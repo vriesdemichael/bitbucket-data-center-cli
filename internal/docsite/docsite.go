@@ -1,12 +1,12 @@
 // Package docsite knows where the published documentation lives.
 //
-// The site is versioned by mike: each release is published under its own tag
-// and the "latest" alias is repointed at it, so one document is reachable at
-// two addresses. A schema's $id is its canonical identity rather than its
-// address, so it names the version the snapshot was published under. Naming
-// the alias instead would have every release assert the same identity for a
-// different document, which is what a validator resolves $ref against and
-// caches by.
+// The site is versioned by mike, one build per major: a release replaces its
+// major's build and is also reachable under its own full version and, while it
+// is the newest, under the "latest" alias, so one document has several
+// addresses. A schema's $id is its canonical identity rather than its address,
+// so it names the release that published it. Naming the major or the alias
+// instead would have every release assert the same identity for a different
+// document, which is what a validator resolves $ref against and caches by.
 package docsite
 
 const (

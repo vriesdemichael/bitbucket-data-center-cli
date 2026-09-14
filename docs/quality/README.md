@@ -128,10 +128,9 @@ tag the version computation will produce — and the release job prepends it to
 the generated notes.
 
 It has to exist **before** the push that triggers the release. The notes are
-rendered into the versioned docs snapshot in the same run, and a mike snapshot
-is immutable in practice: no later commit reaches the `/vX.Y.Z/` page. Prose
-added afterwards can be edited into the GitHub release, but the pinned docs page
-keeps the ledger for good.
+rendered into the published docs in the same run. Prose added afterwards can be
+edited into the GitHub release, and reaches the docs changelog only when the
+next release rebuilds the site.
 
 Absent for an ordinary release, which is the normal case and changes nothing.
 Above forty entries the generated ledger folds into a `<details>` block, so the
