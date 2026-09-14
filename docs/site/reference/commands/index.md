@@ -5385,10 +5385,23 @@ Usage:
 Publish draft comments and optionally submit a status change
 
 ```text
-Publish draft comments and optionally submit a status change
+Publish your draft review on a pull request: the comments you added with
+`bb pr comment add --pending`, together with the status and summary comment
+given by --status and --comment.
+
+Bitbucket completes only a review that was started, so this needs at least one
+draft comment. Without one it fails and changes nothing. To set a status on its
+own, use `bb pr review set`; to post a comment on its own, use `bb pr comment add`.
 
 Usage:
   bb pr review complete <id> [flags]
+
+Examples:
+  # Publish your draft comments
+  bb pr review complete 42
+
+  # Publish them with a request for changes and a summary comment
+  bb pr review complete 42 --status NEEDS_WORK --comment "Unit tests fail"
 
 Flags:
       --comment string   Review completion comment text

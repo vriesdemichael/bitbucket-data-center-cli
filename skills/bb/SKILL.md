@@ -195,9 +195,16 @@ As an autonomous agent performing code reviews or addressing comments:
 # Submit an approval once verified
 bb pr review approve 42 --repo MYPROJ/payments
 
-# Request changes with a summary note if issues were found
-bb pr review complete 42 --repo MYPROJ/payments --status NEEDS_WORK --comment "Unit tests failed in payment_test.go"
+# Request changes if issues were found, and post the summary as a comment
+bb pr review set 42 NEEDS_WORK --repo MYPROJ/payments
+bb pr comment add 42 --repo MYPROJ/payments --text "Unit tests failed in payment_test.go"
+
+# Publish comments drafted with --pending as one review, optionally with a status
+bb pr review complete 42 --repo MYPROJ/payments --status NEEDS_WORK
 ```
+
+`bb pr review complete` needs a draft review: without a comment added with
+`--pending` it fails and sets no status.
 
 ### 6. Address review feedback and tasks
 
