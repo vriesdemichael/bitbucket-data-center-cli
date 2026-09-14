@@ -66,7 +66,6 @@ var exemptFromParity = map[string]string{
 	// coverage profile is written. The hook skips the profile because nothing
 	// local reads it and instrumentation costs time on every commit; CI writes
 	// it because the coverage gates consume it.
-	"test:unit":          "the pre-commit form of test:unit:coverage, without the profile",
 	"test:unit:coverage": "the CI form of test:unit, which also writes the profile the gates read",
 	// Not a gate: it builds the linter, and quality:lint -- which is the gate,
 	// and does run on both sides -- falls back to `go run` when the binary is

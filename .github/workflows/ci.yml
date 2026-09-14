@@ -218,6 +218,42 @@ jobs:
       - name: Verify committed generated docs artifacts are current
         run: task docs:verify-generated
 
+  # The unit suite, natively, on the other two operating systems bb is released
+  # for. Every other job runs on Linux, so code behind a Windows build tag
+  # (internal/config/policy_windows.go), a runtime.GOOS branch, or a file system
+  # that ignores case was compiled and run only on a developer's machine. It is
+  # the pre-commit hook's package set: no race detector, which needs a C
+  # toolchain, and no coverage, which the Linux job reports. The live suite
+  # stays on Linux, because GitHub's Windows and macOS runners cannot run the
+  # Bitbucket container.
+  unit-tests-other-os:
+    name: Unit Tests (${{ matrix.os }})
+    strategy:
+      # One operating system failing says nothing about the other.
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Setup Task
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
+
+      - name: Run Go tests
+        run: task test:unit
+
   docs-site:
     name: Docs Site
     runs-on: ubuntu-latest
@@ -530,6 +566,7 @@ jobs:
       - release-flow
       - adr-validation
       - unit-tests
+      - unit-tests-other-os
       - docs-site
       - live-tests
       - coverage-gates
@@ -541,6 +578,7 @@ jobs:
           RELEASE_FLOW_RESULT: ${{ needs.release-flow.result }}
           ADR_VALIDATION_RESULT: ${{ needs.adr-validation.result }}
           UNIT_TESTS_RESULT: ${{ needs.unit-tests.result }}
+          UNIT_TESTS_OTHER_OS_RESULT: ${{ needs.unit-tests-other-os.result }}
           DOCS_SITE_RESULT: ${{ needs.docs-site.result }}
           LIVE_TESTS_RESULT: ${{ needs.live-tests.result }}
           COVERAGE_GATES_RESULT: ${{ needs.coverage-gates.result }}
@@ -551,6 +589,7 @@ jobs:
           [[ "$RELEASE_FLOW_RESULT" == "success" ]]
           [[ "$ADR_VALIDATION_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_RESULT" == "success" ]]
+          [[ "$UNIT_TESTS_OTHER_OS_RESULT" == "success" ]]
           [[ "$DOCS_SITE_RESULT" == "success" ]]
           # Live tests no longer skip on forks: the Bitbucket instance is
           # SDK-licensed and needs no repository secret, so "skipped" would now
