@@ -329,7 +329,12 @@ func TestSkillRemoveReportsNotFound(t *testing.T) {
 
 // TestResolveInstallPathProject tests project-scoped path resolution.
 func TestResolveInstallPathProject(t *testing.T) {
-	dir := t.TempDir()
+	// The working directory as the OS reports it, which on macOS is the
+	// temporary directory with /var resolved to /private/var.
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
 	origDir, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
