@@ -66,12 +66,40 @@ jobs:
           # (ADR-065).
           go run ./tools/release-version
 
+  # Every platform's archives, the Linux packages, and each binary's SBOM,
+  # checked against the archive it describes. ci.yml runs the same workflow on
+  # every pull request.
   build-artifacts:
-    name: Build ${{ matrix.goos }}/${{ matrix.goarch }} artifact
+    name: Build artifacts
     needs:
       - determine-version
     if: ${{ needs.determine-version.outputs.should_release == 'true' }}
+    uses: ./.github/workflows/release-artifacts.yml
+    with:
+      version: ${{ needs.determine-version.outputs.version }}
+
+  # A published SBOM answers "give us an SBOM". An SBOM *attestation* answers
+  # "prove this SBOM describes that artifact", which is the question a
+  # supply-chain scanner actually asks, and it is verifiable with the same
+  # `gh attestation verify` the provenance already uses.
+  #
+  # Each archive is attested with the SBOM of the binary inside it, and the
+  # .deb and .rpm with the SBOM of the hardened binary they install. The job
+  # runs nothing but the download and the attestation, because any job in this
+  # workflow that can mint an OIDC token can sign as release.yml on main -- the
+  # identity `bb update` trusts -- and the build runs third-party tools.
+  # Its platforms are the build's (TestEveryReleasedPlatformHasItsSBOMsAttested).
+  attest-sboms:
+    name: Attest ${{ matrix.goos }}/${{ matrix.goarch }} SBOMs
+    needs:
+      - determine-version
+      - build-artifacts
+    if: ${{ needs.determine-version.outputs.should_release == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -79,129 +107,58 @@ jobs:
           - goos: linux
             goarch: amd64
             archive: tar.gz
-            binary_ext: ""
           - goos: linux
             goarch: arm64
             archive: tar.gz
-            binary_ext: ""
           - goos: darwin
             goarch: amd64
             archive: tar.gz
-            binary_ext: ""
           - goos: darwin
             goarch: arm64
             archive: tar.gz
-            binary_ext: ""
           - goos: windows
             goarch: amd64
             archive: zip
-            binary_ext: .exe
           - goos: windows
             goarch: arm64
             archive: zip
-            binary_ext: .exe
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.x'
-
-      - name: Setup uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-
-      - name: Setup Task
-        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
-
-      - name: Validate version input
-        env:
-          VERSION: ${{ needs.determine-version.outputs.version }}
-        run: |
-          set -euo pipefail
-          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "Version must look like vMAJOR.MINOR.PATCH (optionally with prerelease/build suffix)."
-            exit 1
-          fi
-
-      - name: Embed Windows PE metadata
-        if: matrix.goos == 'windows'
-        env:
-          VERSION: ${{ needs.determine-version.outputs.version }}
-        run: |
-          set -euo pipefail
-          go install github.com/tc-hib/go-winres@v0.3.3
-          VERSION_NO_V="${VERSION#v}"
-          # PE version must be X.Y.Z.W (four numeric components)
-          PE_VERSION="${VERSION_NO_V}.0"
-          YEAR="$(date -u +%Y)"
-          go-winres simply \
-            --arch amd64,arm64 \
-            --out cmd/bb/rsrc \
-            --manifest cli \
-            --file-description "Bitbucket Server CLI" \
-            --product-name "Bitbucket Server CLI" \
-            --file-version "${PE_VERSION}" \
-            --product-version "${PE_VERSION}" \
-            --copyright "Copyright ${YEAR} Michael de Vries" \
-            --original-filename "bb.exe"
-
-      - name: Build and package artifact
-        env:
-          VERSION: ${{ needs.determine-version.outputs.version }}
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          ARCHIVE: ${{ matrix.archive }}
-          BINARY_EXT: ${{ matrix.binary_ext }}
-        run: |
-          set -euo pipefail
-          mkdir -p dist
-
-          VERSION_NO_V="${VERSION#v}"
-          BINARY_NAME="bb${BINARY_EXT}"
-          ARCHIVE_BASENAME="bb_${VERSION_NO_V}_${GOOS}_${GOARCH}"
-
-          # Standard build (in-place self-update enabled for standalone binary downloads)
-          CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" go build -trimpath -ldflags "-s -w -buildid= -X main.Version=${VERSION}" -o "$BINARY_NAME" ./cmd/bb
-
-          if [[ "$ARCHIVE" == "zip" ]]; then
-            ARCHIVE_NAME="${ARCHIVE_BASENAME}.zip"
-            zip -q "dist/${ARCHIVE_NAME}" "$BINARY_NAME"
-          else
-            ARCHIVE_NAME="${ARCHIVE_BASENAME}.tar.gz"
-            tar -czf "dist/${ARCHIVE_NAME}" "$BINARY_NAME"
-          fi
-
-          # Hardened build (in-place self-update disabled for package managers and enterprise deployments)
-          CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" go build -trimpath -tags no_self_update -ldflags "-s -w -buildid= -X main.Version=${VERSION}" -o "$BINARY_NAME" ./cmd/bb
-
-          if [[ "$ARCHIVE" == "zip" ]]; then
-            ARCHIVE_NAME="${ARCHIVE_BASENAME}_noupdate.zip"
-            zip -q "dist/${ARCHIVE_NAME}" "$BINARY_NAME"
-          else
-            ARCHIVE_NAME="${ARCHIVE_BASENAME}_noupdate.tar.gz"
-            tar -czf "dist/${ARCHIVE_NAME}" "$BINARY_NAME"
-          fi
-
-      - name: Upload packaged artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Download the platform's artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/*
-          if-no-files-found: error
+          path: dist
+
+      - name: Name the platform's artifacts
+        id: names
+        env:
+          VERSION: ${{ needs.determine-version.outputs.version }}
+          PLATFORM: ${{ matrix.goos }}_${{ matrix.goarch }}
+        run: echo "base=dist/bb_${VERSION#v}_${PLATFORM}" >> "$GITHUB_OUTPUT"
+
+      - name: Attest the standard archive with its SBOM
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: ${{ steps.names.outputs.base }}.${{ matrix.archive }}
+          sbom-path: ${{ steps.names.outputs.base }}.spdx.json
+
+      # Only the Linux build has a .deb and an .rpm; elsewhere those two paths
+      # match nothing and the archive is the one subject.
+      - name: Attest the hardened archive and packages with their SBOM
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: |
+            ${{ steps.names.outputs.base }}_noupdate.${{ matrix.archive }}
+            ${{ steps.names.outputs.base }}.deb
+            ${{ steps.names.outputs.base }}.rpm
+          sbom-path: ${{ steps.names.outputs.base }}_noupdate.spdx.json
 
   release:
     name: Publish Release
     needs:
       - determine-version
       - build-artifacts
+      - attest-sboms
     if: ${{ needs.determine-version.outputs.should_release == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -296,47 +253,6 @@ jobs:
           echo "Another release published this version first; this run is superseded."
           exit 1
 
-      - name: Build Linux .deb and .rpm packages
-        env:
-          VERSION: ${{ needs.determine-version.outputs.version }}
-        run: |
-          set -euo pipefail
-          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.46.3
-
-          VERSION_NO_V="${VERSION#v}"
-          workdir="$(mktemp -d)"
-
-          for arch in amd64 arm64; do
-            extract="${workdir}/${arch}"
-            mkdir -p "$extract"
-            tar -xzf "dist/bb_${VERSION_NO_V}_linux_${arch}_noupdate.tar.gz" -C "$extract"
-
-            for packager in deb rpm; do
-              PKG_ARCH="$arch" \
-              PKG_VERSION="$VERSION_NO_V" \
-              PKG_BINARY="${extract}/bb" \
-                nfpm package \
-                  --config scripts/nfpm.yaml \
-                  --packager "$packager" \
-                  --target "dist/bb_${VERSION_NO_V}_linux_${arch}.${packager}"
-            done
-          done
-
-          ls -1 dist/*.deb dist/*.rpm
-
-      # Before the checksum step on purpose, so the SBOM is covered by
-      # sha256sums.txt and signed like every other artifact rather than being a
-      # loose file nobody can verify.
-      - name: Generate SBOM
-        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
-        with:
-          path: .
-          format: spdx-json
-          output-file: dist/sbom.spdx.json
-          # This workflow publishes the release itself, further down.
-          upload-artifact: false
-          upload-release-assets: false
-
       # Every download asset carries the version in its filename, so a reader has
       # to know the version before they can build a URL -- which is why the
       # install instructions used to pin one, and why the pin went stale.
@@ -383,7 +299,7 @@ jobs:
           COSIGN_YES: "true"
         run: |
           set -euo pipefail
-          for file in dist/*.tar.gz dist/*.zip dist/*.deb dist/*.rpm dist/sha256sums.txt dist/sbom.spdx.json; do
+          for file in dist/*.tar.gz dist/*.zip dist/*.deb dist/*.rpm dist/*.spdx.json dist/sha256sums.txt; do
             if [[ ! -f "$file" ]]; then
               continue
             fi
@@ -404,23 +320,6 @@ jobs:
             dist/*.zip
             dist/*.deb
             dist/*.rpm
-
-      # A published SBOM file answers "give us an SBOM". An SBOM *attestation*
-      # answers "prove this SBOM describes that binary", which is the question a
-      # supply-chain scanner actually asks, and it is verifiable with the same
-      # `gh attestation verify` the provenance already uses.
-      #
-      # One SBOM covers every artifact because they are all built from the same
-      # module at the same commit; the dependency set does not vary by platform.
-      - name: Attest the SBOM against the released artifacts
-        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
-        with:
-          subject-path: |
-            dist/*.tar.gz
-            dist/*.zip
-            dist/*.deb
-            dist/*.rpm
-          sbom-path: dist/sbom.spdx.json
 
       - name: Publish GitHub release
         env:

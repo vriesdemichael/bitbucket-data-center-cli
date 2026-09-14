@@ -254,6 +254,18 @@ jobs:
       - name: Run Go tests
         run: task test:unit
 
+  # The build half of a release, on every pull request: each platform's
+  # archives and Linux packages, and each binary's SBOM checked against the
+  # archive it describes. A change that breaks packaging or an SBOM fails here
+  # rather than in the release that runs once it reaches main.
+  release-artifacts:
+    name: Release Artifacts
+    uses: ./.github/workflows/release-artifacts.yml
+    with:
+      version: v0.0.0
+      # Nothing downloads these; they exist to prove the build.
+      retention-days: 1
+
   docs-site:
     name: Docs Site
     runs-on: ubuntu-latest
@@ -568,6 +580,7 @@ jobs:
       - adr-validation
       - unit-tests
       - unit-tests-other-os
+      - release-artifacts
       - docs-site
       - live-tests
       - coverage-gates
@@ -580,6 +593,7 @@ jobs:
           ADR_VALIDATION_RESULT: ${{ needs.adr-validation.result }}
           UNIT_TESTS_RESULT: ${{ needs.unit-tests.result }}
           UNIT_TESTS_OTHER_OS_RESULT: ${{ needs.unit-tests-other-os.result }}
+          RELEASE_ARTIFACTS_RESULT: ${{ needs.release-artifacts.result }}
           DOCS_SITE_RESULT: ${{ needs.docs-site.result }}
           LIVE_TESTS_RESULT: ${{ needs.live-tests.result }}
           COVERAGE_GATES_RESULT: ${{ needs.coverage-gates.result }}
@@ -591,6 +605,7 @@ jobs:
           [[ "$ADR_VALIDATION_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_OTHER_OS_RESULT" == "success" ]]
+          [[ "$RELEASE_ARTIFACTS_RESULT" == "success" ]]
           [[ "$DOCS_SITE_RESULT" == "success" ]]
           # Live tests no longer skip on forks: the Bitbucket instance is
           # SDK-licensed and needs no repository secret, so "skipped" would now

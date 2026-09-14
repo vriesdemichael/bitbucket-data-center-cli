@@ -95,19 +95,24 @@ metadata.
 
 ### Software Bill of Materials
 
-Every release publishes `sbom.spdx.json`, an SPDX 2.3 SBOM of the Go module
-graph, signed and checksummed like every other artifact. It is also attested
-against each released binary, so the link between the SBOM and the artifact is
-itself verifiable rather than asserted:
+Every release archive has its own SPDX 2.3 SBOM, generated from the binary
+inside it: the Go modules that binary links, the Go standard library it was
+linked with, and each module's licence. The dependencies differ by platform, so
+each SBOM describes one platform only. It is named after its archive
+(`bb_linux_amd64.spdx.json` for `bb_linux_amd64.tar.gz`); the `.deb` and `.rpm`
+install the `_noupdate` binary and carry its SBOM. Before a release is
+published, each SBOM is checked against the build information the Go linker
+wrote into its binary.
+
+Each SBOM is signed and checksummed like every other artifact, and attested
+against its archive, so the link between the SBOM and the artifact is itself
+verifiable rather than asserted:
 
 ```bash
 gh attestation verify bb_linux_amd64.tar.gz \
   --repo vriesdemichael/bitbucket-data-center-cli \
   --predicate-type https://spdx.dev/Document
 ```
-
-One SBOM covers every platform artifact: all of them are built from the same
-module at the same commit, so the dependency set does not vary between them.
 
 ## Credential handling
 

@@ -1,0 +1,234 @@
+name: Release Artifacts
+
+# The build half of a release, shared so a pull request builds exactly what a
+# release would: every archive, the Linux packages, and each binary's SBOM,
+# checked against the archive it describes. release.yml attests and publishes
+# what this uploads; ci.yml runs it to find out before main does.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version the binaries report and their SBOMs give them (vMAJOR.MINOR.PATCH)
+        required: true
+        type: string
+      retention-days:
+        description: Days to keep the uploaded artifacts; 0 keeps the repository default
+        required: false
+        type: number
+        default: 0
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }} artifact
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            archive: tar.gz
+            binary_ext: ""
+          - goos: linux
+            goarch: arm64
+            archive: tar.gz
+            binary_ext: ""
+          - goos: darwin
+            goarch: amd64
+            archive: tar.gz
+            binary_ext: ""
+          - goos: darwin
+            goarch: arm64
+            archive: tar.gz
+            binary_ext: ""
+          - goos: windows
+            goarch: amd64
+            archive: zip
+            binary_ext: .exe
+          - goos: windows
+            goarch: arm64
+            archive: zip
+            binary_ext: .exe
+    env:
+      VERSION: ${{ inputs.version }}
+      # syft names the scanned binary bb and gives it the release version, rather
+      # than its path on this runner and a digest. The go command cannot record
+      # the release version itself: the module path has no /vN suffix, so it
+      # ignores a v2-or-later tag and stamps a pseudo-version.
+      SYFT_SOURCE_NAME: bb
+      SYFT_SOURCE_VERSION: ${{ inputs.version }}
+      # A Go binary's contents are its build information. syft's other binary
+      # catalogers add a guess at the file itself -- on Windows, a package named
+      # bb with no version and no purl -- which sbom-check refuses.
+      SYFT_DEFAULT_CATALOGERS: go-module-binary-cataloger
+      # Without the module cache a binary scan finds no licences at all.
+      SYFT_GOLANG_SEARCH_LOCAL_MOD_CACHE_LICENSES: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Validate version input
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Version must look like vMAJOR.MINOR.PATCH (optionally with prerelease/build suffix)."
+            exit 1
+          fi
+
+      - name: Embed Windows PE metadata
+        if: matrix.goos == 'windows'
+        run: |
+          set -euo pipefail
+          go install github.com/tc-hib/go-winres@v0.3.3
+          VERSION_NO_V="${VERSION#v}"
+          # PE version must be X.Y.Z.W (four numeric components)
+          PE_VERSION="${VERSION_NO_V}.0"
+          YEAR="$(date -u +%Y)"
+          go-winres simply \
+            --arch amd64,arm64 \
+            --out cmd/bb/rsrc \
+            --manifest cli \
+            --file-description "Bitbucket Server CLI" \
+            --product-name "Bitbucket Server CLI" \
+            --file-version "${PE_VERSION}" \
+            --product-version "${PE_VERSION}" \
+            --copyright "Copyright ${YEAR} Michael de Vries" \
+            --original-filename "bb.exe"
+
+      - name: Build binaries
+        id: build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          BINARY_EXT: ${{ matrix.binary_ext }}
+        run: |
+          set -euo pipefail
+
+          # Both binaries go outside the checkout, and both are built before
+          # anything is written into it. The go command stamps vcs.modified=true
+          # on a binary built from a tree with untracked files -- the first
+          # binary, or an archive in dist/, is one -- and sbom-check refuses a
+          # binary stamped that way.
+          standard="${RUNNER_TEMP}/bb/standard/bb${BINARY_EXT}"
+          noupdate="${RUNNER_TEMP}/bb/noupdate/bb${BINARY_EXT}"
+          mkdir -p "$(dirname "$standard")" "$(dirname "$noupdate")"
+
+          # Standard build (in-place self-update enabled for standalone binary downloads)
+          CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -buildid= -X main.Version=${VERSION}" -o "$standard" ./cmd/bb
+
+          # Hardened build (in-place self-update disabled for package managers and enterprise deployments)
+          CGO_ENABLED=0 go build -trimpath -tags no_self_update -ldflags "-s -w -buildid= -X main.Version=${VERSION}" -o "$noupdate" ./cmd/bb
+
+          mkdir -p dist
+          {
+            echo "standard=$standard"
+            echo "noupdate=$noupdate"
+            echo "base=bb_${VERSION#v}_${GOOS}_${GOARCH}"
+          } >> "$GITHUB_OUTPUT"
+          echo "SYFT_GOLANG_LOCAL_MOD_CACHE_DIR=$(go env GOMODCACHE)" >> "$GITHUB_ENV"
+
+      # Each SBOM is generated from the binary it describes, not from the
+      # checkout. A binary's build information names the modules the linker
+      # used for that platform and the standard library it was linked with;
+      # the checkout holds neither, and holds the docs site's Python packages
+      # and the workflows' actions besides. The dependencies differ by
+      # operating system -- the keyring links D-Bus on Linux and the credential
+      # manager on Windows -- so every archive carries its own.
+      - name: Generate the standard binary's SBOM
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          file: ${{ steps.build.outputs.standard }}
+          format: spdx-json
+          output-file: dist/${{ steps.build.outputs.base }}.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Generate the hardened binary's SBOM
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          file: ${{ steps.build.outputs.noupdate }}
+          format: spdx-json
+          output-file: dist/${{ steps.build.outputs.base }}_noupdate.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Package archives
+        env:
+          ARCHIVE: ${{ matrix.archive }}
+          STANDARD: ${{ steps.build.outputs.standard }}
+          NOUPDATE: ${{ steps.build.outputs.noupdate }}
+          BASE: ${{ steps.build.outputs.base }}
+        run: |
+          set -euo pipefail
+
+          # An archive holds the binary alone, at its root.
+          package() {
+            local binary="$1" name="$2"
+            if [[ "$ARCHIVE" == "zip" ]]; then
+              (cd "$(dirname "$binary")" && zip -q "${GITHUB_WORKSPACE}/dist/${name}.zip" "$(basename "$binary")")
+            else
+              tar -czf "dist/${name}.tar.gz" -C "$(dirname "$binary")" "$(basename "$binary")"
+            fi
+          }
+
+          package "$STANDARD" "$BASE"
+          package "$NOUPDATE" "${BASE}_noupdate"
+
+      # From the hardened binary: a package manager owns updates. The packages
+      # therefore carry that binary's SBOM, and release.yml attests them with it.
+      - name: Build Linux .deb and .rpm packages
+        if: matrix.goos == 'linux'
+        env:
+          PKG_ARCH: ${{ matrix.goarch }}
+          PKG_BINARY: ${{ steps.build.outputs.noupdate }}
+          BASE: ${{ steps.build.outputs.base }}
+        run: |
+          set -euo pipefail
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.46.3
+
+          export PKG_VERSION="${VERSION#v}"
+          for packager in deb rpm; do
+            nfpm package \
+              --config scripts/nfpm.yaml \
+              --packager "$packager" \
+              --target "dist/${BASE}.${packager}"
+          done
+
+          ls -1 dist/*.deb dist/*.rpm
+
+      # release.yml attests each archive with its SBOM, which claims the SBOM
+      # lists what that archive's binary is built from. This holds the claim to
+      # the binary's own build information before anything is uploaded.
+      - name: Check each SBOM against its archive
+        env:
+          TARGET_GOOS: ${{ matrix.goos }}
+          TARGET_GOARCH: ${{ matrix.goarch }}
+          ARCHIVE: ${{ matrix.archive }}
+          BASE: ${{ steps.build.outputs.base }}
+        run: |
+          set -euo pipefail
+          for name in "$BASE" "${BASE}_noupdate"; do
+            go run ./tools/sbom-check \
+              -archive "dist/${name}.${ARCHIVE}" \
+              -sbom "dist/${name}.spdx.json" \
+              -version "$VERSION" \
+              -goos "$TARGET_GOOS" \
+              -goarch "$TARGET_GOARCH"
+          done
+
+      - name: Upload packaged artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days }}
