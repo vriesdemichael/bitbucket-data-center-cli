@@ -446,7 +446,7 @@ bb ai mcp serve --host https://bitbucket.example.com --project PAYMENTS --audit-
 {"timestamp":"2026-08-29T09:30:00Z","event":"mcp_tool_invocation","tool":"get_pull_request","project":"PAYMENTS","repo":"ledger","status":"success","duration_ms":45,"user_identity":"alice","host":"https://bitbucket.example.com","scope":"PAYMENTS"}
 ```
 
-`status` is `success`, `error`, or `denied`. Argument values are recorded, with tokens, passwords and URL credentials redacted. When the client sends W3C trace context, `trace_id` carries it so a record correlates with the agent's own trace.
+`status` is `success`, `error`, or `denied`. Argument values and error messages are recorded, with tokens, passwords and URL credentials redacted. When the client sends W3C trace context, `trace_id` carries it so a record correlates with the agent's own trace.
 
 Auditing is **off by default** — a developer who never turns it on should not accumulate a log file they will not find. Turn it on by fleet policy, not by asking developers to.
 

@@ -16,7 +16,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 ## Decision
 
-bb ai mcp serve accepts --project and --repo, confining every tool call to that project or repository, and --audit-file, recording every invocation as JSON Lines. Both are off by default. Both are enforced in one middleware over tools/call, never in handlers. Each tool has a scope rule, held to the catalogue by a test. A tool whose arguments identify its target has them injected when omitted and refused when they name something else. A tool whose project argument is only a filter, or that addresses something Bitbucket does not scope to a project at all, is withheld: dropped from the catalogue as well as refused on call. Audit writes are synchronous and a failed write refuses the call, unless --audit-failure=warn. The sink is a file or stderr; stdout carries the protocol and is rejected. Administrators can mandate the destination with policy.mcp_audit_file, which binds only where the policy file is out of the developer's reach -- see ADR-058 for the deployment step that makes that true.
+bb ai mcp serve accepts --project and --repo, confining every tool call to that project or repository, and --audit-file, recording every invocation as JSON Lines. Both are off by default. Both are enforced in one middleware over tools/call, never in handlers. Each tool has a scope rule, held to the catalogue by a test. A tool whose arguments identify its target has them injected when omitted and refused when they name something else. Under a project scope, list_pull_requests, whose repository is optional, answers a call without one with the pull requests of the caller in that project: a filter over the dashboard, accepted because the dashboard holds only the work of the caller and the filter decides everything the agent receives. A tool whose project argument is only a filter, or that addresses something Bitbucket does not scope to a project at all, is withheld: dropped from the catalogue as well as refused on call. Audit writes are synchronous and a failed write refuses the call, unless --audit-failure=warn. The sink is a file or stderr; stdout carries the protocol and is rejected. Administrators can mandate the destination with policy.mcp_audit_file, which binds only where the policy file is out of the developer's reach -- see ADR-058 for the deployment step that makes that true.
 
 ## Agent Instructions
 
@@ -29,6 +29,7 @@ ADR-039 bounds a server to one instance and one token's rights, not to a part of
 ## Rejected Alternatives
 
 - `Compare project and repository only when the caller supplies them`: Fails open on every call that omits them, while reading like enforcement.
+- `Refuse list_pull_requests without a repository under a project scope`: Leaves an agent confined to a project no way to ask for its own pull requests, and refuses an omitted argument the scope is meant to fill in.
 - `Let unboundable tools through under a scope`: Sells a boundary that does not exist; a commit SHA is not project-scoped in the API.
 - `Write audit records asynchronously`: Loses the denials, which are the records worth having.
 - `Ship direct SIEM integrations`: Puts a network call, a credential and retry buffering in the tool-call path of a process spawned per IDE session. Every collector already tails a file.
