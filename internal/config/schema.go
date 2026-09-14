@@ -3,10 +3,15 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
+	"github.com/santhosh-tekuri/jsonschema/v6/kind"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -206,34 +211,162 @@ var getCompiledConfigSchema = sync.OnceValue(func() *jsonschema.Schema {
 // ValidateConfigYAML validates raw YAML bytes against the configuration JSON Schema.
 // Returns nil if the configuration satisfies the schema, or a KindValidation error if it does not.
 func ValidateConfigYAML(rawYAML []byte) error {
-	trimmed := bytes.TrimSpace(rawYAML)
-	if len(trimmed) == 0 {
-		return nil
+	data, err := configDocument(rawYAML)
+	if err != nil || data == nil {
+		return err
+	}
+
+	if err := getCompiledConfigSchema().Validate(data); err != nil {
+		return apperrors.New(apperrors.KindValidation, "configuration does not match schema", err)
+	}
+
+	return nil
+}
+
+// configDocument decodes a configuration file into the form the schema is
+// checked against. An empty file, and one holding only null, is no document at
+// all, and nil with no error says so.
+func configDocument(rawYAML []byte) (any, error) {
+	if len(bytes.TrimSpace(rawYAML)) == 0 {
+		return nil, nil
 	}
 
 	var rawMap any
 	if err := yaml.Unmarshal(rawYAML, &rawMap); err != nil {
-		return apperrors.New(apperrors.KindValidation, "invalid YAML configuration", err)
+		return nil, apperrors.New(apperrors.KindValidation, "invalid YAML configuration", err)
 	}
 	if rawMap == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Round-trip through JSON to convert map[any]any to map[string]any for jsonschema
 	jsonBytes, err := json.Marshal(rawMap)
 	if err != nil {
-		return apperrors.New(apperrors.KindValidation, "failed to serialize configuration for schema validation", err)
+		return nil, apperrors.New(apperrors.KindValidation, "failed to serialize configuration for schema validation", err)
 	}
 
 	var data any
 	if err := json.Unmarshal(jsonBytes, &data); err != nil {
-		return apperrors.New(apperrors.KindValidation, "failed to decode configuration for schema validation", err)
+		return nil, apperrors.New(apperrors.KindValidation, "failed to decode configuration for schema validation", err)
 	}
 
-	schema := getCompiledConfigSchema()
-	if err := schema.Validate(data); err != nil {
-		return apperrors.New(apperrors.KindValidation, "configuration does not match schema", err)
+	return data, nil
+}
+
+// SchemaViolation is one place a configuration file departs from the schema.
+type SchemaViolation struct {
+	// Key is the dotted path to the key at fault, empty for the document itself.
+	Key string
+	// Line is where that key sits in the file, zero when it could not be placed.
+	Line int
+	// Problem says what is wrong with it.
+	Problem string
+}
+
+// configSchemaViolations reports every departure from the schema, where
+// ValidateConfigYAML answers only whether there is one.
+//
+// That answer is what a load needs, and a load stops at the first file that
+// fails. Someone repairing a file needs the rest: fixing one unknown key to be
+// told about the next is a round trip per typo.
+//
+// The validator reports a tree, with the findings at its leaves. A leaf naming
+// several unknown keys becomes one violation per key, so each can be placed on
+// its own line.
+func configSchemaViolations(data any, document *yaml.Node) []SchemaViolation {
+	violations := []SchemaViolation{}
+
+	err := getCompiledConfigSchema().Validate(data)
+	if err == nil {
+		return violations
 	}
 
-	return nil
+	var failure *jsonschema.ValidationError
+	if !errors.As(err, &failure) {
+		return append(violations, SchemaViolation{Problem: err.Error()})
+	}
+
+	collectViolations(failure, document, &violations)
+	sort.SliceStable(violations, func(i, j int) bool {
+		if violations[i].Line != violations[j].Line {
+			return violations[i].Line < violations[j].Line
+		}
+		return violations[i].Key < violations[j].Key
+	})
+
+	return violations
+}
+
+func collectViolations(failure *jsonschema.ValidationError, document *yaml.Node, found *[]SchemaViolation) {
+	if len(failure.Causes) > 0 {
+		for _, cause := range failure.Causes {
+			collectViolations(cause, document, found)
+		}
+		return
+	}
+
+	location := failure.InstanceLocation
+	at := func(path []string, problem string) SchemaViolation {
+		return SchemaViolation{Key: strings.Join(path, "."), Line: lineOf(document, path), Problem: problem}
+	}
+
+	switch problem := failure.ErrorKind.(type) {
+	case *kind.AdditionalProperties:
+		for _, property := range problem.Properties {
+			*found = append(*found, at(childPath(location, property), "unknown key"))
+		}
+	case *kind.Required:
+		for _, property := range problem.Missing {
+			*found = append(*found, at(childPath(location, property), "required key is missing"))
+		}
+	case *kind.Type:
+		*found = append(*found, at(location, fmt.Sprintf("got %s, want %s", problem.Got, strings.Join(problem.Want, " or "))))
+	default:
+		// The validator's own wording, less the location it leads with: the
+		// key is reported beside it.
+		_, message, _ := strings.Cut(failure.Error(), ": ")
+		*found = append(*found, at(location, message))
+	}
+}
+
+func childPath(location []string, child string) []string {
+	return append(append([]string{}, location...), child)
+}
+
+// lineOf places a key path in the parsed file: the line of the deepest part of
+// the path that is there. A missing key is placed on its parent, which is where
+// it would have to be added.
+func lineOf(document *yaml.Node, path []string) int {
+	node := document
+	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
+		node = node.Content[0]
+	}
+
+	line := node.Line
+	for _, segment := range path {
+		next, keyLine := childNode(node, segment)
+		if next == nil {
+			return line
+		}
+		node, line = next, keyLine
+	}
+
+	return line
+}
+
+func childNode(node *yaml.Node, segment string) (*yaml.Node, int) {
+	switch node.Kind {
+	case yaml.MappingNode:
+		for index := 0; index+1 < len(node.Content); index += 2 {
+			if node.Content[index].Value == segment {
+				return node.Content[index+1], node.Content[index].Line
+			}
+		}
+	case yaml.SequenceNode:
+		if position, err := strconv.Atoi(segment); err == nil && position >= 0 && position < len(node.Content) {
+			return node.Content[position], node.Content[position].Line
+		}
+	}
+
+	return nil, 0
 }

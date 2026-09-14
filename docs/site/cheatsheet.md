@@ -17,6 +17,7 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 |---|---|---|
 | Log in with a token | `printf '%s' "$TOKEN" \| bb auth login https://bitbucket.example.com --token-stdin` | Stores securely in OS keyring |
 | Check auth & connection | `bb auth status` | Validates credentials and server reachability |
+| Check the configuration | `bb doctor` | Every invalid key in every config file, and where each setting comes from; needs no host |
 | Configure git credentials | `bb auth setup-git` | One-time setup so `git push`/`git pull` authenticate via `bb` |
 | View PAT creation URL | `bb auth token-url` | Prints link to create a new personal access token |
 | Switch active server | `bb auth server use https://bitbucket.example.com` | When multiple Bitbucket hosts are configured |

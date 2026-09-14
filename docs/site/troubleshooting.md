@@ -66,7 +66,7 @@ a credential.
 ## `the stored configuration at ... could not be read`
 
 ```text
-permanent: the stored configuration at /home/alice/.config/bb/config.yaml could not be read. Fix or remove that file; bb will not rewrite a file it could not read (invalid YAML configuration (yaml: line 5: found character that cannot start any token))
+permanent: the stored configuration at /home/alice/.config/bb/config.yaml could not be read; run 'bb doctor' to list every problem in it. Fix or remove that file; bb will not rewrite a file it could not read (invalid YAML configuration (yaml: line 5: found character that cannot start any token))
 ```
 
 A configuration file exists and bb cannot read it -- a stray indent is enough.
@@ -87,17 +87,40 @@ rather than run without it.
 `BB_CONFIG_PATH` overrides the user file. In CI, `BB_DISABLE_STORED_CONFIG=1`
 skips it entirely, so a stray file on a shared runner cannot fail the run.
 
-### Validating a configuration file
+### Checking the configuration
 
-Both files are described by a JSON Schema, published at
-[`config.schema.json`](reference/schemas/config.schema.json). It covers every key
-`bb` reads, so a validator can check a file for a malformed structure or a key
-that does not exist — the case a YAML parser cannot see, because a misspelled
-policy key is valid YAML and is silently ignored.
+`bb doctor` reads the stored, workspace and system files each on its own, so it
+reports every problem in every file where a command stops at the first. It needs
+no host and no network, so it works when nothing else does:
 
-A configuration file may contain an `insecure_secrets` block holding tokens and
-passwords in plain text, so treat it as a credential file when deciding where to
-check it.
+```bash
+bb doctor
+```
+
+```text
+Configuration files
+  stored     /home/alice/.config/bb/config.yaml
+             invalid: the schema rejects 1 key
+             line 6: hosts.corp.username: got number, want string
+             ignored: require_keyring is read only from the system configuration
+  workspace  none found above the working directory
+  system     /etc/bb/config.yaml
+             invalid: the schema rejects 1 key
+             line 2: policies.require_keyrng: unknown key
+```
+
+A misspelled key is valid YAML; the
+[configuration schema](reference/schemas/config.schema.json) is what rejects it,
+and `bb doctor` names each one with its line. A key spelled correctly in the
+wrong file is listed as `ignored`: policy in your own file mandates nothing.
+
+Below the files, `Settings` lists every effective setting, where it came from —
+a flag, an environment variable, a `.env` file, one of the files, the Windows
+registry or the default — and what it overrides. A token or password shows as
+configured, with where it is held, and never its value.
+
+It exits `1` when a file bb reads is invalid. `bb doctor --json` exits `0` and
+puts the verdict in `ok`, so the report is never replaced by an error envelope.
 
 ## Git asks for a password on push or pull
 
