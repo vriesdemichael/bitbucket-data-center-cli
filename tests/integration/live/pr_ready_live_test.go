@@ -322,10 +322,15 @@ func TestLivePRReadyByAReaderIsRefused(t *testing.T) {
 		t.Fatalf("a user with read access marked a draft ready:\n%s", output)
 	}
 	// Bitbucket answers 401 naming AuthorisationException, from the update
-	// itself: the read before it is one a reader may make.
+	// itself: the read before it is one a reader may make. bb reports it as
+	// authorization, because the reader is known and logging in again would not
+	// change the answer.
 	details := apperrors.DetailsOf(err)
 	if details["upstreamStatus"] != "401" || details["upstreamException"] != "com.atlassian.bitbucket.AuthorisationException" {
 		t.Errorf("expected Bitbucket's 401 AuthorisationException for the update, got %v: %v", details, err)
+	}
+	if !apperrors.IsKind(err, apperrors.KindAuthorization) {
+		t.Errorf("a reader refused the change is reported as %s, want authorization: %v", apperrors.KindOf(err), err)
 	}
 
 	if !livePRIsDraft(t, prID) {

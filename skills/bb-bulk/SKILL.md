@@ -441,7 +441,7 @@ Responses follow the machine output contract:
 
 - `validation` (`exit 2`): Invalid policy syntax or unresolvable selectors.
 - `authentication` (`exit 3`): Missing or invalid Bitbucket token.
-- `authorization` (`exit 3`): Insufficient permissions (e.g. requires project or repo admin).
+- `authorization` (`exit 3`): Insufficient permissions (e.g. requires project or repo admin), or an account without a Bitbucket licence.
 - `conflict` (`exit 5`): One or more targets failed during execution.
 - `cancelled` (`exit 12`): Interrupted before every repository was attempted. Not a retry
   signal — re-running replays mutations across the whole plan.
