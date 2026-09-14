@@ -8,6 +8,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func newSshKeyTestService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -184,9 +185,7 @@ func TestSshKeyServiceNetworkErrors(t *testing.T) {
 	// Closed loopback port, not an unresolvable hostname: see the note on
 	// TestTokenServiceNetworkErrors. A DNS lookup per call made this 25
 	// seconds, and left the failure mode at the mercy of the resolver.
-	closed := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	baseURL := closed.URL
-	closed.Close()
+	baseURL := testsupport.RefusedURL
 
 	client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 	if err != nil {

@@ -19,7 +19,7 @@ import (
 func conditionDeps(t *testing.T) Dependencies {
 	t.Helper()
 
-	cfg := config.AppConfig{BitbucketURL: testsupport.ClosedListenerURL(t), ProjectKey: "PRJ"}
+	cfg := config.AppConfig{BitbucketURL: testsupport.RefusedURL, ProjectKey: "PRJ"}
 	return Dependencies{
 		JSONEnabled:   func() bool { return false },
 		DryRunEnabled: func() bool { return false },

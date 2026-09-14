@@ -249,7 +249,7 @@ func TestZeroMeansTheServiceDefault(t *testing.T) {
 func TestEveryPagedListingReportsALostConnection(t *testing.T) {
 	t.Parallel()
 
-	baseURL := testsupport.ClosedListenerURL(t)
+	baseURL := testsupport.RefusedURL
 
 	for _, listing := range listings() {
 		t.Run(listing.name, func(t *testing.T) {

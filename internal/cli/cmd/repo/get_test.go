@@ -15,6 +15,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestCloneURLsFromReadsTheCloneLinks(t *testing.T) {
@@ -187,8 +188,8 @@ func TestRepoGetReportsFailuresBeforeAnyRequest(t *testing.T) {
 
 		err := run(Dependencies{
 			LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-				client, err := openapigenerated.NewClientWithResponses("http://127.0.0.1:1")
-				return config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}, client, err
+				client, err := openapigenerated.NewClientWithResponses(testsupport.RefusedURL)
+				return config.AppConfig{BitbucketURL: testsupport.RefusedURL}, client, err
 			},
 		}, "--repo", "not-a-selector")
 		if !apperrors.IsKind(err, apperrors.KindValidation) {

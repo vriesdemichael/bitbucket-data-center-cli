@@ -22,15 +22,14 @@ import (
 // validation kind is proof the argument never left the process, which is what
 // ADR-054 asks for.
 //
-// The port is one testsupport took and released rather than a number picked in
-// the hope that nothing is listening on it, and the handler it was opened with
-// fails the test -- so a request that does arrive says so instead of quietly
+// The address is testsupport.RefusedURL, whose port no listener is ever
+// handed, so a request that does leave the process fails rather than quietly
 // succeeding against whatever answered.
 func configureUnreachableEnv(t *testing.T) {
 	t.Helper()
 
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", testsupport.ClosedListenerURL(t))
+	t.Setenv("BITBUCKET_URL", testsupport.RefusedURL)
 	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
 	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 	t.Setenv("BITBUCKET_TOKEN", "test-token")

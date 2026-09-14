@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
@@ -80,7 +81,7 @@ func TestLiveTransportIdentityAndHealth(t *testing.T) {
 	t.Run("nothing answering is not healthy", func(t *testing.T) {
 		// The other side of the same distinction, and the only part that needs
 		// no Bitbucket: a closed port.
-		unreachable := config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}
+		unreachable := config.AppConfig{BitbucketURL: testsupport.RefusedURL}
 
 		if _, err := httpclient.NewFromConfig(unreachable).Health(ctx); err == nil {
 			t.Fatal("expected a closed port to fail the health check")

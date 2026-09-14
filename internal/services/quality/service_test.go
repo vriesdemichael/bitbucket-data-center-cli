@@ -211,7 +211,7 @@ func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 	})
 
 	t.Run("set build status transport failure", func(t *testing.T) {
-		baseURL := testsupport.ClosedListenerURL(t)
+		baseURL := testsupport.RefusedURL
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {
@@ -244,7 +244,7 @@ func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 	// could reach.
 
 	t.Run("get build statuses transport failure", func(t *testing.T) {
-		baseURL := testsupport.ClosedListenerURL(t)
+		baseURL := testsupport.RefusedURL
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {
@@ -262,7 +262,7 @@ func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 	})
 
 	t.Run("get build status stats transport failure", func(t *testing.T) {
-		baseURL := testsupport.ClosedListenerURL(t)
+		baseURL := testsupport.RefusedURL
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {
@@ -451,7 +451,7 @@ func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
 
 	// 3. Transient transport failures
 	t.Run("transient transport failures", func(t *testing.T) {
-		baseURL := testsupport.ClosedListenerURL(t)
+		baseURL := testsupport.RefusedURL
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {
