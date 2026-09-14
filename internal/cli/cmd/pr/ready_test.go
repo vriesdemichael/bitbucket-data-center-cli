@@ -1,15 +1,21 @@
 package prcmd
 
 import (
+	"context"
+	"errors"
+	"io"
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 )
 
 // The preview has to predict what SetDraft does, by the same rule: an open pull
 // request already in the requested state is left alone, and one that is not
-// open is refused by Bitbucket whatever its draft flag says.
+// open is refused whatever its draft flag says.
 func TestReadyPreviewPredictsWhatTheCommandDoes(t *testing.T) {
 	t.Parallel()
 
@@ -69,4 +75,85 @@ func TestReadyMessageSaysWhetherAnythingChanged(t *testing.T) {
 			}
 		}
 	}
+}
+
+// refusingChecker answers every permission check with the same refusal.
+type refusingChecker struct{ err error }
+
+func (checker refusingChecker) CheckRepoPermission(context.Context, string, string, openapigenerated.GetRepositories1ParamsPermission) error {
+	return checker.err
+}
+
+// The failures bb pr ready decides before it asks Bitbucket anything. Each must
+// come back as the error it is: not swallowed into a preview, and not replaced
+// by a later failure. The client points at a closed port, so a command that
+// went on to the network would fail with a transport error instead of the one
+// each case expects.
+func TestReadyCommandReportsFailuresBeforeAnyRequest(t *testing.T) {
+	t.Parallel()
+
+	closedPort := func(t *testing.T) (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+		t.Helper()
+
+		client, err := openapigenerated.NewClientWithResponses("http://127.0.0.1:1")
+		if err != nil {
+			t.Fatalf("build client: %v", err)
+		}
+
+		return config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}, client, nil
+	}
+
+	run := func(deps Dependencies, args ...string) error {
+		command := New(deps)
+		command.SetOut(io.Discard)
+		command.SetErr(io.Discard)
+		command.SetArgs(append([]string{"ready"}, args...))
+
+		return command.Execute()
+	}
+
+	t.Run("configuration that cannot be loaded", func(t *testing.T) {
+		t.Parallel()
+
+		broken := errors.New("no Bitbucket host is configured")
+		err := run(Dependencies{
+			LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+				return config.AppConfig{}, nil, broken
+			},
+		}, "42", "--repo", "PRJ/demo")
+		if !errors.Is(err, broken) {
+			t.Fatalf("got %v, want the configuration failure", err)
+		}
+	})
+
+	t.Run("no repository to act on", func(t *testing.T) {
+		t.Parallel()
+
+		err := run(Dependencies{
+			LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+				return closedPort(t)
+			},
+		}, "42")
+		if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "repository is required") {
+			t.Fatalf("got %v, want a validation error asking for the repository", err)
+		}
+	})
+
+	t.Run("a dry run by a caller who may not write", func(t *testing.T) {
+		t.Parallel()
+
+		refused := errors.New("you may not write to PRJ/demo")
+		err := run(Dependencies{
+			DryRunEnabled: func() bool { return true },
+			LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+				return closedPort(t)
+			},
+			PermissionChecker: func(*openapigenerated.ClientWithResponses) PermissionChecker {
+				return refusingChecker{err: refused}
+			},
+		}, "42", "--repo", "PRJ/demo")
+		if !errors.Is(err, refused) {
+			t.Fatalf("got %v, want the permission refusal rather than a preview", err)
+		}
+	})
 }
