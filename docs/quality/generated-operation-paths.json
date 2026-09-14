@@ -690,6 +690,10 @@
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s.diff"
     },
+    "StreamReadme": {
+      "method": "GET",
+      "path": "/api/latest/projects/%s/repos/%s/readme"
+    },
     "Synchronize": {
       "method": "POST",
       "path": "/sync/latest/projects/%s/repos/%s/synchronize"
