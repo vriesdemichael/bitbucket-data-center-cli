@@ -2478,11 +2478,11 @@ func nameOnDisk(directory, name string) string {
 
 	onDisk := name
 	for _, entry := range entries {
-		if entry.Name() == name {
-			return name
-		}
 		if strings.EqualFold(entry.Name(), name) {
 			onDisk = entry.Name()
+			if onDisk == name {
+				break
+			}
 		}
 	}
 
