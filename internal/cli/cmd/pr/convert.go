@@ -54,6 +54,7 @@ func init() {
 		result.Declare(path, result.For[PullRequestChange](changeEnums))
 	}
 	result.Declare("pr review reviewer add", result.For[ReviewerAddition](changeEnums))
+	result.Declare("pr ready", result.For[DraftStateChange](changeEnums))
 
 	result.Declare("pr commits", result.For[PullRequestCommits](nil))
 	result.Declare("pr files", result.For[PullRequestChanges](nil))

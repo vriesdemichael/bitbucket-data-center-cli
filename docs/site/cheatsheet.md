@@ -160,8 +160,8 @@ bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --titl
 # Check CI build statuses directly on the PR
 bb pr build status 42
 
-# When ready for team review, mark ready and assign reviewers
-bb pr update 42 --repo PROJ/my-repo --version 3 --draft=false
+# When ready for team review, mark it ready
+bb pr ready 42 --repo PROJ/my-repo
 ```
 
 ---

@@ -403,13 +403,7 @@ func (service *Service) Update(ctx context.Context, repository RepositoryRef, pu
 			return PullRequest{}, err
 		}
 
-		existing := make([]map[string]any, 0, len(current.Reviewers))
-		for _, reviewer := range current.Reviewers {
-			if name := strings.TrimSpace(reviewer.Name); name != "" {
-				existing = append(existing, map[string]any{"user": map[string]any{"name": name}})
-			}
-		}
-		payload["reviewers"] = existing
+		payload["reviewers"] = reviewerEcho(current)
 	}
 
 	var response pullRequestValue
@@ -1497,30 +1491,16 @@ func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pu
 	// found the same way: the version is an optimistic lock the caller has no
 	// reason to know, so read it rather than demand it (#532).
 	//
-	// A caller who does pass --version still gets the lock, and pays no extra
-	// request for it.
-	// Whether bb picked the version decides who owns it going stale below.
-	resolvedHere := version == nil
-	if version == nil {
-		// Reading it needs the REST client, which this method did not
-		// previously touch. Say so rather than dereferencing a nil one.
-		if service.client == nil {
-			return nil, apperrors.New(apperrors.KindInternal, "http client is not configured on pullrequest service", nil)
-		}
-
-		current, err := service.Get(ctx, repository, resolvedID)
-		if err != nil {
-			return nil, err
-		}
-		version = &current.Version
-	}
-
-	attempt := func(at int) (*openapigenerated.RebaseResponse, error) {
+	// A caller who does pass --version still gets the lock, pays no extra
+	// request for it, and sees its conflict: only a version bb read itself is
+	// retried when it goes stale (writeAtCurrentVersion).
+	var response *openapigenerated.RebaseResponse
+	rebaseAt := func(at int) error {
 		var request openapigenerated.RestPullRequestRebaseRequest
 		// The API field is 32-bit; a version outside its range wrapped rather
 		// than being rejected, which would rebase against the wrong version.
 		if at < 0 || at > math.MaxInt32 {
-			return nil, apperrors.New(
+			return apperrors.New(
 				apperrors.KindValidation,
 				fmt.Sprintf("pull request version must be between 0 and %d", math.MaxInt32),
 				nil,
@@ -1529,47 +1509,29 @@ func (service *Service) Rebase(ctx context.Context, repository RepositoryRef, pu
 		v32 := int32(at)
 		request.Version = &v32
 
-		response, err := service.apiClient.RebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID, request)
+		answered, err := service.apiClient.RebaseWithResponse(ctx, repository.ProjectKey, repository.Slug, resolvedID, request)
 		if err != nil {
-			return nil, apperrors.Transport("failed to rebase pull request", err)
+			return apperrors.Transport("failed to rebase pull request", err)
 		}
+		response = answered
 
-		return response, nil
+		return openapi.MapStatusError(answered.StatusCode(), answered.Body)
 	}
 
-	response, err := attempt(*version)
+	if version != nil {
+		err = rebaseAt(*version)
+	} else {
+		// Reading the version needs the REST client. Say so rather than
+		// dereferencing a nil one.
+		if service.client == nil {
+			return nil, apperrors.New(apperrors.KindInternal, "http client is not configured on pullrequest service", nil)
+		}
+
+		err = service.writeAtCurrentVersion(ctx, repository, resolvedID, func(current PullRequest) error {
+			return rebaseAt(current.Version)
+		})
+	}
 	if err != nil {
-		return nil, err
-	}
-
-	// One retry, and only on the version bb chose itself.
-	//
-	// Advancing the target branch makes Bitbucket rescope the pull request and
-	// bump its version, asynchronously -- so a version read a moment ago can
-	// already be stale by the time the rebase lands. #532 established that bb
-	// reads the version rather than demanding it, because it is an optimistic
-	// lock the caller has no reason to know; reading it and then handing back a
-	// 409 naming a version the caller never supplied only half keeps that.
-	//
-	// A caller who passed --version asserted a specific lock, and the conflict
-	// is the answer they asked for. And it retries once rather than looping: a
-	// second staleness in the same instant means something is writing
-	// continuously, which is worth reporting rather than racing.
-	if resolvedHere && response.StatusCode() == http.StatusConflict &&
-		openapi.NamesException(response.Body, pullRequestOutOfDateException) {
-		current, getErr := service.Get(ctx, repository, resolvedID)
-		if getErr != nil {
-			// Report the conflict, not the failure to investigate it.
-			return nil, openapi.MapStatusError(response.StatusCode(), response.Body)
-		}
-
-		response, err = attempt(current.Version)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 		return nil, err
 	}
 	// A branch already sitting on the tip of its target answers 204 with no
