@@ -518,88 +518,41 @@ tasks:
     internal: true
     cmd: go test -tags=live -c -o .tmp/live.test.exe ./tests/integration/live
 
+  # The stack tasks act on this checkout's own instance: the main checkout's on
+  # localhost:7990, a linked worktree's on ports Docker assigns. The logic lives
+  # in scripts/stack.sh, which says why.
   stack:up:
-    desc: Start local SDK-licensed Bitbucket stack (no licence key required)
-    cmds:
-      # --build so a change to the harness reaches a checkout that already has
-      # the image: compose builds only a missing one, and the old image would
-      # go on running without the change. With nothing changed it rebuilds
-      # from cache in seconds and leaves a running container alone.
-      #
-      # --wait makes this fail when the healthcheck is unhealthy. Docker's own
-      # message says only "container is unhealthy", so the remedy is spelled
-      # out here.
-      - |
-        if ! docker compose -f docker/compose.yml up -d --build --wait; then
-          echo "" >&2
-          echo "The stack did not come up healthy." >&2
-          echo "" >&2
-          echo "On a first start the ~800MB download can outlast the start period;" >&2
-          echo "'task stack:logs' shows progress. An instance in the last minutes" >&2
-          echo "before it stops itself is unhealthy too; check with" >&2
-          echo "'task stack:status', then:" >&2
-          echo "" >&2
-          echo "    task stack:restart" >&2
-          exit 1
-        fi
-      - task: stack:bootstrap
+    desc: Start this checkout's local Bitbucket instance and enable basic auth (no licence key required)
+    cmd: bash scripts/stack.sh up
 
   stack:bootstrap:
-    desc: Enable basic auth on the running stack (and apply a licence key if one is set)
-    # The live suite authenticates with basic auth, and Bitbucket refuses it
-    # until this script's enable_basic_auth step turns it on. CI has always run
-    # this after starting the stack; nothing local did, and the SDK reprovisions
-    # the instance on every container start -- so `task stack:restart` handed
-    # back a stack where all 250 live tests answered 403, and the message named
-    # neither the cause nor the remedy.
-    #
-    # Part of stack:up rather than a step to remember, because the failure it
-    # prevents looks like a product bug rather than a missing setup step.
-    cmds:
-      - |
-        if [ -f .env ]; then set -a; . ./.env; set +a; fi
-        bash scripts/bootstrap-bitbucket.sh \
-          "${BITBUCKET_URL:-http://localhost:7990}" \
-          "${ADMIN_USER:-admin}" \
-          "${ADMIN_PASSWORD:-admin}"
+    desc: Enable basic auth on this checkout's running instance (and apply a licence key if one is set)
+    cmd: bash scripts/stack.sh bootstrap
 
   stack:down:
-    desc: Stop local Bitbucket stack
-    cmd: docker compose -f docker/compose.yml down
+    desc: Stop this checkout's local Bitbucket instance
+    cmd: bash scripts/stack.sh down
 
   stack:purge-fixtures:
-    desc: Remove the LT* projects the live suite left behind (needs the stack up)
-    cmd: bash scripts/purge-live-fixtures.sh
+    desc: Remove the LT* projects the live suite left on this checkout's instance (needs it up)
+    cmd: bash scripts/stack.sh purge-fixtures
 
   stack:reset:
-    desc: Tear down stack and delete all data volumes (full clean restart)
-    cmds:
-      - docker compose -f docker/compose.yml down --volumes --remove-orphans
-      - task: stack:up
+    desc: Tear down this checkout's instance and its Maven cache volume, then start it again
+    cmd: bash scripts/stack.sh reset
 
   stack:restart:
-    desc: Restart local Bitbucket stack (also issues a fresh 3h SDK licence)
-    cmds:
-      - task: stack:down
-      - task: stack:up
+    desc: Restart this checkout's instance (also issues a fresh 3h SDK licence)
+    cmd: bash scripts/stack.sh restart
 
   stack:status:
-    desc: Show local stack status and how long the SDK licence has left
-    cmds:
-      - docker compose -f docker/compose.yml ps
-      # Reads the same marker the healthcheck does, so the two cannot disagree.
-      # Knowing this before starting an hour of work is the point: the licence
-      # expiring mid-run produces a failure that looks like a product bug.
-      - |
-        issued=$(docker exec bb-bitbucket cat /tmp/licence-issued-at 2>/dev/null || true)
-        retire=$(docker exec bb-bitbucket printenv BB_LICENCE_RETIRE_SECONDS 2>/dev/null || true)
-        if [ -z "$issued" ] || [ -z "$retire" ]; then
-          echo "SDK licence: not running (the instance stops itself when its licence ages out; 'task stack:up' starts it)"
-          exit 0
-        fi
-        remaining=$(( issued + retire - $(date +%s) ))
-        echo "SDK licence: the instance stops itself in $(( remaining / 60 ))m; 'task stack:up' then starts it with a new one"
+    desc: Show this checkout's instance, how long before it stops itself, and every local instance
+    cmd: bash scripts/stack.sh status
 
   stack:logs:
-    desc: Tail Bitbucket service logs
-    cmd: docker compose -f docker/compose.yml logs -f bitbucket
+    desc: Tail this checkout's Bitbucket logs
+    cmd: bash scripts/stack.sh logs
+
+  stack:prune:
+    desc: Remove local Bitbucket instances whose worktree no longer exists
+    cmd: bash scripts/stack.sh prune

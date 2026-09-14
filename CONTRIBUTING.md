@@ -56,7 +56,7 @@ working environment.
 This is the gate that matters, and it is the one most changes need.
 
 ```bash
-BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin task test:live
+task test:live
 ```
 
 `task test:live` starts the local stack first when it is not running, with
@@ -65,6 +65,10 @@ it by default even once it reports `RUNNING`. The first start downloads roughly
 800MB of Bitbucket artifacts and takes a few minutes; later starts reuse a
 cached volume. A full run takes about five minutes. `task stack:down` when you
 are finished.
+
+Each checkout has its own instance. In a linked git worktree it runs on ports
+Docker assigns, so parallel work neither shares nor restarts one container; see
+[`docker/README.md`](docker/README.md#one-instance-per-checkout).
 
 **The instance's licence lasts three hours.** The Atlassian Plugin SDK issues it
 on each start. The container stops itself when the licence is 2h45m old, and the
@@ -206,7 +210,7 @@ want it — before a large change, for instance:
 
 ```bash
 task stack:up
-BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin task quality:coverage
+task quality:coverage
 ```
 
 Do not bypass hooks with `--no-verify`.
