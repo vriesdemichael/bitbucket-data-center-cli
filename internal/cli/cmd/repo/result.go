@@ -10,6 +10,32 @@ type SingleRepository struct {
 	Repository result.RepositoryDetail `json:"repository"`
 }
 
+// RepositoryView is what `bb repo get` returns.
+//
+// The README sits beside the repository rather than inside it: it is read from
+// a second endpoint, it can be left out, and a repository without one is not a
+// repository with an empty one.
+type RepositoryView struct {
+	Repository result.RepositoryDetail `json:"repository"`
+	CloneURLs  []CloneURL              `json:"cloneUrls" jsonschema:"Where the repository can be cloned from, one entry per protocol the instance serves. Empty rather than absent when it reports none."`
+	Readme     *Readme                 `json:"readme,omitempty" jsonschema:"The README. Absent when the repository has none, and when --readme=false left it out."`
+}
+
+// CloneURL is one way to clone a repository.
+type CloneURL struct {
+	Name string `json:"name" jsonschema:"Protocol, as Bitbucket names it: http or ssh."`
+	URL  string `json:"url" jsonschema:"The URL git clones from."`
+}
+
+// Readme is a repository's README as it is stored, unrendered.
+//
+// encoding exists for the reason it does on RawFile: a JSON string cannot hold
+// arbitrary bytes.
+type Readme struct {
+	Encoding string `json:"encoding" jsonschema:"How content is encoded: utf-8 for text, base64 for anything that is not valid UTF-8."`
+	Content  string `json:"content" jsonschema:"The README as raw markup. Bitbucket picks which file it is, from the default branch."`
+}
+
 // RepositoryDeletion is what `bb repo delete` and `bb repo admin delete`
 // report.
 type RepositoryDeletion struct {

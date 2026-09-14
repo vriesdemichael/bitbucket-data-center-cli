@@ -35,7 +35,7 @@ path rather than in a flag.
 |---|---|---|
 | `gh repo clone` | `bb repo clone` | |
 | `gh repo list` | `bb repo list` | |
-| `gh repo view` | no single equivalent | `gh repo view` shows a repository's description and renders its README. `bb browse` opens the repository in a browser, `bb repo cat README.md` prints the README, and `bb repo list` shows a project's repositories with their descriptions |
+| `gh repo view` | `bb repo get` | `bb repo view` works as an alias. The README is printed as raw markdown rather than rendered; `--readme=false` leaves it out. There is no `--web`: `bb browse` opens the repository |
 | `gh repo create` | `bb repo create` | |
 | `gh browse` | `bb browse` | Opens repository pages in a browser. Not to be confused with `bb repo browse`, which reads file content over REST rather than opening anything |
 

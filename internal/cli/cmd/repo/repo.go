@@ -170,6 +170,7 @@ func New(deps Dependencies) *cobra.Command {
 	listPaging.Register(listCmd, 25)
 	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	repoCmd.AddCommand(listCmd)
+	repoCmd.AddCommand(newRepoGetCommand(d))
 	repoCmd.AddCommand(newRepoCreateCommand(d, false))
 	repoCmd.AddCommand(newRepoForkCommand(d, nil, false))
 	repoCmd.AddCommand(newRepoDeleteCommand(d, nil, false))
