@@ -176,6 +176,17 @@ type PullRequestChange struct {
 	PullRequest result.PullRequest `json:"pullRequest" jsonschema:"The pull request as it stands after the change."`
 }
 
+// DraftStateChange is what `bb pr ready` returns.
+//
+// changed is published because a pull request already in the requested state
+// is a success that sent nothing, and the pull request alone cannot tell that
+// apart from one that was just changed.
+type DraftStateChange struct {
+	Repository  result.Repository  `json:"repository"`
+	PullRequest result.PullRequest `json:"pullRequest" jsonschema:"The pull request as it stands after the command."`
+	Changed     bool               `json:"changed" jsonschema:"Whether the draft state was changed. False when the pull request was already in the requested state and nothing was sent."`
+}
+
 // ReviewerAddition is what `bb pr review reviewer add` returns.
 //
 // The three lists are separate because they are three different outcomes and a

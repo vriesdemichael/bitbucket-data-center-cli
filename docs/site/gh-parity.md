@@ -27,7 +27,7 @@ path rather than in a flag.
 | `gh pr review` | `bb pr review approve`, `bb pr review unapprove`, `bb pr review set` | `set <id> <status>` is the general form; approve and unapprove are the two shorthands |
 | `gh pr comment` | `bb pr comment add` | |
 | `gh pr checkout 42` | `bb pr checkout 42` | |
-| `gh pr ready 42` | `bb pr update 42 --draft=false` | Bitbucket treats draft as a field rather than a state transition, so this is an update rather than its own verb |
+| `gh pr ready 42` | `bb pr ready 42` | `--undo` turns it back into a draft. No `--version` is needed: `bb` reads it |
 
 ## Repositories
 

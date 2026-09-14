@@ -115,6 +115,7 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd.AddCommand(newPullRequestDiffAlias(deps, &repository))
 	prCmd.AddCommand(newPullRequestStatusCommand(deps, &repository))
 	prCmd.AddCommand(newPullRequestCheckoutCommand(deps, &repository))
+	prCmd.AddCommand(newPullRequestReadyCommand(deps, &repository))
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -664,6 +665,11 @@ func New(deps Dependencies) *cobra.Command {
 		Use:     "update <id>",
 		Aliases: []string{"edit"},
 		Short:   "Update pull request metadata",
+		Long: "Update a pull request's title, description, draft state or reviewers.\n\n" +
+			"--version is required: Bitbucket refuses the update if the pull request has moved on since that " +
+			"version, rather than overwriting someone else's change.\n\n" +
+			"To mark a draft ready for review, or turn a pull request back into a draft, without looking up " +
+			"its version, use bb pr ready.",
 		Example: "  # Update title and description\n" +
 			"  bb pr update 42 --repo PROJ/repo --version 1 --title \"New title\"\n\n" +
 			"  # Mark a draft PR as ready for review\n" +

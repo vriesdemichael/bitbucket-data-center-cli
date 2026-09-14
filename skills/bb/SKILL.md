@@ -136,15 +136,15 @@ bb pr create --repo MYPROJ/payments --from-ref feature/my-work --to-ref main --t
 bb pr create --repo MYPROJ/payments --from-ref feature/my-work --to-ref main --title "Add payment retries" --reviewers alice,bob
 ```
 
-When a draft PR is ready for review, flip the draft flag (the `--version` is the
-current PR version for optimistic locking, from `bb pr get`):
+When a draft PR is ready for review, mark it ready. `bb pr ready` reads the PR's
+current version itself, so it needs no `--version`:
 
 ```bash
 # Mark a draft PR as ready for review
-bb pr update 42 --repo MYPROJ/payments --version 3 --draft=false
+bb pr ready 42 --repo MYPROJ/payments
 
 # Convert an open PR back to draft
-bb pr update 42 --repo MYPROJ/payments --version 3 --draft
+bb pr ready 42 --repo MYPROJ/payments --undo
 ```
 
 ### 4. Retrieve build status, mergeable state, and wait for CI

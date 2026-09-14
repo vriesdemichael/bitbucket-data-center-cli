@@ -587,7 +587,7 @@ func TestAllCommandsExhaustivelyClassifiedForDryRun(t *testing.T) {
 var mutatingVerbs = map[string]struct{}{
 	"add": {}, "apply": {}, "apply-suggestion": {}, "approve": {}, "clear": {},
 	"create": {}, "decline": {}, "delete": {}, "disable": {}, "edit": {},
-	"enable": {}, "grant": {}, "install": {}, "merge": {}, "rebase": {},
+	"enable": {}, "grant": {}, "install": {}, "merge": {}, "ready": {}, "rebase": {},
 	"remove": {}, "reopen": {}, "resolve": {}, "revoke": {}, "set": {},
 	"set-default": {}, "unapprove": {}, "unwatch": {}, "update": {}, "watch": {},
 }
