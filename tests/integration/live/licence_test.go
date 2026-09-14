@@ -3,7 +3,7 @@
 package live_test
 
 import (
-	"net/url"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -15,15 +15,16 @@ import (
 // by docker/harness/start-bitbucket.sh in /tmp/licence-issued-at. The container
 // stops itself BB_LICENCE_RETIRE_SECONDS after that, and the compose
 // healthcheck judges the same two values, so the suite, the healthcheck and the
-// stop cannot disagree about how long an instance has left.
-const (
-	licenceContainerName = "bb-bitbucket"
-	// licenceMinimumRemaining is the margin below which starting a run is not
-	// worth it. A full live run takes about five minutes; anything under this
-	// is likely to be stopped partway through and produce exactly the confusing
-	// mid-run failure this check exists to prevent.
-	licenceMinimumRemaining = 10 * time.Minute
-)
+// stop cannot disagree about how long an instance has left. Which container is
+// this checkout's comes from the file scripts/stack.sh writes
+// (stack_instance_test.go).
+
+// licenceMinimumRemaining is the margin below which starting a run is not worth
+// it. A full live run takes about five minutes; anything under this is likely
+// to be stopped partway through and produce exactly the confusing mid-run
+// failure this check exists to prevent. scripts/stack.sh up restarts an
+// instance this close, so a run through task test:live does not meet it.
+const licenceMinimumRemaining = 10 * time.Minute
 
 const (
 	licenceRemedy = "run 'task stack:restart' to reissue it (about three minutes with the Maven cache warm)"
@@ -58,29 +59,33 @@ func licenceExpiryHint(message string) string {
 	return ""
 }
 
-// instanceState is what the suite can tell about the local docker stack.
+// instanceState is what the suite can tell about this checkout's instance.
 type instanceState int
 
 const (
-	// instanceUnknown is no local stack to judge: docker is missing, or there
-	// is no container by that name.
+	// instanceUnknown is nothing to judge: no instance file, no docker, or no
+	// container by the recorded name.
 	instanceUnknown instanceState = iota
 	instanceStopped
 	instanceRunning
 )
 
-// localInstance reports whether the local stack is running and, when it is, how
-// long it has before it stops itself.
+// localInstance reports whether this checkout's instance is running and, when
+// it is, how long it has before it stops itself.
 //
 // Unknown is kept apart from stopped because it is a different situation: it is
-// what the suite sees whenever docker has no such container, and it must not
-// fail anything.
+// what the suite sees whenever it has no local instance to look at, and it must
+// not fail anything.
 func localInstance() (instanceState, time.Duration) {
+	container := strings.TrimSpace(os.Getenv(stackInstanceContainerVariable))
+	if container == "" {
+		return instanceUnknown, 0
+	}
 	if _, err := exec.LookPath("docker"); err != nil {
 		return instanceUnknown, 0
 	}
 
-	running, err := exec.Command("docker", "inspect", "--format", "{{.State.Running}}", licenceContainerName).Output()
+	running, err := exec.Command("docker", "inspect", "--format", "{{.State.Running}}", container).Output()
 	if err != nil {
 		return instanceUnknown, 0
 	}
@@ -88,7 +93,7 @@ func localInstance() (instanceState, time.Duration) {
 		return instanceStopped, 0
 	}
 
-	marker, err := exec.Command("docker", "exec", licenceContainerName, "sh", "-c",
+	marker, err := exec.Command("docker", "exec", container, "sh", "-c",
 		`echo "$(cat /tmp/licence-issued-at) ${BB_LICENCE_RETIRE_SECONDS}"`).Output()
 	if err != nil {
 		return instanceUnknown, 0
@@ -122,25 +127,17 @@ func parseInstanceMarker(marker string, now time.Time) (time.Duration, bool) {
 	return time.Unix(issuedAt, 0).Add(time.Duration(retireAfter) * time.Second).Sub(now), true
 }
 
-// targetsLocalStack reports whether the suite is pointed at this machine, the
-// only place the docker stack it inspects can be. A run against another
-// instance has nothing to learn from a local container, stopped or not.
-func targetsLocalStack(bitbucketURL string) bool {
-	parsed, err := url.Parse(strings.TrimSpace(bitbucketURL))
-	if err != nil {
-		return false
-	}
+// judgesStackInstance reports whether the suite is pointed at this checkout's
+// own instance, the only one whose container it knows. A run against anything
+// else, another checkout's instance included, has nothing to learn from it.
+func judgesStackInstance(bitbucketURL, instanceURL string) bool {
+	instance := strings.TrimRight(strings.TrimSpace(instanceURL), "/")
 
-	switch strings.ToLower(parsed.Hostname()) {
-	case "localhost", "127.0.0.1", "::1":
-		return true
-	default:
-		return false
-	}
+	return instance != "" && strings.EqualFold(strings.TrimRight(strings.TrimSpace(bitbucketURL), "/"), instance)
 }
 
-// requireUsableLicence stops the run before it starts when the local stack is
-// stopped, or about to stop itself.
+// requireUsableLicence stops the run before it starts when this checkout's
+// instance is stopped, or about to stop itself.
 //
 // Failing here costs one clear line. Not failing here costs a confusing
 // mid-run error, and the time spent debugging the wrong thing — which is the
@@ -148,7 +145,7 @@ func targetsLocalStack(bitbucketURL string) bool {
 func requireUsableLicence(t *testing.T, bitbucketURL string) {
 	t.Helper()
 
-	if !targetsLocalStack(bitbucketURL) {
+	if !judgesStackInstance(bitbucketURL, os.Getenv(stackInstanceURLVariable)) {
 		return
 	}
 
@@ -157,10 +154,10 @@ func requireUsableLicence(t *testing.T, bitbucketURL string) {
 	case state == instanceUnknown:
 		return
 	case state == instanceStopped:
-		t.Fatalf("the local Bitbucket is stopped, as it is once its licence ages out; %s", startRemedy)
+		t.Fatalf("this checkout's Bitbucket is stopped, as it is once its licence ages out; %s", startRemedy)
 	case remaining <= 0:
-		t.Fatalf("the local Bitbucket is %s past the age at which it stops itself; %s", remaining.Abs().Round(time.Minute), licenceRemedy)
+		t.Fatalf("this checkout's Bitbucket is %s past the age at which it stops itself; %s", remaining.Abs().Round(time.Minute), licenceRemedy)
 	case remaining < licenceMinimumRemaining:
-		t.Fatalf("the local Bitbucket stops itself in %s, which is less than a full live run takes; %s", remaining.Round(time.Minute), licenceRemedy)
+		t.Fatalf("this checkout's Bitbucket stops itself in %s, which is less than a full live run takes; %s", remaining.Round(time.Minute), licenceRemedy)
 	}
 }

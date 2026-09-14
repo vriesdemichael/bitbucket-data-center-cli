@@ -128,6 +128,10 @@ Run `task quality:verify` for every gate that needs no Bitbucket instance, and
 `task quality:coverage` for the full coverage gate when you want it locally. The latter
 needs the stack up and takes about eight minutes; CI runs it on every pull request regardless.
 
+Every checkout has its own Bitbucket instance, and `task test:live` starts it before it runs. In a
+linked worktree it listens on ports Docker assigns, so a restart, an expired licence or a fixture
+purge in your worktree leaves every other worktree's live run alone.
+
 ### Iterating on patch coverage
 
 **Do not re-run the suite to re-check the number.** `task quality:coverage:replay` re-applies every

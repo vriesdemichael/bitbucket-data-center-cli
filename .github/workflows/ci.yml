@@ -322,15 +322,16 @@ jobs:
       - name: Setup Task
         run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
 
+      # The task a developer runs, so CI exercises scripts/stack.sh rather than a
+      # copy of its steps. The checkout is not a linked worktree, so the instance
+      # is on localhost:7990, where BITBUCKET_URL above points.
+      #
       # BUILDKIT_PROGRESS=plain stops the builder redrawing its step table,
       # which a CI log records as a fresh copy of the whole table each time.
-      - name: Start Bitbucket stack
+      - name: Start Bitbucket stack and enable basic auth
         env:
           BUILDKIT_PROGRESS: plain
-        run: docker compose -f docker/compose.yml up -d --wait
-
-      - name: Bootstrap Bitbucket (enable basic auth for admin API calls)
-        run: bash scripts/bootstrap-bitbucket.sh "$BITBUCKET_URL" "$ADMIN_USER" "$ADMIN_PASSWORD"
+        run: task stack:up
 
       # LIVE_PARALLEL is passed on the command line rather than set in env:
       # above, because a Taskfile vars: entry is overridden by the CLI form and
