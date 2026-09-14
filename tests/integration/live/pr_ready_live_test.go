@@ -243,6 +243,96 @@ func TestLivePRDraftChangeWithAStaleVersionNamesTheException(t *testing.T) {
 	}
 }
 
+// TestLivePRReadyOnAPullRequestThatDoesNotExist covers the read both paths
+// begin with. A pull request Bitbucket does not have is reported as not found,
+// by the dry run as much as by the change, rather than previewed or attempted.
+func TestLivePRReadyOnAPullRequestThatDoesNotExist(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	output, err := executeLiveCLI(t, "--json", "pr", "ready", "999999")
+	if err == nil {
+		t.Fatalf("pr ready on a pull request that does not exist reported success:\n%s", output)
+	}
+	if !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Errorf("expected not found, got %v", err)
+	}
+
+	preview, err := executeLiveCLI(t, "--dry-run", "--json", "pr", "ready", "999999", "--undo")
+	if err == nil {
+		t.Fatalf("pr ready --dry-run on a pull request that does not exist reported success:\n%s", preview)
+	}
+	if !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Errorf("expected not found from the dry run, got %v", err)
+	}
+	if strings.Contains(preview, "predictedAction") {
+		t.Errorf("a preview was produced for a pull request that does not exist:\n%s", preview)
+	}
+}
+
+// TestLivePRReadyByAReaderIsRefused covers what only Bitbucket can decide:
+// whether the caller may change the pull request at all.
+//
+// A user with read access can read the pull request, so bb gets as far as the
+// update, and Bitbucket refuses that. The refusal has to reach the caller as
+// one, with the pull request still a draft.
+func TestLivePRReadyByAReaderIsRefused(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+
+	reader, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create reader user failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reader.Username, "REPO_READ"); err != nil {
+		t.Fatalf("grant read access failed: %v", err)
+	}
+
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const branch = "feature/ready-by-a-reader"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "reader.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	prID := createLivePRForRegression(t, branch, "Only a writer may mark this ready", "--draft", "--no-default-reviewers", "--no-codeowners")
+
+	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reader)
+
+	output, err := executeLiveCLI(t, "--json", "pr", "ready", prID)
+	if err == nil {
+		t.Fatalf("a user with read access marked a draft ready:\n%s", output)
+	}
+	// Bitbucket answers 401 naming AuthorisationException, from the update
+	// itself: the read before it is one a reader may make.
+	details := apperrors.DetailsOf(err)
+	if details["upstreamStatus"] != "401" || details["upstreamException"] != "com.atlassian.bitbucket.AuthorisationException" {
+		t.Errorf("expected Bitbucket's 401 AuthorisationException for the update, got %v: %v", details, err)
+	}
+
+	if !livePRIsDraft(t, prID) {
+		t.Fatal("the pull request is no longer a draft after a refused change")
+	}
+}
+
 func assertLivePRKeptItsReviewerAndDescription(t *testing.T, prID, reviewer, description string) {
 	t.Helper()
 

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // TestLiveRepoGet covers `bb repo get` on a repository without a README and
@@ -30,6 +32,17 @@ func TestLiveRepoGet(t *testing.T) {
 	repo := seeded.Repos[0]
 	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// A repository that does not exist fails as not found. It must not be
+	// mistaken for one without a README, which is the other 404 this command
+	// reads.
+	missing, err := executeLiveCLI(t, "--json", "repo", "get", "--repo", seeded.Key+"/does-not-exist")
+	if err == nil {
+		t.Fatalf("repo get on a repository that does not exist reported success:\n%s", missing)
+	}
+	if !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Errorf("expected not found for a repository that does not exist, got %v", err)
+	}
 
 	// The seeded repository carries seed.txt and nothing else.
 	bare, err := executeLiveCLI(t, "--json", "repo", "get", "--repo", repoRef)
