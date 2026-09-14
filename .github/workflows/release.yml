@@ -116,7 +116,7 @@ jobs:
           python-version: '3.x'
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@v10.1.0
 
       - name: Setup Task
         run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
@@ -226,7 +226,7 @@ jobs:
           python-version: '3.x'
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@v10.1.0
 
       - name: Setup Task
         run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
