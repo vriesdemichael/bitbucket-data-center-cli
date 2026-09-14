@@ -398,7 +398,7 @@ func TestRetriesDoNotReplayMutations(t *testing.T) {
 			defer server.Close()
 
 			transport := &retryTransport{
-				base:        http.DefaultTransport,
+				base:        server.Client().Transport,
 				retries:     2,
 				baseBackoff: time.Millisecond,
 				logger:      diagnostics.NewLogger(diagnostics.Config{}, io.Discard),
