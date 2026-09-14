@@ -106,7 +106,7 @@ prune() {
         fi
         if [ ! -d "$path" ]; then
           echo "Removing ${other}: its worktree ${path} no longer exists."
-          docker compose -p "$other" down --volumes > /dev/null
+          docker compose -p "$other" down --volumes > /dev/null 2>&1
         fi
       done
 }
@@ -138,7 +138,9 @@ up() {
     count="$(printf '%s' "$others" | grep -c . || true)"
     if [ "$count" -ge "$max_instances" ]; then
       echo "Local Bitbucket instances already running: ${count}, and this machine holds at most ${max_instances} (BB_STACK_MAX):" >&2
-      printf '%s\n' "$others" | awk -F '\t' '{ printf "  %s  %s  (started %s)\n", $1, ($2 == "" ? "?" : $2), $3 }' >&2
+      if [ -n "$others" ]; then
+        printf '%s\n' "$others" | awk -F '\t' '{ printf "  %s  %s  (started %s)\n", $1, ($2 == "" ? "?" : $2), $3 }' >&2
+      fi
       echo "" >&2
       echo "Stop one with 'task stack:down' in its worktree, or raise BB_STACK_MAX." >&2
       exit 1
