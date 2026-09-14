@@ -176,7 +176,7 @@ func TestAtGroupShorthandDoesNotMaskServerFailures(t *testing.T) {
 func TestResolveAuthorUsernameFallsBackWhenTheLookupFails(t *testing.T) {
 	t.Parallel()
 
-	closedURL := testsupport.ClosedListenerURL(t)
+	closedURL := testsupport.RefusedURL
 
 	cfg := config.AppConfig{
 		BitbucketURL:      closedURL,

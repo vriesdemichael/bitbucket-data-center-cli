@@ -23,7 +23,7 @@ import (
 func TestAuthGpgKeyCommandsErrors(t *testing.T) {
 	t.Parallel()
 
-	unreachable := testsupport.ClosedListenerURL(t)
+	unreachable := testsupport.RefusedURL
 
 	deps := Dependencies{
 		LoadConfig: func() (config.AppConfig, error) {

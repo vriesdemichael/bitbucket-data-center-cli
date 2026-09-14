@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestAdminHealthErrors(t *testing.T) {
@@ -29,7 +30,7 @@ func TestAdminHealthErrors(t *testing.T) {
 	// Error on health check network failure
 	netErrDeps := Dependencies{
 		LoadConfig: func() (config.AppConfig, error) {
-			return config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}, nil
+			return config.AppConfig{BitbucketURL: testsupport.RefusedURL}, nil
 		},
 	}
 	cmd = New(netErrDeps)

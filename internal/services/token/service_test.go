@@ -10,6 +10,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func newTokenTestService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -209,9 +210,7 @@ func TestTokenServiceNetworkErrors(t *testing.T) {
 	// resolver, and a network with wildcard DNS would resolve it and change
 	// what this test exercises. Connection refused on loopback is immediate
 	// and the same everywhere.
-	closed := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	baseURL := closed.URL
-	closed.Close()
+	baseURL := testsupport.RefusedURL
 
 	client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 	if err != nil {

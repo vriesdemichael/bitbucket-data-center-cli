@@ -674,7 +674,7 @@ func TestConditionJSONIsValidatedNotReportedAsADefect(t *testing.T) {
 func TestAMissingProjectKeyIsValidation(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}
+	cfg := config.AppConfig{BitbucketURL: testsupport.RefusedURL}
 	deps := Dependencies{
 		JSONEnabled:   func() bool { return false },
 		DryRunEnabled: func() bool { return false },
@@ -721,7 +721,7 @@ func (failingReader) Read([]byte) (int, error) { return 0, errors.New("pipe brok
 func TestUnreadableConditionInputIsValidation(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.AppConfig{BitbucketURL: "http://127.0.0.1:1", ProjectKey: "PRJ", RepoSlug: "repo1"}
+	cfg := config.AppConfig{BitbucketURL: testsupport.RefusedURL, ProjectKey: "PRJ", RepoSlug: "repo1"}
 	deps := Dependencies{
 		JSONEnabled:   func() bool { return false },
 		DryRunEnabled: func() bool { return false },

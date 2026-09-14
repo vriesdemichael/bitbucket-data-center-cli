@@ -12,6 +12,7 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // The other ways an exchange fails, seen from DoRequest. The listeners fail at
@@ -64,14 +65,7 @@ func clientFor(baseURL string, retries int) *Client {
 func TestAReadThatNeverConnectedIsRetriedAndTransient(t *testing.T) {
 	t.Parallel()
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	closed := "http://" + listener.Addr().String()
-	_ = listener.Close()
-
-	err = clientFor(closed, 1).GetJSON(context.Background(), "/rest/api/latest/projects", nil, nil)
+	err := clientFor(testsupport.RefusedURL, 1).GetJSON(context.Background(), "/rest/api/latest/projects", nil, nil)
 	if !apperrors.IsKind(err, apperrors.KindTransient) {
 		t.Fatalf("got %v, want transient", err)
 	}

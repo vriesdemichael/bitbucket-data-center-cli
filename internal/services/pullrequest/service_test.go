@@ -428,7 +428,7 @@ func TestWatchUnwatchRebaseValidation(t *testing.T) {
 func TestWatchUnwatchRebaseAPIErrors(t *testing.T) {
 	t.Parallel()
 
-	closedURL := testsupport.ClosedListenerURL(t)
+	closedURL := testsupport.RefusedURL
 
 	client, err := openapigenerated.NewClientWithResponses(closedURL + "/rest")
 	if err != nil {

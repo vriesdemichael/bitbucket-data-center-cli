@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestRepoAdminCLIValidation(t *testing.T) {
@@ -37,7 +38,7 @@ func TestRepoAdminCLIValidation(t *testing.T) {
 func TestRepoCreateRequiresAProjectKey(t *testing.T) {
 	t.Parallel()
 
-	setup := testSetup{Host: "http://127.0.0.1:1", Token: "token"}
+	setup := testSetup{Host: testsupport.RefusedURL, Token: "token"}
 
 	// --project is MarkFlagRequired, so the guard inside RunE is reached by
 	// giving the flag an empty value rather than by omitting it. Omitting it
@@ -57,7 +58,7 @@ func TestRepoCreateRequiresAProjectKey(t *testing.T) {
 func TestRepoArchiveReportsAnUnreachableServerAsTransient(t *testing.T) {
 	t.Parallel()
 
-	setup := testSetup{Host: "http://127.0.0.1:1", Token: "token", ProjectKey: "PRJ", RepoSlug: "demo"}
+	setup := testSetup{Host: testsupport.RefusedURL, Token: "token", ProjectKey: "PRJ", RepoSlug: "demo"}
 
 	out, err := executeTestCLIWith(t, setup, "repo", "archive", "--output", "-")
 	if err == nil {

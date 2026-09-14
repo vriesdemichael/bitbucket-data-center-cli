@@ -128,7 +128,7 @@ func TestDiffHelpers(t *testing.T) {
 func TestDiffRefsTransportFailure(t *testing.T) {
 	t.Parallel()
 
-	baseURL := testsupport.ClosedListenerURL(t)
+	baseURL := testsupport.RefusedURL
 
 	client, err := openapigenerated.NewClientWithResponses(baseURL)
 	if err != nil {
@@ -188,7 +188,7 @@ func TestDiffTransportFailureBranches(t *testing.T) {
 
 	closedService := func(t *testing.T) *Service {
 		t.Helper()
-		baseURL := testsupport.ClosedListenerURL(t)
+		baseURL := testsupport.RefusedURL
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL)
 		if err != nil {

@@ -21,7 +21,7 @@ import (
 func testClients(t *testing.T) Clients {
 	t.Helper()
 
-	return clientsForURL(t, testsupport.ClosedListenerURL(t))
+	return clientsForURL(t, testsupport.RefusedURL)
 }
 
 // clientsForURL builds Clients against an arbitrary base URL.

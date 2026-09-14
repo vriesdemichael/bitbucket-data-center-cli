@@ -218,7 +218,7 @@ func TestReviewerGroupsAndDefaultReviewersServiceResponseFallbacks(t *testing.T)
 func TestResolveGroupMembersReportsATransportFailure(t *testing.T) {
 	t.Parallel()
 
-	client, err := openapigenerated.NewClientWithResponses(testsupport.ClosedListenerURL(t))
+	client, err := openapigenerated.NewClientWithResponses(testsupport.RefusedURL)
 	if err != nil {
 		t.Fatalf("build client: %v", err)
 	}

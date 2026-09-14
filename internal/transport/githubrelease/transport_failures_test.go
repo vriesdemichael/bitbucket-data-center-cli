@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // A release check that fails at the network level: nothing listening, or a
@@ -19,14 +20,7 @@ func TestAReleaseCheckThatFailsInTransitIsTransient(t *testing.T) {
 	t.Run("nothing listening", func(t *testing.T) {
 		t.Parallel()
 
-		listener, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			t.Fatalf("listen: %v", err)
-		}
-		closed := "http://" + listener.Addr().String()
-		_ = listener.Close()
-
-		_, err = NewClient(closed, &http.Client{}, "bb/test").Latest(context.Background(), "vriesdemichael", "bitbucket-data-center-cli")
+		_, err := NewClient(testsupport.RefusedURL, &http.Client{}, "bb/test").Latest(context.Background(), "vriesdemichael", "bitbucket-data-center-cli")
 		if !apperrors.IsKind(err, apperrors.KindTransient) {
 			t.Fatalf("got %v, want transient", err)
 		}
