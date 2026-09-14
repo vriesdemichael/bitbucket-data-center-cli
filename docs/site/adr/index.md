@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `85`
-- Accepted ADRs: `74`
+- Total ADRs: `86`
+- Accepted ADRs: `75`
 
 ## ADR List
 
@@ -94,4 +94,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 083: No flag carries a secret](083-no-flag-carries-a-secret.md) (`architecture`, `accepted`)
 - [ADR 084: A removed flag warns for one major before it stops working](084-a-removed-flag-warns-for-one-major.md) (`architecture`, `accepted`)
 - [ADR 085: A test fixture is named at random, not from the clock](085-a-test-fixture-is-named-at-random.md) (`development`, `accepted`)
+- [ADR 087: Quoted messages are checked against the source that prints them](087-quoted-messages-are-checked-against-the-source-that-prints-them.md) (`development`, `accepted`)
 
