@@ -7,7 +7,11 @@ decision: >
   repository, and --audit-file, recording every invocation as JSON Lines. Both are off by default.
   Both are enforced in one middleware over tools/call, never in handlers.
   Each tool has a scope rule, held to the catalogue by a test. A tool whose arguments identify its
-  target has them injected when omitted and refused when they name something else. A tool whose
+  target has them injected when omitted and refused when they name something else. Under a project
+  scope, list_pull_requests, whose repository is optional, answers a call without one with the
+  pull requests of the caller in that project: a filter over the dashboard, accepted because the
+  dashboard holds only the work of the caller and the filter decides everything the agent
+  receives. A tool whose
   project argument is only a filter, or that addresses something Bitbucket does not scope to a
   project at all, is withheld: dropped from the catalogue as well as refused on call.
   Audit writes are synchronous and a failed write refuses the call, unless --audit-failure=warn.
@@ -34,6 +38,10 @@ rationale: >
 rejected_alternatives:
   - alternative: Compare project and repository only when the caller supplies them
     reason: Fails open on every call that omits them, while reading like enforcement.
+  - alternative: Refuse list_pull_requests without a repository under a project scope
+    reason: >
+      Leaves an agent confined to a project no way to ask for its own pull requests, and refuses an
+      omitted argument the scope is meant to fill in.
   - alternative: Let unboundable tools through under a scope
     reason: Sells a boundary that does not exist; a commit SHA is not project-scoped in the API.
   - alternative: Write audit records asynchronously
