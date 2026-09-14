@@ -29,7 +29,7 @@ Exposed to every client `bb ai mcp serve` accepts. **Not all of them are read-on
 | `list_branches` | read-only | List branches in a repository. Use to discover existing branches before creating a new one or a pull request. |
 | `list_commits` | read-only | List commits in a repository branch. Use to walk history to find a good base or diagnose what changed. |
 | `list_pr_comments` | read-only | List review comment threads on a pull request, unresolved first. Bitbucket models a task as a blocker comment, so this returns reviewer comments and tasks together, each with its resolution state, file anchor and reply count. Use state=open to see only what is still waiting on the author. Without path this returns the aggregate pull request comment view derived from activities. |
-| `list_pull_requests` | read-only | List pull requests. Without project/repo, lists the current user's PRs across all repositories (dashboard). |
+| `list_pull_requests` | read-only | List pull requests. With project and repo, lists that repository's. Without repo, lists your own pull requests across every repository (the dashboard), narrowed to project when one is given. |
 | `list_required_builds` | read-only | List required build checks that must pass before a pull request can be merged. Check this before attempting a merge to understand what CI must succeed. |
 | `list_tags` | read-only | List tags in a repository. Use to find the latest release baseline or versioning information. |
 | `resolve_ref` | read-only | Resolve a branch or tag name to its tip commit SHA. Use as a cheap existence check before cloning or creating a pull request. |
@@ -49,6 +49,6 @@ Withheld unless the server is started with `--yolo`, because each either cannot 
 
 ## What the split means
 
-The line is drawn by consequence, not by whether a tool writes. Opening a pull request or tagging a commit changes no branch and gates nothing, so both are available by default even though they write. Merging, enabling auto-merge, submitting a review and reporting a build status are held back: the first two are irreversible or cause a later merge, and the last two feed the checks that decide whether a merge is allowed.
+The line is drawn by consequence, not by whether a tool writes. Opening a pull request or tagging a commit changes no branch and gates nothing, so both are available by default even though they write. Merging, enabling auto-merge, submitting a review and reporting a build status are held back: the first two are irreversible or cause a later merge, and the last two feed the checks that decide whether a merge is allowed. Disabling auto-merge stays available by default: it can hold a merge back but never cause one.
 
 See [Enterprise Hardening](../advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve) for scoping a server to a project or repository, restricting it with a read-only token, and mandating an audit trail by policy.

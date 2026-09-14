@@ -393,10 +393,12 @@ export NO_PROXY=.corp.internal,localhost,127.0.0.1
 
 `bb` includes a built-in Model Context Protocol (MCP) server for integration with AI developer tools (VS Code Agent, Cursor, Claude Desktop).
 
-### Principle 1: Safe vs. Unsafe Tool Isolation
-`bb` gates mutating and high-blast-radius operations ([ADR-039](../adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction.md)):
-- **Safe Tools (Enabled by default)**: Read operations, diff inspection (`get_pr_diff`), pull request listing (`list_pull_requests`), and comment threads (`list_pr_comments`, `add_pr_comment`).
-- **Unsafe Tools (Withheld by default)**: High-impact operations (`submit_pr_review`, `merge_pull_request`, `enable_auto_merge`, `set_build_status`) are withheld unless `--yolo` (or `--allow-writes`) is explicitly configured. Gating `submit_pr_review` ensures an agent cannot approve its own pull requests.
+### Principle 1: Default and Gated Tools
+`bb` withholds the tools that decide whether code merges ([ADR-039](../adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction.md)), and draws that line by consequence rather than by whether a tool writes:
+- **Exposed by default**: every read tool, and the writes that change no branch and cause no merge: `create_pull_request`, `update_pull_request`, `add_pr_comment`, `create_tag` and `disable_auto_merge`.
+- **Withheld unless `--yolo`** (or `--allow-writes`): `merge_pull_request` and `enable_auto_merge`, which merge now or later, and `submit_pr_review` and `set_build_status`, which feed the checks that decide whether a merge is allowed. Gating `submit_pr_review` ensures an agent cannot approve its own pull requests.
+
+The [MCP tool reference](../reference/mcp-tools.md) lists every tool with what it can change and when it is exposed.
 
 Inspect exposed tools and their gating status:
 ```bash

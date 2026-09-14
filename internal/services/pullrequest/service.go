@@ -164,8 +164,13 @@ type DashboardListOptions struct {
 	// APPROVED. Combined with Role=REVIEWER, UNAPPROVED is "asked to review and
 	// has not acted yet", which is what Bitbucket's own dashboard shows.
 	ParticipantStatus string
-	MaxResults        int
-	Start             int
+	// ProjectKey narrows the dashboard to one project. Bitbucket has no such
+	// parameter, so each page is filtered as it arrives, inside the walk, and
+	// MaxResults counts pull requests in the project rather than dashboard
+	// rows (#576).
+	ProjectKey string
+	MaxResults int
+	Start      int
 }
 
 func (service *Service) ListDashboard(ctx context.Context, options DashboardListOptions) ([]PullRequest, error) {
@@ -212,11 +217,26 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 
 			mapped := make([]PullRequest, 0, len(response.Values))
 			for _, value := range response.Values {
-				mapped = append(mapped, mapPullRequest(value))
+				pullRequest := mapPullRequest(value)
+				if !inProject(pullRequest, options.ProjectKey) {
+					continue
+				}
+				mapped = append(mapped, pullRequest)
 			}
 
 			return pullRequestPage(response, mapped), nil
 		})
+}
+
+// inProject reports whether a pull request targets a repository in the
+// project, and says yes to every pull request when no project is named.
+func inProject(pullRequest PullRequest, projectKey string) bool {
+	projectKey = strings.TrimSpace(projectKey)
+	if projectKey == "" {
+		return true
+	}
+
+	return pullRequest.Repository != nil && strings.EqualFold(pullRequest.Repository.ProjectKey, projectKey)
 }
 
 // pullRequestPage adapts a hand-decoded page for the shared walk. isLastPage is

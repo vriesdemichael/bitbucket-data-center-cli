@@ -139,6 +139,11 @@ func (a *AuditLogger) Log(record AuditRecord) error {
 	}
 
 	record.Event = auditEventToolInvocation
+	// The arguments are redacted field by field when the record is built. The
+	// error message is free text -- a scope refusal, a handler's error, or an
+	// upstream body #574 put in one -- so it is redacted here, where every
+	// record passes, rather than at each of the places that set it (#576).
+	record.ErrorMessage = diagnostics.RedactText(record.ErrorMessage)
 	record.UserIdentity = a.Identity
 	record.Host = a.Host
 	record.Scope = a.Scope

@@ -360,12 +360,13 @@ Print all MCP tools the serve command can expose.
 
 Use this output to build --tools and --exclude allowlists/denylists.
 
-The EXPOSURE column says when a tool is available:
+EXPOSURE says when a tool is available, and ACCESS whether it changes anything:
 
-  SAFE   exposed by default; side-effects are low-blast-radius and easily
-         reversed, such as opening a pull request or adding a comment
+  SAFE   exposed by default. Some of these write -- opening a pull request,
+         commenting, tagging -- but none changes a branch or causes a merge
   YOLO   withheld unless 'bb ai mcp serve --yolo' (or --allow-writes) is set,
-         because the operation is irreversible
+         because it cannot be undone, causes a merge, or feeds a check that
+         decides whether one is allowed
 
 --tools takes precedence over the safety filter, so naming a YOLO tool in an
 allowlist exposes it without --yolo. Pass --safe-only to list just the set the

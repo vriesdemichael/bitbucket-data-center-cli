@@ -260,12 +260,13 @@ func newMCPToolsCommand(deps Dependencies) *cobra.Command {
 
 Use this output to build --tools and --exclude allowlists/denylists.
 
-The EXPOSURE column says when a tool is available:
+EXPOSURE says when a tool is available, and ACCESS whether it changes anything:
 
-  SAFE   exposed by default; side-effects are low-blast-radius and easily
-         reversed, such as opening a pull request or adding a comment
+  SAFE   exposed by default. Some of these write -- opening a pull request,
+         commenting, tagging -- but none changes a branch or causes a merge
   YOLO   withheld unless 'bb ai mcp serve --yolo' (or --allow-writes) is set,
-         because the operation is irreversible
+         because it cannot be undone, causes a merge, or feeds a check that
+         decides whether one is allowed
 
 --tools takes precedence over the safety filter, so naming a YOLO tool in an
 allowlist exposes it without --yolo. Pass --safe-only to list just the set the
@@ -290,13 +291,14 @@ server exposes by default.`,
 						Description: toolDescription(spec),
 						Safe:        spec.Safe,
 						Exposure:    toolExposure(spec),
+						Writes:      toolWrites(spec),
 					}
 				}
 				return deps.WriteJSON(cmd.OutOrStdout(), entries)
 			}
 
 			for _, spec := range specs {
-				fmt.Fprintf(cmd.OutOrStdout(), "%-40s %-6s %s\n", spec.Tool.Name, toolExposure(spec), toolDescription(spec))
+				fmt.Fprintf(cmd.OutOrStdout(), "%-40s %-6s %-9s %s\n", spec.Tool.Name, toolExposure(spec), toolAccess(spec), toolDescription(spec))
 			}
 			return nil
 		},
@@ -332,6 +334,22 @@ func toolExposure(spec bbmcp.Spec) string {
 	}
 
 	return exposureYolo
+}
+
+// toolWrites reports whether a tool changes anything in Bitbucket, read from
+// the annotation the server publishes to clients. A tool that does not say it
+// is read-only is taken to write.
+func toolWrites(spec bbmcp.Spec) bool {
+	return spec.Tool.Annotations == nil || !spec.Tool.Annotations.ReadOnlyHint
+}
+
+// toolAccess is toolWrites as the text listing shows it.
+func toolAccess(spec bbmcp.Spec) string {
+	if toolWrites(spec) {
+		return "writes"
+	}
+
+	return "read-only"
 }
 
 // toolDescription extracts the human-readable description from a tool spec.

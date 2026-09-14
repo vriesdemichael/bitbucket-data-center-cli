@@ -9,11 +9,15 @@ import (
 // safe and exposure are the same fact twice on purpose: safe is the boolean the
 // server gates on, exposure is that classification as a stable string, so a
 // consumer can render it without re-deriving the vocabulary.
+//
+// writes is a different fact, and the one safe was taken for: the gate is drawn
+// by consequence, so some of the tools exposed by default write (#576).
 type Tool struct {
 	Name        string `json:"name" jsonschema:"Tool name, as an MCP client sees it."`
 	Description string `json:"description,omitempty" jsonschema:"What the tool does."`
-	Safe        bool   `json:"safe" jsonschema:"Whether the tool is read-only. A tool that writes is exposed only with --yolo."`
+	Safe        bool   `json:"safe" jsonschema:"Whether the server exposes the tool without --yolo. Not whether it writes: see writes."`
 	Exposure    string `json:"exposure" jsonschema:"The same classification as a stable string."`
+	Writes      bool   `json:"writes" jsonschema:"Whether the tool changes anything in Bitbucket. Some tools exposed by default do: opening a pull request, commenting, tagging."`
 }
 
 // SkillFile is what `bb ai skill install` and `remove` report.
