@@ -537,8 +537,7 @@ bb doctor --json
 ```
 
 Confirm:
-- `.data.ok` is `true`: every configuration file on the host parses and matches the schema.
-- The `system` entry in `.data.files` has no `violations` and no `ignored` keys. A misspelled policy key is a violation; a policy key in a user or workspace file is ignored and mandates nothing.
+- It exits `0`. Any issue exits `1`, and the output is then the failure envelope rather than the report, with each issue in `.error.details` under its own key: `violation/system/policies/require_keyrng` for a key the schema rejects, `ignored/stored/require_keyring` for a policy key in a user's own file, which mandates nothing.
 - Each policy setting you deployed has a `source.kind` of `system` or `registry` in `.data.settings`, not `default`.
 
 ### Helpdesk Troubleshooting Guide

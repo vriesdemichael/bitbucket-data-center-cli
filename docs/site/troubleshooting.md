@@ -119,8 +119,11 @@ a flag, an environment variable, a `.env` file, one of the files, the Windows
 registry or the default — and what it overrides. A token or password shows as
 configured, with where it is held, and never its value.
 
-It exits `1` when a file bb reads is invalid. `bb doctor --json` exits `0` and
-puts the verdict in `ok`, so the report is never replaced by an error envelope.
+It exits `0` only when there is nothing to fix; any issue it reports exits `1`.
+Under `--json`, a run with issues prints the failure envelope instead of the
+report: `error.message` summarises the issues, and `error.details` names each
+one under its own key, such as `violation/system/policies/require_keyrng` or
+`setting/retry_count`.
 
 ## Git asks for a password on push or pull
 

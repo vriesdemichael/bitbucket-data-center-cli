@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // Dependencies are what the command needs from the root.
@@ -63,23 +62,34 @@ required, it checks that the OS keyring can be reached.
 It needs no configured host, never contacts Bitbucket, and never prints a
 secret: a token or password is reported as configured, with where it is held.
 
-Exit status is 1 when a file bb reads is invalid. Under --json the exit status
-is always zero and the verdict is the "ok" field: machine output is a single
-document on stdout, and a failing exit would replace the report with an error
-envelope.`,
+Exit status is 0 only when there is nothing to fix. Any issue the report shows
+-- an invalid file, a key its file never reads, a setting a command would
+refuse, a required keyring that cannot be reached -- exits 1. Under --json a
+run with issues writes the failure envelope instead of the report: its message
+summarises the issues, and error.details names each one under its own key,
+file/<file>, violation/<file>/<key path>, ignored/<file>/<key>, setting/<name>
+or keyring, with the key path written as a JSON Pointer.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			report := reportFrom(d.Diagnose(config.DiagnoseInput{
+			diagnosis := d.Diagnose(config.DiagnoseInput{
 				Overrides:    d.RuntimeOverrides(),
 				ChangedFlags: changedFlags(cmd, "log-level", "log-format"),
-			}))
+			})
+			issues := issuesIn(diagnosis)
+			failure := failureFor(diagnosis, issues)
 
+			// One document on stdout (ADR-075): the report when there is
+			// nothing to fix, and otherwise only the failure envelope, which
+			// cmd/bb writes from the returned error.
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), report)
+				if failure != nil {
+					return failure
+				}
+				return d.WriteJSON(cmd.OutOrStdout(), reportFrom(diagnosis))
 			}
 
-			writeReport(cmd.OutOrStdout(), report)
+			writeReport(cmd.OutOrStdout(), diagnosis, len(issues))
 
-			return verdict(report)
+			return failure
 		},
 	}
 }
@@ -95,76 +105,49 @@ func changedFlags(cmd *cobra.Command, names ...string) map[string]bool {
 	return changed
 }
 
-// verdict is permanent, exit 1, the kind every command reports for the same
-// file: nothing about the invocation is wrong, and running it again reads the
-// same file.
-func verdict(report Report) error {
-	if report.OK {
-		return nil
-	}
-
-	invalid := []string{}
-	for _, file := range report.Files {
-		if file.Valid {
-			continue
-		}
-		name := file.Path
-		if name == "" {
-			name = "the " + file.Tier + " configuration"
-		}
-		invalid = append(invalid, name)
-	}
-
-	noun := "file is"
-	if len(invalid) > 1 {
-		noun = "files are"
-	}
-
-	return apperrors.New(apperrors.KindPermanent,
-		fmt.Sprintf("%d configuration %s invalid: %s", len(invalid), noun, strings.Join(invalid, ", ")), nil)
-}
-
-func writeReport(w io.Writer, report Report) {
+func writeReport(w io.Writer, diagnosis config.Diagnosis, issues int) {
 	fmt.Fprintln(w, "Configuration files")
-	for _, file := range report.Files {
+	invalid := false
+	for _, file := range diagnosis.Files {
 		writeFile(w, file)
+		invalid = invalid || !file.Valid()
 	}
 
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Settings")
-	if !report.OK {
+	if invalid {
 		fmt.Fprintln(w, "  Resolved from the files that parse. bb runs no command until every file is valid.")
 	}
 	width := 0
-	for _, setting := range report.Settings {
+	for _, setting := range diagnosis.Settings {
 		width = max(width, len(setting.Name))
 	}
-	for _, setting := range report.Settings {
+	for _, setting := range diagnosis.Settings {
 		writeSetting(w, setting, width)
 	}
 
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Keyring")
-	switch {
-	case !report.Keyring.Required:
+	switch keyring := diagnosis.Keyring; {
+	case !keyring.Required:
 		fmt.Fprintln(w, "  not required, so not checked")
-	case report.Keyring.Reachable:
-		fmt.Fprintf(w, "  required by %s; reachable\n", describeSource(report.Keyring.RequiredBy))
+	case keyring.Reachable:
+		fmt.Fprintf(w, "  required by %s; reachable\n", describeSource(keyring.RequiredBy))
 	default:
-		fmt.Fprintf(w, "  required by %s; %s\n", describeSource(report.Keyring.RequiredBy), report.Keyring.Problem)
+		fmt.Fprintf(w, "  required by %s; %s\n", describeSource(keyring.RequiredBy), keyring.Problem)
 	}
 
 	fmt.Fprintln(w)
-	if report.OK {
-		fmt.Fprintln(w, "Every configuration file bb reads is valid.")
+	if issues == 0 {
+		fmt.Fprintln(w, "No issues found.")
 	} else {
-		fmt.Fprintln(w, "A configuration file bb reads is invalid.")
+		fmt.Fprintf(w, "%d %s to fix.\n", issues, plural(issues, "issue", "issues"))
 	}
 }
 
 const fileIndent = "             "
 
-func writeFile(w io.Writer, file File) {
+func writeFile(w io.Writer, file config.DiagnosedFile) {
 	location := file.Path
 	switch {
 	case location == "" && file.Tier == config.TierWorkspace:
@@ -217,7 +200,7 @@ func writeFile(w io.Writer, file File) {
 	}
 }
 
-func writeSetting(w io.Writer, setting Setting, width int) {
+func writeSetting(w io.Writer, setting config.DiagnosedSetting, width int) {
 	indent := strings.Repeat(" ", width+4)
 
 	switch {
@@ -241,7 +224,7 @@ func writeSetting(w io.Writer, setting Setting, width int) {
 	}
 }
 
-func describeSource(source Source) string {
+func describeSource(source config.SettingSource) string {
 	switch source.Kind {
 	case config.SourceFlag:
 		return "the " + source.Name + " flag"
