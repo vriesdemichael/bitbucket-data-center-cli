@@ -16,11 +16,11 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 ## Decision
 
-Dependabot proposes dependency updates and .github/workflows/dependabot-automerge.yml approves and rebase-merges them once CI is green. This is deliberate: a green run is accepted as sufficient evidence that an update is safe, without a human reading the diff. Three things are held for a person instead: major version bumps, any update whose type will not parse, and the Bitbucket product image whatever its update type, because the tag under test is a user-facing support claim (ADR-042). Ecosystems, schedules, grouping and the held set live in .github/dependabot.yml and the workflow. This record does not restate them.
+Dependabot proposes dependency updates and .github/workflows/dependabot-automerge.yml approves and rebase-merges them once CI is green. This is deliberate: a green run is accepted as sufficient evidence that an update is safe, without a human reading the diff. Three things are held for a person instead: major version bumps, any update whose type will not parse, and the Bitbucket product image whatever its update type, because the tag under test is a user-facing support claim (ADR-042). Every GitHub Action is pinned to the full commit of a release, with the release named in a comment beside it. A tag can be moved by whoever owns it, and the release workflow runs with a token that publishes signed binaries; a commit cannot be moved. Dependabot reads the comment and proposes the next release as a new commit, so a pinned action stays in the automated stream. Ecosystems, schedules, grouping and the held set live in .github/dependabot.yml and the workflow. This record does not restate them.
 
 ## Agent Instructions
 
-Do not add a dependency exception to this record; add it to the workflow, where it is executable. Do not weaken a CI gate to get an update through. The gate is what auto-merge is trusting. Choose an action's pinning style knowing it decides participation: a floating major tag updates only when a new major tag exists upstream, so an action that stops publishing them stops producing proposals. Pinning to an exact version or a sha puts it back in the automated stream.
+Do not add a dependency exception to this record; add it to the workflow, where it is executable. Do not weaken a CI gate to get an update through. The gate is what auto-merge is trusting. Pin a new action the same way, as owner/action@<full commit> # vX.Y.Z, where the commit is the one the release tag points to (follow an annotated tag to its commit). TestEveryActionIsPinnedToACommit fails on a tag, a short sha, or a commit with no release named beside it.
 
 ## Rationale
 

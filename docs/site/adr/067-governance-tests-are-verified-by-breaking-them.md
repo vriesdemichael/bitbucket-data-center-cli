@@ -33,6 +33,7 @@ A governance test asserts an invariant about the codebase rather than a behaviou
    - TestEveryADRCrossReferenceResolves: a record does not cite a record that does not exist.
    - TestAcceptedRecordsDoNotNameABitbucketVersion: a record in force does not restate a Bitbucket release.
    - TestBitbucketImageIsProposedButNotAutoMerged: the product image is proposed but held from auto-merge.
+   - TestEveryActionIsPinnedToACommit: every workflow action is pinned to a release's commit, with the release named beside it.
    - TestPolicyLoadingNeverCreatesTheSystemConfigDirectory: reading policy does not create its directory.
    - TestVerbClassificationExemptionsNameRealCommands: an exemption names a real command and gives a reason.
    - TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit: a package running git installs the guard.
