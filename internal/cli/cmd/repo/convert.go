@@ -27,6 +27,7 @@ func init() {
 	detailEnums := map[string][]string{"repository.state": result.RepositoryStates}
 
 	result.Declare("repo list", result.List[result.RepositorySummary](nil))
+	result.Declare("repo get", result.For[RepositoryView](detailEnums))
 	result.Declare("repo create", result.For[SingleRepository](detailEnums))
 	result.Declare("repo fork", result.For[SingleRepository](detailEnums))
 	result.Declare("repo delete", result.For[RepositoryDeletion](nil))

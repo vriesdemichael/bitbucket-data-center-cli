@@ -24,6 +24,7 @@ func TestGhSpellingsResolveToTheirCanonicalCommands(t *testing.T) {
 		{gh: []string{"pr", "edit"}, canonical: "update"},
 		{gh: []string{"pr", "close"}, canonical: "decline"},
 		{gh: []string{"pr", "checks"}, canonical: "checks"},
+		{gh: []string{"repo", "view"}, canonical: "get"},
 	}
 
 	for _, testCase := range testCases {

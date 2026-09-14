@@ -43,6 +43,7 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Delete a branch | `bb branch delete feature/retry --repo PROJ/my-repo` | Removes branch from server |
 | View commit details | `bb commit get 1a2b3c4 --repo PROJ/my-repo` | Author, message, and timestamp |
 | Compare commits or refs | `bb commit compare 5d6e7f8 1a2b3c4 --repo PROJ/my-repo` | Commits in the first that the second does not have |
+| Describe a repository | `bb repo get --repo PROJ/my-repo` | Description, state, clone URLs and the README as raw markdown |
 | Read file without cloning | `bb repo cat README.md --repo PROJ/my-repo --at main` | Outputs raw content to stdout |
 | Diff refs on server | `bb repo compare feature/retry main --repo PROJ/my-repo --diff` | Unified diff of what `feature/retry` adds, without a local fetch |
 

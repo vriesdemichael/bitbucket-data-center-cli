@@ -287,6 +287,7 @@ var readOnlyCommands = map[string]struct{}{
 	"repo comment list":               {},
 	"repo compare":                    {},
 	"repo default-task list":          {},
+	"repo get":                        {},
 	"repo label list":                 {},
 	"repo list":                       {},
 	"repo permissions list":           {},

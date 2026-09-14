@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-openapi.json",
-  "covered": 209,
+  "covered": 210,
   "total": 572,
-  "coverage_percent": 36.53846153846153,
+  "coverage_percent": 36.71328671328671,
   "by_tag": [
     {
       "tag": "",
@@ -67,7 +67,7 @@
     },
     {
       "tag": "Project",
-      "covered": 33,
+      "covered": 34,
       "total": 76
     },
     {
@@ -1085,12 +1085,6 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/raw/{path}",
       "tag": "Repository",
       "summary": "Get raw content of a file at revision"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/readme",
-      "tag": "Project",
-      "summary": "Get repository readme"
     },
     {
       "method": "POST",
