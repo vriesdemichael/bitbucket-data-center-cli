@@ -23,6 +23,9 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 )
 
 type observation struct {
@@ -75,27 +78,22 @@ func normalize(path string) string {
 	return path
 }
 
-// kindFor mirrors openapi.MapStatusError, so the registry shows what bb decides
-// today next to what the server said. A row where those disagree is the work.
-func kindFor(status int) string {
-	switch {
-	case status >= 200 && status < 300:
-		return "success"
-	case status == 400:
-		return "validation"
-	case status == 401:
-		return "authentication"
-	case status == 403:
-		return "authorization"
-	case status == 404:
-		return "not_found"
-	case status == 409:
-		return "conflict"
-	case status == 429, status >= 500:
-		return "transient"
-	default:
-		return "permanent"
+// kindFor is the kind bb decides for an answer: openapi.MapStatusError itself,
+// handed the exception the way Bitbucket sends it, so the registry shows what
+// bb does today next to what the server said. A row where those disagree is
+// the work.
+func kindFor(status int, exception string) string {
+	var body []byte
+	if exception != "" {
+		body = []byte(fmt.Sprintf(`{"errors":[{"exceptionName":%q}]}`, exception))
 	}
+
+	err := openapi.MapStatusError(status, body)
+	if err == nil {
+		return "success"
+	}
+
+	return string(apperrors.KindOf(err))
 }
 
 func main() {
@@ -128,7 +126,7 @@ func main() {
 			grouped[key] = &entry{
 				Status:    seen.Status,
 				Exception: seen.Exception,
-				Kind:      kindFor(seen.Status),
+				Kind:      kindFor(seen.Status, seen.Exception),
 				Example:   seen.Message,
 				EmptyBody: seen.BodyBytes == 0,
 			}
