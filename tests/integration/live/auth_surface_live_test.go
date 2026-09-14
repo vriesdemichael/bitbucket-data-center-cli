@@ -35,11 +35,12 @@ func TestLiveAuthIdentityAndTokenURL(t *testing.T) {
 
 	// token-url is computed from the host rather than fetched, so the guarantee
 	// is that it points at the right place for the configured server.
-	tokenURLOutput, err := executeLiveCLI(t, "auth", "token-url", "--host", "http://localhost:7990")
+	configuredHost := strings.TrimRight(harness.config.BitbucketURL, "/")
+	tokenURLOutput, err := executeLiveCLI(t, "auth", "token-url", "--host", configuredHost)
 	if err != nil {
 		t.Fatalf("auth token-url failed: %v\noutput: %s", err, tokenURLOutput)
 	}
-	if !strings.Contains(tokenURLOutput, "localhost:7990") {
+	if !strings.Contains(tokenURLOutput, strings.TrimPrefix(strings.TrimPrefix(configuredHost, "https://"), "http://")) {
 		t.Fatalf("expected the configured host in the token url, got: %s", tokenURLOutput)
 	}
 
@@ -62,6 +63,9 @@ func TestLiveAuthIdentityAndTokenURL(t *testing.T) {
 // file rather than the developer's own — the same isolation the stored-config
 // flow test uses.
 func TestLiveAuthAliasLifecycle(t *testing.T) {
+	// Read before the environment is cleared below.
+	host := liveInstanceURL()
+
 	configPath := filepath.Join(t.TempDir(), "bb-config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
@@ -72,7 +76,6 @@ func TestLiveAuthAliasLifecycle(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	const host = "http://localhost:7990"
 	if output, err := executeLiveCLIWithStdin(t, "admin", "auth", "login", host, "--username", "admin", "--password-stdin", "--set-default"); err != nil {
 		t.Fatalf("auth login failed: %v\noutput: %s", err, output)
 	}

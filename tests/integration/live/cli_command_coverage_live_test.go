@@ -420,6 +420,9 @@ func TestLiveCLIBuildRequiredAndInsightsHumanOutput(t *testing.T) {
 }
 
 func TestLiveCLIAuthStoredConfigFlow(t *testing.T) {
+	// Read before the environment is cleared below.
+	host := liveInstanceURL()
+
 	configPath := filepath.Join(t.TempDir(), "bb-config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
@@ -430,7 +433,6 @@ func TestLiveCLIAuthStoredConfigFlow(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	host := "http://localhost:7990"
 	loginOutput, err := executeLiveCLIWithStdin(t, "admin", "auth", "login", host, "--username", "admin", "--password-stdin", "--set-default")
 	if err != nil {
 		t.Fatalf("auth login failed: %v\noutput: %s", err, loginOutput)

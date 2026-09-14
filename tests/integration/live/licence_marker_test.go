@@ -41,23 +41,32 @@ func TestParseInstanceMarker(t *testing.T) {
 	}
 }
 
-// TestOnlyTheLocalStackIsJudged keeps a local container, stopped or running,
-// from failing a run that is pointed somewhere else.
-func TestOnlyTheLocalStackIsJudged(t *testing.T) {
+// TestOnlyThisCheckoutsInstanceIsJudged keeps this checkout's container, stopped
+// or running, from failing a run that is pointed at another server, another
+// checkout's instance included.
+func TestOnlyThisCheckoutsInstanceIsJudged(t *testing.T) {
 	t.Parallel()
 
-	for bitbucketURL, want := range map[string]bool{
-		"http://localhost:7990":          true,
-		"http://127.0.0.1:7990":          true,
-		"http://[::1]:7990":              true,
-		"http://LOCALHOST:17990":         true,
-		"https://bitbucket.corp.example": false,
-		"http://localhost.corp.example":  false,
-		"":                               false,
-		"://not a url":                   false,
+	const instance = "http://localhost:32769"
+
+	for _, testCase := range []struct {
+		name       string
+		configured string
+		instance   string
+		want       bool
+	}{
+		{name: "this checkout's instance", configured: instance, instance: instance, want: true},
+		{name: "with a trailing slash", configured: instance + "/", instance: instance, want: true},
+		{name: "another checkout's instance", configured: "http://localhost:7990", instance: instance, want: false},
+		{name: "another server", configured: "https://bitbucket.corp.example", instance: instance, want: false},
+		{name: "no instance file", configured: instance, instance: "", want: false},
 	} {
-		if got := targetsLocalStack(bitbucketURL); got != want {
-			t.Errorf("targetsLocalStack(%q) = %t, want %t", bitbucketURL, got, want)
-		}
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := judgesStackInstance(testCase.configured, testCase.instance); got != testCase.want {
+				t.Errorf("judgesStackInstance(%q, %q) = %t, want %t", testCase.configured, testCase.instance, got, testCase.want)
+			}
+		})
 	}
 }

@@ -199,6 +199,8 @@ func configureLiveCLIConstants() {
 // property nothing here needed and which cost every live test its ability to
 // run alongside another.
 func applyLocalLiveDefaultsToProcess() {
+	applyStackInstanceToProcess()
+
 	if strings.TrimSpace(os.Getenv("BB_DISABLE_STORED_CONFIG")) == "" {
 		_ = os.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	}

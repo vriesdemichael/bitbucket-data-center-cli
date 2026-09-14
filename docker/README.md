@@ -36,22 +36,31 @@ CI never reaches the limit: each run creates the container from scratch.
 ## Usage
 
 ```bash
-task stack:up        # start (first run downloads ~800MB of product artifacts)
-task stack:status
+task stack:up        # start this checkout's instance and enable basic auth
+task stack:status    # this instance, how long before it stops itself, every local instance
 task stack:logs
 task stack:down
-task stack:reset     # tear down and delete the Maven cache volume
+task stack:reset     # tear down this instance and delete its Maven cache volume
+task stack:prune     # remove instances whose worktree no longer exists
 ```
 
-Then enable basic authentication, which Bitbucket 10 disables by default even
-once the instance reports `RUNNING`:
+`task test:live` runs `task stack:up` first, so starting the stack by hand is
+optional. In the main checkout the instance is served at `http://localhost:7990`
+with admin credentials `admin` / `admin`.
 
-```bash
-bash scripts/bootstrap-bitbucket.sh http://localhost:7990 admin admin
-```
+### One instance per checkout
 
-Bitbucket is served at `http://localhost:7990` with admin credentials
-`admin` / `admin`.
+Each checkout has its own instance: its own compose project, container, Maven
+cache volume and licence, so a restart or a fixture purge in one git worktree
+leaves the others alone. The main checkout keeps `http://localhost:7990`. A
+linked worktree gets ports Docker assigns, which change each time its instance
+starts; `task stack:up` writes the current URL to `.tmp/bitbucket.env`, where the
+live suite reads it.
+
+A worktree's first start downloads about 360MB on top of what the image already
+holds. `task stack:up` removes instances whose worktree is gone before it
+starts, and refuses to start a fifth running instance (`BB_STACK_MAX`), since
+each is a Bitbucket JVM of about 6GB.
 
 ## Version
 
