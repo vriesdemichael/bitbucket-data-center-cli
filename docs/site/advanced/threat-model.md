@@ -255,7 +255,7 @@ bb ai mcp serve --project PAYMENTS --audit-file /var/log/bb/mcp-audit.jsonl
 #### 2. Architectural Mitigations
 - **Sigstore / Cosign Keyless Signing**: Releases are signed via OIDC identity bound to `.github/workflows/release.yml@refs/heads/main`.
 - **GitHub Build Provenance**: Provenance attestations verifiable via `gh attestation verify`.
-- **Attested SPDX 2.3 SBOM**: Every release publishes `sbom.spdx.json`, attested against each compiled binary.
+- **Attested SPDX 2.3 SBOM**: Every release archive has its own SBOM, generated from the binary it contains, checked against that binary's build information, and attested against the archive.
 
 #### 3. Audit Test Procedure
 ```bash
