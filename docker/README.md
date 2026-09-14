@@ -15,26 +15,23 @@ which is why the live suite is no longer restricted to pull requests from this
 repository.
 
 A full live suite run takes about five minutes, so the 3-hour window only
-matters for long local sessions. `task stack:restart` issues a fresh licence.
+matters for long local sessions, and the instance handles those itself.
 
-### Stale instances are caught, not silently used
+### The instance stops itself before its licence runs out
 
-`docker compose up -d` reuses a running container rather than recreating it, and
-Bitbucket keeps reporting `RUNNING` after the licence expires. Left alone, that
-would mean the live suite running against a dead instance and failing in ways
-that look like product bugs.
+Bitbucket keeps reporting `RUNNING` after the licence expires and only refuses
+writes, so an expired instance fails the live suite in ways that look like
+product bugs.
 
-The healthcheck therefore also fails once the licence is within ~15 minutes of
-expiry, so an aged container is reported `unhealthy` and `task stack:up` exits
-non-zero instead of proceeding:
+The container therefore stops itself when the licence is 2h45m old. A stopped
+instance holds no memory, and `task test:live` starts it again before it runs,
+with a new licence; `task stack:up` does the same on its own.
 
-```
-container bb-bitbucket is unhealthy
-```
+Until the stop, the healthcheck reports an instance that age as `unhealthy`, and
+the live suite refuses to start against one with less than ten minutes left.
+`task stack:restart` issues a fresh licence straight away.
 
-The fix is always `task stack:restart`, which issues a fresh licence.
-
-CI never hits this — each run creates the container from scratch.
+CI never reaches the limit: each run creates the container from scratch.
 
 ## Usage
 

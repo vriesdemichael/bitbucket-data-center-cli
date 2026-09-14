@@ -56,46 +56,33 @@ working environment.
 This is the gate that matters, and it is the one most changes need.
 
 ```bash
-task stack:up
-```
-
-First run downloads roughly 800MB of Bitbucket artifacts and takes a few
-minutes. Subsequent starts reuse a cached volume.
-
-```bash
-bash scripts/bootstrap-bitbucket.sh http://localhost:7990 admin admin
-```
-
-Bitbucket 10 disables basic authentication by default even once it reports
-`RUNNING`; this enables it. Then:
-
-```bash
 BITBUCKET_URL=http://localhost:7990 ADMIN_USER=admin ADMIN_PASSWORD=admin task test:live
 ```
 
-A full run takes about five minutes. `task stack:down` when you are finished.
+`task test:live` starts the local stack first when it is not running, with
+`task stack:up`, which also enables basic authentication: Bitbucket 10 disables
+it by default even once it reports `RUNNING`. The first start downloads roughly
+800MB of Bitbucket artifacts and takes a few minutes; later starts reuse a
+cached volume. A full run takes about five minutes. `task stack:down` when you
+are finished.
 
-**The instance's licence lasts three hours.** It is issued by the Atlassian
-Plugin SDK on each start and reissued on restart — but not by `task stack:up`,
-which reuses a running container rather than recreating it. `task stack:restart`
-is what reissues it.
-
-Check before starting a long session:
+**The instance's licence lasts three hours.** The Atlassian Plugin SDK issues it
+on each start. The container stops itself when the licence is 2h45m old, and the
+next `task test:live` starts it again with a new one.
 
 ```bash
 task stack:status
 ```
 
 ```text
-SDK licence: 148m remaining (healthcheck retires the container at 2h45m)
+SDK licence: the instance stops itself in 148m; 'task stack:up' then starts it with a new one
 ```
 
-You do not have to remember. The live suite refuses to start against an expired
-instance and tells you what to run, and `task stack:up` fails with the same
-advice. Both exist because an expired licence does not look like one: Bitbucket
-keeps reporting `RUNNING` and only refuses writes, so the first symptom used to
-be a `git push` failing partway through seeding with `License limit exceeded` —
-which reads like a broken test. See [`docker/README.md`](docker/README.md).
+The live suite refuses to start against an instance with less than ten minutes
+left, and `task stack:restart` issues a fresh licence straight away. An expired
+licence does not look like one: Bitbucket keeps reporting `RUNNING` and only
+refuses writes, so the symptom is a `git push` failing partway through seeding
+with `License limit exceeded`. See [`docker/README.md`](docker/README.md).
 
 ## Making a change
 
