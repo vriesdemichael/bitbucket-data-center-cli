@@ -71,8 +71,9 @@ Docker assigns, so parallel work neither shares nor restarts one container; see
 [`docker/README.md`](docker/README.md#one-instance-per-checkout).
 
 **The instance's licence lasts three hours.** The Atlassian Plugin SDK issues it
-on each start. The container stops itself when the licence is 2h45m old, and the
-next `task test:live` starts it again with a new one.
+on each start. The container stops itself when the licence is 2h58m old, two
+minutes before it runs out, and the next `task test:live` starts it again with a
+new one.
 
 ```bash
 task stack:status
@@ -82,11 +83,13 @@ task stack:status
 SDK licence: the instance stops itself in 148m; 'task stack:up' then starts it with a new one
 ```
 
-The live suite refuses to start against an instance with less than ten minutes
-left, and `task stack:restart` issues a fresh licence straight away. An expired
-licence does not look like one: Bitbucket keeps reporting `RUNNING` and only
-refuses writes, so the symptom is a `git push` failing partway through seeding
-with `License limit exceeded`. See [`docker/README.md`](docker/README.md).
+`task test:live` also starts an instance again once it is 2h40m old, so a run it
+starts has at least eighteen minutes before the stop; the live suite refuses a run
+started some other way from 2h45m. `task stack:restart` issues a fresh licence
+straight away. An expired licence does not look like one: Bitbucket keeps
+reporting `RUNNING` and only refuses writes, so the symptom is a `git push`
+failing partway through seeding with `License limit exceeded`. See
+[`docker/README.md`](docker/README.md).
 
 ## Making a change
 
