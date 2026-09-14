@@ -23,13 +23,16 @@ Bitbucket keeps reporting `RUNNING` after the licence expires and only refuses
 writes, so an expired instance fails the live suite in ways that look like
 product bugs.
 
-The container therefore stops itself when the licence is 2h45m old. A stopped
-instance holds no memory, and `task test:live` starts it again before it runs,
-with a new licence; `task stack:up` does the same on its own.
+The container therefore stops itself when the licence is 2h58m old, two minutes
+before it runs out. A stopped instance holds no memory, and `task test:live`
+starts it again before it runs, with a new licence; `task stack:up` does the same
+on its own.
 
-Until the stop, the healthcheck reports an instance that age as `unhealthy`, and
-the live suite refuses to start against one with less than ten minutes left.
-`task stack:restart` issues a fresh licence straight away.
+`task test:live` also starts an instance again once it is 2h40m old, so a run it
+starts has at least eighteen minutes before the stop, and a full run takes about
+four. The live suite refuses a run started some other way from 2h45m. The
+healthcheck reports an instance past 2h58m as `unhealthy` should it not have
+stopped, and `task stack:restart` issues a fresh licence straight away.
 
 CI never reaches the limit: each run creates the container from scratch.
 

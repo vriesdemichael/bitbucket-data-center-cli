@@ -30,10 +30,13 @@ readonly worktree_label=dev.bb-cli.worktree
 # Each instance is a Bitbucket JVM of about 6GB. Past this many, `up` refuses to
 # start another rather than let the machine swap.
 readonly max_instances="${BB_STACK_MAX:-4}"
-# The live suite refuses to start against an instance with less than this left
-# before it stops itself (licenceMinimumRemaining in
-# tests/integration/live/licence_test.go), so `up` restarts one that close.
-readonly minimum_remaining_seconds=600
+# Ages from the licence's issue. The container stops itself at
+# BB_LICENCE_RETIRE_SECONDS, 2h58m, two minutes before the licence runs out.
+# `up` starts an instance at least 2h40m old again, so a run `task test:live`
+# starts has at least eighteen minutes before that stop. The live suite refuses
+# a run from 2h45m (licenceLatestStartAge in tests/integration/live/licence_test.go):
+# the five minutes between are what `task test:live` spends building the suite.
+readonly restart_from_age_seconds=9600
 
 worktree="$(git rev-parse --show-toplevel)"
 readonly worktree
@@ -61,6 +64,16 @@ compose() {
 
 running_container() {
   compose ps -q --status running bitbucket 2>/dev/null || true
+}
+
+# age_seconds prints how long ago this checkout's instance was issued its
+# licence, and fails when it is not running.
+age_seconds() {
+  local container issued
+  container="$(running_container)"
+  [ -n "$container" ] || return 1
+  issued="$(docker exec "$container" cat /tmp/licence-issued-at 2>/dev/null)" || return 1
+  echo $(( $(date +%s) - issued ))
 }
 
 # remaining_seconds prints how long this checkout's instance has before it stops
@@ -130,7 +143,7 @@ bootstrap() {
 }
 
 up() {
-  local others count remaining
+  local others count age
   prune
 
   if [ -z "$(running_container)" ]; then
@@ -145,8 +158,9 @@ up() {
       echo "Stop one with 'task stack:down' in its worktree, or raise BB_STACK_MAX." >&2
       exit 1
     fi
-  elif remaining="$(remaining_seconds)" && [ "$remaining" -lt "$minimum_remaining_seconds" ]; then
-    echo "This instance stops itself in $(( remaining / 60 ))m, too soon for a live run; starting it again with a new licence."
+  elif age="$(age_seconds)" && [ "$age" -ge "$restart_from_age_seconds" ]; then
+    printf 'This instance is %dh%02dm into its licence, 2h40m or more; starting it again with a new licence.\n' \
+      $(( age / 3600 )) $(( age % 3600 / 60 ))
     compose stop bitbucket > /dev/null
   fi
 
