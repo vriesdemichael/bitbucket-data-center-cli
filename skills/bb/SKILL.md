@@ -312,9 +312,12 @@ bb tag create v1.2.3 --repo MYPROJ/payments --start-point main
 
 ### 10. File browse/edit, comparison and archives
 
-Read or edit repository files over REST without cloning, compare refs/branches, or download repository archives:
+Describe a repository, read or edit its files over REST without cloning, compare refs/branches, or download repository archives:
 
 ```bash
+# Describe a repository: description, state, clone URLs and its README
+bb repo get --repo MYPROJ/payments
+
 # Print raw file contents to stdout
 bb repo cat README.md --repo MYPROJ/payments --at main
 

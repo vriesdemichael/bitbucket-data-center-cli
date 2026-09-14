@@ -37,7 +37,7 @@ func TestLintMarkdownCatchesTheRealDefects(t *testing.T) {
 		problem string
 	}{
 		{name: "flag that is really positional", command: `bb auth login --host https://example.com --token x`, problem: "unknown flag: --host"},
-		{name: "command that does not exist", command: `bb repo view --repo TEST/repo`, problem: "not a subcommand"},
+		{name: "command that does not exist", command: `bb repo inspect --repo TEST/repo`, problem: "not a subcommand"},
 		{name: "search name as a flag", command: `bb search repos --name demo --limit 20`, problem: "unknown flag: --name"},
 		{name: "project key as a flag", command: `bb project create --key DEMO --name Demo`, problem: "unknown flag: --key"},
 		{name: "compare refs as flags", command: `bb commit compare --repo A/b --from x --to y`, problem: "unknown flag: --from"},
@@ -64,7 +64,7 @@ func TestLintMarkdownCatchesTheRealDefects(t *testing.T) {
 func TestLintMarkdownReportsUsableLineNumbers(t *testing.T) {
 	t.Parallel()
 
-	document := "line one\nline two\n\n```bash\nbb auth status\nbb repo view --repo A/b\n```\n"
+	document := "line one\nline two\n\n```bash\nbb auth status\nbb repo inspect --repo A/b\n```\n"
 
 	findings, _ := lintMarkdown("doc.md", document)
 
@@ -130,7 +130,7 @@ func TestExpectInvalidFailsWhenTheCommandBecomesValid(t *testing.T) {
 func TestExpectInvalidDirectiveDoesNotCarryAcrossProse(t *testing.T) {
 	t.Parallel()
 
-	document := "<!-- docs-lint: expect-invalid -->\n```bash\nbb repo view --repo A/b\n```\n\nSome prose.\n\n```bash\nbb auth status\n```\n"
+	document := "<!-- docs-lint: expect-invalid -->\n```bash\nbb repo inspect --repo A/b\n```\n\nSome prose.\n\n```bash\nbb auth status\n```\n"
 
 	findings, _ := lintMarkdown("doc.md", document)
 
@@ -183,7 +183,7 @@ func TestLintMarkdownHandlesContinuationsAndEnvironmentPrefixes(t *testing.T) {
 		"BITBUCKET_URL=https://example.com bb auth status\n" +
 		"bb pr create --repo A/b \\\n  --from-ref feature \\\n  --to-ref main --title \"x\"\n" +
 		"bb repo list --limit 5 | jq .data\n" +
-		"# bb repo view --repo A/b\n" +
+		"# bb repo inspect --repo A/b\n" +
 		"```\n"
 
 	findings, checked := lintMarkdown("doc.md", document)
