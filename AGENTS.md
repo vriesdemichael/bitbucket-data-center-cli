@@ -253,6 +253,13 @@ payload. An unmarked machine-output block fails, so a new example is checked by 
 payload from the command's `--describe` rather than writing one from memory — that is the same
 declaration the check reads.
 
+A quoted error message is checked against the source that prints it. Put
+`<!-- docs-lint: message-of bb -->` on the line before a troubleshooting heading that is one code
+span, or before a table whose first column quotes messages, and name the import path of any other
+package a quote comes from, as in `message-of bb crypto/x509`. Copy the message from the Go source
+and write `...` where it carries a value. When the check fails the quote is stale, not the source.
+See ADR-087.
+
 If the linter flags something you believe is correct, suspect a trailing carriage return before
 suspecting the documentation: on a CRLF checkout `\r` ends up inside the last token and pflag
 reports it as an unknown flag, with nothing visible in the message to say so. See ADR-048.

@@ -1,0 +1,36 @@
+---
+search:
+  boost: 0.3
+---
+
+# ADR 087: Quoted messages are checked against the source that prints them
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `087`
+- Title: `Quoted messages are checked against the source that prints them`
+- Category: `development`
+- Status: `accepted`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/087-quoted-messages-are-checked-against-the-source-that-prints-them.yaml`
+
+## Decision
+
+tools/docs-lint checks that an error or diagnostic message quoted in the documentation is still printed by the Go source that produces it.
+The quote is declared. `<!-- docs-lint: message-of bb -->` on its own line applies to the next heading, which must be one code span, or to the next table, where each first-column cell that is one code span is a quote. The directive names its producers: `bb` is this module's source under cmd/ and internal/, and anything else is a Go import path read from the toolchain, such as crypto/x509 for a TLS error bb passes through. A directive followed by anything else, or one that declares no quote, fails.
+A message is each Go string literal, and each `+` chain holding one, with fmt verbs and non-literal operands standing for any text. In a quote, `...` and `…` stand for any text. A quote matches when some text for both makes it part of a message, and at least three consecutive words of it -- or its longest stretch between placeholders, when shorter -- lie on literal source text. Words an argument supplies are therefore unchecked; the words around them are checked.
+It runs inside docs:lint, so it adds no gate and needs no Bitbucket instance.
+
+## Agent Instructions
+
+When documentation quotes a message bb prints, as a troubleshooting heading or in a table of symptoms, declare it with `<!-- docs-lint: message-of bb -->`, adding the import path of any other package whose message the table quotes. Copy the message from the source, writing `...` where it carries a value. When the check fails, the documentation is stale: quote what the source prints now. Do not reword a Go message to fit the documentation, and do not remove a directive to quiet the check.
+
+## Rationale
+
+The invocation and schema checks of ADR-048 cover what a reader types and what a command returns, not the text it fails with, which is what a reader pastes into a search to find the troubleshooting entry.
+Declared rather than inferred, for the reason output-of is: the same pages put commands, configuration keys and Go's own errors in code spans, so inference either misses messages or fails on quotes bb never claimed. The anchor exists because a template made mostly of verbs, such as `invalid %s`, prints nearly anything and would otherwise vouch for a message that is gone.
+
+## Rejected Alternatives
+
+- `Diff hand-written text output blocks against real command output`: Almost every text block is generated and cannot drift, most of the rest need a server or stored configuration, and a verb matches a value its field cannot hold as readily as one it can.
+- `Resolve each verb to the literals its call sites pass`: It would check the words an argument supplies as well, at the cost of following values through function parameters. The anchor already fails a reworded message.

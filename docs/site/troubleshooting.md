@@ -50,6 +50,8 @@ To capture what the server answered rather than what `bb` did, set
 method, path, status and Bitbucket's own exception name — never request headers
 and never response bodies, only their size.
 
+<!-- docs-lint: message-of bb -->
+
 ## `no Bitbucket host configured`
 
 ```text
@@ -58,6 +60,8 @@ validation: no Bitbucket host configured: set BITBUCKET_URL or run 'bb auth logi
 
 Nothing has been configured yet. Run `bb auth login`, or set `BITBUCKET_URL` and
 a credential.
+
+<!-- docs-lint: message-of bb -->
 
 ## `the stored configuration at ... could not be read`
 
@@ -138,6 +142,8 @@ If another credential manager answers first, re-run `bb auth setup-git`, which
 resets the helper list for that host before adding `bb`. See
 [Git Authentication](advanced/git-authentication.md).
 
+<!-- docs-lint: message-of crypto/x509 -->
+
 ## `certificate signed by unknown authority`
 
 `bb` trusts the system store plus anything in `BB_CA_FILE`, which is **added**
@@ -147,6 +153,8 @@ A common variant: it works in a terminal and fails in an IDE, because a GUI
 application did not inherit your shell environment. Set `BB_CA_FILE` in the
 IDE's own environment block. See
 [Networks, Proxies and TLS](advanced/networks-proxies-and-tls.md).
+
+<!-- docs-lint: message-of bb -->
 
 ## `OS keyring is unavailable and keyring-backed storage is required`
 

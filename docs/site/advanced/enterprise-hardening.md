@@ -532,6 +532,8 @@ Confirm:
 
 ### Helpdesk Troubleshooting Guide
 
+<!-- docs-lint: message-of bb crypto/x509 -->
+
 | Symptom / Error Message | Root Cause | Remediation |
 |---|---|---|
 | `read CA bundle: open ...: no such file or directory` | Imaging race condition: `BB_CA_FILE` was set before the CA certificate was written to disk. | Ensure the provisioning script copies the `.pem` file before setting the environment variable. |

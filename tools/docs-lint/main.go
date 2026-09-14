@@ -595,6 +595,8 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 		}
 	}
 
+	findings = append(findings, lintMessageQuotes(file, contents)...)
+
 	// Inline spans, which were invisible to this linter until #460. A page can
 	// be entirely tables — cheatsheet.md is — and so entirely unchecked.
 	if !isGeneratedFromRecords(file) {
