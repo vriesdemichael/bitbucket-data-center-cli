@@ -117,9 +117,15 @@ func TestLiveSearchCommands(t *testing.T) {
 
 // TestLiveRepoLabelAndWatchLifecycle covers repo label add, list and remove
 // plus repo watch and unwatch.
+//
+// Not parallel. Twice in CI, with the parallel tests running, Bitbucket
+// answered the label add with 500 "A database error has occurred". Label adds
+// fired all at once, and label adds amid a stream of repository creations, did
+// not reproduce it against an otherwise idle instance, so what it collides with
+// is something the parallel suite does. Go runs the tests that did not declare
+// themselves parallel before it releases any that did, so this one has the
+// instance to itself.
 func TestLiveRepoLabelAndWatchLifecycle(t *testing.T) {
-	t.Parallel()
-
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
