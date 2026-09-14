@@ -7,13 +7,15 @@ decision: >
   repository, and --audit-file, recording every invocation as JSON Lines. Both are off by default.
   Both are enforced in one middleware over tools/call, never in handlers.
   Each tool has a scope rule, held to the catalogue by a test. A tool whose arguments identify its
-  target has them injected when omitted and refused when they name something else. Under a project
-  scope, list_pull_requests, whose repository is optional, answers a call without one with the
-  pull requests of the caller in that project: a filter over the dashboard, accepted because the
-  dashboard holds only the work of the caller and the filter decides everything the agent
-  receives. A tool whose
+  target has them injected when omitted and refused when they name something else. A tool whose
   project argument is only a filter, or that addresses something Bitbucket does not scope to a
   project at all, is withheld: dropped from the catalogue as well as refused on call.
+  list_pull_requests is the one tool whose project and repository are both optional, because
+  leaving the repository out asks something of its own: the pull requests of the caller, across
+  repositories. Under a project scope a call without a repository answers with those pull
+  requests narrowed to the project. That filters what the dashboard answered, and is accepted
+  because the dashboard holds only the work of the caller and the filter decides everything the
+  agent receives.
   Audit writes are synchronous and a failed write refuses the call, unless --audit-failure=warn.
   The sink is a file or stderr; stdout carries the protocol and is rejected. Administrators can
   mandate the destination with policy.mcp_audit_file, which binds only where the policy file is out
@@ -22,6 +24,8 @@ agent_instructions: >
   Add a scope rule for every new tool in the same change. TestEveryToolHasAScopeRule fails without
   one, in both directions. Choose it by what the tool's arguments can actually bound: a tool keyed by
   commit SHA cannot be bounded and must be withheld.
+  Keep project and repository required unless leaving them out asks Bitbucket something of its
+  own, as list_pull_requests without a repository asks for the pull requests of the caller.
   Never write a scope check that skips when it finds no argument to check. That permits every call it
   does not understand while reading like enforcement.
   Do not add per-handler enforcement, and do not enable auditing by default.
@@ -38,7 +42,7 @@ rationale: >
 rejected_alternatives:
   - alternative: Compare project and repository only when the caller supplies them
     reason: Fails open on every call that omits them, while reading like enforcement.
-  - alternative: Refuse list_pull_requests without a repository under a project scope
+  - alternative: Instead of narrowing list_pull_requests under a project scope, refuse a call without a repository
     reason: >
       Leaves an agent confined to a project no way to ask for its own pull requests, and refuses an
       omitted argument the scope is meant to fill in.
