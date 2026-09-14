@@ -158,11 +158,136 @@ func TestOneFileHasOneKeyHoweverItsPathIsSpelled(t *testing.T) {
 	if relative := keyFor("config.yaml"); relative != absolute {
 		t.Errorf("a relative path keyed differently from the absolute one: %s vs %s", relative, absolute)
 	}
-	if runtime.GOOS == "windows" {
-		if upper := keyFor(strings.ToUpper(filepath.Join(directory, "config.yaml"))); upper != absolute {
-			t.Errorf("a differently-cased path keyed differently on a case-insensitive file system: %s vs %s", upper, absolute)
+
+	// Whether another case is the same file is the file system's answer, not the
+	// operating system's: Windows and macOS ignore case by default, Linux does
+	// not. Either way one file has one key, and two files have two.
+	upper := strings.ToUpper(filepath.Join(directory, "config.yaml"))
+	upperKey := keyFor(upper)
+	if sameFile(t, upper, filepath.Join(directory, "config.yaml")) {
+		if upperKey != absolute {
+			t.Errorf("a differently-cased path to the same file keyed differently: %s vs %s", upperKey, absolute)
 		}
+	} else if upperKey == absolute {
+		t.Errorf("a differently-cased path that is another file shared the key %s", absolute)
 	}
+}
+
+// TestAPathSpelledAsOnDiskKeepsItsKey is what makes resolving the spelling safe
+// to ship: a path already spelled as the file system holds it canonicalises to
+// itself, so a credential stored under it before is still found. bb's own
+// default on macOS, under Library/Application Support, is such a path.
+func TestAPathSpelledAsOnDiskKeepsItsKey(t *testing.T) {
+	t.Parallel()
+
+	path := mixedCaseConfig(t)
+
+	want := path
+	if runtime.GOOS == "windows" {
+		want = strings.ToLower(path)
+	}
+	if got := canonicalConfigPath(path); got != want {
+		t.Errorf("canonicalConfigPath(%s) = %s, want %s", path, got, want)
+	}
+}
+
+func TestAnotherSpellingResolvesToTheNameOnDisk(t *testing.T) {
+	t.Parallel()
+
+	onDisk := mixedCaseConfig(t)
+	root := filepath.Dir(filepath.Dir(filepath.Dir(onDisk)))
+	variant := filepath.Join(root, "application support", "BB", "Config.yaml")
+
+	got := spelledOnDisk(variant)
+	if sameFile(t, variant, onDisk) {
+		if got != onDisk {
+			t.Errorf("%s is the same file as %s but resolved to %s", variant, onDisk, got)
+		}
+	} else if got != variant {
+		t.Errorf("%s names no file here, so it should stay as written, got %s", variant, got)
+	}
+
+	missing := filepath.Join(filepath.Dir(onDisk), "Not Yet", "config.yaml")
+	if got := spelledOnDisk(missing); got != missing {
+		t.Errorf("a path whose last parts do not exist yet should keep them as written: got %s, want %s", got, missing)
+	}
+}
+
+// TestSpelledOnDiskKeepsWhatItCannotResolve covers the paths it hands back as
+// written: one that is not absolute, the root of its volume, and one inside a
+// directory that can be entered but not listed.
+func TestSpelledOnDiskKeepsWhatItCannotResolve(t *testing.T) {
+	t.Parallel()
+
+	if got := spelledOnDisk("config.yaml"); got != "config.yaml" {
+		t.Errorf("a relative path should come back as written, got %s", got)
+	}
+
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("resolve the temporary directory: %v", err)
+	}
+
+	top := filepath.VolumeName(root) + string(filepath.Separator)
+	if got := spelledOnDisk(top); got != top {
+		t.Errorf("the root of the volume should come back as written: got %s, want %s", got, top)
+	}
+
+	// Entered, not listed. Windows ignores the mode, which leaves a directory
+	// that lists, and the name found is the one written either way.
+	unlisted := filepath.Join(root, "Unlisted")
+	if err := os.MkdirAll(unlisted, 0o700); err != nil {
+		t.Fatalf("create %s: %v", unlisted, err)
+	}
+	path := filepath.Join(unlisted, "config.yaml")
+	if err := os.WriteFile(path, []byte("hosts: {}\n"), 0o600); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+	if err := os.Chmod(unlisted, 0o100); err != nil {
+		t.Fatalf("make %s unlistable: %v", unlisted, err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(unlisted, 0o700) })
+
+	if got := spelledOnDisk(path); got != path {
+		t.Errorf("a name in a directory that cannot be listed should stay as written: got %s, want %s", got, path)
+	}
+}
+
+// mixedCaseConfig creates Application Support/bb/config.yaml in a fresh
+// directory and returns its path as the file system spells it.
+func mixedCaseConfig(t *testing.T) string {
+	t.Helper()
+
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("resolve the temporary directory: %v", err)
+	}
+	directory := filepath.Join(root, "Application Support", "bb")
+	if err := os.MkdirAll(directory, 0o750); err != nil {
+		t.Fatalf("create %s: %v", directory, err)
+	}
+	path := filepath.Join(directory, "config.yaml")
+	if err := os.WriteFile(path, []byte("hosts: {}\n"), 0o600); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+
+	return path
+}
+
+// sameFile reports whether candidate opens the file at existing.
+func sameFile(t *testing.T, candidate, existing string) bool {
+	t.Helper()
+
+	candidateInfo, err := os.Stat(candidate)
+	if err != nil {
+		return false
+	}
+	existingInfo, err := os.Stat(existing)
+	if err != nil {
+		t.Fatalf("stat %s: %v", existing, err)
+	}
+
+	return os.SameFile(candidateInfo, existingInfo)
 }
 
 func TestTheSameNameInTwoDirectoriesIsTwoKeys(t *testing.T) {

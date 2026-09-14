@@ -2411,12 +2411,12 @@ func credentialKey(host string) string {
 // canonicalConfigPath is one spelling for one file.
 //
 // BB_CONFIG_PATH is taken as written, so one file arrived as a relative path,
-// an absolute one, or in another case on Windows, and each spelling digested
-// to its own key: a credential saved under one was not found under another,
-// and config.yaml in two directories shared a key and evicted each other
-// (#587). The directory's symlinks are resolved rather than the file's,
-// because at the first login the file does not exist yet and the directory
-// does.
+// an absolute one, or in another case on a file system that ignores case, and
+// each spelling digested to its own key: a credential saved under one was not
+// found under another, and config.yaml in two directories shared a key and
+// evicted each other (#587). The directory's symlinks are resolved rather than
+// the file's, because at the first login the file does not exist yet and the
+// directory does.
 func canonicalConfigPath(path string) string {
 	canonical := filepath.Clean(path)
 	if absolute, err := filepath.Abs(canonical); err == nil {
@@ -2425,11 +2425,68 @@ func canonicalConfigPath(path string) string {
 	if directory, err := filepath.EvalSymlinks(filepath.Dir(canonical)); err == nil {
 		canonical = filepath.Join(directory, filepath.Base(canonical))
 	}
+	// Windows keys have always been lowercase, and changing them would lose the
+	// credentials stored under them. Everywhere else the file system decides.
 	if runtime.GOOS == "windows" {
-		canonical = strings.ToLower(canonical)
+		return strings.ToLower(canonical)
 	}
 
-	return canonical
+	return spelledOnDisk(canonical)
+}
+
+// spelledOnDisk is an absolute path with each part as the file system holds
+// it, as far as the path exists.
+//
+// macOS ignores case by default, as Windows does, so ~/Config.yaml and
+// ~/config.yaml open one file and would otherwise digest to two keys.
+// Lowercasing, as Windows does, would change the key of every path that is not
+// lowercase already -- bb's own default on macOS is under Library/Application
+// Support -- and every credential stored under one would stop being found. A
+// path already spelled as it is on disk comes back unchanged and keeps its key,
+// and so does every path on a file system that respects case, where each
+// existing part is found exactly. A part that does not exist yet is kept as
+// written.
+func spelledOnDisk(path string) string {
+	if !filepath.IsAbs(path) {
+		return path
+	}
+
+	separator := string(filepath.Separator)
+	volume := filepath.VolumeName(path)
+	spelled := volume + separator
+	parts := strings.Split(strings.TrimLeft(path[len(volume):], separator), separator)
+	for index, part := range parts {
+		if part == "" {
+			continue
+		}
+		if _, err := os.Lstat(filepath.Join(spelled, part)); err != nil {
+			return filepath.Join(append([]string{spelled}, parts[index:]...)...)
+		}
+		spelled = filepath.Join(spelled, nameOnDisk(spelled, part))
+	}
+
+	return spelled
+}
+
+// nameOnDisk is the entry in directory that name refers to: name itself when it
+// is there exactly, and otherwise the entry that differs from it only in case.
+func nameOnDisk(directory, name string) string {
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		return name
+	}
+
+	onDisk := name
+	for _, entry := range entries {
+		if entry.Name() == name {
+			return name
+		}
+		if strings.EqualFold(entry.Name(), name) {
+			onDisk = entry.Name()
+		}
+	}
+
+	return onDisk
 }
 
 // storedSecrets reads the token and password stored for a host.
