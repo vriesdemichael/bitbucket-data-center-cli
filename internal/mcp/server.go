@@ -58,6 +58,9 @@ func ClientsFromConfig(cfg config.AppConfig) (Clients, error) {
 // Creating things is generally safe even where this package offers no way to
 // undo it: opening a pull request or tagging a commit changes no branch and
 // gates nothing. Judge by consequence, not by whether a delete tool exists.
+//
+// Disabling auto-merge is exposed for the same reason: it can hold a merge back
+// but never cause one, so it is not the control enable_auto_merge is.
 type Spec struct {
 	Tool     *mcp.Tool
 	Register func(*mcp.Server, Clients)

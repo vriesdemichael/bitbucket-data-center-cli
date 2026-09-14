@@ -78,6 +78,21 @@ func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
 	}
 	theirs := fmt.Sprintf("%d", int64(authored["id"].(float64)))
 
+	// A pull request the caller wrote in another project, so a project filter
+	// has something of their own to leave out, and the dashboard without one
+	// has somewhere else to reach.
+	other, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed a second project failed: %v", err)
+	}
+	if err := harness.pushCommitOnBranch(other.Key, other.Repos[0].Slug, "feature/outside", "outside.txt"); err != nil {
+		t.Fatalf("push feature/outside failed: %v", err)
+	}
+	outside, err := harness.createPullRequest(ctx, other.Key, other.Repos[0].Slug, "feature/outside", "master")
+	if err != nil {
+		t.Fatalf("create the pull request in the second project failed: %v", err)
+	}
+
 	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
 		callCtx := context.Background()
 
@@ -124,14 +139,40 @@ func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
 		t.Run("dashboard mode reaches across repositories", func(t *testing.T) {
 			// The dashboard is the caller's own pull requests wherever they
 			// are, which is the property the repository endpoint cannot have:
-			// two repositories, one answer. role=author because the default is
-			// REVIEWER and the caller wrote these rather than being asked to
-			// review them.
+			// two repositories, one answer. No role, because that is how an
+			// agent asks for its own pull requests; the tool used to send
+			// REVIEWER for it, and an author who reviews nothing got an empty
+			// list (#576).
 			// An explicit limit because the default is 25 rows of an
 			// instance-wide listing, which the rest of the suite fills.
-			ids := listed(t, map[string]any{"role": "author", "limit": dashboardPage})
+			ids := listed(t, map[string]any{"limit": dashboardPage})
 			if !containsFold(ids, mine) || !containsFold(ids, elsewhere) {
 				t.Errorf("the dashboard reported %v, want both %s and %s", ids, mine, elsewhere)
+			}
+		})
+
+		t.Run("without a project the dashboard reaches other projects", func(t *testing.T) {
+			var payload struct {
+				PullRequests []struct {
+					ID         int64 `json:"id"`
+					Repository *struct {
+						ProjectKey string `json:"project_key"`
+					} `json:"repository"`
+				} `json:"pull_requests"`
+			}
+			raw := callAndDecode(t, session, callCtx, "list_pull_requests", map[string]any{"limit": dashboardPage}, &payload)
+			for _, pullRequest := range payload.PullRequests {
+				if pullRequest.Repository != nil && strings.EqualFold(pullRequest.Repository.ProjectKey, other.Key) && fmt.Sprintf("%d", pullRequest.ID) == outside {
+					return
+				}
+			}
+			t.Errorf("the dashboard did not report %s in %s: %s", outside, other.Key, raw)
+		})
+
+		t.Run("a role narrows the dashboard", func(t *testing.T) {
+			ids := listed(t, map[string]any{"role": "author", "limit": dashboardPage})
+			if !containsFold(ids, mine) {
+				t.Errorf("role=author reported %v, want %s", ids, mine)
 			}
 			// Somebody else's pull request is not the caller's, wherever it is.
 			if containsFold(ids, theirs) {
@@ -159,7 +200,62 @@ func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
 				t.Errorf("the refusal does not point at the dashboard: %s", text)
 			}
 		})
+
+		t.Run("a project without a repository narrows the dashboard to it", func(t *testing.T) {
+			listedInProject(t, session, map[string]any{"project": seeded.Key, "limit": dashboardPage}, seeded.Key, mine, elsewhere)
+		})
+
+		t.Run("a repository needs its project", func(t *testing.T) {
+			result, callErr := session.CallTool(callCtx, &mcp.CallToolParams{
+				Name:      "list_pull_requests",
+				Arguments: map[string]any{"repo": first.Slug},
+			})
+			if callErr != nil {
+				t.Fatalf("tools/call returned a protocol error: %v", callErr)
+			}
+			if !result.IsError || !strings.Contains(mcpResultText(result), "project") {
+				t.Fatalf("a repository without its project was not refused for it: %s", mcpResultText(result))
+			}
+		})
 	}, "ai", "mcp", "serve")
+
+	// Scoped to the project, the call with no arguments is bound to it: the
+	// project is filled in, and the dashboard is narrowed to it rather than the
+	// call refused for the repository the scope does not name.
+	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+		t.Run("a project-scoped server narrows the dashboard", func(t *testing.T) {
+			listedInProject(t, session, map[string]any{"limit": dashboardPage}, seeded.Key, mine, elsewhere)
+		})
+	}, "ai", "mcp", "serve", "--project", seeded.Key)
+}
+
+// listedInProject calls list_pull_requests, fails if anything it returns lies
+// outside the project, and checks that the pull requests named are among it.
+func listedInProject(t *testing.T, session *mcp.ClientSession, args map[string]any, projectKey string, want ...string) {
+	t.Helper()
+
+	var payload struct {
+		PullRequests []struct {
+			ID         int64 `json:"id"`
+			Repository *struct {
+				ProjectKey string `json:"project_key"`
+			} `json:"repository"`
+		} `json:"pull_requests"`
+	}
+	raw := callAndDecode(t, session, context.Background(), "list_pull_requests", args, &payload)
+
+	ids := make([]string, 0, len(payload.PullRequests))
+	for _, pullRequest := range payload.PullRequests {
+		if pullRequest.Repository == nil || !strings.EqualFold(pullRequest.Repository.ProjectKey, projectKey) {
+			t.Fatalf("list_pull_requests %v returned a pull request outside %s: %s", args, projectKey, raw)
+		}
+		ids = append(ids, fmt.Sprintf("%d", pullRequest.ID))
+	}
+	for _, id := range want {
+		if !containsFold(ids, id) {
+			t.Errorf("list_pull_requests %v reported %v, want %s among them", args, ids, id)
+		}
+	}
 }
 
 // TestLiveMCPGetFileContentReturnsTheFileAsText covers get_file_content against

@@ -83,9 +83,17 @@ const (
 
 	// scopeOptionalProjectRepo: the tool takes project and repo, but works
 	// without them by widening to every repository the token can see.
-	// list_pull_requests does this — omitting both selects dashboard mode.
-	// Under a scope the arguments are injected, which turns the unbounded mode
-	// into the bounded one rather than refusing the call.
+	// list_pull_requests does this — omitting repo selects the caller's own
+	// pull requests, narrowed to project when one is given. Under a scope the
+	// arguments are injected, which bounds the call rather than refusing it: a
+	// repository scope makes it the repository listing, and a project scope
+	// narrows the dashboard to the project.
+	//
+	// That narrowing filters what Bitbucket answered, which scopeProjectFilter
+	// does not accept as a boundary. It is accepted here because the dashboard
+	// answers only with the caller's own pull requests and the filter decides
+	// everything the agent receives; refusing left a project-scoped agent no
+	// way to ask for its own work (#576).
 	scopeOptionalProjectRepo
 
 	// scopeProjectFilter: the tool takes project as a filter and has no repo
