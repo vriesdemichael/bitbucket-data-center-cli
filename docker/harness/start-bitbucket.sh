@@ -26,12 +26,27 @@ echo "==> Licence: Atlassian Plugin SDK development licence (3h, 12 users, reiss
 
 cd /work/harness
 
-# Record when the licence was issued so the healthcheck can retire the instance
-# before it expires. Without this, `docker compose up -d` happily reuses a
-# container that has been running for days: /status still reports RUNNING on an
-# expired licence, so the live suite would run against a dead instance and fail
-# in ways that look like product bugs.
+# Record when the licence was issued. The healthcheck and the live suite read
+# it to tell how long the instance has left: /status keeps reporting RUNNING on
+# an expired licence, so nothing else can.
 date +%s > /tmp/licence-issued-at
+
+# Stop the container before the licence runs out. A stopped instance holds no
+# memory, whether or not anyone is still working, and `task stack:up` -- which
+# `task test:live` runs first -- starts it again with a new licence. Left
+# running, it would keep answering RUNNING while refusing every write.
+#
+# Process 1 first, then everything else. atlas-run becomes process 1 and is a
+# shell script that runs Maven as a child, and a shell as process 1 ignores
+# SIGTERM, so it exits only once Maven and the product JVM are gone. The second
+# kill reaches this subshell too, which is why it comes last.
+retire_after="${BB_LICENCE_RETIRE_SECONDS:?set in docker/harness/Dockerfile}"
+(
+  sleep "${retire_after}"
+  echo "==> SDK licence is $(( retire_after / 60 )) minutes old; stopping so the next start issues a new one"
+  kill -TERM 1 2>/dev/null || true
+  kill -TERM -1 2>/dev/null || true
+) &
 
 # atlas-run reads stdin and treats EOF as a shutdown request, so the container
 # must be run with stdin open and a TTY attached (compose: stdin_open + tty).

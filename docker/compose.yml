@@ -7,9 +7,9 @@ name: bitbucket-data-center-cli
 # and no Atlassian account are required, so this stack runs identically on a
 # fork, in a contributor's environment, and in CI.
 #
-# The licence is valid for 3 hours and is reissued on every start. A full live
-# suite run takes ~5 minutes, so this only matters for long local sessions:
-# `task stack:restart` issues a fresh one.
+# The licence is valid for 3 hours and is reissued on every start. The instance
+# stops itself before it runs out (docker/harness/start-bitbucket.sh), and
+# `task stack:up` -- which `task test:live` runs first -- starts it again.
 #
 # The SDK provides the instance's database (embedded), so there is no separate
 # Postgres service. The live suite exercises the REST API, where behaviour is
@@ -54,20 +54,18 @@ services:
       #      still disabled at this point; scripts/bootstrap-bitbucket.sh enables
       #      it after this gate passes.)
       #
-      #   2. The SDK licence has not aged out. It is valid for 3 hours from
-      #      process start, and `docker compose up -d` reuses a running container
-      #      rather than recreating it — so without this the stack would happily
-      #      serve an expired licence while still reporting RUNNING, and the live
-      #      suite would fail in ways that look like product bugs. Going unhealthy
-      #      at 2h45m makes `task stack:up` (which passes --wait) fail loudly with
-      #      an instance that needs `task stack:restart`.
+      #   2. The SDK licence is younger than BB_LICENCE_RETIRE_SECONDS, the age at
+      #      which the container stops itself. Bitbucket keeps reporting RUNNING
+      #      on an expired licence, so this is the backstop for an instance whose
+      #      stop has not happened yet: `task stack:up` (which passes --wait)
+      #      fails on it rather than handing the suite an instance about to go.
       #
       # $$ escapes compose's own variable interpolation.
       test:
         - CMD-SHELL
         - >-
           curl -sf http://localhost:7990/status | grep -q RUNNING &&
-          [ $$(( $$(date +%s) - $$(cat /tmp/licence-issued-at) )) -lt 9900 ]
+          [ $$(( $$(date +%s) - $$(cat /tmp/licence-issued-at) )) -lt $${BB_LICENCE_RETIRE_SECONDS} ]
       interval: 10s
       timeout: 5s
       # Failures during start_period do not count toward retries, so the grace
