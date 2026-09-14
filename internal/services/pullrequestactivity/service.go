@@ -260,7 +260,8 @@ func mapActivityStatusError(statusCode int, body []byte) error {
 	case 400:
 		return apperrors.New(apperrors.KindValidation, message, nil)
 	case 401:
-		return apperrors.New(apperrors.KindAuthentication, message, nil)
+		// Bitbucket's exception says whether it refused the login or the permission.
+		return apperrors.New(apperrors.KindOf(openapi.MapStatusError(statusCode, body)), message, nil)
 	case 403:
 		// Reported as authorization rather than internal so callers can treat a
 		// token that may not read the timeline as "unavailable here" instead of

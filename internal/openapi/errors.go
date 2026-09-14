@@ -128,11 +128,14 @@ func firstException(body []byte) string {
 func mapStatus(status int, body []byte, baseMessage string) error {
 	switch status {
 	case http.StatusBadRequest:
-		if kind, ok := kindFromException(body); ok {
+		if kind, ok := kindFromException(body, badRequestExceptions); ok {
 			return apperrors.New(kind, baseMessage, nil)
 		}
 		return apperrors.New(apperrors.KindValidation, baseMessage, nil)
 	case http.StatusUnauthorized:
+		if kind, ok := kindFromException(body, unauthorizedExceptions); ok {
+			return apperrors.New(kind, baseMessage, nil)
+		}
 		return apperrors.New(apperrors.KindAuthentication, baseMessage, nil)
 	case http.StatusForbidden:
 		return apperrors.New(apperrors.KindAuthorization, baseMessage, nil)
@@ -156,9 +159,9 @@ func mapStatus(status int, body []byte, baseMessage string) error {
 // badRequestExceptions are the 400s whose exceptionName says the status is
 // wrong about what happened.
 //
-// 400 is the one ambiguous status Bitbucket sends in practice: 403, 404 and 409
-// each mean one thing, and a full live run produces no 5xx at all. So this is a
-// short list rather than a table, and it is grown from
+// 400 and 401 are the ambiguous statuses Bitbucket sends in practice: 403, 404
+// and 409 each mean one thing, and a full live run produces no 5xx at all. So
+// these are short lists rather than a table, and they are grown from
 // docs/quality/bitbucket-error-registry.json -- an entry earns its place by
 // having been observed, not by seeming likely.
 //
@@ -171,12 +174,26 @@ var badRequestExceptions = map[string]apperrors.Kind{
 	"com.atlassian.bitbucket.repository.DuplicateRefException": apperrors.KindConflict,
 }
 
+// unauthorizedExceptions are the 401s that are not about who the caller is.
+//
+// Bitbucket refuses a known user with 401 far more often than with 403. An
+// AuthorisationException is a caller Bitbucket recognised, without the
+// permission; a NoAccessAuthenticationException is a valid login on an account
+// without a Bitbucket licence. Logging in again changes neither -- an
+// administrator has to grant the permission or the licence -- which is what
+// authorization tells the caller and authentication does not. A 401 for
+// credentials that are wrong or missing keeps the status answer.
+var unauthorizedExceptions = map[string]apperrors.Kind{
+	"com.atlassian.bitbucket.AuthorisationException":               apperrors.KindAuthorization,
+	"com.atlassian.bitbucket.auth.NoAccessAuthenticationException": apperrors.KindAuthorization,
+}
+
 // kindFromException reads Bitbucket's own name for what went wrong.
 //
 // Additive by construction: an exception that is not listed, or a body that
 // carries none, falls through to the status-only answer. A change here can only
 // correct a case, never break one that works today.
-func kindFromException(body []byte) (apperrors.Kind, bool) {
+func kindFromException(body []byte, exceptions map[string]apperrors.Kind) (apperrors.Kind, bool) {
 	trimmed := strings.TrimSpace(string(body))
 	if trimmed == "" {
 		return "", false
@@ -195,7 +212,7 @@ func kindFromException(body []byte) (apperrors.Kind, bool) {
 		if one.ExceptionName == nil {
 			continue
 		}
-		if kind, ok := badRequestExceptions[strings.TrimSpace(*one.ExceptionName)]; ok {
+		if kind, ok := exceptions[strings.TrimSpace(*one.ExceptionName)]; ok {
 			return kind, true
 		}
 	}

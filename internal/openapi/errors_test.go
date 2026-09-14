@@ -238,8 +238,9 @@ func TestMissingPayloadTellsAnEmptyAnswerFromAnUnreadableOne(t *testing.T) {
 	})
 }
 
-// TestMapStatusErrorReadsTheExceptionOnA400 pins the one correction the error
-// registry justified, and the fallthrough that keeps it from breaking anything.
+// TestMapStatusErrorReadsTheExceptionOnA400 pins the correction the error
+// registry justified for a 400, and the fallthrough that keeps it from breaking
+// anything.
 func TestMapStatusErrorReadsTheExceptionOnA400(t *testing.T) {
 	t.Parallel()
 
@@ -263,6 +264,11 @@ func TestMapStatusErrorReadsTheExceptionOnA400(t *testing.T) {
 			body: `{"errors":[{"message":"The project key must be specified."}]}`,
 			want: apperrors.KindValidation,
 		},
+		{
+			name: "an exception listed for a 401 does not change a 400",
+			body: `{"errors":[{"exceptionName":"com.atlassian.bitbucket.AuthorisationException"}]}`,
+			want: apperrors.KindValidation,
+		},
 		{name: "a body that is not JSON keeps the status answer", body: "<html>bad request</html>", want: apperrors.KindValidation},
 		{name: "no body at all keeps the status answer", body: "", want: apperrors.KindValidation},
 	}
@@ -272,6 +278,58 @@ func TestMapStatusErrorReadsTheExceptionOnA400(t *testing.T) {
 			err := MapStatusError(400, []byte(testCase.body))
 			if err == nil {
 				t.Fatal("a 400 produced no error")
+			}
+			if kind := apperrors.KindOf(err); kind != testCase.want {
+				t.Errorf("kind = %v, want %v", kind, testCase.want)
+			}
+		})
+	}
+}
+
+// TestMapStatusErrorReadsTheExceptionOnA401 tells a caller Bitbucket refused
+// from a caller it could not identify, with the bodies a live run recorded in
+// docs/quality/bitbucket-error-registry.json.
+func TestMapStatusErrorReadsTheExceptionOnA401(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		body string
+		want apperrors.Kind
+	}{
+		{
+			name: "a caller without the permission is authorization",
+			body: `{"errors":[{"message":"You are not permitted to access this resource","exceptionName":"com.atlassian.bitbucket.AuthorisationException"}]}`,
+			want: apperrors.KindAuthorization,
+		},
+		{
+			name: "an account without a licence is authorization",
+			body: `{"errors":[{"message":"You are not currently licensed to use Bitbucket.\nPlease contact your administrator to resolve this issue.","exceptionName":"com.atlassian.bitbucket.auth.NoAccessAuthenticationException"}]}`,
+			want: apperrors.KindAuthorization,
+		},
+		{
+			name: "wrong credentials stay authentication",
+			body: `{"errors":[{"message":"Authentication failed. Please check your credentials and try again.","exceptionName":"com.atlassian.bitbucket.auth.IncorrectPasswordAuthenticationException"}]}`,
+			want: apperrors.KindAuthentication,
+		},
+		{
+			name: "no credentials stay authentication",
+			body: `{"errors":[{"message":"You are not permitted to access this resource","exceptionName":"com.atlassian.plugins.rest.api.security.exception.AuthenticationRequiredException"}]}`,
+			want: apperrors.KindAuthentication,
+		},
+		{
+			name: "an exception listed for a 400 does not change a 401",
+			body: `{"errors":[{"exceptionName":"com.atlassian.bitbucket.repository.DuplicateRefException"}]}`,
+			want: apperrors.KindAuthentication,
+		},
+		{name: "no body at all keeps the status answer", body: "", want: apperrors.KindAuthentication},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := MapStatusError(401, []byte(testCase.body))
+			if err == nil {
+				t.Fatal("a 401 produced no error")
 			}
 			if kind := apperrors.KindOf(err); kind != testCase.want {
 				t.Errorf("kind = %v, want %v", kind, testCase.want)
