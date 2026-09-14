@@ -13,6 +13,7 @@ import (
 	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/outcome"
 )
 
@@ -104,12 +105,7 @@ func assertKind(t *testing.T, err error, want apperrors.Kind, says string) {
 func TestARequestThatNeverReachedTheServerIsTransient(t *testing.T) {
 	t.Parallel()
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	refused := "http://" + listener.Addr().String()
-	_ = listener.Close()
+	refused := testsupport.RefusedURL
 
 	// A POST included: nothing was sent, so nothing can have been applied, and
 	// retrying later is the honest advice even for a mutation.

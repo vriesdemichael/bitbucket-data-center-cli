@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // mock-inventory: transport-fault — a server failing every request is injected; the subject is how the checker classifies it.
@@ -56,15 +56,7 @@ func TestPermissionCheckerInspect500Error(t *testing.T) {
 func TestAnUnreachableServerIsTransientNotInternal(t *testing.T) {
 	t.Parallel()
 
-	// Reserve a port and close it, so connecting is refused rather than hanging.
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	address := listener.Addr().String()
-	_ = listener.Close()
-
-	client, err := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: "http://" + address})
+	client, err := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: testsupport.RefusedURL})
 	if err != nil {
 		t.Fatalf("client: %v", err)
 	}
@@ -100,14 +92,7 @@ func TestAnUnreachableServerIsTransientNotInternal(t *testing.T) {
 func TestACancelledContextIsNotReportedAsTransient(t *testing.T) {
 	t.Parallel()
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	address := listener.Addr().String()
-	_ = listener.Close()
-
-	client, err := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: "http://" + address})
+	client, err := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: testsupport.RefusedURL})
 	if err != nil {
 		t.Fatalf("client: %v", err)
 	}
@@ -166,14 +151,7 @@ func TestTransportFailureLeavesClassifiedErrorsAlone(t *testing.T) {
 func TestEveryCheckerMethodClassifiesAnUnreachableServer(t *testing.T) {
 	t.Parallel()
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	address := listener.Addr().String()
-	_ = listener.Close()
-
-	client, err := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: "http://" + address})
+	client, err := openapi.NewClientWithResponsesFromConfig(config.AppConfig{BitbucketURL: testsupport.RefusedURL})
 	if err != nil {
 		t.Fatalf("client: %v", err)
 	}

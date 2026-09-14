@@ -99,7 +99,7 @@ func TestTagServiceTransportAndValidationBranches(t *testing.T) {
 	// that loses the connection halfway must report it rather than return the
 	// pages it managed.
 	t.Run("transport failures", func(t *testing.T) {
-		baseURL := testsupport.ClosedListenerURL(t)
+		baseURL := testsupport.RefusedURL
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL + "/rest")
 		if err != nil {

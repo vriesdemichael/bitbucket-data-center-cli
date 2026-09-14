@@ -275,7 +275,7 @@ func TestWriteJSONMethods(t *testing.T) {
 func TestGetJSONTransportAndRetryExhaustion(t *testing.T) {
 	t.Parallel()
 
-	baseURL := testsupport.ClosedListenerURL(t)
+	baseURL := testsupport.RefusedURL
 
 	client := NewFromConfig(config.AppConfig{BitbucketURL: baseURL})
 	client.retries = 1
@@ -381,7 +381,7 @@ func TestHealthTransportAndPermanentErrorBranches(t *testing.T) {
 	t.Parallel()
 
 	t.Run("transport failure", func(t *testing.T) {
-		baseURL := testsupport.ClosedListenerURL(t)
+		baseURL := testsupport.RefusedURL
 
 		client := NewFromConfig(config.AppConfig{BitbucketURL: baseURL})
 		client.retries = 1

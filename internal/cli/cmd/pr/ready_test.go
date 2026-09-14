@@ -11,6 +11,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // The preview has to predict what SetDraft does, by the same rule: an open pull
@@ -95,12 +96,12 @@ func TestReadyCommandReportsFailuresBeforeAnyRequest(t *testing.T) {
 	closedPort := func(t *testing.T) (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
 		t.Helper()
 
-		client, err := openapigenerated.NewClientWithResponses("http://127.0.0.1:1")
+		client, err := openapigenerated.NewClientWithResponses(testsupport.RefusedURL)
 		if err != nil {
 			t.Fatalf("build client: %v", err)
 		}
 
-		return config.AppConfig{BitbucketURL: "http://127.0.0.1:1"}, client, nil
+		return config.AppConfig{BitbucketURL: testsupport.RefusedURL}, client, nil
 	}
 
 	run := func(deps Dependencies, args ...string) error {

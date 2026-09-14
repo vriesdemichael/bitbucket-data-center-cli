@@ -6,6 +6,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // A repository that is not fully named is refused before any request. The
@@ -35,7 +36,7 @@ func TestGetAndReadmeRefuseAnIncompleteRepositoryBeforeAnyRequest(t *testing.T) 
 func TestGetAndReadmeReportAConnectionThatFailed(t *testing.T) {
 	t.Parallel()
 
-	client, err := openapigenerated.NewClientWithResponses("http://127.0.0.1:1")
+	client, err := openapigenerated.NewClientWithResponses(testsupport.RefusedURL)
 	if err != nil {
 		t.Fatalf("build client: %v", err)
 	}

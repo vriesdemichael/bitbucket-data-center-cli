@@ -15,6 +15,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	bulkworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/bulk"
 )
 
@@ -247,7 +248,7 @@ func TestBulkApplyReportsCancellationWithoutLosingTheArtifact(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		deps := testDependencies("http://127.0.0.1:1")
+		deps := testDependencies(testsupport.RefusedURL)
 		deps.JSONEnabled = func() bool { return jsonEnabled }
 
 		command := New(deps)
@@ -286,7 +287,7 @@ func TestBulkApplyReportsCancellationWithoutLosingTheArtifact(t *testing.T) {
 
 		// The handle has to actually resolve, which is the whole reason it is
 		// in the message.
-		statusCommand := New(testDependencies("http://127.0.0.1:1"))
+		statusCommand := New(testDependencies(testsupport.RefusedURL))
 		statusBuffer := &bytes.Buffer{}
 		statusCommand.SetOut(statusBuffer)
 		// Its own buffer: stdout is the machine contract and stderr is

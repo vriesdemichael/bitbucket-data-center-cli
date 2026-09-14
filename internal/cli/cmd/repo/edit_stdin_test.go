@@ -17,11 +17,11 @@ import (
 func TestRepoEditRequiresContentToBeAskedFor(t *testing.T) {
 	t.Parallel()
 
-	// A closed listener rather than a guarded one: the second case is supposed
+	// A refused address rather than a guarded server: the second case is supposed
 	// to reach a request. Both are decided before a reply matters -- one
 	// refuses without asking, and the other only has to get past that same
 	// refusal, so a request that fails at the transport is a pass.
-	setup := testSetup{Host: testsupport.ClosedListenerURL(t), Token: "token"}
+	setup := testSetup{Host: testsupport.RefusedURL, Token: "token"}
 
 	t.Run("no content given", func(t *testing.T) {
 		_, err := executeTestCLIWith(t, setup, "repo", "edit", "file.txt",

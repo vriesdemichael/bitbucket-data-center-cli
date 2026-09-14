@@ -246,7 +246,7 @@ func TestRepositorySettingsAdditionalBranches(t *testing.T) {
 			t.Fatal("expected invalid json payload error")
 		}
 
-		baseURL := testsupport.ClosedListenerURL(t)
+		baseURL := testsupport.RefusedURL
 
 		client, err := openapigenerated.NewClientWithResponses(baseURL)
 		if err != nil {
