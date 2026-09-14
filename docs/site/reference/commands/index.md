@@ -3584,10 +3584,13 @@ required, it checks that the OS keyring can be reached.
 It needs no configured host, never contacts Bitbucket, and never prints a
 secret: a token or password is reported as configured, with where it is held.
 
-Exit status is 1 when a file bb reads is invalid. Under --json the exit status
-is always zero and the verdict is the "ok" field: machine output is a single
-document on stdout, and a failing exit would replace the report with an error
-envelope.
+Exit status is 0 only when there is nothing to fix. Any issue the report shows
+-- an invalid file, a key its file never reads, a setting a command would
+refuse, a required keyring that cannot be reached -- exits 1. Under --json a
+run with issues writes the failure envelope instead of the report: its message
+summarises the issues, and error.details names each one under its own key,
+file/<file>, violation/<file>/<key path>, ignored/<file>/<key>, setting/<name>
+or keyring, with the key path written as a JSON Pointer.
 
 Usage:
   bb doctor [flags]

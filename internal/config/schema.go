@@ -257,6 +257,9 @@ func configDocument(rawYAML []byte) (any, error) {
 type SchemaViolation struct {
 	// Key is the dotted path to the key at fault, empty for the document itself.
 	Key string
+	// Path is the same path as segments. A host key is a URL, so the dotted
+	// form alone cannot tell hosts."a.b".x from hosts.a."b.x".
+	Path []string
 	// Line is where that key sits in the file, zero when it could not be placed.
 	Line int
 	// Problem says what is wrong with it.
@@ -307,7 +310,7 @@ func collectViolations(failure *jsonschema.ValidationError, document *yaml.Node,
 
 	location := failure.InstanceLocation
 	at := func(path []string, problem string) SchemaViolation {
-		return SchemaViolation{Key: strings.Join(path, "."), Line: lineOf(document, path), Problem: problem}
+		return SchemaViolation{Key: strings.Join(path, "."), Path: path, Line: lineOf(document, path), Problem: problem}
 	}
 
 	switch problem := failure.ErrorKind.(type) {

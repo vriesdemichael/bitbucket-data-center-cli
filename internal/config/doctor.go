@@ -105,6 +105,7 @@ func (file DiagnosedFile) Valid() bool {
 // IgnoredKey is a key that means something in another tier's file.
 type IgnoredKey struct {
 	Key      string
+	Line     int
 	ReadFrom []string
 }
 
@@ -473,7 +474,7 @@ func ignoredKeys(tier string, document *yaml.Node) []IgnoredKey {
 				readFrom = append(readFrom, other)
 			}
 		}
-		ignored = append(ignored, IgnoredKey{Key: key, ReadFrom: readFrom})
+		ignored = append(ignored, IgnoredKey{Key: key, Line: root.Content[index].Line, ReadFrom: readFrom})
 	}
 
 	return ignored

@@ -44,7 +44,9 @@ disk in the config file; say so if you are reporting on the environment's securi
 When a command fails because a configuration file could not be read, or a setting does not
 take effect, run `bb doctor --json`. It needs no host, lists every key the configuration schema
 rejects in every file with its line, and says where each setting comes from. A token or
-password is reported as configured, never shown. It exits zero; the verdict is `.data.ok`.
+password is reported as configured, never shown. It exits 0 only when there is nothing to fix;
+otherwise the output is the failure envelope, and `error.details` names each issue under its own
+key, such as `violation/stored/hosts/corp/url`.
 
 ## Discovering Commands
 
