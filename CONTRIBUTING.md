@@ -282,6 +282,7 @@ They are still expected, and a reviewer will ask:
 |---|---|
 | ADR Validation | validates `docs/decisions/*.yaml` |
 | Unit Tests | formatting, line endings, `golangci-lint` against the pinned version, non-live tests, that the live-tagged tree compiles, that generated artifacts are current, and that every documented `bb ...` invocation parses |
+| Unit Tests (windows-latest), Unit Tests (macos-latest) | the non-live tests, natively on Windows and on macOS |
 | Docs Site | builds the MkDocs site |
 | Live Integration Tests | starts Bitbucket and runs the live suite |
 | Coverage Gates | global and patch coverage thresholds, against the profiles the live job produced |
