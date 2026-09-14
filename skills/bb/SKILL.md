@@ -136,8 +136,7 @@ bb pr create --repo MYPROJ/payments --from-ref feature/my-work --to-ref main --t
 bb pr create --repo MYPROJ/payments --from-ref feature/my-work --to-ref main --title "Add payment retries" --reviewers alice,bob
 ```
 
-When a draft PR is ready for review, mark it ready. `bb pr ready` reads the PR's
-current version itself, so it needs no `--version`:
+When a draft PR is ready for review, mark it ready:
 
 ```bash
 # Mark a draft PR as ready for review
