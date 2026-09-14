@@ -1,8 +1,8 @@
 {
   "version": 2,
   "summary": {
-    "runnable_commands": 235,
-    "covered_commands": 235,
+    "runnable_commands": 236,
+    "covered_commands": 236,
     "covered_percent": 100,
     "masked_commands": 0,
     "dry_run_only_commands": 0,
@@ -109,6 +109,7 @@
     "pr merge",
     "pr merge-base",
     "pr participants",
+    "pr ready",
     "pr rebase",
     "pr reopen",
     "pr review approve",

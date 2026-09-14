@@ -134,6 +134,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"pr watch":                    {Intent: "pr.watch", Action: "update", Stateful: true},
 	"pr unwatch":                  {Intent: "pr.unwatch", Action: "delete", Stateful: true},
 	"pr rebase":                   {Intent: "pr.rebase", Action: "update", Stateful: true},
+	"pr ready":                    {Intent: "pr.ready", Action: "update", Stateful: true},
 	// reviewer conditions
 	"reviewer condition create": {Intent: "reviewer.condition.create", Action: "create", Stateful: true},
 	"reviewer condition update": {Intent: "reviewer.condition.update", Action: "update", Stateful: true},
