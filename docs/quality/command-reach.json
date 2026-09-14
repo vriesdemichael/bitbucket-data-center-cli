@@ -1,8 +1,8 @@
 {
   "version": 2,
   "summary": {
-    "runnable_commands": 237,
-    "covered_commands": 237,
+    "runnable_commands": 238,
+    "covered_commands": 238,
     "covered_percent": 100,
     "masked_commands": 0,
     "dry_run_only_commands": 0,
@@ -75,6 +75,7 @@
     "diff commit",
     "diff pr",
     "diff refs",
+    "doctor",
     "insights annotation add",
     "insights annotation delete",
     "insights annotation list",

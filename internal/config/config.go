@@ -1225,18 +1225,7 @@ func LoadPolicy() (PolicyConfig, error) {
 		return PolicyConfig{}, unreadableConfig(SystemConfigPath, "system configuration", err)
 	}
 
-	policy := sys.PolicyConfig()
-	if sys.Policies != nil {
-		mergePolicy(&policy, *sys.Policies)
-	}
-	if sys.Policy != nil {
-		mergePolicy(&policy, *sys.Policy)
-	}
-
-	platformPolicy := loadPlatformPolicy()
-	mergePolicy(&policy, platformPolicy)
-
-	return policy, nil
+	return effectivePolicy(sys, loadPlatformPolicy()), nil
 }
 
 func mergePolicy(target *PolicyConfig, source PolicyConfig) {
@@ -1640,27 +1629,36 @@ func matchStoredHost(stored StoredConfig, runtimeURL string) (string, StoredProf
 }
 
 func resolveStoredCredentials(stored StoredConfig, runtimeURL string) (AppConfig, bool) {
-	if len(stored.Hosts) == 0 {
+	key, profile, ok := storedProfileFor(stored, runtimeURL)
+	if !ok {
 		return AppConfig{}, false
 	}
 
-	key, profile, ok := matchStoredHost(stored, runtimeURL)
-	if !ok {
-		// No host matched, so fall back to the configured default. This is what
-		// makes `bb pr list` work against the active server without repeating
-		// --host, and it is why callers that pass credentials to other programs
-		// must use resolveStoredCredentialsStrict instead.
-		if stored.DefaultHost == "" {
-			return AppConfig{}, false
-		}
-		profile, ok = stored.Hosts[stored.DefaultHost]
-		if !ok {
-			return AppConfig{}, false
-		}
-		key = stored.DefaultHost
+	return credentialsForStoredHost(stored, key, profile), true
+}
+
+// storedProfileFor is the profile resolveStoredCredentials takes credentials
+// from, and the key it is filed under. bb doctor asks the same question to say
+// where a credential comes from, and asking it here keeps the two answers one.
+func storedProfileFor(stored StoredConfig, runtimeURL string) (string, StoredProfile, bool) {
+	if len(stored.Hosts) == 0 {
+		return "", StoredProfile{}, false
 	}
 
-	return credentialsForStoredHost(stored, key, profile), true
+	if key, profile, ok := matchStoredHost(stored, runtimeURL); ok {
+		return key, profile, true
+	}
+
+	// No host matched, so fall back to the configured default. This is what
+	// makes `bb pr list` work against the active server without repeating
+	// --host, and it is why callers that pass credentials to other programs
+	// must use resolveStoredCredentialsStrict instead.
+	profile, ok := stored.Hosts[stored.DefaultHost]
+	if stored.DefaultHost == "" || !ok {
+		return "", StoredProfile{}, false
+	}
+
+	return stored.DefaultHost, profile, true
 }
 
 // resolveStoredCredentialsStrict resolves credentials only for a host that is
@@ -2349,7 +2347,8 @@ func UseOSKeyring() {
 //
 // So this names the file and stops. Repairing it is the reader's decision,
 // with the path in front of them, rather than a suggestion from the tool that
-// has already misread it once.
+// has already misread it once. It points at bb doctor, which reports every
+// problem in every file where this reports the first.
 //
 // Permanent, exit 1. Nothing about the invocation is wrong and running it
 // again reads the same file; validation, exit 2, told a script its command
@@ -2367,12 +2366,14 @@ func unreadableConfig(pathOf func() (string, error), what string, cause error) e
 	// middle of the sentence.
 	cause = kindless{cause}
 
+	const doctor = "run 'bb doctor' to list every problem in it"
+
 	path, pathErr := pathOf()
 	if pathErr != nil || strings.TrimSpace(path) == "" {
-		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf("the %s could not be read. %s", what, remedy), cause)
+		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf("the %s could not be read; %s. %s", what, doctor, remedy), cause)
 	}
 
-	return apperrors.New(apperrors.KindPermanent, fmt.Sprintf("the %s at %s could not be read. %s", what, path, remedy), cause)
+	return apperrors.New(apperrors.KindPermanent, fmt.Sprintf("the %s at %s could not be read; %s. %s", what, path, doctor, remedy), cause)
 }
 
 // kindless reads as its cause without the kind prefix, and unwraps to it.

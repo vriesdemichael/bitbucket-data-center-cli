@@ -21,6 +21,7 @@ import (
 	commitcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/commit"
 	deploymentcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/deployment"
 	diffcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/diff"
+	doctorcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/doctor"
 	insightscmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/insights"
 	prcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/pr"
 	projectcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/project"
@@ -334,6 +335,11 @@ your behalf using the link above.`,
 	rootCmd.AddCommand(updatecmd.New(updatecmd.Dependencies{
 		JSONEnabled:      func() bool { return options.JSON },
 		DryRunEnabled:    func() bool { return options.DryRun },
+		WriteJSON:        writeJSON,
+		RuntimeOverrides: func() config.Overrides { return options.runtime },
+	}))
+	rootCmd.AddCommand(doctorcmd.New(doctorcmd.Dependencies{
+		JSONEnabled:      func() bool { return options.JSON },
 		WriteJSON:        writeJSON,
 		RuntimeOverrides: func() config.Overrides { return options.runtime },
 	}))
