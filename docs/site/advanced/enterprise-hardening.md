@@ -62,7 +62,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    disable_update: true
    update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
    ```
-   - **JSON Schema Validation**: All configuration files are validated against [`config.schema.json`](../reference/schemas/config.schema.json). Supplying the `$schema` directive enables live linting and autocompletion in VS Code, IntelliJ, and CI pipelines (e.g. `check-jsonschema`).
+   - **JSON Schema Validation**: All configuration files are validated against [`config.schema.json`](../reference/schemas/config.schema.json). Supplying the `$schema` directive enables live linting and autocompletion in VS Code and IntelliJ. On the host, `bb doctor` reports every key the schema rejects in the deployed file, and the source each policy setting comes from.
    - `require_keyring: true`: Enforces OS keyring storage machine-wide; refuses fallback to plaintext files even if `BB_REQUIRE_KEYRING` is unset or set to `0`. If a user sets `BB_REQUIRE_KEYRING=0`, `bb` outputs an explicit warning to `stderr` and continues enforcing keyring policy.
    - `ca_file: <path>`: Mandates corporate Root CA bundle. Attempts to pass a conflicting CA file abort with an authorization error.
    - `allowed_hosts: [...]`: Whitelists permitted Bitbucket Server / Data Center instances. Connection attempts to unlisted hosts abort with an authorization error.
@@ -530,6 +530,17 @@ Confirm:
   git config --global --get "credential.https://bitbucket.example.com.helper"
   ```
 
+Check the deployed configuration itself. `bb doctor` needs no host and no login, so it runs as soon as the file is in place:
+
+```bash
+bb doctor --json
+```
+
+Confirm:
+- `.data.ok` is `true`: every configuration file on the host parses and matches the schema.
+- The `system` entry in `.data.files` has no `violations` and no `ignored` keys. A misspelled policy key is a violation; a policy key in a user or workspace file is ignored and mandates nothing.
+- Each policy setting you deployed has a `source.kind` of `system` or `registry` in `.data.settings`, not `default`.
+
 ### Helpdesk Troubleshooting Guide
 
 <!-- docs-lint: message-of bb crypto/x509 -->
@@ -547,7 +558,8 @@ Confirm:
 | `could not load the Sigstore trust material needed to verify the release manifest` | The host cannot reach `https://tuf-repo-cdn.sigstore.dev`, and no offline trust root is configured. The release itself is not implicated. | Deploy a `trusted_root.json` and set `update_trusted_root` in system configuration (or `update_tuf_url` for a mirrored TUF repository). |
 | `update_trusted_root is invalid` | The configured trusted root path does not exist on this host — typically an imaging race, the same one that bites `ca_file`. | Ensure the provisioning script writes `trusted_root.json` before the configuration file that references it. |
 | `update_trusted_root and update_tuf_url are mutually exclusive` | Both Sigstore trust sources are configured. | Keep the trusted root file for air-gapped hosts, or the TUF mirror URL — not both. |
-| `the system configuration at ... could not be read` | The system configuration file is malformed, typically from a provisioning template or a partial write. bb fails closed rather than run without the policy. | Validate the file against `config.schema.json` (see [Validating a configuration file](../troubleshooting.md#validating-a-configuration-file)) and redeploy it. Users cannot work around it, by design. |
+| `the system configuration at ... could not be read` | The system configuration file is malformed, typically from a provisioning template or a partial write. bb fails closed rather than run without the policy. | Run `bb doctor` on the host: it lists every problem in the file with its line (see [Checking the configuration](../troubleshooting.md#checking-the-configuration)). Redeploy the corrected file. Users cannot work around it, by design. |
+| A policy setting is not enforced | The key is in a user or workspace configuration file, which bb reads no policy from. | Run `bb doctor`: it lists the key as `ignored` in that file, and names the source each policy setting comes from. Move the key to the system configuration. |
 | `update_tuf_url must be an absolute https URL` | The configured mirror is a bare hostname, a relative path, or plain `http`. | Give the full origin, for example `https://artifactory.corp.internal/tuf`. |
 
 ---

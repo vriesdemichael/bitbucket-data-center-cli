@@ -41,6 +41,11 @@ Create one at: `bb auth token-url`
 `config-file-plaintext`. The last means no OS keyring was available and the token is on
 disk in the config file; say so if you are reporting on the environment's security posture.
 
+When a command fails because a configuration file could not be read, or a setting does not
+take effect, run `bb doctor --json`. It needs no host, lists every key the configuration schema
+rejects in every file with its line, and says where each setting comes from. A token or
+password is reported as configured, never shown. It exits zero; the verdict is `.data.ok`.
+
 ## Discovering Commands
 
 Every command has built-in help. Prefer `--help` over guessing:

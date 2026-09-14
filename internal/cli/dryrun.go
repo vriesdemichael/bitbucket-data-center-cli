@@ -244,6 +244,7 @@ var readOnlyCommands = map[string]struct{}{
 	"diff commit":                     {},
 	"diff pr":                         {},
 	"diff refs":                       {},
+	"doctor":                          {},
 	"insights annotation list":        {},
 	"insights report get":             {},
 	"insights report list":            {},
