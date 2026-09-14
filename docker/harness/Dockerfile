@@ -89,6 +89,12 @@ RUN /opt/atlassian-sdk/apache-maven-3.9.8/bin/mvn -q --batch-mode --no-transfer-
         -Dartifact="com.atlassian.bitbucket.server:bitbucket-webapp:$(cat /bitbucket-version):war" \
     || echo "WARN: could not pre-fetch bitbucket-webapp; it will download on first start"
 
+# How old the SDK licence may get before the instance stops itself: 2h45m of
+# the three hours it is issued for. start-bitbucket.sh stops the container at
+# this age, and the compose healthcheck and the live suite read the same
+# number, so the three cannot disagree about how long an instance has left.
+ENV BB_LICENCE_RETIRE_SECONDS=9900
+
 COPY start-bitbucket.sh /usr/local/bin/start-bitbucket.sh
 RUN chmod +x /usr/local/bin/start-bitbucket.sh
 

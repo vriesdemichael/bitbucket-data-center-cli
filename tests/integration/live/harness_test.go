@@ -58,7 +58,7 @@ func newLiveHarness(t *testing.T) *liveHarness {
 	// Before anything is seeded. An expired licence still reports RUNNING and
 	// only refuses writes, so without this the run gets several minutes in and
 	// then fails at a git push with a message that reads like a product bug.
-	requireUsableLicence(t)
+	requireUsableLicence(t, cfg.BitbucketURL)
 
 	client, err := newGeneratedClient(cfg)
 	if err != nil {
