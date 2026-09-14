@@ -5236,7 +5236,7 @@ Mark a draft pull request ready for review, or turn it back into a draft
 ```text
 Mark a draft pull request ready for review. With --undo, turn an open pull request back into a draft.
 
-No --version is needed: bb reads the pull request's current version itself. If the pull request changes between that read and the update, so that Bitbucket refuses the version as out of date, bb reads it again and retries once.
+bb reads the pull request's current version itself. If the pull request changes between that read and the update, so that Bitbucket refuses the version as out of date, bb reads it again and retries once.
 
 A pull request already in the requested state is left as it is, and the command succeeds saying nothing changed. A merged or declined pull request is refused: only an open one can be marked ready or turned into a draft.
 
@@ -5850,7 +5850,7 @@ Update a pull request's title, description, draft state or reviewers.
 
 --version is required: Bitbucket refuses the update if the pull request has moved on since that version, rather than overwriting someone else's change.
 
-To mark a draft ready for review, or turn a pull request back into a draft, without looking up its version, use bb pr ready.
+To mark a draft ready for review, or turn a pull request back into a draft, use bb pr ready.
 
 Usage:
   bb pr update <id> [flags]

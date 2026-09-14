@@ -29,7 +29,7 @@ func newPullRequestReadyCommand(deps Dependencies, repositorySelector *string) *
 		Use:   "ready <id>",
 		Short: "Mark a draft pull request ready for review, or turn it back into a draft",
 		Long: "Mark a draft pull request ready for review. With --undo, turn an open pull request back into a draft.\n\n" +
-			"No --version is needed: bb reads the pull request's current version itself. If the pull request " +
+			"bb reads the pull request's current version itself. If the pull request " +
 			"changes between that read and the update, so that Bitbucket refuses the version as out of date, " +
 			"bb reads it again and retries once.\n\n" +
 			"A pull request already in the requested state is left as it is, and the command succeeds saying " +
