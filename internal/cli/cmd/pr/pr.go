@@ -1626,7 +1626,19 @@ changes as readily as an approval, which its name does not suggest.`,
 	reviewCompleteCmd := &cobra.Command{
 		Use:   "complete <id>",
 		Short: "Publish draft comments and optionally submit a status change",
-		Args:  cobra.ExactArgs(1),
+		Long: `Publish your draft review on a pull request: the comments you added with
+` + "`bb pr comment add --pending`" + `, together with the status and summary comment
+given by --status and --comment.
+
+Bitbucket completes only a review that was started, so this needs at least one
+draft comment. Without one it fails and changes nothing. To set a status on its
+own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`bb pr comment add`" + `.`,
+		Example: `  # Publish your draft comments
+  bb pr review complete 42
+
+  # Publish them with a request for changes and a summary comment
+  bb pr review complete 42 --status NEEDS_WORK --comment "Unit tests fail"`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1654,14 +1666,29 @@ changes as readily as an approval, which its name does not suggest.`,
 					return err
 				}
 
+				started, err := hasDraftReview(cmd.Context(), client, target)
+				if err != nil {
+					return err
+				}
+				predicted := dryrunpreview.PredictedUpdate
+				reason := "pull request review will be completed"
+				var blocking []string
+				if !started {
+					predicted = dryrunpreview.PredictedBlocked
+					reason = noDraftReviewReason(target, reviewCompleteStatus, reviewCompleteComment)
+					blocking = []string{"no draft review to complete"}
+				}
+
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
 					Intent:          "pr.review.complete",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "status": reviewCompleteStatus, "comment": reviewCompleteComment},
 					Action:          "update",
-					PredictedAction: "update",
+					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
-					Reason:          "pull request review will be completed",
-					RequiredState:   []string{"pull request"},
+					Reason:          reason,
+					RequiredState:   []string{"pull request", "draft review"},
+					BlockingReasons: blocking,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -1669,6 +1696,9 @@ changes as readily as an approval, which its name does not suggest.`,
 			response, err := client.FinishReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, target.PullRequestID, nil, body)
 			if err != nil {
 				return err
+			}
+			if isNoDraftReview(response.StatusCode(), response.Body) {
+				return noDraftReviewError(target, reviewCompleteStatus, reviewCompleteComment)
 			}
 			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
 				return err
