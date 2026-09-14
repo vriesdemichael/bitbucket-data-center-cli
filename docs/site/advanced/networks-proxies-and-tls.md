@@ -142,7 +142,7 @@ credential in play.
 | `tls: client didn't provide a certificate` or `tls: bad certificate` | Server requires mTLS — set `--client-cert` and `--client-key`. |
 | Hangs, then a timeout | Proxy required and not configured, or `NO_PROXY` missing an internal host. |
 | Works for `bb`, hangs for `bb repo clone` | Git's proxy configured separately — see above. |
-| `401` or `403` from `bb`, `200` from `/status` | Network is fine; this is authentication. See [`bb auth status`](../installation-and-quickstart.md#authenticate-to-bitbucket). |
+| `401` or `403` from `bb`, `200` from `/status` | Network is fine; Bitbucket refused the credentials or what they may do. See [`bb auth status`](../installation-and-quickstart.md#authenticate-to-bitbucket). |
 
 ## See also
 

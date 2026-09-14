@@ -102,6 +102,13 @@ func TestActivityExtractionAndStatusMapping(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("a 401 that refuses a known caller", func(t *testing.T) {
+		err := mapActivityStatusError(http.StatusUnauthorized, []byte(`{"errors":[{"message":"You are not permitted to access this resource","exceptionName":"com.atlassian.bitbucket.AuthorisationException"}]}`))
+		if kind := apperrors.KindOf(err); kind != apperrors.KindAuthorization {
+			t.Fatalf("mapped to %s, want authorization", kind)
+		}
+	})
 }
 
 func TestRawActivityHelpers(t *testing.T) {
