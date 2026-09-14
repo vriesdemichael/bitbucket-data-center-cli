@@ -94,32 +94,30 @@ gh attestation verify bb_linux_amd64.tar.gz --repo vriesdemichael/bitbucket-data
 
 ### Software Bill of Materials
 
-Every release publishes `sbom.spdx.json`, an SPDX 2.3 SBOM of the Go module
-graph. It is covered by `sha256sums.txt` and Sigstore-signed like every other
-artifact:
+Every archive has its own SPDX 2.3 SBOM, generated from the binary inside it and
+named after the archive. It is covered by `sha256sums.txt` and Sigstore-signed
+like every other artifact:
 
 ```bash
-curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/sbom.spdx.json"
-curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/sbom.spdx.json.sigstore.json"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.spdx.json"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.spdx.json.sigstore.json"
 cosign verify-blob \
-	--bundle sbom.spdx.json.sigstore.json \
+	--bundle bb_linux_amd64.spdx.json.sigstore.json \
 	--certificate-identity "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main" \
 	--certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-	sbom.spdx.json
+	bb_linux_amd64.spdx.json
 ```
 
-The SBOM is also **attested against each released artifact**, which is the
-stronger claim: not just "here is an SBOM" but "this SBOM describes that
-binary", signed by the workflow that built both.
+Each SBOM is also **attested against its archive**, which is the stronger claim:
+not just "here is an SBOM" but "this SBOM describes that binary", signed by the
+workflow that built both. The `.deb` and `.rpm` install the `_noupdate` binary
+and are attested with its SBOM.
 
 ```bash
 gh attestation verify bb_linux_amd64.tar.gz \
 	--repo vriesdemichael/bitbucket-data-center-cli \
 	--predicate-type https://spdx.dev/Document
 ```
-
-One SBOM covers every platform artifact: they are built from the same module at
-the same commit, so the dependency set does not vary between them.
 
 ## Authenticate to Bitbucket
 
