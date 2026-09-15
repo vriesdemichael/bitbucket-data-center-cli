@@ -12,7 +12,7 @@ request.
 
 | Tool | Why |
 |---|---|
-| **Go** (see `go.mod`, currently 1.26) | building and testing |
+| **Go** (the version `go.mod` names) | building and testing |
 | **[Task](https://taskfile.dev)** | every workflow in this repo is a `task` target |
 | **Docker** | runs the local Bitbucket instance for live tests |
 | **Bash** + **curl** | `scripts/bootstrap-bitbucket.sh` needs both |
