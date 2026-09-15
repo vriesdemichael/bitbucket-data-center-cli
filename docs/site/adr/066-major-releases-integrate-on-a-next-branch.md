@@ -18,9 +18,12 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 A breaking major release is assembled on a long-lived integration branch named `next`, and is published only when `next` reaches `main`.
 1. Where work goes:
-   - Every change targets `next`, whatever version it would cut. Only `dependabot/*` and
+   - Every change targets `next`, whatever version it would cut, dependency updates included:
+     every entry in .github/dependabot.yml sets `target-branch: next`. Only `dependabot/*` and
      `hotfix/*` may open a pull request into `main`, and only carrying no breaking change; the
-     release-flow job refuses everything else and says so. An earlier wording sent patches and
+     release-flow job refuses everything else and says so. Dependabot still opens security
+     updates against `main`, the default branch, whatever its configuration says; auto-merge
+     leaves those to a person, who retargets them (ADR-069). An earlier wording sent patches and
      non-breaking work straight to `main`, which the gate has not permitted since it was
      enforced.
    - Grouping is the reason, and it is not only about majors. ADR-033 cuts a release from every
@@ -71,7 +74,7 @@ A breaking major release is assembled on a long-lived integration branch named `
 
 ## Agent Instructions
 
-Target `next` for anything belonging to the next major, and `main` for v3.x patches and non-breaking work. When unsure, ask whether the change would fail a command line that works today; if it would, it belongs on `next`. This is enforced rather than trusted: the release-flow job in ci.yml refuses a pull request into `main` from anything but `dependabot/*` or `hotfix/*`, and refuses any of those carrying a breaking commit. It reads the same classification the release workflow does (tools/conventionalcommits), so the gate and the version it protects cannot disagree about what breaking means. Do not open a pull request whose base is another feature branch. CI triggers only on `main` and `next`, so a stacked pull request runs nothing and merges having proven nothing. Rebase onto the integration branch and target it directly. Do not add a release trigger to `next`, and do not tag from it. The absence of one is what makes batching possible; adding it would ship each breaking change as it lands, which is the outcome the branch exists to avoid. When adding a branch to the CI workflow triggers, add it to both the pull_request and push lists. Adding only one leaves either pull requests or the merged result unverified. Mark breaking commits properly -- `!` or a `BREAKING CHANGE:` footer -- on `next` as well as on `main`. The release that eventually reads them is computed from the commits, and a breaking change recorded as a plain fix produces the wrong version at the moment it matters most.
+Target `next` for every change, a Dependabot pull request included: retarget one opened against `main` rather than merging it there. Mark a change breaking when it would fail a command line that works today. This is enforced rather than trusted: the release-flow job in ci.yml refuses a pull request into `main` from anything but `dependabot/*` or `hotfix/*`, and refuses any of those carrying a breaking commit. It reads the same classification the release workflow does (tools/conventionalcommits), so the gate and the version it protects cannot disagree about what breaking means. Do not open a pull request whose base is another feature branch. CI triggers only on `main` and `next`, so a stacked pull request runs nothing and merges having proven nothing. Rebase onto the integration branch and target it directly. Do not add a release trigger to `next`, and do not tag from it. The absence of one is what makes batching possible; adding it would ship each breaking change as it lands, which is the outcome the branch exists to avoid. When adding a branch to the CI workflow triggers, add it to both the pull_request and push lists. Adding only one leaves either pull requests or the merged result unverified. Mark breaking commits properly -- `!` or a `BREAKING CHANGE:` footer -- on `next` as well as on `main`. The release that eventually reads them is computed from the commits, and a breaking change recorded as a plain fix produces the wrong version at the moment it matters most.
 
 ## Rationale
 

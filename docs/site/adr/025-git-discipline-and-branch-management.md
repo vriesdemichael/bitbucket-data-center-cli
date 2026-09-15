@@ -20,7 +20,7 @@ Use strict git discipline: no direct commits to main, no merge or squash commits
 
 ## Agent Instructions
 
-Never commit directly to main. Work on PR branches from latest origin/main. Do not use merge commits or squash merges; use rebase-based merges. Keep commit messages conventional and meaningful for changelog generation. You may amend/rebase/force-with-lease on PR branches to clean history. Rebase PR branches on latest main before merge.
+Never commit directly to main. Work on PR branches from latest origin/next, which every change targets (ADR-066). Do not use merge commits or squash merges; use rebase-based merges. Keep commit messages conventional and meaningful for changelog generation. You may amend/rebase/force-with-lease on PR branches to clean history. Rebase PR branches on latest next before merge.
 
 ## Rationale
 

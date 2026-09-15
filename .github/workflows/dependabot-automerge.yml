@@ -65,6 +65,19 @@ jobs:
               return;
             }
 
+            // Updates are proposed against next, like every other change
+            // (ADR-066). One based anywhere else is usually a security update,
+            // which Dependabot opens against the default branch whatever its
+            // configuration says. Merged into main it would move main ahead of
+            // next, so a person retargets it instead.
+            if (pr.base?.ref !== 'next') {
+              core.notice(
+                `PR #${pr.number} is based on ${pr.base?.ref || 'an unknown branch'}, not next; leaving it for review.`
+              );
+              core.setOutput('should_merge', 'false');
+              return;
+            }
+
             // Green CI is necessary but not sufficient.  Dependabot records what
             // it changed in a trailer on the head commit:
             //

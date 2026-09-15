@@ -504,9 +504,10 @@ tasks:
     # replay every commit with new shas while next kept the originals, leaving
     # two copies of the same work.
     #
-    # Dependency bumps and hotfixes land on main directly, so main moves ahead
-    # of next and the fast-forward stops being possible. Rebasing next onto main
-    # restores it. This says which of the two situations you are in.
+    # Hotfixes, and Dependabot security updates merged rather than retargeted,
+    # land on main directly, so main moves ahead of next and the fast-forward
+    # stops being possible. Rebasing next onto main restores it. This says which
+    # of the two situations you are in.
     silent: true
     cmds:
       - git fetch --quiet origin main next
