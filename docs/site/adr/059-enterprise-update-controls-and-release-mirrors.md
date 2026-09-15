@@ -40,10 +40,15 @@ Provide centralized control over CLI updates for enterprise and air-gapped envir
    - When querying custom mirrors, relative asset URLs are resolved against the configured base URL. In air-gapped
      networks where release manifests reference firewalled `github.com` URLs, the client falls back to downloading
      assets directly from `{baseURL}/{assetName}`.
+   - Update URLs are https by default: the base URL, every asset URL a manifest names, and every redirect. Plain
+     HTTP needs an explicit opt-in, `bb update --allow-http` or `BB_ALLOW_HTTP_UPDATE`, and warns on every run.
+     There is no configuration file key for users, because a workspace file arrives with a cloned repository.
+     `allow_http_update` in system policy or the registry decides for every user when set: `false` refuses the
+     opt-in and any `http://` update URL with exit code 3, and `true` permits plain HTTP without one.
 
 ## Agent Instructions
 
-Do not allow `bb update` to execute when `BB_DISABLE_UPDATE=1`, `disable_update: true` is configured in system policy, or when compiled with `-tags no_self_update`. Always resolve release manifests and binary downloads via the configured release mirror base URL when specified.
+Do not allow `bb update` to execute when `BB_DISABLE_UPDATE=1`, `disable_update: true` is configured in system policy, or when compiled with `-tags no_self_update`. Always resolve release manifests and binary downloads via the configured release mirror base URL when specified. Hold every request the updater sends, redirects included, to the plain-HTTP permission rather than checking the base URL alone.
 
 ## Rationale
 

@@ -49,6 +49,10 @@ func ConfigJSONSchema() map[string]any {
 			"type":        "string",
 			"description": "Base URL of internal release manifest and asset mirror.",
 		},
+		"allow_http_update": map[string]any{
+			"type":        "boolean",
+			"description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+		},
 		"mcp_audit_file": map[string]any{
 			"type":        "string",
 			"description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
@@ -152,6 +156,7 @@ func ConfigJSONSchema() map[string]any {
 			"allow_insecure_skip_verify": policyProps["allow_insecure_skip_verify"],
 			"disable_update":             policyProps["disable_update"],
 			"update_base_url":            policyProps["update_base_url"],
+			"allow_http_update":          policyProps["allow_http_update"],
 			"mcp_audit_file":             policyProps["mcp_audit_file"],
 			"update_trusted_root":        policyProps["update_trusted_root"],
 			"update_tuf_url":             policyProps["update_tuf_url"],
