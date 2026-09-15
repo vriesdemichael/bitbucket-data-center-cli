@@ -171,7 +171,7 @@ task docs:validate
 for a failure there is:
 
 ```bash
-gofmt -w ./cmd ./internal ./tools
+task quality:format
 ```
 
 ### Line endings
