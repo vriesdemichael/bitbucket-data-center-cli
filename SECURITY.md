@@ -99,14 +99,14 @@ Every release archive has its own SPDX 2.3 SBOM, generated from the binary
 inside it: the Go modules that binary links, the Go standard library it was
 linked with, and each module's licence. The dependencies differ by platform, so
 each SBOM describes one platform only. It is named after its archive
-(`bb_linux_amd64.spdx.json` for `bb_linux_amd64.tar.gz`); the `.deb` and `.rpm`
-install the `_noupdate` binary and carry its SBOM. Before a release is
-published, each SBOM is checked against the build information the Go linker
-wrote into its binary.
+(`bb_linux_amd64.spdx.json` for `bb_linux_amd64.tar.gz`). The `.deb` and `.rpm`
+install the `_noupdate` binary, so they share its SBOM
+(`bb_linux_amd64_noupdate.spdx.json`). Before a release is published, each SBOM
+is checked against the build information the Go linker wrote into its binary.
 
 Each SBOM is signed and checksummed like every other artifact, and attested
-against its archive, so the link between the SBOM and the artifact is itself
-verifiable rather than asserted:
+against every artifact it describes, so the link between the SBOM and the
+artifact is itself verifiable rather than asserted:
 
 ```bash
 gh attestation verify bb_linux_amd64.tar.gz \
