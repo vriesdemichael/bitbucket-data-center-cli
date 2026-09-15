@@ -103,6 +103,7 @@ func TestParseRegistryPolicyUpdateTrust(t *testing.T) {
 	reader := &mockRegistryReader{
 		integers: map[string]uint64{
 			"AllowUnverifiedUpdate": 1,
+			"AllowHTTPUpdate":       0,
 		},
 		strings: map[string]string{
 			"UpdateTrustedRoot":       `C:\ProgramData\bb\trusted_root.json`,
@@ -125,13 +126,21 @@ func TestParseRegistryPolicyUpdateTrust(t *testing.T) {
 	if policy.AllowUnverifiedUpdate == nil || !*policy.AllowUnverifiedUpdate {
 		t.Errorf("expected AllowUnverifiedUpdate=true, got %v", policy.AllowUnverifiedUpdate)
 	}
+	if policy.AllowHTTPUpdate == nil || *policy.AllowHTTPUpdate {
+		t.Errorf("expected AllowHTTPUpdate=false, got %v", policy.AllowHTTPUpdate)
+	}
 
 	stringForm := &mockRegistryReader{
 		strings: map[string]string{
 			"AllowUnverifiedUpdate": "false",
+			"AllowHTTPUpdate":       "true",
 		},
 	}
-	if policy := parseRegistryPolicy(stringForm); policy.AllowUnverifiedUpdate == nil || *policy.AllowUnverifiedUpdate {
-		t.Errorf("expected AllowUnverifiedUpdate=false from string value, got %v", policy.AllowUnverifiedUpdate)
+	stringPolicy := parseRegistryPolicy(stringForm)
+	if stringPolicy.AllowUnverifiedUpdate == nil || *stringPolicy.AllowUnverifiedUpdate {
+		t.Errorf("expected AllowUnverifiedUpdate=false from string value, got %v", stringPolicy.AllowUnverifiedUpdate)
+	}
+	if stringPolicy.AllowHTTPUpdate == nil || !*stringPolicy.AllowHTTPUpdate {
+		t.Errorf("expected AllowHTTPUpdate=true from string value, got %v", stringPolicy.AllowHTTPUpdate)
 	}
 }

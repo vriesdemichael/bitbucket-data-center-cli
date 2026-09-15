@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
@@ -30,6 +31,9 @@ type UpdateCommandHTTPConfig struct {
 	RequestTimeout time.Duration
 	TLSOptions     network.TLSOptions
 	UpdateBaseURL  string
+	// HTTPPermission decides whether UpdateBaseURL, the assets a manifest names
+	// and any redirect may use plain HTTP.
+	HTTPPermission config.UpdateHTTPPermission
 	// Trust carries the administrative policy that decides who may vouch for
 	// the binary this command is about to install, and where the Sigstore trust
 	// material backing that decision comes from.
@@ -47,12 +51,16 @@ var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfi
 		baseURL = "https://api.github.com"
 	}
 
-	httpClient := &http.Client{Timeout: httpConfig.RequestTimeout, Transport: transport}
+	httpClient := &http.Client{Timeout: httpConfig.RequestTimeout, Transport: requireScheme(transport, httpConfig.HTTPPermission)}
 	client := githubrelease.NewClient(
 		baseURL,
 		httpClient,
 		fmt.Sprintf("bb/%s", strings.TrimSpace(version)),
 	)
+
+	// The Sigstore TUF mirror stays https whatever the release mirror may use:
+	// update_tuf_url must be https, and a redirect must not undo that.
+	trustClient := &http.Client{Timeout: httpConfig.RequestTimeout, Transport: requireScheme(transport, config.UpdateHTTPPermission{})}
 
 	trust := httpConfig.Trust
 	verifier := updatesigstore.NewReleaseVerifier(updatesigstore.ReleaseVerifierOptions{
@@ -62,7 +70,7 @@ var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfi
 		TUFRepositoryURL: trust.TUFRepositoryURL,
 		ExpectedIdentity: trust.SignatureIdentity,
 		ExpectedIssuer:   trust.SignatureIssuer,
-		HTTPClient:       httpClient,
+		HTTPClient:       trustClient,
 	})
 
 	return updateworkflow.NewRunner(updateworkflow.Dependencies{
@@ -101,6 +109,16 @@ func trustSourceDescription(trust config.UpdateTrust) string {
 // host, so it cannot go through LoadWithOverrides, and it used to read BB_*
 // itself -- which worked only while flags were written into those variables.
 func LoadUpdateCommandHTTPConfig(overrides config.Overrides, optionalBaseURL ...string) (UpdateCommandHTTPConfig, error) {
+	baseURLFlag := ""
+	if len(optionalBaseURL) > 0 {
+		baseURLFlag = optionalBaseURL[0]
+	}
+	return loadUpdateCommandHTTPConfig(overrides, baseURLFlag, nil)
+}
+
+// loadUpdateCommandHTTPConfig is LoadUpdateCommandHTTPConfig with bb update's
+// own flags: --base-url, and --allow-http when it was passed.
+func loadUpdateCommandHTTPConfig(overrides config.Overrides, baseURLFlag string, allowHTTPFlag *bool) (UpdateCommandHTTPConfig, error) {
 	requestTimeout, err := config.ResolveRequestTimeoutWith(overrides, defaultUpdateRequestTimeout)
 	if err != nil {
 		return UpdateCommandHTTPConfig{}, err
@@ -114,12 +132,18 @@ func LoadUpdateCommandHTTPConfig(overrides config.Overrides, optionalBaseURL ...
 		return UpdateCommandHTTPConfig{}, err
 	}
 
-	flagVal := ""
-	if len(optionalBaseURL) > 0 {
-		flagVal = optionalBaseURL[0]
-	}
-	baseURL, err := config.ResolveUpdateBaseURL(flagVal)
+	baseURL, err := config.ResolveUpdateBaseURL(baseURLFlag)
 	if err != nil {
+		return UpdateCommandHTTPConfig{}, err
+	}
+
+	// Refused here, before anything is fetched; the transport holds every later
+	// request to the same permission (requireScheme).
+	httpPermission, err := config.ResolveUpdateHTTPPermission(allowHTTPFlag)
+	if err != nil {
+		return UpdateCommandHTTPConfig{}, err
+	}
+	if err := httpPermission.CheckURL(baseURL); err != nil {
 		return UpdateCommandHTTPConfig{}, err
 	}
 
@@ -137,7 +161,8 @@ func LoadUpdateCommandHTTPConfig(overrides config.Overrides, optionalBaseURL ...
 			ClientCertFile:     tlsSettings.ClientCertFile,
 			ClientKeyFile:      tlsSettings.ClientKeyFile,
 		},
-		UpdateBaseURL: baseURL,
+		UpdateBaseURL:  baseURL,
+		HTTPPermission: httpPermission,
 	}, nil
 }
 
@@ -169,6 +194,7 @@ func (d Dependencies) withDefaults() Dependencies {
 func New(deps Dependencies) *cobra.Command {
 	d := deps.withDefaults()
 	var baseURL string
+	var allowHTTP bool
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -185,9 +211,17 @@ func New(deps Dependencies) *cobra.Command {
 				return apperrors.New(apperrors.KindAuthorization, msg, nil)
 			}
 
-			httpConfig, err := LoadUpdateCommandHTTPConfig(d.runtimeOverrides(), baseURL)
+			var allowHTTPFlag *bool
+			if cmd.Flags().Changed("allow-http") {
+				allowHTTPFlag = &allowHTTP
+			}
+			httpConfig, err := loadUpdateCommandHTTPConfig(d.runtimeOverrides(), baseURL, allowHTTPFlag)
 			if err != nil {
 				return err
+			}
+
+			if warning := plainHTTPWarning(httpConfig); warning != "" {
+				fmt.Fprintln(cmd.ErrOrStderr(), style.Warning.Render(warning))
 			}
 
 			runner := UpdateRunnerFactory(cmd.Root().Version, httpConfig)
@@ -216,8 +250,25 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&baseURL, "base-url", "", "Custom release mirror base URL")
+	cmd.Flags().BoolVar(&allowHTTP, "allow-http", false, "Permit a plain-HTTP release mirror; refused when administrative policy sets allow_http_update: false")
 
 	return cmd
+}
+
+// plainHTTPWarning is what a run against a plain-HTTP mirror prints on stderr.
+//
+// Every run, like the unverified-update warning: it is a standing condition,
+// and the person running the command is the one who needs to know.
+func plainHTTPWarning(httpConfig UpdateCommandHTTPConfig) string {
+	parsed, err := url.Parse(httpConfig.UpdateBaseURL)
+	if err != nil || !strings.EqualFold(parsed.Scheme, "http") {
+		return ""
+	}
+
+	return fmt.Sprintf(
+		"Warning: bb update is fetching from a plain-HTTP release mirror (%s), permitted by %s; anyone on the network path can read, delay or withhold what it serves",
+		parsed.Redacted(), httpConfig.HTTPPermission.Source,
+	)
 }
 
 func writeUpdateHuman(cmd *cobra.Command, result updateworkflow.Result) {

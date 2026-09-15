@@ -8,6 +8,10 @@
       "description": "JSON schema reference URI.",
       "type": "string"
     },
+    "allow_http_update": {
+      "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+      "type": "boolean"
+    },
     "allow_insecure_skip_verify": {
       "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
       "type": "boolean"
@@ -105,6 +109,10 @@
       "additionalProperties": false,
       "description": "Administrative policy block.",
       "properties": {
+        "allow_http_update": {
+          "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+          "type": "boolean"
+        },
         "allow_insecure_skip_verify": {
           "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
           "type": "boolean"
@@ -163,6 +171,10 @@
       "additionalProperties": false,
       "description": "Administrative policy block (alias).",
       "properties": {
+        "allow_http_update": {
+          "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+          "type": "boolean"
+        },
         "allow_insecure_skip_verify": {
           "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
           "type": "boolean"

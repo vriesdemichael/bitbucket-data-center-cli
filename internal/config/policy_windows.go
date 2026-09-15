@@ -106,6 +106,15 @@ func parseRegistryPolicy(k registryReader) PolicyConfig {
 		policy.UpdateBaseURL = strings.TrimSpace(val)
 	}
 
+	if val, _, err := k.GetIntegerValue("AllowHTTPUpdate"); err == nil {
+		b := val != 0
+		policy.AllowHTTPUpdate = &b
+	} else if strVal, _, err := k.GetStringValue("AllowHTTPUpdate"); err == nil {
+		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
+			policy.AllowHTTPUpdate = &b
+		}
+	}
+
 	if val, _, err := k.GetStringValue("UpdateTrustedRoot"); err == nil && strings.TrimSpace(val) != "" {
 		policy.UpdateTrustedRoot = strings.TrimSpace(val)
 	}
