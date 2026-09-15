@@ -2,6 +2,8 @@ module github.com/vriesdemichael/bitbucket-data-center-cli
 
 go 1.27.0
 
+toolchain go1.27.1
+
 require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/go-openapi/runtime v0.33.2
