@@ -80,6 +80,9 @@ func TestAnHTTPSMirrorCannotRedirectToPlainHTTP(t *testing.T) {
 	if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), strings.TrimPrefix(plain.URL, "http://")) {
 		t.Fatalf("expected the redirect to plain HTTP to be refused, naming its target, got %v", err)
 	}
+	if !strings.Contains(err.Error(), secure.URL+"/sha256sums.txt redirected to a URL bb update may not fetch") {
+		t.Fatalf("expected the refusal to say the mirror redirected there, got %v", err)
+	}
 
 	body, err := fetchThrough(t, requireScheme(trustsTheTestCertificate, config.UpdateHTTPPermission{Allowed: true}), secure.URL+"/sha256sums.txt")
 	if err != nil || body != "served over plain HTTP" {
@@ -98,6 +101,43 @@ func TestTheReleaseClientKeepsTheRefusalsKind(t *testing.T) {
 	_, err := client.Download(context.Background(), "sha256sums.txt")
 	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
 		t.Fatalf("expected a validation error, got kind %q: %v", kind, err)
+	}
+	if strings.Count(err.Error(), "validation") != 1 || strings.Contains(err.Error(), `Get "`) {
+		t.Fatalf("expected the refusal once, without the transport's wrapping, got %v", err)
+	}
+}
+
+// TestARefusedManifestAddressIsReportedOnce is the fallback path: the mirror
+// does not hold the asset, and the manifest's own address for it is refused.
+func TestARefusedManifestAddressIsReportedOnce(t *testing.T) {
+	t.Parallel()
+
+	missing := httptest.NewServer(http.NotFoundHandler())
+	t.Cleanup(missing.Close)
+	client := githubrelease.NewClient(missing.URL, &http.Client{Transport: requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{Allowed: true})}, "bb/test")
+
+	_, err := client.Download(context.Background(), "ftp://files.example.invalid/sha256sums.txt")
+	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
+		t.Fatalf("expected a validation error, got kind %q: %v", kind, err)
+	}
+	want := "release asset sha256sums.txt could not be downloaded from the mirror at " + missing.URL + "/sha256sums.txt, and the manifest's own address for it is refused: " +
+		`update URL "ftp://files.example.invalid/sha256sums.txt" must be an absolute https URL`
+	if !strings.Contains(err.Error(), want) || strings.Count(err.Error(), "validation") != 1 {
+		t.Fatalf("expected %q, once, got %v", want, err)
+	}
+}
+
+func TestSigstoreTrustMaterialIsFetchedOverHTTPSOnly(t *testing.T) {
+	t.Parallel()
+
+	plain := plainHTTPServer(t)
+
+	_, err := fetchThrough(t, requireTrustHTTPS(http.DefaultTransport), plain.URL+"/10.root.json")
+	if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "Sigstore trust material is fetched over https only") {
+		t.Fatalf("expected plain HTTP to be refused for trust material, got %v", err)
+	}
+	if strings.Contains(err.Error(), "--allow-http") {
+		t.Fatalf("the refusal offers --allow-http, which does not apply to trust material: %v", err)
 	}
 }
 

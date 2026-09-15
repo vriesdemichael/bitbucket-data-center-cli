@@ -1454,6 +1454,17 @@ type UpdateHTTPPermission struct {
 	ForbiddenByPolicy bool
 	// Source names what permitted plain HTTP, for the warning bb update prints.
 	Source string
+	// PolicyOrigin names where allow_http_update was set, so a refusal tells a
+	// user which file or registry key to ask their administrator about.
+	PolicyOrigin string
+}
+
+// policyClause is how a refusal names the policy that refused it.
+func (permission UpdateHTTPPermission) policyClause() string {
+	if permission.PolicyOrigin == "" {
+		return "allow_http_update"
+	}
+	return "allow_http_update in " + permission.PolicyOrigin
 }
 
 // ResolveUpdateHTTPPermission decides whether bb update may use plain HTTP.
@@ -1471,27 +1482,47 @@ func ResolveUpdateHTTPPermission(allowHTTPFlag *bool) (UpdateHTTPPermission, err
 	if err != nil {
 		return UpdateHTTPPermission{}, err
 	}
-	return resolveUpdateHTTPPermission(policy, allowHTTPFlag)
+
+	origin := ""
+	if policy.AllowHTTPUpdate != nil {
+		origin = allowHTTPUpdatePolicyOrigin()
+	}
+	return resolveUpdateHTTPPermission(policy, allowHTTPFlag, origin)
 }
 
-func resolveUpdateHTTPPermission(policy PolicyConfig, allowHTTPFlag *bool) (UpdateHTTPPermission, error) {
+// allowHTTPUpdatePolicyOrigin names the policy source that set
+// allow_http_update: the registry when it carries the value, the system
+// configuration file otherwise.
+func allowHTTPUpdatePolicyOrigin() string {
+	if loadPlatformPolicy().AllowHTTPUpdate != nil && platformPolicyDescription() != "" {
+		return platformPolicyDescription()
+	}
+	path, err := SystemConfigPath()
+	if err != nil {
+		path = ""
+	}
+	return policyOriginDescription(nil, "", path)
+}
+
+func resolveUpdateHTTPPermission(policy PolicyConfig, allowHTTPFlag *bool, policyOrigin string) (UpdateHTTPPermission, error) {
 	sourced := map[string]bool{}
 	requested, err := resolveBool(sourced, settingAllowHTTPUpdate, allowHTTPFlag, false)
 	if err != nil {
-		return UpdateHTTPPermission{}, apperrors.New(apperrors.KindValidation, nameOf(sourced, settingAllowHTTPUpdate)+" must be a boolean", err)
+		return UpdateHTTPPermission{}, apperrors.New(apperrors.KindValidation, nameOf(sourced, settingAllowHTTPUpdate)+" must be true or false (or 1 or 0)", nil)
 	}
 
+	forbidden := UpdateHTTPPermission{ForbiddenByPolicy: true, PolicyOrigin: policyOrigin}
 	switch {
 	case policy.AllowHTTPUpdate != nil && *policy.AllowHTTPUpdate:
-		return UpdateHTTPPermission{Allowed: true, Source: "the allow_http_update policy"}, nil
+		return UpdateHTTPPermission{Allowed: true, Source: "the allow_http_update policy", PolicyOrigin: policyOrigin}, nil
 	case policy.AllowHTTPUpdate != nil && requested:
 		return UpdateHTTPPermission{}, apperrors.New(
 			apperrors.KindAuthorization,
-			nameOf(sourced, settingAllowHTTPUpdate)+" is refused: plain-HTTP update URLs are disabled by administrative policy (allow_http_update)",
+			fmt.Sprintf("%s is refused: plain-HTTP update URLs are disabled by administrative policy (%s)", nameOf(sourced, settingAllowHTTPUpdate), forbidden.policyClause()),
 			nil,
 		)
 	case policy.AllowHTTPUpdate != nil:
-		return UpdateHTTPPermission{ForbiddenByPolicy: true}, nil
+		return forbidden, nil
 	case requested:
 		return UpdateHTTPPermission{Allowed: true, Source: nameOf(sourced, settingAllowHTTPUpdate)}, nil
 	default:
@@ -1525,7 +1556,7 @@ func (permission UpdateHTTPPermission) CheckURL(rawURL string) error {
 		case permission.Allowed:
 			return nil
 		case permission.ForbiddenByPolicy:
-			return apperrors.New(apperrors.KindAuthorization, fmt.Sprintf("update URL %q uses plain HTTP, which administrative policy forbids (allow_http_update)", shown), nil)
+			return apperrors.New(apperrors.KindAuthorization, fmt.Sprintf("update URL %q uses plain HTTP, which administrative policy forbids (%s)", shown, permission.policyClause()), nil)
 		default:
 			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("update URL %q uses plain HTTP; pass --allow-http or set BB_ALLOW_HTTP_UPDATE=1 to permit it", shown), nil)
 		}
