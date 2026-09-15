@@ -7,9 +7,9 @@ Planned scripts:
 
 Not implemented in minimal scaffold.
 
-Release packaging (used by `.github/workflows/release.yml`):
-- `nfpm.yaml`: nFPM template for building the Linux `.deb`/`.rpm` packages; the workflow exports `PKG_ARCH`, `PKG_VERSION`, and `PKG_BINARY` per architecture
-- `gen_homebrew_formula.py`: render the Homebrew formula pushed to `vriesdemichael/homebrew-tap` from `sha256sums.txt`
+Release packaging:
+- `nfpm.yaml`: nFPM template for building the Linux `.deb`/`.rpm` packages in `.github/workflows/release-artifacts.yml`; the workflow exports `PKG_ARCH`, `PKG_VERSION`, and `PKG_BINARY` per architecture
+- `gen_homebrew_formula.py`: render the Homebrew formula pushed to `vriesdemichael/homebrew-tap` from `sha256sums.txt`, in `.github/workflows/release.yml`
 
 Coverage reporting workflow:
 - `task quality:coverage:report:update` refreshes combined unit + live `docs/quality/coverage-report.json`

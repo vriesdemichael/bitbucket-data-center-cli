@@ -32,7 +32,7 @@ gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
 ```
 
 ### C. Software Bill of Materials (SPDX 2.3 SBOM)
-Each archive has its own SBOM, generated from the binary inside it and named after the archive (`bb_${VERSION}_linux_amd64.spdx.json`); the `.deb` and `.rpm` carry the SBOM of the `_noupdate` binary they install. Verify that the released archive is attested with its SBOM:
+Each archive has its own SBOM, generated from the binary inside it and named after the archive (`bb_${VERSION}_linux_amd64.spdx.json`). The `.deb` and `.rpm` install the `_noupdate` binary and are attested with its SBOM (`bb_${VERSION}_linux_amd64_noupdate.spdx.json`). Verify that the released archive is attested with its SBOM:
 
 ```bash
 VERSION="[[ bb_version ]]"

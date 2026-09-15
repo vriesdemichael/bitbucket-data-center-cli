@@ -111,7 +111,7 @@ cosign verify-blob \
 Each SBOM is also **attested against its archive**, which is the stronger claim:
 not just "here is an SBOM" but "this SBOM describes that binary", signed by the
 workflow that built both. The `.deb` and `.rpm` install the `_noupdate` binary
-and are attested with its SBOM.
+and are attested with its SBOM, `bb_linux_amd64_noupdate.spdx.json`.
 
 ```bash
 gh attestation verify bb_linux_amd64.tar.gz \
