@@ -141,9 +141,9 @@ formatters:
   # which runs the toolchain's own gofmt over the tree.
   #
   # golangci-lint's gofmt formatter is a second implementation of the same
-  # policy, and from v2.13.2 the two disagree: it reports
+  # policy, and the two have disagreed: from v2.13.2 it reported
   # internal/mcp/tools_pr.go as unformatted where the go1.26.6 gofmt binary
-  # reports the tree clean, and `golangci-lint fmt` cannot fix its own
+  # reported the tree clean, and `golangci-lint fmt` could not fix its own
   # complaint. A check that cannot be satisfied and contradicts the tool it
   # imitates is not a gate, and two homes for one policy is what ADR-065 exists
   # to prevent.

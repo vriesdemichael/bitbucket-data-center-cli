@@ -158,7 +158,7 @@ tasks:
       - go run ./tools/openapi-sanitize -in {{.BITBUCKET_OPENAPI_SPEC}} -out {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
       - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{.OAPI_CODEGEN_VERSION}} -config tools/oapi-codegen/bitbucket-types.yaml {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
       - go run ./tools/oapi-fix-generated -file internal/models/generated/bitbucket_types.gen.go
-      - gofmt -w internal/models/generated/bitbucket_types.gen.go
+      - '"$(go env GOROOT)/bin/gofmt" -w internal/models/generated/bitbucket_types.gen.go'
 
   models:verify:
     desc: Verify generated models are up to date
@@ -172,7 +172,7 @@ tasks:
       - mkdir -p internal/openapi/generated
       - go run ./tools/openapi-sanitize -in {{.BITBUCKET_OPENAPI_SPEC}} -out {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
       - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@{{.OAPI_CODEGEN_VERSION}} -config tools/oapi-codegen/bitbucket-client.yaml {{.BITBUCKET_OPENAPI_SANITIZED_TMP}}
-      - gofmt -w internal/openapi/generated/bitbucket_client.gen.go
+      - '"$(go env GOROOT)/bin/gofmt" -w internal/openapi/generated/bitbucket_client.gen.go'
 
   client:verify:
     desc: Verify generated OpenAPI client is up to date
@@ -233,11 +233,14 @@ tasks:
     # The version is checked rather than assumed. A binary left on PATH by
     # something else is the one way this could silently lint with different
     # rules than the pin says, which is exactly the disagreement ADR-065 is
-    # about.
+    # about. So is the Go it was built with: golangci-lint refuses a module
+    # that targets a newer Go than its own build, and a binary installed before
+    # a toolchain bump still reports the pinned version.
     cmd: |
       packages="./cmd/... ./internal/... ./tools/... ./tests/..."
       pinned="${GOLANGCI_LINT_VERSION#v}"
-      if command -v golangci-lint >/dev/null 2>&1 && golangci-lint version 2>&1 | grep -qF "$pinned"; then
+      built_with="built with $(go env GOVERSION) "
+      if command -v golangci-lint >/dev/null 2>&1 && golangci-lint version 2>&1 | grep -F "$pinned" | grep -qF "$built_with"; then
         exec golangci-lint run $packages
       fi
       exec go run "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}" run $packages
@@ -251,10 +254,11 @@ tasks:
     # than the targeted Go version". Building it here uses the toolchain the
     # project already pins, which is what `go run` was doing implicitly.
     #
-    # status makes this a no-op once the right version is in place, so CI can
-    # call it unconditionally and pay the build only on a version bump.
+    # status makes this a no-op once the pinned version, built with the pinned
+    # Go, is in place, so CI can call it unconditionally and pay the build only
+    # on a version or toolchain bump.
     status:
-      - command -v golangci-lint >/dev/null 2>&1 && golangci-lint version 2>&1 | grep -qF "${GOLANGCI_LINT_VERSION#v}"
+      - command -v golangci-lint >/dev/null 2>&1 && golangci-lint version 2>&1 | grep -F "${GOLANGCI_LINT_VERSION#v}" | grep -qF "built with $(go env GOVERSION) "
     cmd: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
   quality:vulncheck:
@@ -270,16 +274,25 @@ tasks:
     # and it is the tree the linter does cover through run.build-tags. Since
     # this is now the only gofmt gate -- golangci-lint's own formatter is off,
     # see .golangci.yml -- the two scopes have to match.
+    #
+    # The gofmt is the one in the toolchain go.mod pins, not the first on PATH.
+    # Its output changes between Go releases -- go1.26 and go1.27 each rewrite
+    # the other's layout of the same literal -- so an installed Go older than
+    # the pin would fail a tree CI passes.
     cmds:
       - |
-        unformatted=$(gofmt -l ./cmd ./internal ./tools ./tests)
+        unformatted=$("$(go env GOROOT)/bin/gofmt" -l ./cmd ./internal ./tools ./tests)
         if [ -n "$unformatted" ]; then
           echo "Not gofmt-clean:" >&2
           echo "$unformatted" >&2
           echo "" >&2
-          echo "Fix with: gofmt -w ./cmd ./internal ./tools ./tests" >&2
+          echo "Fix with: task quality:format" >&2
           exit 1
         fi
+
+  quality:format:
+    desc: Format the Go tree with the pinned toolchain's gofmt
+    cmd: '"$(go env GOROOT)/bin/gofmt" -w ./cmd ./internal ./tools ./tests'
 
   quality:line-endings:verify:
     desc: Verify no committed file contains a carriage return
