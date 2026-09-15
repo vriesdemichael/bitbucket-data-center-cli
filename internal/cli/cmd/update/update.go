@@ -60,7 +60,7 @@ var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfi
 
 	// The Sigstore TUF mirror stays https whatever the release mirror may use:
 	// update_tuf_url must be https, and a redirect must not undo that.
-	trustClient := &http.Client{Timeout: httpConfig.RequestTimeout, Transport: requireScheme(transport, config.UpdateHTTPPermission{})}
+	trustClient := &http.Client{Timeout: httpConfig.RequestTimeout, Transport: requireTrustHTTPS(transport)}
 
 	trust := httpConfig.Trust
 	verifier := updatesigstore.NewReleaseVerifier(updatesigstore.ReleaseVerifierOptions{
@@ -249,7 +249,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&baseURL, "base-url", "", "Custom release mirror base URL")
+	cmd.Flags().StringVar(&baseURL, "base-url", "", "Custom release mirror base URL; https unless --allow-http")
 	cmd.Flags().BoolVar(&allowHTTP, "allow-http", false, "Permit a plain-HTTP release mirror; refused when administrative policy sets allow_http_update: false")
 
 	return cmd

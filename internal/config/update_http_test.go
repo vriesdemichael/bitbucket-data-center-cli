@@ -31,7 +31,7 @@ func expectUpdateURLError(t *testing.T, err error, kind apperrors.Kind, want str
 func TestUpdateURLsAreHTTPSOnlyUntilSomeoneAsks(t *testing.T) {
 	t.Setenv(settingAllowHTTPUpdate.environment, "")
 
-	permission, err := resolveUpdateHTTPPermission(PolicyConfig{}, nil)
+	permission, err := resolveUpdateHTTPPermission(PolicyConfig{}, nil, "")
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestPlainHTTPNeedsAnExplicitOptIn(t *testing.T) {
 	t.Run("the flag permits it", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "")
 
-		permission, err := resolveUpdateHTTPPermission(PolicyConfig{}, httpOptIn(true))
+		permission, err := resolveUpdateHTTPPermission(PolicyConfig{}, httpOptIn(true), "")
 		if err != nil {
 			t.Fatalf("resolve: %v", err)
 		}
@@ -77,7 +77,7 @@ func TestPlainHTTPNeedsAnExplicitOptIn(t *testing.T) {
 	t.Run("the environment variable permits it", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "1")
 
-		permission, err := resolveUpdateHTTPPermission(PolicyConfig{}, nil)
+		permission, err := resolveUpdateHTTPPermission(PolicyConfig{}, nil, "")
 		if err != nil {
 			t.Fatalf("resolve: %v", err)
 		}
@@ -89,7 +89,7 @@ func TestPlainHTTPNeedsAnExplicitOptIn(t *testing.T) {
 	t.Run("the flag outranks the environment variable", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "true")
 
-		permission, err := resolveUpdateHTTPPermission(PolicyConfig{}, httpOptIn(false))
+		permission, err := resolveUpdateHTTPPermission(PolicyConfig{}, httpOptIn(false), "")
 		if err != nil {
 			t.Fatalf("resolve: %v", err)
 		}
@@ -101,8 +101,11 @@ func TestPlainHTTPNeedsAnExplicitOptIn(t *testing.T) {
 	t.Run("a value that is not a boolean is refused", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "sometimes")
 
-		_, err := resolveUpdateHTTPPermission(PolicyConfig{}, nil)
-		expectUpdateURLError(t, err, apperrors.KindValidation, "BB_ALLOW_HTTP_UPDATE must be a boolean")
+		_, err := resolveUpdateHTTPPermission(PolicyConfig{}, nil, "")
+		expectUpdateURLError(t, err, apperrors.KindValidation, "BB_ALLOW_HTTP_UPDATE must be true or false (or 1 or 0)")
+		if strings.Contains(err.Error(), "strconv") {
+			t.Fatalf("the error leaks the parser's own message: %v", err)
+		}
 	})
 }
 
@@ -113,35 +116,35 @@ func TestAllowHTTPUpdatePolicyOverridesTheUser(t *testing.T) {
 	t.Run("false refuses the flag", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "")
 
-		_, err := resolveUpdateHTTPPermission(forbid, httpOptIn(true))
-		expectUpdateURLError(t, err, apperrors.KindAuthorization, "--allow-http is refused: plain-HTTP update URLs are disabled by administrative policy")
+		_, err := resolveUpdateHTTPPermission(forbid, httpOptIn(true), "the system configuration file /etc/bb/config.yaml")
+		expectUpdateURLError(t, err, apperrors.KindAuthorization, "--allow-http is refused: plain-HTTP update URLs are disabled by administrative policy (allow_http_update in the system configuration file /etc/bb/config.yaml)")
 	})
 
 	t.Run("false refuses the environment variable", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "1")
 
-		_, err := resolveUpdateHTTPPermission(forbid, nil)
+		_, err := resolveUpdateHTTPPermission(forbid, nil, "")
 		expectUpdateURLError(t, err, apperrors.KindAuthorization, "BB_ALLOW_HTTP_UPDATE is refused")
 	})
 
 	t.Run("false refuses a plain-HTTP URL nobody opted into", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "")
 
-		permission, err := resolveUpdateHTTPPermission(forbid, nil)
+		permission, err := resolveUpdateHTTPPermission(forbid, nil, `HKEY_LOCAL_MACHINE\Software\Policies\bb`)
 		if err != nil {
 			t.Fatalf("resolve: %v", err)
 		}
 		if permission.Allowed || !permission.ForbiddenByPolicy {
 			t.Fatalf("permission = %+v, want forbidden by policy", permission)
 		}
-		expectUpdateURLError(t, permission.CheckURL("http://mirror.corp.internal/bb"), apperrors.KindAuthorization, "which administrative policy forbids (allow_http_update)")
+		expectUpdateURLError(t, permission.CheckURL("http://mirror.corp.internal/bb"), apperrors.KindAuthorization, `which administrative policy forbids (allow_http_update in HKEY_LOCAL_MACHINE\Software\Policies\bb)`)
 		expectUpdateURLError(t, permission.CheckURL("https://mirror.corp.internal/bb"), "", "")
 	})
 
 	t.Run("false accepts an opt-in set to false", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "")
 
-		if _, err := resolveUpdateHTTPPermission(forbid, httpOptIn(false)); err != nil {
+		if _, err := resolveUpdateHTTPPermission(forbid, httpOptIn(false), ""); err != nil {
 			t.Fatalf("--allow-http=false asks for nothing policy forbids, got %v", err)
 		}
 	})
@@ -149,7 +152,7 @@ func TestAllowHTTPUpdatePolicyOverridesTheUser(t *testing.T) {
 	t.Run("true permits plain HTTP without an opt-in", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "")
 
-		permission, err := resolveUpdateHTTPPermission(permit, nil)
+		permission, err := resolveUpdateHTTPPermission(permit, nil, "")
 		if err != nil {
 			t.Fatalf("resolve: %v", err)
 		}
@@ -161,7 +164,7 @@ func TestAllowHTTPUpdatePolicyOverridesTheUser(t *testing.T) {
 	t.Run("true is not undone by the user", func(t *testing.T) {
 		t.Setenv(settingAllowHTTPUpdate.environment, "false")
 
-		permission, err := resolveUpdateHTTPPermission(permit, httpOptIn(false))
+		permission, err := resolveUpdateHTTPPermission(permit, httpOptIn(false), "")
 		if err != nil {
 			t.Fatalf("resolve: %v", err)
 		}
@@ -189,7 +192,8 @@ func TestAllowHTTPUpdateIsReadFromTheSystemConfiguration(t *testing.T) {
 			t.Setenv(settingAllowHTTPUpdate.environment, "")
 
 			_, err := ResolveUpdateHTTPPermission(httpOptIn(true))
-			expectUpdateURLError(t, err, apperrors.KindAuthorization, "disabled by administrative policy")
+			// The refusal names the file, so a user knows what to ask about.
+			expectUpdateURLError(t, err, apperrors.KindAuthorization, "allow_http_update in the system configuration file "+systemPath)
 		})
 	}
 }
