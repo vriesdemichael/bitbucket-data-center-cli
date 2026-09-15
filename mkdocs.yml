@@ -63,6 +63,10 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.inlinehilite
   - pymdownx.details
+  # Content tabs (=== "Bash"). Without it the cheatsheet's shell completion tabs
+  # render as literal text, and a strict build does not notice.
+  - pymdownx.tabbed:
+      alternate_style: true
 
 validation:
   nav:
