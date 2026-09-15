@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -147,6 +148,15 @@ func (client *Client) Download(ctx context.Context, assetURL string) ([]byte, er
 	}
 
 	body, err := client.fetchAsset(ctx, resolvedURL)
+	if refused, ok := refusal(err); ok && mirrorURL != "" && mirrorURL != resolvedURL {
+		// The manifest's own address was refused rather than unreachable. The
+		// refusal names the fix, so it is reported as it is, once.
+		return nil, apperrors.New(
+			refused.Kind,
+			fmt.Sprintf("release asset %s could not be downloaded from the mirror at %s, and the manifest's own address for it is refused: %s", path.Base(mirrorURL), mirrorURL, refused.Message),
+			nil,
+		)
+	}
 	if err != nil && mirrorURL != "" && mirrorURL != resolvedURL {
 		// Both addresses failed. The mirror is the one the operator configured,
 		// so its failure is the one worth reporting.
@@ -188,6 +198,9 @@ func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byt
 
 	response, err := client.http.Do(request)
 	if err != nil {
+		if refused, ok := refusal(err); ok {
+			return nil, refused
+		}
 		return nil, apperrors.Transport("failed to download release asset", err)
 	}
 	defer func() { _ = response.Body.Close() }()
@@ -216,6 +229,9 @@ func (client *Client) do(ctx context.Context, method, requestURL string, out any
 
 	response, err := client.http.Do(request)
 	if err != nil {
+		if refused, ok := refusal(err); ok {
+			return refused
+		}
 		return apperrors.Transport("failed to fetch release metadata", err)
 	}
 	defer func() { _ = response.Body.Close() }()
@@ -234,6 +250,18 @@ func (client *Client) do(ctx context.Context, method, requestURL string, out any
 	}
 
 	return nil
+}
+
+// refusal returns the error a transport refused a request with, as opposed to
+// one it failed with. A URL the updater may not fetch is not a network problem
+// to retry, and the url.Error and "failed to download" around it would only
+// repeat the URL and the kind.
+func refusal(err error) (*apperrors.AppError, bool) {
+	var classified *apperrors.AppError
+	if errors.As(err, &classified) && (classified.Kind == apperrors.KindValidation || classified.Kind == apperrors.KindAuthorization) {
+		return classified, true
+	}
+	return nil, false
 }
 
 func decodeJSON(body []byte, out any) error {

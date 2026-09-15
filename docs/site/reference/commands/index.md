@@ -11599,7 +11599,7 @@ Usage:
 
 Flags:
       --allow-http        Permit a plain-HTTP release mirror; refused when administrative policy sets allow_http_update: false
-      --base-url string   Custom release mirror base URL
+      --base-url string   Custom release mirror base URL; https unless --allow-http
 ```
 
 ??? note "Global flags"
