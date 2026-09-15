@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -552,9 +553,17 @@ func TestLivePRRebase(t *testing.T) {
 
 	// The target has to move, or there is nothing to rebase onto and the
 	// command could report success without doing anything.
+	//
+	// Bitbucket takes the move in asynchronously: it rescopes the pull request
+	// and bumps its version after the push has returned (#598). A rebase sent
+	// before that finds the pull request still on its old target and answers
+	// that there is nothing to rebase, which is how this failed on a loaded CI
+	// runner. So wait for the bump, and fail rather than rebase too early.
+	versionBefore := currentLivePRVersion(t, prID)
 	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", "moved-ahead.txt", "the target moved\n"); err != nil {
 		t.Fatalf("advancing master failed: %v", err)
 	}
+	waitForLivePRVersionAbove(t, prID, versionBefore)
 
 	before := currentLivePRSourceCommit(t, prID)
 
@@ -585,6 +594,30 @@ func TestLivePRRebase(t *testing.T) {
 	// The pull request catches up, and how long that takes is Bitbucket's
 	// business rather than a reason to fail.
 	waitForLivePRSourceCommit(t, prID, toHash)
+}
+
+// waitForLivePRVersionAbove waits for Bitbucket to bump the pull request's
+// version past the one given, which it does once it has rescoped the pull
+// request after its target moved.
+func waitForLivePRVersionAbove(t *testing.T, prID, version string) {
+	t.Helper()
+
+	floor, err := strconv.Atoi(version)
+	if err != nil {
+		t.Fatalf("pull request version %q is not a number: %v", version, err)
+	}
+
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		got := currentLivePRVersion(t, prID)
+		if current, err := strconv.Atoi(got); err == nil && current > floor {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the pull request is still at version %s; Bitbucket did not rescope it after its target moved (want above %s)", got, version)
+		}
+		time.Sleep(time.Second)
+	}
 }
 
 // TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict is the boundary on
