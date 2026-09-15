@@ -86,6 +86,10 @@ type PolicyConfig struct {
 	AllowInsecureSkipVerify *bool    `yaml:"allow_insecure_skip_verify,omitempty"`
 	DisableUpdate           *bool    `yaml:"disable_update,omitempty"`
 	UpdateBaseURL           string   `yaml:"update_base_url,omitempty"`
+	// AllowHTTPUpdate decides whether bb update may fetch over plain HTTP.
+	// Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE; set, it
+	// decides for every user. See ResolveUpdateHTTPPermission.
+	AllowHTTPUpdate *bool `yaml:"allow_http_update,omitempty"`
 	// MCPAuditFile mandates where `bb ai mcp serve` writes its audit trail.
 	// When set, the server audits whether or not --audit-file is passed, and
 	// rejects a --audit-file naming a different path.
@@ -115,6 +119,7 @@ type SystemConfigFile struct {
 	AllowInsecureSkipVerify *bool                    `yaml:"allow_insecure_skip_verify,omitempty"`
 	DisableUpdate           *bool                    `yaml:"disable_update,omitempty"`
 	UpdateBaseURL           string                   `yaml:"update_base_url,omitempty"`
+	AllowHTTPUpdate         *bool                    `yaml:"allow_http_update,omitempty"`
 	MCPAuditFile            string                   `yaml:"mcp_audit_file,omitempty"`
 	UpdateTrustedRoot       string                   `yaml:"update_trusted_root,omitempty"`
 	UpdateTUFURL            string                   `yaml:"update_tuf_url,omitempty"`
@@ -142,6 +147,7 @@ func (sys SystemConfigFile) PolicyConfig() PolicyConfig {
 		AllowInsecureSkipVerify: sys.AllowInsecureSkipVerify,
 		DisableUpdate:           sys.DisableUpdate,
 		UpdateBaseURL:           sys.UpdateBaseURL,
+		AllowHTTPUpdate:         sys.AllowHTTPUpdate,
 		MCPAuditFile:            sys.MCPAuditFile,
 		UpdateTrustedRoot:       sys.UpdateTrustedRoot,
 		UpdateTUFURL:            sys.UpdateTUFURL,
@@ -279,6 +285,7 @@ var (
 	settingRequestTimeout     = runtimeSetting{"BB_REQUEST_TIMEOUT", "--request-timeout"}
 	settingRetryCount         = runtimeSetting{"BB_RETRY_COUNT", "--retry-count"}
 	settingRetryBackoff       = runtimeSetting{"BB_RETRY_BACKOFF", "--retry-backoff"}
+	settingAllowHTTPUpdate    = runtimeSetting{"BB_ALLOW_HTTP_UPDATE", "--allow-http"}
 )
 
 // nameFor is nameOf against the sources this configuration was resolved from.
@@ -1247,6 +1254,9 @@ func mergePolicy(target *PolicyConfig, source PolicyConfig) {
 	if strings.TrimSpace(source.UpdateBaseURL) != "" {
 		target.UpdateBaseURL = strings.TrimSpace(source.UpdateBaseURL)
 	}
+	if source.AllowHTTPUpdate != nil {
+		target.AllowHTTPUpdate = source.AllowHTTPUpdate
+	}
 	if strings.TrimSpace(source.MCPAuditFile) != "" {
 		target.MCPAuditFile = strings.TrimSpace(source.MCPAuditFile)
 	}
@@ -1427,6 +1437,101 @@ func ResolveUpdateBaseURL(flagValue string) (string, error) {
 		return normalizeURL(policy.UpdateBaseURL), nil
 	}
 	return "https://api.github.com", nil
+}
+
+// UpdateHTTPPermission is whether bb update may fetch over plain HTTP, and what
+// decided it.
+//
+// The default is https only. A release mirror serves the binary bb is about to
+// execute, and over plain HTTP anyone on the network path can read, delay or
+// withhold what it serves -- and, once allow_unverified_update has dropped
+// signature verification, replace it. So plain HTTP is something a person asks
+// for, and something administrative policy can refuse outright.
+type UpdateHTTPPermission struct {
+	// Allowed reports that http:// update URLs are accepted.
+	Allowed bool
+	// ForbiddenByPolicy reports allow_http_update: false.
+	ForbiddenByPolicy bool
+	// Source names what permitted plain HTTP, for the warning bb update prints.
+	Source string
+}
+
+// ResolveUpdateHTTPPermission decides whether bb update may use plain HTTP.
+//
+// allow_http_update decides when policy sets it, in both directions: false
+// refuses the user's opt-in, and true permits plain HTTP for every user without
+// one. Unset, --allow-http outranks BB_ALLOW_HTTP_UPDATE, and neither means
+// https only.
+//
+// There is deliberately no configuration file key for users. A workspace file
+// arrives with a cloned repository, and plain HTTP to a release mirror is not
+// something to accept on a repository's say-so.
+func ResolveUpdateHTTPPermission(allowHTTPFlag *bool) (UpdateHTTPPermission, error) {
+	policy, err := LoadPolicy()
+	if err != nil {
+		return UpdateHTTPPermission{}, err
+	}
+	return resolveUpdateHTTPPermission(policy, allowHTTPFlag)
+}
+
+func resolveUpdateHTTPPermission(policy PolicyConfig, allowHTTPFlag *bool) (UpdateHTTPPermission, error) {
+	sourced := map[string]bool{}
+	requested, err := resolveBool(sourced, settingAllowHTTPUpdate, allowHTTPFlag, false)
+	if err != nil {
+		return UpdateHTTPPermission{}, apperrors.New(apperrors.KindValidation, nameOf(sourced, settingAllowHTTPUpdate)+" must be a boolean", err)
+	}
+
+	switch {
+	case policy.AllowHTTPUpdate != nil && *policy.AllowHTTPUpdate:
+		return UpdateHTTPPermission{Allowed: true, Source: "the allow_http_update policy"}, nil
+	case policy.AllowHTTPUpdate != nil && requested:
+		return UpdateHTTPPermission{}, apperrors.New(
+			apperrors.KindAuthorization,
+			nameOf(sourced, settingAllowHTTPUpdate)+" is refused: plain-HTTP update URLs are disabled by administrative policy (allow_http_update)",
+			nil,
+		)
+	case policy.AllowHTTPUpdate != nil:
+		return UpdateHTTPPermission{ForbiddenByPolicy: true}, nil
+	case requested:
+		return UpdateHTTPPermission{Allowed: true, Source: nameOf(sourced, settingAllowHTTPUpdate)}, nil
+	default:
+		return UpdateHTTPPermission{}, nil
+	}
+}
+
+// CheckURL holds a URL bb update is about to fetch to this permission: it must
+// be absolute, and https unless plain HTTP is allowed.
+//
+// bb update applies it to every request it sends, not only to the configured
+// base URL. The asset URLs a manifest names and each hop of a redirect are
+// addresses the mirror chose, and an https mirror redirecting to plain HTTP
+// would otherwise undo the check.
+func (permission UpdateHTTPPermission) CheckURL(rawURL string) error {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return apperrors.New(apperrors.KindValidation, fmt.Sprintf("update URL %q must be an absolute https URL", rawURL), err)
+	}
+	// Redacted, because a URL can carry a password and this one is printed.
+	shown := parsed.Redacted()
+	if parsed.Host == "" {
+		return apperrors.New(apperrors.KindValidation, fmt.Sprintf("update URL %q must be an absolute https URL", shown), nil)
+	}
+
+	switch strings.ToLower(parsed.Scheme) {
+	case "https":
+		return nil
+	case "http":
+		switch {
+		case permission.Allowed:
+			return nil
+		case permission.ForbiddenByPolicy:
+			return apperrors.New(apperrors.KindAuthorization, fmt.Sprintf("update URL %q uses plain HTTP, which administrative policy forbids (allow_http_update)", shown), nil)
+		default:
+			return apperrors.New(apperrors.KindValidation, fmt.Sprintf("update URL %q uses plain HTTP; pass --allow-http or set BB_ALLOW_HTTP_UPDATE=1 to permit it", shown), nil)
+		}
+	default:
+		return apperrors.New(apperrors.KindValidation, fmt.Sprintf("update URL %q must be an absolute https URL", shown), nil)
+	}
 }
 
 // UpdateTrust describes who is allowed to vouch for a new bb binary, and how

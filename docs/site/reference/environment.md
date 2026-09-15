@@ -110,6 +110,7 @@ not a person who can answer a question.
 |---|---|---|
 | `BB_DISABLE_UPDATE` | unset | `1` or `true` disables `bb update`. The command explains that it is disabled and points at your system package manager. Administrative policy can disable it too, and is reported separately. |
 | `BB_UPDATE_BASE_URL` | GitHub releases | Base URL the updater fetches manifests and artifacts from, for an internal mirror. The `--base-url` flag wins over it; it wins over the workspace, stored and system configuration. |
+| `BB_ALLOW_HTTP_UPDATE` | unset | `1` or `true` permits a plain-HTTP release mirror, as `bb update --allow-http` does for one run; update URLs are otherwise `https` only. Refused when policy sets `allow_http_update: false`. |
 
 !!! note "Update trust is settable from system policy only"
 
@@ -122,7 +123,9 @@ not a person who can answer a question.
 
     `BB_DISABLE_UPDATE` and `BB_UPDATE_BASE_URL` are honoured because neither
     weakens verification: the first only refuses to update, and an artifact from
-    a mirror still has to pass the same signature check.
+    a mirror still has to pass the same signature check. `BB_ALLOW_HTTP_UPDATE`
+    weakens the connection rather than the signature check, and policy can
+    refuse it.
 
 ## Output and diagnostics
 

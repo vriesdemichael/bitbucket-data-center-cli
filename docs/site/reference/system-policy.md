@@ -38,6 +38,7 @@ policies:
 | `allow_insecure_skip_verify` | boolean | When `false`, `--insecure-skip-verify` cannot be enabled. |
 | `disable_update` | boolean | Disable `bb update` machine-wide. |
 | `update_base_url` | string | Base URL of an internal release manifest and asset mirror. |
+| `allow_http_update` | boolean | Whether `bb update` may fetch over plain HTTP. `false` refuses `http://` update URLs and `--allow-http` for every user; `true` permits plain HTTP for every user. See below. |
 | `mcp_audit_file` | string | Mandate where `bb ai mcp serve` writes its JSON Lines audit trail. Accepts a path or the literal `stderr`. |
 | `update_trusted_root` | string | Path to a Sigstore `trusted_root.json`, so release signatures verify without reaching the Sigstore TUF CDN. |
 | `update_tuf_url` | string | Base URL of an internally mirrored Sigstore TUF repository. Mutually exclusive with `update_trusted_root`. |
@@ -67,6 +68,8 @@ Policy does not fail silently, and the message names policy as the reason:
   `bb` prints a warning saying policy mandates keyring storage.
 - `bb update` under `disable_update` exits `3` (`authorization`) and says to use
   the system package manager.
+- `--allow-http` or `BB_ALLOW_HTTP_UPDATE` under `allow_http_update: false`
+  exits `3`, and so does an `http://` update URL.
 
 ## `update_base_url` is a default, not a mandate
 
@@ -77,6 +80,19 @@ mirror to anyone who has not chosen one, and does not pin them to it.
 
 Use `disable_update: true` where the requirement is that a machine never fetches
 its own binary. Setting `update_base_url` alone does not achieve that.
+
+## Update URLs are https unless someone asks for plain HTTP
+
+`bb update` fetches over `https` only: the base URL, every asset URL a manifest
+names, and every redirect along the way. A user permits plain HTTP explicitly,
+with `bb update --allow-http` or `BB_ALLOW_HTTP_UPDATE=1`, and every run that
+uses it warns on stderr. There is no configuration file key for it, because a
+workspace file arrives with a cloned repository.
+
+`allow_http_update` overrides the user in both directions when policy sets it.
+`false` refuses the opt-in and every `http://` update URL, whatever the user
+passes. `true` permits plain HTTP for everyone, for a fleet whose internal
+mirror has no TLS.
 
 ## Update trust is settable from policy only
 

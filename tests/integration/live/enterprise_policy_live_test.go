@@ -228,7 +228,29 @@ func TestLiveEnterpriseUpdateControls(t *testing.T) {
 	}))
 	defer mirrorServer.Close()
 
-	output, err = executeLiveCLI(t, "--json", "update", "--dry-run", "--base-url", mirrorServer.URL)
+	// httptest serves plain HTTP, which bb update refuses until someone asks
+	// for it -- and refuses before it sends anything.
+	_, err = executeLiveCLI(t, "--json", "update", "--dry-run", "--base-url", mirrorServer.URL)
+	if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "--allow-http") {
+		t.Fatalf("expected a plain-HTTP mirror to be refused without --allow-http, got %v", err)
+	}
+	if mirrorContacted {
+		t.Fatal("the refused plain-HTTP mirror was contacted")
+	}
+
+	// Policy decides for every user: allow_http_update: false refuses the opt-in.
+	if err := os.WriteFile(policyPath, []byte("allow_http_update: false\n"), 0o600); err != nil {
+		t.Fatalf("write policy: %v", err)
+	}
+	_, err = executeLiveCLI(t, "--json", "update", "--dry-run", "--base-url", mirrorServer.URL, "--allow-http")
+	if !apperrors.IsKind(err, apperrors.KindAuthorization) || mirrorContacted {
+		t.Fatalf("expected allow_http_update: false to refuse --allow-http before contacting the mirror, got %v", err)
+	}
+	if err := os.WriteFile(policyPath, []byte("{}\n"), 0o600); err != nil {
+		t.Fatalf("write policy: %v", err)
+	}
+
+	output, err = executeLiveCLI(t, "--json", "update", "--dry-run", "--base-url", mirrorServer.URL, "--allow-http")
 	if !mirrorContacted {
 		t.Fatal("expected mirror server to be contacted by update command")
 	}

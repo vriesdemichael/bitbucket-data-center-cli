@@ -680,6 +680,7 @@ func (r resolution) settings() []DiagnosedSetting {
 		r.policySetting("allowed_hosts", "AllowedHosts", "", policyList(func(p PolicyConfig) []string { return p.AllowedHosts })),
 		r.policySetting("allow_insecure_skip_verify", "AllowInsecureSkipVerify", "true", policyFlag(func(p PolicyConfig) *bool { return p.AllowInsecureSkipVerify })),
 		r.disableUpdate(),
+		r.policySetting("allow_http_update", "AllowHTTPUpdate", "", policyFlag(func(p PolicyConfig) *bool { return p.AllowHTTPUpdate })),
 		// The registry has no value for mcp_audit_file (ADR-058, point 6).
 		r.policySetting("mcp_audit_file", "", "", policyText(func(p PolicyConfig) string { return p.MCPAuditFile })),
 	)
@@ -979,7 +980,29 @@ func (r resolution) updateBaseURL() DiagnosedSetting {
 		candidates[index].value = normalizeURL(candidates[index].value)
 	}
 
-	return resolveSetting("update_base_url", "https://api.github.com", candidates...)
+	setting := resolveSetting("update_base_url", "https://api.github.com", candidates...)
+	// bb update refuses a base URL it may not fetch from, so say so here rather
+	// than on the next update. --allow-http belongs to bb update and cannot be
+	// seen from here; policy and BB_ALLOW_HTTP_UPDATE can.
+	if err := r.updateHTTPPermission().CheckURL(setting.Value); err != nil {
+		setting.Problem = apperrors.MessageOf(err)
+	}
+
+	return setting
+}
+
+// updateHTTPPermission follows ResolveUpdateHTTPPermission for a run without
+// --allow-http.
+func (r resolution) updateHTTPPermission() UpdateHTTPPermission {
+	if r.policy.AllowHTTPUpdate != nil {
+		return UpdateHTTPPermission{Allowed: *r.policy.AllowHTTPUpdate, ForbiddenByPolicy: !*r.policy.AllowHTTPUpdate}
+	}
+	if variable := r.in.fromProcessEnvironment(settingAllowHTTPUpdate.environment); len(variable) > 0 {
+		allowed, err := strconv.ParseBool(variable[0].value)
+		return UpdateHTTPPermission{Allowed: err == nil && allowed}
+	}
+
+	return UpdateHTTPPermission{}
 }
 
 func (r resolution) fromRegistry(name, value string) []settingCandidate {

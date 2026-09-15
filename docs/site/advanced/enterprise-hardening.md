@@ -70,7 +70,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
 
 2. **Enterprise Update Controls and Release Mirrors ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md))**:
    - **Disabling In-Place Self-Updates**: On managed corporate machines where software must be installed exclusively through IT package managers (e.g. Jamf, Ansible, Intune, SCCM), disable `bb update` by setting `disable_update: true` in system configuration or `export BB_DISABLE_UPDATE=1`. Alternatively, deploy the `_noupdate` builds described below, which cannot self-update whatever the configuration says.
-   - **Internal Release Mirrors**: In firewalled or air-gapped enterprise enclaves, configure `bb update` to query internal mirrors (e.g. JFrog Artifactory, Sonatype Nexus) instead of `api.github.com` via `--base-url <url>`, `BB_UPDATE_BASE_URL`, or `update_base_url` in system/user config. A mirror alone is not sufficient on a host with no internet access: pair it with an offline trust root, below.
+   - **Internal Release Mirrors**: In firewalled or air-gapped enterprise enclaves, configure `bb update` to query internal mirrors (e.g. JFrog Artifactory, Sonatype Nexus) instead of `api.github.com` via `--base-url <url>`, `BB_UPDATE_BASE_URL`, or `update_base_url` in system/user config. A mirror alone is not sufficient on a host with no internet access: pair it with an offline trust root, below. Mirror URLs must be `https`: a plain-HTTP mirror needs `bb update --allow-http` or `BB_ALLOW_HTTP_UPDATE=1`, and `allow_http_update: false` in system configuration refuses it for every user (`true` permits it fleet-wide).
    - **Offline Signature Verification ([ADR-063](../adr/063-offline-release-signature-verification.md))**: By default, `bb update` fetches Sigstore trust material from `https://tuf-repo-cdn.sigstore.dev` on every run. Deploy a `trusted_root.json` alongside the corporate CA bundle and point at it to verify releases with no internet access at all:
      ```yaml
      update_trusted_root: /etc/bb/trusted_root.json
@@ -560,6 +560,9 @@ Confirm:
 | `the system configuration at ... could not be read` | The system configuration file is malformed, typically from a provisioning template or a partial write. bb fails closed rather than run without the policy. | Run `bb doctor` on the host: it lists every problem in the file with its line (see [Checking the configuration](../troubleshooting.md#checking-the-configuration)). Redeploy the corrected file. Users cannot work around it, by design. |
 | A policy setting is not enforced | The key is in a user or workspace configuration file, which bb reads no policy from. | Run `bb doctor`: it lists the key as `ignored` in that file, and names the source each policy setting comes from. Move the key to the system configuration. |
 | `update_tuf_url must be an absolute https URL` | The configured mirror is a bare hostname, a relative path, or plain `http`. | Give the full origin, for example `https://artifactory.corp.internal/tuf`. |
+| `uses plain HTTP; pass --allow-http or set BB_ALLOW_HTTP_UPDATE=1 to permit it` | The update base URL, an asset URL in the mirror's manifest, or a redirect uses `http://`. | Serve the mirror over `https`, or opt in explicitly for a mirror that has no TLS. |
+| `plain-HTTP update URLs are disabled by administrative policy` | `--allow-http` or `BB_ALLOW_HTTP_UPDATE` was set on a host whose policy sets `allow_http_update: false`. | Serve the mirror over `https`; the policy exists so the fleet cannot fall back to plain HTTP. |
+| `which administrative policy forbids (allow_http_update)` | An update URL uses `http://` and policy sets `allow_http_update: false`. | Serve the mirror over `https`. |
 
 ---
 
