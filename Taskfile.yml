@@ -266,7 +266,7 @@ tasks:
     # The one check with no substitute here. bb ships signed binaries to five
     # package managers, and nothing in the pipeline would otherwise surface a
     # CVE in a transitive dependency.
-    cmd: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+    cmd: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
 
   quality:format:verify:
     desc: Verify the Go tree is gofmt-clean
