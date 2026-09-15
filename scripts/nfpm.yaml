@@ -1,4 +1,5 @@
-# Template consumed by `nfpm package` during the Release workflow.
+# Template consumed by `nfpm package` in .github/workflows/release-artifacts.yml,
+# which builds the release artifacts for a release and on every pull request.
 # nfpm expands ${VAR} at runtime; the workflow exports PKG_ARCH, PKG_VERSION
 # and PKG_BINARY for each Linux architecture before invoking nfpm.
 #
