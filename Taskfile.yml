@@ -6,6 +6,13 @@ version: '3'
 # developer who believes a gate passed. The workflow sources this same file.
 dotenv: ['.github/coverage-thresholds.env', '.github/tool-versions.env']
 
+env:
+  # Material for MkDocs prints an advisory about MkDocs 2.0 on every build. It
+  # is not about this site: mkdocs is pinned to 1.6.x, and Dependabot leaves a
+  # major bump for review. Every mkdocs and mike run goes through a task, CI and
+  # the release included, so this silences it everywhere.
+  NO_MKDOCS_2_WARNING: "1"
+
 vars:
   OAPI_CODEGEN_VERSION: v2.4.1
   # The Bitbucket release under test lives in exactly one place, the harness base
