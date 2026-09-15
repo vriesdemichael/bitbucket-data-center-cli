@@ -93,11 +93,12 @@ failing partway through seeding with `License limit exceeded`. See
 
 ## Making a change
 
-**Branch from `main`.** `main` requires a pull request; direct pushes are
-rejected.
+**Branch from `next`.** Every change targets `next`, which collects work into the
+next release; `main` moves only when `next` is promoted to it (ADR-066). Both
+require a pull request; direct pushes are rejected.
 
 **Use [Conventional Commits](https://www.conventionalcommits.org/).** The commit
-type determines whether merging your PR publishes a release, so it is worth
+type decides the version of the release your change ships in, so it is worth
 getting right:
 
 | Type | Effect on release |
@@ -112,13 +113,13 @@ Non-releasing commits are not second-class — they simply ship with the next
 changes that actually break the CLI contract: a removed or renamed command or
 flag, a changed exit code, or a change to the `bb.machine` JSON envelope.
 
-**Keep history linear.** Rebase onto `main`; never merge `main` into your
+**Keep history linear.** Rebase onto `next`; never merge `next` into your
 branch. This is a convention rather than a gate: the check that enforced it
 existed to keep committed coverage artifacts from conflicting on every rebase,
 and ADR-045 deleted those artifacts.
 
 ```bash
-git fetch origin && git rebase origin/main
+git fetch origin && git rebase origin/next
 ```
 
 **Add a live test for new commands.** A command with no live test — or one whose

@@ -7,11 +7,12 @@ decision: >
   conventional commits only, and rebase-based integration.
   History rewriting is permitted on PR branches but never on main.
 agent_instructions: >
-  Never commit directly to main. Work on PR branches from latest origin/main.
+  Never commit directly to main. Work on PR branches from latest origin/next, which every change
+  targets (ADR-066).
   Do not use merge commits or squash merges; use rebase-based merges.
   Keep commit messages conventional and meaningful for changelog generation.
   You may amend/rebase/force-with-lease on PR branches to clean history.
-  Rebase PR branches on latest main before merge.
+  Rebase PR branches on latest next before merge.
 rationale: >
   Linear rebase-only history improves readability, bisectability, and release automation.
   Conventional commit discipline ensures changelog quality and predictable versioning behavior.

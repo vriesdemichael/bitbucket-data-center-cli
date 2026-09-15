@@ -6,9 +6,12 @@ decision: >
   Dependabot proposes dependency updates and .github/workflows/dependabot-automerge.yml approves and
   rebase-merges them once CI is green. This is deliberate: a green run is accepted as sufficient
   evidence that an update is safe, without a human reading the diff.
-  Three things are held for a person instead: major version bumps, any update whose type will not
-  parse, and the Bitbucket product image whatever its update type, because the tag under test is a
-  user-facing support claim (ADR-042).
+  Four things are held for a person instead: major version bumps, any update whose type will not
+  parse, the Bitbucket product image whatever its update type, because the tag under test is a
+  user-facing support claim (ADR-042), and any pull request not based on `next`. Updates are
+  proposed against `next` like every other change (ADR-066); one based elsewhere is usually a
+  security update, which Dependabot opens against `main` regardless, and is retargeted rather than
+  merged there.
   Every GitHub Action is pinned to the full commit of a release, with the release named in a comment
   beside it. A tag can be moved by whoever owns it, and the release workflow runs with a token that
   publishes signed binaries; a commit cannot be moved. Dependabot reads the comment and proposes the

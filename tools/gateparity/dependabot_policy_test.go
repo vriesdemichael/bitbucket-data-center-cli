@@ -17,14 +17,19 @@ const (
 	// harnessDirectory is the Dependabot directory that watches the Dockerfile
 	// carrying the Bitbucket base image tag (ADR-042).
 	harnessDirectory = "/docker/harness"
+
+	// dependabotTargetBranch is the branch every update is proposed against: the
+	// integration branch, like any other change (ADR-066).
+	dependabotTargetBranch = "next"
 )
 
-// dependabotConfig is the subset of .github/dependabot.yml this test reads.
+// dependabotConfig is the subset of .github/dependabot.yml these tests read.
 type dependabotConfig struct {
 	Updates []struct {
-		Ecosystem string `yaml:"package-ecosystem"`
-		Directory string `yaml:"directory"`
-		Ignore    []struct {
+		Ecosystem    string `yaml:"package-ecosystem"`
+		Directory    string `yaml:"directory"`
+		TargetBranch string `yaml:"target-branch"`
+		Ignore       []struct {
 			DependencyName string `yaml:"dependency-name"`
 		} `yaml:"ignore"`
 	} `yaml:"updates"`
@@ -139,6 +144,80 @@ func TestBitbucketImageIsProposedButNotAutoMerged(t *testing.T) {
 					"ADR-069 holds it whatever the update type; a mention that no longer declines the\n"+
 					"merge leaves a Bitbucket bump to land unattended.",
 				dependabotAutomergePath,
+			)
+		}
+	})
+}
+
+// TestDependabotProposesUpdatesAgainstNext asserts that dependency updates reach
+// next and not main, in both files that decide it.
+//
+// The proposal half: every entry in .github/dependabot.yml sets target-branch to
+// next. Without it Dependabot opens its pull requests against the default
+// branch, and an update merged into main moves main ahead of next. next can then
+// be promoted only after every commit on it is rebased, where the same update
+// rebased onto next would have cost nothing.
+//
+// The adoption half: dependabot-automerge.yml declines a pull request based on
+// any other branch. Dependabot opens security updates against the default
+// branch whatever its configuration says, so the configuration alone cannot keep
+// them off main. Like the product-image hold above, this reads the workflow as
+// text: it proves the hold is written, not that the script still reaches it.
+func TestDependabotProposesUpdatesAgainstNext(t *testing.T) {
+	t.Parallel()
+
+	root := repositoryRoot(t)
+
+	t.Run("every update targets next", func(t *testing.T) {
+		raw, err := os.ReadFile(filepath.Join(root, dependabotConfigPath))
+		if err != nil {
+			t.Fatalf("read %s: %v", dependabotConfigPath, err)
+		}
+
+		var config dependabotConfig
+		if err := yaml.Unmarshal(raw, &config); err != nil {
+			t.Fatalf("parse %s: %v", dependabotConfigPath, err)
+		}
+		if len(config.Updates) == 0 {
+			t.Fatalf("%s declares no updates", dependabotConfigPath)
+		}
+
+		for _, update := range config.Updates {
+			if update.TargetBranch == dependabotTargetBranch {
+				continue
+			}
+			t.Errorf(
+				"%s: the %s update for %s has target-branch %q, not %q.\n"+
+					"Without it Dependabot opens pull requests against main. Merged there, an update\n"+
+					"moves main ahead of next, and next cannot fast-forward onto main again until\n"+
+					"every commit on it is rebased (ADR-066).",
+				dependabotConfigPath, update.Ecosystem, update.Directory, update.TargetBranch, dependabotTargetBranch,
+			)
+		}
+	})
+
+	t.Run("auto-merge holds a pull request based elsewhere", func(t *testing.T) {
+		lines := readLines(t, filepath.Join(root, dependabotAutomergePath))
+
+		baseCheck := regexp.MustCompile(`base\??\.ref\s*!==\s*'` + dependabotTargetBranch + `'`)
+		held := false
+		for index, line := range lines {
+			if !baseCheck.MatchString(line) {
+				continue
+			}
+			for _, following := range lines[index:min(index+8, len(lines))] {
+				if strings.Contains(following, "should_merge") && strings.Contains(following, "'false'") {
+					held = true
+				}
+			}
+		}
+
+		if !held {
+			t.Errorf(
+				"%s does not decline a pull request whose base is not %s.\n"+
+					"Dependabot opens security updates against main whatever %s says, and the\n"+
+					"workflow would merge them there, moving main ahead of next (ADR-066, ADR-069).",
+				dependabotAutomergePath, dependabotTargetBranch, dependabotConfigPath,
 			)
 		}
 	})

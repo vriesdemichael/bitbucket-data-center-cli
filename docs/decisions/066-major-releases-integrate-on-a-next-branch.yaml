@@ -7,9 +7,12 @@ decision: >
   published only when `next` reaches `main`.
 
   1. Where work goes:
-     - Every change targets `next`, whatever version it would cut. Only `dependabot/*` and
+     - Every change targets `next`, whatever version it would cut, dependency updates included:
+       every entry in .github/dependabot.yml sets `target-branch: next`. Only `dependabot/*` and
        `hotfix/*` may open a pull request into `main`, and only carrying no breaking change; the
-       release-flow job refuses everything else and says so. An earlier wording sent patches and
+       release-flow job refuses everything else and says so. Dependabot still opens security
+       updates against `main`, the default branch, whatever its configuration says; auto-merge
+       leaves those to a person, who retargets them (ADR-069). An earlier wording sent patches and
        non-breaking work straight to `main`, which the gate has not permitted since it was
        enforced.
      - Grouping is the reason, and it is not only about majors. ADR-033 cuts a release from every
@@ -58,9 +61,9 @@ decision: >
      - The full suite runs on `next`, including the live tests. A branch that will become a release
        is not a place for a reduced gate.
 agent_instructions: >
-  Target `next` for anything belonging to the next major, and `main` for v3.x patches and
-  non-breaking work. When unsure, ask whether the change would fail a command line that works today;
-  if it would, it belongs on `next`. This is enforced rather than trusted: the release-flow job in
+  Target `next` for every change, a Dependabot pull request included: retarget one opened against
+  `main` rather than merging it there. Mark a change breaking when it would fail a command line that
+  works today. This is enforced rather than trusted: the release-flow job in
   ci.yml refuses a pull request into `main` from anything but `dependabot/*` or `hotfix/*`, and
   refuses any of those carrying a breaking commit. It reads the same classification the release
   workflow does (tools/conventionalcommits), so the gate and the version it protects cannot

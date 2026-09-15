@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: "gomod"
     directory: "/"
+    target-branch: "next"
     schedule:
       interval: "daily"
       time: "06:00"
@@ -21,6 +22,7 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "next"
     schedule:
       interval: "daily"
       time: "06:00"
@@ -31,6 +33,7 @@ updates:
 
   - package-ecosystem: "uv"
     directory: "/docs"
+    target-branch: "next"
     schedule:
       interval: "daily"
       time: "06:00"
@@ -48,6 +51,7 @@ updates:
 
   - package-ecosystem: "docker-compose"
     directory: "/docker"
+    target-branch: "next"
     schedule:
       interval: "daily"
       time: "06:00"
@@ -58,6 +62,7 @@ updates:
 
   - package-ecosystem: "docker"
     directory: "/docker/harness"
+    target-branch: "next"
     schedule:
       interval: "daily"
       time: "06:00"
