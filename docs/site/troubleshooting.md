@@ -200,6 +200,7 @@ disk and is the right answer in CI and containers.
 host "https://bitbucket.example.com" is not permitted by administrative policy
 insecure TLS verification is disabled by administrative policy
 overriding CA bundle is disabled by administrative policy
+--allow-http is refused: plain-HTTP update URLs are disabled by administrative policy (allow_http_update in the system configuration file /etc/bb/config.yaml)
 ```
 
 These come from a machine-wide configuration file that only an administrator can
@@ -207,7 +208,8 @@ write, and nothing you set in your own environment overrides them — that is th
 point of them. There is no local workaround, and looking for one wastes time.
 
 What the message is worth to you is the specific key it names, so you can ask
-for the right change: `allowed_hosts`, `allow_insecure_skip_verify`, `ca_file`.
+for the right change: `allowed_hosts`, `allow_insecure_skip_verify`, `ca_file`,
+`allow_http_update`.
 [System Policy](reference/system-policy.md) lists what each one controls.
 
 The exception is the CA bundle. `overriding CA bundle is disabled` also appears
@@ -222,6 +224,26 @@ your package manager would still believe the old version was installed, and the
 next upgrade or uninstall would act on that stale record. Update through the
 package manager instead. See
 [Builds With Self-Update Compiled Out](advanced/enterprise-hardening.md#builds-with-self-update-compiled-out).
+
+## `bb update` refuses a plain-HTTP mirror
+
+```text
+update URL "http://mirror.example.com/bb" uses plain HTTP; pass --allow-http or set BB_ALLOW_HTTP_UPDATE=1 to permit it
+```
+
+`bb update` fetches from release mirrors over `https` only. Serve the mirror over
+`https` if you can. If it has no TLS, permit plain HTTP for one run with
+`bb update --allow-http`, or for every run with `BB_ALLOW_HTTP_UPDATE=1`; each run
+then warns that anyone on the network path can read or withhold what the mirror
+serves.
+
+The refused URL is not always the one you configured. It can be a download the
+mirror's manifest points at, or an address the mirror redirects to, and the
+message says which.
+
+When the message says `--allow-http is refused` or `which administrative policy
+forbids`, the machine's policy sets `allow_http_update: false`, and the section
+above applies.
 
 ## A command exits non-zero and I need to know why
 
