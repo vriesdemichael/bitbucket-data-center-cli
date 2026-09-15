@@ -62,7 +62,6 @@ Linux amd64 example:
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.tar.gz"
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/sha256sums.txt"
 curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/sha256sums.txt.sigstore.json"
-curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.tar.gz.sigstore.json"
 cosign verify-blob \
 	--bundle sha256sums.txt.sigstore.json \
 	--certificate-identity "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main" \
@@ -79,45 +78,8 @@ artifact, so `--ignore-missing` verifies whichever you downloaded. To pin a
 release, swap `latest/download` for `download/[[ bb_version_tag ]]` and use the
 versioned names.
 
-Archive-level provenance verification remains available when you want to inspect a specific artifact directly:
-
-```bash
-cosign verify-blob \
-	--bundle bb_linux_amd64.tar.gz.sigstore.json \
-	--certificate-identity "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main" \
-	--certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-	bb_linux_amd64.tar.gz
-gh attestation verify bb_linux_amd64.tar.gz --repo vriesdemichael/bitbucket-data-center-cli
-```
-
-`bb update` now requires the signed checksum bundle. If Sigstore verification is unavailable or fails, self-update stops and you should use WinGet, Scoop, or manual release installation instead.
-
-### Software Bill of Materials
-
-Every archive has its own SPDX 2.3 SBOM, generated from the binary inside it and
-named after the archive. It is covered by `sha256sums.txt` and Sigstore-signed
-like every other artifact:
-
-```bash
-curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.spdx.json"
-curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.spdx.json.sigstore.json"
-cosign verify-blob \
-	--bundle bb_linux_amd64.spdx.json.sigstore.json \
-	--certificate-identity "https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main" \
-	--certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-	bb_linux_amd64.spdx.json
-```
-
-Each SBOM is also **attested against its archive**, which is the stronger claim:
-not just "here is an SBOM" but "this SBOM describes that binary", signed by the
-workflow that built both. The `.deb` and `.rpm` install the `_noupdate` binary
-and are attested with its SBOM, `bb_linux_amd64_noupdate.spdx.json`.
-
-```bash
-gh attestation verify bb_linux_amd64.tar.gz \
-	--repo vriesdemichael/bitbucket-data-center-cli \
-	--predicate-type https://spdx.dev/Document
-```
+Per-archive signatures, build provenance and SBOMs are covered in
+[Release Verification](advanced/enterprise-hardening.md#1-release-verification-pre-deployment).
 
 ## Authenticate to Bitbucket
 

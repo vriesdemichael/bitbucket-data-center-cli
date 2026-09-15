@@ -41,6 +41,19 @@ gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
   --predicate-type https://spdx.dev/Document
 ```
 
+To inspect an SBOM itself, download it and verify its signature like any other artifact:
+
+```bash
+VERSION="[[ bb_version ]]"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/v${VERSION}/bb_${VERSION}_linux_amd64.spdx.json"
+curl -LO "https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/v${VERSION}/bb_${VERSION}_linux_amd64.spdx.json.sigstore.json"
+cosign verify-blob \
+  --bundle "bb_${VERSION}_linux_amd64.spdx.json.sigstore.json" \
+  --certificate-identity 'https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  "bb_${VERSION}_linux_amd64.spdx.json"
+```
+
 ---
 
 ## 2. Fleet Security Controls
@@ -59,6 +72,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    allowed_hosts:
      - https://bitbucket.corp.internal
    allow_insecure_skip_verify: false
+   allow_http_update: false
    disable_update: true
    update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
    ```
@@ -67,6 +81,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    - `ca_file: <path>`: Mandates corporate Root CA bundle. Attempts to pass a conflicting CA file abort with an authorization error.
    - `allowed_hosts: [...]`: Whitelists permitted Bitbucket Server / Data Center instances. Connection attempts to unlisted hosts abort with an authorization error.
    - `allow_insecure_skip_verify: false`: Hard-refuses `--insecure-skip-verify` and `BB_INSECURE_SKIP_VERIFY=true`.
+   - `allow_http_update: false`: Hard-refuses plain-HTTP update URLs, `bb update --allow-http` and `BB_ALLOW_HTTP_UPDATE=1`.
 
 2. **Enterprise Update Controls and Release Mirrors ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md))**:
    - **Disabling In-Place Self-Updates**: On managed corporate machines where software must be installed exclusively through IT package managers (e.g. Jamf, Ansible, Intune, SCCM), disable `bb update` by setting `disable_update: true` in system configuration or `export BB_DISABLE_UPDATE=1`. Alternatively, deploy the `_noupdate` builds described below, which cannot self-update whatever the configuration says.
@@ -203,6 +218,7 @@ ca_file: /Library/Application Support/Corporate/Certs/corp-root-ca.pem
 allowed_hosts:
   - https://bitbucket.corp.internal
 allow_insecure_skip_verify: false
+allow_http_update: false
 disable_update: true
 EOF
 sudo chmod 644 /etc/bb/config.yaml
@@ -253,6 +269,7 @@ Linux workstations authenticate through the **Secret Service API over D-Bus** (G
           allowed_hosts:
             - https://bitbucket.corp.internal
           allow_insecure_skip_verify: false
+          allow_http_update: false
           disable_update: true
           update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
 ```
@@ -297,6 +314,7 @@ ca_file: $CertDir\corp-root-ca.pem
 allowed_hosts:
   - https://bitbucket.corp.internal
 allow_insecure_skip_verify: false
+allow_http_update: false
 disable_update: true
 update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
 "@ | Set-Content -Path "$ConfigDir\config.yaml" -Encoding UTF8
@@ -308,6 +326,7 @@ Set-ItemProperty -Path $RegPath -Name "RequireKeyring" -Value 1 -Type DWord
 Set-ItemProperty -Path $RegPath -Name "CAFile" -Value "$CertDir\corp-root-ca.pem" -Type String
 Set-ItemProperty -Path $RegPath -Name "AllowedHosts" -Value "https://bitbucket.corp.internal" -Type String
 Set-ItemProperty -Path $RegPath -Name "AllowInsecureSkipVerify" -Value 0 -Type DWord
+Set-ItemProperty -Path $RegPath -Name "AllowHTTPUpdate" -Value 0 -Type DWord
 Set-ItemProperty -Path $RegPath -Name "DisableUpdate" -Value 1 -Type DWord
 ```
 
@@ -562,7 +581,7 @@ Confirm:
 | `update_tuf_url must be an absolute https URL` | The configured mirror is a bare hostname, a relative path, or plain `http`. | Give the full origin, for example `https://artifactory.corp.internal/tuf`. |
 | `uses plain HTTP; pass --allow-http or set BB_ALLOW_HTTP_UPDATE=1 to permit it` | The update base URL, an asset URL in the mirror's manifest, or a redirect uses `http://`. | Serve the mirror over `https`, or opt in explicitly for a mirror that has no TLS. |
 | `plain-HTTP update URLs are disabled by administrative policy` | `--allow-http` or `BB_ALLOW_HTTP_UPDATE` was set on a host whose policy sets `allow_http_update: false`. | Serve the mirror over `https`; the policy exists so the fleet cannot fall back to plain HTTP. |
-| `which administrative policy forbids (allow_http_update)` | An update URL uses `http://` and policy sets `allow_http_update: false`. | Serve the mirror over `https`. |
+| `uses plain HTTP, which administrative policy forbids` | An update URL uses `http://` and policy sets `allow_http_update: false`. | Serve the mirror over `https`. |
 
 ---
 
