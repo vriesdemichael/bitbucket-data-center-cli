@@ -74,7 +74,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 063: Offline release signature verification and update trust policy](063-offline-release-signature-verification.md) (`architecture`, `accepted`)
 - [ADR 064: Machine output carries no contract version; breaking payload changes ride the release major](064-machine-output-carries-no-contract-version.md) (`architecture`, `accepted`)
 - [ADR 065: What the quality apparatus measures, and why each part exists](065-what-the-quality-apparatus-measures.md) (`development`, `accepted`)
-- [ADR 066: Major releases integrate on a next branch, and only main releases](066-major-releases-integrate-on-a-next-branch.md) (`development`, `accepted`)
+- [ADR 066: Every change integrates on next, and only main releases](066-major-releases-integrate-on-a-next-branch.md) (`development`, `accepted`)
 - [ADR 067: Governance tests are verified by breaking them](067-governance-tests-are-verified-by-breaking-them.md) (`development`, `accepted`)
 - [ADR 068: The vendored API reference is derived from the harness release](068-api-reference-derived-from-the-harness-release.md) (`architecture`, `accepted`)
 - [ADR 069: Dependabot updates merge themselves, except where held for a person](069-dependabot-updates-merge-themselves-except-where-held.md) (`development`, `accepted`)
