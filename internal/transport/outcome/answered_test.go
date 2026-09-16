@@ -15,9 +15,9 @@ import (
 // TestAStatusThatArrivedIsTheOutcome is a body that fails to read after the
 // server has already answered.
 //
-// It reported "no answer came back", exit 13, which sends the caller to check
-// whether a change they can see the status for was applied. The status says it
-// was; only the payload was lost.
+// It reported "no answer came back", exit 13, for a 4xx the caller could act
+// on: a refused change is refused, and checking whether it landed is a trip
+// for nothing. A 2xx stays unknown: see answered().
 func TestAStatusThatArrivedIsTheOutcome(t *testing.T) {
 	t.Parallel()
 
@@ -27,13 +27,17 @@ func TestAStatusThatArrivedIsTheOutcome(t *testing.T) {
 		kind    apperrors.Kind
 		message string
 	}{
-		"a created resource": {
+		// A 2xx is the one status that does not settle it. An SSO proxy answers
+		// an unauthenticated write with a redirect to a login page, which the
+		// client follows, so a 200 can belong to that page rather than to the
+		// POST -- and the body that would say which is the part that was lost.
+		"a status that says created": {
 			method: http.MethodPost, status: http.StatusCreated,
-			kind: apperrors.KindPermanent, message: "applied the POST and answered 201",
+			kind: apperrors.KindUnknownOutcome, message: "answered with 201",
 		},
 		"a refused change": {
 			method: http.MethodPost, status: http.StatusConflict,
-			kind: apperrors.KindPermanent, message: "refused the POST with 409",
+			kind: apperrors.KindPermanent, message: "refused with 409",
 		},
 		"a server error": {
 			method: http.MethodPost, status: http.StatusBadGateway,
