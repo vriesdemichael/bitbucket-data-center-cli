@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/044-git-credential-helper-instead-of-persisted-credentials/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/044-git-credential-helper-instead-of-persisted-credentials/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1053,9 +1218,9 @@
 <li>Source: <code>docs/decisions/044-git-credential-helper-instead-of-persisted-credentials.yaml</code></li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Authenticate git operations by implementing git's credential helper protocol in bb auth git-credential, configured per host by bb auth setup-git. Never write a credential into a repository's configuration. Credentials supplied to git for a single command are passed with git -c and scoped to the host being contacted, so they live only in that process's arguments. Any lookup whose result is handed to another program must resolve the host strictly, with no fallback to the configured default host.</p>
+<p>Authenticate git operations by implementing git's credential helper protocol in bb auth git-credential, configured per host by bb auth setup-git. Never write a credential into a repository's configuration. Credentials supplied to git for a single command are scoped to the host being contacted and passed in the child's environment, which only the owner of the process can read; a command line is readable by every local account. A git too old to read configuration from its environment takes them as arguments instead. Every credential lookup resolves the host strictly, with no fallback to the configured default host.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Do not write credentials into a repository. Specifically, do not set http.extraHeader, credential.helper store, or a remote URL containing a username and password as a way of making a clone authenticate later. If a git operation needs credentials, either pass them with git -c for that single invocation or rely on the credential helper. Scope every credential configuration to a host. A bare credential.helper or an unscoped http.extraHeader applies to every host git contacts, which turns a Bitbucket credential into one that is offered to unrelated remotes. Use config.LoadStoredAuthForHostStrict, never config.LoadStoredAuthForHost, whenever the resolved credential leaves bb. The non-strict lookup falls back to the configured default host by design so that bb's own commands work without --host; using it in an outward-facing path returns the default server's credentials for a host that was never configured. Keep the credential helper silent when it cannot help: no output and exit 0. A non-zero exit makes git treat the credential lookup as failed rather than falling through to another helper or prompting. Write nothing but protocol fields to stdout. Keep store and erase as accepted no-ops so git cannot write into or clear bb's keyring.</p>
+<p>Do not write credentials into a repository. Specifically, do not set http.extraHeader, credential.helper store, or a remote URL containing a username and password as a way of making a clone authenticate later. If a git operation needs credentials, either pass them to that single invocation through the child's environment or rely on the credential helper. Scope every credential configuration to a host. A bare credential.helper or an unscoped http.extraHeader applies to every host git contacts, which turns a Bitbucket credential into one that is offered to unrelated remotes. Resolve credentials with config.LoadStoredAuthForHostStrict. Do not reintroduce a lookup that falls back to the configured default host: the host is chosen by inputs an attacker reaches -- a .env file in any parent directory, a cloned repository's .bb/config.yaml, a URL given to bb api, and --host on an MCP server -- so a fallback offers the user's token to whichever host was named. Keep the credential helper silent when it cannot help: no output and exit 0. A non-zero exit makes git treat the credential lookup as failed rather than falling through to another helper or prompting. Write nothing but protocol fields to stdout. Keep store and erase as accepted no-ops so git cannot write into or clear bb's keyring.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>bb repo clone previously persisted an Authorization header containing a live token into every cloned repository's .git/config. That put a credential on disk in plaintext, defeating the keyring it was otherwise stored in, and an unscoped http.extraHeader is attached to every HTTP request git makes from that repository — so adding any unrelated HTTP remote caused the Bitbucket token to be sent to that host. The credential also never rotated, so revoking it broke every existing clone with an error that reads like a bad token. This was not hypothetical. The same mechanism had already written a test credential into this project's own repository configuration and broken pushes to github.com. A credential helper inverts the arrangement: git asks for a credential at the moment it needs one and nothing is stored, so the keyring stays the single source of truth and revocation takes effect immediately. The strict-lookup rule is recorded because the first implementation of the helper did not follow it, and consequently returned the Bitbucket token when git asked for github.com credentials — the precise failure the helper was written to prevent, reintroduced one layer up.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
@@ -1072,6 +1237,9 @@
 
 
 
+
+  
+  
 
 
 

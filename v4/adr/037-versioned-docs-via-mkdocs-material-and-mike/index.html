@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/037-versioned-docs-via-mkdocs-material-and-mike/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/037-versioned-docs-via-mkdocs-material-and-mike/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1053,15 +1218,19 @@
 <li>Source: <code>docs/decisions/037-versioned-docs-via-mkdocs-material-and-mike.yaml</code></li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Adopt MkDocs with the Material theme as the documentation framework and use mike for versioned deployments to GitHub Pages. Build docs in CI and publish versioned docs from the release workflow.</p>
+<p>Adopt MkDocs with the Material theme as the documentation framework and use mike for versioned deployments to GitHub Pages. Build docs in CI and publish versioned docs from the release workflow.
+The site is versioned by major. A release deploys to its major version, v4.0.1 to v4, replacing that major's previous build, so the version selector holds one entry per major. The entry's title is the full release version, and the full version is also kept as an alias of the major, so a link naming a release resolves to the newest build of its major. The <code>latest</code> alias follows the newest major and is the site's default.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Keep docs source in a dedicated MkDocs docs directory and validate with strict builds. Use Taskfile tasks for docs build/serve/deploy workflows. In release automation, publish the computed release version and update a stable alias (for example <code>latest</code>). Prefer uv/uvx as the first-choice tooling for Python-based scripts and docs tasks; use docs/pyproject.toml dependency metadata rather than ad-hoc virtualenv setup.</p>
+<p>Keep docs source in a dedicated MkDocs docs directory and validate with strict builds. Use Taskfile tasks for docs build/serve/deploy workflows. Publish through <code>task docs:deploy-version</code>, which deploys to the major with the full version as title and alias and moves <code>latest</code>. Do not deploy a release as a mike version of its own. Prefer uv/uvx as the first-choice tooling for Python-based scripts and docs tasks; use docs/pyproject.toml dependency metadata rather than ad-hoc virtualenv setup.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>MkDocs Material provides a modern interface with minimal maintenance overhead in a Python-light repository, and mike adds simple versioned docs semantics that align with release tags. This supports incremental docs delivery while keeping publication automated.</p>
+<p>MkDocs Material provides a modern interface with minimal maintenance overhead in a Python-light repository, and mike adds simple versioned docs semantics that align with release tags. This supports incremental docs delivery while keeping publication automated.
+A selector entry per release grows without bound and stops being a list anyone can pick from. Within a major, a newer release's docs describe what a reader of an older one can use, so one build per major loses nothing a reader needs.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>Keep README-only documentation</code>: Not sufficient for scalable, navigable, versioned public docs.</li>
 <li><code>Use a Node-based docs stack</code>: Adds avoidable ecosystem/tooling overhead for this repository.</li>
+<li><code>Deploy each release as its own version and prune old ones</code>: Pruning is a second step every release has to remember, and the selector grows back whenever it is forgotten.</li>
+<li><code>Deploy to the major without keeping the full version as an alias</code>: Published schemas take their $id from the full version, and release notes link to it, so each of those addresses would stop resolving at the next release.</li>
 </ul>
 
 
@@ -1069,6 +1238,9 @@
 
 
 
+
+  
+  
 
 
 

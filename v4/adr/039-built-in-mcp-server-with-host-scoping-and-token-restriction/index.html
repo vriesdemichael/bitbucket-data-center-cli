@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1049,13 +1214,14 @@
 <li>Title: <code>Built-in MCP server with explicit host scoping and token capability restriction</code></li>
 <li>Category: <code>architecture</code></li>
 <li>Status: <code>accepted</code></li>
+<li>Amended By: <code>083</code></li>
 <li>Provenance: <code>guided-ai</code></li>
 <li>Source: <code>docs/decisions/039-built-in-mcp-server-with-host-scoping-and-token-restriction.yaml</code></li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Expose a curated set of high-value Bitbucket operations as MCP tools via bb ai mcp serve. The server uses stdio transport for IDE-native integration. When more than one Bitbucket server context is configured, --host is required and the server exits immediately with an actionable error if it is omitted. An optional --token flag scopes all API calls made by the server to the supplied PAT, restricting capabilities to that token's rights. An optional --tools allowlist and --exclude denylist allow further narrowing of the exposed tool surface. A companion bb ai mcp tools command lists all available tools with name, description and exposure to support allowlist/denylist construction. Tools are classified safe or unsafe. Safe tools have side-effects that are low-blast-radius and easily reversed — opening a pull request, adding a comment, submitting a review — and are exposed by default. Unsafe tools perform irreversible operations and are withheld unless --yolo (or its alias --allow-writes) is set. --tools takes precedence over the classification, so an operator can expose one unsafe tool without enabling all of them. This record does not enumerate the tools. mcp.AllSpecs() is the catalogue, bb ai mcp tools prints it with an EXPOSURE column, and an MCP client receives it at connect time.</p>
+<p>Expose a curated set of high-value Bitbucket operations as MCP tools via bb ai mcp serve. The server uses stdio transport for IDE-native integration. When more than one Bitbucket server context is configured, --host is required and the server exits immediately with an actionable error if it is omitted. An optional --token flag scopes all API calls made by the server to the supplied PAT, restricting capabilities to that token's rights. An optional --tools allowlist and --exclude denylist allow further narrowing of the exposed tool surface. A companion bb ai mcp tools command lists all available tools with name, description and exposure to support allowlist/denylist construction. Tools are classified safe or unsafe, by consequence rather than by whether they write. A tool is unsafe when its effect cannot be undone, causes a merge, or feeds a check that decides whether a merge is allowed: merging, enabling auto-merge, submitting a review, reporting a build status. Unsafe tools are withheld unless --yolo (or its alias --allow-writes) is set. Every other tool is safe and exposed by default, including tools that write but change no branch and cause no merge, such as opening a pull request, tagging a commit or disabling auto-merge. --tools takes precedence over the classification, so an operator can expose one unsafe tool without enabling all of them. This record does not enumerate the tools. mcp.AllSpecs() is the catalogue, bb ai mcp tools prints it with an EXPOSURE column, and an MCP client receives it at connect time.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When generating MCP server configuration for an IDE (e.g. VS Code, Cursor), always emit bb ai mcp serve as the server command. If the user has multiple Bitbucket instances configured (detectable via bb auth server list), prompt for --host before generating the config snippet. Document the --token flag as the recommended way to run a read-only MCP server instance: instruct users to create a read-only PAT and pass it via --token. Never silently pick one host when multiple are configured; always surface the ambiguity. Do not list tool names here or anywhere else that has to be maintained by hand. This record previously carried three tiers of them and drifted: it named a tool that has never existed, omitted five that do, and described two withheld-by-default tools as enabled by default. Read the catalogue from mcp.AllSpecs(), or run bb ai mcp tools. TestADRDoesNotNameToolsThatDoNotExist fails the build if a name appears here that the server does not implement, so the only names that may appear are real ones. When a new tool is added, set Safe according to whether its effect can be undone easily. That flag is what bb ai mcp tools reports and what the server filters on, so it is the whole of the safe-by-default behaviour.</p>
+<p>The --token flag this record describes was removed in v4: ADR-083. Scope the server by giving it its own read-only PAT as BITBUCKET_TOKEN in the MCP client's env block, never as a flag. When generating MCP server configuration for an IDE (e.g. VS Code, Cursor), always emit bb ai mcp serve as the server command. If the user has multiple Bitbucket instances configured (detectable via bb auth server list), prompt for --host before generating the config snippet. Give the server its own read-only PAT through the client's env block, and say so when generating configuration; the flag that once did this is gone. Never silently pick one host when multiple are configured; always surface the ambiguity. Do not list tool names here or anywhere else that has to be maintained by hand. This record previously carried three tiers of them and drifted: it named a tool that has never existed, omitted five that do, and described two withheld-by-default tools as enabled by default. Read the catalogue from mcp.AllSpecs(), or run bb ai mcp tools. TestADRDoesNotNameToolsThatDoNotExist fails the build if a name appears here that the server does not implement, so the only names that may appear are real ones. When a new tool is added, set Safe false when its effect cannot be undone, causes a merge, or feeds a merge check; TestGatedToolsAreTheOnesThatMergeOrGate holds the gated set to that rule. Safe is not read-only, and bb ai mcp tools reports whether a tool writes separately. Safe is what the server filters on, so it is the whole of the safe-by-default behaviour.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Stdio transport is the canonical IDE-native MCP transport; HTTP would require port management and is not supported out of the box by most IDE MCP clients. Explicit --host enforcement prevents silent use of the wrong Bitbucket instance in multi-tenant setups, which is a real failure mode in enterprise environments. Token-scoped servers allow teams to run a read-only instance alongside a write-enabled instance in the same IDE session without additional access-control logic inside the server itself. The tools/exclude flags put capability control in the hands of the user without requiring code changes.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
@@ -1071,6 +1237,9 @@
 
 
 
+
+  
+  
 
 
 

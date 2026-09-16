@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/067-governance-tests-are-verified-by-breaking-them/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/067-governance-tests-are-verified-by-breaking-them/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1070,12 +1235,21 @@
    - TestEveryADRCrossReferenceResolves: a record does not cite a record that does not exist.
    - TestAcceptedRecordsDoNotNameABitbucketVersion: a record in force does not restate a Bitbucket release.
    - TestBitbucketImageIsProposedButNotAutoMerged: the product image is proposed but held from auto-merge.
+   - TestDependabotProposesUpdatesAgainstNext: every Dependabot update targets next, and auto-merge leaves one opened elsewhere to a person.
+   - TestEveryActionIsPinnedToACommit: every workflow action is pinned to a release's commit, with the release named beside it.
+   - TestEveryReleasedPlatformHasItsSBOMsAttested: every platform the release builds has its archives attested with their SBOMs.
    - TestPolicyLoadingNeverCreatesTheSystemConfigDirectory: reading policy does not create its directory.
    - TestVerbClassificationExemptionsNameRealCommands: an exemption names a real command and gives a reason.
    - TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit: a package running git installs the guard.
    - TestOnlyTheSharedHelperDecidesInteractivity: only the shared helper asks whether a stream is a terminal.
    - TestEveryUseOfStandardInputIsAccountedFor: every place standard input is used is recorded.
    - TestNoServiceOptionIsCalledLimit: a service list option says whether it caps or pages.
+   - TestACappedListingSaysSoIsEnforced: a command that takes --limit reports reaching it, in JSON and in text.
+   - TestEveryLimitedToolSaysWhenItStopped: an MCP tool that takes a limit returns a required limit_reached.
+   - TestNoFailureIsWrappedAsTransient: a transport failure keeps its classification through the service that wraps it.
+   - TestAnEchoedFlagPublishesTheValuesItAccepts: a payload field that echoes an enum flag publishes the flag's values.
+   - TestAMissingArgumentIsNamed: a missing positional argument is named in the error.
+   - TestNoFixtureIsNamedFromTheClock: no test builds a fixture name from time.Now().
    - TestGovernanceTestsNamedInThisRecordExist: this list names only tests that exist.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
 <p>Break a governance test before adding it, and before trusting one you did not write. Record what the invariant is, what breaks it, and that you saw it fail. Add the test to the list above in the same change; a guard nobody can find is one nobody maintains. Do not write a test that compares a value to something derived from it. Check first whether the assertion is already true by construction; if it is, the code is where the guarantee lives. Do not describe a check as CI-safe. Every check can run anywhere since ADR-043 gave CI its own licensed Bitbucket; what separates the hook set from the CI-only set is the cost of booting the stack, not the ability to.</p>
@@ -1093,6 +1267,9 @@
 
 
 
+
+  
+  
 
 
 

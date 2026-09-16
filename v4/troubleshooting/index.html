@@ -1,0 +1,2048 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CLI automation for Bitbucket Data Center">
+      
+      
+      
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/troubleshooting/">
+      
+      
+        <link rel="prev" href="../basic-usage/">
+      
+      
+        <link rel="next" href="../gh-parity/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Troubleshooting - Bitbucket Data Center CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#troubleshooting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Bitbucket Data Center CLI" class="md-header__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Bitbucket Data Center CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Troubleshooting
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Bitbucket Data Center CLI" class="md-nav__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    Bitbucket Data Center CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation-and-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation and Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cheatsheet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Cheatsheet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../basic-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#start-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#no-bitbucket-host-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        no Bitbucket host configured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-stored-configuration-at-could-not-be-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        the stored configuration at ... could not be read
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="the stored configuration at ... could not be read">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#checking-the-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking the configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#git-asks-for-a-password-on-push-or-pull" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git asks for a password on push or pull
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#certificate-signed-by-unknown-authority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        certificate signed by unknown authority
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#os-keyring-is-unavailable-and-keyring-backed-storage-is-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OS keyring is unavailable and keyring-backed storage is required
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bitbucket-api-returned-401-authentication-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bitbucket API returned 401: Authentication failed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bitbucket-api-returned-401-you-are-not-currently-licensed-to-use-bitbucket" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bitbucket API returned 401: You are not currently licensed to use Bitbucket
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#repository-is-required-use-repo-projectslug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        repository is required (use --repo PROJECT/slug ...)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ambiguous-git-remote-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ambiguous git remote context ...
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-command-refuses-and-blames-administrative-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A command refuses and blames administrative policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bb-update-says-self-update-is-disabled-in-this-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb update says self-update is disabled in this build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bb-update-refuses-a-plain-http-mirror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb update refuses a plain-HTTP mirror
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-command-exits-non-zero-and-i-need-to-know-why" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A command exits non-zero and I need to know why
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-command-hangs-or-refuses-to-ask-me-something" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A command hangs, or refuses to ask me something
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nothing-here-matches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nothing here matches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Command Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/enterprise-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Hardening
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Architecture & Threat Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/repository-discovery-and-server-switching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Discovery and Server Switching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/bulk-operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bulk Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/dry-run-planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-Run Planning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/git-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/networks-proxies-and-tls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Networks, Proxies and TLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/machine-mode-diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Mode and Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/webhook-secrets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Secrets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai-and-llms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI and llms.txt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#start-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start here
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#no-bitbucket-host-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        no Bitbucket host configured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-stored-configuration-at-could-not-be-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        the stored configuration at ... could not be read
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="the stored configuration at ... could not be read">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#checking-the-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking the configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#git-asks-for-a-password-on-push-or-pull" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git asks for a password on push or pull
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#certificate-signed-by-unknown-authority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        certificate signed by unknown authority
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#os-keyring-is-unavailable-and-keyring-backed-storage-is-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OS keyring is unavailable and keyring-backed storage is required
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bitbucket-api-returned-401-authentication-failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bitbucket API returned 401: Authentication failed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bitbucket-api-returned-401-you-are-not-currently-licensed-to-use-bitbucket" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bitbucket API returned 401: You are not currently licensed to use Bitbucket
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#repository-is-required-use-repo-projectslug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        repository is required (use --repo PROJECT/slug ...)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ambiguous-git-remote-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ambiguous git remote context ...
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-command-refuses-and-blames-administrative-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A command refuses and blames administrative policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bb-update-says-self-update-is-disabled-in-this-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb update says self-update is disabled in this build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bb-update-refuses-a-plain-http-mirror" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb update refuses a plain-HTTP mirror
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-command-exits-non-zero-and-i-need-to-know-why" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A command exits non-zero and I need to know why
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-command-hangs-or-refuses-to-ask-me-something" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A command hangs, or refuses to ask me something
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nothing-here-matches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nothing here matches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h1>
+<p>Symptoms a person hits while using <code>bb</code>, and what to check first. Fleet-wide
+policy failures have their own table in
+<a href="../advanced/enterprise-hardening/#helpdesk-troubleshooting-guide">Enterprise Hardening</a>.</p>
+<h2 id="start-here">Start here<a class="headerlink" href="#start-here" title="Permanent link">&para;</a></h2>
+<p><code>bb auth status</code> answers most questions in one line: which host <code>bb</code> will talk
+to, how it authenticates, where the credential is stored, and whether the checks
+pass.</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>status
+</code></pre></div>
+<p>When something fails and the reason is not obvious, run it again with a trace on
+stderr. This never corrupts <code>--json</code> output on stdout:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>--log-level<span class="w"> </span>debug<span class="w"> </span>--log-format<span class="w"> </span>jsonl<span class="w"> </span>repo<span class="w"> </span>list
+</code></pre></div>
+<p>Every field in that trace is redacted before it is written. A field whose name
+contains <code>token</code>, <code>password</code>, <code>secret</code>, <code>authorization</code>, <code>cookie</code>, <code>apikey</code>,
+<code>api-key</code> or <code>credential</code> is replaced with <code>[REDACTED]</code>, and any value that
+parses as a URL has its embedded credentials and sensitive query parameters
+rewritten the same way.</p>
+<p>Two things that leaves in place, both worth checking before you send a trace
+anywhere:</p>
+<ul>
+<li><strong>URLs keep everything but their credentials.</strong> Only embedded userinfo and
+  sensitive query parameters are rewritten — the scheme, host, port and path
+  survive. A trace therefore contains your internal hostnames, and the project
+  keys and repository slugs in every request path.</li>
+<li><strong>Redaction is by field name.</strong> A secret pasted into free text under an
+  innocent-looking field is not caught, because nothing there looks like a
+  credential to a name match.</li>
+</ul>
+<p><strong>Read a trace before you send it to anyone.</strong></p>
+<p>To capture what the server answered rather than what <code>bb</code> did, set
+<code>BB_ERROR_HARVEST</code> to a file path and reproduce the problem once. It records the
+method, path, status and Bitbucket's own exception name — never request headers
+and never response bodies, only their size.</p>
+<!-- docs-lint: message-of bb -->
+
+<h2 id="no-bitbucket-host-configured"><code>no Bitbucket host configured</code><a class="headerlink" href="#no-bitbucket-host-configured" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>validation: no Bitbucket host configured: set BITBUCKET_URL or run &#39;bb auth login &lt;host&gt;&#39;
+</code></pre></div>
+<p>Nothing has been configured yet. Run <code>bb auth login</code>, or set <code>BITBUCKET_URL</code> and
+a credential.</p>
+<!-- docs-lint: message-of bb -->
+
+<h2 id="the-stored-configuration-at-could-not-be-read"><code>the stored configuration at ... could not be read</code><a class="headerlink" href="#the-stored-configuration-at-could-not-be-read" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>permanent: the stored configuration at /home/alice/.config/bb/config.yaml could not be read; run &#39;bb doctor&#39; to list every problem in it. Fix or remove that file; bb will not rewrite a file it could not read (invalid YAML configuration (yaml: line 5: found character that cannot start any token))
+</code></pre></div>
+<p>A configuration file exists and bb cannot read it -- a stray indent is enough.
+Every command stops here rather than carry on as if you had never logged in, and
+<code>bb auth login</code> and <code>bb auth logout</code> refuse to write over the file, so the other
+hosts in it are not lost. Repair it using the line the message names, or move it
+aside and log in again.</p>
+<p>The same message names a workspace's <code>.bb/config.yaml</code>. For the system file it
+says to ask your administrator instead: that file carries policy, and bb stops
+rather than run without it.</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>User</th>
+<th>System</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux</td>
+<td><code>~/.config/bb/config.yaml</code></td>
+<td><code>/etc/bb/config.yaml</code></td>
+</tr>
+<tr>
+<td>macOS</td>
+<td><code>~/Library/Application Support/bb/config.yaml</code></td>
+<td><code>/etc/bb/config.yaml</code></td>
+</tr>
+<tr>
+<td>Windows</td>
+<td><code>%APPDATA%\bb\config.yaml</code></td>
+<td><code>%ProgramData%\bb\config.yaml</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>BB_CONFIG_PATH</code> overrides the user file. In CI, <code>BB_DISABLE_STORED_CONFIG=1</code>
+skips it entirely, so a stray file on a shared runner cannot fail the run.</p>
+<h3 id="checking-the-configuration">Checking the configuration<a class="headerlink" href="#checking-the-configuration" title="Permanent link">&para;</a></h3>
+<p><code>bb doctor</code> reads the stored, workspace and system files each on its own, so it
+reports every problem in every file where a command stops at the first. It needs
+no host and no network, so it works when nothing else does:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>doctor
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Configuration files
+  stored     /home/alice/.config/bb/config.yaml
+             invalid: the schema rejects 1 key
+             line 6: hosts.corp.username: got number, want string
+             ignored: require_keyring is read only from the system configuration
+  workspace  none found above the working directory
+  system     /etc/bb/config.yaml
+             invalid: the schema rejects 1 key
+             line 2: policies.require_keyrng: unknown key
+</code></pre></div>
+<p>A misspelled key is valid YAML; the
+<a href="../reference/schemas/config.schema.json">configuration schema</a> is what rejects it,
+and <code>bb doctor</code> names each one with its line. A key spelled correctly in the
+wrong file is listed as <code>ignored</code>: policy in your own file mandates nothing.</p>
+<p>Below the files, <code>Settings</code> lists every effective setting, where it came from —
+a flag, an environment variable, a <code>.env</code> file, one of the files, the Windows
+registry or the default — and what it overrides. A token or password shows as
+configured, with where it is held, and never its value.</p>
+<p>It exits <code>0</code> only when there is nothing to fix; any issue it reports exits <code>1</code>.
+Under <code>--json</code>, a run with issues prints the failure envelope instead of the
+report: <code>error.message</code> summarises the issues, and <code>error.details</code> names each
+one under its own key, such as <code>violation/system/policies/require_keyrng</code> or
+<code>setting/retry_count</code>.</p>
+<h2 id="git-asks-for-a-password-on-push-or-pull">Git asks for a password on push or pull<a class="headerlink" href="#git-asks-for-a-password-on-push-or-pull" title="Permanent link">&para;</a></h2>
+<p><code>bb</code> installs itself as a git credential helper for one host, matched exactly —
+scheme and port included. A remote on a different spelling gets no answer.</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>remote<span class="w"> </span>-v
+git<span class="w"> </span>config<span class="w"> </span>--get-all<span class="w"> </span>credential.https://bitbucket.example.com.helper
+</code></pre></div>
+<p>Ask the helper directly what it would give git:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;protocol=https</span>
+<span class="s1">host=bitbucket.example.com</span>
+
+<span class="s1">&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>auth<span class="w"> </span>git-credential<span class="w"> </span>get
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="s2">&quot;protocol=https</span><span class="se">`n</span><span class="s2">host=bitbucket.example.com</span><span class="se">`n`n</span><span class="s2">&quot;</span> <span class="p">|</span> <span class="n">bb</span> <span class="n">auth</span> <span class="n">git-credential</span> <span class="n">get</span>
+</code></pre></div>
+<p>Working, it answers with the credential it would hand git:</p>
+<div class="highlight"><pre><span></span><code>username=alice
+password=&lt;your token&gt;
+</code></pre></div>
+<div class="admonition danger">
+<p class="admonition-title">That output is your token</p>
+<p>It is printed in full, because that is what git asks for. Do not paste it
+into an issue, a chat message or a screenshot.</p>
+</div>
+<p><strong>No output means <code>bb</code> has nothing stored for that host</strong> — run <code>bb auth login</code>
+for it. The silence is deliberate: it lets git fall through to another helper
+instead of failing outright.</p>
+<p>If another credential manager answers first, re-run <code>bb auth setup-git --force</code>,
+which replaces the helper configured for that host with <code>bb</code>. Without <code>--force</code>
+it refuses rather than overwrite somebody else's helper. See
+<a href="../advanced/git-authentication/">Git Authentication</a>.</p>
+<!-- docs-lint: message-of crypto/x509 -->
+
+<h2 id="certificate-signed-by-unknown-authority"><code>certificate signed by unknown authority</code><a class="headerlink" href="#certificate-signed-by-unknown-authority" title="Permanent link">&para;</a></h2>
+<p><code>bb</code> trusts the system store plus anything in <code>BB_CA_FILE</code>, which is <strong>added</strong>
+to that store rather than replacing it.</p>
+<p>A common variant: it works in a terminal and fails in an IDE, because a GUI
+application did not inherit your shell environment. Set <code>BB_CA_FILE</code> in the
+IDE's own environment block. See
+<a href="../advanced/networks-proxies-and-tls/">Networks, Proxies and TLS</a>.</p>
+<!-- docs-lint: message-of bb -->
+
+<h2 id="os-keyring-is-unavailable-and-keyring-backed-storage-is-required"><code>OS keyring is unavailable and keyring-backed storage is required</code><a class="headerlink" href="#os-keyring-is-unavailable-and-keyring-backed-storage-is-required" title="Permanent link">&para;</a></h2>
+<p>A headless Linux host, an SSH session, or a container. <code>bb</code> reaches the keyring
+through the freedesktop Secret Service API, so it needs two things on Linux: a
+D-Bus session bus, and a Secret Service provider listening on it. A session bus
+alone is not enough — with no provider there is nothing to answer, and the
+storage still fails.</p>
+<div class="highlight"><pre><span></span><code><span class="nb">eval</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>dbus-launch<span class="w"> </span>--sh-syntax<span class="k">)</span><span class="s2">&quot;</span>
+gnome-keyring-daemon<span class="w"> </span>--start<span class="w"> </span>--components<span class="o">=</span>secrets
+</code></pre></div>
+<p>The daemon also has to be <strong>unlocked</strong>. A login keyring created with a password
+stays locked until something supplies it, and a locked keyring refuses reads the
+same way a missing one does. <code>libsecret</code>, KWallet's Secret Service interface and
+<code>keepassxc</code> with Secret Service enabled all work in place of
+<code>gnome-keyring-daemon</code>.</p>
+<p><strong>On a server, in a container or in CI, do not do any of this.</strong> Supply the
+credential through <code>BITBUCKET_TOKEN</code> instead. It stores nothing on disk, needs
+no session bus, and satisfies a <code>BB_REQUIRE_KEYRING</code> policy, because there is no
+plaintext fallback to refuse.</p>
+<!-- docs-lint: message-of bb -->
+
+<h2 id="bitbucket-api-returned-401-authentication-failed"><code>bitbucket API returned 401: Authentication failed</code><a class="headerlink" href="#bitbucket-api-returned-401-authentication-failed" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>authentication: bitbucket API returned 401: Authentication failed. Please check your credentials and try again.
+</code></pre></div>
+<p>The token is wrong, revoked, or expired. Bitbucket personal access tokens can be
+created with an expiry, and nothing warns you as it approaches. Exit status is
+<code>3</code>, and the error <code>kind</code> is <code>authentication</code>.</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>status
+</code></pre></div>
+<p>That names the host the credential was tried against, which is the other half of
+the answer: a token that is valid on one instance is not on another. Create a
+replacement and store it:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>token-url<span class="w"> </span>--host<span class="w"> </span>https://bitbucket.example.com
+<span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;%s&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BB_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>auth<span class="w"> </span>login<span class="w"> </span>https://bitbucket.example.com<span class="w"> </span>--token-stdin
+</code></pre></div>
+<p>If <code>BITBUCKET_TOKEN</code> is set in your environment it wins over anything stored, so
+logging in again changes nothing until you unset it. <code>bb auth status</code> reports
+which one is in use as <code>source=env</code> rather than <code>source=stored</code>.</p>
+<!-- docs-lint: message-of bb -->
+
+<h2 id="bitbucket-api-returned-401-you-are-not-currently-licensed-to-use-bitbucket"><code>bitbucket API returned 401: You are not currently licensed to use Bitbucket</code><a class="headerlink" href="#bitbucket-api-returned-401-you-are-not-currently-licensed-to-use-bitbucket" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>authorization: bitbucket API returned 401: You are not currently licensed to use Bitbucket.
+Please contact your administrator to resolve this issue.
+</code></pre></div>
+<p>The credential is valid and the account is not licensed. Bitbucket answers this
+with <code>401</code> rather than <code>403</code>, but it is not an authentication problem: the error
+<code>kind</code> is <code>authorization</code>, because logging in again cannot fix it. Only an
+administrator granting the licence can.</p>
+<p>The same <code>kind</code> covers a licensed account that lacks a permission, which
+Bitbucket also reports as <code>401</code>:</p>
+<div class="highlight"><pre><span></span><code>authorization: bitbucket API returned 401: You are not permitted to access this resource
+</code></pre></div>
+<p>Both exit <code>3</code>. To tell them apart in a script, read <code>error.details.upstreamException</code>
+under <code>--json</code>: a licence problem is <code>NoAccessAuthenticationException</code> and a
+permission problem is <code>AuthorisationException</code>. Branch on that rather than on the
+wording, which Bitbucket rewrites between releases.</p>
+<!-- docs-lint: message-of bb -->
+
+<h2 id="repository-is-required-use-repo-projectslug"><code>repository is required (use --repo PROJECT/slug ...)</code><a class="headerlink" href="#repository-is-required-use-repo-projectslug" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>validation: repository is required (use --repo PROJECT/slug or set BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
+</code></pre></div>
+<p>The command needs a repository and could not work one out. <code>bb</code> infers one from
+the git remotes of the directory you are standing in, so this means either you
+are not inside a Bitbucket clone, or its remotes point somewhere <code>bb</code> has no
+host configured for. Name the repository instead:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>pr<span class="w"> </span>list<span class="w"> </span>--repo<span class="w"> </span>PROJECT/my-repo
+</code></pre></div>
+<p><code>git remote -v</code> shows what <code>bb</code> had to work with. A URL on a hostname that is
+not your configured Bitbucket host — an SSH clone host on a different name, for
+instance — is not matched; <code>bb auth alias add</code> teaches <code>bb</code> that the two are the
+same instance.</p>
+<!-- docs-lint: message-of bb -->
+
+<h2 id="ambiguous-git-remote-context"><code>ambiguous git remote context ...</code><a class="headerlink" href="#ambiguous-git-remote-context" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>validation: ambiguous git remote context (origin=PROJ/api@https://bitbucket.example.com, upstream=PLATFORM/api@https://bitbucket.example.com); specify --repo PROJECT/slug and/or set active server with auth server use --host
+</code></pre></div>
+<p>The clone has remotes naming more than one repository and <code>bb</code> will not pick. A
+side remote next to <code>origin</code> is not ambiguous — <code>origin</code> wins, which is git's
+own convention — but an <code>upstream</code> remote is the deliberate exception, because
+the convention that puts a fork on <code>origin</code> puts the repository people work
+against on <code>upstream</code>. There is no defensible default between the two.</p>
+<p>The message lists every candidate it found, as <code>remote=PROJECT/slug@host</code>. Pass
+<code>--repo PROJECT/slug</code> for the one you meant. When the candidates differ by host
+rather than by repository, <code>bb auth server use</code> sets which instance is the
+default.</p>
+<h2 id="a-command-refuses-and-blames-administrative-policy">A command refuses and blames administrative policy<a class="headerlink" href="#a-command-refuses-and-blames-administrative-policy" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>host &quot;https://bitbucket.example.com&quot; is not permitted by administrative policy
+insecure TLS verification is disabled by administrative policy
+overriding CA bundle is disabled by administrative policy
+--allow-http is refused: plain-HTTP update URLs are disabled by administrative policy (allow_http_update in the system configuration file /etc/bb/config.yaml)
+</code></pre></div>
+<p>These come from a machine-wide configuration file that only an administrator can
+write, and nothing you set in your own environment overrides them — that is the
+point of them. There is no local workaround, and looking for one wastes time.</p>
+<p>What the message is worth to you is the specific key it names, so you can ask
+for the right change: <code>allowed_hosts</code>, <code>allow_insecure_skip_verify</code>, <code>ca_file</code>,
+<code>allow_http_update</code>.
+<a href="../reference/system-policy/">System Policy</a> lists what each one controls.</p>
+<p>The exception is the CA bundle. <code>overriding CA bundle is disabled</code> also appears
+when you have set <code>BB_CA_FILE</code> yourself and it differs from the mandated one;
+unsetting yours resolves it, because omitting it uses the mandated bundle.</p>
+<h2 id="bb-update-says-self-update-is-disabled-in-this-build"><code>bb update</code> says self-update is disabled in this build<a class="headerlink" href="#bb-update-says-self-update-is-disabled-in-this-build" title="Permanent link">&para;</a></h2>
+<p>Not policy — the binary itself. Installs from WinGet, Scoop and Homebrew are
+<code>_noupdate</code> builds, with self-update compiled out: if <code>bb</code> replaced its own file,
+your package manager would still believe the old version was installed, and the
+next upgrade or uninstall would act on that stale record. Update through the
+package manager instead. See
+<a href="../advanced/enterprise-hardening/#builds-with-self-update-compiled-out">Builds With Self-Update Compiled Out</a>.</p>
+<h2 id="bb-update-refuses-a-plain-http-mirror"><code>bb update</code> refuses a plain-HTTP mirror<a class="headerlink" href="#bb-update-refuses-a-plain-http-mirror" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>update URL &quot;http://mirror.example.com/bb&quot; uses plain HTTP; pass --allow-http or set BB_ALLOW_HTTP_UPDATE=1 to permit it
+</code></pre></div>
+<p><code>bb update</code> fetches from release mirrors over <code>https</code> only. Serve the mirror over
+<code>https</code> if you can. If it has no TLS, permit plain HTTP for one run with
+<code>bb update --allow-http</code>, or for every run with <code>BB_ALLOW_HTTP_UPDATE=1</code>; each run
+then warns that anyone on the network path can read or withhold what the mirror
+serves.</p>
+<p>The refused URL is not always the one you configured. It can be a download the
+mirror's manifest points at, or an address the mirror redirects to, and the
+message says which.</p>
+<p>When the message says <code>--allow-http is refused</code> or <code>which administrative policy
+forbids</code>, the machine's policy sets <code>allow_http_update: false</code>, and the section
+above applies.</p>
+<h2 id="a-command-exits-non-zero-and-i-need-to-know-why">A command exits non-zero and I need to know why<a class="headerlink" href="#a-command-exits-non-zero-and-i-need-to-know-why" title="Permanent link">&para;</a></h2>
+<p>Exit codes are deterministic by error kind:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>2</code></td>
+<td><code>validation</code>, including unknown flags and commands</td>
+</tr>
+<tr>
+<td><code>3</code></td>
+<td><code>authentication</code> or <code>authorization</code></td>
+</tr>
+<tr>
+<td><code>4</code></td>
+<td><code>not_found</code></td>
+</tr>
+<tr>
+<td><code>5</code></td>
+<td><code>conflict</code></td>
+</tr>
+<tr>
+<td><code>10</code></td>
+<td><code>transient</code></td>
+</tr>
+<tr>
+<td><code>11</code></td>
+<td><code>not_implemented</code></td>
+</tr>
+<tr>
+<td><code>12</code></td>
+<td><code>cancelled</code>: the command was interrupted</td>
+</tr>
+<tr>
+<td><code>13</code></td>
+<td><code>unknown_outcome</code>: the request reached the server and no usable answer came back; check whether it was applied before running it again</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td><code>permanent</code> (including a rejected TLS certificate or a host that does not resolve), <code>internal</code>, or unknown</td>
+</tr>
+</tbody>
+</table>
+<p>Under <code>--json</code> the failure arrives as an envelope with an <code>error</code> key instead of
+<code>data</code>, carrying the same kind. See
+<a href="../advanced/machine-mode-diagnostics/#error-kinds-and-exit-codes">Machine Mode and Diagnostics</a>.</p>
+<h2 id="a-command-hangs-or-refuses-to-ask-me-something">A command hangs, or refuses to ask me something<a class="headerlink" href="#a-command-hangs-or-refuses-to-ask-me-something" title="Permanent link">&para;</a></h2>
+<p><code>bb</code> prompts only when it decides a person is present, and treats <code>CI</code>,
+<code>TERM=dumb</code> and a list of coding harnesses as proof that nobody is. When it will
+not prompt, it fails naming the flag that would have supplied the value rather
+than guessing.</p>
+<p>To force that behaviour, pass <code>--no-input</code> or set <code>BB_NO_PROMPT</code>. If your CI
+harness is one <code>bb</code> has not heard of, name its variable in <code>BB_NO_PROMPT_VARS</code>.
+See <a href="../reference/environment/#interactivity">Interactivity</a>.</p>
+<h2 id="nothing-here-matches">Nothing here matches<a class="headerlink" href="#nothing-here-matches" title="Permanent link">&para;</a></h2>
+<p>Open an issue with the command you ran, what it printed, and a trace from
+<code>bb --log-level debug --log-format jsonl &lt;your command&gt;</code>. Include <code>bb --version</code>
+and the target from <code>bb auth status</code>.</p>
+<p>Before attaching anything, read it through and remove:</p>
+<ul>
+<li><strong>Tokens and passwords.</strong> The trace redacts fields it recognises by name, but
+  not a secret sitting in free text, and <code>bb auth git-credential get</code> prints your
+  token in full by design.</li>
+<li><strong>Internal hostnames and URLs</strong>, if your instance is not public. A hostname is
+  usually not needed to reproduce a problem; <code>https://bitbucket.example.com</code> in
+  its place loses nothing.</li>
+<li><strong>Project keys, repository names and usernames</strong> that reveal work you cannot
+  share.</li>
+</ul>
+<p><code>BB_ERROR_HARVEST</code> output is the safest thing to attach: it records the method,
+path, status and Bitbucket's exception name, and never a request header or a
+response body.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../reference/environment/">Environment Variables</a></li>
+<li><a href="../reference/system-policy/">System Policy</a></li>
+<li><a href="../advanced/machine-mode-diagnostics/">Machine Mode and Diagnostics</a></li>
+<li><a href="../advanced/git-authentication/">Git Authentication</a></li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.top", "navigation.tracking", "navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

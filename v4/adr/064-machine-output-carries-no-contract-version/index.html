@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/064-machine-output-carries-no-contract-version/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/064-machine-output-carries-no-contract-version/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1054,7 +1219,7 @@
 <li>Source: <code>docs/decisions/064-machine-output-carries-no-contract-version.yaml</code></li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>The machine envelope carries no constant fields. The contract version is removed, and so is meta.contract, which named the format and never varied. meta.bbVersion is added, reporting the binary that produced the document: provenance for an operator reading stored output, not a compatibility switch. Nothing in bb branches on it and nothing outside bb should. What identifies the document is its shape -- meta.bbVersion, and exactly one of data or error. Compatibility rides the release major instead. Adding a field to data is additive. Removing or renaming one, changing its type, or changing whether it can be null is breaking, and the commit must carry a ! or a BREAKING CHANGE footer so the release automation cuts a major. Whether a change is breaking is therefore computed from the schemas rather than judged, so the guarantee is exactly as wide as the commands that have one. Making that total is the point of deriving each schema from a typed result the command already builds, rather than maintaining schema files by hand. The MCP surface is out of scope. ADR-061's per-tool contracts stay: an agent connecting to bb ai mcp serve does not choose the binary and cannot pin, so in-band declaration does real work there. The two surfaces get different answers on purpose.</p>
+<p>The machine envelope carries no constant fields. The contract version is removed, and so is meta.contract, which named the format and never varied. meta.bbVersion is added, reporting the binary that produced the document: provenance for an operator reading stored output, not a compatibility switch. Nothing in bb branches on it and nothing outside bb should. What identifies the document is its shape -- meta.bbVersion, and exactly one of data or error. Compatibility rides the release major instead. Adding a field to data is additive, and so is adding one to meta: meta is open, while the set of top-level members is closed. Removing or renaming one, changing its type, or changing whether it can be null is breaking, and the commit must carry a ! or a BREAKING CHANGE footer so the release automation cuts a major. Whether a change is breaking is therefore computed from the schemas rather than judged, so the guarantee is exactly as wide as the commands that have one. Making that total is the point of deriving each schema from a typed result the command already builds, rather than maintaining schema files by hand. The MCP surface is out of scope. ADR-061's per-tool contracts stay: an agent connecting to bb ai mcp serve does not choose the binary and cannot pin, so in-band declaration does real work there. The two surfaces get different answers on purpose.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
 <p>Do not add a version field to the envelope, and do not reintroduce one per command. When changing a data payload, ask whether an existing consumer breaks. If it does, mark the commit breaking. The release version is the only compatibility signal consumers have, so an unmarked break reaches them silently through package managers and bb update. If the command you are changing has no schema, add one in the same change. A diff cannot see a payload it does not have.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
@@ -1072,6 +1237,9 @@
 
 
 
+
+  
+  
 
 
 

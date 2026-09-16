@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/081-an-issue-closes-when-its-fix-ships/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/081-an-issue-closes-when-its-fix-ships/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1055,15 +1220,16 @@
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>An issue closes when the release carrying its fix is published, not when the fix merges.
 On main this needs nothing: a Closes footer reaching main closes the issue and the release follows in the same push. On next GitHub does not close from a non-default branch, and that gap is the mechanism -- the issue stays open for the whole integration window and closes when next reaches main. It is not closed by hand in the meantime.
-A staged fix is marked rather than closed: the label staged-on-next, and one comment naming the pull request and the milestone. One label across every major; the milestone names the release.
+A staged fix is marked rather than closed: the label "staged on next", and one comment naming the pull request and the milestone. One label across every major; the milestone names the release.
 The closing keyword goes in the commit body, not only in the pull request description. main takes rebase merges, so the commit message is what arrives on the default branch.
-Remaining work is the query is:open milestone:vN.0.0 -label:staged-on-next. The milestone progress bar reads zero until the major lands, and the tracking issue holds the ordering.
+Remaining work is the query is:open milestone:vN.0.0 -label:"staged on next". The milestone progress bar reads zero until the major lands, and the tracking issue holds the ordering.
 The release workflow closes what the keywords missed: on publish it closes the milestone's open issues with a link to the release, then closes the milestone.
 This takes effect after v4.0.0. That major was worked the other way throughout -- its issues were closed as their fixes merged to next -- and switching for the last few would leave one board holding both conventions while the reason for the record, a reporter who can tell shipped from merged, is already lost for that release.
-Two things have to exist before it can be followed: the staged-on-next label, and the closing step in the release workflow. Neither does yet.</p>
+One keyword per issue. GitHub reads <code>Closes #1, #2</code> as one reference and closes the first, so a footer covering several issues has to repeat the keyword: <code>Closes #1, closes #2</code>. A combined footer looks like it worked until the release leaves the rest open.
+The "staged on next" label exists. The closing step in the release workflow does not yet, so until it does, the issues a milestone still holds are closed by hand when the release publishes.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>From v5.0.0 on, do not close an issue because its fix merged to next. Apply staged-on-next and leave it open; the release closes it. For v4.0.0 keep closing on merge, which is how the rest of that milestone was worked.
-Put the Closes footer in the commit body of the change itself. A keyword that lives only in a pull request description does not survive into main's history.
+<p>From v5.0.0 on, do not close an issue because its fix merged to next. Apply "staged on next" and leave it open; the release closes it. For v4.0.0 keep closing on merge, which is how the rest of that milestone was worked.
+Put the Closes footer in the commit body of the change itself. A keyword that lives only in a pull request description does not survive into main's history. Repeat the keyword for each issue -- <code>Closes #1, closes #2</code> -- because a shared one closes only the first.
 Do not add a label per release, and do not mirror a milestone as sub-issues of its tracking issue. Both put the same work in two places, and the copy is the one that goes stale.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Adopters install signed binaries through change approval. To them a closed issue reads as fixed in the version they can install, which during a batched major is false for weeks. An open issue also draws the next reporter onto the existing thread instead of a duplicate, and gives them something to subscribe to.
@@ -1081,6 +1247,9 @@ This is already GitHub's behaviour on a non-default branch. The record exists be
 
 
 
+
+  
+  
 
 
 

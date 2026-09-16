@@ -115,6 +115,7 @@
             "permanent",
             "not_implemented",
             "cancelled",
+            "unknown_outcome",
             "internal"
           ],
           "type": "string"
@@ -591,7 +592,7 @@
       "type": "object"
     }
   },
-  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/reference/schemas/bulk-plan.schema.json",
+  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.1.0/reference/schemas/bulk-plan.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Schema for deterministic reviewed bulk plan artifacts produced by bb bulk plan.",

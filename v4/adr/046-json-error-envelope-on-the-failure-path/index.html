@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/046-json-error-envelope-on-the-failure-path/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/046-json-error-envelope-on-the-failure-path/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1055,7 +1220,7 @@
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>When --json is set and a command fails, write the machine envelope to stdout carrying an error object in place of data, with kind, message and exitCode drawn from the ADR-011 taxonomy. The human-readable line continues to go to stderr unchanged, and exit codes are unaffected. A consumer decides success or failure by which key is present: data on success, error on failure. The failure shape does not vary by command, so it is published once as docs/reference/schemas/output/output.error.schema.json rather than per command. Machine output requested but not parsed still counts as requested. When flag parsing itself fails, --json is recovered from the raw arguments, because an unknown flag or unknown command is precisely when a script most needs a parseable answer. Classify malformed invocations as validation. An unknown flag, unknown command, bad flag value or wrong argument count is the caller's mistake, so it reports kind validation and exit code 2 rather than falling through to internal and exit 1.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Emit failures under --json through jsonoutput.WriteError. Do not print a bare string to stdout on the error path, and do not move the human-readable line off stderr. Do not add data to the failure envelope or error to the success envelope. The two documents are distinguished by which key is present; a null data alongside error would make a command whose successful payload is legitimately null ambiguous. When adding an error kind to internal/domain/errors, add it to Kinds(). The published schema derives its enum from that function and tests validate real emitted envelopes against it, so a kind missing there publishes a contract the CLI can violate. Exit codes stay owned by the taxonomy. The envelope reports exitCode; it does not decide it. Route errors from cmd/bb through cli.ClassifyUsageError before reporting them. It maps pflag's typed errors and Cobra's usage errors onto validation and leaves everything else untouched, so a transport or server failure still reports internal and exit 1. Cobra raises its own usage errors as plain fmt.Errorf values, so recognising them means matching message text. Do not add a marker to cobraUsageErrorMarkers without a case in TestClassifyUsageErrorMatchesCobrasRealMessages that drives the real condition through a command tree. The test exists so a Cobra upgrade that rewords a message fails the build rather than silently reclassifying malformed invocations back to internal.</p>
+<p>Emit failures under --json through jsonoutput.WriteError. Do not print a bare string to stdout on the error path, and do not move the human-readable line off stderr. Do not add data to the failure envelope or error to the success envelope. The two documents are distinguished by which key is present; a null data alongside error would make a command whose successful payload is legitimately null ambiguous. When adding an error kind to internal/domain/errors, add it to Kinds(). The published schema derives its enum from that function and tests validate real emitted envelopes against it, so a kind missing there publishes a contract the CLI can violate. Exit codes stay owned by the taxonomy. The envelope reports exitCode; it does not decide it. Route errors from cmd/bb through cli.ClassifyUsageError before reporting them. It maps pflag's typed errors and Cobra's usage errors onto validation and leaves everything else untouched, so a transport or server failure keeps the kind it was classified as, and internal is what an unclassified one becomes. Cobra raises its own usage errors as plain fmt.Errorf values, so recognising them means matching message text. Do not add a marker to cobraUsageErrorMarkers without a case in TestClassifyUsageErrorMatchesCobrasRealMessages that drives the real condition through a command tree. The test exists so a Cobra upgrade that rewords a message fails the build rather than silently reclassifying malformed invocations back to internal.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>--json is documented as a stable machine contract and ADR-011 promises structured JSON error payloads, but cmd/bb printed the error as plain text regardless of the flag. The envelope machinery was wired only to the success path, so a failing command left stdout empty. The primary consumer of --json is an agent or a CI script. Empty stdout plus an unparseable string on stderr cannot be distinguished from a command that produced malformed output, and it cannot be branched on by error kind — even though the classification already existed one line above, and was already being serialised into the diagnostics logger. Carrying error where data would sit keeps the envelope self-describing without a discriminator field, and keeps the success schema, which forbids additional properties, unchanged. Nothing that parsed the old output breaks: previously there was nothing on stdout to parse. Publishing one failure schema rather than one per command matches the shape of the problem and lets a consumer handle an error from a command it has never seen. Classifying usage errors is the other half of the same defect. An envelope reporting kind internal for a typo tells a consumer the CLI broke, so an agent branching on kind retries or escalates a failure it should have fixed in its own invocation. Emitting a well-formed envelope carrying the wrong classification would have replaced an obvious gap with a misleading answer. The kind-to-exit-code mapping is unchanged; what changes is which kind a malformed invocation receives, and with it its exit code, from 1 to 2.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
@@ -1072,6 +1237,9 @@
 
 
 
+
+  
+  
 
 
 

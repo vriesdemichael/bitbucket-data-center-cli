@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/042-track-newest-containerisable-bitbucket-version/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/042-track-newest-containerisable-bitbucket-version/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1093,7 +1258,7 @@
      act of adopting it.</li>
 </ol>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Do not state or assume a specific supported Bitbucket version in code, CLI output, or documentation, and do not reintroduce a default version target in configuration. To find the version under test, read the base image tag in docker/harness/Dockerfile. Do not open a version-bump pull request by hand. Dependabot proposes every published release against docker/harness/Dockerfile, so a hand-written bump duplicates one that already exists or is about to. Editing the tag locally is still the right move for reproducing or bisecting a version-specific bug; opening a pull request for it is not. Do not add an ignore for atlassian/bitbucket to .github/dependabot.yml. An ignore suppresses the proposal, so nobody learns a release exists and the suite never runs against it. The hold in dependabot-automerge.yml keeps the same human decision while keeping the evidence. When adopting a release, carry task openapi:refresh in the same change. The vendored OpenAPI reference is derived from the tag, so a tag bump on its own fails openapi:verify. Where behavior differs between versions, record the version it was observed on next to the workaround and cover it with a live test.</p>
+<p>Do not state or assume a specific supported Bitbucket version in code, CLI output, or documentation, and do not reintroduce a default version target in configuration. To find the version under test, read the base image tag in docker/harness/Dockerfile. Documentation may name the version through the <code>10.4.3</code> macro, which renders that same tag: a reader asking whether their instance is covered needs a number, and one derived from the tag cannot drift away from it. Do not open a version-bump pull request by hand. Dependabot proposes every published release against docker/harness/Dockerfile, so a hand-written bump duplicates one that already exists or is about to. Editing the tag locally is still the right move for reproducing or bisecting a version-specific bug; opening a pull request for it is not. Do not add an ignore for atlassian/bitbucket to .github/dependabot.yml. An ignore suppresses the proposal, so nobody learns a release exists and the suite never runs against it. The hold in dependabot-automerge.yml keeps the same human decision while keeping the evidence. When adopting a release, carry task openapi:refresh in the same change. The vendored OpenAPI reference is derived from the tag, so a tag bump on its own fails openapi:verify. Where behavior differs between versions, record the version it was observed on next to the workaround and cover it with a live test.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>The previous 9.4.16 pin drifted. The stack moved on while the configuration default, the auth status output, and the README still advertised 9.4.16, so the documented target described a version nothing was testing against. The intent was never to freeze on one release but to run the newest one that works, and keeping that in the stack definition leaves one place to change on upgrade with no copies to drift.
 What has changed since is which half of that sentence is enforced. "The newest version that works" was originally an assertion made in advance, and its upper bound was real: newer releases had failed to run in this containerised stack, so the newest published release and the newest supportable one were not the same thing. Two changes turned the assertion into a check. ADR-043 removed the licence secret, so the live suite runs on every pull request including a Dependabot one. And the ignore holding atlassian/bitbucket back was removed once the licence stopped capping the version the stack could provision, so a proposal now arrives for every release. A release that cannot be exercised fails visibly on a pull request instead of being excluded by a judgement nobody wrote down.
@@ -1113,6 +1278,9 @@ The adoption step stayed manual for a reason easily mistaken for caution. Two in
 
 
 
+
+  
+  
 
 
 

@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/047-credential-input-and-keyring-enforcement/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/047-credential-input-and-keyring-enforcement/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1049,13 +1214,14 @@
 <li>Title: <code>Credential input paths and enforceable keyring storage</code></li>
 <li>Category: <code>architecture</code></li>
 <li>Status: <code>accepted</code></li>
+<li>Amended By: <code>083</code></li>
 <li>Provenance: <code>guided-ai</code></li>
 <li>Source: <code>docs/decisions/047-credential-input-and-keyring-enforcement.yaml</code></li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Never require a secret to be passed as a command-line flag value. bb auth login accepts --token-stdin and --password-stdin, which read one credential from stdin, and these are the forms the README, the quickstart and the agent skill teach. The --token and --password flags remain for compatibility and warn on stderr when used. Make keyring-backed storage enforceable rather than merely preferred. --require-keyring and BB_REQUIRE_KEYRING=1 turn a keyring failure into an error instead of a silent degradation to the plaintext config fallback, and the refusal happens before any secret is written. Enforce the policy where credentials are read as well as where they are written, so a config file written before the policy was set cannot keep serving plaintext credentials. Report how the credential in use is held. bb auth status prints a credential_storage value of keyring, environment, config-file-plaintext or none, and a plaintext credential warns once per process on stderr rather than only at login.</p>
+<p>Never require a secret to be passed as a command-line flag value. bb auth login accepts --token-stdin and --password-stdin, which read one credential from stdin, and these are the forms the README, the quickstart and the agent skill teach. The --token and --password flags remain for compatibility and warn on stderr when used. Make keyring-backed storage enforceable rather than merely preferred. --require-keyring and BB_REQUIRE_KEYRING=1 turn a keyring failure into an error instead of a silent degradation to the plaintext config fallback, and the refusal happens before any secret is written. Enforce the policy where credentials are read as well as where they are written, so a config file written before the policy was set cannot keep serving plaintext credentials. Report how the credential in use is held. bb auth status prints a credentialStorage value of keyring, environment, config-file-plaintext or none, and a plaintext credential warns once per process on stderr rather than only at login. Scope keyring entries to the configuration file. An entry is keyed by the host and a digest of the file's canonical path -- absolute, its directory's symlinks resolved, case-folded on Windows -- so two configuration files keep two identities for one host. An entry keyed by host alone, as written before, answers only for a file that has no entry of its own, and logout removes it only for the file that was using it.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Do not add a flag whose value is a secret. If a command needs one, read it from stdin and add a matching --<name>-stdin flag, or take it from the environment. Warnings about credential handling go to stderr, never stdout. Under --json stdout is a machine contract, and prose there makes the envelope unparseable — tests that share one buffer for both streams hide exactly that bug. When a policy refuses an operation, refuse before writing anything. A check that errors after the secret has reached disk is worse than no check. The keyring is reached through the keyringSet/keyringGet/keyringDelete indirection in internal/config. Use it rather than calling go-keyring directly, and swap it in tests to exercise the unavailable-keyring path; go-keyring's own mock replaces a package-level provider with no way to restore it, which makes later tests in the same binary order-dependent.</p>
+<p>The --token and --password flags this record kept for compatibility were removed in v4: ADR-083 says no flag carries a secret at all. The instruction below did not change; what changed is that nothing is exempt from it. Do not add a flag whose value is a secret. If a command needs one, read it from stdin and add a matching --<name>-stdin flag, or take it from the environment. Warnings about credential handling go to stderr, never stdout. Under --json stdout is a machine contract, and prose there makes the envelope unparseable — tests that share one buffer for both streams hide exactly that bug. When a policy refuses an operation, refuse before writing anything. A check that errors after the secret has reached disk is worse than no check. The keyring is reached through the keyringSet/keyringGet/keyringDelete indirection in internal/config. Use it rather than calling go-keyring directly, and swap it in tests to exercise the unavailable-keyring path; go-keyring's own mock replaces a package-level provider with no way to restore it, which makes later tests in the same binary order-dependent.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>A flag value is visible to every local user through ps and /proc/<pid>/cmdline, appears in Windows Task Manager details, is captured by process-auditing and EDR tooling, and is written to shell history. The CLI's own documentation taught that form, so it was the path most users and agents took. gh solved this with --with-token; the stdin variants here are the same idea, named after the flags they replace. The keyring fallback was already announced, but announcing is not enforcing. The keyring is unavailable on precisely the platforms this CLI targets most — headless servers, CI containers, WSL without gnome-keyring, jump boxes — so plaintext was the default path in automation rather than an edge case, and an operator who mandated keyring-backed storage had no way to require it. Enforcement at login alone would have been close to decorative. The credential outlives the login that created it, so a machine provisioned before the policy existed would keep using plaintext indefinitely; the read path is where the guarantee has to hold. Environment credentials are exempt because they never reach the config file. That also gives the documented answer for CI: supply BITBUCKET_TOKEN per invocation and do not log in at all.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
@@ -1072,6 +1238,9 @@
 
 
 
+
+  
+  
 
 
 

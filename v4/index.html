@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/">
       
       
       
@@ -443,6 +443,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -459,10 +513,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -480,8 +534,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -603,6 +657,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -632,10 +742,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -653,8 +763,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -923,6 +1033,34 @@
   
   
     <li class="md-nav__item">
+      <a href="advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -993,6 +1131,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1127,6 +1292,12 @@
     </div>
 </section>
 
+<div class="admonition warning">
+<p class="admonition-title">Data Center only — Bitbucket Cloud is not supported</p>
+<p><code>bb</code> talks to the Bitbucket Data Center REST API. Bitbucket Cloud
+(bitbucket.org) is a different API, and no <code>bb</code> command will work against
+it. If your repositories live on bitbucket.org, this is not your CLI.</p>
+</div>
 <section class="bb-grid bb-grid-3">
     <article class="bb-card bb-card-accent">
         <p class="bb-card-kicker">Operational Safety</p>
@@ -1172,6 +1343,16 @@
         <h2><a href="advanced/">Advanced Topics</a></h2>
         <p>Dive into repository discovery, dry-run semantics, bulk operations, and diagnostics for higher-trust automation.</p>
     </article>
+    <article class="bb-card bb-link-card">
+        <p class="bb-card-kicker">Stuck</p>
+        <h2><a href="troubleshooting/">Troubleshooting</a></h2>
+        <p>Paste the message you got. Start with <code>bb doctor</code>, which reads every configuration file and needs no host.</p>
+    </article>
+    <article class="bb-card bb-link-card">
+        <p class="bb-card-kicker">Translate</p>
+        <h2><a href="gh-parity/">Coming from <code>gh</code></a></h2>
+        <p>The command each <code>gh</code> one maps to, where the spelling differs, and the few places there is no counterpart.</p>
+    </article>
 </section>
 
 <h2 id="what-this-docs-site-contains">What this docs site contains<a class="headerlink" href="#what-this-docs-site-contains" title="Permanent link">&para;</a></h2>
@@ -1182,6 +1363,8 @@
             <li><a href="installation-and-quickstart/">Installation and Quickstart</a></li>
             <li><a href="cheatsheet/">Developer Cheatsheet &amp; Cookbook</a></li>
             <li><a href="basic-usage/">Basic Usage</a></li>
+            <li><a href="troubleshooting/">Troubleshooting</a></li>
+            <li><a href="gh-parity/">Coming from <code>gh</code></a></li>
             <li><a href="advanced/">Advanced Topics</a></li>
             <li><a href="reference/schemas/">JSON Schemas</a></li>
         </ul>

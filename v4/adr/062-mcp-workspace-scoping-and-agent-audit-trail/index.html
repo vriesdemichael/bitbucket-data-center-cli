@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/062-mcp-workspace-scoping-and-agent-audit-trail/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/062-mcp-workspace-scoping-and-agent-audit-trail/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1053,14 +1218,15 @@
 <li>Source: <code>docs/decisions/062-mcp-workspace-scoping-and-agent-audit-trail.yaml</code></li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>bb ai mcp serve accepts --project and --repo, confining every tool call to that project or repository, and --audit-file, recording every invocation as JSON Lines. Both are off by default. Both are enforced in one middleware over tools/call, never in handlers. Each tool has a scope rule, held to the catalogue by a test. A tool whose arguments identify its target has them injected when omitted and refused when they name something else. A tool whose project argument is only a filter, or that addresses something Bitbucket does not scope to a project at all, is withheld: dropped from the catalogue as well as refused on call. Audit writes are synchronous and a failed write refuses the call, unless --audit-failure=warn. The sink is a file or stderr; stdout carries the protocol and is rejected. Administrators can mandate the destination with policy.mcp_audit_file, which binds only where the policy file is out of the developer's reach -- see ADR-058 for the deployment step that makes that true.</p>
+<p>bb ai mcp serve accepts --project and --repo, confining every tool call to that project or repository, and --audit-file, recording every invocation as JSON Lines. Both are off by default. Both are enforced in one middleware over tools/call, never in handlers. Each tool has a scope rule, held to the catalogue by a test. A tool whose arguments identify its target has them injected when omitted and refused when they name something else. A tool whose project argument is only a filter, or that addresses something Bitbucket does not scope to a project at all, is withheld: dropped from the catalogue as well as refused on call. list_pull_requests is the one tool whose project and repository are both optional, because leaving the repository out asks something of its own: the pull requests of the caller, across repositories. Under a project scope a call without a repository answers with those pull requests narrowed to the project. That filters what the dashboard answered, and is accepted because the dashboard holds only the work of the caller and the filter decides everything the agent receives. Audit writes are synchronous and a failed write refuses the call, unless --audit-failure=warn. The sink is a file or stderr; stdout carries the protocol and is rejected. Administrators can mandate the destination with policy.mcp_audit_file, which binds only where the policy file is out of the developer's reach -- see ADR-058 for the deployment step that makes that true.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Add a scope rule for every new tool in the same change. TestEveryToolHasAScopeRule fails without one, in both directions. Choose it by what the tool's arguments can actually bound: a tool keyed by commit SHA cannot be bounded and must be withheld. Never write a scope check that skips when it finds no argument to check. That permits every call it does not understand while reading like enforcement. Do not add per-handler enforcement, and do not enable auditing by default. Do not describe either control as preventing what it does not: the trail is not tamper-evident, and an agent with shell access bypasses this layer entirely.</p>
+<p>Add a scope rule for every new tool in the same change. TestEveryToolHasAScopeRule fails without one, in both directions. Choose it by what the tool's arguments can actually bound: a tool keyed by commit SHA cannot be bounded and must be withheld. Keep project and repository required unless leaving them out asks Bitbucket something of its own, as list_pull_requests without a repository asks for the pull requests of the caller. Never write a scope check that skips when it finds no argument to check. That permits every call it does not understand while reading like enforcement. Do not add per-handler enforcement, and do not enable auditing by default. Do not describe either control as preventing what it does not: the trail is not tamper-evident, and an agent with shell access bypasses this layer entirely.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>ADR-039 bounds a server to one instance and one token's rights, not to a part of the instance. On a multi-tenant Bitbucket a read-only token still reaches most of what its owner can read. Middleware rather than handlers is the load-bearing choice: 24 handlers is 24 chances to forget, silently, and one choke point makes the property hold for tools nobody has written yet. The trail is not a duplicate of Bitbucket's. A call refused by the scope never reaches Bitbucket, so no server-side record can exist -- and attempted-and-blocked is the prompt-injection signal worth alerting on. Bitbucket also cannot tell an agent from the person whose token it uses.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>Compare project and repository only when the caller supplies them</code>: Fails open on every call that omits them, while reading like enforcement.</li>
+<li><code>Instead of narrowing list_pull_requests under a project scope, refuse a call without a repository</code>: Leaves an agent confined to a project no way to ask for its own pull requests, and refuses an omitted argument the scope is meant to fill in.</li>
 <li><code>Let unboundable tools through under a scope</code>: Sells a boundary that does not exist; a commit SHA is not project-scoped in the API.</li>
 <li><code>Write audit records asynchronously</code>: Loses the denials, which are the records worth having.</li>
 <li><code>Ship direct SIEM integrations</code>: Puts a network call, a credential and retry buffering in the tool-call path of a process spawned per IDE session. Every collector already tails a file.</li>
@@ -1071,6 +1237,9 @@
 
 
 
+
+  
+  
 
 
 

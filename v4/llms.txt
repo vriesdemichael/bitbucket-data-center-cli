@@ -21,10 +21,6 @@ brew install vriesdemichael/tap/bb
 winget install vriesdemichael.bb
 ```
 
-```bash
-yay -S bb-bin
-```
-
 Debian, Ubuntu, RHEL and Fedora packages, platform archives, and Sigstore verification
 instructions are on the installation page linked at the end.
 
@@ -67,6 +63,14 @@ Credentials go to the OS keyring. On headless servers and most containers there 
 keyring and `bb` falls back to a plaintext config file, saying so. Pass
 `--require-keyring` to `bb auth login` to fail instead of falling back.
 
+When a command refuses and the configuration is the suspect, `bb doctor` reads every
+configuration file on its own and reports each problem with its line, plus where every
+effective setting comes from. It needs no host and no network:
+
+```bash
+bb doctor --json
+```
+
 ## 3. Enable the skill
 
 The skill teaches a shell-driving agent the command surface. `bb` carries it embedded, so
@@ -82,11 +86,17 @@ That writes `.agents/skills/bb/SKILL.md` — project scope. For user scope:
 bb ai skill install --global
 ```
 
-A second skill covers multi-repository bulk governance:
+A second skill covers `bb bulk`, which is deprecated: it warns at runtime that it will be
+removed in v5.0.0. Install it only to maintain an existing `bulk-policy.yaml`:
 
 ```bash
 bb ai skill install bulk
 ```
+
+For new work there is nothing to install. Project-level policy already cascades to every
+repository in the project — `bb project permissions`, `bb project webhook`,
+`bb project default-task` and `bb project branch-restriction` are each set once — and
+anything Bitbucket does not scope to a project is a loop over `bb repo list`.
 
 If the agent expects a different path, print the skill and redirect it:
 
@@ -137,8 +147,9 @@ Things worth knowing before you wire it up:
   handler cannot return a shape its schema does not describe (ADR-061).
 
 The audit trail covers this server only. An agent that can also run shell commands can
-invoke `bb` directly and bypass it. The control that survives that is `--token`, which
-binds at the Bitbucket server.
+invoke `bb` directly and bypass it. The control that survives that is the token the
+server runs under -- give it a read-only PAT via `BITBUCKET_TOKEN` in the client's `env`
+block -- which binds at the Bitbucket server.
 
 ## 5. Which one to enable
 
@@ -156,7 +167,7 @@ Pass `--json` whenever another system parses the output. Every command that supp
 emits a single bb.machine envelope on stdout:
 
 ```json
-{"data": {}, "meta": {"bbVersion": "4.0.0"}}
+{"data": {}, "meta": {"bbVersion": "v4.1.0"}}
 ```
 
 There is no envelope version field. The release version is the compatibility
@@ -164,8 +175,10 @@ signal, and `meta.bbVersion` reports the binary that produced the document.
 
 A failure replaces `data` with `error`, carrying a `kind` from a fixed taxonomy
 (`authentication`, `authorization`, `validation`, `not_found`, `conflict`, `transient`,
-`permanent`, `not_implemented`, `internal`), a `message`, and the `exitCode` that matches
-the process exit status. Branch on `kind`, not on message text.
+`permanent`, `not_implemented`, `cancelled`, `unknown_outcome`, `internal`), a `message`,
+and the `exitCode` that matches the process exit status. Branch on `kind`, not on message
+text. A listing that stopped at `--limit` says so with `meta.limitReached: true`; raise
+`--limit` or pass `--all` for the rest.
 
 Diagnostics go to stderr and never contaminate the document on stdout. `--log-format jsonl`
 makes them machine-readable too.
@@ -189,12 +202,13 @@ Prefer the published command reference over guessing flags or subcommands.
 - [JSON Schemas](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/): Machine contracts for output and bulk inputs
 - [Machine Mode and Diagnostics](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/machine-mode-diagnostics/): JSON envelope contract and supportability patterns
 - [Basic Usage](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/basic-usage/): Common workflows and command patterns
+- [Troubleshooting](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/troubleshooting/): The messages bb prints when setup is wrong, and what each means
 - [Advanced Topics](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/): Dry-run, bulk automation, diagnostics, and repository discovery
 - [AI and llms.txt overview](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/ai-and-llms/): How this file and the AI tooling fit together
 - [Architecture Decision Records](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/adr/): Design rationale and system constraints
 - [Changelog](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/changelog/): Release history and release notes
 - [bb AI core skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
-- [bb bulk governance AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md)
+- [bb bulk AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md): For a deprecated command, kept for existing policies
 
 If you hit behaviour that does not match this file, open an issue at
 <https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/new>, or ask the user

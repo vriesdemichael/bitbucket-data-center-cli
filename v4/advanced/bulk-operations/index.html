@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/advanced/bulk-operations/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/advanced/bulk-operations/">
       
       
         <link rel="prev" href="../repository-discovery-and-server-switching/">
@@ -367,6 +367,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -383,10 +437,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -404,8 +458,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -527,6 +581,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -556,10 +666,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -577,8 +687,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -767,10 +877,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-bulk-workflows-exist" class="md-nav__link">
+  <a href="#the-three-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why bulk workflows exist
+        The three commands
       
     </span>
   </a>
@@ -778,10 +888,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflow-model" class="md-nav__link">
+  <a href="#choosing-repositories" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Workflow model
+        Choosing repositories
       
     </span>
   </a>
@@ -789,10 +899,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-policy" class="md-nav__link">
+  <a href="#operations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example policy
+        Operations
       
     </span>
   </a>
@@ -800,10 +910,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#safety-and-contract-notes" class="md-nav__link">
+  <a href="#secrets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Safety and contract notes
+        Secrets
       
     </span>
   </a>
@@ -811,10 +921,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#secrets-in-a-policy" class="md-nav__link">
+  <a href="#what-a-plan-artifact-holds" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Secrets in a policy
+        What a plan artifact holds
       
     </span>
   </a>
@@ -822,10 +932,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#schema-and-ide-integration" class="md-nav__link">
+  <a href="#plan-integrity" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Schema and IDE integration
+        Plan integrity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-and-editor-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema and editor support
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-artifacts-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where artifacts live
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -960,6 +1103,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../webhook-secrets/" class="md-nav__link">
         
   
@@ -1049,6 +1220,33 @@
   
   
     <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../changelog/" class="md-nav__link">
         
   
@@ -1096,10 +1294,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-bulk-workflows-exist" class="md-nav__link">
+  <a href="#the-three-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why bulk workflows exist
+        The three commands
       
     </span>
   </a>
@@ -1107,10 +1305,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workflow-model" class="md-nav__link">
+  <a href="#choosing-repositories" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Workflow model
+        Choosing repositories
       
     </span>
   </a>
@@ -1118,10 +1316,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-policy" class="md-nav__link">
+  <a href="#operations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example policy
+        Operations
       
     </span>
   </a>
@@ -1129,10 +1327,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#safety-and-contract-notes" class="md-nav__link">
+  <a href="#secrets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Safety and contract notes
+        Secrets
       
     </span>
   </a>
@@ -1140,10 +1338,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#secrets-in-a-policy" class="md-nav__link">
+  <a href="#what-a-plan-artifact-holds" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Secrets in a policy
+        What a plan artifact holds
       
     </span>
   </a>
@@ -1151,10 +1349,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#schema-and-ide-integration" class="md-nav__link">
+  <a href="#plan-integrity" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Schema and IDE integration
+        Plan integrity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-and-editor-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema and editor support
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-artifacts-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where artifacts live
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
       
     </span>
   </a>
@@ -1182,47 +1413,241 @@
 
 
 <h1 id="bulk-operations">Bulk Operations<a class="headerlink" href="#bulk-operations" title="Permanent link">&para;</a></h1>
-<h2 id="why-bulk-workflows-exist">Why bulk workflows exist<a class="headerlink" href="#why-bulk-workflows-exist" title="Permanent link">&para;</a></h2>
-<p>Bulk workflows apply consistent policy changes across many repositories while keeping reviewable,
-deterministic plan artifacts.</p>
-<h2 id="workflow-model">Workflow model<a class="headerlink" href="#workflow-model" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Author policy file (YAML or JSON).</li>
-<li>Run <code>bb bulk plan</code> to produce a reviewed plan with a deterministic <code>planHash</code>.</li>
-<li>Review and store plan artifact.</li>
-<li>Run <code>bb bulk apply --from-plan ...</code> to execute exactly that reviewed plan.</li>
-<li>Query operation status with <code>bb bulk status &lt;operation-id&gt;</code>.</li>
-</ol>
-<h2 id="example-policy">Example policy<a class="headerlink" href="#example-policy" title="Permanent link">&para;</a></h2>
-<p>See: <code>docs/examples/bulk-policy.yaml</code>.</p>
-<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>bulk<span class="w"> </span>plan<span class="w"> </span>-f<span class="w"> </span>docs/examples/bulk-policy.yaml<span class="w"> </span>-o<span class="w"> </span>.tmp/bulk-plan.json
-bb<span class="w"> </span>bulk<span class="w"> </span>apply<span class="w"> </span>--from-plan<span class="w"> </span>.tmp/bulk-plan.json
-bb<span class="w"> </span>bulk<span class="w"> </span>status<span class="w"> </span>&lt;operation-id&gt;
+<div class="admonition danger">
+<p class="admonition-title">Deprecated — due for removal in v5.0.0</p>
+<p><code>bb bulk</code> works and is supported until it is removed, and warns on stderr on
+every invocation. <strong>Do not start with it.</strong> If you already use it, the
+migration is below.</p>
+<p><strong>Why.</strong> Its nine operations are all repository <em>configuration</em>, and four of
+them — user and group permissions, webhooks, default tasks — are settable
+once at the <strong>project</strong> level, where Bitbucket cascades them to every
+repository it contains. Doing those per repository is more work for the same
+result. What remains is a handful of repository-only settings, and a shell
+loop over <code>bb</code> reaches those with more flexibility than a policy file and
+without a plan artifact to manage.</p>
+<p>It also never grew into what a bulk tool is actually wanted for: changing
+<em>code</em> across an estate — branch, run a script, commit, open a pull request
+with reviewers. That needs a different shape, and this one was not going to
+become it.</p>
+<p><strong>What to use instead.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Instead of</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>repo.permission.user.grant</code>, <code>repo.permission.group.grant</code></td>
+<td><code>bb project permissions</code></td>
+</tr>
+<tr>
+<td><code>repo.webhook.create</code></td>
+<td><code>bb project webhook</code></td>
+</tr>
+<tr>
+<td><code>repo.default-task.create</code></td>
+<td><code>bb project default-task</code></td>
+</tr>
+<tr>
+<td>the repository-only settings</td>
+<td><code>bb repo settings ...</code> in a loop over <code>bb repo list</code></td>
+</tr>
+<tr>
+<td>cross-repository code changes</td>
+<td>a tool built for it, such as multi-gitter or Sourcegraph batch changes</td>
+</tr>
+</tbody>
+</table>
+<p><code>bb project branch-restriction</code> is worth knowing about too: it has no
+repository-level equivalent, so it was never reachable through bulk at all.</p>
+</div>
+<p>The rest of this page is reference for a policy that already exists: the three
+commands, what a selector reaches, and the fields each operation takes. It is
+not a place to start — see the migration table above for that.</p>
+<p><code>bb bulk</code> applies one reviewed change across many repositories. It is a
+three-step workflow — write a policy, plan it, apply the plan — and the split
+exists so that what gets applied is a thing you looked at rather than a
+selector evaluated at the moment of writing.</p>
+<h2 id="the-three-commands">The three commands<a class="headerlink" href="#the-three-commands" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bb bulk plan --file &lt;policy&gt;</code></td>
+<td>Resolves the policy into a deterministic plan. Contacts the server to enumerate repositories; changes nothing</td>
+</tr>
+<tr>
+<td><code>bb bulk apply --from-plan &lt;plan&gt;</code></td>
+<td>Applies the operations in a reviewed plan</td>
+</tr>
+<tr>
+<td><code>bb bulk status &lt;operation-id&gt;</code></td>
+<td>Shows the saved status of a prior apply</td>
+</tr>
+</tbody>
+</table>
+<p><code>plan</code> takes <code>--output</code> to write the plan artifact; without it the plan is
+printed. <code>apply</code> reads only a plan file — it never takes a policy, so the thing
+applied is always the thing reviewed.</p>
+<p><code>bb bulk apply</code> rejects <code>--dry-run</code>. The plan <em>is</em> the dry run, and accepting the
+flag would imply a second, weaker preview exists.</p>
+<h2 id="choosing-repositories">Choosing repositories<a class="headerlink" href="#choosing-repositories" title="Permanent link">&para;</a></h2>
+<p>The <code>selector</code> decides the blast radius. It has three forms, and they are
+additive — the targets are the union of whatever you use.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bb.io/v1alpha1</span>
+<span class="nt">selector</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">projectKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PLATFORM</span>
+<span class="w">  </span><span class="nt">repoPattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*-service&quot;</span>
+<span class="w">  </span><span class="nt">repositories</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PAYMENTS/ledger</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">legacy-gateway</span>
 </code></pre></div>
-<h2 id="safety-and-contract-notes">Safety and contract notes<a class="headerlink" href="#safety-and-contract-notes" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>bulk plan</code> performs no server writes.</li>
-<li><code>bulk apply</code> does not support <code>--dry-run</code>; use <code>bulk plan</code> as preview.</li>
-<li><code>bulk apply</code> persists status artifacts under local config directory (override with <code>BB_BULK_STATUS_DIR</code>).</li>
-<li>JSON mode is available for plan/apply/status commands using global <code>--json</code>.</li>
-</ul>
-<h2 id="secrets-in-a-policy">Secrets in a policy<a class="headerlink" href="#secrets-in-a-policy" title="Permanent link">&para;</a></h2>
-<p>A policy never holds a credential. <code>repo.webhook.create</code> takes <code>secretEnv</code> and
-<code>credentialsPasswordEnv</code>, which name an environment variable that <code>bb bulk apply</code>
-reads at apply time — so the plan artifact stays committable, and the same plan
-applies against different environments unedited. An apply whose named variable is
-unset is refused rather than run without the secret.</p>
-<p>A <code>secretEnv</code> belongs to an operation, so every repository the selector matches
-gets the same secret for that operation; per-repository secrets need one plan
-per repository.</p>
-<p>See <a href="../webhook-secrets/">Webhook Secrets</a> for the full rules.</p>
-<h2 id="schema-and-ide-integration">Schema and IDE integration<a class="headerlink" href="#schema-and-ide-integration" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Schemas are published under <a href="../../reference/schemas/">JSON Schemas</a>.</li>
-<li>Add YAML schema comment for editor validation and completion:</li>
-</ul>
+<p><strong><code>projectKey</code> alone</strong> selects every repository in that project.</p>
+<p><strong><code>repoPattern</code></strong> filters the slugs within <code>projectKey</code>, so it requires one. It
+is a <strong>glob, not a regular expression</strong> — <code>path.Match</code> semantics:</p>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Matches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>*-service</code></td>
+<td><code>payments-service</code>, <code>auth-service</code></td>
+</tr>
+<tr>
+<td><code>payments-*</code></td>
+<td><code>payments-api</code>, <code>payments-worker</code></td>
+</tr>
+<tr>
+<td><code>svc-?</code></td>
+<td><code>svc-a</code>, <code>svc-b</code></td>
+</tr>
+<tr>
+<td><code>[a-m]*</code></td>
+<td>slugs starting <code>a</code> through <code>m</code></td>
+</tr>
+</tbody>
+</table>
+<p>A pattern must match the <strong>whole</strong> slug: <code>service</code> matches a repository called
+exactly <code>service</code>, not <code>payments-service</code>. Regular-expression habits do not
+carry over — <code>.*-service</code> looks for a literal dot and matches nothing. An
+invalid pattern is refused at plan time, naming <code>selector.repoPattern</code>.</p>
+<p><strong><code>repositories</code></strong> names repositories explicitly, and is the only form that
+crosses projects. An entry may be <code>PROJECT/slug</code>, which wins over
+<code>selector.projectKey</code>, or a bare slug, which uses it. A bare slug with no
+<code>projectKey</code> set is refused.</p>
+<p>So a pattern is confined to one project, and a policy that has to reach across
+several lists them.</p>
+<p>A selector matching nothing is an error rather than a successful run over
+nothing.</p>
+<h2 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h2>
+<p>Each entry in <code>operations</code> names a <code>type</code> and carries that type's fields.</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Requires</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>repo.permission.user.grant</code></td>
+<td><code>username</code>, <code>permission</code></td>
+</tr>
+<tr>
+<td><code>repo.permission.group.grant</code></td>
+<td><code>group</code>, <code>permission</code></td>
+</tr>
+<tr>
+<td><code>repo.webhook.create</code></td>
+<td><code>name</code>, <code>url</code></td>
+</tr>
+<tr>
+<td><code>repo.settings.auto-merge</code></td>
+<td><code>enabled</code></td>
+</tr>
+<tr>
+<td><code>repo.settings.auto-decline</code></td>
+<td><code>enabled</code>; <code>inactivityWeeks</code> when enabled</td>
+</tr>
+<tr>
+<td><code>repo.pull-request-settings.required-approvers-count</code></td>
+<td><code>count</code></td>
+</tr>
+<tr>
+<td><code>repo.pull-request-settings.required-all-tasks-complete</code></td>
+<td><code>requiredAllTasksComplete</code></td>
+</tr>
+<tr>
+<td><code>repo.default-task.create</code></td>
+<td><code>description</code></td>
+</tr>
+<tr>
+<td><code>build.required.create</code></td>
+<td><code>payload</code></td>
+</tr>
+</tbody>
+</table>
+<p>A policy naming an unknown type, or omitting a required field, is refused at
+plan time with exit <code>2</code> and no server contact.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bb.io/v1alpha1</span>
+<span class="nt">selector</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">projectKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PLATFORM</span>
+<span class="w">  </span><span class="nt">repoPattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*-service&quot;</span>
+<span class="nt">operations</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">repo.permission.group.grant</span>
+<span class="w">    </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">platform-reviewers</span>
+<span class="w">    </span><span class="nt">permission</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REPO_WRITE</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">repo.settings.auto-merge</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<h2 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">&para;</a></h2>
+<p>A policy is a file that gets committed and reviewed, so it names the environment
+variable holding a secret rather than the secret. See
+<a href="../webhook-secrets/">Webhook Secrets</a>.</p>
+<h2 id="what-a-plan-artifact-holds">What a plan artifact holds<a class="headerlink" href="#what-a-plan-artifact-holds" title="Permanent link">&para;</a></h2>
+<p><code>--output</code> writes the reviewed plan as JSON. It carries the policy it came from,
+the targets it resolved to, and the hash that ties an apply back to it:</p>
+<div class="highlight"><pre><span></span><code>apiVersion  bb.io/v1alpha1
+kind        BulkPlan
+planHash    sha256:b249cf...
+policy      the policy as given, normalised
+validation  valid, plus any errors
+summary     targetCount, operationCount
+targets     each repository, with the operations queued for it
+</code></pre></div>
+<h2 id="plan-integrity">Plan integrity<a class="headerlink" href="#plan-integrity" title="Permanent link">&para;</a></h2>
+<p>A plan is a reviewed artifact, and <code>apply</code> treats it as one. A plan edited after
+review — an added target, a fabricated operation — is rejected rather than
+applied, so review means something.</p>
+<h2 id="schema-and-editor-support">Schema and editor support<a class="headerlink" href="#schema-and-editor-support" title="Permanent link">&para;</a></h2>
+<p>The policy schema is published, so an editor can validate as you type:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/bulk-policy.schema.json</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bb.io/v1alpha1</span>
 </code></pre></div>
+<p>The plan and status artifacts have published schemas too, under
+<a href="../../reference/schemas/">JSON Schemas</a>.</p>
+<h2 id="where-artifacts-live">Where artifacts live<a class="headerlink" href="#where-artifacts-live" title="Permanent link">&para;</a></h2>
+<p><code>bb bulk</code> writes run state to <code>bulk-status</code> beside the stored configuration
+file, so it follows <code>BB_CONFIG_PATH</code>; a plan is written only where <code>--output</code>
+says. Set <code>BB_BULK_STATUS_DIR</code> somewhere shared for a team runner — see
+<a href="../../reference/environment/#bulk-operations">Environment Variables</a>.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../dry-run-planning/">Dry-Run Planning</a> — the single-command equivalent</li>
+<li><a href="../webhook-secrets/">Webhook Secrets</a></li>
+<li><a href="../../reference/schemas/">JSON Schemas</a></li>
+</ul>
 
 
 

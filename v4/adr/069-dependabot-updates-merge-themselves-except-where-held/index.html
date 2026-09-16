@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/069-dependabot-updates-merge-themselves-except-where-held/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/069-dependabot-updates-merge-themselves-except-where-held/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1053,9 +1218,9 @@
 <li>Source: <code>docs/decisions/069-dependabot-updates-merge-themselves-except-where-held.yaml</code></li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Dependabot proposes dependency updates and .github/workflows/dependabot-automerge.yml approves and rebase-merges them once CI is green. This is deliberate: a green run is accepted as sufficient evidence that an update is safe, without a human reading the diff. Three things are held for a person instead: major version bumps, any update whose type will not parse, and the Bitbucket product image whatever its update type, because the tag under test is a user-facing support claim (ADR-042). Ecosystems, schedules, grouping and the held set live in .github/dependabot.yml and the workflow. This record does not restate them.</p>
+<p>Dependabot proposes dependency updates and .github/workflows/dependabot-automerge.yml approves and rebase-merges them once CI is green. This is deliberate: a green run is accepted as sufficient evidence that an update is safe, without a human reading the diff. Four things are held for a person instead: major version bumps, any update whose type will not parse, the Bitbucket product image whatever its update type, because the tag under test is a user-facing support claim (ADR-042), and any pull request not based on <code>next</code>. Updates are proposed against <code>next</code> like every other change (ADR-066); one based elsewhere is usually a security update, which Dependabot opens against <code>main</code> regardless, and is retargeted rather than merged there. Every GitHub Action is pinned to the full commit of a release, with the release named in a comment beside it. A tag can be moved by whoever owns it, and the release workflow runs with a token that publishes signed binaries; a commit cannot be moved. Dependabot reads the comment and proposes the next release as a new commit, so a pinned action stays in the automated stream. Ecosystems, schedules, grouping and the held set live in .github/dependabot.yml and the workflow. This record does not restate them.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Do not add a dependency exception to this record; add it to the workflow, where it is executable. Do not weaken a CI gate to get an update through. The gate is what auto-merge is trusting. Choose an action's pinning style knowing it decides participation: a floating major tag updates only when a new major tag exists upstream, so an action that stops publishing them stops producing proposals. Pinning to an exact version or a sha puts it back in the automated stream.</p>
+<p>Do not add a dependency exception to this record; add it to the workflow, where it is executable. Do not weaken a CI gate to get an update through. The gate is what auto-merge is trusting. Pin a new action the same way, as owner/action@<full commit> # vX.Y.Z, where the commit is the one the release tag points to (follow an annotated tag to its commit). TestEveryActionIsPinnedToACommit fails on a tag, a short sha, or a commit with no release named beside it.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Auto-merge is only defensible where the gate is. Every pull request here runs the live suite against a real Bitbucket (ADR-043) and must clear the coverage gates (ADR-065), so a green run exercises the dependency rather than merely compiling against it. Reading the diff of a patch bump adds little to that, and doing it for every proposal adds enough friction that updates accumulate, which is the outcome the policy exists to avoid. The held set is where a green run is not the whole question. A major bump can be green and still change behaviour a reader should see, and the product image tag is a claim about what this project supports rather than a dependency of its build.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
@@ -1069,6 +1234,9 @@
 
 
 
+
+  
+  
 
 
 

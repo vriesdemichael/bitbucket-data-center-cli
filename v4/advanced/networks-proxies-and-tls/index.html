@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/advanced/networks-proxies-and-tls/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/advanced/networks-proxies-and-tls/">
       
       
         <link rel="prev" href="../git-authentication/">
@@ -367,6 +367,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -383,10 +437,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -404,8 +458,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -527,6 +581,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -556,10 +666,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -577,8 +687,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -983,6 +1093,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../webhook-secrets/" class="md-nav__link">
         
   
@@ -1053,6 +1191,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1303,8 +1468,10 @@ authentication during the TLS handshake, provide your certificate and private ke
 <p>You can also persist client certificates per host in your stored profile:</p>
 <div class="highlight"><pre><span></span><code><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;%s&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$abc</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>auth<span class="w"> </span>login<span class="w"> </span>https://bitbucket.example.com<span class="w"> </span>--token-stdin<span class="w"> </span>--client-cert<span class="w"> </span>/etc/ssl/certs/client.pem<span class="w"> </span>--client-key<span class="w"> </span>/etc/ssl/private/client.key
 </code></pre></div>
-<p>Both files must be PEM-encoded. If either <code>--client-cert</code> or <code>--client-key</code> is specified without
-the other, <code>bb</code> fails immediately with <code>BB_CLIENT_CERT and BB_CLIENT_KEY must be set together</code>.</p>
+<p>Both files must be PEM-encoded. Supplying one without the other fails immediately, and the
+message names the input you actually used for each half — so passing only the flag says
+<code>--client-cert and BB_CLIENT_KEY must be set together</code>, and exporting only the variable says
+<code>BB_CLIENT_CERT and BB_CLIENT_KEY must be set together</code>.</p>
 <h2 id="diagnosing-a-connection">Diagnosing a connection<a class="headerlink" href="#diagnosing-a-connection" title="Permanent link">&para;</a></h2>
 <p>Work outward from the network to the credential:</p>
 <div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-sS<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s1">&#39;%{http_code}\n&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BITBUCKET_URL</span><span class="s2">/status&quot;</span>
@@ -1341,7 +1508,7 @@ credential in play.</p>
 </tr>
 <tr>
 <td><code>401</code> or <code>403</code> from <code>bb</code>, <code>200</code> from <code>/status</code></td>
-<td>Network is fine; this is authentication. See <a href="../../installation-and-quickstart/#authenticate-to-bitbucket"><code>bb auth status</code></a>.</td>
+<td>Network is fine; Bitbucket refused the credentials or what they may do. See <a href="../../installation-and-quickstart/#authenticate-to-bitbucket"><code>bb auth status</code></a>.</td>
 </tr>
 </tbody>
 </table>

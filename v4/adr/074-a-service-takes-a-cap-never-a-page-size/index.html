@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/074-a-service-takes-a-cap-never-a-page-size/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/074-a-service-takes-a-cap-never-a-page-size/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1053,16 +1218,16 @@
 <li>Source: <code>docs/decisions/074-a-service-takes-a-cap-never-a-page-size.yaml</code></li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>A service list option is called MaxResults and caps the total returned. It is not called Limit, which does not say which behaviour it selects, and it is not called PageSize, which is a behaviour no caller can use. Paging is openapi.PageThrough's, which sizes each request from what is still missing; a caller has no cursor to advance and nothing to do with the window. TestNoServiceOptionIsCalledLimit fails on a field or exported parameter named any of the three. Zero means the service's default cap, not unlimited; a service that can be asked for everything exports an AllResults for it.</p>
+<p>A service list option is called MaxResults and caps the total returned. It is not called Limit, which does not say which behaviour it selects, and it is not called PageSize, which is a behaviour no caller can use. Paging is openapi.PageThrough's, which sizes each request from what is still missing; a caller has no cursor to advance and nothing to do with the window. TestNoServiceOptionIsCalledLimit fails on a field or exported parameter named any of the three. Zero means the service's default cap, not unlimited; a service that can be asked for everything exports an AllResults for it. A result that reached its cap says so, whatever it is read through: meta.limitReached under --json, limit_reached from an MCP list tool, and a line on stderr from paging.Hint in text. It means there may be more, not that there is. TestACappedListingSaysSoIsEnforced and TestEveryLimitedToolSaysWhenItStopped fail on a surface that stays silent.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Name a new list option MaxResults, field or parameter, and drive it through openapi.PageThrough. Do not add one called Limit or PageSize, and do not hand-roll the walk. A CLI --limit flag is a total and maps straight to MaxResults; paging.Truncate afterwards is then belt and braces rather than the thing that makes the flag work. Unexported helpers may still speak of pages.</p>
+<p>Name a new list option MaxResults, field or parameter, and drive it through openapi.PageThrough. Do not add one called Limit or PageSize, and do not hand-roll the walk. A CLI --limit flag is a total and maps straight to MaxResults; paging.Truncate afterwards is then belt and braces rather than the thing that makes the flag work. Unexported helpers may still speak of pages. A new list command passes paging.LimitReached to WriteJSONList and calls paging.Hint before its text output returns. A new MCP list tool returns its collection through capped and sets limit_reached from it. A command that takes --limit only to find one thing rather than to return a page says so in its RunE with a <code>limit-not-reported:</code> comment giving the reason.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>This began as a rule about ambiguity. Eleven services capped and eight paged to exhaustion, the field was called Limit in all nineteen, and the wrong guess failed silently in the direction that loses data. Renaming was not enough. Seven --limit flags shipped doing nothing, and in every one the field was honestly called PageSize: the CLI handed a cap to something that took a window, and no naming rule reaches a call site where both halves are named correctly. One of them was worse -- the dashboard's option was already called MaxResults and was already a page size. Removing the second meaning is what closes it. With no page size on the surface, a cap cannot land on one, and the value a caller passes has only one thing it can mean.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>Keep both names and document which is which</code>: Documentation is what was already missing, and it does not fail a build.</li>
 <li><code>Keep PageSize and check the call sites statically instead</code>: The check would have to know whether a value flowing into a parameter is a cap, which needs type resolution the guard does not have, and would still pass the dashboard.</li>
-<li><code>Return a truncated flag alongside the results</code>: Composes with the envelope's meta.limitReached and is worth having, but it makes truncation observable rather than unambiguous.</li>
+<li><code>Keep PageSize and have each service report whether it truncated</code>: It makes a page size observable rather than removing it. The signal a caller reads comes from the cap itself -- meta.limitReached, limit_reached, the text hint -- and needs no second meaning to exist.</li>
 </ul>
 
 
@@ -1070,6 +1235,9 @@
 
 
 
+
+  
+  
 
 
 

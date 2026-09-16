@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4.0.0/adr/011-error-taxonomy-and-cli-exit-contract/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v4/adr/011-error-taxonomy-and-cli-exit-contract/">
       
       
       
@@ -363,6 +363,60 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -379,10 +433,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -400,8 +454,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -523,6 +577,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -552,10 +662,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -573,8 +683,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,6 +953,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/webhook-secrets/" class="md-nav__link">
         
   
@@ -913,6 +1051,33 @@
     
   
     ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
   
 
     
@@ -1053,14 +1218,18 @@
 <li>Source: <code>docs/decisions/011-error-taxonomy-and-cli-exit-contract.yaml</code></li>
 </ul>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Define a stable error taxonomy (authentication, authorization, validation, not-found, conflict, transient, permanent) and map it to deterministic CLI exit codes and structured JSON error payloads.</p>
+<p>Define a stable error taxonomy and map it to deterministic CLI exit codes and structured JSON error payloads. The kinds are authentication, authorization, validation, not_found, conflict, transient, permanent, not_implemented, cancelled, unknown_outcome and internal; internal is what an unclassified error becomes, so every error has a kind.
+unknown_outcome is exit 13 and means the request reached the server and no usable answer came back, so bb cannot say whether it was applied: a mutation whose connection was lost, timed out or was interrupted after it was sent, that a gateway answered with 502 or 504, that Bitbucket answered with 500, or that Bitbucket answered with an error it raised while writing the answer. Only for a method the retry policy will not replay. A GET, PUT or DELETE in the same position is transient: it is idempotent, so sending it again is how the caller finds out. A 500 is Bitbucket raising an error rather than refusing the request, and it can raise one after applying part of what was asked; the retry policy already refuses to replay a 5xx on a method it does not replay, so reporting it as transient asked the caller to do what the policy would not. 503 stays transient: it says the request was not processed. It sits apart from transient, which invites a retry; from permanent, which says the work did not happen; and from cancelled, exit 12, an interrupt that stopped the request before the server could act on it. A mutation that may have been applied has to be checked rather than repeated.
+A status that arrived says whether the work was refused, not that it landed. A reply cut short after a 4xx is reported as refused rather than unknown: nothing was applied, and sending it again will be refused again. A 2xx settles nothing, because behind SSO or a proxy a login page can answer 200 to a write nobody authenticated, so a mutation whose body was lost stays unknown_outcome.
+A command may resolve an unknown outcome by reading the state back, and one does: a webhook create lists the scope's webhooks before and after, and one new webhook matching the request is reported as created; anything else stays unknown_outcome. The mutation is never sent again. This is worth doing where a listing identifies what was made; it is not required of every mutation, and most of them report exit 13 and leave the check to the caller.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Map transport and service errors into canonical categories before returning from workflows. Keep human output and JSON output consistent with the same underlying error classification. Avoid leaking raw upstream errors directly to users.</p>
+<p>Map transport and service errors into canonical categories before returning from workflows. Do not report a failed mutation as transient when its outcome is unknown: exit 10 tells a caller's wrapper to replay a request the retry policy itself refuses to replay. Keep human output and JSON output consistent with the same underlying error classification. Avoid leaking raw upstream errors directly to users.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Deterministic error behavior is required for both scriptability and operator trust. A consistent taxonomy simplifies retries, diagnostics, and support workflows.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>Free-form error strings and ad-hoc exit codes</code>: Breaks machine consumption and makes behavior unpredictable.</li>
+<li><code>Send the mutation again when the check does not find what it made</code>: A request that timed out can still be in progress, so not finding its result is not proof it will not land, and a second send then duplicates it: the failure #454 removed from the retry policy.</li>
 </ul>
 
 
@@ -1068,6 +1237,9 @@
 
 
 
+
+  
+  
 
 
 
