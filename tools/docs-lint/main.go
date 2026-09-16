@@ -39,6 +39,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/tools/releasetags"
 )
 
 // shellLanguages are the fenced-block languages whose contents are shell.
@@ -145,23 +146,25 @@ func resolveTargetVersion(explicit string) string {
 	return findLocalGitTag()
 }
 
+// findLocalGitTag is the newest release tag, which is not the newest tag: a
+// prerelease is not a version the documentation should name (releasetags).
 func findLocalGitTag() string {
-	cmd := exec.Command("git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*.[0-9]*.[0-9]*")
-	out, err := cmd.Output()
-	if err == nil {
-		tag := strings.TrimSpace(string(out))
-		if tag != "" {
+	if tag := releasetags.Latest(); tag != "" {
+		return strings.TrimPrefix(tag, "v")
+	}
+
+	// Nothing to describe from -- a shallow clone that fetched tags has them
+	// without the history they sit on -- so fall back to the tag list.
+	out, err := exec.Command("git", "tag", "-l", "--sort=-v:refname", releasetags.Glob).Output()
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if tag := strings.TrimSpace(line); releasetags.IsRelease(tag) {
 			return strings.TrimPrefix(tag, "v")
 		}
 	}
-	cmd = exec.Command("git", "tag", "-l", "--sort=-v:refname", "v[0-9]*.[0-9]*.[0-9]*")
-	out, err = cmd.Output()
-	if err == nil {
-		lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-		if len(lines) > 0 && strings.TrimSpace(lines[0]) != "" {
-			return strings.TrimPrefix(strings.TrimSpace(lines[0]), "v")
-		}
-	}
+
 	return ""
 }
 
