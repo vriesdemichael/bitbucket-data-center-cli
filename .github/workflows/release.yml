@@ -136,8 +136,11 @@ jobs:
           PLATFORM: ${{ matrix.goos }}_${{ matrix.goarch }}
         run: echo "base=dist/bb_${VERSION#v}_${PLATFORM}" >> "$GITHUB_OUTPUT"
 
+      # actions/attest, not actions/attest-sbom: the latter is deprecated and is
+      # a warning followed by this same action at this same version, so twelve
+      # warnings per release bought nothing.
       - name: Attest the standard archive with its SBOM
-        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
           subject-path: ${{ steps.names.outputs.base }}.${{ matrix.archive }}
           sbom-path: ${{ steps.names.outputs.base }}.spdx.json
@@ -145,7 +148,7 @@ jobs:
       # Only the Linux build has a .deb and an .rpm; elsewhere those two paths
       # match nothing and the archive is the one subject.
       - name: Attest the hardened archive and packages with their SBOM
-        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
           subject-path: |
             ${{ steps.names.outputs.base }}_noupdate.${{ matrix.archive }}

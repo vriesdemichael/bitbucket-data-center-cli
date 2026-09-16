@@ -516,7 +516,7 @@ tasks:
       - '{{ .ROOT_DIR | replace "\\" "/" }}/.tmp/live.test.exe -test.timeout=20m -test.parallel={{.LIVE_PARALLEL}}'
 
   release:promote:check:
-    desc: Verify next can fast-forward onto main before promoting
+    desc: Verify next can fast-forward onto main, and that CI passed on it, before promoting
     # main is a release pointer and keeps a linear history, so the promotion is
     # a fast-forward push and never a pull request -- a rebase-merge would
     # replay every commit with new shas while next kept the originals, leaving
@@ -534,6 +534,28 @@ tasks:
           ahead=$(git rev-list --count origin/main..origin/next)
           echo "next is $ahead commits ahead of main and can fast-forward."
           echo "  git push origin next:main"
+          # The promotion is a push, so branch protection's "CI Complete"
+          # requirement never runs: it gates pull requests, and an administrator
+          # pushing to main bypasses it anyway. Pushing cuts a release
+          # immediately, from whatever next holds. So the check that would have
+          # run is asked for here, against the commit that is about to become
+          # main.
+          head=$(git rev-parse origin/next)
+          ci=$(gh api "repos/{owner}/{repo}/commits/$head/check-runs" --jq '.check_runs[] | select(.name=="CI Complete") | .conclusion' 2>/dev/null | head -1)
+          if [ "$ci" = "success" ]; then
+            echo "  CI Complete: success on $(git rev-parse --short origin/next)"
+          elif [ -z "$ci" ]; then
+            echo "" >&2
+            echo "CI Complete has not reported on $(git rev-parse --short origin/next) (or gh is not authenticated)." >&2
+            echo "Pushing cuts a release from this commit, so check the run first:" >&2
+            echo "  gh run list --branch next --limit 1" >&2
+            exit 1
+          else
+            echo "" >&2
+            echo "CI Complete on $(git rev-parse --short origin/next) is \"$ci\", not success." >&2
+            echo "Pushing cuts a release from this commit." >&2
+            exit 1
+          fi
           # The last place a person looks before a major ships. Advisory:
           # promote:check is a convenience, not a gate, and a deprecation left
           # in place is a decision rather than a mistake to be blocked.

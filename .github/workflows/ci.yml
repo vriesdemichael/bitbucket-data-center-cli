@@ -57,16 +57,28 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # The branch names arrive through the environment rather than being
+      # expanded into the script. A branch is named by whoever opens the pull
+      # request, and an expansion puts that name into the shell: `$(...)` in a
+      # branch name would have run here. The token is read-only on this event,
+      # which is why this is a nit rather than an incident.
       - name: Verify the pull request may reach its base
         if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
         run: |
           go run ./tools/release-flow \
-            -base-ref "${{ github.event.pull_request.base.ref }}" \
-            -head-ref "${{ github.event.pull_request.head.ref }}" \
-            -base-sha "${{ github.event.pull_request.base.sha }}" \
-            -head-sha "${{ github.event.pull_request.head.sha }}" \
-            -head-repo "${{ github.event.pull_request.head.repo.full_name }}" \
-            -repo "${{ github.repository }}"
+            -base-ref "$BASE_REF" \
+            -head-ref "$HEAD_REF" \
+            -base-sha "$BASE_SHA" \
+            -head-sha "$HEAD_SHA" \
+            -head-repo "$HEAD_REPO" \
+            -repo "$REPO"
 
   adr-validation:
     name: ADR Validation
