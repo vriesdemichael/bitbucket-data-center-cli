@@ -47,6 +47,12 @@ type Request struct {
 	// Flag is the escape hatch to name when there is nobody to ask.
 	Flag string
 
+	// Verb is what the command does to the resource: delete, remove, revoke or
+	// clear. Empty means delete, which is what every caller meant before the
+	// other three were guarded and told a person revoking a token that they
+	// were about to delete one.
+	Verb string
+
 	// MachineOutput suppresses prompting the way --json does.
 	MachineOutput bool
 
@@ -67,9 +73,17 @@ func ConfirmDestructive(request Request) error {
 	if request.Yes && !request.TargetExplicit {
 		// gh reaches the same answer for the same reason: --yes on an inferred
 		// target is the accident it was meant to prevent.
+		//
+		// The remedy is what to do, not what was going to happen. It named the
+		// resource -- "pass PROJ/repo branch feature to confirm" -- which is
+		// not something that can be passed to anything, and a pipeline running
+		// inside a checkout is exactly where this is read.
 		return apperrors.New(
 			apperrors.KindValidation,
-			fmt.Sprintf("%s only applies when the target is named explicitly; pass %s to confirm", request.Flag, request.Resource),
+			fmt.Sprintf(
+				"%s only applies when the target is named explicitly, and bb took the repository from the git remote; name it with --repo PROJECT/slug, or set BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG",
+				request.Flag,
+			),
 			nil,
 		)
 	}
@@ -77,11 +91,48 @@ func ConfirmDestructive(request Request) error {
 		return nil
 	}
 
-	if err := gate(request, "delete "+request.Resource); err != nil {
+	if err := gate(request, request.verb()+" "+request.Resource); err != nil {
 		return err
 	}
 
-	return confirmDeletion(request.In, request.Out, request.Resource)
+	return confirmDeletion(request.In, request.Out, request.Resource, request.destruction())
+}
+
+// verb is what the command does, for the question and the refusal to say.
+func (request Request) verb() string {
+	if strings.TrimSpace(request.Verb) == "" {
+		return "delete"
+	}
+
+	return strings.TrimSpace(request.Verb)
+}
+
+// destruction is the verb in the two other forms the question needs.
+type destruction struct {
+	// noun completes "Type X to confirm ...".
+	noun string
+	// past completes "nothing was ...".
+	past string
+}
+
+// destructions are the four verbs ADR-073 guards.
+//
+// A verb that is not one of them falls back to wording that needs no noun at
+// all, so a fifth destructive command reads correctly on the day it is added
+// rather than on the day somebody remembers this map.
+var destructions = map[string]destruction{
+	"delete": {noun: "deletion", past: "deleted"},
+	"remove": {noun: "removal", past: "removed"},
+	"revoke": {noun: "revocation", past: "revoked"},
+	"clear":  {noun: "clearing", past: "cleared"},
+}
+
+func (request Request) destruction() destruction {
+	if words, known := destructions[request.verb()]; known {
+		return words
+	}
+
+	return destruction{past: "changed"}
 }
 
 // ConfirmAction is ConfirmDestructive for something that has no single target
@@ -161,13 +212,20 @@ func gate(request Request, action string) error {
 // away from every other answer, and a person who has already typed the wrong
 // command will type y to it. Naming the resource makes the confirmation carry
 // the same information as the command.
-func confirmDeletion(in io.Reader, out io.Writer, resource string) error {
+func confirmDeletion(in io.Reader, out io.Writer, resource string, words destruction) error {
 	// A caller that leaves this blank turns the confirmation into a bare return.
 	if strings.TrimSpace(resource) == "" {
 		return apperrors.New(apperrors.KindInternal, "refusing to confirm a deletion with no named target", nil)
 	}
 
-	fmt.Fprintf(out, "Type %q to confirm deletion: ", resource)
+	// In the command's own word: somebody revoking a token was asked to confirm
+	// a deletion and told afterwards that nothing was deleted, which describes
+	// neither what they typed nor what would have happened.
+	if words.noun == "" {
+		fmt.Fprintf(out, "Type %q to confirm: ", resource)
+	} else {
+		fmt.Fprintf(out, "Type %q to confirm %s: ", resource, words.noun)
+	}
 
 	reader := bufio.NewReader(in)
 	line, err := reader.ReadString('\n')
@@ -178,7 +236,7 @@ func confirmDeletion(in io.Reader, out io.Writer, resource string) error {
 	if strings.TrimSpace(line) != resource {
 		return apperrors.New(
 			apperrors.KindValidation,
-			fmt.Sprintf("confirmation did not match %q; nothing was deleted", resource),
+			fmt.Sprintf("confirmation did not match %q; nothing was %s", resource, words.past),
 			nil,
 		)
 	}
@@ -287,6 +345,9 @@ func ConfirmDeleteOf(cmd *cobra.Command, machineOutput, yes, targetExplicit bool
 	request.TargetExplicit = targetExplicit
 	request.Resource = resource
 	request.Flag = "--yes"
+	if cmd != nil {
+		request.Verb = cmd.Name()
+	}
 
 	return ConfirmDestructive(request)
 }

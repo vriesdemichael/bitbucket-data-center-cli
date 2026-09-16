@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
 )
 
@@ -132,10 +133,43 @@ func destructiveTarget(cmd *cobra.Command, args []string) string {
 	}
 
 	parts = append(parts, args...)
+	parts = append(parts, identifyingFlags(cmd)...)
 
 	if len(parts) == 0 {
 		return dryRunCommandPath(cmd)
 	}
 
 	return strings.Join(parts, " ")
+}
+
+// controlFlags say how a command runs rather than what it acts on, so they are
+// no part of what is about to be destroyed.
+var controlFlags = map[string]struct{}{
+	"yes": {}, "repo": {}, "json": {}, "dry-run": {}, "describe": {},
+	"no-input": {}, "no-color": {}, "full-error-body": {}, "host": {},
+	"log-level": {}, "log-format": {}, "request-timeout": {}, "retry-count": {},
+	"retry-backoff": {}, "ca-file": {}, "insecure-skip-verify": {},
+	"client-cert": {}, "client-key": {}, "limit": {}, "all": {},
+}
+
+// identifyingFlags are the values that say which thing is going, for a command
+// that takes it as a flag rather than as an argument.
+//
+// `bb pr review reviewer remove 1 --user bob` asked to confirm "PROJ/repo
+// reviewer 1", which names the pull request and not bob; `bb repo comment
+// delete --id 7` named nothing at all. Only flags the caller actually passed
+// are read, so nothing that was left at its default appears.
+func identifyingFlags(cmd *cobra.Command) []string {
+	var values []string
+
+	cmd.Flags().Visit(func(flag *pflag.Flag) {
+		if _, control := controlFlags[flag.Name]; control {
+			return
+		}
+		if value := strings.TrimSpace(flag.Value.String()); value != "" && value != "false" {
+			values = append(values, value)
+		}
+	})
+
+	return values
 }
