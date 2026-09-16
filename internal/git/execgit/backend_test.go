@@ -520,6 +520,19 @@ func TestCloneFailureRedactsCredentials(t *testing.T) {
 	if strings.Contains(errMsg, "super-secret-token-12345") {
 		t.Fatalf("error message leaked secret token: %s", errMsg)
 	}
+
+	// Where git reads configuration from the environment, the header never
+	// reaches the command line, so there is nothing left in the error to
+	// redact -- and its absence is the stronger claim. An older git still takes
+	// it as an argument, and that argument is still redacted.
+	if backend.gitReadsConfigFromEnvironment(context.Background()) {
+		if strings.Contains(errMsg, "Authorization:") {
+			t.Fatalf("the credential header reached the error, so it was on the command line: %s", errMsg)
+		}
+
+		return
+	}
+
 	if !strings.Contains(errMsg, "Authorization: Bearer ***") {
 		t.Fatalf("expected error message to contain redacted token header, got: %s", errMsg)
 	}
