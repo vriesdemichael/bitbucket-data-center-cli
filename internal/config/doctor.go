@@ -163,16 +163,19 @@ func Diagnose(input DiagnoseInput) Diagnosis {
 	dotenv := readDotenvFiles()
 	loadDotEnv()
 
+	platformPolicy, platformProblems := loadPlatformPolicyWithProblems()
+
 	return diagnose(diagnosisInputs{
-		getenv:         os.Getenv,
-		ambient:        func(name string) bool { return ambient[name] },
-		dotenv:         dotenv,
-		files:          []fileInput{storedFileInput(), workspaceFileInput(), systemFileInput()},
-		platformPolicy: loadPlatformPolicy(),
-		flags:          input.Overrides,
-		changedFlags:   input.ChangedFlags,
-		secrets:        func(host, key string) (string, string) { return storedSecrets(host, key) },
-		probeKeyring:   probeKeyring,
+		getenv:           os.Getenv,
+		ambient:          func(name string) bool { return ambient[name] },
+		dotenv:           dotenv,
+		files:            []fileInput{storedFileInput(), workspaceFileInput(), systemFileInput()},
+		platformPolicy:   platformPolicy,
+		platformProblems: platformProblems,
+		flags:            input.Overrides,
+		changedFlags:     input.ChangedFlags,
+		secrets:          func(host, key string) (string, string) { return storedSecrets(host, key) },
+		probeKeyring:     probeKeyring,
 	})
 }
 
@@ -186,10 +189,13 @@ type diagnosisInputs struct {
 	dotenv         []dotenvFile
 	files          []fileInput
 	platformPolicy PolicyConfig
-	flags          Overrides
-	changedFlags   map[string]bool
-	secrets        func(host, key string) (token, password string)
-	probeKeyring   func() error
+	// platformProblems are policy values the platform store holds that bb
+	// could not read, so a row can say so instead of looking unset.
+	platformProblems []PolicyProblem
+	flags            Overrides
+	changedFlags     map[string]bool
+	secrets          func(host, key string) (token, password string)
+	probeKeyring     func() error
 }
 
 type dotenvFile struct {
@@ -680,7 +686,7 @@ func (r resolution) settings() []DiagnosedSetting {
 		r.policySetting("allowed_hosts", "AllowedHosts", "", policyList(func(p PolicyConfig) []string { return p.AllowedHosts })),
 		r.policySetting("allow_insecure_skip_verify", "AllowInsecureSkipVerify", "true", policyFlag(func(p PolicyConfig) *bool { return p.AllowInsecureSkipVerify })),
 		r.disableUpdate(),
-		r.policySetting("allow_http_update", "AllowHTTPUpdate", "", policyFlag(func(p PolicyConfig) *bool { return p.AllowHTTPUpdate })),
+		r.allowHTTPUpdate(),
 		// The registry has no value for mcp_audit_file (ADR-058, point 6).
 		r.policySetting("mcp_audit_file", "", "", policyText(func(p PolicyConfig) string { return p.MCPAuditFile })),
 	)
@@ -988,25 +994,66 @@ func (r resolution) updateBaseURL() DiagnosedSetting {
 	// bb update refuses a base URL it may not fetch from, so say so here rather
 	// than on the next update. --allow-http belongs to bb update and cannot be
 	// seen from here; policy and BB_ALLOW_HTTP_UPDATE can.
-	if err := r.updateHTTPPermission().CheckURL(setting.Value); err != nil {
+	permission, err := r.updateHTTPPermission()
+	if err != nil {
+		setting.Problem = apperrors.MessageOf(err)
+
+		return setting
+	}
+	if err := permission.CheckURL(setting.Value); err != nil {
 		setting.Problem = apperrors.MessageOf(err)
 	}
 
 	return setting
 }
 
-// updateHTTPPermission follows ResolveUpdateHTTPPermission for a run without
-// --allow-http.
-func (r resolution) updateHTTPPermission() UpdateHTTPPermission {
-	if r.policy.AllowHTTPUpdate != nil {
-		return UpdateHTTPPermission{Allowed: *r.policy.AllowHTTPUpdate, ForbiddenByPolicy: !*r.policy.AllowHTTPUpdate}
-	}
+// updateHTTPPermission answers what bb update would decide, from the policy
+// and the variable this diagnosis read.
+//
+// The rule is updateHTTPDecision, shared with the loader. Restating it here is
+// what made the report miss two refusals: a BB_ALLOW_HTTP_UPDATE that is not a
+// boolean, which fails every bb update with exit 2, and an opt-in against a
+// policy that forbids plain HTTP, which fails every bb update with exit 3 even
+// against an https mirror. --allow-http is not among the inputs, because a flag
+// belongs to a command line rather than to a diagnosis.
+func (r resolution) updateHTTPPermission() (UpdateHTTPPermission, error) {
+	requested := false
 	if variable := r.in.fromProcessEnvironment(settingAllowHTTPUpdate.environment); len(variable) > 0 {
-		allowed, err := strconv.ParseBool(variable[0].value)
-		return UpdateHTTPPermission{Allowed: err == nil && allowed}
+		parsed, err := strconv.ParseBool(strings.TrimSpace(variable[0].value))
+		if err != nil {
+			return UpdateHTTPPermission{}, invalidAllowHTTPUpdate(settingAllowHTTPUpdate.environment)
+		}
+		requested = parsed
 	}
 
-	return UpdateHTTPPermission{}
+	return updateHTTPDecision(r.policy, requested, settingAllowHTTPUpdate.environment, "")
+}
+
+// allowHTTPUpdate reports the policy and the variable together, because the
+// refusal a run meets depends on both.
+func (r resolution) allowHTTPUpdate() DiagnosedSetting {
+	policy := r.policyCandidates("allow_http_update", "AllowHTTPUpdate", policyFlag(func(p PolicyConfig) *bool { return p.AllowHTTPUpdate }))
+
+	// Policy decides either way here, unlike require_keyring: it can permit
+	// plain HTTP as well as refuse it, and a variable asking for it against a
+	// policy that refuses fails the run rather than being ignored.
+	variable := r.in.fromProcessEnvironment(settingAllowHTTPUpdate.environment)
+	if len(policy) > 0 {
+		for index := range variable {
+			variable[index].ineligible = true
+		}
+	}
+
+	setting := r.withPolicyProblem(resolveSetting("allow_http_update", "", append(policy, variable...)...), "AllowHTTPUpdate")
+	if setting.Problem != "" {
+		return setting
+	}
+
+	if _, err := r.updateHTTPPermission(); err != nil {
+		setting.Problem = apperrors.MessageOf(err)
+	}
+
+	return setting
 }
 
 func (r resolution) fromRegistry(name, value string) []settingCandidate {
@@ -1049,7 +1096,28 @@ func (r resolution) policyCandidates(key, registryName string, value func(Policy
 }
 
 func (r resolution) policySetting(name, registryName, fallback string, value func(PolicyConfig) string) DiagnosedSetting {
-	return resolveSetting(name, fallback, r.policyCandidates(name, registryName, value)...)
+	return r.withPolicyProblem(resolveSetting(name, fallback, r.policyCandidates(name, registryName, value)...), registryName)
+}
+
+// withPolicyProblem reports a policy value the platform store holds but bb
+// could not read.
+//
+// Without it the row shows whatever is in force, which reads as the
+// administrator's decision rather than as a value that was refused.
+func (r resolution) withPolicyProblem(setting DiagnosedSetting, registryName string) DiagnosedSetting {
+	if setting.Problem != "" || registryName == "" {
+		return setting
+	}
+
+	for _, problem := range r.in.platformProblems {
+		if problem.Name == registryName {
+			setting.Problem = problem.Message
+
+			return setting
+		}
+	}
+
+	return setting
 }
 
 func (r resolution) requireKeyring() DiagnosedSetting {
@@ -1065,7 +1133,7 @@ func (r resolution) requireKeyring() DiagnosedSetting {
 		setting.Value = strconv.FormatBool(parsed)
 	}
 
-	return setting
+	return r.withPolicyProblem(setting, "RequireKeyring")
 }
 
 func (r resolution) disableUpdate() DiagnosedSetting {
@@ -1077,7 +1145,7 @@ func (r resolution) disableUpdate() DiagnosedSetting {
 		variable[index].value = strconv.FormatBool(disabled)
 	}
 
-	return resolveSetting("disable_update", "false", mandateOver(policy, variable)...)
+	return r.withPolicyProblem(resolveSetting("disable_update", "false", mandateOver(policy, variable)...), "DisableUpdate")
 }
 
 func (r resolution) updateTrust() []DiagnosedSetting {

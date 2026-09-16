@@ -40,6 +40,54 @@ func doctorInputs(t *testing.T, files map[string]string, environment map[string]
 	}
 }
 
+// TestDoctorReportsTheRefusalsAnUpdateWouldMeet is ADR-086's rule that anything
+// a command would refuse fails the doctor.
+//
+// The allow_http_update row read policy only, so two refusals were invisible: a
+// variable bb update cannot parse, which fails the run before it starts, and a
+// variable asking for plain HTTP where policy refuses it, which fails every run
+// even against an https mirror.
+func TestDoctorReportsTheRefusalsAnUpdateWouldMeet(t *testing.T) {
+	t.Parallel()
+
+	t.Run("a variable that is not a boolean", func(t *testing.T) {
+		t.Parallel()
+
+		setting := diagnosedSetting(t, diagnose(doctorInputs(t, nil, map[string]string{
+			"BB_ALLOW_HTTP_UPDATE": "yes",
+		})), "allow_http_update")
+
+		if !strings.Contains(setting.Problem, "must be true or false") {
+			t.Fatalf("bb update exits 2 on this, and the diagnosis says %q", setting.Problem)
+		}
+	})
+
+	t.Run("an opt-in against a policy that refuses", func(t *testing.T) {
+		t.Parallel()
+
+		setting := diagnosedSetting(t, diagnose(doctorInputs(t,
+			map[string]string{TierSystem: "policies:\n  allow_http_update: false\n"},
+			map[string]string{"BB_ALLOW_HTTP_UPDATE": "1"},
+		)), "allow_http_update")
+
+		if !strings.Contains(setting.Problem, "refused") {
+			t.Fatalf("every bb update exits 3 here, and the diagnosis says %q", setting.Problem)
+		}
+	})
+
+	t.Run("nothing to report when the two agree", func(t *testing.T) {
+		t.Parallel()
+
+		setting := diagnosedSetting(t, diagnose(doctorInputs(t, nil, map[string]string{
+			"BB_ALLOW_HTTP_UPDATE": "1",
+		})), "allow_http_update")
+
+		if setting.Problem != "" {
+			t.Fatalf("a permitted opt-in was reported as a problem: %q", setting.Problem)
+		}
+	})
+}
+
 func writeDoctorFile(t *testing.T, directory, name, content string) string {
 	t.Helper()
 
