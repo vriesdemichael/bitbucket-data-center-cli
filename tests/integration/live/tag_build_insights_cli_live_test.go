@@ -25,7 +25,7 @@ func TestLiveTagCLISurface(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -33,9 +33,16 @@ func TestLiveTagCLISurface(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	const tag = "v9.9.9-live"
+	// The older of the two commits rather than master: with the tip as the start
+	// point, a tag made at the default branch regardless would read back as
+	// asked for.
+	if len(repo.CommitIDs) < 2 {
+		t.Fatalf("want two seeded commits, got %v", repo.CommitIDs)
+	}
+	startPoint := repo.CommitIDs[1]
 
 	t.Run("a dry run predicts the tag without making it", func(t *testing.T) {
-		output := mustLiveCLI(t, "--dry-run", "tag", "create", tag, "--start-point", "master")
+		output := mustLiveCLI(t, "--dry-run", "tag", "create", tag, "--start-point", startPoint)
 		if !strings.Contains(output, `"predictedAction": "create"`) {
 			t.Errorf("expected a create prediction:\n%s", output)
 		}
@@ -46,19 +53,35 @@ func TestLiveTagCLISurface(t *testing.T) {
 	})
 
 	t.Run("creating one answers with the tag", func(t *testing.T) {
-		output := mustLiveCLI(t, "tag", "create", tag, "--start-point", "master")
+		output := mustLiveCLI(t, "tag", "create", tag, "--start-point", startPoint)
 		if !strings.Contains(output, tag) {
 			t.Fatalf("expected the created tag in the output:\n%s", output)
 		}
 	})
 
 	t.Run("it appears in the listing and can be read back", func(t *testing.T) {
-		if listing := mustLiveCLI(t, "tag", "list", "--all"); !strings.Contains(listing, tag) {
+		listing := mustLiveCLI(t, "tag", "list", "--all")
+		if !strings.Contains(listing, tag) {
 			t.Fatalf("the tag is missing from the listing:\n%s", listing)
 		}
-		if view := mustLiveCLI(t, "tag", "view", tag); !strings.Contains(view, tag) {
+		view := mustLiveCLI(t, "tag", "view", tag)
+		if !strings.Contains(view, tag) {
 			t.Fatalf("reading the tag back did not name it:\n%s", view)
 		}
+
+		var listed []map[string]any
+		decodeJSONData(t, listing, &listed)
+		var entry map[string]any
+		for _, candidate := range listed {
+			if candidate["displayId"] == tag {
+				entry = candidate
+			}
+		}
+		if entry == nil {
+			t.Fatalf("no listed tag has the displayId %s:\n%s", tag, listing)
+		}
+		assertLiveTagPointsAt(t, "the listed tag", entry, tag, startPoint)
+		assertLiveTagPointsAt(t, "the viewed tag", decodeJSONMap(t, view), tag, startPoint)
 	})
 
 	t.Run("deleting it removes it", func(t *testing.T) {
@@ -117,5 +140,18 @@ func TestLiveEmptyListingsSaySo(t *testing.T) {
 				t.Fatalf("printed nothing at all for an empty result")
 			}
 		})
+	}
+}
+
+// assertLiveTagPointsAt compares a tag as bb's JSON reports it with the name
+// and start point it was created with.
+func assertLiveTagPointsAt(t *testing.T, source string, tag map[string]any, name, commit string) {
+	t.Helper()
+
+	if tag["displayId"] != name || tag["id"] != "refs/tags/"+name {
+		t.Errorf("%s is named %v (%v), want %s (refs/tags/%s)", source, tag["displayId"], tag["id"], name, name)
+	}
+	if tag["latestCommit"] != commit {
+		t.Errorf("%s points at %v, want the start point %s", source, tag["latestCommit"], commit)
 	}
 }
