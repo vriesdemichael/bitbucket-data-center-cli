@@ -81,7 +81,8 @@ rather than run without it.
 
 | Platform | User | System |
 |---|---|---|
-| Linux, macOS | `~/.config/bb/config.yaml` | `/etc/bb/config.yaml` |
+| Linux | `~/.config/bb/config.yaml` | `/etc/bb/config.yaml` |
+| macOS | `~/Library/Application Support/bb/config.yaml` | `/etc/bb/config.yaml` |
 | Windows | `%APPDATA%\bb\config.yaml` | `%ProgramData%\bb\config.yaml` |
 
 `BB_CONFIG_PATH` overrides the user file. In CI, `BB_DISABLE_STORED_CONFIG=1`
@@ -164,8 +165,9 @@ password=<your token>
 for it. The silence is deliberate: it lets git fall through to another helper
 instead of failing outright.
 
-If another credential manager answers first, re-run `bb auth setup-git`, which
-resets the helper list for that host before adding `bb`. See
+If another credential manager answers first, re-run `bb auth setup-git --force`,
+which replaces the helper configured for that host with `bb`. Without `--force`
+it refuses rather than overwrite somebody else's helper. See
 [Git Authentication](advanced/git-authentication.md).
 
 <!-- docs-lint: message-of crypto/x509 -->

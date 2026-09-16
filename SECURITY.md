@@ -111,7 +111,7 @@ artifact is itself verifiable rather than asserted:
 ```bash
 gh attestation verify bb_linux_amd64.tar.gz \
   --repo vriesdemichael/bitbucket-data-center-cli \
-  --predicate-type https://spdx.dev/Document
+  --predicate-type https://spdx.dev/Document/v2.3
 ```
 
 ## Credential handling
@@ -125,5 +125,7 @@ above.
 ## Telemetry
 
 `bb` sends no telemetry and makes no network calls other than to the Bitbucket
-host you configure. The only exception is `bb update`, which contacts
-`api.github.com` and only when you run it explicitly.
+host you configure. The only exception is `bb update`, and only when you run it explicitly: it
+contacts the release host (`api.github.com`, or the mirror `update_base_url`
+names) and Sigstore's `tuf-repo-cdn.sigstore.dev` for the trust material the
+signature check needs, unless `update_trusted_root` supplies it from disk.

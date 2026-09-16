@@ -183,7 +183,7 @@ Needs work: carol
 bb pr get --repo MYPROJ/payments 42 --json | jq .data.reviewSummary.actionRequired
 
 # Check if any PR builds are still INPROGRESS or FAILED
-bb pr build status 42 --json | jq '.data[] | {key, state}'
+bb pr build status 42 --json | jq '.data.statuses[] | {key, state}'
 ```
 
 `bb pr list` shows the same signal per pull request, so you can spot which of your

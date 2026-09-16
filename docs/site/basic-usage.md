@@ -172,10 +172,10 @@ bb pr review reviewer add 42 --default-reviewers --codeowners
 See [Advanced: Repository Discovery and Server Switching](advanced/repository-discovery-and-server-switching.md)
 for remote URL formats, precedence, ambiguity handling, and multi-server workflows.
 
-## Strict non-interactive contract
+## Prompts and the non-interactive contract
 
-`bb` operates strictly non-interactively across all commands ([ADR-054](adr/054-strict-non-interactive-cli-contract.md)).
-Commands never block on standard input for interactive prompts or confirmation dialogs (`[y/N]`). Missing or invalid options fail fast with descriptive error messages, ensuring predictable execution in scripts, CI/CD pipelines, and AI agent tool calls.
+`bb` prompts only where a person can answer ([ADR-073](adr/073-interactive-when-a-person-is-there-explicit-when-not.md)).
+With no terminal, or under `--json`, no command blocks on standard input: it fails fast and names the flag or value it needed, which is what keeps scripts, CI/CD pipelines and AI agent tool calls predictable. A command that deletes, removes, revokes or clears something asks for confirmation at a terminal, and requires `--yes` when there is nobody to ask.
 
 ## Dry-run behavior and scope
 
@@ -236,7 +236,7 @@ Runtime precedence order:
 1. CLI flags
 2. Environment variables / `.env`
 3. Git remote inference (repo + host context)
-4. Stored config (`~/.config/bb/config.yaml`) + keyring/fallback secrets
+4. Stored config (`%AppData%\bb\config.yaml`, `~/Library/Application Support/bb/config.yaml` or `~/.config/bb/config.yaml`) + keyring/fallback secrets
 5. Built-in defaults
 
 Supported day-to-day authentication modes are token and basic auth.

@@ -166,7 +166,7 @@ echo $?
 ```
 
 ```text
-validation: --repo must be in PROJECT/slug format
+validation: invalid repository selector (expected PROJECT/slug)
 2
 ```
 
