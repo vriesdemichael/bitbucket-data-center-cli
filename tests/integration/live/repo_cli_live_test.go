@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
@@ -25,6 +26,14 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+
+	// A second project, for the project filter to leave out. A listing that only
+	// has to include this test's repository passes just as well when the filter
+	// is dropped and the whole instance comes back.
+	other, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed the project the filter must exclude failed: %v", err)
 	}
 
 	repo := seeded.Repos[0]
@@ -44,6 +53,18 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !jsonArrayHasEntries(t, repoListOutput) {
 		t.Fatalf("the instance-wide repo list came back empty: %s", repoListOutput)
 	}
+	// The cap holds whatever the instance holds, which is the part of --limit
+	// the unscoped answer can be held to.
+	if listed := repoCLIArray(t, repoListOutput); len(listed) > 50 {
+		t.Fatalf("repo list --limit 50 answered with %d repositories", len(listed))
+	}
+
+	// A cap below what the instance holds shows --limit reaches the listing at
+	// all: the two projects above are two repositories, and the default of 25
+	// would answer with both.
+	if limited := repoCLIArray(t, mustLiveCLI(t, "repo", "list", "--limit", "1")); len(limited) != 1 {
+		t.Fatalf("repo list --limit 1 answered with %d repositories: %v", len(limited), limited)
+	}
 
 	projectRepoListOutput, err := executeLiveCLI(t, "--json", "repo", "list", "--project", seeded.Key, "--limit", "50")
 	if err != nil {
@@ -51,6 +72,15 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	}
 	if !jsonArrayContainsSlug(t, projectRepoListOutput, repo.Slug) {
 		t.Fatalf("expected repo slug %s in project-filtered repo list output: %s", repo.Slug, projectRepoListOutput)
+	}
+	// The project's one repository and nothing else. The limit is above what
+	// the project holds, so the filter is what this listing proves.
+	projectRepos := repoCLIArray(t, projectRepoListOutput)
+	if len(projectRepos) != 1 || projectRepos[0]["projectKey"] != seeded.Key || projectRepos[0]["slug"] != repo.Slug {
+		t.Fatalf("want exactly %s/%s from the project filter, got %v", seeded.Key, repo.Slug, projectRepos)
+	}
+	if jsonArrayContainsSlug(t, projectRepoListOutput, other.Repos[0].Slug) {
+		t.Fatalf("the project filter let %s/%s through: %s", other.Key, other.Repos[0].Slug, projectRepoListOutput)
 	}
 
 	commitID := repo.CommitIDs[0]
@@ -66,7 +96,10 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected comment id in commit create output: %s", createCommitOutput)
 	}
-	commitCommentVersion, _ := commentVersionFromCreateOutput(createCommitOutput)
+	commitCommentVersion, ok := commentVersionFromCreateOutput(createCommitOutput)
+	if !ok {
+		t.Fatalf("expected version in commit create output: %s", createCommitOutput)
+	}
 
 	// The round trip bb could not make. A commit has no thread view, so a reply
 	// to a commit comment reached no bb command at all until the listing was
@@ -77,6 +110,10 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		"--commit", commitID, "--text", commitReplyText, "--parent", commitCommentID)
 	if err != nil {
 		t.Fatalf("repo comment create --parent failed: %v\noutput: %s", err, replyOnCommitOutput)
+	}
+	replyCommentID, ok := commentIDFromCreateOutput(replyOnCommitOutput)
+	if !ok {
+		t.Fatalf("expected comment id in reply create output: %s", replyOnCommitOutput)
 	}
 
 	listCommitOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--commit", commitID, "--path", "seed.txt", "--limit", "25")
@@ -96,6 +133,23 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("the reply did not say what it answers: %s", listCommitOutput)
 	}
 
+	// The substrings above say the text reached the listing somewhere. The line
+	// is what --line and --line-type sent, and the parent is what --parent sent:
+	// a comment stored without them is a comment on no line, or a new thread.
+	listedCommitComments := repoCLIComments(t, listCommitOutput)
+	commitComment := repoCLIEntryWithID(t, listedCommitComments, commitCommentID)
+	if commitComment["text"] != "live cli commit comment" {
+		t.Errorf("commit comment text = %v, want %q", commitComment["text"], "live cli commit comment")
+	}
+	repoCLIAssertAnchor(t, commitComment, "seed.txt", 1, "CONTEXT")
+	commitReply := repoCLIEntryWithID(t, listedCommitComments, replyCommentID)
+	if commitReply["text"] != commitReplyText || commitReply["reply"] != true {
+		t.Errorf("reply %s = text %v, reply %v; want %q, true", replyCommentID, commitReply["text"], commitReply["reply"], commitReplyText)
+	}
+	if parent, _ := numericOrStringID(commitReply["parentId"]); parent != commitCommentID {
+		t.Errorf("reply %s answers %q, want %s", replyCommentID, parent, commitCommentID)
+	}
+
 	humanCommitOutput, err := executeLiveCLI(t, "repo", "comment", "list", "--commit", commitID, "--path", "seed.txt", "--limit", "25")
 	if err != nil {
 		t.Fatalf("repo comment list (commit, human) failed: %v\noutput: %s", err, humanCommitOutput)
@@ -111,6 +165,18 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !strings.Contains(humanListCommitOutput, "No comments found") && !strings.Contains(humanListCommitOutput, "[") {
 		t.Fatalf("expected human comment list output, got: %s", humanListCommitOutput)
 	}
+	// The empty-listing notice satisfied the check above too, on a file that
+	// holds a comment.
+	if strings.Contains(humanListCommitOutput, "No comments found") || !strings.Contains(humanListCommitOutput, "live cli commit comment") {
+		t.Fatalf("the human listing did not show the comment on seed.txt: %s", humanListCommitOutput)
+	}
+
+	// A version the comment is not at has to be refused as out of date. bb
+	// resolves a missing version itself, so an update whose --version never
+	// reached Bitbucket succeeds whatever number it named.
+	staleUpdateOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "update", "--commit", commitID, "--id", commitCommentID,
+		"--text", "an update at a version the comment is not at", "--version", repoCLIVersionAfter(t, commitCommentVersion))
+	repoCLIAssertOutOfDate(t, staleUpdateOutput, err)
 
 	updateCommitArgs := []string{"--json", "repo", "comment", "update", "--commit", commitID, "--id", commitCommentID, "--text", "live cli commit comment updated"}
 	if commitCommentVersion != "" {
@@ -125,16 +191,35 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("expected version in commit update output: %s", updateCommitOutput)
 	}
 
+	updatedCommitComment := repoCLIEntryWithID(t, repoCLICommitComments(t, commitID, "seed.txt"), commitCommentID)
+	if updatedCommitComment["text"] != "live cli commit comment updated" {
+		t.Errorf("commit comment text after the update = %v, want %q", updatedCommitComment["text"], "live cli commit comment updated")
+	}
+	if stored, _ := numericOrStringID(updatedCommitComment["version"]); stored != updatedCommitVersion || stored == commitCommentVersion {
+		t.Errorf("commit comment is stored at version %s; the update reported %s, from %s", stored, updatedCommitVersion, commitCommentVersion)
+	}
+
 	// The reply goes first. Bitbucket refuses to delete a comment that has
 	// replies -- "This comment has replies which must be deleted first" -- so a
 	// thread is torn down leaf upwards, and asserting it here keeps the order
 	// from being rediscovered by whoever adds the next reply to this fixture.
-	replyCommentID, ok := commentIDFromCreateOutput(replyOnCommitOutput)
-	if !ok {
-		t.Fatalf("expected comment id in reply create output: %s", replyOnCommitOutput)
-	}
 	if deleteReplyOutput, err := executeLiveCLI(t, "repo", "comment", "delete", "--commit", commitID, "--id", replyCommentID, "--yes"); err != nil {
 		t.Fatalf("repo comment delete (reply) failed: %v\noutput: %s", err, deleteReplyOutput)
+	}
+	afterReplyDelete := repoCLICommitComments(t, commitID, "seed.txt")
+	if _, found := repoCLIEntryByID(afterReplyDelete, replyCommentID); found {
+		t.Fatalf("reply %s is still listed after its delete: %v", replyCommentID, afterReplyDelete)
+	}
+	if _, found := repoCLIEntryByID(afterReplyDelete, commitCommentID); !found {
+		t.Fatalf("deleting reply %s removed comment %s as well: %v", replyCommentID, commitCommentID, afterReplyDelete)
+	}
+
+	// The version from before the update, which the comment is no longer at.
+	staleDeleteOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "delete", "--commit", commitID, "--id", commitCommentID,
+		"--version", commitCommentVersion, "--yes")
+	repoCLIAssertOutOfDate(t, staleDeleteOutput, err)
+	if _, found := repoCLIEntryByID(repoCLICommitComments(t, commitID, "seed.txt"), commitCommentID); !found {
+		t.Fatalf("a delete refused for its version removed comment %s anyway", commitCommentID)
 	}
 
 	deleteCommitArgs := []string{"repo", "comment", "delete", "--commit", commitID, "--id", commitCommentID, "--yes"}
@@ -147,6 +232,9 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	}
 	if !strings.Contains(deleteCommitOutput, "Deleted comment") {
 		t.Fatalf("expected human delete output, got: %s", deleteCommitOutput)
+	}
+	if remaining := repoCLICommitComments(t, commitID, "seed.txt"); len(remaining) != 0 {
+		t.Fatalf("comments still listed on seed.txt after the last one was deleted: %v", remaining)
 	}
 
 	branch := testsupport.UniqueName("lt-repo-cli-")
@@ -167,7 +255,21 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected comment id in pr create output: %s", createPROutput)
 	}
-	prCommentVersion, _ := commentVersionFromCreateOutput(createPROutput)
+	prCommentVersion, ok := commentVersionFromCreateOutput(createPROutput)
+	if !ok {
+		t.Fatalf("expected version in pr create output: %s", createPROutput)
+	}
+
+	// Anchored to the file the branch adds. The comment above is anchored to
+	// nothing, so the listings scoped to that file had nothing they could show:
+	// this is what they must find, and the other is what they must leave out.
+	anchoredPRText := "live cli anchored pr comment"
+	createAnchoredPROutput := mustLiveCLI(t, "repo", "comment", "create", "--pr", pullRequestID,
+		"--text", anchoredPRText, "--path", "repo-cli-feature.txt", "--line", "1", "--line-type", "ADDED")
+	anchoredPRCommentID, ok := commentIDFromCreateOutput(createAnchoredPROutput)
+	if !ok {
+		t.Fatalf("expected comment id in anchored pr create output: %s", createAnchoredPROutput)
+	}
 
 	listPROutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "repo-cli-feature.txt", "--limit", "25")
 	if err != nil {
@@ -176,6 +278,7 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !jsonObjectHasCommentsArray(t, listPROutput) {
 		t.Fatalf("expected comments array in pr list output: %s", listPROutput)
 	}
+	repoCLIAssertOnlyAnchoredComment(t, repoCLIComments(t, listPROutput), anchoredPRCommentID, anchoredPRText, prCommentID)
 
 	prCommentListOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--path", "repo-cli-feature.txt", "--limit", "25")
 	if err != nil {
@@ -184,6 +287,8 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !jsonObjectHasThreadsArray(t, prCommentListOutput) {
 		t.Fatalf("expected threads array in pr comment list output: %s", prCommentListOutput)
 	}
+	pathThreads, _ := decodeJSONMap(t, prCommentListOutput)["threads"].([]any)
+	repoCLIAssertOnlyAnchoredComment(t, pathThreads, anchoredPRCommentID, anchoredPRText, prCommentID)
 
 	prCommentListFullOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--path", "repo-cli-feature.txt", "--limit", "25", "--full")
 	if err != nil {
@@ -192,6 +297,7 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !jsonObjectHasCommentsArray(t, prCommentListFullOutput) {
 		t.Fatalf("expected --full to restore the raw comments array: %s", prCommentListFullOutput)
 	}
+	repoCLIAssertOnlyAnchoredComment(t, repoCLIComments(t, prCommentListFullOutput), anchoredPRCommentID, anchoredPRText, prCommentID)
 
 	aggregatePRCommentListOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--limit", "25")
 	if err != nil {
@@ -203,6 +309,12 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !strings.Contains(aggregatePRCommentListOutput, `"source": "activities"`) {
 		t.Fatalf("expected activities source in aggregate pr comment list output: %s", aggregatePRCommentListOutput)
 	}
+	// The whole pull request, so both: the one on no file and the one on a line.
+	aggregateThreads, _ := decodeJSONMap(t, aggregatePRCommentListOutput)["threads"].([]any)
+	if thread := repoCLIEntryWithID(t, aggregateThreads, prCommentID); thread["text"] != "live cli pr comment" || thread["anchor"] != nil {
+		t.Errorf("thread %s = text %v, anchor %v; want %q on no file", prCommentID, thread["text"], thread["anchor"], "live cli pr comment")
+	}
+	repoCLIAssertAnchor(t, repoCLIEntryWithID(t, aggregateThreads, anchoredPRCommentID), "repo-cli-feature.txt", 1, "ADDED")
 
 	prCommentGetOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "get", pullRequestID, prCommentID)
 	if err != nil {
@@ -210,6 +322,10 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	}
 	if !strings.Contains(prCommentGetOutput, `"comment"`) {
 		t.Fatalf("expected comment payload in pr comment get output: %s", prCommentGetOutput)
+	}
+	gotPRComment := nestedJSONMap(t, prCommentGetOutput, "comment")
+	if id, _ := numericOrStringID(gotPRComment["id"]); id != prCommentID || gotPRComment["text"] != "live cli pr comment" || gotPRComment["anchor"] != nil {
+		t.Errorf("pr comment get = id %s, text %v, anchor %v; want %s, %q, no anchor", id, gotPRComment["text"], gotPRComment["anchor"], prCommentID, "live cli pr comment")
 	}
 
 	prActivityListOutput, err := executeLiveCLI(t, "--json", "pr", "activity", "list", pullRequestID, "--limit", "25")
@@ -219,6 +335,9 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !strings.Contains(prActivityListOutput, `"activities"`) {
 		t.Fatalf("expected activities payload in pr activity list output: %s", prActivityListOutput)
 	}
+	if !repoCLIActivityComments(t, prActivityListOutput, prCommentID, "live cli pr comment") {
+		t.Errorf("no COMMENTED activity carries comment %s with its text: %s", prCommentID, prActivityListOutput)
+	}
 
 	humanPRCommentListOutput, err := executeLiveCLI(t, "pr", "comment", "list", pullRequestID, "--path", "repo-cli-feature.txt", "--limit", "25")
 	if err != nil {
@@ -227,6 +346,14 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !strings.Contains(humanPRCommentListOutput, "[") && !strings.Contains(humanPRCommentListOutput, "No comments found") {
 		t.Fatalf("expected human pr comment list output, got: %s", humanPRCommentListOutput)
 	}
+	if !strings.Contains(humanPRCommentListOutput, anchoredPRText) || strings.Contains(humanPRCommentListOutput, "live cli pr comment") {
+		t.Fatalf("the human listing of repo-cli-feature.txt should show the comment on it and only that one: %s", humanPRCommentListOutput)
+	}
+
+	// Refused as out of date, or --version never reached Bitbucket.
+	stalePRUpdateOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "update", "--pr", pullRequestID, "--id", prCommentID,
+		"--text", "an update at a version the comment is not at", "--version", repoCLIVersionAfter(t, prCommentVersion))
+	repoCLIAssertOutOfDate(t, stalePRUpdateOutput, err)
 
 	updatePRArgs := []string{"--json", "repo", "comment", "update", "--pr", pullRequestID, "--id", prCommentID, "--text", "live cli pr comment updated"}
 	if prCommentVersion != "" {
@@ -241,6 +368,21 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("expected version in pr update output: %s", updatePROutput)
 	}
 
+	updatedPRComment := repoCLIPRComment(t, pullRequestID, prCommentID)
+	if updatedPRComment["text"] != "live cli pr comment updated" {
+		t.Errorf("pr comment text after the update = %v, want %q", updatedPRComment["text"], "live cli pr comment updated")
+	}
+	if stored, _ := numericOrStringID(updatedPRComment["version"]); stored != updatedPRVersion || stored == prCommentVersion {
+		t.Errorf("pr comment is stored at version %s; the update reported %s, from %s", stored, updatedPRVersion, prCommentVersion)
+	}
+
+	stalePRDeleteOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "delete", "--pr", pullRequestID, "--id", prCommentID,
+		"--version", prCommentVersion, "--yes")
+	repoCLIAssertOutOfDate(t, stalePRDeleteOutput, err)
+	if kept := repoCLIPRComment(t, pullRequestID, prCommentID); kept["text"] != "live cli pr comment updated" {
+		t.Fatalf("a delete refused for its version changed comment %s: %v", prCommentID, kept)
+	}
+
 	deletePRArgs := []string{"repo", "comment", "delete", "--pr", pullRequestID, "--id", prCommentID, "--yes"}
 	if updatedPRVersion != "" {
 		deletePRArgs = append(deletePRArgs, "--version", updatedPRVersion)
@@ -252,6 +394,7 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !strings.Contains(deletePROutput, "Deleted comment") {
 		t.Fatalf("expected human delete output, got: %s", deletePROutput)
 	}
+	repoCLIAssertPRCommentGone(t, pullRequestID, prCommentID)
 }
 
 func TestLiveCLIRepoSettingsSurface(t *testing.T) {
@@ -1539,6 +1682,165 @@ func unmarshalJSONObject(value string, target *map[string]any) error {
 	}
 
 	return json.Unmarshal(encodedData, target)
+}
+
+// repoCLIArray decodes a listing whose data is a list, failing the test when it
+// is not one.
+func repoCLIArray(t *testing.T, output string) []map[string]any {
+	t.Helper()
+
+	items := make([]map[string]any, 0)
+	if err := unmarshalJSONArray(output, &items); err != nil {
+		t.Fatalf("expected json array output, got parse error %v for: %s", err, output)
+	}
+
+	return items
+}
+
+// repoCLIComments reads the comments array out of a comment listing.
+func repoCLIComments(t *testing.T, output string) []any {
+	t.Helper()
+
+	comments, ok := decodeJSONMap(t, output)["comments"].([]any)
+	if !ok {
+		t.Fatalf("expected a comments array in: %s", output)
+	}
+
+	return comments
+}
+
+// repoCLICommitComments lists what bb reads back for one file of a commit,
+// replies included.
+func repoCLICommitComments(t *testing.T, commitID, path string) []any {
+	t.Helper()
+
+	return repoCLIComments(t, mustLiveCLI(t, "repo", "comment", "list", "--commit", commitID, "--path", path, "--limit", "25"))
+}
+
+// repoCLIEntryByID finds the entry of a listing whose own id is the one given.
+//
+// Only the entries themselves and not what they nest: a comment's author has
+// an id too, and a walk that matched it would read a user as the comment.
+func repoCLIEntryByID(entries []any, id string) (map[string]any, bool) {
+	for _, entry := range entries {
+		fields, ok := entry.(map[string]any)
+		if !ok {
+			continue
+		}
+		if candidate, ok := numericOrStringID(fields["id"]); ok && candidate == id {
+			return fields, true
+		}
+	}
+
+	return nil, false
+}
+
+// repoCLIEntryWithID is repoCLIEntryByID for an entry the listing must hold.
+func repoCLIEntryWithID(t *testing.T, entries []any, id string) map[string]any {
+	t.Helper()
+
+	entry, ok := repoCLIEntryByID(entries, id)
+	if !ok {
+		t.Fatalf("no entry with id %s in the listing: %v", id, entries)
+	}
+
+	return entry
+}
+
+// repoCLIAssertAnchor checks where a comment, or the thread it opens, sits in
+// the diff. Both carry the anchor under the same keys.
+func repoCLIAssertAnchor(t *testing.T, comment map[string]any, path string, line int, lineType string) {
+	t.Helper()
+
+	anchor, ok := comment["anchor"].(map[string]any)
+	if !ok {
+		t.Errorf("comment %v has no anchor, want %s line %d %s", comment["id"], path, line, lineType)
+		return
+	}
+	if anchor["path"] != path || anchor["line"] != float64(line) || anchor["lineType"] != lineType {
+		t.Errorf("comment %v is anchored at %v line %v %v, want %s line %d %s",
+			comment["id"], anchor["path"], anchor["line"], anchor["lineType"], path, line, lineType)
+	}
+}
+
+// repoCLIAssertOnlyAnchoredComment checks a listing scoped to the file of the
+// anchored comment: that one is in it where it was put, and the comment
+// anchored to no file is not.
+func repoCLIAssertOnlyAnchoredComment(t *testing.T, entries []any, anchoredID, anchoredText, unanchoredID string) {
+	t.Helper()
+
+	anchored := repoCLIEntryWithID(t, entries, anchoredID)
+	if anchored["text"] != anchoredText {
+		t.Errorf("comment %s text = %v, want %q", anchoredID, anchored["text"], anchoredText)
+	}
+	repoCLIAssertAnchor(t, anchored, "repo-cli-feature.txt", 1, "ADDED")
+
+	if _, found := repoCLIEntryByID(entries, unanchoredID); found {
+		t.Errorf("a listing scoped to repo-cli-feature.txt holds comment %s, which is on no file: %v", unanchoredID, entries)
+	}
+}
+
+// repoCLIActivityComments reports whether a pull request's timeline records
+// the comment, with its text, as a COMMENTED entry.
+func repoCLIActivityComments(t *testing.T, output, commentID, text string) bool {
+	t.Helper()
+
+	activities, _ := decodeJSONMap(t, output)["activities"].([]any)
+	for _, entry := range activities {
+		activity, _ := entry.(map[string]any)
+		comment, _ := activity["comment"].(map[string]any)
+		if activity["action"] != "COMMENTED" || comment == nil {
+			continue
+		}
+		if id, _ := numericOrStringID(comment["id"]); id == commentID && comment["text"] == text {
+			return true
+		}
+	}
+
+	return false
+}
+
+// repoCLIPRComment reads one pull request comment back by id.
+func repoCLIPRComment(t *testing.T, prID, commentID string) map[string]any {
+	t.Helper()
+
+	return nestedJSONMap(t, mustLiveCLI(t, "pr", "comment", "get", prID, commentID), "comment")
+}
+
+// repoCLIAssertPRCommentGone checks a deleted pull request comment cannot be
+// read by id, for the reason that it is not there. Any failure of the read would
+// otherwise pass for a delete.
+func repoCLIAssertPRCommentGone(t *testing.T, prID, commentID string) {
+	t.Helper()
+
+	output, err := executeLiveCLI(t, "--json", "pr", "comment", "get", prID, commentID)
+	if !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Fatalf("comment %s on pull request %s: want not found after the delete, got %v\n%s", commentID, prID, err, output)
+	}
+}
+
+// repoCLIAssertOutOfDate checks a write was refused as a conflict, the refusal
+// that only the version it named explains. Any failure at all would otherwise
+// pass for the version having been checked.
+func repoCLIAssertOutOfDate(t *testing.T, output string, err error) {
+	t.Helper()
+
+	if !apperrors.IsKind(err, apperrors.KindConflict) {
+		t.Fatalf("want a conflict for a version the comment is not at, got %v\n%s", err, output)
+	}
+}
+
+// repoCLIVersionAfter is a version one past the one given, which a comment at
+// the given version is not at.
+func repoCLIVersionAfter(t *testing.T, version string) string {
+	t.Helper()
+
+	number, err := strconv.Atoi(version)
+	if err != nil {
+		t.Fatalf("comment version %q is not a number: %v", version, err)
+	}
+
+	return strconv.Itoa(number + 1)
 }
 
 func unmarshalJSONArray(value string, target *[]map[string]any) error {
