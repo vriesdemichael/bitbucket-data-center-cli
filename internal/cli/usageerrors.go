@@ -121,7 +121,7 @@ func UnknownSubcommandError(root *cobra.Command, args []string) error {
 	}
 
 	unconsumed := cmd.Flags().Args()
-	if len(unconsumed) == 0 {
+	if len(unconsumed) == 0 || helpWasAskedFor(cmd, unconsumed) {
 		return nil
 	}
 
@@ -130,4 +130,21 @@ func UnknownSubcommandError(root *cobra.Command, args []string) error {
 		fmt.Sprintf("unknown command %q for %q", unconsumed[0], cmd.CommandPath()),
 		nil,
 	)
+}
+
+// helpWasAskedFor reports whether the argument a group could not match was a
+// request for its help rather than a misspelled subcommand.
+//
+// Two spellings land here. `bb pr help` is Cobra's own spelling of `bb help
+// pr`, and it exited 0 until groups started reporting what they could not
+// match; `bb pr bogus --help` asks to be told what exists, which the help it
+// prints answers. Reporting either as a usage failure -- exit 2, the help on
+// stderr, an error envelope under --json -- makes asking for help something bb
+// refuses to do.
+func helpWasAskedFor(cmd *cobra.Command, unconsumed []string) bool {
+	if requested, err := cmd.Flags().GetBool("help"); err == nil && requested {
+		return true
+	}
+
+	return len(unconsumed) > 0 && unconsumed[0] == "help"
 }
