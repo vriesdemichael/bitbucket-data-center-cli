@@ -17,12 +17,12 @@ import (
 	"strings"
 
 	cc "github.com/vriesdemichael/bitbucket-data-center-cli/tools/conventionalcommits"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/tools/releasetags"
 )
 
-// tagPattern is the glob git describe matches, and semverPattern is what a
-// manually requested version must look like.
-const tagPattern = "v[0-9]*.[0-9]*.[0-9]*"
-
+// semverPattern is what a manually requested version must look like: a release,
+// or a release carrying a prerelease or build suffix. Which tag counts as the
+// last release is releasetags' answer, not this one.
 var (
 	semverPattern  = regexp.MustCompile(`^v\d+\.\d+\.\d+(?:[.-][0-9A-Za-z.-]+)?$`)
 	numericPattern = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
@@ -125,7 +125,7 @@ func writeOutputs(path string, result decision) (err error) {
 func main() {
 	// An absent tag is the first release, not a failure, so the error is the
 	// answer rather than a stop.
-	previousTag, _ := git("describe", "--tags", "--abbrev=0", "--match", tagPattern)
+	previousTag, _ := git(releasetags.DescribeArgs()...)
 
 	rangeSpec := "HEAD"
 	if previousTag != "" {

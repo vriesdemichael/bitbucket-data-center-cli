@@ -23,9 +23,8 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	cc "github.com/vriesdemichael/bitbucket-data-center-cli/tools/conventionalcommits"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/tools/releasetags"
 )
-
-const tagPattern = "v[0-9]*.[0-9]*.[0-9]*"
 
 var numericPattern = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
 
@@ -33,7 +32,7 @@ func main() {
 	annotate := flag.Bool("annotate", false, "Emit GitHub Actions warning annotations instead of plain lines")
 	flag.Parse()
 
-	previousTag, _ := git("describe", "--tags", "--abbrev=0", "--match", tagPattern)
+	previousTag, _ := git(releasetags.DescribeArgs()...)
 
 	rangeSpec := "HEAD"
 	if previousTag != "" {
