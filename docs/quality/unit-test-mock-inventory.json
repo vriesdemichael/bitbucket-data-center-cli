@@ -1,16 +1,16 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 177,
-    "files": 62,
-    "functions": 168,
+    "mocked_servers": 184,
+    "files": 67,
+    "functions": 175,
     "by_class": {
-      "external-service": 14,
+      "external-service": 18,
       "harness-constructor": 18,
       "routing-beacon": 5,
-      "transport-fault": 76,
-      "unreachable-state": 23,
-      "unreached-guard": 41
+      "transport-fault": 74,
+      "unreachable-state": 24,
+      "unreached-guard": 45
     },
     "behaviour_by_package": {}
   },
@@ -466,6 +466,54 @@
       "reviewed": true
     },
     {
+      "file": "internal/cli/cmd/update/scheme_test.go",
+      "line": 46,
+      "function": "plainHTTPServer",
+      "class": "external-service",
+      "signals": [
+        "answers-any-request"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror over plain HTTP, not",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/update/scheme_test.go",
+      "line": 79,
+      "function": "TestAnHTTPSMirrorCannotRedirectToPlainHTTP",
+      "class": "external-service",
+      "signals": [
+        "inspects-the-request-path"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror that redirects; the",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/update/scheme_test.go",
+      "line": 123,
+      "function": "TestARefusedManifestAddressIsReportedOnce",
+      "class": "external-service",
+      "signals": [
+        "handler-supplied-by-the-caller"
+      ],
+      "action": "decide-separately",
+      "reason": "two release mirrors, one of which refuses;",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/update/scheme_test.go",
+      "line": 241,
+      "function": "TestAPermittedRedirectToPlainHTTPWarns",
+      "class": "external-service",
+      "signals": [
+        "inspects-the-request-path"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror redirecting to plain",
+      "reviewed": true
+    },
+    {
       "file": "internal/cli/cmd/webhook/webhook_test.go",
       "line": 76,
       "function": "TestWebhookListAcceptsABareArray",
@@ -493,7 +541,7 @@
     },
     {
       "file": "internal/cli/commit_test.go",
-      "line": 32,
+      "line": 37,
       "function": "TestCommitListJiraError",
       "class": "transport-fault",
       "signals": [
@@ -546,7 +594,7 @@
     },
     {
       "file": "internal/cli/permissionchecker/permission_checker_test.go",
-      "line": 216,
+      "line": 194,
       "function": "TestASecondRequestFailingIsAlsoTransient",
       "class": "transport-fault",
       "signals": [
@@ -733,6 +781,18 @@
       "class": "unreached-guard",
       "signals": [
         "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/openapi/client_outcome_test.go",
+      "line": 140,
+      "function": "TestTheGeneratedClientDoesNotRetryARejectedCertificate",
+      "class": "unreached-guard",
+      "signals": [
+        "answers-any-request",
         "fails-if-the-server-is-reached"
       ],
       "action": "keep",
@@ -1370,7 +1430,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 516,
+      "line": 515,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1381,7 +1441,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 542,
+      "line": 541,
       "function": "TestNeedsWorkPropagatesUserLookupFailure",
       "class": "unreachable-state",
       "signals": [
@@ -1395,7 +1455,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 707,
+      "line": 706,
       "function": "TestRebaseRejectsOutOfRangeVersion",
       "class": "unreached-guard",
       "signals": [
@@ -1408,7 +1468,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 774,
+      "line": 778,
       "function": "TestRebaseRetriesOnceOnAVersionItReadItself",
       "class": "unreachable-state",
       "signals": [
@@ -1434,7 +1494,7 @@
     },
     {
       "file": "internal/services/pullrequestactivity/service_test.go",
-      "line": 169,
+      "line": 176,
       "function": "TestListReportsATruncatedBodyAsTransient",
       "class": "transport-fault",
       "signals": [
@@ -1566,7 +1626,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 230,
+      "line": 219,
       "function": "newServiceWithBaseURL",
       "class": "harness-constructor",
       "signals": [
@@ -1577,7 +1637,7 @@
     },
     {
       "file": "internal/services/reposettings/service_test.go",
-      "line": 242,
+      "line": 231,
       "function": "TestRepositorySettingsAdditionalBranches",
       "class": "unreachable-state",
       "signals": [
@@ -1720,7 +1780,7 @@
     },
     {
       "file": "internal/services/sshkey/service_test.go",
-      "line": 15,
+      "line": 16,
       "function": "newSshKeyTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1731,7 +1791,7 @@
     },
     {
       "file": "internal/services/sshkey/service_test.go",
-      "line": 91,
+      "line": 92,
       "function": "TestSshKeyServicePagination",
       "class": "transport-fault",
       "signals": [
@@ -1745,7 +1805,7 @@
     },
     {
       "file": "internal/services/sshkey/service_test.go",
-      "line": 121,
+      "line": 122,
       "function": "TestSshKeyServicePaginationEdgeCases",
       "class": "transport-fault",
       "signals": [
@@ -1759,7 +1819,7 @@
     },
     {
       "file": "internal/services/sshkey/service_test.go",
-      "line": 139,
+      "line": 140,
       "function": "TestSshKeyServiceTransientErrors",
       "class": "transport-fault",
       "signals": [
@@ -1767,18 +1827,6 @@
         "handler-passed-to-a-helper",
         "returns-a-status",
         "returns-bitbucket-entity"
-      ],
-      "action": "keep",
-      "reason": "the failure is injected below the API; no live server refuses on request.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/services/sshkey/service_test.go",
-      "line": 187,
-      "function": "TestSshKeyServiceNetworkErrors",
-      "class": "transport-fault",
-      "signals": [
-        "answers-any-request"
       ],
       "action": "keep",
       "reason": "the failure is injected below the API; no live server refuses on request.",
@@ -1825,7 +1873,7 @@
     },
     {
       "file": "internal/services/token/service_test.go",
-      "line": 17,
+      "line": 18,
       "function": "newTokenTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1836,7 +1884,7 @@
     },
     {
       "file": "internal/services/token/service_test.go",
-      "line": 118,
+      "line": 119,
       "function": "TestTokenServicePagination",
       "class": "transport-fault",
       "signals": [
@@ -1850,7 +1898,7 @@
     },
     {
       "file": "internal/services/token/service_test.go",
-      "line": 139,
+      "line": 140,
       "function": "TestTokenServiceTransientErrors",
       "class": "transport-fault",
       "signals": [
@@ -1858,18 +1906,6 @@
         "handler-passed-to-a-helper",
         "returns-a-status",
         "returns-bitbucket-entity"
-      ],
-      "action": "keep",
-      "reason": "the failure is injected below the API; no live server refuses on request.",
-      "reviewed": true
-    },
-    {
-      "file": "internal/services/token/service_test.go",
-      "line": 212,
-      "function": "TestTokenServiceNetworkErrors",
-      "class": "transport-fault",
-      "signals": [
-        "answers-any-request"
       ],
       "action": "keep",
       "reason": "the failure is injected below the API; no live server refuses on request.",
@@ -2381,6 +2417,57 @@
       "action": "keep",
       "reason": "a server that fails and then succeeds is the",
       "reviewed": true
+    },
+    {
+      "file": "internal/transport/httpclient/outcome_wiring_test.go",
+      "line": 30,
+      "function": "TestARejectedCertificateIsNotRetried",
+      "class": "unreached-guard",
+      "signals": [
+        "answers-any-request",
+        "fails-if-the-server-is-reached",
+        "serves-bitbucket-routes"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/transport/network/transport_test.go",
+      "line": 243,
+      "function": "TestNewSafeTransport",
+      "class": "unreachable-state",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "returns-a-status"
+      ],
+      "action": "keep",
+      "reason": "a server demanding a client certificate,",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/outcome/outcome_test.go",
+      "line": 236,
+      "function": "TestARejectedCertificateIsPermanent",
+      "class": "unreached-guard",
+      "signals": [
+        "answers-any-request",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/transport/outcome/outcome_test.go",
+      "line": 263,
+      "function": "TestAServerThatRefusesTheHandshakeIsPermanent",
+      "class": "unreached-guard",
+      "signals": [
+        "answers-any-request",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
       "file": "internal/transport/sigstore/trustedroot_test.go",

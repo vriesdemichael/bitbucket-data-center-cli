@@ -199,6 +199,12 @@ jobs:
       - name: Verify command reach has not regressed
         run: task quality:command-reach:verify
 
+      # Catches a mocked Bitbucket server arriving, leaving or changing class
+      # without the record saying so. The record is what ADR-079 turns into
+      # work, and it had drifted four servers out of date unnoticed.
+      - name: Verify the mocked-server inventory is current
+        run: task quality:mock-inventory:verify
+
       # Catches documented commands that do not parse against the real command
       # tree. Six had accumulated by v2.0.2, including the README quickstart and
       # the agent skill, which agents emit verbatim.
