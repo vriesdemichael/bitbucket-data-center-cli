@@ -53,14 +53,57 @@ than the human output, and consult `--describe` for a command's schema before
 guessing at flags. [Machine Mode and Diagnostics](advanced/machine-mode-diagnostics.md)
 has the envelope, the error kinds and the exit codes.
 
+## Installing the skill
+
+The skill is a `SKILL.md` that teaches a shell-driving agent the command
+surface: target resolution, the flags that matter, and the shapes commands
+return. `bb` carries it embedded, so installing it needs no network and no
+checkout of this repository:
+
+```bash
+bb ai skill install
+```
+
+That writes `.agents/skills/bb/SKILL.md`, alongside the project. `--global`
+writes `~/.agents/skills/bb/SKILL.md` instead, for every project on the machine.
+`bb ai skill remove` deletes the file it wrote.
+
+Most agents read `.agents/skills/<name>/SKILL.md`. Where yours expects something
+else, print the skill and redirect it:
+
+```bash
+bb ai skill show > .claude/skills/bb/SKILL.md
+```
+
+A second skill, `bulk`, covers `bb bulk`. That command is deprecated and warns at
+runtime that it will be removed in v5.0.0, so install this one only to maintain
+a `bulk-policy.yaml` that already exists:
+
+```bash
+bb ai skill install bulk
+```
+
+**Re-run `bb ai skill install` after upgrading `bb`.** Both subcommands print the
+copy compiled into the binary you just ran, so the skill and the command surface
+cannot disagree. The same skills are published through the open agent skills
+ecosystem for machines where `bb` is not installed yet, but that copy is a
+snapshot taken at release time and can describe a different version
+([ADR-040](adr/040-agent-skill-distribution-static-npx-and-dynamic-cli.md)):
+
+```bash
+npx skills add vriesdemichael/bitbucket-data-center-cli
+```
+
 ## llms.txt
 
 [`llms.txt`](llms.txt) is a setup guide written for an agent to work through in
 order: install, authenticate, then enable either the skill or the MCP server. It
-ends with the machine contract and links onward.
+ends with the machine output contract and links onward. It is not a summary of
+the product or a substitute for the command reference.
 
-Point an agent at it when the task is getting `bb` working. The pages here are
-what it consults afterwards.
+Point an agent at it when the task is getting `bb` working. Once `bb` runs, the
+agent's sources are the skill or the MCP tool catalogue for what to call,
+`--help` and `--describe` for the exact surface, and these pages for behaviour.
 
 - Published `llms.txt`: [llms.txt](llms.txt)
 - Versioned docs home: [Home](index.md)
@@ -70,15 +113,13 @@ what it consults afterwards.
 - AI core skill for agents: [SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
 - Skill for the deprecated `bb bulk`: [Bulk SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md)
 
-## What it covers
+## Which source answers which question
 
-- Product premise and operator value
-- Core strengths and safety model
-- Important workflows for pull requests, search, tags, builds, and automation
-- Pointers to the full docs, schemas, skill, and repository
-
-## When to use which source
-
-- Start with `llms.txt` when an agent needs quick orientation.
-- Use the command reference when exact flags and arguments matter.
-- Use the advanced docs and ADRs when the agent needs behavioral or architectural context.
+| Question | Source |
+|---|---|
+| How do I get `bb` working at all? | `llms.txt` |
+| What can I call, and how do I drive it? | The skill, or `bb ai mcp tools` |
+| What exactly does this command take? | `bb <command> --help`, and [All Commands](reference/commands/index.md) |
+| What shape does it return? | `bb <command> --describe`, and [JSON Schemas](reference/schemas.md) |
+| Why does it behave that way? | [Advanced Topics](advanced/index.md) and the [ADRs](adr/index.md) |
+| It failed and I need to know why | [Troubleshooting](troubleshooting.md), and [Machine Mode and Diagnostics](advanced/machine-mode-diagnostics.md) |
