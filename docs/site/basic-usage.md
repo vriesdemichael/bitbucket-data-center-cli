@@ -277,3 +277,16 @@ and `env/default` when neither supplied one.
 `BITBUCKET_VERSION_TARGET`, and the human rendering leaves the version out
 entirely when it is. It records a version for your own environment; `bb` does
 not pin one, and nothing branches on it.
+
+## When a command does not do what you expected
+
+`bb doctor` reports every problem in every configuration file at once, and where
+each effective setting comes from. It needs no host and no network:
+
+```bash
+bb doctor
+```
+
+- [Troubleshooting](troubleshooting.md): the messages people hit, and what each one means
+- [Coming from `gh`](gh-parity.md): the `bb` command behind each `gh` one
+- [Machine Mode and Diagnostics](advanced/machine-mode-diagnostics.md): error kinds, exit codes and traces

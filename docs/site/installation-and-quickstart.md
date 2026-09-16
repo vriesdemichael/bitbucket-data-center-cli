@@ -171,6 +171,25 @@ do not need it — SSH authenticates with your key.
 See [Git Authentication](advanced/git-authentication.md) for how it works and how
 to clean up clones made by older versions of `bb`.
 
+## When something is wrong
+
+`bb doctor` is the first thing to run. It reads the stored, workspace and system
+configuration files each on its own and reports every problem in every one of
+them — an unparseable file, a misspelled key with its line, a key set in a file
+that never reads it — then shows where each effective setting comes from. It
+needs no host and no network, so it answers when nothing else does:
+
+```bash
+bb doctor
+```
+
+`bb auth status` is the other half: it proves the host is reachable, the
+certificate is trusted and the credential still works.
+
+[**Troubleshooting**](troubleshooting.md) has the messages people actually hit,
+each with what to do about it. [Coming from `gh`](gh-parity.md) maps the `gh`
+command you were about to type to its `bb` counterpart.
+
 ## First useful commands
 
 ```bash
@@ -193,4 +212,5 @@ defaults and what each one does.
 Behind a proxy, or against a certificate from an internal CA, see
 [Networks, Proxies and TLS](advanced/networks-proxies-and-tls.md).
 
-See [Basic Usage](basic-usage.md) for precedence, dry-run behavior, machine mode, and diagnostics guidance.
+See [Basic Usage](basic-usage.md) for precedence, dry-run behavior, machine mode, and diagnostics guidance,
+and [Troubleshooting](troubleshooting.md) when a command does not do what you expected.

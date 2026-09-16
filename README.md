@@ -162,6 +162,8 @@ each problem with its line, needing no host and no network.
 - AI and llms.txt overview: [docs/site/ai-and-llms.md](docs/site/ai-and-llms.md)
 - Installation and Quickstart: [docs/site/installation-and-quickstart.md](docs/site/installation-and-quickstart.md)
 - Basic Usage: [docs/site/basic-usage.md](docs/site/basic-usage.md)
+- Troubleshooting: [docs/site/troubleshooting.md](docs/site/troubleshooting.md)
+- Coming from `gh`: [docs/site/gh-parity.md](docs/site/gh-parity.md)
 - Advanced Topics: [docs/site/advanced/index.md](docs/site/advanced/index.md)
 - Command Reference (generated): [docs/site/reference/commands/index.md](docs/site/reference/commands/index.md)
 - ADR Index: [docs/site/adr/index.md](docs/site/adr/index.md)
