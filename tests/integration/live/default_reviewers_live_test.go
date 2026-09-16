@@ -72,7 +72,20 @@ func TestLiveDefaultReviewersResolveAgainstTheCondition(t *testing.T) {
 		"reviewers": [{"id": %d}],
 		"requiredApprovals": 1
 	}`, reviewerID)
-	mustLiveCLI(t, "reviewer", "condition", "create", condition, "--repo", repoRef)
+	created := mustLiveCLI(t, "reviewer", "condition", "create", condition, "--repo", repoRef)
+
+	// Both subtests reason from the condition, so it is read back before
+	// either runs rather than taken from the create's answer.
+	conditionID, ok := numericOrStringID(decodeJSONMap(t, created)["id"])
+	if !ok {
+		t.Fatalf("the condition create answered without an id:\n%s", created)
+	}
+	listing := mustLiveCLI(t, "reviewer", "condition", "list", "--repo", repoRef)
+	stored, found := governanceCondition(t, listing, conditionID)
+	if !found {
+		t.Fatalf("condition %s is not in the listing:\n%s", conditionID, listing)
+	}
+	assertGovernanceConditionStored(t, stored, "", "refs/heads/master", reviewerID, 1)
 
 	t.Run("a pull request the condition matches gets the reviewer", func(t *testing.T) {
 		const branch = "feature/matches-the-condition"
@@ -87,6 +100,7 @@ func TestLiveDefaultReviewersResolveAgainstTheCondition(t *testing.T) {
 		if names := decodeLivePRReviewers(t, decodeJSONMap(t, output)); !containsFold(names, reviewer.Username) {
 			t.Fatalf("expected the default reviewer %s to be assigned, got %v", reviewer.Username, names)
 		}
+		governancePullRequestAsStored(t, output, "Matches the condition", branch, "master")
 	})
 
 	t.Run("a pull request it does not match gets nobody", func(t *testing.T) {
@@ -105,7 +119,38 @@ func TestLiveDefaultReviewersResolveAgainstTheCondition(t *testing.T) {
 			t.Fatalf("the condition targets master only, but %s was assigned on a pull request into %s: %v",
 				reviewer.Username, otherTarget, names)
 		}
+		governancePullRequestAsStored(t, output, "Different target", branch, otherTarget)
 	})
+}
+
+// governancePullRequestAsStored reads back the pull request a `pr create`
+// answered with, through `bb pr get`, and returns it.
+//
+// The create's answer is what Bitbucket said back, not a read of what it kept.
+// So the stored pull request must hold the reviewers that answer reported,
+// which carries every assertion a test makes on the answer over to the stored
+// state, and the title and branches the create sent.
+func governancePullRequestAsStored(t *testing.T, createOutput, title, sourceBranch, targetBranch string) map[string]any {
+	t.Helper()
+
+	created := extractPRData(decodeJSONMap(t, createOutput))
+	id, ok := numericOrStringID(created["id"])
+	if !ok {
+		t.Fatalf("the create answered without a pull request id:\n%s", createOutput)
+	}
+
+	stored := extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", id)))
+	if stored["title"] != title || stored["sourceBranch"] != sourceBranch || stored["targetBranch"] != targetBranch {
+		t.Errorf("pull request %s is stored as %q from %v into %v, want %q from %s into %s",
+			id, stored["title"], stored["sourceBranch"], stored["targetBranch"], title, sourceBranch, targetBranch)
+	}
+
+	createdReviewers, storedReviewers := decodeLivePRReviewers(t, created), decodeLivePRReviewers(t, stored)
+	if !governanceSameNames(storedReviewers, createdReviewers) {
+		t.Errorf("pull request %s holds reviewers %v, but its create answered with %v", id, storedReviewers, createdReviewers)
+	}
+
+	return stored
 }
 
 // TestLiveDefaultReviewersFromAFork covers the source side of the same query.
@@ -151,8 +196,21 @@ func TestLiveDefaultReviewersFromAFork(t *testing.T) {
 		"reviewers": [{"id": %d}],
 		"requiredApprovals": 1
 	}`, reviewerID)
-	mustLiveCLI(t, "reviewer", "condition", "create", condition, "--repo", upstreamRef)
+	created := mustLiveCLI(t, "reviewer", "condition", "create", condition, "--repo", upstreamRef)
 
+	conditionID, ok := numericOrStringID(decodeJSONMap(t, created)["id"])
+	if !ok {
+		t.Fatalf("the condition create answered without an id:\n%s", created)
+	}
+	listing := mustLiveCLI(t, "reviewer", "condition", "list", "--repo", upstreamRef)
+	stored, found := governanceCondition(t, listing, conditionID)
+	if !found {
+		t.Fatalf("condition %s is not in the listing:\n%s", conditionID, listing)
+	}
+	assertGovernanceConditionStored(t, stored, "", "refs/heads/master", reviewerID, 1)
+
+	// The fork is a fixture posted raw. Its name, slug and project are proven by
+	// the push below, which goes to that project and slug and fails otherwise.
 	forkSlug := upstream.Slug + "-reviewer-fork"
 	postLiveJSON(t, fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s", seeded.Key, upstream.Slug), map[string]any{
 		"name":    forkSlug,
@@ -176,6 +234,12 @@ func TestLiveDefaultReviewersFromAFork(t *testing.T) {
 	if names := decodeLivePRReviewers(t, decodeJSONMap(t, output)); !containsFold(names, reviewer.Username) {
 		t.Fatalf("expected %s to be assigned on the fork pull request, got %v", reviewer.Username, names)
 	}
+
+	// --from-repo is what makes this a fork pull request at all, so the stored
+	// one has to name the fork as its source and the upstream as its target.
+	pr := governancePullRequestAsStored(t, output, "From the fork with default reviewers", branch, "master")
+	assertLivePRRepository(t, pr, "sourceRepository", forkSlug)
+	assertLivePRRepository(t, pr, "repository", upstream.Slug)
 }
 
 // TestLiveReviewerGroupResolutionShapes covers what the reviewer-group lookup
@@ -207,6 +271,12 @@ func TestLiveReviewerGroupResolutionShapes(t *testing.T) {
 	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, member.Username, "REPO_READ"); err != nil {
 		t.Fatalf("grant member read access failed: %v", err)
 	}
+	// Read back, because the group below would not notice a grant that was not
+	// kept: Bitbucket takes a member who cannot see the repository.
+	grants := mustLiveCLI(t, "repo", "settings", "security", "permissions", "users", "list", "--repo", repoRef)
+	if held := governanceHeldPermission(t, grants, member.Username); held != "REPO_READ" {
+		t.Fatalf("%s holds %q on the repository, want REPO_READ:\n%s", member.Username, held, grants)
+	}
 
 	const groupName = "resolution_shapes"
 	if err := harness.createReviewerGroup(ctx, seeded.Key, repo.Slug, groupName, member.Username); err != nil {
@@ -217,6 +287,9 @@ func TestLiveReviewerGroupResolutionShapes(t *testing.T) {
 		output := mustLiveCLI(t, "reviewer-group", "users", groupName, "--repo", repoRef)
 		if !strings.Contains(output, member.Username) {
 			t.Fatalf("expected %s in the group members, got:\n%s", member.Username, output)
+		}
+		if members := governanceUserNames(decodeJSONMap(t, output)["users"]); !governanceSameNames(members, []string{member.Username}) {
+			t.Errorf("group members = %v, want just %s", members, member.Username)
 		}
 	})
 
@@ -236,6 +309,9 @@ func TestLiveReviewerGroupResolutionShapes(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "1 or more reviewer") {
 			t.Errorf("expected the empty-group refusal, got: %v", err)
+		}
+		if listing := mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef); governanceReviewerGroupNamed(t, listing, "empty_group") {
+			t.Errorf("the refused create left a group behind:\n%s", listing)
 		}
 	})
 }
@@ -304,6 +380,11 @@ func TestLiveReviewerConditionInputRoutes(t *testing.T) {
 	if !strings.Contains(listed, conditionID) {
 		t.Fatalf("the condition created from a file is not in the listing:\n%s", listed)
 	}
+	fromFile, found := governanceCondition(t, listed, conditionID)
+	if !found {
+		t.Fatalf("condition %s is not an entry of the listing:\n%s", conditionID, listed)
+	}
+	assertGovernanceConditionStored(t, fromFile, "", "refs/heads/master", reviewerID, 1)
 
 	// stdin, on the update. Two required approvals rather than one, so the
 	// listing afterwards says which body arrived.
@@ -321,6 +402,11 @@ func TestLiveReviewerConditionInputRoutes(t *testing.T) {
 	if !strings.Contains(afterUpdate, `"requiredApprovals": 2`) {
 		t.Fatalf("the update read from stdin did not take:\n%s", afterUpdate)
 	}
+	fromStdin, found := governanceCondition(t, afterUpdate, conditionID)
+	if !found {
+		t.Fatalf("condition %s is not an entry of the listing after its update:\n%s", conditionID, afterUpdate)
+	}
+	assertGovernanceConditionStored(t, fromStdin, "", "refs/heads/master", reviewerID, 2)
 }
 
 // TestLiveReviewerGroupFlagsExpandAndAccumulate covers the two flag spellings
@@ -368,6 +454,10 @@ func TestLiveReviewerGroupFlagsExpandAndAccumulate(t *testing.T) {
 			"--from-ref", branch, "--to-ref", "refs/heads/master",
 			"--title", branch, "--no-default-reviewers", "--no-codeowners",
 		}, args...)...)
+
+		// The stored pull request must hold the reviewers returned here, so the
+		// subtests' checks on them are checks on what Bitbucket kept.
+		governancePullRequestAsStored(t, output, branch, branch, "master")
 
 		return decodeLivePRReviewers(t, decodeJSONMap(t, output))
 	}
