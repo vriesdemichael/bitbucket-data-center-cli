@@ -42,16 +42,23 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	// Create branch with a commit to open PR against master
+	// Create branch with a commit to open PR against its target
 	branchName := "feature/lifecycle-test"
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branchName, "lifecycle.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
+	// A target other than the default branch, so the target read back below
+	// cannot be the repository's default standing in for the one sent.
+	const targetBranch = "release/lifecycle-target"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, targetBranch, "lifecycle-target.txt"); err != nil {
+		t.Fatalf("push the target branch failed: %v", err)
+	}
+
 	// 1. Create PR -> OPEN
 	createOutput, err := executeLiveCLI(t, "--json", "pr", "create",
 		"--from-ref", branchName,
-		"--to-ref", "refs/heads/master",
+		"--to-ref", "refs/heads/"+targetBranch,
 		"--title", "State Machine Lifecycle PR",
 	)
 	if err != nil {
@@ -93,6 +100,11 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := getPR["state"].(string); !ok || state != "OPEN" {
 		t.Fatalf("expected state OPEN before decline, got %v", state)
 	}
+	assertLifecyclePRStored(t, getPR, map[string]any{
+		"title":        "State Machine Lifecycle PR",
+		"sourceBranch": branchName,
+		"targetBranch": targetBranch,
+	})
 	prVersion := extractPRVersion(getEnvelope.Data)
 
 	// 3. Decline PR -> DECLINED
@@ -111,6 +123,9 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := declinePR["state"].(string); !ok || state != "DECLINED" {
 		t.Fatalf("expected state DECLINED, got %v", state)
 	}
+	// Each transition's state is read back as well: the checks on the
+	// transition's own answer cannot say the pull request stayed that way.
+	assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"state": "DECLINED"})
 	declineVersion := extractPRVersion(declineEnvelope.Data)
 
 	// 4. Reopen PR -> OPEN
@@ -129,6 +144,7 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := reopenPR["state"].(string); !ok || state != "OPEN" {
 		t.Fatalf("expected state OPEN after reopen, got %v", state)
 	}
+	assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"state": "OPEN"})
 	reopenVersion := extractPRVersion(reopenEnvelope.Data)
 
 	// 5. Merge PR -> MERGED
@@ -147,6 +163,8 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 	if state, ok := mergePR["state"].(string); !ok || state != "MERGED" {
 		t.Fatalf("expected state MERGED, got %v", state)
 	}
+	merged := readLifecyclePR(t, prID)
+	assertLifecyclePRStored(t, merged, map[string]any{"state": "MERGED"})
 	mergeVersion := extractPRVersion(mergeEnvelope.Data)
 
 	// 6. Attempt second merge on already merged PR -> Bitbucket DC returns 409 Conflict (exit code 5)
@@ -158,4 +176,10 @@ func TestLivePRStateMachineFullLifecycle(t *testing.T) {
 		// Bitbucket returns 409 Conflict when attempting to re-merge a merged PR
 		t.Logf("second merge returned expected failure with exit code %d: %v", apperrors.ExitCode(mergeAgainErr), mergeAgainErr)
 	}
+	// The version sent is the current one, so the refusal has to be about the
+	// state, and the pull request stays merged at the version it merged at.
+	if details := apperrors.DetailsOf(mergeAgainErr); details["upstreamException"] != "com.atlassian.bitbucket.pull.IllegalPullRequestStateException" {
+		t.Errorf("expected Bitbucket to refuse merging a merged pull request, got %v: %v", details, mergeAgainErr)
+	}
+	assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"state": "MERGED", "version": merged["version"]})
 }

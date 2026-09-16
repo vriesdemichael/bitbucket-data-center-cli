@@ -5,6 +5,8 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -39,7 +41,7 @@ func TestLivePullRequestMergeability(t *testing.T) {
 			t.Fatalf("push commit on branch failed: %v", err)
 		}
 
-		id := createLivePRForRegression(t, branch, "Clean", "--no-default-reviewers", "--no-codeowners")
+		id := createLifecyclePR(t, branch, "Clean", "--no-default-reviewers", "--no-codeowners")
 		mergeable, outcome := livePRMergeability(t, id)
 		if !mergeable {
 			t.Errorf("expected a clean pull request to be mergeable, outcome=%q", outcome)
@@ -58,7 +60,7 @@ func TestLivePullRequestMergeability(t *testing.T) {
 			t.Fatalf("push the master side failed: %v", err)
 		}
 
-		id := createLivePRForRegression(t, branch, "Conflicting", "--no-default-reviewers", "--no-codeowners")
+		id := createLifecyclePR(t, branch, "Conflicting", "--no-default-reviewers", "--no-codeowners")
 
 		mergeable, outcome := livePRMergeability(t, id)
 		if mergeable {
@@ -91,11 +93,17 @@ func TestLivePullRequestMergeability(t *testing.T) {
 	t.Run("a merge check appears as a named blocker", func(t *testing.T) {
 		mustLiveCLI(t, "repo", "settings", "pull-requests", "update-approvers", "--count", "1")
 
+		// The count as stored. The blocker below shows only that something
+		// vetoes the merge, which another count would do just as well.
+		if got := approverCountFrom(t, decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "pull-requests", "get"))); got != "1" {
+			t.Fatalf("requiredApprovers reads back as %s, want 1", got)
+		}
+
 		const branch = "feature/needs-approval"
 		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "needs-approval.txt"); err != nil {
 			t.Fatalf("push commit on branch failed: %v", err)
 		}
-		id := createLivePRForRegression(t, branch, "Needs approval", "--no-default-reviewers", "--no-codeowners")
+		id := createLifecyclePR(t, branch, "Needs approval", "--no-default-reviewers", "--no-codeowners")
 
 		human := mustLiveHumanCLI(t, "pr", "get", id)
 		if !strings.Contains(human, "Merge blockers:") {
@@ -114,7 +122,10 @@ func TestLivePullRequestMergeability(t *testing.T) {
 		// request was "will be merged" at full confidence however many vetoes
 		// stood against it -- the weakest prediction in the tool making the
 		// strongest claim, about the one operation that cannot be undone.
+		before := readLifecyclePR(t, id)
 		preview := mustLiveCLI(t, "--dry-run", "pr", "merge", id)
+		// A preview sends nothing: still open, at the version it was judged at.
+		assertLifecyclePRStored(t, readLifecyclePR(t, id), map[string]any{"state": "OPEN", "version": before["version"]})
 		if !strings.Contains(preview, `"predictedAction": "blocked"`) {
 			t.Fatalf("a pull request the server will not merge was not predicted blocked:\n%s", preview)
 		}
@@ -129,7 +140,7 @@ func TestLivePullRequestMergeability(t *testing.T) {
 			t.Fatalf("push commit on branch failed: %v", err)
 		}
 
-		id := createLivePRForRegression(t, branch, "To be declined", "--no-default-reviewers", "--no-codeowners")
+		id := createLifecyclePR(t, branch, "To be declined", "--no-default-reviewers", "--no-codeowners")
 		mustLiveCLI(t, "pr", "decline", id)
 
 		// The point is that reading it still works. A closed pull request has
@@ -185,7 +196,7 @@ func TestLivePullRequestDraftState(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
-	id := createLivePRForRegression(t, branch, "A draft", "--draft", "--no-default-reviewers", "--no-codeowners")
+	id := createLifecyclePR(t, branch, "A draft", "--draft", "--no-default-reviewers", "--no-codeowners")
 
 	if !livePRIsDraft(t, id) {
 		t.Fatal("expected the pull request to be created as a draft")
@@ -212,6 +223,14 @@ func TestLivePullRequestDraftState(t *testing.T) {
 	alreadyReady := mustLiveCLI(t, "--dry-run", "pr", "update", id, "--version", version, "--draft=false")
 	if !strings.Contains(alreadyReady, `"predictedAction": "no-op"`) {
 		t.Errorf("asking for the draft state it already holds was not predicted a no-op:\n%s", alreadyReady)
+	}
+
+	// Neither preview sent anything, the one asking for a draft included.
+	if livePRIsDraft(t, id) {
+		t.Error("a preview of --draft made the pull request a draft")
+	}
+	if after := currentLivePRVersion(t, id); after != version {
+		t.Errorf("the version moved from %s to %s across two previews", version, after)
 	}
 }
 
@@ -243,12 +262,23 @@ func TestLivePullRequestHumanOutput(t *testing.T) {
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "human.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
-	prID := createLivePRForRegression(t, branch, "Human output", "--no-default-reviewers", "--no-codeowners")
+	prID := createLifecyclePR(t, branch, "Human output", "--no-default-reviewers", "--no-codeowners")
+
+	// A declined one beside it, for the listing below to ask for by state:
+	// Bitbucket lists only open pull requests when it is sent no state, so this
+	// one can appear only if the state bb sends arrives.
+	const declinedBranch = "feature/human-output-declined"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, declinedBranch, "human-declined.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	declinedID := createLifecyclePR(t, declinedBranch, "Human output declined", "--no-default-reviewers", "--no-codeowners")
+	mustLiveCLI(t, "pr", "decline", declinedID)
+	assertLifecyclePRStored(t, readLifecyclePR(t, declinedID), map[string]any{"state": "DECLINED"})
 
 	t.Run("the listing names the pull request and both refs", func(t *testing.T) {
 		// Human output, so not through mustLiveCLI: that adds --json, and the
 		// arrow and the # are what a person reads rather than a machine.
-		output := mustLiveHumanCLI(t, "pr", "list", "--state", "open")
+		output := mustLiveHumanCLI(t, "pr", "list", "--state", "all")
 
 		if !strings.Contains(output, "#"+prID) {
 			t.Errorf("expected the pull request id in the listing:\n%s", output)
@@ -258,6 +288,22 @@ func TestLivePullRequestHumanOutput(t *testing.T) {
 		if !strings.Contains(output, branch+" -> master") {
 			t.Errorf("expected %q in the listing:\n%s", branch+" -> master", output)
 		}
+
+		// Each row read as its columns -- id, state, refs, title -- rather than
+		// searched for.
+		rows := map[string][]string{}
+		for _, line := range strings.Split(output, "\n") {
+			columns := strings.Split(strings.TrimRight(line, "\r"), "\t")
+			rows[columns[0]] = columns
+		}
+		for _, want := range [][]string{
+			{"#" + prID, "OPEN", branch + " -> master", "Human output"},
+			{"#" + declinedID, "DECLINED", declinedBranch + " -> master", "Human output declined"},
+		} {
+			if got := rows[want[0]]; !slices.Equal(got, want) {
+				t.Errorf("the listing row for %s is %q, want %q:\n%s", want[0], got, want, output)
+			}
+		}
 	})
 
 	t.Run("an empty comment listing says so", func(t *testing.T) {
@@ -265,12 +311,23 @@ func TestLivePullRequestHumanOutput(t *testing.T) {
 		if strings.TrimSpace(output) == "" {
 			t.Fatal("an empty comment listing printed nothing at all")
 		}
+		// Saying so is this sentence: an error, or a listing that invented a
+		// comment, is not empty either.
+		if got := strings.TrimSpace(output); got != "No comments found" {
+			t.Errorf("an empty comment listing printed %q, want %q", got, "No comments found")
+		}
 	})
 
-	t.Run("an empty activity listing says so", func(t *testing.T) {
-		output := mustLiveHumanCLI(t, "pr", "activity", prID)
+	// `pr activity` alone is the command group, which prints its help and
+	// succeeds, so this passed without listing anything. Nor is a timeline ever
+	// empty: opening the pull request is its first entry, and here its only one.
+	t.Run("the activity listing names the opening", func(t *testing.T) {
+		output := mustLiveHumanCLI(t, "pr", "activity", "list", prID)
 		if strings.TrimSpace(output) == "" {
-			t.Fatal("an empty activity listing printed nothing at all")
+			t.Fatal("the activity listing printed nothing at all")
+		}
+		if !regexp.MustCompile(`^\[\d+ OPENED\]$`).MatchString(strings.TrimSpace(output)) {
+			t.Errorf("expected the one OPENED entry, got:\n%s", output)
 		}
 	})
 }
@@ -320,13 +377,14 @@ func TestLivePullRequestListingFilters(t *testing.T) {
 		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, fmt.Sprintf("filter-%d.txt", index)); err != nil {
 			t.Fatalf("push %s failed: %v", branch, err)
 		}
-		ids = append(ids, createLivePRForRegression(t, branch, "Filter "+branch,
+		ids = append(ids, createLifecyclePR(t, branch, "Filter "+branch,
 			"--no-default-reviewers", "--no-codeowners"))
 	}
 
 	// One of them is declined, so the state filter has something to exclude.
 	declined := ids[2]
 	mustLiveCLI(t, "pr", "decline", declined)
+	assertLifecyclePRStored(t, readLifecyclePR(t, declined), map[string]any{"state": "DECLINED"})
 
 	// Takes the output rather than the command words: a helper that spreads a
 	// variadic into mustLiveCLI hides them from tools/command-reach, which
@@ -364,20 +422,44 @@ func TestLivePullRequestListingFilters(t *testing.T) {
 			t.Errorf("an open pull request is missing from --state open: %v", open)
 		}
 
-		if closed := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "closed")); !contains(closed, declined) {
+		closed := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "closed"))
+		if !contains(closed, declined) {
 			t.Errorf("--state closed did not return the declined pull request: %v", closed)
+		}
+		for _, open := range ids[:2] {
+			if contains(closed, open) {
+				t.Errorf("the open pull request %s survived --state closed: %v", open, closed)
+			}
 		}
 	})
 
 	t.Run("a limit below the total cuts the answer", func(t *testing.T) {
-		if limited := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "all", "--limit", "1")); len(limited) != 1 {
+		// The total first. all is also the one state only Bitbucket can apply:
+		// bb sends it and keeps every answer, and a server that dropped it would
+		// list the two open pull requests alone.
+		all := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "all"))
+		if len(all) != len(ids) {
+			t.Errorf("--state all returned %v, want the %d seeded %v", all, len(ids), ids)
+		}
+		for _, id := range ids {
+			if !contains(all, id) {
+				t.Errorf("--state all is missing %s: %v", id, all)
+			}
+		}
+
+		limited := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "all", "--limit", "1"))
+		if len(limited) != 1 {
 			t.Fatalf("--limit 1 returned %d pull requests: %v", len(limited), limited)
+		}
+		if !contains(ids, limited[0]) {
+			t.Errorf("--limit 1 returned %s, which is not one of the seeded %v", limited[0], ids)
 		}
 	})
 
 	t.Run("the source branch filter narrows to one", func(t *testing.T) {
-		// A filter the server applies: only the pull request from that branch
-		// can come back, and getting it wrong returns the others.
+		// A filter bb applies rather than one it sends: the request carries no
+		// branch, so there is nothing on the server to read back, and only the
+		// pull request from that branch can survive the narrowing.
 		narrowed := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "all", "--source-branch", branches[0]))
 		if len(narrowed) != 1 || narrowed[0] != ids[0] {
 			t.Fatalf("--source-branch %s returned %v, want just %s", branches[0], narrowed, ids[0])
@@ -386,10 +468,41 @@ func TestLivePullRequestListingFilters(t *testing.T) {
 
 	t.Run("pr status lists what is waiting on the caller", func(t *testing.T) {
 		// A different endpoint entirely -- the cross-repository dashboard --
-		// reached through the command that exists for it.
-		output := mustLiveCLI(t, "pr", "status")
+		// reached through the command that exists for it. --all, because the
+		// dashboard spans every repository the suite has open.
+		output := mustLiveCLI(t, "pr", "status", "--all")
 		if !strings.Contains(output, ids[0]) {
 			t.Errorf("pr status omitted a pull request the caller authored:\n%s", output)
+		}
+
+		// Parsed, and only this repository's entries: every parallel test's
+		// first pull request is #1 by the same admin.
+		section := func(name string) []string {
+			listing, _ := decodeJSONMap(t, output)[name].(map[string]any)
+			entries, _ := listing["pullRequests"].([]any)
+			found := make([]string, 0, len(entries))
+			for _, entry := range entries {
+				pullRequest, _ := entry.(map[string]any)
+				if location, _ := pullRequest["repository"].(map[string]any); location["projectKey"] == seeded.Key && location["slug"] == repo.Slug {
+					found = append(found, trimNumeric(pullRequest["id"]))
+				}
+			}
+
+			return found
+		}
+
+		// bb asks the dashboard for the caller's open pull requests as author,
+		// and for what waits on their review: the declined one is authored too,
+		// and nobody reviews their own.
+		created := section("createdByYou")
+		if !contains(created, ids[0]) || !contains(created, ids[1]) {
+			t.Errorf("createdByYou lists %v from this repository, want the open %v", created, ids[:2])
+		}
+		if contains(created, declined) {
+			t.Errorf("createdByYou lists the declined pull request %s: %v", declined, created)
+		}
+		if reviewing := section("requestingYourReview"); len(reviewing) != 0 {
+			t.Errorf("requestingYourReview lists the caller's own pull requests %v", reviewing)
 		}
 	})
 }
