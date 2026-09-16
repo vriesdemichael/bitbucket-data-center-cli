@@ -11,7 +11,9 @@ import (
 )
 
 func TestLiveAuthStatusAndAdminHealth(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
+	// The instance the suite was pointed at, not the main checkout's port: a
+	// linked worktree's instance, or another release's, listens elsewhere.
+	t.Setenv("BITBUCKET_URL", liveInstanceURL())
 
 	command := cli.NewRootCommand()
 	output := &bytes.Buffer{}
