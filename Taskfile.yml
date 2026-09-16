@@ -544,7 +544,10 @@ tasks:
           # run is asked for here, against the commit that is about to become
           # main.
           head=$(git rev-parse origin/next)
-          ci=$(gh api "repos/{owner}/{repo}/commits/$head/check-runs" --jq '.check_runs[] | select(.name=="CI Complete") | .conclusion' 2>/dev/null | head -1)
+          # jq picks the one conclusion, rather than a pipe into head: Task runs
+          # its own shell, and that shell has no head on Windows -- so the check
+          # died at "executable file not found" on the machine that runs it.
+          ci=$(gh api "repos/{owner}/{repo}/commits/$head/check-runs" --jq '[.check_runs[] | select(.name=="CI Complete") | .conclusion] | .[0] // empty' 2>/dev/null)
           if [ "$ci" = "success" ]; then
             echo "  CI Complete: success on $(git rev-parse --short origin/next)"
           elif [ -z "$ci" ]; then
