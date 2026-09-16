@@ -28,6 +28,51 @@ policies:
   disable_update: true
 ```
 
+### Windows registry values
+
+Under `HKEY_LOCAL_MACHINE\Software\Policies\bb`, each key above has a value with
+a different name and a registry type. The names are not the YAML spellings:
+
+| Value name | Type | YAML key |
+|---|---|---|
+| `RequireKeyring` | boolean | `require_keyring` |
+| `AllowedHosts` | `REG_MULTI_SZ`, or a comma-separated `REG_SZ` | `allowed_hosts` |
+| `CAFile` | `REG_SZ` | `ca_file` |
+| `AllowInsecureSkipVerify` | boolean | `allow_insecure_skip_verify` |
+| `DisableUpdate` | boolean | `disable_update` |
+| `UpdateBaseURL` | `REG_SZ` | `update_base_url` |
+| `AllowHTTPUpdate` | boolean | `allow_http_update` |
+| `UpdateTrustedRoot` | `REG_SZ` | `update_trusted_root` |
+| `UpdateTUFURL` | `REG_SZ` | `update_tuf_url` |
+| `UpdateSignatureIdentity` | `REG_SZ` | `update_signature_identity` |
+| `UpdateSignatureIssuer` | `REG_SZ` | `update_signature_issuer` |
+| `AllowUnverifiedUpdate` | boolean | `allow_unverified_update` |
+
+A **boolean** is a `REG_DWORD` of `0` or `1`, or a `REG_SZ` of `true` or `false`.
+Write it one of those two ways. A `REG_DWORD` other than `0` reads as true.
+
+An empty string value is treated as unset, so a `REG_SZ` left blank does not
+mandate an empty path or an empty host list.
+
+The environment variables a user sets take the same two spellings and no others:
+`BB_ALLOW_HTTP_UPDATE=yes` is refused with
+`BB_ALLOW_HTTP_UPDATE must be true or false (or 1 or 0)` and the run fails.
+
+`mcp_audit_file` has **no registry value**. Mandating where `bb ai mcp serve`
+writes its audit trail on Windows needs `%ProgramData%\bb\config.yaml`.
+
+!!! tip "Check that a policy took effect"
+
+    ```bash
+    bb doctor
+    ```
+
+    Run it on a machine after deploying policy. It needs no host and no network,
+    and its `Settings` section gives each effective setting with where it came
+    from, naming the registry when that is the answer. A value that does not
+    appear there is one `bb` did not read — check the value's name and type
+    against the table above.
+
 ## Keys
 
 | Key | Type | Effect |
