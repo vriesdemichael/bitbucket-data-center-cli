@@ -48,6 +48,37 @@ func TestLivePRTransitionsWithoutAnExplicitVersion(t *testing.T) {
 
 	// Every call below deliberately omits --version. Before the fix each one
 	// answered 409 with expectedVersion -1.
+	//
+	// pr update is here for the same reason and arrived later: #532 fixed the
+	// transitions and left --version as the one required flag on the command
+	// that edits a title, so changing a title took a read first and a stale
+	// read turned the edit into a 409.
+	t.Run("update", func(t *testing.T) {
+		retitled := "Retitled without a version"
+
+		output, err := executeLiveCLI(t, "--json", "pr", "update", prID, "--title", retitled)
+		if err != nil {
+			t.Fatalf("pr update without --version failed: %v\noutput: %s", err, output)
+		}
+
+		pr := extractPRData(decodeJSONMap(t, output))
+		if title, _ := pr["title"].(string); title != retitled {
+			t.Fatalf("the title is %v, want %q\noutput: %s", pr["title"], retitled, output)
+		}
+	})
+
+	// The update above moved the version past 0, so this names one the pull
+	// request has genuinely moved on from.
+	t.Run("an explicit stale version still conflicts on update", func(t *testing.T) {
+		output, err := executeLiveCLI(t, "--json", "pr", "update", prID, "--version", "0", "--title", "Should not land")
+		if err == nil {
+			t.Fatalf("expected a conflict for a stale version, got success:\n%s", output)
+		}
+		if !strings.Contains(output, "out-of-date") && !strings.Contains(err.Error(), "conflict") {
+			t.Errorf("expected an out-of-date conflict, got: %v\noutput: %s", err, output)
+		}
+	})
+
 	t.Run("decline", func(t *testing.T) {
 		assertLivePRState(t, prID, "decline", "DECLINED")
 	})
