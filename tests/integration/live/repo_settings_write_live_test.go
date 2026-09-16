@@ -4,6 +4,7 @@ package live_test
 
 import (
 	"context"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -56,6 +57,14 @@ func TestLiveWorkflowWebhookLifecycle(t *testing.T) {
 				t.Errorf("expected %q in the webhook listing:\n%s", want, listing)
 			}
 		}
+
+		// The same, field by field on the webhook the create named: a substring
+		// can be found in another webhook, or in the wrong field.
+		hook, ok := findByID(decodeJSONMap(t, listing)["webhooks"], id)
+		if !ok {
+			t.Fatalf("webhook %s is not in the listing:\n%s", id, listing)
+		}
+		assertRepoSettingsWebhook(t, hook, name, url, true, event)
 	})
 
 	t.Run("deleting it removes it", func(t *testing.T) {
@@ -64,6 +73,9 @@ func TestLiveWorkflowWebhookLifecycle(t *testing.T) {
 		listing := mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list", "--repo", repoRef)
 		if strings.Contains(listing, url) {
 			t.Fatalf("the webhook survived the delete:\n%s", listing)
+		}
+		if _, ok := findByID(decodeJSONMap(t, listing)["webhooks"], id); ok {
+			t.Fatalf("webhook %s is still listed after the delete:\n%s", id, listing)
 		}
 	})
 }
@@ -179,13 +191,16 @@ func TestLiveWebhookUpdatePreservesUnchangedFields(t *testing.T) {
 
 	// Created through the API so it can carry a secret, which bb has no flag
 	// for and which the server never sends back in a listing.
+	//
+	// Inactive, because active is what Bitbucket stores when an update leaves
+	// the flag out: an active webhook would survive a rename that dropped it.
 	created, err := harness.liveJSON(ctx, "POST",
 		"/rest/api/latest/projects/"+seeded.Key+"/repos/"+repo.Slug+"/webhooks",
 		map[string]any{
 			"name":          "preserve-me",
 			"url":           "http://example.invalid/hook",
 			"events":        []string{"repo:refs_changed", "pr:opened"},
-			"active":        true,
+			"active":        false,
 			"configuration": map[string]any{"secret": "s3cr3t"},
 		})
 	if err != nil {
@@ -207,11 +222,14 @@ func TestLiveWebhookUpdatePreservesUnchangedFields(t *testing.T) {
 	if url, _ := after["url"].(string); url != "http://example.invalid/hook" {
 		t.Errorf("the url changed to %q", url)
 	}
-	if active, _ := after["active"].(bool); !active {
-		t.Error("the webhook was deactivated by a rename")
+	if active, ok := after["active"].(bool); !ok || active {
+		t.Error("the webhook was activated by a rename")
 	}
 	if events, _ := after["events"].([]any); len(events) != 2 {
 		t.Errorf("events = %v, want both to survive", events)
+	}
+	if events, _ := after["events"].([]any); !slices.Contains(events, any("repo:refs_changed")) || !slices.Contains(events, any("pr:opened")) {
+		t.Errorf("events = %v, want repo:refs_changed and pr:opened", events)
 	}
 
 	// The one a listing cannot show and a mock cannot check.
@@ -272,6 +290,10 @@ func TestLiveRepoSettingsReadSurfaces(t *testing.T) {
 		if !strings.Contains(listing, user.Username) {
 			t.Fatalf("expected %s in the permission listing:\n%s", user.Username, listing)
 		}
+		// Appearing is not holding what was granted.
+		if got := repoSettingsPermissionsFrom(t, listing)[user.Username]; got != "REPO_READ" {
+			t.Fatalf("%s holds %q on the repository, want REPO_READ:\n%s", user.Username, got, listing)
+		}
 	})
 
 	t.Run("a granted user appears in the project permission listing", func(t *testing.T) {
@@ -280,6 +302,9 @@ func TestLiveRepoSettingsReadSurfaces(t *testing.T) {
 		listing := mustLiveCLI(t, "project", "permissions", "list", seeded.Key, "--all")
 		if !strings.Contains(listing, user.Username) {
 			t.Fatalf("expected %s in the project permission listing:\n%s", user.Username, listing)
+		}
+		if got := repoSettingsPermissionsFrom(t, listing)[user.Username]; got != "PROJECT_READ" {
+			t.Fatalf("%s holds %q on the project, want PROJECT_READ:\n%s", user.Username, got, listing)
 		}
 	})
 }
