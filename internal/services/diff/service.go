@@ -510,6 +510,10 @@ func pathOrDot(value string) string {
 // ambiguity. A record with neither -- a binary change -- falls back to the
 // header, where the two paths are the same string and can be split down the
 // middle.
+//
+// A patch marks the two sides a/ and b/. The raw diff Bitbucket streams marks
+// them src:// and dst://, and reading only the first pair named every file of
+// `bb diff pr --name-only` as dst://path.
 func extractNamesFromUnifiedDiff(diffText string) []string {
 	seen := map[string]struct{}{}
 	names := make([]string, 0)
@@ -555,10 +559,10 @@ func extractNamesFromUnifiedDiff(diffText string) []string {
 			recordNamed = false
 
 		case header != "" && strings.HasPrefix(line, "--- "):
-			fromPath = diffSidePath(line, "--- ", "a/")
+			fromPath = diffSidePath(line, "--- ", diffSides[0][0], diffSides[1][0])
 
 		case header != "" && strings.HasPrefix(line, "+++ "):
-			if path := diffSidePath(line, "+++ ", "b/"); path != "" {
+			if path := diffSidePath(line, "+++ ", diffSides[0][1], diffSides[1][1]); path != "" {
 				add(path)
 				recordNamed = true
 			}
@@ -569,17 +573,27 @@ func extractNamesFromUnifiedDiff(diffText string) []string {
 	return names
 }
 
+// diffSides are the prefixes that mark the old and the new side of a diff: a/
+// and b/ in a patch, src:// and dst:// in Bitbucket's raw diff.
+var diffSides = [2][2]string{{"a/", "b/"}, {"src://", "dst://"}}
+
 // diffSidePath reads the path off one side of a unified diff header.
 //
 // Git appends an optional tab-separated field after the path, and writes
 // /dev/null for a side that does not exist.
-func diffSidePath(line, marker, sidePrefix string) string {
+func diffSidePath(line, marker string, sidePrefixes ...string) string {
 	rest := strings.TrimPrefix(line, marker)
 	rest = strings.TrimSuffix(rest, "\r")
 	if index := strings.IndexByte(rest, '\t'); index >= 0 {
 		rest = rest[:index]
 	}
-	rest = strings.TrimPrefix(rest, sidePrefix)
+	for _, prefix := range sidePrefixes {
+		if trimmed, found := strings.CutPrefix(rest, prefix); found {
+			rest = trimmed
+
+			break
+		}
+	}
 	if rest == "/dev/null" || rest == "dev/null" {
 		return ""
 	}
@@ -605,14 +619,15 @@ func pathFromDiffGitHeader(header string) string {
 	}
 
 	left, right := rest[:half], rest[half+1:]
-	if !strings.HasPrefix(left, "a/") || !strings.HasPrefix(right, "b/") {
-		return ""
-	}
-	if left[2:] != right[2:] {
-		return ""
-	}
-	if path := left[2:]; path != "/dev/null" && path != "dev/null" {
-		return path
+	for _, sides := range diffSides {
+		leftPath, hasOld := strings.CutPrefix(left, sides[0])
+		rightPath, hasNew := strings.CutPrefix(right, sides[1])
+		if !hasOld || !hasNew || leftPath != rightPath {
+			continue
+		}
+		if leftPath != "/dev/null" && leftPath != "dev/null" {
+			return leftPath
+		}
 	}
 
 	return ""
