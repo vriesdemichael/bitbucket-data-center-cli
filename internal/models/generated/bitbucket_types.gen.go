@@ -6673,12 +6673,10 @@ type RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId string
 
 // RestRestrictionRequest defines model for RestRestrictionRequest.
 type RestRestrictionRequest struct {
-	AccessKeyIds []int32             `json:"accessKeyIds"`
-	AccessKeys   *[]RestSshAccessKey `json:"accessKeys,omitempty"`
-	GroupNames   []string            `json:"groupNames"`
-	Groups       *[]string           `json:"groups,omitempty"`
-	Id           *int32              `json:"id,omitempty"`
-	Matcher      *struct {
+	AccessKeys *[]int32  `json:"accessKeys,omitempty"`
+	Groups     *[]string `json:"groups,omitempty"`
+	Id         *int32    `json:"id,omitempty"`
+	Matcher    *struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
@@ -6690,9 +6688,8 @@ type RestRestrictionRequest struct {
 		ResourceId int32                           `json:"resourceId"`
 		Type       RestRestrictionRequestScopeType `json:"type"`
 	} `json:"scope,omitempty"`
-	Type      *string                `json:"type,omitempty"`
-	UserSlugs []string               `json:"userSlugs"`
-	Users     *[]RestApplicationUser `json:"users,omitempty"`
+	Type  *string   `json:"type,omitempty"`
+	Users *[]string `json:"users,omitempty"`
 }
 
 // RestRestrictionRequestMatcherTypeId defines model for RestRestrictionRequest.Matcher.Type.Id.

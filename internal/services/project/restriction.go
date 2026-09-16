@@ -187,51 +187,19 @@ func (service *Service) upsertRestriction(ctx context.Context, projectKey string
 		bodyEntry.Matcher.DisplayId = &input.MatcherDisplay
 	}
 
-	if len(input.Users) > 0 {
-		users := make([]openapigenerated.RestApplicationUser, 0, len(input.Users))
-		for _, name := range input.Users {
-			if strings.TrimSpace(name) != "" {
-				nameCopy := strings.TrimSpace(name)
-				users = append(users, openapigenerated.RestApplicationUser{Name: &nameCopy})
-			}
-		}
-		if len(users) > 0 {
-			bodyEntry.Users = &users
-		}
+	// Exemptions go by name and by access key id: Bitbucket refuses users sent as
+	// objects and fails on access keys sent as objects (OPENAPI-031).
+	if users := trimmedNonEmpty(input.Users); len(users) > 0 {
+		bodyEntry.Users = &users
 	}
 
-	if len(input.Groups) > 0 {
-		groups := make([]string, 0, len(input.Groups))
-		for _, group := range input.Groups {
-			if trimmed := strings.TrimSpace(group); trimmed != "" {
-				groups = append(groups, trimmed)
-			}
-		}
-		if len(groups) > 0 {
-			bodyEntry.Groups = &groups
-		}
+	if groups := trimmedNonEmpty(input.Groups); len(groups) > 0 {
+		bodyEntry.Groups = &groups
 	}
 
 	if len(input.AccessKeyIDs) > 0 {
-		keys := make([]openapigenerated.RestSshAccessKey, 0, len(input.AccessKeyIDs))
-		for _, kid := range input.AccessKeyIDs {
-			kidCopy := kid
-			keys = append(keys, openapigenerated.RestSshAccessKey{Key: &struct {
-				AlgorithmType     *string "json:\"algorithmType,omitempty\""
-				BitLength         *int32  "json:\"bitLength,omitempty\""
-				CreatedDate       *int64  "json:\"createdDate,omitempty\""
-				ExpiryDays        *int32  "json:\"expiryDays,omitempty\""
-				Fingerprint       *string "json:\"fingerprint,omitempty\""
-				Id                *int32  "json:\"id,omitempty\""
-				Label             *string "json:\"label,omitempty\""
-				LastAuthenticated *string "json:\"lastAuthenticated,omitempty\""
-				Text              *string "json:\"text,omitempty\""
-				Warning           *string "json:\"warning,omitempty\""
-			}{Id: &kidCopy}})
-		}
-		if len(keys) > 0 {
-			bodyEntry.AccessKeys = &keys
-		}
+		keys := append([]int32(nil), input.AccessKeyIDs...)
+		bodyEntry.AccessKeys = &keys
 	}
 
 	requestBody := openapigenerated.CreateRestrictionsApplicationVndAtlBitbucketBulkPlusJSONRequestBody{bodyEntry}
@@ -331,4 +299,15 @@ func normalizeProjectRestrictionRequestMatcherType(value string) (openapigenerat
 	default:
 		return "", apperrors.New(apperrors.KindValidation, "matcher type must be one of BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN", nil)
 	}
+}
+
+// trimmedNonEmpty trims each value and drops the empty ones.
+func trimmedNonEmpty(values []string) []string {
+	kept := make([]string, 0, len(values))
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			kept = append(kept, trimmed)
+		}
+	}
+	return kept
 }

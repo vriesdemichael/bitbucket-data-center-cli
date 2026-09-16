@@ -117,6 +117,8 @@ func sanitize(inputPath, outputPath string) error {
 	renamedProperties := fixSchemaPropertyNames(spec)
 	fixedArrayProperties := fixArrayTypedProperties(spec)
 	fixedArrayResponses := fixArrayTypedResponses(spec)
+	fixedScalarItems := fixScalarItemProperties(spec)
+	removedIgnoredProperties := removeIgnoredRequestProperties(spec)
 
 	output, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
@@ -128,8 +130,8 @@ func sanitize(inputPath, outputPath string) error {
 	}
 
 	fmt.Printf(
-		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d fixed path params=%d renamed properties=%d fixed array properties=%d fixed array responses=%d\n",
-		fixedOperations, renamedOperationIDs, fixedSchemaFields, fixedPathParams, renamedProperties, fixedArrayProperties, fixedArrayResponses,
+		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d fixed path params=%d renamed properties=%d fixed array properties=%d fixed array responses=%d fixed scalar items=%d removed ignored properties=%d\n",
+		fixedOperations, renamedOperationIDs, fixedSchemaFields, fixedPathParams, renamedProperties, fixedArrayProperties, fixedArrayResponses, fixedScalarItems, removedIgnoredProperties,
 	)
 	return nil
 }
@@ -623,4 +625,133 @@ func fixArrayTypedResponses(spec map[string]any) int {
 	}
 
 	return fixed
+}
+
+// scalarItemProperty names a request property the spec declares as an array of
+// objects but the server reads as an array of those objects' identifiers.
+type scalarItemProperty struct {
+	schema     string
+	property   string
+	itemType   string
+	itemFormat string
+}
+
+// scalarItemProperties lists those properties.
+//
+// Same rule as the lists above: an entry belongs here only where a running
+// Bitbucket has refused the declared shape and stored the scalar one.
+var scalarItemProperties = []scalarItemProperty{
+	// A branch restriction names the users and SSH access keys it exempts. On
+	// 10.4.3, users sent as {"name": "admin"} answered 400 "{name=admin} is not
+	// a valid user" and access keys sent as {"key": {"id": 6}} answered 500,
+	// while ["admin"] and [6] were stored. bb followed the declaration, so
+	// --user and --access-key-id on a restriction had never worked.
+	{schema: "RestRestrictionRequest", property: "users", itemType: "string"},
+	{schema: "RestRestrictionRequest", property: "accessKeys", itemType: "integer", itemFormat: "int32"},
+}
+
+// fixScalarItemProperties rewrites the listed properties into arrays of
+// identifiers. A property whose items are already scalar is left alone, so a
+// corrected spec is not forced back to this.
+func fixScalarItemProperties(spec map[string]any) int {
+	fixed := 0
+	for _, entry := range scalarItemProperties {
+		properties := schemaProperties(spec, entry.schema)
+		property, ok := properties[entry.property].(map[string]any)
+		if !ok {
+			continue
+		}
+		if propertyType, _ := property["type"].(string); propertyType != "array" {
+			continue
+		}
+		items, ok := property["items"].(map[string]any)
+		if !ok {
+			continue
+		}
+		_, isReference := items["$ref"]
+		if itemType, _ := items["type"].(string); !isReference && itemType != "object" {
+			continue
+		}
+
+		replacement := map[string]any{"type": entry.itemType}
+		if entry.itemFormat != "" {
+			replacement["format"] = entry.itemFormat
+		}
+		property["items"] = replacement
+		fixed++
+	}
+
+	return fixed
+}
+
+// ignoredRequestProperty names a request property the server accepts and then
+// discards.
+type ignoredRequestProperty struct {
+	schema   string
+	property string
+}
+
+// ignoredRequestProperties lists those properties. They are removed rather
+// than left in the generated models, where a caller could set one and believe
+// it had an effect.
+var ignoredRequestProperties = []ignoredRequestProperty{
+	// Declared required on a restriction request. On 10.4.3 a create carrying
+	// only one of them answered 200 and stored no user, group or access key.
+	{schema: "RestRestrictionRequest", property: "accessKeyIds"},
+	{schema: "RestRestrictionRequest", property: "groupNames"},
+	{schema: "RestRestrictionRequest", property: "userSlugs"},
+}
+
+// removeIgnoredRequestProperties deletes the listed properties and takes them
+// out of their schema's required list.
+func removeIgnoredRequestProperties(spec map[string]any) int {
+	removed := 0
+	for _, entry := range ignoredRequestProperties {
+		schema := componentSchema(spec, entry.schema)
+		properties, _ := schema["properties"].(map[string]any)
+		if _, present := properties[entry.property]; !present {
+			continue
+		}
+		delete(properties, entry.property)
+		removed++
+
+		required, ok := schema["required"].([]any)
+		if !ok {
+			continue
+		}
+		kept := make([]any, 0, len(required))
+		for _, name := range required {
+			if name != entry.property {
+				kept = append(kept, name)
+			}
+		}
+		if len(kept) == 0 {
+			delete(schema, "required")
+		} else {
+			schema["required"] = kept
+		}
+	}
+
+	return removed
+}
+
+// componentSchema returns a component schema, or nil when it is missing.
+func componentSchema(spec map[string]any, name string) map[string]any {
+	components, ok := spec["components"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	schemas, ok := components["schemas"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	schema, _ := schemas[name].(map[string]any)
+	return schema
+}
+
+// schemaProperties returns a component schema's properties, or nil when the
+// schema or its properties are missing.
+func schemaProperties(spec map[string]any, name string) map[string]any {
+	properties, _ := componentSchema(spec, name)["properties"].(map[string]any)
+	return properties
 }

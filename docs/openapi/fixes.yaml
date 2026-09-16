@@ -2,6 +2,16 @@ version: 1
 updated_at: "2026-08-27"
 source_openapi: docs/reference/atlassian/bitbucket-openapi.json
 
+# What belongs here: a place where the published specification is wrong about the
+# release it describes -- a shape that release refuses, a field it ignores, a route
+# it serves but does not document -- and what bb does about it.
+#
+# A field or endpoint that an older release does not have yet is not a mismatch in
+# the specification, and it is not recorded here. The specification for that
+# release is accurate; the release simply predates the feature. bb works around
+# those with a check on the server's version, and they are catalogued with the
+# compatibility layer instead.
+
 # The registry had never been exercised end to end. It was, during the bump from
 # Bitbucket 10.2 to 10.4.
 validation:
@@ -1323,3 +1333,50 @@ fixes:
     verification:
       commands:
         - go test -tags=live ./tests/integration/live -run TestLiveCodeOwnersEndpointContract
+  - id: OPENAPI-031
+    area: restriction-exemptions-go-by-name-and-id
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Probed on 10.4.3 with raw HTTP and no bb code in the path, against both media types the
+      create accepts (application/json and application/vnd.atl.bitbucket.bulk+json). This is not a
+      difference between releases: every published specification from 8.19 to 10.4 declares the
+      same shapes, and they are wrong for the release each one describes.
+    description: >
+      A branch restriction names the users and SSH access keys it exempts by username and by key
+      id, not as the objects the spec declares, and discards the three required properties the
+      spec adds for the same purpose.
+    reference:
+      type: schema
+      value: RestRestrictionRequest (users, accessKeys, userSlugs, groupNames, accessKeyIds)
+      upstream_issue: >
+        The spec declares users as RestApplicationUser objects and accessKeys as RestSshAccessKey
+        objects, and marks userSlugs, groupNames and accessKeyIds required. On 10.4.3:
+
+          - users [{"name": "admin"}] answered 400 "{name=admin} is not a valid user";
+            ["admin"] was stored.
+          - accessKeys [{"key": {"id": 6}}] and [{"id": 6}] answered 500; [6] was stored.
+          - userSlugs, groupNames and accessKeyIds each answered 200 and stored nothing.
+          - groups ["stash-users"] was stored, as declared.
+
+        bb built its request from the declaration, so --user and --access-key-id on
+        `bb branch restriction` and `bb project branch-restriction` create and update had never
+        worked. No live test passed either flag to a restriction command.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/services/branch/service.go
+        - internal/services/project/restriction.go
+        - tests/integration/live/restriction_exemptions_live_test.go
+      detail: >
+        The sanitizer rewrites users to an array of strings and accessKeys to an array of int32,
+        guarded on the declared object items so a corrected spec is left alone, and removes
+        userSlugs, groupNames and accessKeyIds from the schema and its required list, so nothing
+        can set a property the server discards. The services send usernames and key ids, and the
+        live test reads back a user, a group and an access key exempted by one restriction.
+    verification:
+      commands:
+        - go test ./tools/openapi-sanitize -run 'TestFixScalarItemProperties|TestRemoveIgnoredRequestProperties'
+        - task models:verify
+        - task client:verify
+        - go test -tags=live ./tests/integration/live -run TestLiveRestrictionExemptions

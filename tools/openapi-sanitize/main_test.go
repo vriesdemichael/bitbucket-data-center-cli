@@ -467,3 +467,81 @@ func TestFixArrayTypedResponsesWrapsSchemaInArray(t *testing.T) {
 		t.Fatalf("an unlisted operation was rewritten: %v", getSchema)
 	}
 }
+
+func restrictionRequestSpec() map[string]any {
+	return map[string]any{
+		"components": map[string]any{
+			"schemas": map[string]any{
+				"RestRestrictionRequest": map[string]any{
+					"required": []any{"accessKeyIds", "groupNames", "type", "userSlugs"},
+					"properties": map[string]any{
+						"users":        map[string]any{"type": "array", "items": map[string]any{"$ref": "#/components/schemas/RestApplicationUser"}},
+						"accessKeys":   map[string]any{"type": "array", "items": map[string]any{"$ref": "#/components/schemas/RestSshAccessKey"}},
+						"groups":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+						"userSlugs":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+						"groupNames":   map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+						"accessKeyIds": map[string]any{"type": "array", "items": map[string]any{"type": "integer", "format": "int32"}},
+						"type":         map[string]any{"type": "string"},
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestFixScalarItemPropertiesRewritesObjectItems(t *testing.T) {
+	t.Parallel()
+
+	spec := restrictionRequestSpec()
+	if fixed := fixScalarItemProperties(spec); fixed != 2 {
+		t.Fatalf("fixed = %d, want 2 (users and accessKeys)", fixed)
+	}
+
+	properties := schemaProperties(spec, "RestRestrictionRequest")
+	users := properties["users"].(map[string]any)["items"].(map[string]any)
+	if users["type"] != "string" || users["$ref"] != nil {
+		t.Fatalf("users items = %v, want plain strings", users)
+	}
+	keys := properties["accessKeys"].(map[string]any)["items"].(map[string]any)
+	if keys["type"] != "integer" || keys["format"] != "int32" {
+		t.Fatalf("accessKeys items = %v, want int32", keys)
+	}
+	if groups := properties["groups"].(map[string]any)["items"].(map[string]any); groups["type"] != "string" {
+		t.Fatalf("groups was rewritten: %v", groups)
+	}
+
+	// A spec that already declares scalars is left as it is.
+	if fixed := fixScalarItemProperties(spec); fixed != 0 {
+		t.Fatalf("second pass fixed = %d, want 0", fixed)
+	}
+}
+
+func TestRemoveIgnoredRequestPropertiesDropsThemFromRequired(t *testing.T) {
+	t.Parallel()
+
+	spec := restrictionRequestSpec()
+	if removed := removeIgnoredRequestProperties(spec); removed != 3 {
+		t.Fatalf("removed = %d, want 3", removed)
+	}
+
+	properties := schemaProperties(spec, "RestRestrictionRequest")
+	for _, name := range []string{"userSlugs", "groupNames", "accessKeyIds"} {
+		if _, present := properties[name]; present {
+			t.Errorf("%s is still declared", name)
+		}
+	}
+	for _, name := range []string{"users", "groups", "accessKeys", "type"} {
+		if _, present := properties[name]; !present {
+			t.Errorf("%s was removed, and it is not on the list", name)
+		}
+	}
+
+	required := spec["components"].(map[string]any)["schemas"].(map[string]any)["RestRestrictionRequest"].(map[string]any)["required"]
+	if got, _ := json.Marshal(required); string(got) != `["type"]` {
+		t.Fatalf("required = %s, want [\"type\"]", got)
+	}
+
+	if removed := removeIgnoredRequestProperties(spec); removed != 0 {
+		t.Fatalf("second pass removed = %d, want 0", removed)
+	}
+}
