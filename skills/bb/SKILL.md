@@ -9,11 +9,17 @@ description: Query and mutate Bitbucket Data Center resources from an AI agent. 
 
 > **Authoritative Command Surface**: Built-in CLI help (`bb --help`, `bb <cmd> --help`) and the MCP tool catalogue (`bb ai mcp tools`) reflect the live runtime command tree. Prefer them when a command option or argument signature needs runtime verification.
 
-## Multi-Repository Bulk Governance
+## Multi-Repository Changes
 
-This skill focuses on repository-centric developer workflows. For multi-repository
-policy management, declarative schema authoring (`bulk-policy.yaml`), and two-stage
-plan/apply rollouts (`bb bulk plan`, `bb bulk apply`), see the dedicated `bb-bulk` skill:
+This skill focuses on repository-centric developer workflows. To change many
+repositories at once, set the policy once on the project: `bb project permissions`,
+`bb project webhook`, `bb project default-task` and `bb project branch-restriction`
+cascade to every repository in the project, so there is nothing to fan out. Anything
+Bitbucket does not scope to a project is a loop over `bb repo list --project PROJ --json`.
+
+`bb bulk` is deprecated and warns at runtime that it will be removed in v5.0.0. Do not
+reach for it in new work. The `bb-bulk` skill documents it for an agent maintaining an
+existing `bulk-policy.yaml`:
 
 ```bash
 bb ai skill show bulk
