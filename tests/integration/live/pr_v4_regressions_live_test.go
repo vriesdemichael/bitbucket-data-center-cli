@@ -6,9 +6,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
+	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // The four defects fixed for v4.0.0 in the pull-request commands. Each had a
@@ -44,7 +49,7 @@ func TestLivePRTransitionsWithoutAnExplicitVersion(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
-	prID := createLivePRForRegression(t, branch, "Transitions without --version")
+	prID := createLifecyclePR(t, branch, "Transitions without --version")
 
 	// Every call below deliberately omits --version. Before the fix each one
 	// answered 409 with expectedVersion -1.
@@ -65,11 +70,15 @@ func TestLivePRTransitionsWithoutAnExplicitVersion(t *testing.T) {
 		if title, _ := pr["title"].(string); title != retitled {
 			t.Fatalf("the title is %v, want %q\noutput: %s", pr["title"], retitled, output)
 		}
+
+		assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"title": retitled})
 	})
 
 	// The update above moved the version past 0, so this names one the pull
 	// request has genuinely moved on from.
 	t.Run("an explicit stale version still conflicts on update", func(t *testing.T) {
+		before := readLifecyclePR(t, prID)
+
 		output, err := executeLiveCLI(t, "--json", "pr", "update", prID, "--version", "0", "--title", "Should not land")
 		if err == nil {
 			t.Fatalf("expected a conflict for a stale version, got success:\n%s", output)
@@ -77,20 +86,27 @@ func TestLivePRTransitionsWithoutAnExplicitVersion(t *testing.T) {
 		if !strings.Contains(output, "out-of-date") && !strings.Contains(err.Error(), "conflict") {
 			t.Errorf("expected an out-of-date conflict, got: %v\noutput: %s", err, output)
 		}
+		assertLifecycleOutOfDate(t, err)
+
+		assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"title": before["title"], "version": before["version"]})
 	})
 
 	t.Run("decline", func(t *testing.T) {
 		assertLivePRState(t, prID, "decline", "DECLINED")
+		assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"state": "DECLINED"})
 	})
 
 	t.Run("reopen", func(t *testing.T) {
 		assertLivePRState(t, prID, "reopen", "OPEN")
+		assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"state": "OPEN"})
 	})
 
 	// A stale version must still be refused: resolving the current one when the
 	// caller gave none must not have disarmed the optimistic lock for callers
 	// who do give one.
 	t.Run("an explicit stale version still conflicts", func(t *testing.T) {
+		before := readLifecyclePR(t, prID)
+
 		output, err := executeLiveCLI(t, "--json", "pr", "decline", prID, "--version", "0")
 		if err == nil {
 			t.Fatalf("expected a conflict for a stale version, got success:\n%s", output)
@@ -98,11 +114,15 @@ func TestLivePRTransitionsWithoutAnExplicitVersion(t *testing.T) {
 		if !strings.Contains(output, "out-of-date") && !strings.Contains(err.Error(), "conflict") {
 			t.Errorf("expected an out-of-date conflict, got: %v\noutput: %s", err, output)
 		}
+		assertLifecycleOutOfDate(t, err)
+
+		assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"state": before["state"], "version": before["version"]})
 	})
 
 	// Merge closes the pull request, so it goes last.
 	t.Run("merge", func(t *testing.T) {
 		assertLivePRState(t, prID, "merge", "MERGED")
+		assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"state": "MERGED"})
 	})
 }
 
@@ -129,6 +149,104 @@ func createLivePRForRegression(t *testing.T, fromBranch, title string, extraArgs
 	}
 
 	return fmt.Sprintf("%v", id)
+}
+
+// createLifecyclePR is createLivePRForRegression followed by a read of what
+// Bitbucket stored for the title and both branches.
+//
+// A read of its own, because Bitbucket answers 2xx to a property it does not
+// know and drops it: the create's answer cannot tell a stored value from a
+// dropped one, and createLivePRForRegression keeps only the id. master is the
+// default branch, but not one Bitbucket fills in: a create without a toRef is
+// refused with 400.
+func createLifecyclePR(t *testing.T, fromBranch, title string, extraArgs ...string) string {
+	t.Helper()
+
+	prID := createLivePRForRegression(t, fromBranch, title, extraArgs...)
+	assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{
+		"title":        title,
+		"sourceBranch": fromBranch,
+		"targetBranch": "master",
+	})
+
+	return prID
+}
+
+// readLifecyclePR reads a pull request through bb pr get, in the repository the
+// test is scoped to.
+func readLifecyclePR(t *testing.T, prID string) map[string]any {
+	t.Helper()
+
+	return extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", prID)))
+}
+
+// readLifecyclePRIn is readLifecyclePR for a pull request in a repository other
+// than the test's own, such as the upstream of a fork.
+func readLifecyclePRIn(t *testing.T, repoRef, prID string) map[string]any {
+	t.Helper()
+
+	return extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", prID, "--repo", repoRef)))
+}
+
+// assertLifecyclePRStored compares fields of a pull request that was read back
+// with the values sent, exactly. The values are what JSON decodes to: a version
+// is a float64 and a repository a map.
+func assertLifecyclePRStored(t *testing.T, stored, want map[string]any) {
+	t.Helper()
+
+	for _, field := range slices.Sorted(maps.Keys(want)) {
+		if !reflect.DeepEqual(stored[field], want[field]) {
+			t.Errorf("pull request %v reads back %s = %#v, want %#v", stored["id"], field, stored[field], want[field])
+		}
+	}
+}
+
+// assertLifecyclePRHarnessStored reads back a pull request that
+// harness.createPullRequest opened: the title and description it always sends,
+// and the branches it was given.
+func assertLifecyclePRHarnessStored(t *testing.T, prID, fromBranch, toBranch string) {
+	t.Helper()
+
+	assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{
+		"title":        "Live test PR",
+		"description":  "PR seeded by live harness",
+		"sourceBranch": fromBranch,
+		"targetBranch": toBranch,
+	})
+}
+
+// assertLifecycleOutOfDate checks that a refusal is Bitbucket's own answer to a
+// stale version, which only a version that reached it can produce.
+func assertLifecycleOutOfDate(t *testing.T, err error) {
+	t.Helper()
+
+	details := apperrors.DetailsOf(err)
+	if details["upstreamStatus"] != "409" || details["upstreamException"] != "com.atlassian.bitbucket.pull.PullRequestOutOfDateException" {
+		t.Errorf("expected Bitbucket's 409 PullRequestOutOfDateException, got %v: %v", details, err)
+	}
+}
+
+// assertLifecycleForkStored reads a fork back through bb repo get: its name, the
+// project it was made in, and the repository it was forked from.
+func assertLifecycleForkStored(t *testing.T, projectKey, forkSlug, forkName, originSlug string) {
+	t.Helper()
+
+	stored, ok := decodeJSONMap(t, mustLiveCLI(t, "repo", "get", "--repo", projectKey+"/"+forkSlug, "--readme=false"))["repository"].(map[string]any)
+	if !ok {
+		t.Fatalf("repo get of the fork %s/%s carries no repository", projectKey, forkSlug)
+	}
+
+	want := map[string]any{
+		"projectKey": projectKey,
+		"slug":       forkSlug,
+		"name":       forkName,
+		"origin":     map[string]any{"projectKey": projectKey, "slug": originSlug},
+	}
+	for _, field := range slices.Sorted(maps.Keys(want)) {
+		if !reflect.DeepEqual(stored[field], want[field]) {
+			t.Errorf("the fork reads back %s = %#v, want %#v", field, stored[field], want[field])
+		}
+	}
 }
 
 // assertLivePRState runs a transition with no --version and checks the state it
@@ -218,7 +336,7 @@ func TestLivePRUpdateKeepsReviewers(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
-	prID := createLivePRForRegression(t, branch, "Reviewers must survive an update",
+	prID := createLifecyclePR(t, branch, "Reviewers must survive an update",
 		"--reviewers", reviewer.Username, "--no-default-reviewers", "--no-codeowners")
 
 	before := currentLivePRReviewers(t, prID)
@@ -229,8 +347,9 @@ func TestLivePRUpdateKeepsReviewers(t *testing.T) {
 	version := currentLivePRVersion(t, prID)
 
 	// The defect, exactly as reported: change one unrelated field.
+	const description = "touched by the live regression test"
 	updateOutput, err := executeLiveCLI(t, "--json", "pr", "update", prID,
-		"--version", version, "--description", "touched by the live regression test")
+		"--version", version, "--description", description)
 	if err != nil {
 		t.Fatalf("pr update failed: %v\noutput: %s", err, updateOutput)
 	}
@@ -239,6 +358,10 @@ func TestLivePRUpdateKeepsReviewers(t *testing.T) {
 	if len(after) != 1 || !strings.EqualFold(after[0], reviewer.Username) {
 		t.Fatalf("updating the description dropped the reviewers: before=%v after=%v", before, after)
 	}
+
+	// The field the update was for. The pull request had no description, so a
+	// dropped one reads back absent.
+	assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"description": description})
 
 	// --reviewers still replaces the list, so the echo must not have turned the
 	// flag into an append.
@@ -317,8 +440,9 @@ func TestLiveReviewerFlagsAcceptTheReviewerGroupPrefix(t *testing.T) {
 				t.Fatalf("push commit on branch failed: %v", err)
 			}
 
+			title := "Reviewer group prefix " + fmt.Sprint(index)
 			args := append([]string{"--no-default-reviewers", "--no-codeowners"}, flags...)
-			output, err := createLivePRWithOutput(t, branch, "Reviewer group prefix "+fmt.Sprint(index), args...)
+			output, err := createLivePRWithOutput(t, branch, title, args...)
 			if err != nil {
 				t.Fatalf("pr create with %v failed: %v\noutput: %s", flags, err, output)
 			}
@@ -326,6 +450,14 @@ func TestLiveReviewerFlagsAcceptTheReviewerGroupPrefix(t *testing.T) {
 			reviewers := decodeLivePRReviewers(t, decodeJSONMap(t, output))
 			if !containsFold(reviewers, member.Username) {
 				t.Errorf("expected %v to expand to %s, got %v", flags, member.Username, reviewers)
+			}
+
+			// The expansion as Bitbucket stored it: the group's one member and
+			// nobody beside them, which the create's answer cannot vouch for.
+			stored := readLifecyclePR(t, trimNumeric(extractPRData(decodeJSONMap(t, output))["id"]))
+			assertLifecyclePRStored(t, stored, map[string]any{"title": title, "sourceBranch": branch, "targetBranch": "master"})
+			if names := decodeLivePRReviewers(t, stored); len(names) != 1 || !strings.EqualFold(names[0], member.Username) {
+				t.Errorf("%v stored the reviewers %v, want exactly [%s]", flags, names, member.Username)
 			}
 		})
 	}
@@ -378,14 +510,18 @@ func TestLivePRCreateFromAFork(t *testing.T) {
 	}
 	upstream := seeded.Repos[0]
 
+	// No slug is sent: Bitbucket derives a fork's slug from its name and ignores
+	// one beside it, answering 201 either way, so the name is chosen to be the
+	// slug the rest of the test uses.
 	forkSlug := upstream.Slug + "-contributor-fork"
 	postLiveJSON(t, fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s", seeded.Key, upstream.Slug), map[string]any{
 		"name":    forkSlug,
-		"slug":    forkSlug,
 		"project": map[string]any{"key": seeded.Key},
 	})
+	assertLifecycleForkStored(t, seeded.Key, forkSlug, forkSlug, upstream.Slug)
 
 	configureLiveCLIEnv(t, harness, seeded.Key, forkSlug)
+	upstreamRef := seeded.Key + "/" + upstream.Slug
 
 	branch := "feature/from-the-fork"
 	if err := harness.pushCommitOnBranch(seeded.Key, forkSlug, branch, "contributed.txt"); err != nil {
@@ -415,6 +551,16 @@ func TestLivePRCreateFromAFork(t *testing.T) {
 	// "branch not found" before the fix.
 	assertLivePRRepository(t, pr, "sourceRepository", forkSlug)
 	assertLivePRRepository(t, pr, "repository", upstream.Slug)
+
+	// Read back on the upstream, and with the project as well as the slug: the
+	// two checks above read the create's own answer.
+	assertLifecyclePRStored(t, readLifecyclePRIn(t, upstreamRef, trimNumeric(pr["id"])), map[string]any{
+		"title":            "From the fork",
+		"sourceBranch":     branch,
+		"targetBranch":     "master",
+		"sourceRepository": map[string]any{"projectKey": seeded.Key, "slug": forkSlug},
+		"repository":       map[string]any{"projectKey": seeded.Key, "slug": upstream.Slug},
+	})
 
 	// The other side of the flag: a pull request that is not from a fork must
 	// not become one.
@@ -446,6 +592,16 @@ func TestLivePRCreateFromAFork(t *testing.T) {
 		if _, present := created["sourceRepository"]; present {
 			assertLivePRRepository(t, created, "sourceRepository", upstream.Slug)
 		}
+
+		// Read back, where the source repository is there to check whether or
+		// not the create's answer carried it.
+		assertLifecyclePRStored(t, readLifecyclePRIn(t, upstreamRef, trimNumeric(created["id"])), map[string]any{
+			"title":            "Not from a fork",
+			"sourceBranch":     branch,
+			"targetBranch":     "master",
+			"sourceRepository": map[string]any{"projectKey": seeded.Key, "slug": upstream.Slug},
+			"repository":       map[string]any{"projectKey": seeded.Key, "slug": upstream.Slug},
+		})
 	})
 
 	// Naming the target as the source is the same-repository case spelled out,
@@ -465,7 +621,19 @@ func TestLivePRCreateFromAFork(t *testing.T) {
 			"--no-default-reviewers", "--no-codeowners",
 		)
 
-		assertLivePRRepository(t, extractPRData(decodeJSONMap(t, output)), "repository", upstream.Slug)
+		created := extractPRData(decodeJSONMap(t, output))
+		assertLivePRRepository(t, created, "repository", upstream.Slug)
+
+		// The --from-repo sent is the repository Bitbucket assumes without one,
+		// by design, so no read can tell it arrived; this one shows naming it
+		// made the pull request nothing else.
+		assertLifecyclePRStored(t, readLifecyclePRIn(t, upstreamRef, trimNumeric(created["id"])), map[string]any{
+			"title":            "Target named as source",
+			"sourceBranch":     branch,
+			"targetBranch":     "master",
+			"sourceRepository": map[string]any{"projectKey": seeded.Key, "slug": upstream.Slug},
+			"repository":       map[string]any{"projectKey": seeded.Key, "slug": upstream.Slug},
+		})
 	})
 }
 
