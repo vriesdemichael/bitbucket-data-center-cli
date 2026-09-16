@@ -4,9 +4,11 @@ package live_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
@@ -74,17 +76,31 @@ func TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected(t *testing.T) {
 
 			release := []string{"--type", "read-only", "--matcher-type", "PATTERN", "--matcher-id", "refs/heads/release/*"}
 			id := restrictionID(t, mustLiveCLI(t, append(scope.create, then(append(release, "--user", "admin")...)...)...))
+			assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, append(scope.get, then(id)...)...)), storedRestriction{
+				restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*", users: []string{"admin"},
+			})
 
 			t.Run("a refused update keeps the restriction it would have replaced", func(t *testing.T) {
-				refused := append(append([]string{id}, release...), "--user", testsupport.UniqueName("no-such-user-"))
-				if output, err := executeLiveCLI(t, append(scope.update, then(refused...)...)...); err == nil {
+				missingUser := testsupport.UniqueName("no-such-user-")
+				refused := append(append([]string{id}, release...), "--user", missingUser)
+				output, err := executeLiveCLI(t, append(scope.update, then(refused...)...)...)
+				if err == nil {
 					t.Fatalf("an update naming a user that does not exist succeeded:\n%s", output)
+				}
+				// Bitbucket's refusal of the create, not a check bb made before
+				// sending it: only a create the server refused shows what that
+				// refusal leaves behind.
+				if status := apperrors.DetailsOf(err)["upstreamStatus"]; status != "400" || !strings.Contains(err.Error(), missingUser) {
+					t.Errorf("the update failed with upstream status %q and %v, want Bitbucket's 400 naming %s", status, err, missingUser)
 				}
 
 				kept := restrictionPayload(t, mustLiveCLI(t, append(scope.get, then(id)...)...))
 				if !restrictionExempts(kept, "admin") {
 					t.Errorf("restriction %s no longer exempts admin after a refused update: %v", id, kept)
 				}
+				assertRestrictionStored(t, kept, storedRestriction{
+					restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*", users: []string{"admin"},
+				})
 			})
 
 			t.Run("an update of the same type and matcher leaves one restriction", func(t *testing.T) {
@@ -98,9 +114,17 @@ func TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected(t *testing.T) {
 				if got, _ := numericOrStringID(matching[0]["id"]); got != updated {
 					t.Errorf("the remaining restriction is %s, the update answered with %s", got, updated)
 				}
+				if got, _ := numericOrStringID(matching[0]["id"]); got != id {
+					t.Errorf("the remaining restriction is %s; one that keeps its type and matcher keeps its id, %s", got, id)
+				}
 				if groups, _ := matching[0]["groups"].([]any); len(groups) != 1 || groups[0] != "stash-users" {
 					t.Errorf("groups = %v, want [stash-users]", matching[0]["groups"])
 				}
+				// No users: the upsert replaces every exemption, and admin was not
+				// named again.
+				assertRestrictionStored(t, matching[0], storedRestriction{
+					restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*", groups: []string{"stash-users"},
+				})
 				id = updated
 			})
 
@@ -114,6 +138,10 @@ func TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected(t *testing.T) {
 				}
 				if now := restrictionsMatching(t, listed, "read-only", "refs/heads/hotfix/*"); len(now) != 1 {
 					t.Errorf("want one read-only restriction on hotfix/*, got %d: %v", len(now), now)
+				} else {
+					assertRestrictionStored(t, now[0], storedRestriction{
+						restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/hotfix/*", groups: []string{"stash-users"},
+					})
 				}
 			})
 		})
