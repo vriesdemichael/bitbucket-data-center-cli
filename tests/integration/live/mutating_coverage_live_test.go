@@ -1322,6 +1322,10 @@ func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
 	})
 
 	t.Run("a name that does not exist is not found, not transient", func(t *testing.T) {
+		// Read here rather than taken from the subtest above, so this one holds
+		// when it runs on its own.
+		before := mutatedReviewerGroups(t, mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef))
+
 		output, err := executeLiveCLI(t, "--json", "reviewer-group", "delete", "no_such_group", "--repo", repoRef, "--yes")
 		if err == nil {
 			t.Fatalf("expected a failure, got:\n%s", output)
@@ -1337,8 +1341,10 @@ func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
 		}
 
 		// And nothing was deleted in its place.
-		if after := mutatedReviewerGroups(t, mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef)); len(after) != 1 || after[keptName].id != keptID {
-			t.Errorf("want %s (id %s) untouched by a refused delete, got %v", keptName, keptID, after)
+		after := mutatedReviewerGroups(t, mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef))
+		unchanged := maps.EqualFunc(before, after, func(was, is mutatedReviewerGroup) bool { return was.id == is.id })
+		if !unchanged || after[keptName].id != keptID {
+			t.Errorf("want %v, with %s (id %s), untouched by a refused delete, got %v", before, keptName, keptID, after)
 		}
 	})
 }
