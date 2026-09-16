@@ -60,9 +60,7 @@ func TestLivePullRequestReviewSurfaces(t *testing.T) {
 	// Before the status below, which would add the reviewer as a participant
 	// had the create dropped them.
 	created := prReviewPullRequest(t, prID)
-	if created["title"] != "Review surfaces" {
-		t.Fatalf("title = %v, want Review surfaces", created["title"])
-	}
+	prReviewAssertOpened(t, created, "Review surfaces", branch)
 	prReviewAssertSoleReviewer(t, created, reviewer.Username, "UNAPPROVED")
 
 	commentsPath := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/comments",
@@ -275,8 +273,9 @@ func TestLivePullRequestReviewSurfaces(t *testing.T) {
 		for _, pullRequest := range listed {
 			switch id, _ := numericOrStringID(pullRequest["id"]); id {
 			case declinedID:
-				if pullRequest["state"] != "DECLINED" || pullRequest["title"] != "Declined beside review surfaces" {
-					t.Errorf("declined pull request = state %v, title %v", pullRequest["state"], pullRequest["title"])
+				prReviewAssertOpened(t, pullRequest, "Declined beside review surfaces", declinedBranch)
+				if pullRequest["state"] != "DECLINED" {
+					t.Errorf("pull request %s is %v after the decline, want DECLINED", declinedID, pullRequest["state"])
 				}
 			case prID:
 				// Bitbucket counts the reply as a comment and the task only as
@@ -329,9 +328,7 @@ func TestLivePullRequestOutputMatchesDeclaredSchema(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 	prID := createLivePRForRegression(t, branch, "Declared schema", "--no-default-reviewers", "--no-codeowners")
-	if title := prReviewPullRequest(t, prID)["title"]; title != "Declared schema" {
-		t.Fatalf("title = %v, want Declared schema", title)
-	}
+	prReviewAssertOpened(t, prReviewPullRequest(t, prID), "Declared schema", branch)
 
 	mustLiveCLI(t, "pr", "comment", "add", prID, "--text", "a plain comment")
 	mustLiveCLI(t, "pr", "comment", "add", prID, "--text", "an inline comment",

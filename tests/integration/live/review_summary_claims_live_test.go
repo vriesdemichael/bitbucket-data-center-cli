@@ -43,9 +43,7 @@ func TestLiveReviewSummaryNeverOverclaims(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 	prID := createLivePRForRegression(t, branch, "Overclaim", "--no-default-reviewers", "--no-codeowners")
-	if title := prReviewPullRequest(t, prID)["title"]; title != "Overclaim" {
-		t.Fatalf("title = %v, want Overclaim", title)
-	}
+	prReviewAssertOpened(t, prReviewPullRequest(t, prID), "Overclaim", branch)
 
 	// One unresolved comment and deliberately no task, so every count the
 	// blocker-comment tally can produce is a truthful zero.

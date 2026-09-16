@@ -947,6 +947,18 @@ func prReviewPullRequest(t *testing.T, prID string) map[string]any {
 	return extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", prID)))
 }
 
+// prReviewAssertOpened fails unless a pull request opened with
+// createLivePRForRegression was stored with the title and source branch it was
+// given, into master.
+func prReviewAssertOpened(t *testing.T, pullRequest map[string]any, title, sourceBranch string) {
+	t.Helper()
+
+	if pullRequest["title"] != title || pullRequest["sourceBranch"] != sourceBranch || pullRequest["targetBranch"] != "master" {
+		t.Fatalf("pull request = title %v, %v -> %v; want %q, %s -> master",
+			pullRequest["title"], pullRequest["sourceBranch"], pullRequest["targetBranch"], title, sourceBranch)
+	}
+}
+
 // prReviewAssertSoleReviewer fails unless the pull request names exactly one
 // reviewer, holding the REVIEWER role and the status given. bb lists a
 // PARTICIPANT among the reviewers too, and setting a status adds one, so the

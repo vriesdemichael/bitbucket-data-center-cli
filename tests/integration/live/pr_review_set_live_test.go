@@ -56,9 +56,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		t.Fatalf("add the reviewer failed: %v", err)
 	}
 	pullRequest := prReviewPullRequest(t, prID)
-	if pullRequest["title"] != "Review status" {
-		t.Fatalf("title = %v, want Review status", pullRequest["title"])
-	}
+	prReviewAssertOpened(t, pullRequest, "Review status", branch)
 	prReviewAssertSoleReviewer(t, pullRequest, reviewer.Username, "UNAPPROVED")
 
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)

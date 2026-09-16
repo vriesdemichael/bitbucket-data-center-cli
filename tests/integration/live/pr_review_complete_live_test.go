@@ -63,9 +63,7 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 		t.Fatalf("add the reviewer failed: %v", err)
 	}
 	pullRequest := prReviewPullRequest(t, prID)
-	if pullRequest["title"] != "Review complete without a draft" {
-		t.Fatalf("title = %v, want Review complete without a draft", pullRequest["title"])
-	}
+	prReviewAssertOpened(t, pullRequest, "Review complete without a draft", branch)
 	prReviewAssertSoleReviewer(t, pullRequest, reviewer.Username, "UNAPPROVED")
 
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
