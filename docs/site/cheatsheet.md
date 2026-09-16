@@ -328,3 +328,11 @@ git config --global alias.pr '!bb pr'
 # Run 'git browse' to open current repository in browser
 git config --global alias.browse '!bb browse'
 ```
+
+---
+
+## When something does not work
+
+- [Troubleshooting](troubleshooting.md): the messages people hit, and what each one means
+- [Coming from `gh`](gh-parity.md): the `bb` command behind each `gh` one
+- `bb doctor`: every problem in every configuration file, and where each setting comes from

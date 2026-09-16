@@ -69,6 +69,16 @@ hide:
 		<h2><a href="advanced/">Advanced Topics</a></h2>
 		<p>Dive into repository discovery, dry-run semantics, bulk operations, and diagnostics for higher-trust automation.</p>
 	</article>
+	<article class="bb-card bb-link-card">
+		<p class="bb-card-kicker">Stuck</p>
+		<h2><a href="troubleshooting/">Troubleshooting</a></h2>
+		<p>Paste the message you got. Start with <code>bb doctor</code>, which reads every configuration file and needs no host.</p>
+	</article>
+	<article class="bb-card bb-link-card">
+		<p class="bb-card-kicker">Translate</p>
+		<h2><a href="gh-parity/">Coming from <code>gh</code></a></h2>
+		<p>The command each <code>gh</code> one maps to, where the spelling differs, and the few places there is no counterpart.</p>
+	</article>
 </section>
 
 ## What this docs site contains
@@ -80,6 +90,8 @@ hide:
 			<li><a href="installation-and-quickstart/">Installation and Quickstart</a></li>
 			<li><a href="cheatsheet/">Developer Cheatsheet &amp; Cookbook</a></li>
 			<li><a href="basic-usage/">Basic Usage</a></li>
+			<li><a href="troubleshooting/">Troubleshooting</a></li>
+			<li><a href="gh-parity/">Coming from <code>gh</code></a></li>
 			<li><a href="advanced/">Advanced Topics</a></li>
 			<li><a href="reference/schemas/">JSON Schemas</a></li>
 		</ul>
