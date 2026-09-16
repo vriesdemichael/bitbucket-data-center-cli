@@ -304,7 +304,7 @@ func strconvQuote(value string) string {
 // body that is not JSON as a whole -- a page with a JSON blob inside it -- and
 // leaves one that is as it was: re-encoding sorted its keys, escaped its angle
 // brackets and rounded integers past 2^53.
-var credentialField = regexp.MustCompile(`(?i)("[a-z0-9_.-]*(?:token|password|passwd|secret|authorization|cookie|apikey|api-key|api_key|credential)[a-z0-9_.-]*"\s*:\s*")((?:[^"\\]|\\.)*)(")`)
+var credentialField = regexp.MustCompile(`(?i)("[a-z0-9_.-]*(?:token|password|passwd|passphrase|secret|authorization|cookie|apikey|api-key|api_key|private[_-]?key|credential)[a-z0-9_.-]*"\s*:\s*")((?:[^"\\]|\\.)*)(")`)
 
 // credentialInURL matches a URL carrying userinfo, which is where a token
 // hides in text that is not a URL field: clone links, Location headers, and the
@@ -330,7 +330,37 @@ var cookieHeader = regexp.MustCompile(`(?i)((?:set-)?cookie["']?\s*[:=]\s*["']?)
 // secret, which looks redacted and is not. So quotes and HTML spacing between
 // the name and the value are skipped, a scheme word is kept for the reader,
 // and the value runs to whatever ends it.
-var credentialHeader = regexp.MustCompile(`(?i)((?:proxy-)?authorization|x-[a-z0-9-]*(?:token|key|secret)|api[-_]?key)(["']?\s*[:=](?:\s|&nbsp;|["'])*)((?:bearer|basic|token|negotiate|digest)(?:\s|&nbsp;)+)?([^\s"'<>;,}&]+)`)
+// The separator also skips an escaped quote, and the value stops before a
+// backslash. A body that arrives as JSON writes the header as
+// `Authorization: \"Bearer X\"`, and a pattern that could not skip the `\"`
+// matched the backslash alone: it replaced the escape, left the token, and
+// broke the JSON for whoever parsed it next.
+var credentialHeader = regexp.MustCompile(`(?i)((?:proxy-)?authorization|x-[a-z0-9-]*(?:token|key|secret)|api[-_]?key)((?:\\?["'])?\s*[:=](?:\s|&nbsp;|\\?["'])*)((?:bearer|basic|token|negotiate|digest)(?:\s|&nbsp;)+)?([^\s"'<>;,}&\\]+)`)
+
+// credentialScheme matches a credential that arrives with its scheme and no
+// header name in front of it: "rejected Bearer abc123..." in a sentence a
+// server wrote. Length is the only thing separating that from prose, so the
+// replacement checks it rather than the pattern.
+var credentialScheme = regexp.MustCompile(`(?i)\b(bearer|basic)(\s+)([A-Za-z0-9._~+/=-]+)`)
+
+// schemeCredentialLength is how long a word after Bearer or Basic has to be
+// before it is treated as a credential. "authentication" is fourteen, and a
+// token is longer than any word a message would put there.
+const schemeCredentialLength = 16
+
+// credentialAssignment matches key=value where no query string introduced it:
+// a form-encoded body, or a fragment of one echoed into an error.
+var credentialAssignment = regexp.MustCompile(`(?i)(^|[\s,{(])((?:access_token|private_token|token|api[_-]?key|password|passwd|secret|client_secret)=)([^&\s"'<#]+)`)
+
+// credentialQuotedField is credentialField for a document that quotes its keys
+// with apostrophes, which a Python or Ruby server prints when it repr()s a
+// dictionary into an error.
+var credentialQuotedField = regexp.MustCompile(`(?i)('[a-z0-9_.-]*(?:token|password|passwd|secret|credential|passphrase|private[_-]?key)[a-z0-9_.-]*'\s*:\s*')([^']*)(')`)
+
+// credentialElement matches an XML element whose name marks it sensitive. The
+// SOAP and LDAP faces of an enterprise stack answer in XML, and a proxy in
+// front of Bitbucket can be the thing that fails.
+var credentialElement = regexp.MustCompile(`(?i)(<([a-z0-9:_.-]*(?:token|password|passwd|secret|credential|passphrase|private[_-]?key)[a-z0-9:_.-]*)[^>]*>)([^<]+)(</)`)
 
 // RedactText removes credentials from free text.
 //
@@ -352,9 +382,31 @@ func RedactText(text string) string {
 	}
 
 	text = credentialField.ReplaceAllString(text, "${1}[REDACTED]${3}")
+	text = credentialQuotedField.ReplaceAllString(text, "${1}[REDACTED]${3}")
+	text = credentialElement.ReplaceAllString(text, "${1}[REDACTED]${4}")
 	text = credentialInURL.ReplaceAllString(text, "${1}${2}:[REDACTED]@")
 	text = credentialQuery.ReplaceAllString(text, "${1}[REDACTED]")
+	text = credentialAssignment.ReplaceAllString(text, "${1}${2}[REDACTED]")
 	text = cookieHeader.ReplaceAllString(text, "${1}[REDACTED]")
+	text = credentialHeader.ReplaceAllString(text, "${1}${2}${3}[REDACTED]")
 
-	return credentialHeader.ReplaceAllString(text, "${1}${2}${3}[REDACTED]")
+	return redactSchemeCredentials(text)
+}
+
+// redactSchemeCredentials removes a credential that arrives with its scheme and
+// nothing else in front of it.
+//
+// Length decides, because the pattern alone cannot: "Bearer authentication is
+// required" is prose, and the word after the scheme is the only difference.
+// Anything at least as long as schemeCredentialLength is treated as a secret,
+// which errs towards redacting a long word rather than printing a token.
+func redactSchemeCredentials(text string) string {
+	return credentialScheme.ReplaceAllStringFunc(text, func(match string) string {
+		groups := credentialScheme.FindStringSubmatch(match)
+		if len(groups) != 4 || len(groups[3]) < schemeCredentialLength {
+			return match
+		}
+
+		return groups[1] + groups[2] + "[REDACTED]"
+	})
 }
