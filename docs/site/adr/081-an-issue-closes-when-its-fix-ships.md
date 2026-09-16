@@ -23,12 +23,13 @@ The closing keyword goes in the commit body, not only in the pull request descri
 Remaining work is the query is:open milestone:vN.0.0 -label:"staged on next". The milestone progress bar reads zero until the major lands, and the tracking issue holds the ordering.
 The release workflow closes what the keywords missed: on publish it closes the milestone's open issues with a link to the release, then closes the milestone.
 This takes effect after v4.0.0. That major was worked the other way throughout -- its issues were closed as their fixes merged to next -- and switching for the last few would leave one board holding both conventions while the reason for the record, a reporter who can tell shipped from merged, is already lost for that release.
-Two things have to exist before it can be followed: the "staged on next" label, and the closing step in the release workflow. Neither does yet.
+One keyword per issue. GitHub reads `Closes #1, #2` as one reference and closes the first, so a footer covering several issues has to repeat the keyword: `Closes #1, closes #2`. A combined footer looks like it worked until the release leaves the rest open.
+The "staged on next" label exists. The closing step in the release workflow does not yet, so until it does, the issues a milestone still holds are closed by hand when the release publishes.
 
 ## Agent Instructions
 
 From v5.0.0 on, do not close an issue because its fix merged to next. Apply "staged on next" and leave it open; the release closes it. For v4.0.0 keep closing on merge, which is how the rest of that milestone was worked.
-Put the Closes footer in the commit body of the change itself. A keyword that lives only in a pull request description does not survive into main's history.
+Put the Closes footer in the commit body of the change itself. A keyword that lives only in a pull request description does not survive into main's history. Repeat the keyword for each issue -- `Closes #1, closes #2` -- because a shared one closes only the first.
 Do not add a label per release, and do not mirror a milestone as sub-issues of its tracking issue. Both put the same work in two places, and the copy is the one that goes stale.
 
 ## Rationale

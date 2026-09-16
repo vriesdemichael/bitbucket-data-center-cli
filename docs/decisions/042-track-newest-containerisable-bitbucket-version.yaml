@@ -41,7 +41,10 @@ decision: >
 agent_instructions: >
   Do not state or assume a specific supported Bitbucket version in code, CLI output, or
   documentation, and do not reintroduce a default version target in configuration. To find the
-  version under test, read the base image tag in docker/harness/Dockerfile.
+  version under test, read the base image tag in docker/harness/Dockerfile. Documentation may name
+  the version through the `[[ bitbucket_version ]]` macro, which renders that same tag: a reader
+  asking whether their instance is covered needs a number, and one derived from the tag cannot
+  drift away from it.
   Do not open a version-bump pull request by hand. Dependabot proposes every published release
   against docker/harness/Dockerfile, so a hand-written bump duplicates one that already exists or
   is about to. Editing the tag locally is still the right move for reproducing or bisecting a
