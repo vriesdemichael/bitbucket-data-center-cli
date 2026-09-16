@@ -131,7 +131,7 @@ bb --json auth status
     "bitbucketUrl": "https://bitbucket.acme.corp",
     "bitbucketVersionTarget": "",
     "authMode": "token",
-    "authSource": "stored/default",
+    "authSource": "stored",
     "credentialStorage": "keyring",
     "checks": [
       { "name": "authentication", "ok": true, "advisory": false },
@@ -145,7 +145,12 @@ bb --json auth status
 ```
 
 `ok` is the one field a script needs: false when any non-advisory check failed. `checks` entries
-carry a `detail` and a `remedy` when they fail, omitted here for brevity.
+carry a `detail` and a `remedy` when they fail, omitted here for brevity. `authSource` is
+`stored`, `env`, or `env/default` when neither a stored nor an environment credential supplied
+one; `bitbucketVersionTarget` is empty unless an operator set `BITBUCKET_VERSION_TARGET`.
+
+When something does not work, `bb doctor` reads every configuration file on its own and reports
+each problem with its line, needing no host and no network.
 
 **Ready for daily workflows?** See the **[Developer Cheatsheet & Cookbook](docs/site/cheatsheet.md)** for scannable reference tables and top 10 daily developer recipes (PR reviews, local checkout, auto-merge, and IDE setup).
 
