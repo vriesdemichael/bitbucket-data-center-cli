@@ -31,23 +31,28 @@ func TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected(t *testing.T) {
 		create, get, update, list []string
 		// keyed says a project key follows the command words.
 		keyed bool
+		// restrictionScope is the scope Bitbucket reports for a restriction
+		// created through these commands.
+		restrictionScope string
 	}
 
 	scopes := []scope{
 		{
-			name:   "repository",
-			create: []string{"branch", "restriction", "create"},
-			get:    []string{"branch", "restriction", "get"},
-			update: []string{"branch", "restriction", "update"},
-			list:   []string{"branch", "restriction", "list"},
+			name:             "repository",
+			create:           []string{"branch", "restriction", "create"},
+			get:              []string{"branch", "restriction", "get"},
+			update:           []string{"branch", "restriction", "update"},
+			list:             []string{"branch", "restriction", "list"},
+			restrictionScope: "REPOSITORY",
 		},
 		{
-			name:   "project",
-			create: []string{"project", "branch-restriction", "create"},
-			get:    []string{"project", "branch-restriction", "get"},
-			update: []string{"project", "branch-restriction", "update"},
-			list:   []string{"project", "branch-restriction", "list"},
-			keyed:  true,
+			name:             "project",
+			create:           []string{"project", "branch-restriction", "create"},
+			get:              []string{"project", "branch-restriction", "get"},
+			update:           []string{"project", "branch-restriction", "update"},
+			list:             []string{"project", "branch-restriction", "list"},
+			keyed:            true,
+			restrictionScope: "PROJECT",
 		},
 	}
 
@@ -77,7 +82,7 @@ func TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected(t *testing.T) {
 			release := []string{"--type", "read-only", "--matcher-type", "PATTERN", "--matcher-id", "refs/heads/release/*"}
 			id := restrictionID(t, mustLiveCLI(t, append(scope.create, then(append(release, "--user", "admin")...)...)...))
 			assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, append(scope.get, then(id)...)...)), storedRestriction{
-				restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*", users: []string{"admin"},
+				scope: scope.restrictionScope, restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*", users: []string{"admin"},
 			})
 
 			t.Run("a refused update keeps the restriction it would have replaced", func(t *testing.T) {
@@ -99,7 +104,7 @@ func TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected(t *testing.T) {
 					t.Errorf("restriction %s no longer exempts admin after a refused update: %v", id, kept)
 				}
 				assertRestrictionStored(t, kept, storedRestriction{
-					restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*", users: []string{"admin"},
+					scope: scope.restrictionScope, restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*", users: []string{"admin"},
 				})
 			})
 
@@ -123,7 +128,7 @@ func TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected(t *testing.T) {
 				// No users: the upsert replaces every exemption, and admin was not
 				// named again.
 				assertRestrictionStored(t, matching[0], storedRestriction{
-					restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*", groups: []string{"stash-users"},
+					scope: scope.restrictionScope, restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*", groups: []string{"stash-users"},
 				})
 				id = updated
 			})
@@ -140,7 +145,7 @@ func TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected(t *testing.T) {
 					t.Errorf("want one read-only restriction on hotfix/*, got %d: %v", len(now), now)
 				} else {
 					assertRestrictionStored(t, now[0], storedRestriction{
-						restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/hotfix/*", groups: []string{"stash-users"},
+						scope: scope.restrictionScope, restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/hotfix/*", groups: []string{"stash-users"},
 					})
 				}
 			})

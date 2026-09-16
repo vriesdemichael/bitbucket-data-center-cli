@@ -236,7 +236,7 @@ func TestLiveProjectBranchRestrictionLifecycle(t *testing.T) {
 		t.Fatalf("expected the matcher in the get output, got: %s", getOutput)
 	}
 	stored := restrictionPayload(t, getOutput)
-	assertRestrictionStored(t, stored, storedRestriction{restrictionType: "no-deletes", matcherType: "PATTERN", matcherID: "refs/heads/release/*"})
+	assertRestrictionStored(t, stored, storedRestriction{scope: "PROJECT", restrictionType: "no-deletes", matcherType: "PATTERN", matcherID: "refs/heads/release/*"})
 	if matcher, _ := stored["matcher"].(map[string]any); matcher["displayId"] != "refs/heads/release/*" {
 		t.Errorf("matcher.displayId = %v, want the id, which Bitbucket derived while ignoring --matcher-display", matcher["displayId"])
 	}
@@ -278,7 +278,7 @@ func TestLiveProjectBranchRestrictionLifecycle(t *testing.T) {
 	if moved := restrictionsMatching(t, afterUpdate, "no-deletes", "refs/heads/hotfix/*"); len(moved) != 1 {
 		t.Errorf("want one no-deletes restriction on hotfix/*, got %d: %v", len(moved), moved)
 	} else {
-		assertRestrictionStored(t, moved[0], storedRestriction{restrictionType: "no-deletes", matcherType: "PATTERN", matcherID: "refs/heads/hotfix/*"})
+		assertRestrictionStored(t, moved[0], storedRestriction{scope: "PROJECT", restrictionType: "no-deletes", matcherType: "PATTERN", matcherID: "refs/heads/hotfix/*"})
 		if id, _ := numericOrStringID(moved[0]["id"]); id != restrictionID {
 			t.Errorf("the listing holds restriction %s on hotfix/*, the update answered with %s", id, restrictionID)
 		}

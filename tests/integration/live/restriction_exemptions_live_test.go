@@ -25,10 +25,13 @@ func TestLiveRestrictionExemptions(t *testing.T) {
 	// The command words are literals in the table and every call spreads one of
 	// them through append, which is the shape tools/command-reach can read.
 	type scope struct {
-		name        string
-		create, get []string
+		name              string
+		create, get, list []string
 		// keyed says a project key follows the command words.
 		keyed bool
+		// restrictionScope is the scope Bitbucket reports for a restriction
+		// created through these commands.
+		restrictionScope string
 		// accessKeyScope names where an SSH access key this scope's restriction
 		// can exempt is added.
 		accessKeyScope string
@@ -39,19 +42,23 @@ func TestLiveRestrictionExemptions(t *testing.T) {
 
 	scopes := []scope{
 		{
-			name:            "repository",
-			create:          []string{"branch", "restriction", "create"},
-			get:             []string{"branch", "restriction", "get"},
-			accessKeyScope:  "--repo",
-			writePermission: "REPO_WRITE",
+			name:             "repository",
+			create:           []string{"branch", "restriction", "create"},
+			get:              []string{"branch", "restriction", "get"},
+			list:             []string{"branch", "restriction", "list"},
+			restrictionScope: "REPOSITORY",
+			accessKeyScope:   "--repo",
+			writePermission:  "REPO_WRITE",
 		},
 		{
-			name:            "project",
-			create:          []string{"project", "branch-restriction", "create"},
-			get:             []string{"project", "branch-restriction", "get"},
-			keyed:           true,
-			accessKeyScope:  "--project",
-			writePermission: "PROJECT_WRITE",
+			name:             "project",
+			create:           []string{"project", "branch-restriction", "create"},
+			get:              []string{"project", "branch-restriction", "get"},
+			list:             []string{"project", "branch-restriction", "list"},
+			keyed:            true,
+			restrictionScope: "PROJECT",
+			accessKeyScope:   "--project",
+			writePermission:  "PROJECT_WRITE",
 		},
 	}
 
@@ -140,11 +147,22 @@ func TestLiveRestrictionExemptions(t *testing.T) {
 				t.Errorf("restriction %s does not exempt access key %s: %v", id, accessKeyID, stored["accessKeys"])
 			}
 			assertRestrictionStored(t, stored, storedRestriction{
-				restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*",
+				scope: scope.restrictionScope, restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*",
 				users: []string{"admin"}, groups: []string{"stash-users"},
 			})
 			if exempted, _ := stored["accessKeys"].([]any); len(exempted) != 1 {
 				t.Errorf("restriction %s exempts %d access keys, want only %s: %v", id, len(exempted), accessKeyID, stored["accessKeys"])
+			}
+
+			// Bitbucket answers a get for a restriction id through any project's
+			// or repository's path, so the get cannot show where the restriction
+			// was stored. The scope's own listing can.
+			listed := restrictionsMatching(t, mustLiveCLI(t, append(scope.list, then()...)...), "read-only", "refs/heads/release/*")
+			if len(listed) != 1 {
+				t.Fatalf("want restriction %s alone on release/* in the %s listing, got %d: %v", id, scope.name, len(listed), listed)
+			}
+			if got, _ := numericOrStringID(listed[0]["id"]); got != id {
+				t.Errorf("the %s listing holds restriction %s on release/*, the create answered with %s", scope.name, got, id)
 			}
 		})
 	}
@@ -183,6 +201,9 @@ func restrictionExempts(restriction map[string]any, user string) bool {
 // storedRestriction is a branch restriction as a test expects Bitbucket to hold
 // it.
 type storedRestriction struct {
+	// scope is PROJECT or REPOSITORY, which says which of the two endpoints
+	// created the restriction.
+	scope                                   string
 	restrictionType, matcherType, matcherID string
 	// users and groups are the exemptions exactly: one Bitbucket holds that is
 	// not named here is as wrong as one it dropped.
@@ -195,9 +216,9 @@ func assertRestrictionStored(t *testing.T, restriction map[string]any, want stor
 	t.Helper()
 
 	matcher, _ := restriction["matcher"].(map[string]any)
-	if restriction["type"] != want.restrictionType || matcher["type"] != want.matcherType || matcher["id"] != want.matcherID {
-		t.Errorf("restriction %v is %v on %v %v, want %s on %s %s", restriction["id"],
-			restriction["type"], matcher["type"], matcher["id"], want.restrictionType, want.matcherType, want.matcherID)
+	if restriction["scope"] != want.scope || restriction["type"] != want.restrictionType || matcher["type"] != want.matcherType || matcher["id"] != want.matcherID {
+		t.Errorf("restriction %v is a %v %v on %v %v, want a %s %s on %s %s", restriction["id"], restriction["scope"],
+			restriction["type"], matcher["type"], matcher["id"], want.scope, want.restrictionType, want.matcherType, want.matcherID)
 	}
 
 	var users []string

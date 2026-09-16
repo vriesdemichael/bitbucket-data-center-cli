@@ -31,7 +31,7 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	branchName := "feature/live-test-branch"
-	startPoint := olderSeedCommit(t, repo)
+	startPoint := branchOlderSeedCommit(t, repo)
 
 	// Create branch
 	createOutput, err := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", startPoint)
@@ -82,6 +82,9 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	// all, so the first call here has nothing to read back.
 	mustLiveCLI(t, "branch", "list", "--base", "master", "--all")
 	mustLiveCLI(t, "branch", "list", "--details", "--all")
+	// The same base without --details has to be accepted, or the refusal below
+	// would not need --details to have been sent.
+	mustLiveCLI(t, "branch", "list", "--base", "no-such-branch", "--all")
 	if output, err := executeLiveCLI(t, "--json", "branch", "list", "--base", "no-such-branch", "--details", "--all"); !apperrors.IsKind(err, apperrors.KindNotFound) {
 		t.Fatalf("--base naming no branch, with --details, was not refused as not found: %v\n%s", err, output)
 	}
@@ -183,8 +186,11 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 		t.Fatalf("expected restriction id in output, got: %s", createOutput)
 	}
 	// BRANCH is the matcher type --matcher-type defaults to.
-	assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", restrictionID)),
-		storedRestriction{restrictionType: "read-only", matcherType: "BRANCH", matcherID: "refs/heads/master"})
+	created := storedRestriction{scope: "REPOSITORY", restrictionType: "read-only", matcherType: "BRANCH", matcherID: "refs/heads/master"}
+	assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", restrictionID)), created)
+	// The listing as well: Bitbucket answers a get for a restriction id through
+	// any repository's path, so only the listing shows it was stored on this one.
+	assertOnlyRestrictionListed(t, mustLiveCLI(t, "branch", "restriction", "list"), restrictionID, created)
 
 	// Get restriction
 	getOutput, err := executeLiveCLI(t, "branch", "restriction", "get", restrictionID)
@@ -223,7 +229,7 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 	if !strings.Contains(listOutput, restrictionID) || !strings.Contains(listOutput, "no-deletes") {
 		t.Fatalf("expected restriction %s in human list output, got: %s", restrictionID, listOutput)
 	}
-	updated := storedRestriction{restrictionType: "no-deletes", matcherType: "PATTERN", matcherID: "refs/heads/master"}
+	updated := storedRestriction{scope: "REPOSITORY", restrictionType: "no-deletes", matcherType: "PATTERN", matcherID: "refs/heads/master"}
 	assertOnlyRestrictionListed(t, mustLiveCLI(t, "branch", "restriction", "list"), restrictionID, updated)
 
 	// A restriction id that is not an id at all. A unit test asked these of a
@@ -286,7 +292,7 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	branchName := "feature/live-dry-run-delete"
-	startPoint := olderSeedCommit(t, repo)
+	startPoint := branchOlderSeedCommit(t, repo)
 
 	createOutput, err := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", startPoint)
 	if err != nil {
@@ -389,7 +395,7 @@ func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
 	// Another branch to ask for. master is the default already, so asking for it
 	// leaves the default unchanged whether or not the dry run sent the change.
 	const otherBranch = "feature/live-dry-run-default"
-	startPoint := olderSeedCommit(t, repo)
+	startPoint := branchOlderSeedCommit(t, repo)
 	mustLiveCLI(t, "branch", "create", otherBranch, "--start-point", startPoint)
 	assertOnlyBranchNamed(t, otherBranch, startPoint)
 
@@ -492,7 +498,7 @@ func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
 		t.Fatalf("expected restriction id in create output: %s", createOutput)
 	}
 	// BRANCH is the matcher type --matcher-type defaults to.
-	fixture := storedRestriction{restrictionType: "read-only", matcherType: "BRANCH", matcherID: "refs/heads/master"}
+	fixture := storedRestriction{scope: "REPOSITORY", restrictionType: "read-only", matcherType: "BRANCH", matcherID: "refs/heads/master"}
 
 	// --limit has nothing to cut in a repository this test made;
 	// TestLiveBranchRestrictionLimitCaps is where it is proven.
@@ -547,7 +553,7 @@ func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
 	// Another branch to ask for. master is the default already, so asking for it
 	// leaves the default unchanged whether or not the dry run sent the change.
 	const otherBranch = "feature/live-dry-run-model"
-	startPoint := olderSeedCommit(t, repo)
+	startPoint := branchOlderSeedCommit(t, repo)
 	mustLiveCLI(t, "branch", "create", otherBranch, "--start-point", startPoint)
 	assertOnlyBranchNamed(t, otherBranch, startPoint)
 
@@ -611,7 +617,7 @@ func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
 	if restrictionID == "" {
 		t.Fatalf("expected restriction id in create output: %s", createOutput)
 	}
-	fixture := storedRestriction{restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*"}
+	fixture := storedRestriction{scope: "REPOSITORY", restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*"}
 
 	// --limit has nothing to cut in a repository this test made;
 	// TestLiveBranchRestrictionLimitCaps is where it is proven.
@@ -655,10 +661,10 @@ func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
 	}
 }
 
-// olderSeedCommit is the first of the two commits a repository was seeded with,
-// which is second in the ids because Bitbucket lists the newest first. A branch
-// started there points somewhere master does not.
-func olderSeedCommit(t *testing.T, repo seededRepository) string {
+// branchOlderSeedCommit is the first of the two commits a repository was seeded
+// with, which is second in the ids because Bitbucket lists the newest first. A
+// branch started there points somewhere master does not.
+func branchOlderSeedCommit(t *testing.T, repo seededRepository) string {
 	t.Helper()
 
 	if len(repo.CommitIDs) < 2 {
