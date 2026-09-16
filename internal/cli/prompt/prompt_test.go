@@ -114,7 +114,7 @@ func TestTheConfirmationMustNameTheResource(t *testing.T) {
 			t.Parallel()
 
 			out := &bytes.Buffer{}
-			err := confirmDeletion(strings.NewReader(testCase.typed), out, testCase.resource)
+			err := confirmDeletion(strings.NewReader(testCase.typed), out, testCase.resource, destructions["delete"])
 
 			if testCase.accepted {
 				if err != nil {
@@ -140,7 +140,7 @@ func TestAnEmptyTargetIsRefused(t *testing.T) {
 	t.Parallel()
 
 	for _, resource := range []string{"", "   "} {
-		if err := confirmDeletion(strings.NewReader("\n"), &bytes.Buffer{}, resource); err == nil {
+		if err := confirmDeletion(strings.NewReader("\n"), &bytes.Buffer{}, resource, destructions["delete"]); err == nil {
 			t.Errorf("a bare return confirmed the deletion of %q", resource)
 		}
 	}
@@ -465,7 +465,7 @@ func TestReadsThatFailAreReported(t *testing.T) {
 	if err := confirmYesNo(broken(), &bytes.Buffer{}, "do the thing"); err == nil {
 		t.Error("a failed read was treated as a yes")
 	}
-	if err := confirmDeletion(broken(), &bytes.Buffer{}, "PRJ/demo"); err == nil {
+	if err := confirmDeletion(broken(), &bytes.Buffer{}, "PRJ/demo", destructions["delete"]); err == nil {
 		t.Error("a failed read was treated as a confirmation")
 	}
 
