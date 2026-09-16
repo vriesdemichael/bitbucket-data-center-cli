@@ -62,6 +62,16 @@ func TestLiveGPGKeyLifecycle(t *testing.T) {
 	if !strings.Contains(listOutput, "fingerprint") {
 		t.Fatalf("expected the added key in the listing, got: %s", listOutput)
 	}
+	// Seeing one is not seeing this one. Bitbucket keeps nothing of the block
+	// but what it parsed out of it, so the fixture's own fingerprint and address
+	// are the comparison.
+	listed, found := liveSuiteGPGKeyIn(t, listOutput)
+	if !found {
+		t.Fatalf("no key with the fixture's fingerprint %s in the listing: %s", liveSuiteGPGFingerprint, listOutput)
+	}
+	if listed.EmailAddress != liveSuiteGPGEmail {
+		t.Errorf("emailAddress = %q, want %q", listed.EmailAddress, liveSuiteGPGEmail)
+	}
 
 	keyID, ok := numericOrStringID(firstOfJSONArray(t, addOutput)["id"])
 	if !ok {
@@ -81,11 +91,25 @@ func TestLiveGPGKeyLifecycle(t *testing.T) {
 	if strings.Contains(afterRemove, keyID) {
 		t.Fatalf("expected the key to be gone after remove, got: %s", afterRemove)
 	}
+	for _, key := range listedGPGKeys(t, afterRemove) {
+		if key.ID == keyID || strings.EqualFold(key.Fingerprint, keyID) {
+			t.Fatalf("key %s is still listed after remove: %s", keyID, afterRemove)
+		}
+	}
 
 	// clear is a separate endpoint from remove, so it needs a key of its own to
 	// take away rather than being trusted because remove worked.
 	if _, err := executeLiveCLI(t, "--json", "auth", "gpg-key", "add", keyPath); err != nil {
 		t.Fatalf("auth gpg-key add before clear failed: %v", err)
+	}
+	// Read back, or an empty listing after clear could be an add that stored
+	// nothing.
+	beforeClear, err := executeLiveCLI(t, "--json", "auth", "gpg-key", "list", "--all")
+	if err != nil {
+		t.Fatalf("auth gpg-key list before clear failed: %v\noutput: %s", err, beforeClear)
+	}
+	if _, found := liveSuiteGPGKeyIn(t, beforeClear); !found {
+		t.Fatalf("the key added for clear to take away is not listed: %s", beforeClear)
 	}
 	if _, err := executeLiveCLI(t, "--json", "auth", "gpg-key", "clear", "--yes"); err != nil {
 		t.Fatalf("auth gpg-key clear failed: %v", err)
@@ -98,6 +122,9 @@ func TestLiveGPGKeyLifecycle(t *testing.T) {
 	if strings.Contains(afterClear, "fingerprint") {
 		t.Fatalf("expected no keys left after clear, got: %s", afterClear)
 	}
+	if keys := listedGPGKeys(t, afterClear); len(keys) != 0 {
+		t.Fatalf("clear left %d keys: %s", len(keys), afterClear)
+	}
 
 	// The human rendering of an empty list, against a list that is empty
 	// because clear emptied it. A unit test held this against a handwritten
@@ -109,6 +136,45 @@ func TestLiveGPGKeyLifecycle(t *testing.T) {
 	if !strings.Contains(humanAfterClear, "No GPG keys found") {
 		t.Fatalf("expected the empty-list message, got: %s", humanAfterClear)
 	}
+}
+
+// The fingerprint and address testdata/live-suite-gpg-public-key.asc carries,
+// as gpg --show-keys reports them.
+const (
+	liveSuiteGPGFingerprint = "04f49bfb9271acc0e0ef25d055f74ab3de0252e3"
+	liveSuiteGPGEmail       = "bb-live-suite@example.local"
+)
+
+// listedGPGKey is what the lifecycle test reads of a gpg-key listing entry.
+type listedGPGKey struct {
+	ID           string `json:"id"`
+	Fingerprint  string `json:"fingerprint"`
+	EmailAddress string `json:"emailAddress"`
+}
+
+// listedGPGKeys decodes a gpg-key list's JSON output.
+func listedGPGKeys(t *testing.T, output string) []listedGPGKey {
+	t.Helper()
+
+	var keys []listedGPGKey
+	decodeJSONData(t, output, &keys)
+
+	return keys
+}
+
+// liveSuiteGPGKeyIn finds the fixture's key in a gpg-key listing.
+func liveSuiteGPGKeyIn(t *testing.T, output string) (listedGPGKey, bool) {
+	t.Helper()
+
+	for _, key := range listedGPGKeys(t, output) {
+		// Hex, so case is presentation: Bitbucket answers in lower case, gpg in
+		// upper.
+		if strings.EqualFold(key.Fingerprint, liveSuiteGPGFingerprint) {
+			return key, true
+		}
+	}
+
+	return listedGPGKey{}, false
 }
 
 // gpgFingerprintFrom pulls the first fingerprint out of a gpg-key list payload.
