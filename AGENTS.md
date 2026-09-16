@@ -101,7 +101,7 @@ artifacts. `coverage.out`, `docs/quality/coverage-report.json` and
 Rebasing therefore needs nothing special:
 
 ```bash
-task pr:rebase          # or: git rebase origin/main
+task pr:rebase          # or: git rebase origin/next
 ```
 
 Earlier versions of this file described a procedure for regenerating and amending committed coverage
@@ -366,7 +366,7 @@ The governance guards, so the set is knowable:
 
 ### When running tests also uncovers a broken test
 
-If the rebase brought in API changes from `main` (e.g. a command's flag changed from `--host` to a positional argument), tests added on the branch may need updating. Fix them in the same amend so history stays clean.
+If the rebase brought in API changes from `next` (e.g. a command's flag changed from `--host` to a positional argument), tests added on the branch may need updating. Fix them in the same amend so history stays clean.
 
 ## Development Tips & Gotchas
 

@@ -237,10 +237,10 @@ coverage profiles left in `.tmp/`, so once you have run it once, re-evaluating
 against your latest commits takes seconds:
 
 ```bash
-task quality:coverage:replay
+task quality:coverage:replay COVERAGE_BASE_REF=origin/next
 ```
 
-That recomputes the diff against `origin/main` and re-applies every threshold
+That recomputes the diff against the branch you work from and re-applies every threshold
 using the profiles already on disk. Add tests, `go test` them, then re-run
 `task test:unit:coverage` (about a minute) and replay — only a change that
 alters *live* behaviour needs `task test:live:coverage` again.
@@ -301,11 +301,10 @@ Collected from actually doing this, not hypothetical:
   reinitialises *this* repository instead. Use `execgit.ScopeFreeEnv()`, which
   strips git's repository-scoping variables. A `TestMain` guard fails any
   package whose tests change this repository's git configuration.
-- **Line endings on Windows.** The repo has no `.gitattributes` and
-  `core.autocrlf` is typically on, so Go tools that write LF make every
-  generated file look modified. Check `git diff --numstat` — files showing
-  `0 0` are line-ending noise and normalise away on commit. Shell scripts may
-  need `tr -d '\r'` before running in a Linux container.
+- **Line endings on Windows.** `.gitattributes` pins every file to LF, in the
+  repository and in your working tree, so `core.autocrlf` cannot change what
+  you commit. A tool that writes CRLF anyway shows up in `git diff`; put it
+  back with `git add --renormalize .`.
 - **Tests that shell out to `git` must use `t.TempDir()`.** A guard fails the
   package if a test mutates the repository's own git config. This is not
   hypothetical — it once wrote an `http.extraHeader` credential into the

@@ -24,7 +24,7 @@ agent_instructions: >
   them when a change affects them.
   A diff in those files is the point: it is how a reviewer sees that a command lost live coverage.
   Do not reintroduce a rebase procedure for refreshing committed coverage. Rebase with
-  `task pr:rebase` or plain `git rebase origin/main`; there is nothing to regenerate afterwards.
+  `task pr:rebase` or plain `git rebase origin/next`; there is nothing to regenerate afterwards.
   Keep the coverage gate authoritative in CI. When adding a check, put it in quality:verify if it
   needs no Bitbucket instance, and in the live-tests job if it does. Do not add a live-dependent
   check to a git hook: it makes every push cost a full suite run and cannot pass for a contributor

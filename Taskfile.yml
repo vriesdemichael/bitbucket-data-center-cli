@@ -220,10 +220,12 @@ tasks:
     cmd: go run ./tools/adr-validator --validate
 
   pr:rebase:
-    desc: Rebase the current branch onto origin/main
+    desc: Rebase the current branch onto origin/next
+    # Every change targets next (ADR-066); main only moves when next is
+    # promoted onto it.
     cmds:
       - git fetch origin --prune
-      - git rebase origin/main
+      - git rebase origin/next
 
   quality:verify:
     desc: Run every gate a git hook can afford (seconds; the same set CI runs outside the live job)
