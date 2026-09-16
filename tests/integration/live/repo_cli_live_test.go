@@ -1508,7 +1508,7 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	// Watch dry-run
+	// Watch dry-run; not read back: no request returns a pull request's watch state (GET .../watch answers 405).
 	watchDryRun, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "watch", pullRequestID)
 	if err != nil {
 		t.Fatalf("pr watch dry-run failed: %v\noutput: %s", err, watchDryRun)
@@ -1517,13 +1517,13 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 		t.Fatalf("expected pr.watch intent, got: %s", watchDryRun)
 	}
 
-	// Watch live
+	// Watch live; not read back: no request returns a pull request's watch state.
 	watchLive, err := executeLiveCLI(t, "--json", "pr", "watch", pullRequestID)
 	if err != nil {
 		t.Fatalf("pr watch live failed: %v\noutput: %s", err, watchLive)
 	}
 
-	// Unwatch dry-run
+	// Unwatch dry-run; not read back: no request returns a pull request's watch state.
 	unwatchDryRun, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "unwatch", pullRequestID)
 	if err != nil {
 		t.Fatalf("pr unwatch dry-run failed: %v\noutput: %s", err, unwatchDryRun)
@@ -1532,11 +1532,23 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 		t.Fatalf("expected pr.unwatch intent, got: %s", unwatchDryRun)
 	}
 
-	// Unwatch live
+	// Unwatch live; not read back: no request returns a pull request's watch state.
 	unwatchLive, err := executeLiveCLI(t, "--json", "pr", "unwatch", pullRequestID)
 	if err != nil {
 		t.Fatalf("pr unwatch live failed: %v\noutput: %s", err, unwatchLive)
 	}
+
+	// The target moves before the rebase is previewed. The branch was on
+	// master's tip, where a rebase that was really sent is a no-op with nothing
+	// to observe (OPENAPI-028). Bitbucket rescopes the pull request after the
+	// push returns, so the preview waits for that (#598).
+	versionBefore := currentLivePRVersion(t, pullRequestID)
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", "moved-ahead.txt", "the target moved\n"); err != nil {
+		t.Fatalf("advancing master failed: %v", err)
+	}
+	waitForLivePRVersionAbove(t, pullRequestID, versionBefore)
+	sourceBranch := prFieldAsString(t, mustLiveCLI(t, "pr", "get", pullRequestID), "sourceBranch")
+	headBefore := repoCLIBranchHead(t, sourceBranch)
 
 	// Rebase dry-run (checking rebaseability)
 	rebaseDryRun, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "rebase", pullRequestID)
@@ -1545,6 +1557,15 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 	}
 	if !strings.Contains(rebaseDryRun, `"intent": "pr.rebase"`) {
 		t.Fatalf("expected pr.rebase intent, got: %s", rebaseDryRun)
+	}
+	if predicted := repoCLIPredictedAction(t, rebaseDryRun); predicted != "update" {
+		t.Fatalf("expected the rebase to be predicted as an update, got %q: %s", predicted, rebaseDryRun)
+	}
+
+	// Off the ref rather than the pull request, whose view of its source lags
+	// the ref a rebase rewrites.
+	if headAfter := repoCLIBranchHead(t, sourceBranch); headAfter != headBefore {
+		t.Fatalf("%s moved from %s to %s during a rebase dry run", sourceBranch, headBefore, headAfter)
 	}
 }
 
@@ -1577,6 +1598,21 @@ func TestLiveCommitPRsAndParticipants(t *testing.T) {
 		t.Fatalf("source_commit not found or empty in get output: %s", prGetJSON)
 	}
 
+	// A second pull request, from a branch that does not contain the commit
+	// above. With only one pull request in the repository, a listing that
+	// ignored the commit it was asked about answered the same.
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+	otherBranch := testsupport.UniqueName("feature/live-commit-prs-")
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, otherBranch, "commit-prs-other.txt"); err != nil {
+		t.Fatalf("push the second branch failed: %v", err)
+	}
+	otherPullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, otherBranch, "master")
+	if err != nil {
+		t.Fatalf("create the second pull request failed: %v", err)
+	}
+	otherSourceCommit := prFieldAsString(t, mustLiveCLI(t, "pr", "get", otherPullRequestID), "sourceCommit")
+
 	// 1. Test List pull requests containing commit
 	commitPRsJSON, err := executeLiveCLI(t, "--json", "commit", "prs", sourceCommit)
 	if err != nil {
@@ -1585,14 +1621,36 @@ func TestLiveCommitPRsAndParticipants(t *testing.T) {
 	if !strings.Contains(commitPRsJSON, fmt.Sprintf(`"id": %s`, pullRequestID)) {
 		t.Fatalf("expected PR ID %s in commit prs output, got: %s", pullRequestID, commitPRsJSON)
 	}
+	if ids := repoCLIPullRequestIDs(t, commitPRsJSON); len(ids) != 1 || ids[0] != pullRequestID {
+		t.Fatalf("commit prs %s = pull requests %v, want only %s", sourceCommit, ids, pullRequestID)
+	}
+	if ids := repoCLIPullRequestIDs(t, mustLiveCLI(t, "commit", "prs", otherSourceCommit)); len(ids) != 1 || ids[0] != otherPullRequestID {
+		t.Fatalf("commit prs %s = pull requests %v, want only %s", otherSourceCommit, ids, otherPullRequestID)
+	}
 
-	// 2. Test Search participants
-	participantsJSON, err := executeLiveCLI(t, "--json", "pr", "participants", "--search", "admin")
+	// A participant the search has to leave out: the author was the only one,
+	// so a search that ignored its filter answered the same.
+	reviewer := repoCLIRepositoryReader(t, harness, seeded.Key, repo.Slug)
+	mustLiveCLI(t, "pr", "review", "reviewer", "add", pullRequestID, "--user", reviewer.Username)
+	if _, found := repoCLIReviewerIn(t, mustLiveCLI(t, "pr", "get", pullRequestID), reviewer.Username); !found {
+		t.Fatalf("%s is not on pull request %s after being added as a reviewer", reviewer.Username, pullRequestID)
+	}
+
+	// 2. Test Search participants, for the account the harness authenticates as
+	// rather than a name that happens to be it locally.
+	username := harness.username()
+	participantsJSON, err := executeLiveCLI(t, "--json", "pr", "participants", "--search", username)
 	if err != nil {
 		t.Fatalf("pr participants failed: %v\noutput: %s", err, participantsJSON)
 	}
-	if !strings.Contains(participantsJSON, `"name": "admin"`) {
-		t.Fatalf("expected participant admin in output, got: %s", participantsJSON)
+	if !strings.Contains(participantsJSON, fmt.Sprintf(`"name": %q`, username)) {
+		t.Fatalf("expected participant %s in output, got: %s", username, participantsJSON)
+	}
+	if names := repoCLIParticipantNames(t, participantsJSON); len(names) != 1 || !strings.EqualFold(names[0], username) {
+		t.Fatalf("participants matching %q = %v, want only %s", username, names, username)
+	}
+	if names := repoCLIParticipantNames(t, mustLiveCLI(t, "pr", "participants", "--search", reviewer.Username)); len(names) != 1 || !strings.EqualFold(names[0], reviewer.Username) {
+		t.Fatalf("participants matching %q = %v, want only %s", reviewer.Username, names, reviewer.Username)
 	}
 }
 
@@ -1626,6 +1684,11 @@ func TestLiveCLIRepoCommentCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo comment list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
+	// The whole pull request as well. The dry run's comment is anchored to no
+	// file, so the listing scoped to one above could never have shown it.
+	if threads := repoCLIThreads(t, mustLiveCLI(t, "pr", "comment", "list", pullRequestID)); len(threads) != 0 {
+		t.Fatalf("the fresh pull request already has comments: %v", threads)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "comment", "create", "--pr", pullRequestID, "--text", "dry-run comment")
 	if err != nil {
@@ -1633,6 +1696,9 @@ func TestLiveCLIRepoCommentCreateDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.comment.create"`) {
 		t.Fatalf("expected repo.comment.create intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
+		t.Fatalf("expected the comment to be predicted as a create, got %q: %s", predicted, dryRunOutput)
 	}
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "dryrun-comment-fixture.txt", "--limit", "200")
@@ -1642,6 +1708,9 @@ func TestLiveCLIRepoCommentCreateDryRunNoSideEffect(t *testing.T) {
 
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no comment side-effect from create dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	}
+	if threads := repoCLIThreads(t, mustLiveCLI(t, "pr", "comment", "list", pullRequestID)); len(threads) != 0 {
+		t.Fatalf("the create dry run left a comment on the pull request: %v", threads)
 	}
 }
 
@@ -1680,6 +1749,14 @@ func TestLiveCLIRepoCommentUpdateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected comment id in fixture output: %s", createOutput)
 	}
 
+	// By id. The fixture is anchored to no file, so the listings below, scoped
+	// to one, never held it and an update that was really sent stayed out of
+	// their sight.
+	fixture := repoCLIPRComment(t, pullRequestID, commentID)
+	if fixture["text"] != "fixture comment" {
+		t.Fatalf("fixture comment text = %v, want %q", fixture["text"], "fixture comment")
+	}
+
 	beforeOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "dryrun-comment-update-fixture.txt", "--limit", "200")
 	if err != nil {
 		t.Fatalf("comment list before failed: %v\noutput: %s", err, beforeOutput)
@@ -1692,6 +1769,9 @@ func TestLiveCLIRepoCommentUpdateDryRunNoSideEffect(t *testing.T) {
 	if !strings.Contains(dryRunOutput, `"intent": "repo.comment.update"`) {
 		t.Fatalf("expected repo.comment.update intent, got: %s", dryRunOutput)
 	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected the comment change to be predicted as an update, got %q: %s", predicted, dryRunOutput)
+	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "dryrun-comment-update-fixture.txt", "--limit", "200")
 	if err != nil {
@@ -1701,8 +1781,14 @@ func TestLiveCLIRepoCommentUpdateDryRunNoSideEffect(t *testing.T) {
 	if beforeOutput != afterOutput {
 		t.Fatalf("expected no comment side-effect from update dry-run\nbefore: %s\nafter: %s", beforeOutput, afterOutput)
 	}
+	if kept := repoCLIPRComment(t, pullRequestID, commentID); kept["text"] != fixture["text"] || kept["version"] != fixture["version"] {
+		t.Fatalf("the update dry run changed comment %s from text %v at version %v to %v at %v",
+			commentID, fixture["text"], fixture["version"], kept["text"], kept["version"])
+	}
 
-	_, _ = executeLiveCLI(t, "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID, "--yes")
+	// The real delete, checked: it used to discard its error.
+	mustLiveHumanCLI(t, "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID, "--yes")
+	repoCLIAssertPRCommentGone(t, pullRequestID, commentID)
 }
 
 func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
@@ -1740,6 +1826,14 @@ func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("expected comment id in fixture output: %s", createOutput)
 	}
 
+	// By id, for the reason the update dry run gives: the fixture is on no
+	// file, so a delete that was really sent was invisible to the listings
+	// scoped to one.
+	fixture := repoCLIPRComment(t, pullRequestID, commentID)
+	if fixture["text"] != "fixture comment delete" {
+		t.Fatalf("fixture comment text = %v, want %q", fixture["text"], "fixture comment delete")
+	}
+
 	beforeOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "dryrun-comment-delete-fixture.txt", "--limit", "200")
 	if err != nil {
 		t.Fatalf("comment list before failed: %v\noutput: %s", err, beforeOutput)
@@ -1752,6 +1846,9 @@ func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
 	if !strings.Contains(dryRunOutput, `"intent": "repo.comment.delete"`) {
 		t.Fatalf("expected repo.comment.delete intent, got: %s", dryRunOutput)
 	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
+		t.Fatalf("expected the comment to be predicted as a delete, got %q: %s", predicted, dryRunOutput)
+	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "dryrun-comment-delete-fixture.txt", "--limit", "200")
 	if err != nil {
@@ -1761,8 +1858,14 @@ func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
 	if beforeOutput != afterOutput {
 		t.Fatalf("expected no comment side-effect from delete dry-run\nbefore: %s\nafter: %s", beforeOutput, afterOutput)
 	}
+	if kept := repoCLIPRComment(t, pullRequestID, commentID); kept["text"] != fixture["text"] || kept["version"] != fixture["version"] {
+		t.Fatalf("the delete dry run changed comment %s from text %v at version %v to %v at %v",
+			commentID, fixture["text"], fixture["version"], kept["text"], kept["version"])
+	}
 
-	_, _ = executeLiveCLI(t, "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID, "--yes")
+	// The real delete, checked: it used to discard its error.
+	mustLiveHumanCLI(t, "repo", "comment", "delete", "--pr", pullRequestID, "--id", commentID, "--yes")
+	repoCLIAssertPRCommentGone(t, pullRequestID, commentID)
 }
 
 func prepareOpenPRDryRunFixture(t *testing.T) (*liveHarness, seededProject, seededRepository, string) {
@@ -2200,6 +2303,69 @@ func repoCLIPullRequestsIn(t *testing.T, output string) []any {
 	}
 
 	return pullRequests
+}
+
+// repoCLIPullRequestIDs lists the ids of the pull requests a payload names,
+// in order.
+func repoCLIPullRequestIDs(t *testing.T, output string) []string {
+	t.Helper()
+
+	pullRequests := repoCLIPullRequestsIn(t, output)
+	ids := make([]string, 0, len(pullRequests))
+	for _, entry := range pullRequests {
+		fields, _ := entry.(map[string]any)
+		id, _ := numericOrStringID(fields["id"])
+		ids = append(ids, id)
+	}
+
+	return ids
+}
+
+// repoCLIParticipantNames lists the usernames a participant search answered
+// with.
+func repoCLIParticipantNames(t *testing.T, output string) []string {
+	t.Helper()
+
+	participants, ok := decodeJSONMap(t, output)["participants"].([]any)
+	if !ok {
+		t.Fatalf("expected a participants array in: %s", output)
+	}
+	names := make([]string, 0, len(participants))
+	for _, entry := range participants {
+		fields, _ := entry.(map[string]any)
+		names = append(names, asString(fields["name"]))
+	}
+
+	return names
+}
+
+// repoCLIThreads reads the comment threads out of a pr comment list payload.
+func repoCLIThreads(t *testing.T, output string) []any {
+	t.Helper()
+
+	threads, ok := decodeJSONMap(t, output)["threads"].([]any)
+	if !ok {
+		t.Fatalf("expected a threads array in: %s", output)
+	}
+
+	return threads
+}
+
+// repoCLIBranchHead reads the commit a branch points at from the ref itself.
+func repoCLIBranchHead(t *testing.T, branch string) string {
+	t.Helper()
+
+	output := mustLiveCLI(t, "branch", "list", "--filter", branch)
+	branches, _ := decodeJSONMap(t, output)["branches"].([]any)
+	for _, entry := range branches {
+		fields, _ := entry.(map[string]any)
+		if head, _ := fields["latestCommit"].(string); fields["displayId"] == branch && head != "" {
+			return head
+		}
+	}
+	t.Fatalf("no head commit for %s in: %s", branch, output)
+
+	return ""
 }
 
 // repoCLIReviewerIn finds one participant in a pr get payload.
