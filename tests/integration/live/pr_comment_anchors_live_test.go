@@ -46,6 +46,7 @@ func TestLivePRCommentAnchors(t *testing.T) {
 	}
 
 	prID := createLivePRForRegression(t, branch, "Anchored review", "--no-default-reviewers", "--no-codeowners")
+	assertCommentFixturePR(t, prID, branch, "Anchored review")
 
 	var rootID string
 
@@ -136,6 +137,20 @@ func assertLiveCommentAnchoredTo(t *testing.T, output, path string) {
 	}
 }
 
+// assertCommentFixturePR reads back the pull request a test in these files
+// opened with createLivePRForRegression: its title and branch, into master.
+// --no-default-reviewers and --no-codeowners only stop bb looking reviewers
+// up, so neither puts anything in the request to read back.
+func assertCommentFixturePR(t *testing.T, prID, branch, title string) {
+	t.Helper()
+
+	pr := extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", prID)))
+	if pr["title"] != title || pr["sourceBranch"] != branch || pr["targetBranch"] != "master" {
+		t.Fatalf("pull request %s is %v from %v into %v, want %q from %s into master",
+			prID, pr["title"], pr["sourceBranch"], pr["targetBranch"], title, branch)
+	}
+}
+
 // TestLivePRWatchAndUnwatch runs the two commands for real. Their only live
 // coverage was a dry run, which by definition subscribes to nothing.
 func TestLivePRWatchAndUnwatch(t *testing.T) {
@@ -158,6 +173,7 @@ func TestLivePRWatchAndUnwatch(t *testing.T) {
 	}
 
 	prID := createLivePRForRegression(t, branch, "Watched", "--no-default-reviewers", "--no-codeowners")
+	assertCommentFixturePR(t, prID, branch, "Watched")
 
 	// Both directions, because a watch that cannot be undone is its own bug and
 	// an unwatch that silently does nothing looks the same as one that works.

@@ -54,6 +54,7 @@ func TestLiveInlineCommentAnchoring(t *testing.T) {
 	}
 
 	prID := createLivePRForRegression(t, branch, "Inline comments", "--no-default-reviewers", "--no-codeowners")
+	assertCommentFixturePR(t, prID, branch, "Inline comments")
 
 	var rootID string
 
