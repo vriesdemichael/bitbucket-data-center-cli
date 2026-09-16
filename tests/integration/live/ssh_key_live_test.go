@@ -60,7 +60,9 @@ func TestLivePersonalSSHKeyLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, seeded.Repos[0].Slug)
 
 	label := testsupport.UniqueName("live-suite-personal-")
-	publicKey := generateSSHPublicKey(t, label)
+	// A comment that is not the label: Bitbucket labels a key sent without one
+	// with its comment, so a --label bb dropped would still read back as sent.
+	publicKey := generateSSHPublicKey(t, testsupport.UniqueName("live-suite-comment-"))
 
 	addOutput, err := executeLiveCLI(t, "--json", "ssh-key", "add", publicKey, "--label", label)
 	if err != nil {
@@ -84,6 +86,16 @@ func TestLivePersonalSSHKeyLifecycle(t *testing.T) {
 	if !strings.Contains(listOutput, label) {
 		t.Fatalf("expected the added key in the listing, got: %s", listOutput)
 	}
+	stored, ok := listedKeyByID(t, listOutput, keyID)
+	if !ok {
+		t.Fatalf("key %s is not in the listing: %s", keyID, listOutput)
+	}
+	if stored["label"] != label {
+		t.Errorf("label = %v, want %s", stored["label"], label)
+	}
+	if stored["text"] != publicKey {
+		t.Errorf("text = %v, want %s", stored["text"], publicKey)
+	}
 
 	if _, err := executeLiveCLI(t, "--json", "ssh-key", "remove", keyID, "--yes"); err != nil {
 		t.Fatalf("ssh-key remove failed: %v", err)
@@ -96,6 +108,9 @@ func TestLivePersonalSSHKeyLifecycle(t *testing.T) {
 	}
 	if strings.Contains(afterRemove, label) {
 		t.Fatalf("expected the key to be gone after remove, got: %s", afterRemove)
+	}
+	if _, ok := listedKeyByID(t, afterRemove, keyID); ok {
+		t.Fatalf("key %s is still listed after remove: %s", keyID, afterRemove)
 	}
 }
 
@@ -121,7 +136,8 @@ func TestLiveRepositoryAccessKeyLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	label := testsupport.UniqueName("live-suite-access-")
-	publicKey := generateSSHPublicKey(t, label)
+	// Not the label as the comment, for the reason the personal key test gives.
+	publicKey := generateSSHPublicKey(t, testsupport.UniqueName("live-suite-comment-"))
 
 	addOutput, err := executeLiveCLI(t, "--json", "repo", "ssh-key", "add", publicKey,
 		"--label", label, "--read-write", "--repo", repoRef)
@@ -162,6 +178,23 @@ func TestLiveRepositoryAccessKeyLifecycle(t *testing.T) {
 		t.Errorf("repo ssh-key list did not report whether the limit was reached: %s", listOutput)
 	}
 
+	// The permission as the repository's listing reports it, not as the add
+	// answered: a key sent without one is granted REPO_READ, so REPO_WRITE here
+	// is --read-write arriving.
+	stored, ok := listedKeyByID(t, listOutput, keyID)
+	if !ok {
+		t.Fatalf("access key %s is not in the repository's listing: %s", keyID, listOutput)
+	}
+	if stored["permission"] != "REPO_WRITE" {
+		t.Errorf("permission = %v, want REPO_WRITE", stored["permission"])
+	}
+	if stored["label"] != label {
+		t.Errorf("label = %v, want %s", stored["label"], label)
+	}
+	if stored["text"] != publicKey {
+		t.Errorf("text = %v, want %s", stored["text"], publicKey)
+	}
+
 	if _, err := executeLiveCLI(t, "--json", "repo", "ssh-key", "remove", keyID, "--repo", repoRef, "--yes"); err != nil {
 		t.Fatalf("repo ssh-key remove failed: %v", err)
 	}
@@ -174,4 +207,19 @@ func TestLiveRepositoryAccessKeyLifecycle(t *testing.T) {
 	if strings.Contains(afterRemove, label) {
 		t.Fatalf("expected the access key to be gone after remove, got: %s", afterRemove)
 	}
+	if _, ok := listedKeyByID(t, afterRemove, keyID); ok {
+		t.Fatalf("access key %s is still listed after remove: %s", keyID, afterRemove)
+	}
+}
+
+// listedKeyByID finds one key in a key listing's JSON output by its id.
+func listedKeyByID(t *testing.T, output, id string) (map[string]any, bool) {
+	t.Helper()
+
+	var data any
+	if err := decodeJSONEnvelopeData(output, &data); err != nil {
+		t.Fatalf("the key listing is not JSON: %v\n%s", err, output)
+	}
+
+	return findByID(data, id)
 }
