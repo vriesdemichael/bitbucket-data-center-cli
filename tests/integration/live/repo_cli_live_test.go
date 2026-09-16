@@ -178,6 +178,10 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	staleUpdateOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "update", "--commit", commitID, "--id", commitCommentID,
 		"--text", "an update at a version the comment is not at", "--version", repoCLIVersionAfter(t, commitCommentVersion))
 	repoCLIAssertOutOfDate(t, staleUpdateOutput, err)
+	staleKept := repoCLIEntryWithID(t, repoCLICommitComments(t, commitID, "seed.txt"), commitCommentID)
+	if version, _ := numericOrStringID(staleKept["version"]); staleKept["text"] != "live cli commit comment" || version != commitCommentVersion {
+		t.Fatalf("an update refused for its version changed comment %s: %v", commitCommentID, staleKept)
+	}
 
 	updateCommitArgs := []string{"--json", "repo", "comment", "update", "--commit", commitID, "--id", commitCommentID, "--text", "live cli commit comment updated"}
 	if commitCommentVersion != "" {
@@ -238,8 +242,12 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("comments still listed on seed.txt after the last one was deleted: %v", remaining)
 	}
 
+	// The branch takes the second line out of seed.txt, so the pull request's
+	// diff holds a removed line and a context line. A file the branch adds holds
+	// only added lines, and ADDED is what bb sends when --line-type is absent: a
+	// comment anchored there read back the same whether the flag arrived or not.
 	branch := testsupport.UniqueName("lt-repo-cli-")
-	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "repo-cli-feature.txt"); err != nil {
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, "seed.txt", "commit-1\n"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
@@ -261,18 +269,28 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("expected version in pr create output: %s", createPROutput)
 	}
 
-	// Anchored to the file the branch adds. The comment above is anchored to
-	// nothing, so the listings scoped to that file had nothing they could show:
+	// Anchored to the line the branch removes. The comment above is anchored to
+	// nothing, so the listings scoped to a file had nothing they could show:
 	// this is what they must find, and the other is what they must leave out.
 	anchoredPRText := "live cli anchored pr comment"
 	createAnchoredPROutput := mustLiveCLI(t, "repo", "comment", "create", "--pr", pullRequestID,
-		"--text", anchoredPRText, "--path", "repo-cli-feature.txt", "--line", "1", "--line-type", "ADDED")
+		"--text", anchoredPRText, "--path", "seed.txt", "--line", "2", "--line-type", "REMOVED")
 	anchoredPRCommentID, ok := commentIDFromCreateOutput(createAnchoredPROutput)
 	if !ok {
 		t.Fatalf("expected comment id in anchored pr create output: %s", createAnchoredPROutput)
 	}
 
-	listPROutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "repo-cli-feature.txt", "--limit", "25")
+	// And one on the line the branch keeps, so the file holds more comments
+	// than a cap of one lets through.
+	keptLinePRText := "a comment on the line the branch keeps"
+	createKeptLinePROutput := mustLiveCLI(t, "repo", "comment", "create", "--pr", pullRequestID,
+		"--text", keptLinePRText, "--path", "seed.txt", "--line", "1", "--line-type", "CONTEXT")
+	keptLinePRCommentID, ok := commentIDFromCreateOutput(createKeptLinePROutput)
+	if !ok {
+		t.Fatalf("expected comment id in the second anchored pr create output: %s", createKeptLinePROutput)
+	}
+
+	listPROutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "seed.txt", "--limit", "25")
 	if err != nil {
 		t.Fatalf("repo comment list (pr) failed: %v\noutput: %s", err, listPROutput)
 	}
@@ -280,8 +298,19 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("expected comments array in pr list output: %s", listPROutput)
 	}
 	repoCLIAssertOnlyAnchoredComment(t, repoCLIComments(t, listPROutput), anchoredPRCommentID, anchoredPRText, prCommentID)
+	keptLineComment := repoCLIEntryWithID(t, repoCLIComments(t, listPROutput), keptLinePRCommentID)
+	if keptLineComment["text"] != keptLinePRText {
+		t.Errorf("comment %s text = %v, want %q", keptLinePRCommentID, keptLineComment["text"], keptLinePRText)
+	}
+	repoCLIAssertAnchor(t, keptLineComment, "seed.txt", 1, "CONTEXT")
 
-	prCommentListOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--path", "repo-cli-feature.txt", "--limit", "25")
+	// Two comments on the file and a cap of one. The listing above asks for 25,
+	// which is also what bb asks for when --limit is absent.
+	if capped := repoCLIComments(t, mustLiveCLI(t, "repo", "comment", "list", "--pr", pullRequestID, "--path", "seed.txt", "--limit", "1")); len(capped) != 1 {
+		t.Fatalf("repo comment list --limit 1 answered with %d comments: %v", len(capped), capped)
+	}
+
+	prCommentListOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--path", "seed.txt", "--limit", "25")
 	if err != nil {
 		t.Fatalf("pr comment list failed: %v\noutput: %s", err, prCommentListOutput)
 	}
@@ -291,7 +320,7 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	pathThreads, _ := decodeJSONMap(t, prCommentListOutput)["threads"].([]any)
 	repoCLIAssertOnlyAnchoredComment(t, pathThreads, anchoredPRCommentID, anchoredPRText, prCommentID)
 
-	prCommentListFullOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--path", "repo-cli-feature.txt", "--limit", "25", "--full")
+	prCommentListFullOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--path", "seed.txt", "--limit", "25", "--full")
 	if err != nil {
 		t.Fatalf("pr comment list --full failed: %v\noutput: %s", err, prCommentListFullOutput)
 	}
@@ -315,7 +344,7 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if thread := repoCLIEntryWithID(t, aggregateThreads, prCommentID); thread["text"] != "live cli pr comment" || thread["anchor"] != nil {
 		t.Errorf("thread %s = text %v, anchor %v; want %q on no file", prCommentID, thread["text"], thread["anchor"], "live cli pr comment")
 	}
-	repoCLIAssertAnchor(t, repoCLIEntryWithID(t, aggregateThreads, anchoredPRCommentID), "repo-cli-feature.txt", 1, "ADDED")
+	repoCLIAssertAnchor(t, repoCLIEntryWithID(t, aggregateThreads, anchoredPRCommentID), "seed.txt", 2, "REMOVED")
 
 	prCommentGetOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "get", pullRequestID, prCommentID)
 	if err != nil {
@@ -339,8 +368,13 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !repoCLIActivityComments(t, prActivityListOutput, prCommentID, "live cli pr comment") {
 		t.Errorf("no COMMENTED activity carries comment %s with its text: %s", prCommentID, prActivityListOutput)
 	}
+	// The opening and three comments are four activities, and 25 is also what
+	// bb asks for when --limit is absent.
+	if capped, _ := decodeJSONMap(t, mustLiveCLI(t, "pr", "activity", "list", pullRequestID, "--limit", "1"))["activities"].([]any); len(capped) != 1 {
+		t.Fatalf("pr activity list --limit 1 answered with %d activities: %v", len(capped), capped)
+	}
 
-	humanPRCommentListOutput, err := executeLiveCLI(t, "pr", "comment", "list", pullRequestID, "--path", "repo-cli-feature.txt", "--limit", "25")
+	humanPRCommentListOutput, err := executeLiveCLI(t, "pr", "comment", "list", pullRequestID, "--path", "seed.txt", "--limit", "25")
 	if err != nil {
 		t.Fatalf("pr comment list human failed: %v\noutput: %s", err, humanPRCommentListOutput)
 	}
@@ -348,13 +382,17 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 		t.Fatalf("expected human pr comment list output, got: %s", humanPRCommentListOutput)
 	}
 	if !strings.Contains(humanPRCommentListOutput, anchoredPRText) || strings.Contains(humanPRCommentListOutput, "live cli pr comment") {
-		t.Fatalf("the human listing of repo-cli-feature.txt should show the comment on it and only that one: %s", humanPRCommentListOutput)
+		t.Fatalf("the human listing of seed.txt should show the comment on it and not the one on no file: %s", humanPRCommentListOutput)
 	}
 
 	// Refused as out of date, or --version never reached Bitbucket.
 	stalePRUpdateOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "update", "--pr", pullRequestID, "--id", prCommentID,
 		"--text", "an update at a version the comment is not at", "--version", repoCLIVersionAfter(t, prCommentVersion))
 	repoCLIAssertOutOfDate(t, stalePRUpdateOutput, err)
+	stalePRKept := repoCLIPRComment(t, pullRequestID, prCommentID)
+	if version, _ := numericOrStringID(stalePRKept["version"]); stalePRKept["text"] != "live cli pr comment" || version != prCommentVersion {
+		t.Fatalf("an update refused for its version changed comment %s: %v", prCommentID, stalePRKept)
+	}
 
 	updatePRArgs := []string{"--json", "repo", "comment", "update", "--pr", pullRequestID, "--id", prCommentID, "--text", "live cli pr comment updated"}
 	if prCommentVersion != "" {
@@ -444,6 +482,14 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	granted := repoCLIPermissionEntry(t, grantedListOutput, username)
 	if granted == nil || granted["permission"] != "REPO_WRITE" {
 		t.Fatalf("%s does not hold REPO_WRITE after a grant of repo_write: %s", username, grantedListOutput)
+	}
+
+	// A second user holding a permission, so there is something for --limit 1
+	// to cut: the one grant above reads the same under any cap, the default of
+	// 100 included.
+	repoCLIRepositoryReader(t, harness, seeded.Key, repo.Slug)
+	if capped, _ := decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "security", "permissions", "users", "list", "--limit", "1"))["entries"].([]any); len(capped) != 1 {
+		t.Fatalf("permissions users list --limit 1 answered with %d entries: %v", len(capped), capped)
 	}
 
 	webhooksListOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "list")
@@ -1611,7 +1657,11 @@ func TestLiveCommitPRsAndParticipants(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create the second pull request failed: %v", err)
 	}
-	otherSourceCommit := prFieldAsString(t, mustLiveCLI(t, "pr", "get", otherPullRequestID), "sourceCommit")
+	otherPullRequest := mustLiveCLI(t, "pr", "get", otherPullRequestID)
+	if source := prFieldAsString(t, otherPullRequest, "sourceBranch"); source != otherBranch {
+		t.Fatalf("pull request %s is from %q, want %s", otherPullRequestID, source, otherBranch)
+	}
+	otherSourceCommit := prFieldAsString(t, otherPullRequest, "sourceCommit")
 
 	// 1. Test List pull requests containing commit
 	commitPRsJSON, err := executeLiveCLI(t, "--json", "commit", "prs", sourceCommit)
@@ -1632,8 +1682,8 @@ func TestLiveCommitPRsAndParticipants(t *testing.T) {
 	// so a search that ignored its filter answered the same.
 	reviewer := repoCLIRepositoryReader(t, harness, seeded.Key, repo.Slug)
 	mustLiveCLI(t, "pr", "review", "reviewer", "add", pullRequestID, "--user", reviewer.Username)
-	if _, found := repoCLIReviewerIn(t, mustLiveCLI(t, "pr", "get", pullRequestID), reviewer.Username); !found {
-		t.Fatalf("%s is not on pull request %s after being added as a reviewer", reviewer.Username, pullRequestID)
+	if entry, found := repoCLIReviewerIn(t, mustLiveCLI(t, "pr", "get", pullRequestID), reviewer.Username); !found || entry["role"] != "REVIEWER" {
+		t.Fatalf("%s is not a reviewer on pull request %s after being added as one", reviewer.Username, pullRequestID)
 	}
 
 	// 2. Test Search participants, for the account the harness authenticates as
@@ -2135,8 +2185,8 @@ func repoCLIAssertAnchor(t *testing.T, comment map[string]any, path string, line
 }
 
 // repoCLIAssertOnlyAnchoredComment checks a listing scoped to the file of the
-// anchored comment: that one is in it where it was put, and the comment
-// anchored to no file is not.
+// anchored comment: that one is in it where it was put, on the line the branch
+// removes, and the comment anchored to no file is not.
 func repoCLIAssertOnlyAnchoredComment(t *testing.T, entries []any, anchoredID, anchoredText, unanchoredID string) {
 	t.Helper()
 
@@ -2144,10 +2194,10 @@ func repoCLIAssertOnlyAnchoredComment(t *testing.T, entries []any, anchoredID, a
 	if anchored["text"] != anchoredText {
 		t.Errorf("comment %s text = %v, want %q", anchoredID, anchored["text"], anchoredText)
 	}
-	repoCLIAssertAnchor(t, anchored, "repo-cli-feature.txt", 1, "ADDED")
+	repoCLIAssertAnchor(t, anchored, "seed.txt", 2, "REMOVED")
 
 	if _, found := repoCLIEntryByID(entries, unanchoredID); found {
-		t.Errorf("a listing scoped to repo-cli-feature.txt holds comment %s, which is on no file: %v", unanchoredID, entries)
+		t.Errorf("a listing scoped to seed.txt holds comment %s, which is on no file: %v", unanchoredID, entries)
 	}
 }
 
