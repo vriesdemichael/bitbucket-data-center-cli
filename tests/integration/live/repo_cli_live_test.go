@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -1554,22 +1555,13 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	// Watch dry-run; not read back: no request returns a pull request's watch state (GET .../watch answers 405).
-	watchDryRun, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "watch", pullRequestID)
-	if err != nil {
-		t.Fatalf("pr watch dry-run failed: %v\noutput: %s", err, watchDryRun)
-	}
-	if !strings.Contains(watchDryRun, `"intent": "pr.watch"`) {
-		t.Fatalf("expected pr.watch intent, got: %s", watchDryRun)
+	// Unwatch before watch. Bitbucket has the author watch a pull request from
+	// the moment it is opened, so a watch sent first had nothing to change.
+	if !repoCLIWatching(t, seeded.Key, repo.Slug, pullRequestID) {
+		t.Fatalf("the author does not watch pull request %s, which they opened", pullRequestID)
 	}
 
-	// Watch live; not read back: no request returns a pull request's watch state.
-	watchLive, err := executeLiveCLI(t, "--json", "pr", "watch", pullRequestID)
-	if err != nil {
-		t.Fatalf("pr watch live failed: %v\noutput: %s", err, watchLive)
-	}
-
-	// Unwatch dry-run; not read back: no request returns a pull request's watch state.
+	// Unwatch dry-run
 	unwatchDryRun, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "unwatch", pullRequestID)
 	if err != nil {
 		t.Fatalf("pr unwatch dry-run failed: %v\noutput: %s", err, unwatchDryRun)
@@ -1577,11 +1569,38 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 	if !strings.Contains(unwatchDryRun, `"intent": "pr.unwatch"`) {
 		t.Fatalf("expected pr.unwatch intent, got: %s", unwatchDryRun)
 	}
+	if !repoCLIWatching(t, seeded.Key, repo.Slug, pullRequestID) {
+		t.Fatalf("the unwatch dry run stopped the watch on pull request %s", pullRequestID)
+	}
 
-	// Unwatch live; not read back: no request returns a pull request's watch state.
+	// Unwatch live
 	unwatchLive, err := executeLiveCLI(t, "--json", "pr", "unwatch", pullRequestID)
 	if err != nil {
 		t.Fatalf("pr unwatch live failed: %v\noutput: %s", err, unwatchLive)
+	}
+	if repoCLIWatching(t, seeded.Key, repo.Slug, pullRequestID) {
+		t.Fatalf("pull request %s is still watched after pr unwatch", pullRequestID)
+	}
+
+	// Watch dry-run
+	watchDryRun, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "watch", pullRequestID)
+	if err != nil {
+		t.Fatalf("pr watch dry-run failed: %v\noutput: %s", err, watchDryRun)
+	}
+	if !strings.Contains(watchDryRun, `"intent": "pr.watch"`) {
+		t.Fatalf("expected pr.watch intent, got: %s", watchDryRun)
+	}
+	if repoCLIWatching(t, seeded.Key, repo.Slug, pullRequestID) {
+		t.Fatalf("the watch dry run watched pull request %s", pullRequestID)
+	}
+
+	// Watch live
+	watchLive, err := executeLiveCLI(t, "--json", "pr", "watch", pullRequestID)
+	if err != nil {
+		t.Fatalf("pr watch live failed: %v\noutput: %s", err, watchLive)
+	}
+	if !repoCLIWatching(t, seeded.Key, repo.Slug, pullRequestID) {
+		t.Fatalf("pull request %s is not watched after pr watch", pullRequestID)
 	}
 
 	// The target moves before the rebase is previewed. The branch was on
@@ -2416,6 +2435,33 @@ func repoCLIBranchHead(t *testing.T, branch string) string {
 	t.Fatalf("no head commit for %s in: %s", branch, output)
 
 	return ""
+}
+
+// repoCLIWatching reads whether the account the CLI runs as watches a pull
+// request.
+//
+// Only the page Bitbucket renders for the pull request says. The REST API has
+// no read for it -- .../watch takes POST and DELETE and answers a GET with 405,
+// and no pull request payload carries it -- while the overview page embeds the
+// viewer's attributes, isWatching among them.
+func repoCLIWatching(t *testing.T, projectKey, repositorySlug, pullRequestID string) bool {
+	t.Helper()
+
+	page := mustLiveHumanCLI(t, "api", fmt.Sprintf("/projects/%s/repos/%s/pull-requests/%s/overview", projectKey, repositorySlug, pullRequestID))
+	found := regexp.MustCompile(`userAttributes:\s*(\{[^{}]*\})`).FindAllStringSubmatch(page, -1)
+	if len(found) != 1 {
+		t.Fatalf("want one userAttributes object on the page of pull request %s, found %d", pullRequestID, len(found))
+	}
+	var attributes map[string]any
+	if err := json.Unmarshal([]byte(found[0][1]), &attributes); err != nil {
+		t.Fatalf("the userAttributes of pull request %s are not JSON: %v\n%s", pullRequestID, err, found[0][1])
+	}
+	watching, ok := attributes["isWatching"].(bool)
+	if !ok {
+		t.Fatalf("no isWatching among the userAttributes of pull request %s: %s", pullRequestID, found[0][1])
+	}
+
+	return watching
 }
 
 // repoCLIReviewerIn finds one participant in a pr get payload.
