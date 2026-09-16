@@ -79,6 +79,35 @@ type StoredConfig struct {
 	UpdateBaseURL   string                   `yaml:"update_base_url,omitempty"`
 }
 
+// PolicyProblem is an administrative policy value bb could not use.
+//
+// A control that silently does not apply is worse than one that is refused:
+// the administrator believes it is in force, and nothing says otherwise. The
+// restrictive value is applied meanwhile, and bb doctor prints the message.
+type PolicyProblem struct {
+	// Name is what the value is called where it was set, such as a registry
+	// value name.
+	Name string
+	// Message says what was wrong and what is in force instead.
+	Message string
+}
+
+// parsePolicyBool reads the spellings an administrator writes.
+//
+// strconv.ParseBool alone rejects yes, no, on and off, which a policy written
+// by hand or by a management tool uses freely. Rejecting them turned the
+// control off and said nothing, which is the failure PolicyProblem exists for.
+func parsePolicyBool(value string) (bool, bool) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "t", "true", "y", "yes", "on", "enable", "enabled":
+		return true, true
+	case "0", "f", "false", "n", "no", "off", "disable", "disabled":
+		return false, true
+	}
+
+	return false, false
+}
+
 type PolicyConfig struct {
 	RequireKeyring          *bool    `yaml:"require_keyring,omitempty"`
 	CAFile                  string   `yaml:"ca_file,omitempty"`
@@ -1521,9 +1550,18 @@ func resolveUpdateHTTPPermission(policy PolicyConfig, allowHTTPFlag *bool, polic
 	sourced := map[string]bool{}
 	requested, err := resolveBool(sourced, settingAllowHTTPUpdate, allowHTTPFlag, false)
 	if err != nil {
-		return UpdateHTTPPermission{}, apperrors.New(apperrors.KindValidation, nameOf(sourced, settingAllowHTTPUpdate)+" must be true or false (or 1 or 0)", nil)
+		return UpdateHTTPPermission{}, invalidAllowHTTPUpdate(nameOf(sourced, settingAllowHTTPUpdate))
 	}
 
+	return updateHTTPDecision(policy, requested, nameOf(sourced, settingAllowHTTPUpdate), policyOrigin)
+}
+
+// updateHTTPDecision is the rule, apart from where its inputs come from.
+//
+// bb doctor asks the same question about the configuration it read, and a
+// second copy of the rule is how its answer came to differ from the command's:
+// it missed an opt-in refused by policy, which fails every bb update.
+func updateHTTPDecision(policy PolicyConfig, requested bool, requestedName, policyOrigin string) (UpdateHTTPPermission, error) {
 	forbidden := UpdateHTTPPermission{ForbiddenByPolicy: true, PolicyOrigin: policyOrigin}
 	switch {
 	case policy.AllowHTTPUpdate != nil && *policy.AllowHTTPUpdate:
@@ -1531,16 +1569,22 @@ func resolveUpdateHTTPPermission(policy PolicyConfig, allowHTTPFlag *bool, polic
 	case policy.AllowHTTPUpdate != nil && requested:
 		return UpdateHTTPPermission{}, apperrors.New(
 			apperrors.KindAuthorization,
-			fmt.Sprintf("%s is refused: plain-HTTP update URLs are disabled by administrative policy (%s)", nameOf(sourced, settingAllowHTTPUpdate), forbidden.policyClause()),
+			fmt.Sprintf("%s is refused: plain-HTTP update URLs are disabled by administrative policy (%s)", requestedName, forbidden.policyClause()),
 			nil,
 		)
 	case policy.AllowHTTPUpdate != nil:
 		return forbidden, nil
 	case requested:
-		return UpdateHTTPPermission{Allowed: true, Source: nameOf(sourced, settingAllowHTTPUpdate)}, nil
+		return UpdateHTTPPermission{Allowed: true, Source: requestedName}, nil
 	default:
 		return UpdateHTTPPermission{}, nil
 	}
+}
+
+// invalidAllowHTTPUpdate is the one message for an opt-in that is not a
+// boolean, whether a command or a diagnosis found it.
+func invalidAllowHTTPUpdate(name string) error {
+	return apperrors.New(apperrors.KindValidation, name+" must be true or false (or 1 or 0)", nil)
 }
 
 // CheckURL holds a URL bb update is about to fetch to this permission: it must
