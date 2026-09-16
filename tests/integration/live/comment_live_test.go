@@ -5,7 +5,9 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -434,14 +436,20 @@ func commentStoredOnPR(t *testing.T, prID, commentID string) map[string]any {
 }
 
 // assertCommentReadBack compares fields of a comment read back with the values
-// that were written. The values are scalars, and a number is a float64 because
-// that is what JSON decodes it to.
+// that were written. A field inside an object is named by its path, as in
+// anchor.line. The values are scalars, and a number is a float64 because that
+// is what JSON decodes it to.
 func assertCommentReadBack(t *testing.T, comment map[string]any, want map[string]any) {
 	t.Helper()
 
-	for field, value := range want {
-		if comment[field] != value {
-			t.Errorf("comment %v: %s = %#v, want %#v", comment["id"], field, comment[field], value)
+	for _, field := range slices.Sorted(maps.Keys(want)) {
+		var got any = comment
+		for _, key := range strings.Split(field, ".") {
+			object, _ := got.(map[string]any)
+			got = object[key]
+		}
+		if got != want[field] {
+			t.Errorf("comment %v: %s = %#v, want %#v", comment["id"], field, got, want[field])
 		}
 	}
 }
