@@ -175,6 +175,7 @@ bb auth status --json
 
 #### 1. Threat Analysis (STRIDE: Information Disclosure, Elevation of Privilege)
 - **Attacker Vector (ADV-1, ADV-2)**: Persisting tokens into `.git/config` (via legacy `http.extraHeader`) leaks credentials whenever repositories are archived, copied, or pushed. Furthermore, an unscoped `http.extraHeader` is transmitted to any HTTP remote, leaking internal Bitbucket tokens to external remotes.
+- **Attacker Vector (ADV-1, ADV-3)**: A cloned repository carries configuration with it. A `.bb/config.yaml` in the repository, or a `.env` in it or any parent directory, can name the host `bb` talks to; so can `--host` and a URL passed to `bb api`, which is what a prompt-injected agent controls.
 
 #### 2. Architectural Mitigations
 - **Host-Scoped Credential Helper**: `bb auth setup-git` writes a credential helper rule scoped strictly to the Bitbucket hostname into the global `~/.gitconfig` ([ADR-044](../adr/044-git-credential-helper-instead-of-persisted-credentials.md)):
@@ -183,6 +184,8 @@ bb auth status --json
   	helper = !"/usr/local/bin/bb" auth git-credential
   ```
 - **Zero Repository Footprint**: Cloned repositories contain zero credentials or tokens in their local `.git/config`.
+- **A Credential Is Bound To Its Host**: a stored credential is released only for the host it was stored for. A host named by repository configuration, by `--host`, or by a URL passed to `bb api` therefore gets no credential unless one is stored for that exact host, whatever the default host is.
+- **Nothing Sensitive On The Command Line**: the header a clone needs is passed to git in its environment, which only the owner of the process can read, rather than in its arguments, which any local account can read while the clone runs.
 - **Instant Revocation**: If a token is revoked in Bitbucket or removed via `bb auth logout`, all local clones immediately lose access without requiring manual git cleanup.
 
 #### 3. Audit Test Procedure
