@@ -1087,7 +1087,7 @@ func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := "feature/live-pr-dryrun-create"
+	branch := testsupport.UniqueName("feature/live-pr-dryrun-create-")
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "dryrun-pr-create.txt"); err != nil {
 		t.Fatalf("create branch failed: %v", err)
 	}
@@ -1095,6 +1095,9 @@ func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
 	listBeforeOutput, err := executeLiveCLI(t, "--json", "pr", "list", "--state", "all", "--source-branch", branch, "--target-branch", "master")
 	if err != nil {
 		t.Fatalf("pr list before failed: %v\noutput: %s", err, listBeforeOutput)
+	}
+	if listed := repoCLIPullRequestsIn(t, listBeforeOutput); len(listed) != 0 {
+		t.Fatalf("the branch already has pull requests, so one opened by the dry run would not stand out: %v", listed)
 	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "create", "--from-ref", branch, "--to-ref", "master", "--title", "Dry run PR")
@@ -1107,6 +1110,9 @@ func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
 	if !strings.Contains(dryRunOutput, `"intent": "pr.create"`) {
 		t.Fatalf("expected pr.create intent, got: %s", dryRunOutput)
 	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
+		t.Fatalf("expected the pull request to be predicted as a create, got %q: %s", predicted, dryRunOutput)
+	}
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "pr", "list", "--state", "all", "--source-branch", branch, "--target-branch", "master")
 	if err != nil {
@@ -1115,6 +1121,11 @@ func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
 
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no pull request side-effect from create dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	}
+	// Across the whole repository as well, which is fresh: a branch filter that
+	// matched nothing would hide a pull request just as well as there being none.
+	if listed := repoCLIPullRequestsIn(t, mustLiveCLI(t, "pr", "list", "--state", "all")); len(listed) != 0 {
+		t.Fatalf("the repository has pull requests after a dry run: %v", listed)
 	}
 }
 
@@ -1129,6 +1140,7 @@ func TestLiveCLIPRUpdateDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("pr get before failed: %v\noutput: %s", err, beforeOutput)
 	}
 	beforeTitle := prFieldAsString(t, beforeOutput, "title")
+	beforeVersion := prFieldAsString(t, beforeOutput, "version")
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "update", pullRequestID, "--title", beforeTitle+" dry-run", "--version", "0")
 	if err != nil {
@@ -1136,6 +1148,9 @@ func TestLiveCLIPRUpdateDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "pr.update"`) {
 		t.Fatalf("expected pr.update intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected the title change to be predicted as an update, got %q: %s", predicted, dryRunOutput)
 	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
@@ -1145,6 +1160,10 @@ func TestLiveCLIPRUpdateDryRunNoSideEffect(t *testing.T) {
 	afterTitle := prFieldAsString(t, afterOutput, "title")
 	if beforeTitle != afterTitle {
 		t.Fatalf("expected no title side-effect from update dry-run\nbefore: %s\nafter: %s", beforeTitle, afterTitle)
+	}
+	// Any update moves the version, including one to a field nobody reads here.
+	if afterVersion := prFieldAsString(t, afterOutput, "version"); afterVersion != beforeVersion {
+		t.Fatalf("the pull request moved from version %s to %s during an update dry run", beforeVersion, afterVersion)
 	}
 }
 
@@ -1171,6 +1190,16 @@ func TestLiveCLIPRGetIncludesMergeability(t *testing.T) {
 	if _, ok := mergeability["mergeable"].(bool); !ok {
 		t.Fatalf("mergeability.mergeable missing from pr get output: %s", output)
 	}
+
+	if id, _ := numericOrStringID(pullRequest["id"]); id != pullRequestID {
+		t.Fatalf("pr get %s answered with pull request %s", pullRequestID, id)
+	}
+	// A branch adding one file to an untouched master merges cleanly, so the
+	// answer is known in advance. Checking only that mergeable is a boolean
+	// passed for true and false alike.
+	if mergeability["mergeable"] != true || mergeability["conflicted"] != false || mergeability["outcome"] != "CLEAN" {
+		t.Fatalf("want a clean, mergeable pull request, got %v", mergeability)
+	}
 }
 
 func TestLiveCLIPRMergeDryRunNoSideEffect(t *testing.T) {
@@ -1184,6 +1213,10 @@ func TestLiveCLIPRMergeDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("pr get before failed: %v\noutput: %s", err, beforeOutput)
 	}
 	beforeState := prFieldAsString(t, beforeOutput, "state")
+	// Open, so a merge that was really sent would leave it MERGED.
+	if beforeState != "OPEN" {
+		t.Fatalf("the fixture pull request is %s, want OPEN", beforeState)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "merge", pullRequestID, "--version", "0")
 	if err != nil {
@@ -1191,6 +1224,9 @@ func TestLiveCLIPRMergeDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "pr.merge"`) {
 		t.Fatalf("expected pr.merge intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected the merge to be predicted as an update, got %q: %s", predicted, dryRunOutput)
 	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
@@ -1209,13 +1245,20 @@ func TestLiveCLIPRReviewerAddDryRunNoSideEffect(t *testing.T) {
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	username := harness.username()
+	// Somebody Bitbucket would take as a reviewer. This named the harness
+	// account, which opened the pull request: Bitbucket refuses an author as a
+	// reviewer and bb's preview skips one, so an add that was really sent could
+	// not have changed the reviewers either.
+	username := repoCLIRepositoryReader(t, harness, seeded.Key, repo.Slug).Username
 
 	beforeOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
 		t.Fatalf("pr get before failed: %v\noutput: %s", err, beforeOutput)
 	}
 	beforeReviewers := prReviewersSnapshot(t, beforeOutput)
+	if _, found := repoCLIReviewerIn(t, beforeOutput, username); found {
+		t.Fatalf("%s is already on the pull request: %s", username, beforeOutput)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "review", "reviewer", "add", pullRequestID, "--user", username)
 	if err != nil {
@@ -1223,6 +1266,9 @@ func TestLiveCLIPRReviewerAddDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "pr.review.reviewer.add"`) {
 		t.Fatalf("expected pr.review.reviewer.add intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected adding %s to be predicted as an update, got %q: %s", username, predicted, dryRunOutput)
 	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
@@ -1233,6 +1279,9 @@ func TestLiveCLIPRReviewerAddDryRunNoSideEffect(t *testing.T) {
 	if beforeReviewers != afterReviewers {
 		t.Fatalf("expected no reviewer side-effect from add dry-run\nbefore: %s\nafter: %s", beforeReviewers, afterReviewers)
 	}
+	if _, found := repoCLIReviewerIn(t, afterOutput, username); found {
+		t.Fatalf("the add dry run put %s on the pull request: %s", username, afterOutput)
+	}
 }
 
 func TestLiveCLIPRReviewerRemoveDryRunNoSideEffect(t *testing.T) {
@@ -1241,13 +1290,19 @@ func TestLiveCLIPRReviewerRemoveDryRunNoSideEffect(t *testing.T) {
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	username := harness.username()
+	// A reviewer for the dry run to preview removing. This named the author,
+	// who was never a reviewer, so a remove that was really sent changed nothing.
+	username := repoCLIRepositoryReader(t, harness, seeded.Key, repo.Slug).Username
+	mustLiveCLI(t, "pr", "review", "reviewer", "add", pullRequestID, "--user", username)
 
 	beforeOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
 		t.Fatalf("pr get before failed: %v\noutput: %s", err, beforeOutput)
 	}
 	beforeReviewers := prReviewersSnapshot(t, beforeOutput)
+	if entry, found := repoCLIReviewerIn(t, beforeOutput, username); !found || entry["role"] != "REVIEWER" {
+		t.Fatalf("%s is not a reviewer after being added as one: %s", username, beforeOutput)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "review", "reviewer", "remove", pullRequestID, "--user", username, "--yes")
 	if err != nil {
@@ -1255,6 +1310,9 @@ func TestLiveCLIPRReviewerRemoveDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "pr.review.reviewer.remove"`) {
 		t.Fatalf("expected pr.review.reviewer.remove intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
+		t.Fatalf("expected removing %s to be predicted as a delete, got %q: %s", username, predicted, dryRunOutput)
 	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
@@ -1264,6 +1322,9 @@ func TestLiveCLIPRReviewerRemoveDryRunNoSideEffect(t *testing.T) {
 	afterReviewers := prReviewersSnapshot(t, afterOutput)
 	if beforeReviewers != afterReviewers {
 		t.Fatalf("expected no reviewer side-effect from remove dry-run\nbefore: %s\nafter: %s", beforeReviewers, afterReviewers)
+	}
+	if entry, found := repoCLIReviewerIn(t, afterOutput, username); !found || entry["role"] != "REVIEWER" {
+		t.Fatalf("the remove dry run took %s off the pull request: %s", username, afterOutput)
 	}
 }
 
@@ -1278,6 +1339,10 @@ func TestLiveCLIPRDeclineDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("pr get before failed: %v\noutput: %s", err, beforeOutput)
 	}
 	beforeState := prFieldAsString(t, beforeOutput, "state")
+	// Open, so a decline that was really sent would leave it DECLINED.
+	if beforeState != "OPEN" {
+		t.Fatalf("the fixture pull request is %s, want OPEN", beforeState)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "decline", pullRequestID, "--version", "0")
 	if err != nil {
@@ -1285,6 +1350,9 @@ func TestLiveCLIPRDeclineDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "pr.decline"`) {
 		t.Fatalf("expected pr.decline intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected the decline to be predicted as an update, got %q: %s", predicted, dryRunOutput)
 	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
@@ -1303,6 +1371,12 @@ func TestLiveCLIPRReopenDryRunNoSideEffect(t *testing.T) {
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// bb reads the version itself when none is given, so a decline whose
+	// --version was dropped succeeds at any number. One the pull request is not
+	// at has to be refused.
+	staleDeclineOutput, err := executeLiveCLI(t, "--json", "pr", "decline", pullRequestID, "--version", "1")
+	repoCLIAssertOutOfDate(t, staleDeclineOutput, err)
+
 	declineOutput, err := executeLiveCLI(t, "--json", "pr", "decline", pullRequestID, "--version", "0")
 	if err != nil {
 		t.Fatalf("pr decline fixture failed: %v\noutput: %s", err, declineOutput)
@@ -1313,6 +1387,12 @@ func TestLiveCLIPRReopenDryRunNoSideEffect(t *testing.T) {
 		t.Fatalf("pr get before failed: %v\noutput: %s", err, beforeOutput)
 	}
 	beforeState := prFieldAsString(t, beforeOutput, "state")
+	// Declined by the fixture, so a reopen that was really sent would leave it
+	// OPEN. Were the decline not stored, the state would already be OPEN and the
+	// comparison below could not fail.
+	if beforeState != "DECLINED" {
+		t.Fatalf("the pull request is %s after the decline, want DECLINED", beforeState)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "reopen", pullRequestID, "--version", "1")
 	if err != nil {
@@ -1320,6 +1400,9 @@ func TestLiveCLIPRReopenDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "pr.reopen"`) {
 		t.Fatalf("expected pr.reopen intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected the reopen to be predicted as an update, got %q: %s", predicted, dryRunOutput)
 	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
@@ -1338,11 +1421,21 @@ func TestLiveCLIPRApproveDryRunNoSideEffect(t *testing.T) {
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// A reviewer who has not approved, previewing their own approval. This ran
+	// as the author, whose approval Bitbucket refuses, so an approve that was
+	// really sent could not have changed the reviewers either.
+	reviewer := repoCLIRepositoryReader(t, harness, seeded.Key, repo.Slug)
+	mustLiveCLI(t, "pr", "review", "reviewer", "add", pullRequestID, "--user", reviewer.Username)
+	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
+
 	beforeOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
 		t.Fatalf("pr get before failed: %v\noutput: %s", err, beforeOutput)
 	}
 	beforeReviewers := prReviewersSnapshot(t, beforeOutput)
+	if entry, found := repoCLIReviewerIn(t, beforeOutput, reviewer.Username); !found || entry["role"] != "REVIEWER" || entry["approved"] != false {
+		t.Fatalf("want %s as a reviewer who has not approved: %s", reviewer.Username, beforeOutput)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "pr", "review", "approve", pullRequestID)
 	if err != nil {
@@ -1350,6 +1443,9 @@ func TestLiveCLIPRApproveDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "pr.review.approve"`) {
 		t.Fatalf("expected pr.review.approve intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected the approval to be predicted as an update, got %q: %s", predicted, dryRunOutput)
 	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
@@ -1360,6 +1456,7 @@ func TestLiveCLIPRApproveDryRunNoSideEffect(t *testing.T) {
 	if beforeReviewers != afterReviewers {
 		t.Fatalf("expected no reviewer side-effect from approve dry-run\nbefore: %s\nafter: %s", beforeReviewers, afterReviewers)
 	}
+	assertLiveReviewerApproval(t, pullRequestID, reviewer.Username, false)
 }
 
 func TestLiveCLIPRUnapproveDryRunNoSideEffect(t *testing.T) {
@@ -1367,6 +1464,15 @@ func TestLiveCLIPRUnapproveDryRunNoSideEffect(t *testing.T) {
 
 	harness, seeded, repo, pullRequestID := prepareOpenPRDryRunFixture(t)
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// An approval for the dry run to preview clearing. Nobody held a review
+	// status on the fixture, so an unapprove that was really sent changed
+	// nothing. The approval is the reviewer's own, so from here the CLI runs as
+	// them.
+	reviewer := repoCLIRepositoryReader(t, harness, seeded.Key, repo.Slug)
+	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
+	mustLiveCLI(t, "pr", "review", "approve", pullRequestID)
+	assertLiveReviewerApproval(t, pullRequestID, reviewer.Username, true)
 
 	beforeOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1381,6 +1487,9 @@ func TestLiveCLIPRUnapproveDryRunNoSideEffect(t *testing.T) {
 	if !strings.Contains(dryRunOutput, `"intent": "pr.review.unapprove"`) {
 		t.Fatalf("expected pr.review.unapprove intent, got: %s", dryRunOutput)
 	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected clearing the approval to be predicted as an update, got %q: %s", predicted, dryRunOutput)
+	}
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1390,6 +1499,7 @@ func TestLiveCLIPRUnapproveDryRunNoSideEffect(t *testing.T) {
 	if beforeReviewers != afterReviewers {
 		t.Fatalf("expected no reviewer side-effect from unapprove dry-run\nbefore: %s\nafter: %s", beforeReviewers, afterReviewers)
 	}
+	assertLiveReviewerApproval(t, pullRequestID, reviewer.Username, true)
 }
 
 func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
@@ -2076,8 +2186,63 @@ func repoCLIAssertOutOfDate(t *testing.T, output string, err error) {
 	t.Helper()
 
 	if !apperrors.IsKind(err, apperrors.KindConflict) {
-		t.Fatalf("want a conflict for a version the comment is not at, got %v\n%s", err, output)
+		t.Fatalf("want a conflict for a version the target is not at, got %v\n%s", err, output)
 	}
+}
+
+// repoCLIPullRequestsIn reads the pull requests out of a pr list payload.
+func repoCLIPullRequestsIn(t *testing.T, output string) []any {
+	t.Helper()
+
+	pullRequests, ok := decodeJSONMap(t, output)["pullRequests"].([]any)
+	if !ok {
+		t.Fatalf("expected a pullRequests array in: %s", output)
+	}
+
+	return pullRequests
+}
+
+// repoCLIReviewerIn finds one participant in a pr get payload.
+func repoCLIReviewerIn(t *testing.T, output, username string) (map[string]any, bool) {
+	t.Helper()
+
+	reviewers, _ := extractPRData(decodeJSONMap(t, output))["reviewers"].([]any)
+	for _, entry := range reviewers {
+		reviewer, _ := entry.(map[string]any)
+		if name, _ := reviewer["name"].(string); strings.EqualFold(name, username) {
+			return reviewer, true
+		}
+	}
+
+	return nil, false
+}
+
+// repoCLIRepositoryReader creates a licensed user who can read the repository,
+// which is what Bitbucket asks of a reviewer and of anyone who approves.
+//
+// The grant is read back rather than trusted: a dry run previewing a review
+// action proves nothing about side effects when the real action would have
+// been refused for want of it.
+func repoCLIRepositoryReader(t *testing.T, harness *liveHarness, projectKey, repositorySlug string) restrictedUser {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	user, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create a licensed user failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, projectKey, repositorySlug, user.Username, "REPO_READ"); err != nil {
+		t.Fatalf("grant %s read access failed: %v", user.Username, err)
+	}
+
+	listing := mustLiveCLI(t, "repo", "settings", "security", "permissions", "users", "list", "--limit", "200")
+	if held := repoCLIPermissionEntry(t, listing, user.Username); held == nil || held["permission"] != "REPO_READ" {
+		t.Fatalf("%s does not hold REPO_READ after the grant: %s", user.Username, listing)
+	}
+
+	return user
 }
 
 // repoCLIVersionAfter is a version one past the one given, which a comment at
