@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
@@ -159,9 +160,16 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	_ = ctx
 
 	configureLiveCLIEnv(t, harness, "", "")
+
+	// Two projects of the test's own, so the listing the token is tried on below
+	// holds more than the one it is capped at.
+	for range 2 {
+		if _, err := harness.seedRepo(ctx, repoSeed{}); err != nil {
+			t.Fatalf("seed a project failed: %v", err)
+		}
+	}
 
 	name := testsupport.UniqueName("live-token-")
 	createOutput, err := executeLiveCLI(t, "--json", "auth", "token", "create", name,
@@ -210,8 +218,17 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 		if err != nil {
 			t.Fatalf("a bearer token bb just created was refused: %v\noutput: %s", err, output)
 		}
+		var listed struct {
+			Projects []map[string]any `json:"projects"`
+		}
+		decodeJSONData(t, output, &listed)
+		if len(listed.Projects) != 1 {
+			t.Errorf("project list --limit 1 answered %d projects: %s", len(listed.Projects), output)
+		}
 	})
 
+	// --limit 50 only bounds the lookup: a cap of 50 shows only past 50 tokens,
+	// which this test does not make.
 	listOutput, err := executeLiveCLI(t, "--json", "auth", "token", "list", "--user", "admin", "--limit", "50")
 	if err != nil {
 		t.Fatalf("auth token list failed: %v\noutput: %s", err, listOutput)
@@ -227,6 +244,23 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 	if !strings.Contains(getOutput, name) {
 		t.Fatalf("expected the token name in get output, got: %s", getOutput)
 	}
+	if got := decodeJSONMap(t, getOutput)["name"]; got != name {
+		t.Errorf("name = %v, want %s", got, name)
+	}
+
+	// bb auth token get publishes neither the permissions nor the expiry, so
+	// those are read from Bitbucket through bb api.
+	stored := decodeJSONMap(t, mustLiveCLI(t, "api", "/rest/access-tokens/latest/users/admin/"+tokenID))
+	if permissions, _ := stored["permissions"].([]any); len(permissions) != 1 || permissions[0] != "REPO_READ" {
+		t.Errorf("permissions = %v, want [REPO_READ]", stored["permissions"])
+	}
+	// A token created without an expiry has no expiryDate at all, so one a day
+	// after its creation is --expiry-days 1 arriving.
+	createdDate, _ := stored["createdDate"].(float64)
+	expiryDate, expires := stored["expiryDate"].(float64)
+	if !expires || expiryDate-createdDate != float64((24*time.Hour).Milliseconds()) {
+		t.Errorf("expiryDate = %v for createdDate %v, want one day later", stored["expiryDate"], stored["createdDate"])
+	}
 
 	renamed := name + "-renamed"
 	if _, err := executeLiveCLI(t, "--json", "auth", "token", "update", tokenID, "--name", renamed, "--user", "admin"); err != nil {
@@ -240,8 +274,14 @@ func TestLiveAuthTokenLifecycle(t *testing.T) {
 	if !strings.Contains(afterUpdate, renamed) {
 		t.Fatalf("expected the rename to persist, got: %s", afterUpdate)
 	}
+	if got := decodeJSONMap(t, afterUpdate)["name"]; got != renamed {
+		t.Errorf("name after update = %v, want %s", got, renamed)
+	}
 
 	if _, err := executeLiveCLI(t, "--json", "auth", "token", "revoke", tokenID, "--user", "admin", "--yes"); err != nil {
 		t.Fatalf("auth token revoke failed: %v", err)
+	}
+	if output, err := executeLiveCLI(t, "--json", "auth", "token", "get", tokenID, "--user", "admin"); !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Fatalf("a revoked token is still found: %v\noutput: %s", err, output)
 	}
 }
