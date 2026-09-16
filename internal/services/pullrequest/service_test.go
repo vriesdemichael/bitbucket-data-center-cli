@@ -772,14 +772,23 @@ func TestRebaseRetriesOnceOnAVersionItReadItself(t *testing.T) {
 	const outOfDate = `{"errors":[{"message":"You are attempting to modify a pull request based on out-of-date information.","exceptionName":"com.atlassian.bitbucket.pull.PullRequestOutOfDateException","currentVersion":1,"expectedVersion":0}]}`
 
 	var rebaseAttempts int
+	var reads int
 	var sentVersions []any
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		if !strings.HasSuffix(request.URL.Path, "/rebase") {
-			// The version read: behind what the server holds, which is the
-			// whole point -- bb asked for 0 and 1 is current.
+			// The pull request moves between the two reads, which is what makes
+			// this test able to fail: answering 1 both times let a retry that
+			// reused the version it already had look identical to one that read
+			// it again.
+			reads++
+			version := 1
+			if reads == 1 {
+				version = 0
+			}
+
 			w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-			_, _ = fmt.Fprint(w, `{"id":42,"version":1,"title":"t","state":"OPEN","open":true}`)
+			_, _ = fmt.Fprintf(w, `{"id":42,"version":%d,"title":"t","state":"OPEN","open":true}`, version)
 			return
 		}
 
@@ -826,7 +835,12 @@ func TestRebaseRetriesOnceOnAVersionItReadItself(t *testing.T) {
 	if rebaseAttempts != 2 {
 		t.Fatalf("expected exactly two rebase attempts, got %d", rebaseAttempts)
 	}
-	if len(sentVersions) != 2 || fmt.Sprintf("%v", sentVersions[1]) != "1" {
-		t.Fatalf("the retry did not send the re-read version: %v", sentVersions)
+	if len(sentVersions) != 2 ||
+		fmt.Sprintf("%v", sentVersions[0]) != "0" ||
+		fmt.Sprintf("%v", sentVersions[1]) != "1" {
+		t.Fatalf("the versions sent were %v, want the read version and then the re-read one", sentVersions)
+	}
+	if reads < 2 {
+		t.Fatalf("the pull request was read %d time(s), want a read before each attempt", reads)
 	}
 }
