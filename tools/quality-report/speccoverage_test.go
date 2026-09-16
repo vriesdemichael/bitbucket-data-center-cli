@@ -90,7 +90,7 @@ func (s *Service) assign(ctx context.Context, r Repo, id string) {
 		t.Fatal(err)
 	}
 
-	covered, err := collectRawHTTPPaths(dir)
+	covered, err := collectRawHTTPPaths([]string{dir})
 	if err != nil {
 		t.Fatal(err)
 	}

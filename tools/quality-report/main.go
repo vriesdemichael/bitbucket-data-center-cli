@@ -101,11 +101,15 @@ func main() {
 	specCoverageFile := flag.String("spec-coverage-file", "docs/quality/spec-coverage.json", "Path to spec coverage artifact")
 	openapiSpecPath := flag.String("openapi-spec", "docs/reference/atlassian/bitbucket-openapi.json", "Path to the Bitbucket OpenAPI spec")
 	generatedClientPath := flag.String("generated-client", "internal/openapi/generated/bitbucket_client.gen.go", "Path to the generated OpenAPI client")
-	servicesRoot := flag.String("services-root", "internal/services", "Root directory scanned for API usage")
+	// Every place bb calls Bitbucket from, not only the services: the pull
+	// request review commands, the auth commands and the permission checker
+	// call the generated client directly, so six endpoints bb has called since
+	// v4.0.0 were counted as gaps. ADR-065 asks what the CLI calls at all.
+	apiRoots := flag.String("api-roots", "internal/services,internal/cli,internal/mcp", "Comma-separated roots scanned for API usage")
 	flag.Parse()
 
 	if *specCoverageMode {
-		runSpecCoverage(*openapiSpecPath, *generatedClientPath, *servicesRoot, *specCoverageFile, *writeReport, *verifyReport)
+		runSpecCoverage(*openapiSpecPath, *generatedClientPath, splitRoots(*apiRoots), *specCoverageFile, *writeReport, *verifyReport)
 		return
 	}
 
@@ -766,4 +770,16 @@ func percent(covered int, total int) float64 {
 func fail(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)
+}
+
+// splitRoots turns the comma-separated -api-roots flag into directories.
+func splitRoots(value string) []string {
+	var roots []string
+	for _, root := range strings.Split(value, ",") {
+		if trimmed := strings.TrimSpace(root); trimmed != "" {
+			roots = append(roots, trimmed)
+		}
+	}
+
+	return roots
 }

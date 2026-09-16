@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-openapi.json",
-  "covered": 210,
+  "covered": 224,
   "total": 572,
-  "coverage_percent": 36.71328671328671,
+  "coverage_percent": 39.16083916083916,
   "by_tag": [
     {
       "tag": "",
@@ -57,7 +57,7 @@
     },
     {
       "tag": "Mirroring (Upstream)",
-      "covered": 0,
+      "covered": 1,
       "total": 21
     },
     {
@@ -67,17 +67,17 @@
     },
     {
       "tag": "Project",
-      "covered": 34,
+      "covered": 35,
       "total": 76
     },
     {
       "tag": "Pull Requests",
-      "covered": 59,
+      "covered": 62,
       "total": 69
     },
     {
       "tag": "Repository",
-      "covered": 53,
+      "covered": 61,
       "total": 99
     },
     {
@@ -97,7 +97,7 @@
     },
     {
       "tag": "System Maintenance",
-      "covered": 1,
+      "covered": 2,
       "total": 81
     }
   ],
@@ -758,12 +758,6 @@
     },
     {
       "method": "GET",
-      "path": "/api/latest/profile/recent/repos",
-      "tag": "Repository",
-      "summary": "Get recently accessed repositories"
-    },
-    {
-      "method": "GET",
       "path": "/api/latest/projects/{projectKey}/avatar.png",
       "tag": "Project",
       "summary": "Get avatar for project"
@@ -833,12 +827,6 @@
       "path": "/api/latest/projects/{projectKey}/repos",
       "tag": "Project",
       "summary": "Get repositories for project"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/archive",
-      "tag": "Repository",
-      "summary": "Stream archive of repository"
     },
     {
       "method": "DELETE",
@@ -923,24 +911,6 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/diff/{path}",
       "tag": "Repository",
       "summary": "Get diff between revisions"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/merge-base",
-      "tag": "Repository",
-      "summary": "Get the common ancestor between two commits"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/watch",
-      "tag": "Repository",
-      "summary": "Stop watching commit"
-    },
-    {
-      "method": "POST",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/watch",
-      "tag": "Repository",
-      "summary": "Watch commit"
     },
     {
       "method": "GET",
@@ -1061,24 +1031,6 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/participants",
       "tag": "Pull Requests",
       "summary": "Get pull request participants"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/review",
-      "tag": "Pull Requests",
-      "summary": "Discard pull request review"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/review",
-      "tag": "Pull Requests",
-      "summary": "Get pull request comment thread"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/review",
-      "tag": "Pull Requests",
-      "summary": "Complete pull request review"
     },
     {
       "method": "GET",
@@ -1387,12 +1339,6 @@
       "summary": "Get pull request auto-merge settings"
     },
     {
-      "method": "PUT",
-      "path": "/api/latest/projects/{projectKey}/settings/auto-merge",
-      "tag": "Project",
-      "summary": "Create or update the pull request auto-merge settings"
-    },
-    {
       "method": "DELETE",
       "path": "/api/latest/projects/{projectKey}/settings/change-author",
       "tag": "Project",
@@ -1463,12 +1409,6 @@
       "path": "/api/latest/projects/{projectKey}/webhooks/{webhookId}/latest",
       "tag": "Project",
       "summary": "Get last webhook invocation details"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/repos",
-      "tag": "Repository",
-      "summary": "Search for repositories"
     },
     {
       "method": "GET",
@@ -1547,12 +1487,6 @@
       "path": "/api/latest/system-signing/configuration",
       "tag": "Security",
       "summary": "Update system signing configuration"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/users",
-      "tag": "System Maintenance",
-      "summary": "Get all users"
     },
     {
       "method": "PUT",
@@ -1683,18 +1617,6 @@
       "path": "/branch-permissions/latest/projects/{projectKey}/restrictions",
       "tag": "Project",
       "summary": "Create multiple ref restrictions"
-    },
-    {
-      "method": "DELETE",
-      "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/comments/{commentId}/reactions/{emoticon}",
-      "tag": "Repository",
-      "summary": "Remove a reaction from comment"
-    },
-    {
-      "method": "PUT",
-      "path": "/comment-likes/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/comments/{commentId}/reactions/{emoticon}",
-      "tag": "Repository",
-      "summary": "React to a comment"
     },
     {
       "method": "PUT",
@@ -1965,12 +1887,6 @@
       "path": "/mirroring/latest/requests",
       "tag": "Mirroring (Upstream)",
       "summary": "Get mirroring requests"
-    },
-    {
-      "method": "POST",
-      "path": "/mirroring/latest/requests",
-      "tag": "Mirroring (Upstream)",
-      "summary": "Create a mirroring request"
     },
     {
       "method": "DELETE",
