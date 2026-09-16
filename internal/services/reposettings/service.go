@@ -557,15 +557,31 @@ func (service *Service) GetRepositoryAutoDeclineSettings(ctx context.Context, re
 	return response.ApplicationjsonCharsetUTF8200, nil
 }
 
+// UpdateRepositoryAutoDeclineSettings sets the repository's own auto-decline
+// policy.
+//
+// Bitbucket wants the inactivity weeks on every write, a write that switches the
+// policy off included: {"enabled": false} alone answers 400 "The parameter
+// 'inactivityWeeks' is required" (OPENAPI-034). The weeks went only
+// with an enable, so auto-decline could not be switched off at all. A caller that
+// names no weeks keeps the ones in force, read first, so that turning the policy
+// off does not also change how long it waits once it is back on.
 func (service *Service) UpdateRepositoryAutoDeclineSettings(ctx context.Context, repo RepositoryRef, enabled bool, inactivityWeeks int32) (*openapigenerated.RestAutoDeclineSettings, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-	body := openapigenerated.SetAutoDeclineSettings1JSONRequestBody{
-		Enabled: &enabled,
+	if inactivityWeeks <= 0 {
+		current, err := service.GetRepositoryAutoDeclineSettings(ctx, repo)
+		if err != nil {
+			return nil, err
+		}
+		if current != nil && current.InactivityWeeks != nil {
+			inactivityWeeks = *current.InactivityWeeks
+		}
 	}
-	if enabled {
-		body.InactivityWeeks = &inactivityWeeks
+	body := openapigenerated.SetAutoDeclineSettings1JSONRequestBody{
+		Enabled:         enabled,
+		InactivityWeeks: inactivityWeeks,
 	}
 	response, err := service.client.SetAutoDeclineSettings1WithResponse(ctx, repo.ProjectKey, repo.Slug, body)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -120,6 +121,7 @@ func sanitize(inputPath, outputPath string) error {
 	fixedScalarItems := fixScalarItemProperties(spec)
 	removedIgnoredProperties := removeIgnoredRequestProperties(spec)
 	removedUnsentProperties := removeUnsentResponseProperties(spec)
+	requiredProperties := requireRequestProperties(spec)
 
 	output, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
@@ -131,8 +133,8 @@ func sanitize(inputPath, outputPath string) error {
 	}
 
 	fmt.Printf(
-		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d fixed path params=%d renamed properties=%d fixed array properties=%d fixed array responses=%d fixed scalar items=%d removed ignored properties=%d removed unsent properties=%d\n",
-		fixedOperations, renamedOperationIDs, fixedSchemaFields, fixedPathParams, renamedProperties, fixedArrayProperties, fixedArrayResponses, fixedScalarItems, removedIgnoredProperties, removedUnsentProperties,
+		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d fixed path params=%d renamed properties=%d fixed array properties=%d fixed array responses=%d fixed scalar items=%d removed ignored properties=%d removed unsent properties=%d required properties=%d\n",
+		fixedOperations, renamedOperationIDs, fixedSchemaFields, fixedPathParams, renamedProperties, fixedArrayProperties, fixedArrayResponses, fixedScalarItems, removedIgnoredProperties, removedUnsentProperties, requiredProperties,
 	)
 	return nil
 }
@@ -798,6 +800,48 @@ func removeReadOnlyProperty(node any, property string) int {
 	}
 
 	return removed
+}
+
+// requiredRequestProperty names a request property the spec leaves optional
+// and the server refuses a write without.
+type requiredRequestProperty struct {
+	schema   string
+	property string
+}
+
+// requiredRequestProperties lists those properties. Declared required, they are
+// always in the generated request, so no caller can build a body the server is
+// bound to refuse.
+var requiredRequestProperties = []requiredRequestProperty{
+	// The auto-decline settings, of a repository and of a project alike. On
+	// 10.4.3 {"enabled": false} answered 400 "The parameter 'inactivityWeeks' is
+	// required", and {"inactivityWeeks": 8} the same for enabled. bb sent the
+	// weeks only when enabling, so it could not switch the policy off
+	// (OPENAPI-034).
+	{schema: "RestAutoDeclineSettingsRequest", property: "enabled"},
+	{schema: "RestAutoDeclineSettingsRequest", property: "inactivityWeeks"},
+}
+
+// requireRequestProperties adds the listed properties to their schema's
+// required list. A property the schema does not declare, or one it already
+// requires, is left alone.
+func requireRequestProperties(spec map[string]any) int {
+	added := 0
+	for _, entry := range requiredRequestProperties {
+		schema := componentSchema(spec, entry.schema)
+		properties, _ := schema["properties"].(map[string]any)
+		if _, declared := properties[entry.property]; !declared {
+			continue
+		}
+		required, _ := schema["required"].([]any)
+		if slices.Contains(required, any(entry.property)) {
+			continue
+		}
+		schema["required"] = append(required, entry.property)
+		added++
+	}
+
+	return added
 }
 
 // componentSchema returns a component schema, or nil when it is missing.

@@ -1467,3 +1467,44 @@ fixes:
         - task models:verify
         - task client:verify
         - go test -tags=live ./tests/integration/live -run 'TestLivePullRequestPendingReview|TestLivePullRequestBlockerReviewLoop'
+  - id: OPENAPI-034
+    area: auto-decline-settings-need-both-fields-on-every-write
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Probed on 10.4.3 with raw HTTP and no bb code in the path, against the repository and the
+      project settings endpoints, which share the request schema and answered the same.
+    description: >
+      A write of the auto-decline settings needs both enabled and inactivityWeeks, switching the
+      policy off included, although the spec declares both optional.
+    reference:
+      type: schema
+      value: RestAutoDeclineSettingsRequest (enabled, inactivityWeeks)
+      upstream_issue: >
+        PUT /api/latest/projects/{projectKey}[/repos/{repositorySlug}]/settings/auto-decline on
+        10.4.3:
+
+          - {"enabled": false} answered 400 "The parameter 'inactivityWeeks' is required."
+          - {"inactivityWeeks": 8} answered 400 "The parameter 'enabled' is required."
+          - {"enabled": false, "inactivityWeeks": 8} was stored as sent.
+
+        bb sent the weeks only when enabling, so `bb repo settings auto-decline set
+        --enabled=false` answered 400 whether or not --inactivity-weeks was given, and a bulk
+        operation disabling auto-decline did the same.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/services/reposettings/service.go
+        - tests/integration/live/repo_settings_policy_live_test.go
+      detail: >
+        The sanitizer adds both properties to the schema's required list, so the generated request
+        always carries them. The service sends the weeks it is given, and when it is given none reads
+        the weeks in force and sends those, so switching the policy off leaves the delay as it was.
+        The live test sets eight weeks, switches the policy off without naming weeks, and reads back
+        a disabled policy that kept them.
+    verification:
+      commands:
+        - go test ./tools/openapi-sanitize -run TestRequireRequestProperties
+        - task models:verify
+        - task client:verify
+        - go test -tags=live ./tests/integration/live -run TestLiveRepoSettingsAutoDeclineLifecycle

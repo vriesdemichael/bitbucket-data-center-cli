@@ -2991,8 +2991,8 @@ type RestAutoDeclineSettingsScopeType string
 
 // RestAutoDeclineSettingsRequest defines model for RestAutoDeclineSettingsRequest.
 type RestAutoDeclineSettingsRequest struct {
-	Enabled         *bool  `json:"enabled,omitempty"`
-	InactivityWeeks *int32 `json:"inactivityWeeks,omitempty"`
+	Enabled         bool  `json:"enabled"`
+	InactivityWeeks int32 `json:"inactivityWeeks"`
 }
 
 // RestAutoMergeProcessingResult defines model for RestAutoMergeProcessingResult.

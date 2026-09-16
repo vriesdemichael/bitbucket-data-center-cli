@@ -624,3 +624,37 @@ func TestRemoveUnsentResponsePropertiesReachesInlineCopies(t *testing.T) {
 		t.Fatalf("second pass removed = %d, want 0", removed)
 	}
 }
+
+func TestRequireRequestPropertiesAddsThemToRequired(t *testing.T) {
+	t.Parallel()
+
+	spec := map[string]any{
+		"components": map[string]any{
+			"schemas": map[string]any{
+				"RestAutoDeclineSettingsRequest": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"enabled":         map[string]any{"type": "boolean"},
+						"inactivityWeeks": map[string]any{"type": "integer", "format": "int32"},
+					},
+				},
+			},
+		},
+	}
+	if added := requireRequestProperties(spec); added != 2 {
+		t.Fatalf("added = %d, want 2 (enabled and inactivityWeeks)", added)
+	}
+	if got, _ := json.Marshal(componentSchema(spec, "RestAutoDeclineSettingsRequest")["required"]); string(got) != `["enabled","inactivityWeeks"]` {
+		t.Fatalf("required = %s, want both properties", got)
+	}
+
+	// A spec that already requires them is left as it is.
+	if added := requireRequestProperties(spec); added != 0 {
+		t.Fatalf("second pass added = %d, want 0", added)
+	}
+
+	// And one that does not declare the schema gains nothing.
+	if added := requireRequestProperties(map[string]any{}); added != 0 {
+		t.Fatalf("added = %d to a spec without the schema, want 0", added)
+	}
+}
