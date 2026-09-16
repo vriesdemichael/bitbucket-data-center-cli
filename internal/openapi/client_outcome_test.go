@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -87,11 +88,15 @@ func TestAMutationOnTheGeneratedClientWhoseAnswerWasLostHasAnUnknownOutcome(t *t
 	}
 }
 
-func TestAnAnswerLostWhileTheGeneratedClientReadsItHasAnUnknownOutcome(t *testing.T) {
+// TestAStatusThatArrivedSaysWhatHappened: a status is an answer.
+//
+// The body being cut short loses the payload, not the outcome: 201 says the
+// project was created. Reported as unknown_outcome, it sent the caller to check
+// something the reply had already told them, and exit 13 reads as "we do not
+// know" when bb does.
+func TestAStatusThatArrivedSaysWhatHappened(t *testing.T) {
 	t.Parallel()
 
-	// The status arrives and the body is cut short: the project exists, and
-	// the caller holds a fragment of the reply that says so.
 	baseURL, _ := hangUpAfterReading(t, func(conn net.Conn) {
 		_, _ = io.WriteString(conn, "HTTP/1.1 201 Created\r\nContent-Type: application/json\r\nContent-Length: 64\r\n\r\n{\"key\"")
 	})
@@ -99,8 +104,11 @@ func TestAnAnswerLostWhileTheGeneratedClientReadsItHasAnUnknownOutcome(t *testin
 	_, err := generatedClient(t, baseURL).CreateProjectWithResponse(context.Background(), openapigenerated.RestProject{})
 	err = apperrors.Transport("failed to create project", err)
 
-	if !apperrors.IsKind(err, apperrors.KindUnknownOutcome) {
-		t.Fatalf("got %v, want unknown_outcome", err)
+	if !apperrors.IsKind(err, apperrors.KindPermanent) {
+		t.Fatalf("got %v, want permanent: the project was created", err)
+	}
+	if !strings.Contains(err.Error(), "do not send it again") {
+		t.Fatalf("the message does not say the POST landed: %v", err)
 	}
 }
 

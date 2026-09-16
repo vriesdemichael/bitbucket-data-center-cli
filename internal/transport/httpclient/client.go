@@ -238,6 +238,10 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 			return nil, lastErr
 		}
 
+		// The status is the outcome, so a body that fails to read after it is
+		// not an unknown one.
+		exchange.Answered(response.StatusCode)
+
 		body, readErr := io.ReadAll(response.Body)
 		_ = response.Body.Close()
 		if readErr != nil {
