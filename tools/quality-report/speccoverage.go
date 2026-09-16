@@ -18,8 +18,8 @@ import (
 
 // runSpecCoverage computes spec path coverage and writes or verifies the
 // committed artifact, then prints a summary.
-func runSpecCoverage(specPath, generatedPath, servicesRoot, outputPath string, writeReport, verifyReport bool) {
-	report, err := computeSpecCoverage(specPath, generatedPath, servicesRoot)
+func runSpecCoverage(specPath, generatedPath string, apiRoots []string, outputPath string, writeReport, verifyReport bool) {
+	report, err := computeSpecCoverage(specPath, generatedPath, apiRoots)
 	if err != nil {
 		fail("failed to compute spec coverage: %v", err)
 	}
@@ -256,11 +256,11 @@ func usedOperationToName(name string) string {
 // resolves string literals, fmt.Sprintf templates, single-return path helpers,
 // local path variables, and substitutes function parameters whose call sites
 // pass string literals (e.g. the shared PR transition("merge"|"decline") helper).
-func collectRawHTTPPaths(root string) (map[methodPath]struct{}, error) {
+func collectRawHTTPPaths(roots []string) (map[methodPath]struct{}, error) {
 	fileSet := token.NewFileSet()
 	var funcs []*ast.FuncDecl
 
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+	walk := func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -277,9 +277,12 @@ func collectRawHTTPPaths(root string) (map[methodPath]struct{}, error) {
 			}
 		}
 		return nil
-	})
-	if err != nil {
-		return nil, err
+	}
+
+	for _, root := range roots {
+		if err := filepath.WalkDir(root, walk); err != nil {
+			return nil, err
+		}
 	}
 
 	// Pass 1: literal string arguments passed to each named function, by position.
@@ -468,7 +471,7 @@ func helperReturnTemplate(fn *ast.FuncDecl) (string, bool) {
 
 // computeSpecCoverage joins the spec against operations reachable through the
 // generated client (restricted to the used set) and the raw httpclient.
-func computeSpecCoverage(specPath, generatedPath, servicesRoot string) (specCoverageReport, error) {
+func computeSpecCoverage(specPath, generatedPath string, apiRoots []string) (specCoverageReport, error) {
 	specOps, err := loadSpecOperations(specPath)
 	if err != nil {
 		return specCoverageReport{}, fmt.Errorf("load spec operations: %w", err)
@@ -477,7 +480,7 @@ func computeSpecCoverage(specPath, generatedPath, servicesRoot string) (specCove
 	if err != nil {
 		return specCoverageReport{}, fmt.Errorf("parse generated client: %w", err)
 	}
-	usedOps, err := discoverUsedGeneratedOperations(servicesRoot)
+	usedOps, err := discoverUsedGeneratedOperations(apiRoots)
 	if err != nil {
 		return specCoverageReport{}, fmt.Errorf("discover used operations: %w", err)
 	}
@@ -488,7 +491,7 @@ func computeSpecCoverage(specPath, generatedPath, servicesRoot string) (specCove
 			covered[mp] = struct{}{}
 		}
 	}
-	rawPaths, err := collectRawHTTPPaths(servicesRoot)
+	rawPaths, err := collectRawHTTPPaths(apiRoots)
 	if err != nil {
 		return specCoverageReport{}, fmt.Errorf("collect raw http paths: %w", err)
 	}
@@ -657,11 +660,11 @@ func contains(values []string, target string) bool {
 // a contract-coverage metric that has since been deleted: that metric looked
 // each operation up in a hand-written manifest of test files, verified nothing
 // about those files, and reported against a threshold of zero.
-func discoverUsedGeneratedOperations(root string) ([]string, error) {
+func discoverUsedGeneratedOperations(roots []string) ([]string, error) {
 	set := map[string]struct{}{}
 	fileSet := token.NewFileSet()
 
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+	walk := func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -720,9 +723,12 @@ func discoverUsedGeneratedOperations(root string) ([]string, error) {
 		})
 
 		return nil
-	})
-	if err != nil {
-		return nil, err
+	}
+
+	for _, root := range roots {
+		if err := filepath.WalkDir(root, walk); err != nil {
+			return nil, err
+		}
 	}
 
 	// A walk that stopped matching would report a low number rather than an
@@ -735,7 +741,7 @@ func discoverUsedGeneratedOperations(root string) ([]string, error) {
 	if len(set) < fewestPlausibleOperations {
 		return nil, fmt.Errorf(
 			"found only %d generated operations in %s, expected at least %d. The detector is probably broken, not the services",
-			len(set), root, fewestPlausibleOperations,
+			len(set), strings.Join(roots, ", "), fewestPlausibleOperations,
 		)
 	}
 

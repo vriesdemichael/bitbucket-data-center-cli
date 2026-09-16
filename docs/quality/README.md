@@ -74,12 +74,14 @@ Coverage is measured at the `(HTTP method, path)` level and combines **both** wa
 the API:
 
 1. The generated typed client (`internal/openapi/generated`), restricted to operations actually
-   called from `internal/services`.
+   called from `internal/services`, `internal/cli` and `internal/mcp`.
 2. The hand-rolled `internal/transport/httpclient` (`GetJSON`/`PostJSON`/…), whose request paths are
-   resolved statically from the services source.
+   resolved statically from those same roots.
 
-Tracking both matters: services such as `pullrequest` are built entirely on the raw httpclient, so a
-generated-client-only metric would report them as uncovered even though they are fully implemented.
+Tracking both matters, and so does scanning past the services: `pullrequest` mixes the two
+transports, and the pull request review commands, the auth commands and the permission checker call
+the generated client from `internal/cli` directly. A generated-client-only metric, or one that
+looked only at `internal/services`, reports endpoints bb has called since v4.0.0 as gaps.
 
 Print current coverage with `task quality:spec-coverage`. The `gaps` array lists unimplemented
 operations (method, path, tag, summary) and is a useful source when scoping new commands.
