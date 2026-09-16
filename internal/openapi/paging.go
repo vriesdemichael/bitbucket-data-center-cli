@@ -110,15 +110,35 @@ func PageThrough[T any](
 
 	results := make([]T, 0, maxResults)
 
+	// fetchFilters records that rows are being dropped after Bitbucket has
+	// sized the page, which makes "ask for what is still missing" the wrong
+	// request size.
+	//
+	// The dashboard listing filters by project in the fetch, so collecting the
+	// last few entries asked for one row, had it filtered out, and asked for
+	// one row again -- hundreds of round trips to walk a listing that is eight
+	// pages long. Bitbucket's own nextPageStart says how many rows it returned,
+	// so a page that hands back fewer than that was filtered, and from there on
+	// the loop asks for a full window and trims at the end.
+	fetchFilters := false
+
 	for {
 		remaining := maxResults - len(results)
 		if remaining <= 0 {
 			break
 		}
 
-		page, err := fetch(ctx, start, min(remaining, pageWindow))
+		window := min(remaining, pageWindow)
+		if fetchFilters {
+			window = pageWindow
+		}
+
+		page, err := fetch(ctx, start, window)
 		if err != nil {
 			return nil, err
+		}
+		if page.NextPageStart != nil && *page.NextPageStart-start > len(page.Values) {
+			fetchFilters = true
 		}
 		// An empty page is not the end of the listing unless the server agrees.
 		//
