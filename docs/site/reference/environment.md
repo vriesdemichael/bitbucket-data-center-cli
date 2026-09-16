@@ -8,6 +8,52 @@ precedence over stored configuration. See
 [Config and auth precedence](../basic-usage.md#config-and-auth-precedence) for
 the full order.
 
+## `.env` files
+
+Before it resolves anything, `bb` reads `.env` files and puts what they hold
+into the environment for that one invocation. A variable the environment already
+carries is left alone, so exporting a value always wins over a file, and the
+values never reach any other process.
+
+Which files are read depends on whether you are in a repository:
+
+| Where you are | Files read |
+|---|---|
+| Inside a repository, marked by a `.git` or a `go.mod` | `.env` in the working directory and in every parent up to and including that root |
+| Anywhere else | `.env` in the working directory, and nothing above it |
+
+When two of them set the same variable, the nearest to the working directory
+wins. A `.env` is read for its content only; it is not configuration, and none
+of the `bb` configuration keys work in it. Write variable names, as they appear
+in the tables below:
+
+```bash
+BITBUCKET_URL=https://bitbucket.example.com
+BB_RETRY_COUNT=5
+```
+
+!!! warning "A `.env` arrives with a clone"
+
+    It is a file in a repository, so anyone who can open a pull request can add
+    one, and it is read by the next `bb` command run in that checkout. `bb` does
+    not hand a stored credential to a host a `.env` names — a credential is
+    released only for the host it was stored for — but everything else in the
+    file applies. Read the `.env` in an unfamiliar repository before running
+    `bb` in it.
+
+**`bb update` does not read `.env`.** It resolves its own settings without going
+through the configuration layer, so `BB_UPDATE_BASE_URL`, `BB_DISABLE_UPDATE`
+and `BB_ALLOW_HTTP_UPDATE` are taken from the real environment and from
+configuration files, never from a `.env`. A repository cannot redirect where the
+next `bb update` fetches a binary from.
+
+`bb doctor` shows which file every setting came from, naming the `.env` by path
+when that is where it was:
+
+```bash
+bb doctor
+```
+
 ## Connection
 
 | Variable | Default | Effect |
@@ -111,6 +157,9 @@ not a person who can answer a question.
 | `BB_DISABLE_UPDATE` | unset | `1` or `true` disables `bb update`. The command explains that it is disabled and points at your system package manager. Administrative policy can disable it too, and is reported separately. |
 | `BB_UPDATE_BASE_URL` | GitHub releases | Base URL the updater fetches manifests and artifacts from, for an internal mirror. The `--base-url` flag wins over it; it wins over the workspace, stored and system configuration. |
 | `BB_ALLOW_HTTP_UPDATE` | unset | `1` or `true` permits a plain-HTTP release mirror, as `bb update --allow-http` does for one run; update URLs are otherwise `https` only. Refused when policy sets `allow_http_update: false`. |
+
+These three are the exception to the `.env` rule above: `bb update` reads them
+from the real environment only.
 
 !!! note "Update trust is settable from system policy only"
 
