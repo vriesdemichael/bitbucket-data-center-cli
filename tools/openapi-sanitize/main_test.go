@@ -545,3 +545,82 @@ func TestRemoveIgnoredRequestPropertiesDropsThemFromRequired(t *testing.T) {
 		t.Fatalf("second pass removed = %d, want 0", removed)
 	}
 }
+
+// commentSpec declares a comment the way the published spec does: pending,
+// anchored and reply read-only on the comment and on the parent it declares
+// inline, the same object inline again as the comment a reaction answers with,
+// and a thread whose anchored flag is not read-only.
+func commentSpec() map[string]any {
+	commentProperties := func() map[string]any {
+		return map[string]any{
+			"text":     map[string]any{"type": "string"},
+			"pending":  map[string]any{"type": "boolean", "readOnly": true},
+			"anchored": map[string]any{"type": "boolean", "readOnly": true},
+			"reply":    map[string]any{"type": "boolean", "readOnly": true},
+		}
+	}
+	withParent := func() map[string]any {
+		properties := commentProperties()
+		properties["parent"] = map[string]any{"type": "object", "properties": commentProperties()}
+
+		return properties
+	}
+
+	return map[string]any{
+		"components": map[string]any{
+			"schemas": map[string]any{
+				"RestComment": map[string]any{"type": "object", "properties": withParent()},
+				"RestUserReaction": map[string]any{"type": "object", "properties": map[string]any{
+					"comment": map[string]any{"type": "object", "properties": withParent()},
+				}},
+				"CommentThread": map[string]any{"type": "object", "properties": map[string]any{
+					"anchored": map[string]any{"type": "boolean"},
+				}},
+			},
+		},
+	}
+}
+
+func TestRemoveUnsentResponsePropertiesReachesInlineCopies(t *testing.T) {
+	t.Parallel()
+
+	spec := commentSpec()
+	// pending and anchored on the comment and its parent, twice over.
+	if removed := removeUnsentResponseProperties(spec); removed != 8 {
+		t.Fatalf("removed = %d, want 8", removed)
+	}
+
+	comment := schemaProperties(spec, "RestComment")
+	reaction := schemaProperties(spec, "RestUserReaction")["comment"].(map[string]any)["properties"].(map[string]any)
+	for name, properties := range map[string]map[string]any{
+		"comment":                 comment,
+		"comment parent":          comment["parent"].(map[string]any)["properties"].(map[string]any),
+		"reaction comment":        reaction,
+		"reaction comment parent": reaction["parent"].(map[string]any)["properties"].(map[string]any),
+	} {
+		for _, gone := range []string{"pending", "anchored"} {
+			if _, present := properties[gone]; present {
+				t.Errorf("%s still declares %s", name, gone)
+			}
+		}
+		for _, kept := range []string{"text", "reply"} {
+			if _, present := properties[kept]; !present {
+				t.Errorf("%s lost %s, which is not on the list", name, kept)
+			}
+		}
+	}
+
+	if _, present := schemaProperties(spec, "CommentThread")["anchored"]; !present {
+		t.Error("CommentThread lost anchored, and it is not on the list")
+	}
+
+	// A property a request can set is not read-only, and stays.
+	writable := map[string]any{"properties": map[string]any{"pending": map[string]any{"type": "boolean"}}}
+	if removed := removeReadOnlyProperty(writable, "pending"); removed != 0 {
+		t.Fatalf("removed a writable pending: %v", writable)
+	}
+
+	if removed := removeUnsentResponseProperties(spec); removed != 0 {
+		t.Fatalf("second pass removed = %d, want 0", removed)
+	}
+}

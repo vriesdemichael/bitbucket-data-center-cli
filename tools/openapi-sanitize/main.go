@@ -119,6 +119,7 @@ func sanitize(inputPath, outputPath string) error {
 	fixedArrayResponses := fixArrayTypedResponses(spec)
 	fixedScalarItems := fixScalarItemProperties(spec)
 	removedIgnoredProperties := removeIgnoredRequestProperties(spec)
+	removedUnsentProperties := removeUnsentResponseProperties(spec)
 
 	output, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
@@ -130,8 +131,8 @@ func sanitize(inputPath, outputPath string) error {
 	}
 
 	fmt.Printf(
-		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d fixed path params=%d renamed properties=%d fixed array properties=%d fixed array responses=%d fixed scalar items=%d removed ignored properties=%d\n",
-		fixedOperations, renamedOperationIDs, fixedSchemaFields, fixedPathParams, renamedProperties, fixedArrayProperties, fixedArrayResponses, fixedScalarItems, removedIgnoredProperties,
+		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d fixed path params=%d renamed properties=%d fixed array properties=%d fixed array responses=%d fixed scalar items=%d removed ignored properties=%d removed unsent properties=%d\n",
+		fixedOperations, renamedOperationIDs, fixedSchemaFields, fixedPathParams, renamedProperties, fixedArrayProperties, fixedArrayResponses, fixedScalarItems, removedIgnoredProperties, removedUnsentProperties,
 	)
 	return nil
 }
@@ -729,6 +730,70 @@ func removeIgnoredRequestProperties(spec map[string]any) int {
 			delete(schema, "required")
 		} else {
 			schema["required"] = kept
+		}
+	}
+
+	return removed
+}
+
+// unsentResponseProperty names a read-only property the spec says a response
+// carries and the server never sends.
+type unsentResponseProperty struct {
+	schema   string
+	property string
+}
+
+// unsentResponseProperties lists those properties. They are removed rather than
+// left in the generated models, where reading one gives its zero value on every
+// response, and a false there reads as an answer.
+//
+// OPENAPI-033: a comment's pending and anchored flags. On 10.4.3 no
+// comment read carries either -- a single comment, the path-scoped and blocker
+// listings, the activity timeline, the review and the comment a reaction
+// answers with -- so bb published every draft as pending false and every
+// inline comment as anchored false. The state and the anchor say the same and
+// are always sent.
+var unsentResponseProperties = []unsentResponseProperty{
+	{schema: "RestComment", property: "anchored"},
+	{schema: "RestComment", property: "pending"},
+	// The comment a reaction answers with, declared inline rather than by
+	// reference.
+	{schema: "RestUserReaction", property: "anchored"},
+	{schema: "RestUserReaction", property: "pending"},
+}
+
+// removeUnsentResponseProperties deletes the listed properties from their
+// schema and from every object declared inline beneath it, which is where a
+// comment's parent is. Only a read-only declaration is removed, so a property a
+// request can set is never taken away.
+func removeUnsentResponseProperties(spec map[string]any) int {
+	removed := 0
+	for _, entry := range unsentResponseProperties {
+		removed += removeReadOnlyProperty(componentSchema(spec, entry.schema), entry.property)
+	}
+
+	return removed
+}
+
+// removeReadOnlyProperty deletes a read-only property from every properties
+// map in an inline schema tree. A $ref is not followed: the schema it names is
+// listed on its own or left alone.
+func removeReadOnlyProperty(node any, property string) int {
+	removed := 0
+	switch typed := node.(type) {
+	case map[string]any:
+		if properties, ok := typed["properties"].(map[string]any); ok {
+			if declared, ok := properties[property].(map[string]any); ok && declared["readOnly"] == true {
+				delete(properties, property)
+				removed++
+			}
+		}
+		for _, child := range typed {
+			removed += removeReadOnlyProperty(child, property)
+		}
+	case []any:
+		for _, child := range typed {
+			removed += removeReadOnlyProperty(child, property)
 		}
 	}
 

@@ -236,6 +236,39 @@ func TestCommentFromLeavesAPathEmptyRatherThanGuessing(t *testing.T) {
 	}
 }
 
+// TestCommentFromReportsADraftAndAnAnchorWithoutTheirFlags pins what the live
+// suite found on Bitbucket 10.4: no comment read carries pending or anchored,
+// so a converter reading those flags published every draft as pending=false and
+// every inline comment as anchored=false. The generated model no longer
+// declares them (OPENAPI-033); the state and the anchor say the same
+// thing and are always sent.
+func TestCommentFromReportsADraftAndAnAnchorWithoutTheirFlags(t *testing.T) {
+	t.Parallel()
+
+	convert := func(fixture string) Comment {
+		t.Helper()
+
+		var upstream openapigenerated.RestComment
+		if err := json.Unmarshal([]byte(fixture), &upstream); err != nil {
+			t.Fatalf("decode fixture %s: %v", fixture, err)
+		}
+
+		return CommentFrom(upstream)
+	}
+
+	if draft := convert(`{"id": 1, "text": "a draft", "state": "PENDING"}`); !draft.Pending || draft.Anchored {
+		t.Errorf("a PENDING comment = pending %v, anchored %v; want pending and unanchored", draft.Pending, draft.Anchored)
+	}
+	inline := convert(`{"id": 2, "text": "on a line", "state": "OPEN",
+		"anchor": {"line": 1, "lineType": "ADDED", "path": {"components": ["a.txt"]}}}`)
+	if inline.Pending || !inline.Anchored {
+		t.Errorf("an OPEN comment with an anchor = pending %v, anchored %v; want anchored and not pending", inline.Pending, inline.Anchored)
+	}
+	if plain := convert(`{"id": 3, "text": "on the pull request", "state": "OPEN"}`); plain.Pending || plain.Anchored {
+		t.Errorf("an OPEN comment without an anchor = pending %v, anchored %v; want neither", plain.Pending, plain.Anchored)
+	}
+}
+
 // TestCommentFromCarriesEveryPublishedField is the guard for the defect this
 // whole model exists to stop.
 //
@@ -250,8 +283,8 @@ func TestCommentFromCarriesEveryPublishedField(t *testing.T) {
 
 	var upstream openapigenerated.RestComment
 	if err := json.Unmarshal([]byte(`{
-		"id": 91, "version": 3, "text": "the body", "state": "RESOLVED", "severity": "BLOCKER",
-		"pending": true, "threadResolved": true, "anchored": true, "reply": true,
+		"id": 91, "version": 3, "text": "the body", "state": "PENDING", "severity": "BLOCKER",
+		"threadResolved": true, "reply": true,
 		"createdDate": 1700000000000, "updatedDate": 1700000001000, "resolvedDate": 1700000002000,
 		"parent": {"id": 90},
 		"author": {"id": 7, "name": "alice", "displayName": "Alice A", "emailAddress": "a@example.com",
@@ -276,7 +309,7 @@ func TestCommentFromCarriesEveryPublishedField(t *testing.T) {
 
 	want := map[string]any{
 		"id": float64(91), "version": float64(3), "text": "the body",
-		"state": "RESOLVED", "severity": "BLOCKER",
+		"state": "PENDING", "severity": "BLOCKER",
 		"pending": true, "resolved": true, "anchored": true,
 		"reply": true, "parentId": float64(90),
 		"replyCount":  float64(1),

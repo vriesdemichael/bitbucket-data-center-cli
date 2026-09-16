@@ -75,9 +75,12 @@ func CommentFrom(upstream openapigenerated.RestComment) Comment {
 	if upstream.Version != nil {
 		converted.Version = *upstream.Version
 	}
-	if upstream.Pending != nil {
-		converted.Pending = *upstream.Pending
-	}
+	// Worked out from what Bitbucket sends. The spec declares pending and
+	// anchored flags as well, and 10.4 sends neither, so reading them reported
+	// every draft as published and every inline comment as unanchored
+	// (OPENAPI-033). A draft is in the PENDING state, and an anchored
+	// comment carries its anchor.
+	converted.Pending = strings.EqualFold(converted.State, "PENDING")
 	// Reported as the server sends it, and it is not the same question as
 	// State. Bitbucket answers threadResolved false beside state RESOLVED on a
 	// comment that has just been resolved: the comment is resolved, the thread
@@ -86,9 +89,7 @@ func CommentFrom(upstream openapigenerated.RestComment) Comment {
 	if upstream.ThreadResolved != nil {
 		converted.Resolved = *upstream.ThreadResolved
 	}
-	if upstream.Anchored != nil {
-		converted.Anchored = *upstream.Anchored
-	}
+	converted.Anchored = upstream.Anchor != nil
 	if upstream.CreatedDate != nil {
 		converted.CreatedDate = *upstream.CreatedDate
 	}

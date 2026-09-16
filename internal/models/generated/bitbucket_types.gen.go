@@ -3984,8 +3984,7 @@ type RestComment struct {
 		} `json:"srcPath,omitempty"`
 		ToHash *string `json:"toHash,omitempty"`
 	} `json:"anchor,omitempty"`
-	Anchored *bool `json:"anchored,omitempty"`
-	Author   *struct {
+	Author *struct {
 		Active       *bool                   `json:"active,omitempty"`
 		AvatarUrl    *string                 `json:"avatarUrl,omitempty"`
 		DisplayName  string                  `json:"displayName"`
@@ -4226,8 +4225,7 @@ type RestComment struct {
 			} `json:"srcPath,omitempty"`
 			ToHash *string `json:"toHash,omitempty"`
 		} `json:"anchor,omitempty"`
-		Anchored *bool `json:"anchored,omitempty"`
-		Author   *struct {
+		Author *struct {
 			Active       *bool                       `json:"active,omitempty"`
 			AvatarUrl    *string                     `json:"avatarUrl,omitempty"`
 			DisplayName  string                      `json:"displayName"`
@@ -4242,7 +4240,6 @@ type RestComment struct {
 		CreatedDate  *int64                  `json:"createdDate,omitempty"`
 		Html         *string                 `json:"html,omitempty"`
 		Id           *int64                  `json:"id,omitempty"`
-		Pending      *bool                   `json:"pending,omitempty"`
 		Properties   *map[string]interface{} `json:"properties,omitempty"`
 		Reply        *bool                   `json:"reply,omitempty"`
 		ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
@@ -4278,7 +4275,6 @@ type RestComment struct {
 		UpdatedDate *int64 `json:"updatedDate,omitempty"`
 		Version     *int32 `json:"version,omitempty"`
 	} `json:"parent,omitempty"`
-	Pending      *bool                   `json:"pending,omitempty"`
 	Properties   *map[string]interface{} `json:"properties,omitempty"`
 	Reply        *bool                   `json:"reply,omitempty"`
 	ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
@@ -7286,8 +7282,7 @@ type RestUserReaction struct {
 			} `json:"srcPath,omitempty"`
 			ToHash *string `json:"toHash,omitempty"`
 		} `json:"anchor,omitempty"`
-		Anchored *bool `json:"anchored,omitempty"`
-		Author   *struct {
+		Author *struct {
 			Active       *bool                             `json:"active,omitempty"`
 			AvatarUrl    *string                           `json:"avatarUrl,omitempty"`
 			DisplayName  string                            `json:"displayName"`
@@ -7528,8 +7523,7 @@ type RestUserReaction struct {
 				} `json:"srcPath,omitempty"`
 				ToHash *string `json:"toHash,omitempty"`
 			} `json:"anchor,omitempty"`
-			Anchored *bool `json:"anchored,omitempty"`
-			Author   *struct {
+			Author *struct {
 				Active       *bool                                   `json:"active,omitempty"`
 				AvatarUrl    *string                                 `json:"avatarUrl,omitempty"`
 				DisplayName  string                                  `json:"displayName"`
@@ -7544,7 +7538,6 @@ type RestUserReaction struct {
 			CreatedDate  *int64                  `json:"createdDate,omitempty"`
 			Html         *string                 `json:"html,omitempty"`
 			Id           *int64                  `json:"id,omitempty"`
-			Pending      *bool                   `json:"pending,omitempty"`
 			Properties   *map[string]interface{} `json:"properties,omitempty"`
 			Reply        *bool                   `json:"reply,omitempty"`
 			ResolvedDate *int64                  `json:"resolvedDate,omitempty"`
@@ -7580,7 +7573,6 @@ type RestUserReaction struct {
 			UpdatedDate *int64 `json:"updatedDate,omitempty"`
 			Version     *int32 `json:"version,omitempty"`
 		} `json:"parent,omitempty"`
-		Pending      *bool                   `json:"pending,omitempty"`
 		Properties   *map[string]interface{} `json:"properties,omitempty"`
 		Reply        *bool                   `json:"reply,omitempty"`
 		ResolvedDate *int64                  `json:"resolvedDate,omitempty"`

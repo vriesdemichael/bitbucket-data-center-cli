@@ -180,8 +180,8 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 	prReviewAssertSoleReviewer(t, prReviewPullRequest(t, pullRequestID), reviewer.Username, "NEEDS_WORK")
 	published := prReviewPublished(t, pullRequestID)
 	for _, text := range []string{publishedText, completionText} {
-		if matching := prReviewWithText(published, text); len(matching) != 1 || matching[0]["state"] != "OPEN" {
-			t.Errorf("want one published OPEN comment reading %q, got %v", text, matching)
+		if matching := prReviewWithText(published, text); len(matching) != 1 || matching[0]["state"] != "OPEN" || matching[0]["pending"] != false {
+			t.Errorf("want one published OPEN comment reading %q, no longer pending, got %v", text, matching)
 		}
 	}
 	if discarded := prReviewWithText(published, draftText); len(discarded) != 0 {
@@ -1000,13 +1000,13 @@ func prReviewPublished(t *testing.T, prID string) []map[string]any {
 }
 
 // prReviewAssertOnlyDraft fails unless the caller's review holds exactly one
-// draft, reading text and still in the PENDING state.
+// draft, reading text, still in the PENDING state and reported as pending.
 func prReviewAssertOnlyDraft(t *testing.T, prID, text string) {
 	t.Helper()
 
 	drafts := prReviewDrafts(t, prID)
-	if len(drafts) != 1 || drafts[0]["text"] != text || drafts[0]["state"] != "PENDING" {
-		t.Fatalf("drafts = %v, want only %q in the PENDING state", drafts, text)
+	if len(drafts) != 1 || drafts[0]["text"] != text || drafts[0]["state"] != "PENDING" || drafts[0]["pending"] != true {
+		t.Fatalf("drafts = %v, want only %q, pending and in the PENDING state", drafts, text)
 	}
 }
 
@@ -1039,13 +1039,14 @@ func prReviewCommentIn(t *testing.T, output string) map[string]any {
 }
 
 // prReviewAssertAnchor fails unless a stored comment is anchored to the file,
-// line and side of the diff given.
+// line and side of the diff given, and is reported as anchored.
 func prReviewAssertAnchor(t *testing.T, comment map[string]any, path string, line int, lineType string) {
 	t.Helper()
 
 	anchor, _ := comment["anchor"].(map[string]any)
-	if anchor["path"] != path || anchor["line"] != float64(line) || anchor["lineType"] != lineType {
-		t.Errorf("comment %v is anchored at %v, want %s line %d (%s)", comment["id"], comment["anchor"], path, line, lineType)
+	if anchor["path"] != path || anchor["line"] != float64(line) || anchor["lineType"] != lineType || comment["anchored"] != true {
+		t.Errorf("comment %v is anchored at %v, anchored = %v; want %s line %d (%s), anchored",
+			comment["id"], comment["anchor"], comment["anchored"], path, line, lineType)
 	}
 }
 

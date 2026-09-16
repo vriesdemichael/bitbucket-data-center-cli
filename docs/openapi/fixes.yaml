@@ -1417,3 +1417,53 @@ fixes:
     verification:
       commands:
         - go test -tags=live ./tests/integration/live -run TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected
+  - id: OPENAPI-033
+    area: comment-pending-and-anchored-flags-are-never-sent
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Probed on 10.4.3 with raw HTTP and no bb code in the path, reading back comments made on a
+      fresh pull request: a draft, a plain comment, a reply, and comments anchored to an added, a
+      context and a removed line.
+    description: >
+      A comment carries no pending or anchored flag. Whether it is a draft is read from its state,
+      and whether it is anchored from its anchor.
+    reference:
+      type: schema
+      value: RestComment (pending, anchored), and the comment RestUserReaction declares inline
+      upstream_issue: >
+        RestComment declares pending and anchored as read-only booleans, on the comment and on the
+        parent it declares inline, and RestUserReaction declares the same comment inline again. On
+        10.4.3 no comment read carries either key:
+
+          GET .../pull-requests/1/comments/257  (created with state PENDING)
+            -> author, comments, createdDate, id, permittedOperations, properties, severity,
+               state "PENDING", text, threadResolved, updatedDate, version
+          GET .../pull-requests/1/comments/250  (anchored to probe.txt line 1)
+            -> the same keys, and anchor {"line":1,"lineType":"ADDED","fileType":"TO",...}
+
+        Nor do the path-scoped and blocker listings, the activity timeline, GET .../review, or the
+        comment a create or a reaction answers with, on a pull request or a commit. bb copied both
+        flags from the response, so every comment read -- `bb pr comment get` and `list --full`,
+        `bb pr review get`, `bb repo comment` -- published a draft as pending false and a comment on
+        a line as anchored false.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/models/generated/bitbucket_types.gen.go
+        - internal/openapi/generated/bitbucket_client.gen.go
+        - internal/cli/result/comment.go
+        - tests/integration/live/pr_review_live_test.go
+      detail: >
+        The sanitizer removes the two read-only properties from RestComment and RestUserReaction and
+        from every object those schemas declare inline, the parent included, so nothing can read a
+        flag that is never there. The comment model reports pending when the state is PENDING and
+        anchored when an anchor is present. The live review tests read a draft back as pending, a
+        published comment as not, and each comment posted on a line as anchored there.
+    verification:
+      commands:
+        - go test ./tools/openapi-sanitize -run TestRemoveUnsentResponsePropertiesReachesInlineCopies
+        - go test ./internal/cli/result -run TestCommentFromReportsADraftAndAnAnchorWithoutTheirFlags
+        - task models:verify
+        - task client:verify
+        - go test -tags=live ./tests/integration/live -run 'TestLivePullRequestPendingReview|TestLivePullRequestBlockerReviewLoop'
