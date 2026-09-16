@@ -1193,34 +1193,12 @@ func buildCreatePayload(input CreateInput) (map[string]any, error) {
 	return payload, nil
 }
 
-// hasUpdatableField reports whether the caller asked for a change, ignoring
-// the keys that always travel: version, and the reviewer set that has to be
-// echoed back so a PUT does not clear it.
-// hasUpdatableField reports whether the caller named anything to change.
-//
-// "version" never counts: it is the precondition, not a change. "reviewers"
-// counts only when the caller asked for it. The service also writes that key on
-// its own, echoing the current list back so an update does not clear it (#511),
-// and an echo is not a request to change anything -- treating it as one would
-// let `bb pr update --version 3` through as a no-op write.
-func hasUpdatableField(payload map[string]any, reviewersRequested bool) bool {
-	for key := range payload {
-		switch key {
-		case "version":
-		case "reviewers":
-			if reviewersRequested {
-				return true
-			}
-		default:
-			return true
-		}
-	}
-
-	return false
-}
-
 // validateUpdateInput refuses an update that cannot be sent, before anything is
 // read.
+//
+// A version is the precondition rather than a change, and the reviewer set the
+// service echoes back is not one either (#511), so neither on its own is an
+// update: `bb pr update 42 --version 3` names nothing to do.
 func validateUpdateInput(input UpdateInput) error {
 	if input.Version != nil && *input.Version < 0 {
 		return apperrors.New(apperrors.KindValidation, "version must be greater than or equal to 0", nil)

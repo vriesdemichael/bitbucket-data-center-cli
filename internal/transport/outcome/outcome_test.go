@@ -273,8 +273,9 @@ func TestAServerThatRefusesTheHandshakeIsPermanent(t *testing.T) {
 	request, _ := http.NewRequest(http.MethodPost, server.URL, nil)
 	tracked, exchange := outcome.Track(request)
 
-	_, err := server.Client().Do(tracked)
+	response, err := server.Client().Do(tracked)
 	if err == nil {
+		_ = response.Body.Close()
 		t.Fatal("a server requiring a client certificate accepted a request without one")
 	}
 
