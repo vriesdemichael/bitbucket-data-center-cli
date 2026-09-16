@@ -417,77 +417,59 @@ func (service *Service) upsertRestriction(ctx context.Context, repo RepositoryRe
 
 	trimmedUpdateID := strings.TrimSpace(id)
 	if trimmedUpdateID != "" {
-		// The id is a path segment on a DELETE, and update is delete followed
-		// by create, so a value that cannot name a restriction is worth
-		// refusing before anything is sent rather than after something is
-		// removed (ADR-054). `restriction update bad` reached the server and
-		// came back as a not-found, which reads like the restriction is gone
-		// rather than like the id was never an id.
+		// The id is a path segment, so a value that cannot name a restriction is
+		// refused before anything is sent (ADR-054). `restriction update bad`
+		// reached the server and came back as a not-found, which reads like the
+		// restriction is gone rather than like the id was never an id.
 		if _, err := strconv.Atoi(trimmedUpdateID); err != nil {
 			return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation,
 				fmt.Sprintf("restriction id must be a number, got %q", trimmedUpdateID), nil)
 		}
-
-		// Bitbucket REST API does not have a PUT endpoint for updating a single restriction.
-		// We implement update as a Delete followed by a Create (bulk POST).
-		if err := service.DeleteRestriction(ctx, repo, trimmedUpdateID); err != nil {
-			return openapigenerated.RestRefRestriction{}, fmt.Errorf("failed to delete existing restriction for update: %w", err)
-		}
 	}
 
-	trimmedType := strings.TrimSpace(input.Type)
-	if trimmedType == "" {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation, "restriction type is required", nil)
-	}
-
-	trimmedMatcherID := strings.TrimSpace(input.MatcherID)
-	if trimmedMatcherID == "" {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation, "matcher id is required", nil)
-	}
-
-	matcherType, err := normalizeRestrictionRequestMatcherType(input.MatcherType)
+	bodyEntry, err := mapRestrictionInput(input)
 	if err != nil {
 		return openapigenerated.RestRefRestriction{}, err
 	}
 
-	bodyEntry := openapigenerated.RestRestrictionRequest{Type: &trimmedType}
-	bodyEntry.Matcher = &struct {
-		DisplayId *string `json:"displayId,omitempty"`
-		Id        *string `json:"id,omitempty"`
-		Type      *struct {
-			Id   openapigenerated.RestRestrictionRequestMatcherTypeId `json:"id"`
-			Name string                                               `json:"name"`
-		} `json:"type,omitempty"`
-	}{
-		Id: &trimmedMatcherID,
-		Type: &struct {
-			Id   openapigenerated.RestRestrictionRequestMatcherTypeId `json:"id"`
-			Name string                                               `json:"name"`
-		}{Id: matcherType},
+	if trimmedUpdateID == "" {
+		return service.createRestriction(ctx, repo, bodyEntry)
 	}
 
-	if trimmedMatcherID != "" && input.MatcherDisplay != "" {
-		bodyEntry.Matcher.DisplayId = &input.MatcherDisplay
+	// Bitbucket has no endpoint that updates one restriction, and its create is
+	// an upsert keyed by type and matcher: the same pair again replaces that
+	// restriction's exemptions and answers with its id. So an update creates
+	// first, and removes the old restriction only when a different one came
+	// back. Deleting first, as this used to, left the branch unprotected whenever
+	// the create was refused -- a user name that does not exist was enough.
+	//
+	// The old restriction is read first so that updating an id that is not there
+	// reports that, rather than creating a restriction nobody asked to add.
+	if _, err := service.GetRestriction(ctx, repo, trimmedUpdateID); err != nil {
+		return openapigenerated.RestRefRestriction{}, err
 	}
 
-	// Exemptions go by name and by access key id: Bitbucket refuses users sent as
-	// objects and fails on access keys sent as objects (OPENAPI-031).
-	if users := cleanedStrings(input.Users); len(users) > 0 {
-		bodyEntry.Users = &users
+	created, err := service.createRestriction(ctx, repo, bodyEntry)
+	if err != nil {
+		return openapigenerated.RestRefRestriction{}, err
 	}
 
-	if len(input.Groups) > 0 {
-		groups := cleanedStrings(input.Groups)
-		if len(groups) > 0 {
-			bodyEntry.Groups = &groups
-		}
+	createdID := int32(0)
+	if created.Id != nil {
+		createdID = *created.Id
+	}
+	if strconv.Itoa(int(createdID)) == trimmedUpdateID {
+		return created, nil
+	}
+	if err := service.DeleteRestriction(ctx, repo, trimmedUpdateID); err != nil {
+		return created, fmt.Errorf("created restriction %d, but removing restriction %s, which it replaces, failed: %w", createdID, trimmedUpdateID, err)
 	}
 
-	if len(input.AccessKeyIDs) > 0 {
-		keys := append([]int32(nil), input.AccessKeyIDs...)
-		bodyEntry.AccessKeys = &keys
-	}
+	return created, nil
+}
 
+// createRestriction sends one restriction to the bulk create.
+func (service *Service) createRestriction(ctx context.Context, repo RepositoryRef, bodyEntry openapigenerated.RestRestrictionRequest) (openapigenerated.RestRefRestriction, error) {
 	requestBody := openapigenerated.CreateRestrictions1ApplicationVndAtlBitbucketBulkPlusJSONBody{bodyEntry}
 
 	// Use the direct client to avoid generated response parsing errors for this array endpoint
@@ -682,11 +664,8 @@ func mapRestrictionInput(input RestrictionUpsertInput) (openapigenerated.RestRes
 		bodyEntry.Users = &users
 	}
 
-	if len(input.Groups) > 0 {
-		groups := cleanedStrings(input.Groups)
-		if len(groups) > 0 {
-			bodyEntry.Groups = &groups
-		}
+	if groups := cleanedStrings(input.Groups); len(groups) > 0 {
+		bodyEntry.Groups = &groups
 	}
 
 	if len(input.AccessKeyIDs) > 0 {

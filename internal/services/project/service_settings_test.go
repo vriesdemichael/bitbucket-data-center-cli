@@ -330,35 +330,6 @@ func TestProjectRestrictionService(t *testing.T) {
 		}
 	})
 
-	t.Run("UpdateRestriction", func(t *testing.T) {
-		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			switch {
-			case r.Method == http.MethodDelete && r.URL.Path == "/rest/branch-permissions/latest/projects/PRJ/restrictions/123":
-				w.WriteHeader(http.StatusNoContent)
-			case r.Method == http.MethodPost && r.URL.Path == "/rest/branch-permissions/latest/projects/PRJ/restrictions":
-				_, _ = w.Write([]byte(`[{"id":124,"type":"read-only"}]`))
-			default:
-				http.NotFound(w, r)
-			}
-		})
-
-		res, err := service.UpdateRestriction(context.Background(), "PRJ", "123", RestrictionUpsertInput{
-			Type:         "read-only",
-			MatcherID:    "refs/heads/master",
-			MatcherType:  "BRANCH",
-			Users:        []string{"user1"},
-			Groups:       []string{"group1"},
-			AccessKeyIDs: []int32{456},
-		})
-		if err != nil {
-			t.Fatalf("unexpected update error: %v", err)
-		}
-		if res.Id == nil || *res.Id != 124 {
-			t.Fatalf("expected restriction id 124, got %v", res.Id)
-		}
-	})
-
 	t.Run("DeleteRestriction", func(t *testing.T) {
 		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodDelete && r.URL.Path == "/rest/branch-permissions/latest/projects/PRJ/restrictions/123" {
@@ -713,16 +684,6 @@ func TestProjectSettingsServiceEmptyAndInvalidJSON(t *testing.T) {
 		}
 		if res.Id != nil {
 			t.Fatalf("expected nil restriction ID, got: %v", res.Id)
-		}
-	})
-
-	t.Run("UpdateRestrictionDeleteFail", func(t *testing.T) {
-		service := newProjectTestService(t, func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNotFound)
-		})
-		_, err := service.UpdateRestriction(context.Background(), "PRJ", "123", RestrictionUpsertInput{Type: "read-only", MatcherID: "a"})
-		if err == nil || !strings.Contains(err.Error(), "failed to delete existing restriction for update") {
-			t.Fatalf("expected delete fail error, got: %v", err)
 		}
 	})
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -144,27 +145,67 @@ func (service *Service) upsertRestriction(ctx context.Context, projectKey string
 		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
 
-	trimmedUpdateID := strings.TrimSpace(id)
-	if trimmedUpdateID != "" {
-		// Like repositories, project-level restriction updates delete the existing restriction first
-		if err := service.DeleteRestriction(ctx, trimmedProject, trimmedUpdateID); err != nil {
-			return openapigenerated.RestRefRestriction{}, fmt.Errorf("failed to delete existing restriction for update: %w", err)
-		}
+	bodyEntry, err := mapRestrictionInput(input)
+	if err != nil {
+		return openapigenerated.RestRefRestriction{}, err
 	}
 
+	trimmedUpdateID := strings.TrimSpace(id)
+	if trimmedUpdateID == "" {
+		return service.createRestriction(ctx, trimmedProject, bodyEntry)
+	}
+
+	// Refused before anything is sent, as for a repository restriction (ADR-054):
+	// the id is a path segment, and a value that cannot name a restriction came
+	// back from the server as a not-found.
+	if _, err := strconv.Atoi(trimmedUpdateID); err != nil {
+		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation,
+			fmt.Sprintf("restriction id must be a number, got %q", trimmedUpdateID), nil)
+	}
+
+	// The same order as a repository restriction's update, for the same reason:
+	// the create is an upsert keyed by type and matcher, so it goes first, and the
+	// old restriction is removed only when a different one came back. Deleting
+	// first left the branches unprotected whenever the create was refused.
+	if _, err := service.GetRestriction(ctx, trimmedProject, trimmedUpdateID); err != nil {
+		return openapigenerated.RestRefRestriction{}, err
+	}
+
+	created, err := service.createRestriction(ctx, trimmedProject, bodyEntry)
+	if err != nil {
+		return openapigenerated.RestRefRestriction{}, err
+	}
+
+	createdID := int32(0)
+	if created.Id != nil {
+		createdID = *created.Id
+	}
+	if strconv.Itoa(int(createdID)) == trimmedUpdateID {
+		return created, nil
+	}
+	if err := service.DeleteRestriction(ctx, trimmedProject, trimmedUpdateID); err != nil {
+		return created, fmt.Errorf("created restriction %d, but removing restriction %s, which it replaces, failed: %w", createdID, trimmedUpdateID, err)
+	}
+
+	return created, nil
+}
+
+// mapRestrictionInput validates a restriction and builds the request for it,
+// before anything is sent.
+func mapRestrictionInput(input RestrictionUpsertInput) (openapigenerated.RestRestrictionRequest, error) {
 	trimmedType := strings.TrimSpace(input.Type)
 	if trimmedType == "" {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation, "restriction type is required", nil)
+		return openapigenerated.RestRestrictionRequest{}, apperrors.New(apperrors.KindValidation, "restriction type is required", nil)
 	}
 
 	trimmedMatcherID := strings.TrimSpace(input.MatcherID)
 	if trimmedMatcherID == "" {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation, "matcher id is required", nil)
+		return openapigenerated.RestRestrictionRequest{}, apperrors.New(apperrors.KindValidation, "matcher id is required", nil)
 	}
 
 	matcherType, err := normalizeProjectRestrictionRequestMatcherType(input.MatcherType)
 	if err != nil {
-		return openapigenerated.RestRefRestriction{}, err
+		return openapigenerated.RestRestrictionRequest{}, err
 	}
 
 	bodyEntry := openapigenerated.RestRestrictionRequest{Type: &trimmedType}
@@ -202,6 +243,22 @@ func (service *Service) upsertRestriction(ctx context.Context, projectKey string
 		bodyEntry.AccessKeys = &keys
 	}
 
+	return bodyEntry, nil
+}
+
+// trimmedNonEmpty trims each value and drops the empty ones.
+func trimmedNonEmpty(values []string) []string {
+	kept := make([]string, 0, len(values))
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			kept = append(kept, trimmed)
+		}
+	}
+	return kept
+}
+
+// createRestriction sends one restriction to the bulk create.
+func (service *Service) createRestriction(ctx context.Context, trimmedProject string, bodyEntry openapigenerated.RestRestrictionRequest) (openapigenerated.RestRefRestriction, error) {
 	requestBody := openapigenerated.CreateRestrictionsApplicationVndAtlBitbucketBulkPlusJSONRequestBody{bodyEntry}
 
 	client, ok := service.client.ClientInterface.(*openapigenerated.Client)
@@ -299,15 +356,4 @@ func normalizeProjectRestrictionRequestMatcherType(value string) (openapigenerat
 	default:
 		return "", apperrors.New(apperrors.KindValidation, "matcher type must be one of BRANCH, MODEL_BRANCH, MODEL_CATEGORY, PATTERN", nil)
 	}
-}
-
-// trimmedNonEmpty trims each value and drops the empty ones.
-func trimmedNonEmpty(values []string) []string {
-	kept := make([]string, 0, len(values))
-	for _, value := range values {
-		if trimmed := strings.TrimSpace(value); trimmed != "" {
-			kept = append(kept, trimmed)
-		}
-	}
-	return kept
 }

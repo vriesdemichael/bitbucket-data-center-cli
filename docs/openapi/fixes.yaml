@@ -4,7 +4,7 @@ source_openapi: docs/reference/atlassian/bitbucket-openapi.json
 
 # What belongs here: a place where the published specification is wrong about the
 # release it describes -- a shape that release refuses, a field it ignores, a route
-# it serves but does not document -- and what bb does about it.
+# or a behaviour it has but does not document -- and what bb does about it.
 #
 # A field or endpoint that an older release does not have yet is not a mismatch in
 # the specification, and it is not recorded here. The specification for that
@@ -1380,3 +1380,40 @@ fixes:
         - task models:verify
         - task client:verify
         - go test -tags=live ./tests/integration/live -run TestLiveRestrictionExemptions
+  - id: OPENAPI-032
+    area: restriction-create-replaces-a-restriction-with-the-same-type-and-matcher
+    source: undocumented-behaviour
+    status: active
+    status_evidence: >
+      Probed on 10.4.3 with raw HTTP and no bb code in the path: a second create with the type and
+      matcher of an existing restriction answered with that restriction's id, and the list then held
+      one restriction carrying the second create's exemptions.
+    description: >
+      Creating a branch restriction whose type and matcher match an existing one replaces that
+      restriction's exemptions rather than adding a second restriction, and answers with the
+      existing id.
+    reference:
+      type: endpoint
+      value: POST /branch-permissions/latest/projects/{projectKey}[/repos/{repositorySlug}]/restrictions
+      upstream_issue: >
+        The specification describes the operation as "Create multiple ref restrictions" and says
+        nothing about an existing restriction with the same type and matcher. There is no endpoint
+        that updates a single restriction, so bb's update is made from this create and a delete, and
+        the order of the two is what this behaviour decides.
+    change:
+      files:
+        - internal/services/branch/service.go
+        - internal/services/project/restriction.go
+        - internal/services/project/service_settings_test.go
+        - tests/integration/live/restriction_update_live_test.go
+      detail: >
+        An update used to delete the old restriction and then create the new one, so a refused
+        create -- a user name that does not exist was enough -- left the branches unprotected. It now
+        reads the old restriction, creates, and deletes the old one only when a different id came
+        back: deleting after an upsert that answered with the same id would remove the restriction
+        just written. Two unit tests that stood a fake Bitbucket behind the old order were deleted
+        rather than adjusted (ADR-079); the live test covers a refused update, an update that keeps
+        its type and matcher, and one that moves to another matcher, for a repository and a project.
+    verification:
+      commands:
+        - go test -tags=live ./tests/integration/live -run TestLiveRestrictionUpdateNeverLeavesTheBranchUnprotected
