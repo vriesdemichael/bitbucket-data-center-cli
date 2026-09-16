@@ -9,7 +9,7 @@ A formal security architecture, trust boundary analysis, and threat model for Ch
 | Field | Value |
 |---|---|
 | **Document Version** | 1.2.0 |
-| **Target System** | `bb` (Bitbucket Data Center CLI) v4.0.x+ |
+| **Target System** | `bb` (Bitbucket Data Center CLI) |
 | **Classification** | Public Security & Threat Analysis Whitepaper |
 | **Methodology** | STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) |
 | **Effective Date** | September 2026 |
@@ -148,7 +148,7 @@ Each domain is analyzed using the **Threat (STRIDE) ↔ Architectural Mitigation
 ### Domain 1: Secret Hygiene & Storage at Rest (TB-1 & TB-2)
 
 #### 1. Threat Analysis (STRIDE: Information Disclosure)
-- **Attacker Vector (ADV-1)**: Unprivileged local users, compromised background processes, or EDR agents scrape secrets passed via CLI flags (retired in v4; `--token`/`--password` no longer exist) through `ps aux` or `/proc/<pid>/cmdline`.
+- **Attacker Vector (ADV-1)**: Unprivileged local users, compromised background processes, or EDR agents scrape secrets passed via CLI flags through `ps aux` or `/proc/<pid>/cmdline`.
 - **Plaintext Fallback Risk**: If an OS keyring is unavailable, CLI tools may silently fall back to unencrypted disk files:
   - Linux: `~/.config/bb/config.yaml`
   - macOS: `~/Library/Application Support/bb/config.yaml`
@@ -156,7 +156,7 @@ Each domain is analyzed using the **Threat (STRIDE) ↔ Architectural Mitigation
 
 #### 2. Architectural Mitigations
 - **Mandatory Stdin Ingestion**: `bb auth login` supports `--token-stdin` and `--password-stdin`, reading secrets strictly over standard input.
-- **No Secret-Bearing Flags**: `--token` and `--password` were removed in v4. No flag accepts a credential value, so process-table exposure has no supported path rather than a warned-about one ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
+- **No Secret-Bearing Flags**: No flag accepts a credential value. A token or password reaches `bb` over stdin or through the environment, so process-table exposure has no supported path rather than a warned-about one ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
 - **Enforced Keyring Storage**: Setting `require_keyring: true` in system configuration or Windows Registry `HKLM\Software\Policies\bb` hard-refuses plaintext fallback machine-wide and cannot be bypassed by unprivileged users unsetting environment variables ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)). Advisory `BB_REQUIRE_KEYRING=1` remains supported for ad-hoc user environments.
 - **Headless Disabling**: Setting `BB_DISABLE_STORED_CONFIG=1` in CI/CD completely skips stored config reads and keyring access, reading solely from `BITBUCKET_TOKEN`.
 
@@ -246,7 +246,7 @@ bb ai mcp serve --project PAYMENTS --audit-file /var/log/bb/mcp-audit.jsonl
 
 #### 4. Residual Gap & Tracking
 - **The audit trail is not tamper-evident.** It is written on the developer's workstation, as the developer, to a path they can modify. It is evidence against a prompt-injected agent confined to MCP tools (ADV-3), which has no shell; it is not evidence against a determined insider.
-- **The CLI beside it is ungated.** An agent with shell access can invoke `bb` directly and reach all 233 commands with none of the safety gating, workspace scoping or auditing described here. `bb api` is the sharpest of them: it forwards an arbitrary authenticated request to Bitbucket, so it reaches endpoints no tool wraps and makes per-tool classification irrelevant to anything holding a shell. It is deliberately **not** exposed as an MCP tool — the server exposes a fixed catalogue of named operations, with no raw-request passthrough among them ([ADR-053](../adr/053-raw-api-escape-hatch.md)) — so this is a statement about the shell beside the server, not a gap in the tool surface. None of it is closable at this layer: an agent that can run shell commands can also edit the audit file. The mitigation that survives is the dedicated read-only PAT the server runs under (`BITBUCKET_TOKEN` in the MCP client's `env` block), which binds at the Bitbucket server and is indifferent to which local process issued the call — and which bounds `bb api` exactly as it bounds every tool. MCP-layer controls are defence in depth over a correctly scoped token, not a replacement for one.
+- **The CLI beside it is ungated.** An agent with shell access can invoke `bb` directly and reach every command in the CLI with none of the safety gating, workspace scoping or auditing described here. `bb api` is the sharpest of them: it forwards an arbitrary authenticated request to Bitbucket, so it reaches endpoints no tool wraps and makes per-tool classification irrelevant to anything holding a shell. It is deliberately **not** exposed as an MCP tool — the server exposes a fixed catalogue of named operations, with no raw-request passthrough among them ([ADR-053](../adr/053-raw-api-escape-hatch.md)) — so this is a statement about the shell beside the server, not a gap in the tool surface. None of it is closable at this layer: an agent that can run shell commands can also edit the audit file. The mitigation that survives is the dedicated read-only PAT the server runs under (`BITBUCKET_TOKEN` in the MCP client's `env` block), which binds at the Bitbucket server and is indifferent to which local process issued the call — and which bounds `bb api` exactly as it bounds every tool. MCP-layer controls are defence in depth over a correctly scoped token, not a replacement for one.
 
 ---
 

@@ -27,13 +27,14 @@ Check `described` first:
   what Bitbucket sent without reading a field, so the envelope is guaranteed and its contents
   are not.
 
-Almost every command is now in the first group. Each of those schemas is derived from the
+Almost every command falls in the first group. Each of those schemas is derived from the
 typed result the command already builds, so it cannot drift from the payload; the rest say
 which of the others they are, and why.
 
-Per-command schema *files* are no longer published. They were hand-maintained, drifted from the
-commands they described — two named a `branch get-default` subcommand that has never existed —
-and nothing consumed them that `--describe` does not serve better.
+There are no per-command schema files on this site, and there is nothing to link to instead.
+A file describing a command is a second copy of a contract that `--describe` already answers
+from the binary, and a copy that cannot be checked against the command is one that is wrong
+sooner or later. Ask the binary.
 
 ---
 

@@ -177,7 +177,7 @@ bb_linux_amd64_noupdate.tar.gz
 ### Socialized Developer Practices
 
 1. **Pipe Tokens via Stdin (Never in CLI Flags)**:
-   `--token` and `--password` no longer exist; the secret goes over stdin or `BITBUCKET_TOKEN`. Flag values are visible to local processes in `ps aux`, `/proc/<pid>/cmdline`, Windows Task Manager, EDR sensors, and shell history files.
+   No flag takes a credential value; the secret goes over stdin or `BITBUCKET_TOKEN`. Flag values are visible to local processes in `ps aux`, `/proc/<pid>/cmdline`, Windows Task Manager, EDR sensors, and shell history files.
    ```bash
    # Provide the token via pipe
    printf "%s" "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
@@ -481,7 +481,7 @@ Bitbucket's audit log remains authoritative for what actually changed. Correlate
 
 *This log is not tamper-evident.* It is written on the developer's machine, as the developer, to a path they can edit. Against a determined insider it proves nothing. Against a prompt-injected agent confined to MCP tools — the ADV-3 threat it is designed for — it holds, because that agent has no shell.
 
-*An agent with shell access can bypass all of this.* Nothing stops it running `bb pr merge` directly, or any of the 233 CLI commands, none of which are scoped, gated, or audited. That is not a gap this feature can close: an agent that can run shell commands can also edit the audit file. **The control that survives it is the token the server runs under**, because a read-only PAT binds at the Bitbucket server and does not care which local process made the call. Treat MCP scoping and auditing as defence in depth over a correctly scoped token, never as a substitute for one.
+*An agent with shell access can bypass all of this.* Nothing stops it running `bb pr merge` directly, or any other command in the CLI, none of which are scoped, gated, or audited. That is not a gap this feature can close: an agent that can run shell commands can also edit the audit file. **The control that survives it is the token the server runs under**, because a read-only PAT binds at the Bitbucket server and does not care which local process made the call. Treat MCP scoping and auditing as defence in depth over a correctly scoped token, never as a substitute for one.
 
 ### Principle 5: Mandating Audit by Policy
 
