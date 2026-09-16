@@ -22,7 +22,19 @@ var nameSinks = map[string]bool{
 	"strconv.Itoa":       true,
 	"strconv.FormatInt":  true,
 	"strconv.FormatUint": true,
+	// Assembling a name rather than formatting one. A review found all three
+	// passing: a timestamp joined into a slice, substituted into a template,
+	// or appended to a builder is a name the same way a Sprintf is.
+	"strings.Join":       true,
+	"strings.ReplaceAll": true,
+	"strings.Replace":    true,
+	"filepath.Join":      true,
+	"path.Join":          true,
 }
+
+// methodSinks are sinks reached through a value rather than a package, so the
+// receiver name is whatever the test called it.
+var methodSinks = map[string]bool{"WriteString": true}
 
 // clockReadings are the methods that read a number or a string off a time.
 var clockReadings = map[string]bool{
@@ -129,6 +141,10 @@ func TestTheClockNameDetectorCatchesWhatItClaims(t *testing.T) {
 		"a reading stored in a variable first":     {body: "stamp := time.Now().UnixNano()\n_ = fmt.Sprint(\"x-\", stamp)", caught: true},
 		"a time stored and read later":             {body: "now := time.Now()\n_ = fmt.Sprintf(\"x-%d\", now.Unix())", caught: true},
 		"Sprintln of a clock":                      {body: `_ = fmt.Sprintln("run", time.Now().UnixMilli())`, caught: true},
+		"a clock joined into a name":               {body: `_ = strings.Join([]string{"LT", time.Now().Format("150405")}, "-")`, caught: true},
+		"a clock substituted into a template":      {body: `_ = strings.ReplaceAll("LT-{stamp}", "{stamp}", time.Now().Format("150405"))`, caught: true},
+		"a clock appended to a builder":            {body: "var builder strings.Builder\nbuilder.WriteString(time.Now().Format(\"150405\"))", caught: true},
+		"a path built from the clock":              {body: `_ = filepath.Join(t.TempDir(), time.Now().Format("150405"))`, caught: true},
 		"a duration measured against the clock":    {body: "start := time.Now()\n_ = fmt.Sprintf(\"elapsed %s\", time.Since(start))"},
 		"a deadline that is never text":            {body: "deadline := time.Now().Add(time.Minute)\n_ = deadline"},
 		"a random name":                            {body: `_ = testsupport.UniqueName("LT")`},
@@ -205,7 +221,7 @@ func clockNames(path, source string) ([]string, error) {
 		ast.Inspect(body, func(inner ast.Node) bool {
 			switch expression := inner.(type) {
 			case *ast.CallExpr:
-				if nameSinks[callName(expression)] {
+				if nameSinks[callName(expression)] || isMethodSink(expression) {
 					for _, argument := range expression.Args {
 						if readsClock(argument, clock) {
 							record(expression.Pos())
@@ -328,4 +344,12 @@ func isString(expression ast.Expr) bool {
 	literal, ok := expression.(*ast.BasicLit)
 
 	return ok && literal.Kind == token.STRING
+}
+
+// isMethodSink reports a sink called on a value: builder.WriteString, whose
+// receiver is named by the test rather than by a package.
+func isMethodSink(call *ast.CallExpr) bool {
+	selector, ok := call.Fun.(*ast.SelectorExpr)
+
+	return ok && methodSinks[selector.Sel.Name]
 }
