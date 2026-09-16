@@ -148,12 +148,17 @@ func (service *Service) DiffRefs(ctx context.Context, input DiffRefsInput) (Resu
 		}
 		return Result{Patch: string(response.Body)}, nil
 	case OutputKindStat:
+		// The summary endpoint counts what its from has and its to lacks: the
+		// compare direction, the other way round from the since and until every
+		// other mode sends. Passed straight through, --stat summarised the
+		// reverse of the diff the same refs print, which for a branch and its
+		// base is nothing at all.
 		response, err := service.client.GetDiffStatsSummary1WithResponse(
 			ctx,
 			input.Repository.ProjectKey,
 			input.Repository.Slug,
 			pathOrDot(input.Path),
-			&openapigenerated.GetDiffStatsSummary1Params{From: &from, To: &to},
+			&openapigenerated.GetDiffStatsSummary1Params{From: &to, To: &from},
 		)
 		if err != nil {
 			return Result{}, apperrors.Transport("failed to get diff stats", err)
