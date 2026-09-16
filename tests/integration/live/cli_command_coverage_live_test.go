@@ -339,28 +339,26 @@ func TestLiveCLIBuildRequiredAndInsightsHumanOutput(t *testing.T) {
 	}
 
 	requiredBody := `{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`
-	requiredID, requiredAvailable := createRequiredBuildCheckWithRetry(t, requiredBody)
-	if requiredAvailable {
-		requiredListOutput, err := executeLiveCLI(t, "build", "required", "list")
-		if err != nil {
-			t.Fatalf("build required list (human) failed: %v\noutput: %s", err, requiredListOutput)
-		}
-		if !strings.Contains(requiredListOutput, "id=") || !strings.Contains(requiredListOutput, "buildParentKeys=") {
-			t.Fatalf("expected human required list output, got: %s", requiredListOutput)
-		}
+	requiredID := createRequiredBuildCheckWithRetry(t, requiredBody)
+	requiredListOutput, err := executeLiveCLI(t, "build", "required", "list")
+	if err != nil {
+		t.Fatalf("build required list (human) failed: %v\noutput: %s", err, requiredListOutput)
+	}
+	if !strings.Contains(requiredListOutput, "id=") || !strings.Contains(requiredListOutput, "buildParentKeys=") {
+		t.Fatalf("expected human required list output, got: %s", requiredListOutput)
+	}
 
-		updateRequiredOutput, err := executeLiveCLI(t, "--json", "build", "required", "update", requiredID, "--body", requiredBody)
-		if err != nil {
-			t.Fatalf("build required update failed: %v\noutput: %s", err, updateRequiredOutput)
-		}
+	updateRequiredOutput, err := executeLiveCLI(t, "--json", "build", "required", "update", requiredID, "--body", requiredBody)
+	if err != nil {
+		t.Fatalf("build required update failed: %v\noutput: %s", err, updateRequiredOutput)
+	}
 
-		deleteRequiredOutput, err := executeLiveCLI(t, "build", "required", "delete", requiredID, "--yes")
-		if err != nil {
-			t.Fatalf("build required delete (human) failed: %v\noutput: %s", err, deleteRequiredOutput)
-		}
-		if !strings.Contains(deleteRequiredOutput, "Deleted required build merge check") {
-			t.Fatalf("expected human required delete output, got: %s", deleteRequiredOutput)
-		}
+	deleteRequiredOutput, err := executeLiveCLI(t, "build", "required", "delete", requiredID, "--yes")
+	if err != nil {
+		t.Fatalf("build required delete (human) failed: %v\noutput: %s", err, deleteRequiredOutput)
+	}
+	if !strings.Contains(deleteRequiredOutput, "Deleted required build merge check") {
+		t.Fatalf("expected human required delete output, got: %s", deleteRequiredOutput)
 	}
 
 	reportKey := testsupport.UniqueName("live-cli-insights-human-")
@@ -636,16 +634,32 @@ func TestLiveCLITagDeleteDryRunNoSideEffect(t *testing.T) {
 	_, _ = executeLiveCLI(t, "--json", "tag", "delete", tagName, "--yes")
 }
 
-func createRequiredBuildCheckWithRetry(t *testing.T, body string) (string, bool) {
+// createRequiredBuildCheckWithRetry creates the check the required-build
+// lifecycle assertions run against.
+//
+// Bitbucket answers 500 here for a short window after a repository is seeded,
+// so the create is retried. What it no longer does is give up quietly: this
+// used to return a boolean, and the caller skipped list, update and delete
+// whenever the window outlasted three attempts -- three commands untested, in a
+// run that stayed green and said so in a log line nobody reads. A dependency
+// that cannot be reached fails the test.
+func createRequiredBuildCheckWithRetry(t *testing.T, body string) string {
 	t.Helper()
 
-	for attempt := 0; attempt < 3; attempt++ {
+	const attempts = 5
+
+	var lastOutput string
+	var lastErr error
+
+	for attempt := range attempts {
 		createOutput, createErr := executeLiveCLI(t, "--json", "build", "required", "create", "--body", body)
 		if createErr != nil {
+			lastOutput, lastErr = createOutput, createErr
+
 			lower := strings.ToLower(createErr.Error() + " " + createOutput)
 			if strings.Contains(lower, "returned 500") {
 				t.Logf("required-build create attempt %d returned 500; retrying", attempt+1)
-				time.Sleep(500 * time.Millisecond)
+				time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
 				continue
 			}
 			t.Fatalf("build required create failed: %v\noutput: %s", createErr, createOutput)
@@ -653,12 +667,16 @@ func createRequiredBuildCheckWithRetry(t *testing.T, body string) (string, bool)
 
 		createPayload := decodeJSONMap(t, createOutput)
 		if requiredID, ok := numericOrStringID(createPayload["id"]); ok {
-			return requiredID, true
+			return requiredID
 		}
+
+		lastOutput, lastErr = createOutput, fmt.Errorf("the create answered without an id")
 	}
 
-	t.Log("required-build create remained unavailable after retries; skipping required lifecycle assertions")
-	return "", false
+	t.Fatalf("build required create did not succeed in %d attempts, so the required-build lifecycle was never exercised: %v\noutput: %s",
+		attempts, lastErr, lastOutput)
+
+	return ""
 }
 
 // configureLiveCLIEnv points a test's CLI calls at the repository it seeded.
