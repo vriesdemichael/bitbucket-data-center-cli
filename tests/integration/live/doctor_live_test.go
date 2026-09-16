@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveDoctorReportsEveryProblemWithoutUsingTheHost runs bb doctor through
@@ -45,6 +47,14 @@ func TestLiveDoctorReportsEveryProblemWithoutUsingTheHost(t *testing.T) {
 		}
 	}
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(directory, "absent.yaml"))
+
+	// "without using the host" was in the name and in nothing else. The host
+	// bb doctor is pointed at for this test is a listener that fails the test
+	// if anything arrives, which is the only way to assert that no request was
+	// made: a server cannot be asked whether it was left alone (ADR-079).
+	unreached := httptest.NewServer(testsupport.UnreachedHandler(t))
+	t.Cleanup(unreached.Close)
+	t.Setenv("BITBUCKET_URL", unreached.URL)
 
 	// Nothing to fix: the report, and exit zero.
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
