@@ -68,7 +68,7 @@ what it consults afterwards.
 - Command Reference: [All Commands](reference/commands/index.md)
 - Machine-readable schemas: [JSON Schemas](reference/schemas.md)
 - AI core skill for agents: [SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
-- AI bulk governance skill for agents: [Bulk SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md)
+- Skill for the deprecated `bb bulk`: [Bulk SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md)
 
 ## What it covers
 

@@ -78,11 +78,17 @@ That writes `.agents/skills/bb/SKILL.md` — project scope. For user scope:
 bb ai skill install --global
 ```
 
-A second skill covers multi-repository bulk governance:
+A second skill covers `bb bulk`, which is deprecated: it warns at runtime that it will be
+removed in v5.0.0. Install it only to maintain an existing `bulk-policy.yaml`:
 
 ```bash
 bb ai skill install bulk
 ```
+
+For new work there is nothing to install. Project-level policy already cascades to every
+repository in the project — `bb project permissions`, `bb project webhook`,
+`bb project default-task` and `bb project branch-restriction` are each set once — and
+anything Bitbucket does not scope to a project is a loop over `bb repo list`.
 
 If the agent expects a different path, print the skill and redirect it:
 
@@ -193,7 +199,7 @@ Prefer the published command reference over guessing flags or subcommands.
 - [Architecture Decision Records](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/adr/): Design rationale and system constraints
 - [Changelog](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/changelog/): Release history and release notes
 - [bb AI core skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
-- [bb bulk governance AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md)
+- [bb bulk AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md): For a deprecated command, kept for existing policies
 
 If you hit behaviour that does not match this file, open an issue at
 <https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/new>, or ask the user
