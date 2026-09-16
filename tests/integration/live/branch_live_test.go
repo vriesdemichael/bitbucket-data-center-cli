@@ -4,9 +4,12 @@ package live_test
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 func TestLiveCLIBranchLifecycle(t *testing.T) {
@@ -17,7 +20,9 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
+	// Two commits, so that the branch can start from the older one: from
+	// master's tip, a branch whose start point went astray would look the same.
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -26,7 +31,7 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	branchName := "feature/live-test-branch"
-	startPoint := repo.CommitIDs[0]
+	startPoint := olderSeedCommit(t, repo)
 
 	// Create branch
 	createOutput, err := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", startPoint)
@@ -41,6 +46,7 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	if asString(branchObj["displayId"]) != branchName {
 		t.Fatalf("expected branch displayId %s, got: %s", branchName, createOutput)
 	}
+	assertOnlyBranchNamed(t, branchName, startPoint)
 
 	// List branches (human output)
 	listOutput, err := executeLiveCLI(t, "branch", "list")
@@ -53,11 +59,11 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 
 	// The listing options, which nothing had driven.
 	//
-	// --filter, --base and --details each add one query parameter, and a query
-	// parameter built wrong does not fail: it comes back with the wrong branches
-	// or with all of them. --filter is the one with a visible answer, so it is
-	// the one asserted; the other two are asked for so that a request Bitbucket
-	// refuses is a failure rather than a silent no-op.
+	// --filter, --base, --details and --order-by each add one query parameter,
+	// and a query parameter built wrong does not fail: it comes back with the
+	// wrong branches, or all of them, or in another order. So each is checked by
+	// what it changes. --all has nothing to page through in this repository;
+	// TestLiveListingsPageToTheEnd is where it is proven.
 	filtered := mustLiveCLI(t, "branch", "list", "--filter", branchName, "--all")
 	if !strings.Contains(filtered, branchName) {
 		t.Fatalf("--filter %s excluded the branch it names:\n%s", branchName, filtered)
@@ -65,10 +71,41 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	if strings.Contains(filtered, `"displayId": "master"`) {
 		t.Fatalf("--filter %s returned master as well, so it filtered nothing:\n%s", branchName, filtered)
 	}
+	if branches := branchesInListing(t, filtered); len(branches) != 1 || branches[0].DisplayID != branchName {
+		t.Fatalf("--filter %s listed %+v, want that branch alone", branchName, branches)
+	}
 
+	// --base and --details change only the metadata Bitbucket attaches to each
+	// branch, which bb's output leaves out. A base that names no branch shows
+	// both were sent: Bitbucket resolves the base only when details are asked
+	// for, and refuses one it cannot find. On its own, --base has no effect at
+	// all, so the first call here has nothing to read back.
 	mustLiveCLI(t, "branch", "list", "--base", "master", "--all")
 	mustLiveCLI(t, "branch", "list", "--details", "--all")
-	mustLiveCLI(t, "branch", "list", "--order-by", "ALPHABETICAL", "--all")
+	if output, err := executeLiveCLI(t, "--json", "branch", "list", "--base", "no-such-branch", "--details", "--all"); !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Fatalf("--base naming no branch, with --details, was not refused as not found: %v\n%s", err, output)
+	}
+
+	// --order-by ALPHABETICAL against Bitbucket's default, which is by
+	// modification. The branch pushed here sorts last by name and first by
+	// modification. Git dates a commit to the second, so the push waits for the
+	// next one: a commit in the same second as the seeded ones would tie with
+	// them, and the two orders could agree.
+	const newestBranch = "release/live-test-newest"
+	time.Sleep(time.Until(time.Now().Truncate(time.Second).Add(time.Second)))
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, newestBranch, "newest.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	if byDefault := branchesInListing(t, mustLiveCLI(t, "branch", "list", "--all")); len(byDefault) == 0 || byDefault[0].DisplayID != newestBranch {
+		t.Fatalf("the default order does not list %s first, so it cannot tell a dropped --order-by apart: %+v", newestBranch, byDefault)
+	}
+	var alphabetical []string
+	for _, branch := range branchesInListing(t, mustLiveCLI(t, "branch", "list", "--order-by", "ALPHABETICAL", "--all")) {
+		alphabetical = append(alphabetical, branch.DisplayID)
+	}
+	if want := []string{branchName, "master", newestBranch}; !slices.Equal(alphabetical, want) {
+		t.Fatalf("--order-by ALPHABETICAL listed %v, want %v", alphabetical, want)
+	}
 
 	// Get default branch
 	defaultOutput, err := executeLiveCLI(t, "--json", "branch", "default", "get")
@@ -83,6 +120,7 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	if asString(defaultBranchObj["displayId"]) == "" && asString(defaultBranchObj["id"]) == "" {
 		t.Fatalf("expected default branch displayId or id, got: %s", defaultOutput)
 	}
+	assertMasterIsDefaultBranch(t, defaultOutput)
 
 	/*
 		// Find by commit
@@ -102,6 +140,9 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	deleteOutput, err := executeLiveCLI(t, "branch", "delete", branchName, "--yes")
 	if err != nil {
 		t.Fatalf("branch delete failed: %v\noutput: %s", err, deleteOutput)
+	}
+	if remaining := branchesInListing(t, mustLiveCLI(t, "branch", "list", "--filter", branchName, "--all")); len(remaining) != 0 {
+		t.Fatalf("branch %s is still listed after its delete: %+v", branchName, remaining)
 	}
 }
 
@@ -141,6 +182,9 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 	if restrictionID == "" {
 		t.Fatalf("expected restriction id in output, got: %s", createOutput)
 	}
+	// BRANCH is the matcher type --matcher-type defaults to.
+	assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", restrictionID)),
+		storedRestriction{restrictionType: "read-only", matcherType: "BRANCH", matcherID: "refs/heads/master"})
 
 	// Get restriction
 	getOutput, err := executeLiveCLI(t, "branch", "restriction", "get", restrictionID)
@@ -151,17 +195,20 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 		t.Fatalf("expected id and type in human get output, got: %s", getOutput)
 	}
 
+	// PATTERN rather than the BRANCH the restriction was created with, so the
+	// matcher type read back is the one this update sent.
 	updateOutput, err := executeLiveCLI(
 		t, "--json", "branch", "restriction", "update", restrictionID,
 		"--type", "no-deletes",
-		"--matcher-type", "BRANCH",
+		"--matcher-type", "PATTERN",
 		"--matcher-id", "refs/heads/master",
 	)
 	if err != nil {
 		t.Fatalf("restriction update failed: %v\noutput: %s", err, updateOutput)
 	}
 
-	// Update the ID as it changed during delete+recreate (our update implementation for single restrictions)
+	// Another type is another restriction: the update created one and removed
+	// the restriction it replaces, so the id to follow is the new one.
 	updatePayload := decodeJSONMap(t, updateOutput)
 	if restriction, ok := updatePayload["restriction"].(map[string]any); ok {
 		restrictionID = asString(restriction["id"])
@@ -176,6 +223,27 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 	if !strings.Contains(listOutput, restrictionID) || !strings.Contains(listOutput, "no-deletes") {
 		t.Fatalf("expected restriction %s in human list output, got: %s", restrictionID, listOutput)
 	}
+	updated := storedRestriction{restrictionType: "no-deletes", matcherType: "PATTERN", matcherID: "refs/heads/master"}
+	assertOnlyRestrictionListed(t, mustLiveCLI(t, "branch", "restriction", "list"), restrictionID, updated)
+
+	// A restriction id that is not an id at all. A unit test asked these of a
+	// stub whose default was 404, so what it checked was the stub's default; a
+	// real instance is what says whether "abc" is refused and not, say, read as
+	// zero. Bitbucket does not route it, and its 404 for a get is one the client
+	// cannot decode, which surfaced as a transient failure. So bb refuses the id
+	// before sending it -- there is no upstream status -- and the restriction
+	// that exists meanwhile shows that nothing reached it.
+	for _, args := range [][]string{
+		{"branch", "restriction", "get", "abc"},
+		{"branch", "restriction", "update", "abc", "--type", "no-deletes", "--matcher-type", "PATTERN", "--matcher-id", "refs/heads/master"},
+		{"branch", "restriction", "delete", "abc", "--yes"},
+	} {
+		output, err := executeLiveCLI(t, args...)
+		if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(apperrors.MessageOf(err), "restriction id") || apperrors.DetailsOf(err)["upstreamStatus"] != "" {
+			t.Fatalf("%s was not refused before it was sent: %v (details %v)\n%s", strings.Join(args, " "), err, apperrors.DetailsOf(err), output)
+		}
+	}
+	assertOnlyRestrictionListed(t, mustLiveCLI(t, "branch", "restriction", "list"), restrictionID, updated)
 
 	deleteOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID, "--yes")
 	if err != nil {
@@ -185,20 +253,19 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 		t.Fatalf("expected delete status ok, got: %s", deleteOutput)
 	}
 
-	// A restriction id that is not an id at all. A unit test asked these of a
-	// stub whose default was 404, so what it checked was the stub's default; a
-	// real instance is what says whether "abc" is refused and not, say, read as
-	// zero.
-	for _, verb := range []string{"get", "update", "delete"} {
-		if output, err := executeLiveCLI(t, "branch", "restriction", verb, "abc"); err == nil {
-			t.Fatalf("restriction %s accepted a non-numeric id:\n%s", verb, output)
-		}
-	}
-
 	// And one that is a number, for a restriction that is gone: the delete
-	// above makes this the same id that worked a moment ago.
-	if output, err := executeLiveCLI(t, "branch", "restriction", "get", restrictionID); err == nil {
+	// above makes this the same id that worked a moment ago. It is also what
+	// shows the delete happened, since Bitbucket answers the delete of an id it
+	// does not hold with 204 as well.
+	output, err := executeLiveCLI(t, "branch", "restriction", "get", restrictionID)
+	if err == nil {
 		t.Fatalf("restriction get found a restriction that was deleted:\n%s", output)
+	}
+	if !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Fatalf("restriction get of the deleted restriction failed with %v, want not found", err)
+	}
+	if remaining := restrictionsInListing(t, mustLiveCLI(t, "branch", "restriction", "list")); len(remaining) != 0 {
+		t.Fatalf("restrictions remain after the delete: %v", remaining)
 	}
 }
 
@@ -210,7 +277,7 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -219,12 +286,13 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	branchName := "feature/live-dry-run-delete"
-	startPoint := repo.CommitIDs[0]
+	startPoint := olderSeedCommit(t, repo)
 
 	createOutput, err := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", startPoint)
 	if err != nil {
 		t.Fatalf("branch create failed: %v\noutput: %s", err, createOutput)
 	}
+	assertOnlyBranchNamed(t, branchName, startPoint)
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "delete", branchName, "--yes")
 	if err != nil {
@@ -244,10 +312,14 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 	if !strings.Contains(listOutput, branchName) {
 		t.Fatalf("expected branch %s to remain after dry-run delete, got: %s", branchName, listOutput)
 	}
+	assertOnlyBranchNamed(t, branchName, startPoint)
 
 	deleteOutput, err := executeLiveCLI(t, "branch", "delete", branchName, "--yes")
 	if err != nil {
 		t.Fatalf("branch delete cleanup failed: %v\noutput: %s", err, deleteOutput)
+	}
+	if remaining := branchesInListing(t, mustLiveCLI(t, "branch", "list", "--filter", branchName, "--all")); len(remaining) != 0 {
+		t.Fatalf("branch %s is still listed after its delete: %+v", branchName, remaining)
 	}
 }
 
@@ -293,6 +365,9 @@ func TestLiveCLIBranchCreateDryRunHasNoSideEffect(t *testing.T) {
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no branch side-effect from create dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
+	if created := branchesInListing(t, mustLiveCLI(t, "branch", "list", "--filter", branchName, "--all")); len(created) != 0 {
+		t.Fatalf("the create dry-run created branch %s: %+v", branchName, created)
+	}
 }
 
 func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
@@ -303,7 +378,7 @@ func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -311,12 +386,19 @@ func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// Another branch to ask for. master is the default already, so asking for it
+	// leaves the default unchanged whether or not the dry run sent the change.
+	const otherBranch = "feature/live-dry-run-default"
+	startPoint := olderSeedCommit(t, repo)
+	mustLiveCLI(t, "branch", "create", otherBranch, "--start-point", startPoint)
+	assertOnlyBranchNamed(t, otherBranch, startPoint)
+
 	defaultBeforeOutput, err := executeLiveCLI(t, "--json", "branch", "default", "get")
 	if err != nil {
 		t.Fatalf("branch default get before failed: %v\noutput: %s", err, defaultBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "default", "set", "master")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "default", "set", otherBranch)
 	if err != nil {
 		t.Fatalf("branch default set dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -334,6 +416,7 @@ func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
 	if defaultBeforeOutput != defaultAfterOutput {
 		t.Fatalf("expected no default-branch side-effect from dry-run\nbefore: %s\nafter: %s", defaultBeforeOutput, defaultAfterOutput)
 	}
+	assertMasterIsDefaultBranch(t, defaultAfterOutput)
 }
 
 func TestLiveCLIBranchRestrictionCreateDryRunHasNoSideEffect(t *testing.T) {
@@ -352,6 +435,8 @@ func TestLiveCLIBranchRestrictionCreateDryRunHasNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// --limit has nothing to cut in a repository this test made;
+	// TestLiveBranchRestrictionLimitCaps is where it is proven.
 	listBeforeOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "list", "--limit", "200")
 	if err != nil {
 		t.Fatalf("restriction list before failed: %v\noutput: %s", err, listBeforeOutput)
@@ -372,6 +457,9 @@ func TestLiveCLIBranchRestrictionCreateDryRunHasNoSideEffect(t *testing.T) {
 
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no restriction side-effect from create dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	}
+	if created := restrictionsInListing(t, listAfterOutput); len(created) != 0 {
+		t.Fatalf("the create dry-run left a restriction behind: %v", created)
 	}
 }
 
@@ -403,11 +491,16 @@ func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
 	if restrictionID == "" {
 		t.Fatalf("expected restriction id in create output: %s", createOutput)
 	}
+	// BRANCH is the matcher type --matcher-type defaults to.
+	fixture := storedRestriction{restrictionType: "read-only", matcherType: "BRANCH", matcherID: "refs/heads/master"}
 
+	// --limit has nothing to cut in a repository this test made;
+	// TestLiveBranchRestrictionLimitCaps is where it is proven.
 	listBeforeOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "list", "--limit", "200")
 	if err != nil {
 		t.Fatalf("restriction list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
+	assertOnlyRestrictionListed(t, listBeforeOutput, restrictionID, fixture)
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "restriction", "delete", restrictionID, "--yes")
 	if err != nil {
@@ -425,8 +518,14 @@ func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no restriction side-effect from delete dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
+	assertOnlyRestrictionListed(t, listAfterOutput, restrictionID, fixture)
 
-	_, _ = executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID, "--yes")
+	if output, err := executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID, "--yes"); err != nil {
+		t.Fatalf("restriction delete cleanup failed: %v\noutput: %s", err, output)
+	}
+	if remaining := restrictionsInListing(t, mustLiveCLI(t, "branch", "restriction", "list")); len(remaining) != 0 {
+		t.Fatalf("restrictions remain after the delete: %v", remaining)
+	}
 }
 
 func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
@@ -437,7 +536,7 @@ func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -445,12 +544,19 @@ func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// Another branch to ask for. master is the default already, so asking for it
+	// leaves the default unchanged whether or not the dry run sent the change.
+	const otherBranch = "feature/live-dry-run-model"
+	startPoint := olderSeedCommit(t, repo)
+	mustLiveCLI(t, "branch", "create", otherBranch, "--start-point", startPoint)
+	assertOnlyBranchNamed(t, otherBranch, startPoint)
+
 	defaultBeforeOutput, err := executeLiveCLI(t, "--json", "branch", "default", "get")
 	if err != nil {
 		t.Fatalf("branch default get before failed: %v\noutput: %s", err, defaultBeforeOutput)
 	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "model", "update", "master")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "branch", "model", "update", otherBranch)
 	if err != nil {
 		t.Fatalf("branch model update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
@@ -468,6 +574,7 @@ func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
 	if defaultBeforeOutput != defaultAfterOutput {
 		t.Fatalf("expected no default-branch side-effect from model update dry-run\nbefore: %s\nafter: %s", defaultBeforeOutput, defaultAfterOutput)
 	}
+	assertMasterIsDefaultBranch(t, defaultAfterOutput)
 }
 
 func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
@@ -486,11 +593,12 @@ func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// PATTERN rather than BRANCH, which is what --matcher-type defaults to.
 	createOutput, err := executeLiveCLI(
 		t, "--json", "branch", "restriction", "create",
 		"--type", "read-only",
-		"--matcher-type", "BRANCH",
-		"--matcher-id", "refs/heads/master",
+		"--matcher-type", "PATTERN",
+		"--matcher-id", "refs/heads/release/*",
 	)
 	if err != nil {
 		t.Fatalf("restriction create fixture failed: %v\noutput: %s", err, createOutput)
@@ -503,17 +611,24 @@ func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
 	if restrictionID == "" {
 		t.Fatalf("expected restriction id in create output: %s", createOutput)
 	}
+	fixture := storedRestriction{restrictionType: "read-only", matcherType: "PATTERN", matcherID: "refs/heads/release/*"}
 
+	// --limit has nothing to cut in a repository this test made;
+	// TestLiveBranchRestrictionLimitCaps is where it is proven.
 	listBeforeOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "list", "--limit", "200")
 	if err != nil {
 		t.Fatalf("restriction list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
+	assertOnlyRestrictionListed(t, listBeforeOutput, restrictionID, fixture)
 
+	// An update that changes something. The restriction as it stands would leave
+	// the listing as it was whether or not the dry run sent the update.
 	dryRunOutput, err := executeLiveCLI(
 		t, "--json", "--dry-run", "branch", "restriction", "update", restrictionID,
 		"--type", "read-only",
-		"--matcher-type", "BRANCH",
-		"--matcher-id", "refs/heads/master",
+		"--matcher-type", "PATTERN",
+		"--matcher-id", "refs/heads/release/*",
+		"--group", "stash-users",
 	)
 	if err != nil {
 		t.Fatalf("restriction update dry-run failed: %v\noutput: %s", err, dryRunOutput)
@@ -530,6 +645,98 @@ func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no restriction side-effect from update dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
+	assertOnlyRestrictionListed(t, listAfterOutput, restrictionID, fixture)
 
-	_, _ = executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID, "--yes")
+	if output, err := executeLiveCLI(t, "--json", "branch", "restriction", "delete", restrictionID, "--yes"); err != nil {
+		t.Fatalf("restriction delete cleanup failed: %v\noutput: %s", err, output)
+	}
+	if remaining := restrictionsInListing(t, mustLiveCLI(t, "branch", "restriction", "list")); len(remaining) != 0 {
+		t.Fatalf("restrictions remain after the delete: %v", remaining)
+	}
+}
+
+// olderSeedCommit is the first of the two commits a repository was seeded with,
+// which is second in the ids because Bitbucket lists the newest first. A branch
+// started there points somewhere master does not.
+func olderSeedCommit(t *testing.T, repo seededRepository) string {
+	t.Helper()
+
+	if len(repo.CommitIDs) < 2 {
+		t.Fatalf("want two seeded commits, the repository has %v", repo.CommitIDs)
+	}
+
+	return repo.CommitIDs[1]
+}
+
+// listedBranch is one branch in `bb branch list --json`.
+type listedBranch struct {
+	ID           string `json:"id"`
+	DisplayID    string `json:"displayId"`
+	LatestCommit string `json:"latestCommit"`
+}
+
+// branchesInListing decodes the branches out of `bb branch list --json`, in
+// the order they were listed.
+func branchesInListing(t *testing.T, output string) []listedBranch {
+	t.Helper()
+
+	var listing struct {
+		Branches []listedBranch `json:"branches"`
+	}
+	if err := decodeJSONEnvelopeData(output, &listing); err != nil {
+		t.Fatalf("branch list returned invalid JSON: %v\n%s", err, output)
+	}
+
+	return listing.Branches
+}
+
+// assertOnlyBranchNamed reads a branch back through a listing filtered by its
+// name, and checks the commit it points at.
+func assertOnlyBranchNamed(t *testing.T, name, commit string) {
+	t.Helper()
+
+	branches := branchesInListing(t, mustLiveCLI(t, "branch", "list", "--filter", name, "--all"))
+	if len(branches) != 1 || branches[0].DisplayID != name || branches[0].ID != "refs/heads/"+name || branches[0].LatestCommit != commit {
+		t.Fatalf("want branch %s alone, at %s; the listing filtered by its name holds %+v", name, commit, branches)
+	}
+}
+
+// assertMasterIsDefaultBranch reads `bb branch default get --json`.
+func assertMasterIsDefaultBranch(t *testing.T, output string) {
+	t.Helper()
+
+	defaultBranch := nestedJSONMap(t, output, "defaultBranch")
+	if defaultBranch["id"] != "refs/heads/master" || defaultBranch["displayId"] != "master" {
+		t.Fatalf("the default branch is %v (%v), want master (refs/heads/master)", defaultBranch["displayId"], defaultBranch["id"])
+	}
+}
+
+// restrictionsInListing decodes the restrictions out of a restriction list
+// command's JSON output, for either scope.
+func restrictionsInListing(t *testing.T, output string) []map[string]any {
+	t.Helper()
+
+	var listing struct {
+		Restrictions []map[string]any `json:"restrictions"`
+	}
+	if err := decodeJSONEnvelopeData(output, &listing); err != nil {
+		t.Fatalf("restriction list returned invalid JSON: %v\n%s", err, output)
+	}
+
+	return listing.Restrictions
+}
+
+// assertOnlyRestrictionListed checks that a listing holds one restriction, the
+// one given, stored as the test expects.
+func assertOnlyRestrictionListed(t *testing.T, output, id string, want storedRestriction) {
+	t.Helper()
+
+	restrictions := restrictionsInListing(t, output)
+	if len(restrictions) != 1 {
+		t.Fatalf("want restriction %s alone, the listing holds %d: %v", id, len(restrictions), restrictions)
+	}
+	if got, _ := numericOrStringID(restrictions[0]["id"]); got != id {
+		t.Fatalf("want restriction %s alone, the listing holds %s: %v", id, got, restrictions[0])
+	}
+	assertRestrictionStored(t, restrictions[0], want)
 }
