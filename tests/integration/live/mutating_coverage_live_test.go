@@ -1433,6 +1433,9 @@ func TestLiveDefaultBranchFoundPastTheFirstPage(t *testing.T) {
 		}
 	}
 	firstPage, _ := decodeJSONMap(t, mustLiveCLI(t, "branch", "list", "--filter", target, "--limit", "25"))["branches"].([]any)
+	if len(firstPage) != 25 {
+		t.Fatalf("want a full first page of 25 branches matching %q, got %d", target, len(firstPage))
+	}
 	for _, entry := range firstPage {
 		if fields, _ := entry.(map[string]any); fields["displayId"] == target {
 			t.Fatalf("%s is on the first page of its own filter, so this proves nothing past it", target)
