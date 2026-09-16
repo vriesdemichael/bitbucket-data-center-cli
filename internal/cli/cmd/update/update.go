@@ -34,6 +34,10 @@ type UpdateCommandHTTPConfig struct {
 	// HTTPPermission decides whether UpdateBaseURL, the assets a manifest names
 	// and any redirect may use plain HTTP.
 	HTTPPermission config.UpdateHTTPPermission
+	// WarnPlainHTTP is called with the first plain-HTTP URL a run actually
+	// fetches, when nothing has warned about one already. Nil is how the
+	// command says it has warned itself, about a base URL that is http.
+	WarnPlainHTTP func(fetchedURL string)
 	// Trust carries the administrative policy that decides who may vouch for
 	// the binary this command is about to install, and where the Sigstore trust
 	// material backing that decision comes from.
@@ -51,7 +55,7 @@ var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfi
 		baseURL = "https://api.github.com"
 	}
 
-	httpClient := &http.Client{Timeout: httpConfig.RequestTimeout, Transport: requireScheme(transport, httpConfig.HTTPPermission)}
+	httpClient := &http.Client{Timeout: httpConfig.RequestTimeout, Transport: requireScheme(transport, httpConfig.HTTPPermission, httpConfig.WarnPlainHTTP)}
 	client := githubrelease.NewClient(
 		baseURL,
 		httpClient,
@@ -222,6 +226,18 @@ func New(deps Dependencies) *cobra.Command {
 
 			if warning := plainHTTPWarning(httpConfig); warning != "" {
 				fmt.Fprintln(cmd.ErrOrStderr(), style.Warning.Render(warning))
+			} else {
+				// The base URL is https, which is not the same as the run
+				// staying on https: a mirror can redirect, and a manifest can
+				// name an asset elsewhere. The guard sees each request, so it
+				// carries the other half of ADR-059's "every run that uses
+				// plain HTTP warns".
+				httpConfig.WarnPlainHTTP = func(fetched string) {
+					fmt.Fprintln(cmd.ErrOrStderr(), style.Warning.Render(fmt.Sprintf(
+						"Warning: bb update followed an https URL to a plain-HTTP one (%s), permitted by %s; anyone on the network path can read, delay or withhold what it serves",
+						fetched, httpConfig.HTTPPermission.Source,
+					)))
+				}
 			}
 
 			runner := UpdateRunnerFactory(cmd.Root().Version, httpConfig)

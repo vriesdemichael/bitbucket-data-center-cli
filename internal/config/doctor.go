@@ -977,14 +977,14 @@ func (r resolution) updateBaseURL() DiagnosedSetting {
 	if r.storedRead {
 		candidates = append(candidates, r.fromFile(TierStored, "update_base_url", r.stored.UpdateBaseURL)...)
 	}
-	candidates = append(candidates, r.fromFile(TierSystem, "update_base_url", r.system.UpdateBaseURL)...)
-	if r.system.Policies != nil {
-		candidates = append(candidates, r.fromFile(TierSystem, "policies.update_base_url", r.system.Policies.UpdateBaseURL)...)
-	}
-	if r.system.Policy != nil {
-		candidates = append(candidates, r.fromFile(TierSystem, "policy.update_base_url", r.system.Policy.UpdateBaseURL)...)
-	}
-	candidates = append(candidates, r.fromRegistry("UpdateBaseURL", r.in.platformPolicy.UpdateBaseURL)...)
+	// The system tier is one policy reading, in the order the merge gives it,
+	// rather than a second opinion about which of a file's three spellings
+	// wins.
+	candidates = append(candidates, r.policyCandidates(
+		"update_base_url",
+		"UpdateBaseURL",
+		policyText(func(policy PolicyConfig) string { return policy.UpdateBaseURL }),
+	)...)
 
 	for index := range candidates {
 		candidates[index].value = normalizeURL(candidates[index].value)

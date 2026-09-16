@@ -53,12 +53,12 @@ func TestTheUpdateTransportRefusesPlainHTTPUnlessPermitted(t *testing.T) {
 
 	plain := plainHTTPServer(t)
 
-	_, err := fetchThrough(t, requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{}), plain.URL+"/sha256sums.txt")
+	_, err := fetchThrough(t, requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{}, nil), plain.URL+"/sha256sums.txt")
 	if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "uses plain HTTP") {
 		t.Fatalf("expected the plain-HTTP request to be refused as validation, got %v", err)
 	}
 
-	body, err := fetchThrough(t, requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{Allowed: true}), plain.URL+"/sha256sums.txt")
+	body, err := fetchThrough(t, requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{Allowed: true}, nil), plain.URL+"/sha256sums.txt")
 	if err != nil || body != "served over plain HTTP" {
 		t.Fatalf("expected a permitted plain-HTTP request to go through, got %q, %v", body, err)
 	}
@@ -76,7 +76,7 @@ func TestAnHTTPSMirrorCannotRedirectToPlainHTTP(t *testing.T) {
 	t.Cleanup(secure.Close)
 	trustsTheTestCertificate := secure.Client().Transport
 
-	_, err := fetchThrough(t, requireScheme(trustsTheTestCertificate, config.UpdateHTTPPermission{}), secure.URL+"/sha256sums.txt")
+	_, err := fetchThrough(t, requireScheme(trustsTheTestCertificate, config.UpdateHTTPPermission{}, nil), secure.URL+"/sha256sums.txt")
 	if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), strings.TrimPrefix(plain.URL, "http://")) {
 		t.Fatalf("expected the redirect to plain HTTP to be refused, naming its target, got %v", err)
 	}
@@ -84,7 +84,7 @@ func TestAnHTTPSMirrorCannotRedirectToPlainHTTP(t *testing.T) {
 		t.Fatalf("expected the refusal to say the mirror redirected there, got %v", err)
 	}
 
-	body, err := fetchThrough(t, requireScheme(trustsTheTestCertificate, config.UpdateHTTPPermission{Allowed: true}), secure.URL+"/sha256sums.txt")
+	body, err := fetchThrough(t, requireScheme(trustsTheTestCertificate, config.UpdateHTTPPermission{Allowed: true}, nil), secure.URL+"/sha256sums.txt")
 	if err != nil || body != "served over plain HTTP" {
 		t.Fatalf("expected a permitted redirect to go through, got %q, %v", body, err)
 	}
@@ -96,7 +96,7 @@ func TestTheReleaseClientKeepsTheRefusalsKind(t *testing.T) {
 	t.Parallel()
 
 	plain := plainHTTPServer(t)
-	client := githubrelease.NewClient(plain.URL, &http.Client{Transport: requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{})}, "bb/test")
+	client := githubrelease.NewClient(plain.URL, &http.Client{Transport: requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{}, nil)}, "bb/test")
 
 	_, err := client.Download(context.Background(), "sha256sums.txt")
 	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
@@ -114,7 +114,7 @@ func TestARefusedManifestAddressIsReportedOnce(t *testing.T) {
 
 	missing := httptest.NewServer(http.NotFoundHandler())
 	t.Cleanup(missing.Close)
-	client := githubrelease.NewClient(missing.URL, &http.Client{Transport: requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{Allowed: true})}, "bb/test")
+	client := githubrelease.NewClient(missing.URL, &http.Client{Transport: requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{Allowed: true}, nil)}, "bb/test")
 
 	_, err := client.Download(context.Background(), "ftp://files.example.invalid/sha256sums.txt")
 	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
@@ -215,4 +215,50 @@ func TestUpdateRefusesAPlainHTTPMirrorBeforeFetchingAnything(t *testing.T) {
 	if built != nil {
 		t.Fatal("the runner was built although policy refused plain HTTP")
 	}
+}
+
+// TestAPermittedRedirectToPlainHTTPWarns covers the half of ADR-059 the
+// pre-flight check cannot see.
+//
+// "Every run that uses plain HTTP warns" was implemented as a check on the
+// configured base URL. An https mirror that redirects to http, or a manifest
+// naming an http asset, uses plain HTTP without the base URL ever saying so --
+// and with --allow-http given for something else, that run was silent.
+func TestAPermittedRedirectToPlainHTTPWarns(t *testing.T) {
+	t.Parallel()
+
+	plain := plainHTTPServer(t)
+	secure := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		http.Redirect(writer, request, plain.URL+request.URL.Path, http.StatusFound)
+	}))
+	t.Cleanup(secure.Close)
+
+	var warned []string
+	transport := requireScheme(
+		secure.Client().Transport,
+		config.UpdateHTTPPermission{Allowed: true},
+		func(fetched string) { warned = append(warned, fetched) },
+	)
+
+	if _, err := fetchThrough(t, transport, secure.URL+"/sha256sums.txt"); err != nil {
+		t.Fatalf("expected a permitted redirect to go through, got %v", err)
+	}
+	if len(warned) != 1 || !strings.HasPrefix(warned[0], plain.URL) {
+		t.Fatalf("expected one warning naming the plain-HTTP target, got %q", warned)
+	}
+
+	// A second hop over plain HTTP in the same run is the same standing
+	// condition, not a second thing to say.
+	if _, err := fetchThrough(t, transport, secure.URL+"/bb_linux_amd64.tar.gz"); err != nil {
+		t.Fatalf("expected the second fetch to go through, got %v", err)
+	}
+	if len(warned) != 1 {
+		t.Fatalf("expected the warning once per run, got %q", warned)
+	}
+
+	// An https request warns about nothing.
+	quiet := requireScheme(secure.Client().Transport, config.UpdateHTTPPermission{}, func(string) {
+		t.Error("an https URL warned about plain HTTP")
+	})
+	_, _ = fetchThrough(t, quiet, secure.URL+"/sha256sums.txt")
 }

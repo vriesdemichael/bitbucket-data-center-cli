@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -20,11 +21,15 @@ import (
 type schemeGuard struct {
 	base  http.RoundTripper
 	check func(rawURL string) error
+	// warn is called with the first plain-HTTP URL this guard lets through, and
+	// only when nothing has warned already. Nil means somebody else did.
+	warn   func(fetchedURL string)
+	warned sync.Once
 }
 
 // requireScheme guards the client that talks to the release mirror.
-func requireScheme(base http.RoundTripper, permission config.UpdateHTTPPermission) http.RoundTripper {
-	return &schemeGuard{base: base, check: permission.CheckURL}
+func requireScheme(base http.RoundTripper, permission config.UpdateHTTPPermission, warn func(fetchedURL string)) http.RoundTripper {
+	return &schemeGuard{base: base, check: permission.CheckURL, warn: warn}
 }
 
 // requireTrustHTTPS guards the client that fetches Sigstore trust material,
@@ -46,6 +51,8 @@ func requireTrustHTTPS(base http.RoundTripper) http.RoundTripper {
 func (guard *schemeGuard) RoundTrip(request *http.Request) (*http.Response, error) {
 	err := guard.check(request.URL.String())
 	if err == nil {
+		guard.warnOnce(request.URL)
+
 		return guard.base.RoundTrip(request)
 	}
 
@@ -65,4 +72,19 @@ func (guard *schemeGuard) RoundTrip(request *http.Request) (*http.Response, erro
 	}
 
 	return nil, err
+}
+
+// warnOnce reports the first plain-HTTP URL that actually gets fetched.
+//
+// The command warns about a base URL that is http before anything is sent, but
+// an https base can still lead to plain HTTP: a redirect, or an asset URL the
+// manifest names. ADR-059 says every run that uses plain HTTP warns, and that
+// run used to be silent -- the permission was granted for a mirror, and
+// something else collected it.
+func (guard *schemeGuard) warnOnce(target *url.URL) {
+	if guard.warn == nil || target == nil || !strings.EqualFold(target.Scheme, "http") {
+		return
+	}
+
+	guard.warned.Do(func() { guard.warn(target.Redacted()) })
 }

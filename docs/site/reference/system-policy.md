@@ -17,8 +17,9 @@ file. `%ProgramData%` is resolved through the Windows known-folder API rather
 than read from the environment, so setting a `ProgramData` variable cannot
 redirect where policy comes from.
 
-Keys may sit at the top level of the file or under a `policies:` mapping; both
-are read, and `policies:` wins.
+Keys may sit at the top level of the file, under a `policies:` mapping, or
+under `policy:`. All three are read, in that order, and a later one wins. Every
+key follows this order, including `update_base_url`.
 
 ```yaml
 policies:
