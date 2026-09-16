@@ -117,7 +117,8 @@ func TestLivePullRequestInspection(t *testing.T) {
 	}
 
 	// No Jira link is configured on the test instance, so the guarantee here is
-	// that the command handles an unlinked pull request rather than failing.
+	// that the command handles an unlinked pull request rather than failing. The
+	// answer is empty for any pull request, so it cannot show which one was read.
 	jiraOutput, err := executeLiveCLI(t, "--json", "pr", "jira", pullRequestID, "--repo", repoRef)
 	if err != nil {
 		t.Fatalf("pr jira failed: %v\noutput: %s", err, jiraOutput)
