@@ -318,15 +318,26 @@ func (p *PermissionChecker) InspectProjectPermissions(ctx context.Context, proje
 	return result, nil
 }
 
+// projectCreateProbeKey is a project key Bitbucket can never accept, so the
+// probe below can never create a project.
+const projectCreateProbeKey = "!!"
+
 // CheckProjectCreate verifies if the caller can create projects by intentionally
 // sending an invalid create payload.
+//
+// The payload names a key, and an invalid one. Bitbucket checks that a key is
+// present before it checks the caller, so an empty payload answered 400 to
+// everyone and every account was told it could create projects. A key that is
+// present but malformed gets past that check: 401 for an account without
+// PROJECT_CREATE, 400 for the key for one with it (observed on 10.4.3).
 func (p *PermissionChecker) CheckProjectCreate(ctx context.Context) error {
 	cacheKey := "global:PROJECT_CREATE"
 	if err, ok := p.cache[cacheKey]; ok {
 		return err
 	}
 
-	resp, err := p.client.CreateProjectWithResponse(ctx, openapigenerated.RestProject{})
+	probeKey := projectCreateProbeKey
+	resp, err := p.client.CreateProjectWithResponse(ctx, openapigenerated.RestProject{Key: &probeKey})
 	if err != nil {
 		err = transportFailure(err)
 		p.cache[cacheKey] = err
