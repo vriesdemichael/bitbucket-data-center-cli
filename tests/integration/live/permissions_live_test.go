@@ -106,12 +106,28 @@ func asBoundaryAccount(t *testing.T, harness *liveHarness, projectKey, repositor
 // subject: exactly the level given, or no entry at all when want is empty.
 //
 // A grant answers 204 with no body, so the listing is the only evidence of
-// which level Bitbucket kept.
+// which level Bitbucket kept. A listing without its entries, or cut at its
+// page size, fails rather than reads as nobody holding anything.
 func assertBoundaryStoredLevel(t *testing.T, listing, name, want string) {
 	t.Helper()
 
+	entries, ok := decodeJSONMap(t, listing)["entries"].([]any)
+	if !ok {
+		t.Fatalf("the listing carries no entries to find %s in: %s", name, listing)
+	}
+	var page struct {
+		Meta struct {
+			LimitReached bool `json:"limitReached"`
+		} `json:"meta"`
+	}
+	if err := json.Unmarshal([]byte(listing), &page); err != nil {
+		t.Fatalf("the listing's meta does not decode: %v\n%s", err, listing)
+	}
+	if page.Meta.LimitReached {
+		t.Fatalf("the listing stopped at its page size, so %s may be past it: %s", name, listing)
+	}
+
 	var held []string
-	entries, _ := decodeJSONMap(t, listing)["entries"].([]any)
 	for _, entry := range entries {
 		record, _ := entry.(map[string]any)
 		if subject, _ := record["name"].(string); strings.EqualFold(subject, name) {
@@ -172,16 +188,17 @@ func assertBoundaryHumanHeldLevels(t *testing.T, output string, want map[string]
 	}
 }
 
-// boundaryEmptyProject creates a project holding nothing, removed when the
-// test ends.
+// boundaryEmptyProject creates a project holding nothing, its name starting
+// with the prefix given, removed when the test ends. It returns the key and
+// the name.
 //
 // A refused delete is read back by the project still standing, and a seeded
 // project would stand either way: Bitbucket refuses to delete a project that
 // holds a repository, even to an administrator.
-func boundaryEmptyProject(ctx context.Context, t *testing.T, harness *liveHarness) string {
+func boundaryEmptyProject(ctx context.Context, t *testing.T, harness *liveHarness, namePrefix string) (string, string) {
 	t.Helper()
 
-	key, _, err := harness.createProject(ctx, "LT", "Live Test")
+	key, name, err := harness.createProject(ctx, "LT", namePrefix)
 	if err != nil {
 		t.Fatalf("create project failed: %v", err)
 	}
@@ -191,7 +208,7 @@ func boundaryEmptyProject(ctx context.Context, t *testing.T, harness *liveHarnes
 		harness.deleteProjectAndContents(cleanupCtx, key)
 	})
 
-	return key
+	return key, name
 }
 
 // assertBoundaryTagAbsent reads back the tag a refused create named.
@@ -258,8 +275,9 @@ func boundaryRequiredAllTasksComplete(t *testing.T) bool {
 }
 
 // ---------------------------------------------------------------------------
-// Repo-read boundary: a user with no project/repo access should get 403 on
-// operations that require at least REPO_READ.
+// Repo-read boundary: a user with no project/repo access is refused operations
+// that require at least REPO_READ. Bitbucket refuses with 401 and an
+// AuthorisationException, not 403.
 // ---------------------------------------------------------------------------
 
 func TestLivePermissionRepoReadDeniedWithoutAccess(t *testing.T) {
@@ -564,7 +582,7 @@ func TestLivePermissionProjectDeleteDeniedWithProjectWriteOnly(t *testing.T) {
 
 	// Empty, so that the delete is refused for the permission alone and the
 	// project standing afterwards shows it was.
-	projectKey := boundaryEmptyProject(ctx, t, harness)
+	projectKey, _ := boundaryEmptyProject(ctx, t, harness, "Live Test")
 
 	user, err := harness.createLicensedUser(ctx)
 	if err != nil {
@@ -601,7 +619,7 @@ func TestLivePermissionProjectDeleteDryRunDeniedWithProjectWriteOnly(t *testing.
 	defer cancel()
 
 	// Empty, for the same reason as the delete that is not a dry run.
-	projectKey := boundaryEmptyProject(ctx, t, harness)
+	projectKey, _ := boundaryEmptyProject(ctx, t, harness, "Live Test")
 
 	user, err := harness.createLicensedUser(ctx)
 	if err != nil {
@@ -816,8 +834,15 @@ func TestLivePermissionPRApproveDryRunDeniedWithoutRepoRead(t *testing.T) {
 	if participants.StatusCode() != http.StatusOK || participants.ApplicationjsonCharsetUTF8200 == nil {
 		t.Fatalf("list participants returned status %d: %s", participants.StatusCode(), participants.Body)
 	}
-	if values := participants.ApplicationjsonCharsetUTF8200.Values; values != nil {
-		for _, participant := range *values {
+	// The whole list, and this pull request's: its author is always on it, so
+	// an empty page cannot pass for nobody having approved.
+	page := participants.ApplicationjsonCharsetUTF8200
+	if page.IsLastPage == nil || !*page.IsLastPage {
+		t.Fatalf("the participants of pull request %s do not fit one page: %s", prID, participants.Body)
+	}
+	author := false
+	if page.Values != nil {
+		for _, participant := range *page.Values {
 			name := ""
 			if participant.User != nil {
 				name = participant.User.Name
@@ -826,7 +851,13 @@ func TestLivePermissionPRApproveDryRunDeniedWithoutRepoRead(t *testing.T) {
 			if strings.EqualFold(name, user.Username) || approved {
 				t.Errorf("a refused dry run left participant %q approved=%v on pull request %s", name, approved, prID)
 			}
+			if participant.Role != nil && *participant.Role == openapigenerated.RestPullRequestParticipantRoleAUTHOR {
+				author = true
+			}
 		}
+	}
+	if !author {
+		t.Errorf("the participants read back for pull request %s name no author: %s", prID, participants.Body)
 	}
 }
 
@@ -1151,6 +1182,22 @@ func TestLiveProjectPermissionsShowAsAdmin(t *testing.T) {
 
 	configureLiveCLIEnv(t, harness, seeded.Key, seeded.Repos[0].Slug)
 
+	// A project listed ahead of this one when projects are asked for by this
+	// one's name, because Bitbucket matches every name that contains it and
+	// sorts by name. The probes behind show ask that way, so they have to look
+	// past it.
+	decoy, decoyName := boundaryEmptyProject(ctx, t, harness, "A "+seeded.Name)
+	if stored := nestedJSONMap(t, mustLiveCLI(t, "project", "get", decoy), "project"); stored["name"] != decoyName {
+		t.Fatalf("project %s is named %v, want %q", decoy, stored["name"], decoyName)
+	}
+	var named struct {
+		Projects []map[string]any `json:"projects"`
+	}
+	decodeJSONData(t, mustLiveCLI(t, "project", "list", "--name", seeded.Name), &named)
+	if len(named.Projects) != 2 || named.Projects[0]["key"] != decoy || named.Projects[1]["key"] != seeded.Key {
+		t.Fatalf("projects listed for the name %q are %v, want %s ahead of %s", seeded.Name, named.Projects, decoy, seeded.Key)
+	}
+
 	// JSON output
 	output, cliErr := executeLiveCLI(t, "--json", "project", "permissions", "show", seeded.Key)
 	if cliErr != nil {
@@ -1190,7 +1237,7 @@ func TestLiveProjectPermissionsShowAsAdmin(t *testing.T) {
 	assertBoundaryStoredLevel(t, mustLiveCLI(t, "project", "permissions", "list", seeded.Key, "--all"), account.Username, "PROJECT_WRITE")
 
 	// A project the account holds nothing on.
-	other := boundaryEmptyProject(ctx, t, harness)
+	other, _ := boundaryEmptyProject(ctx, t, harness, "Live Test")
 
 	asBoundaryAccount(t, harness, seeded.Key, seeded.Repos[0].Slug, account, func(t *testing.T) {
 		writer := map[string]bool{"PROJECT_READ": true, "PROJECT_WRITE": true, "PROJECT_ADMIN": false}
