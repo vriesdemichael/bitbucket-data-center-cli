@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
@@ -45,14 +46,69 @@ func run(args []string, stdout, stderr io.Writer) int {
 	// command that is not listening to its context.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	go func() {
-		<-ctx.Done()
-		stop()
-	}()
+
+	finished := make(chan struct{})
+	defer close(finished)
+	go superviseInterrupt(ctx, finished, interruptGrace, stop, func() {
+		reportInterrupt(args, stdout, stderr)
+	})
+
 	cmd.SetContext(ctx)
 	cmd.SetArgs(args)
 
 	return executeRootCommand(cmd, args, stdout, stderr)
+}
+
+// interruptGrace is how long an interrupted command has to answer for itself
+// before main answers for it. A test shortens it.
+var interruptGrace = 2 * time.Second
+
+// superviseInterrupt restores default signal handling on the first interrupt,
+// and answers for a command that the cancellation does not reach.
+//
+// Cancelling the context is the whole mechanism for a command that watches it.
+// A command blocked on a read does not: `bb api --input -`, `auth login
+// --token-stdin` and the git credential helper all wait on stdin, and a reader
+// there does not notice a cancelled context. v4.0.0 had no handler at all, so
+// the first interrupt ended the process; keeping the terminal waiting for a
+// second one that prints nothing is worse than either.
+func superviseInterrupt(ctx context.Context, finished <-chan struct{}, grace time.Duration, stop, answer func()) {
+	select {
+	case <-ctx.Done():
+	case <-finished:
+		return
+	}
+
+	stop()
+
+	timer := time.NewTimer(grace)
+	defer timer.Stop()
+
+	select {
+	case <-finished:
+	case <-timer.C:
+		answer()
+	}
+}
+
+// reportInterrupt writes what executeRootCommand would have written for a
+// cancelled run, and ends the process, because what it was waiting for is not
+// going to return.
+//
+// The raw arguments decide whether stdout is a machine contract. The parsed
+// flag belongs to a command that is still running, and reading it from here
+// would be a data race.
+func reportInterrupt(args []string, stdout, stderr io.Writer) {
+	err := apperrors.New(apperrors.KindCancelled, "interrupted", nil)
+
+	if argsRequestJSON(args) {
+		if writeErr := jsonoutput.WriteError(stdout, err); writeErr != nil {
+			fmt.Fprintln(stderr, writeErr.Error())
+		}
+	}
+
+	fmt.Fprintln(stderr, err.Error())
+	os.Exit(apperrors.ExitCode(err))
 }
 
 func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io.Writer) int {
