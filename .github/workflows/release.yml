@@ -26,6 +26,7 @@ jobs:
       should_release: ${{ steps.compute.outputs.should_release }}
       version: ${{ steps.compute.outputs.version }}
       previous_tag: ${{ steps.compute.outputs.previous_tag }}
+      is_prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -65,6 +66,29 @@ jobs:
           # allowing something in that this then cuts a major release from
           # (ADR-065).
           go run ./tools/release-version
+
+      # A version carrying a suffix -- v4.1.0-rc.1, which only the manual
+      # dispatch can ask for -- is a prerelease. Conventional Commits never
+      # produce one, so this is false on every push to main and the ordinary
+      # release path below is the same path it always was.
+      #
+      # What it changes: the GitHub release is marked prerelease, so
+      # /releases/latest keeps pointing at the last real one and nobody's bb
+      # update sees it; the docs are not republished, so the version selector
+      # and the latest alias keep naming a release people can install; and the
+      # package managers are left alone, because none of them has a channel for
+      # this.
+      - name: Say whether this version is a prerelease
+        id: prerelease
+        env:
+          VERSION: ${{ steps.compute.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERSION" || "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
 
   # Every platform's archives, the Linux packages, and each binary's SBOM,
   # checked against the archive it describes. ci.yml runs the same workflow on
@@ -317,13 +341,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.determine-version.outputs.version }}
+          IS_PRERELEASE: ${{ needs.determine-version.outputs.is_prerelease }}
         run: |
           set -euo pipefail
+          # bb update asks GitHub for /releases/latest, which is the newest
+          # release that is not marked prerelease. Marking it is what keeps a
+          # release candidate off everybody's updater.
+          flags=()
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            flags+=(--prerelease)
+          fi
+
           if gh release view "$VERSION" >/dev/null 2>&1; then
-            gh release edit "$VERSION" --title "$VERSION" --notes-file RELEASE_NOTES.md
+            gh release edit "$VERSION" --title "$VERSION" --notes-file RELEASE_NOTES.md ${flags[@]+"${flags[@]}"}
             gh release upload "$VERSION" dist/* changelog.json --clobber
           else
-            gh release create "$VERSION" --title "$VERSION" --notes-file RELEASE_NOTES.md dist/* changelog.json
+            gh release create "$VERSION" --title "$VERSION" --notes-file RELEASE_NOTES.md ${flags[@]+"${flags[@]}"} dist/* changelog.json
           fi
 
   publish-docs:
@@ -331,7 +364,7 @@ jobs:
     needs:
       - determine-version
       - release
-    if: ${{ needs.determine-version.outputs.should_release == 'true' }}
+    if: ${{ needs.determine-version.outputs.should_release == 'true' && needs.determine-version.outputs.is_prerelease != 'true' }}
     runs-on: ubuntu-latest
     # contents: write, and nothing else. These two steps were the last of the
     # release job, which holds id-token: write and attestations: write -- the
@@ -390,7 +423,7 @@ jobs:
     needs:
       - determine-version
       - release
-    if: ${{ needs.determine-version.outputs.should_release == 'true' }}
+    if: ${{ needs.determine-version.outputs.should_release == 'true' && needs.determine-version.outputs.is_prerelease != 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -434,7 +467,7 @@ jobs:
     needs:
       - determine-version
       - release
-    if: ${{ needs.determine-version.outputs.should_release == 'true' }}
+    if: ${{ needs.determine-version.outputs.should_release == 'true' && needs.determine-version.outputs.is_prerelease != 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -520,7 +553,7 @@ jobs:
     needs:
       - determine-version
       - release
-    if: ${{ needs.determine-version.outputs.should_release == 'true' }}
+    if: ${{ needs.determine-version.outputs.should_release == 'true' && needs.determine-version.outputs.is_prerelease != 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

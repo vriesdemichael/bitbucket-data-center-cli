@@ -90,8 +90,14 @@ jobs:
           set -euo pipefail
           go install github.com/tc-hib/go-winres@v0.3.3
           VERSION_NO_V="${VERSION#v}"
-          # PE version must be X.Y.Z.W (four numeric components)
-          PE_VERSION="${VERSION_NO_V}.0"
+          # PE version must be X.Y.Z.W (four numeric components), so a
+          # prerelease or build suffix is dropped: v4.1.0-rc.1 embeds 4.1.0.0.
+          # Windows has nowhere to put the rest, and go-winres refuses the whole
+          # build rather than trimming it -- which is how a manual prerelease
+          # failed here, halfway through a release.
+          PE_NUMERIC="${VERSION_NO_V%%-*}"
+          PE_NUMERIC="${PE_NUMERIC%%+*}"
+          PE_VERSION="${PE_NUMERIC}.0"
           YEAR="$(date -u +%Y)"
           go-winres simply \
             --arch amd64,arm64 \
