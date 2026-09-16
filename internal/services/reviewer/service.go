@@ -751,8 +751,7 @@ func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKe
 				// The group exists but its membership could not be read and no
 				// embedded members were available. Surface that instead of
 				// silently reporting an empty group, which would assign nobody.
-				return nil, apperrors.New(
-					apperrors.KindTransient,
+				return nil, apperrors.Transport(
 					fmt.Sprintf("failed to list members of reviewer group %q in repository %s/%s", trimmedGroup, projectKey, repositorySlug),
 					lookupErr,
 				)
@@ -799,8 +798,7 @@ func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKe
 			// The group exists but its membership could not be read and no
 			// embedded members were available. Surface that instead of
 			// silently reporting an empty group.
-			return nil, apperrors.New(
-				apperrors.KindTransient,
+			return nil, apperrors.Transport(
 				fmt.Sprintf("failed to read reviewer group %q in project %s", trimmedGroup, projectKey),
 				lookupErr,
 			)

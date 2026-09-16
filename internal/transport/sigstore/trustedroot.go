@@ -73,8 +73,10 @@ func TrustedRootFromTUF(repositoryBaseURL string, httpClient *http.Client) Trust
 }
 
 func trustedRootError(cause error) error {
-	return apperrors.New(
-		apperrors.KindTransient,
+	// Transport rather than New(KindTransient): a rejected certificate or a
+	// refused connection on the way to the trust material is not something
+	// retrying fixes, and this wrapper used to say it was.
+	return apperrors.Transport(
 		"failed to load Sigstore trusted roots",
 		fmt.Errorf("%w: %w", ErrTrustedRootUnavailable, cause),
 	)
