@@ -4333,7 +4333,7 @@ Usage:
   bb pr build [command]
 
 Available Commands:
-  status      Show build statuses for a pull request's source commit
+  status      Show build statuses for a pull request's source commit (also available as bb pr checks)
 
 Use "bb pr build [command] --help" for more information about a command.
 ```
@@ -4362,10 +4362,10 @@ Use "bb pr build [command] --help" for more information about a command.
 
 ## `bb pr build status`
 
-Show build statuses for a pull request's source commit
+Show build statuses for a pull request's source commit (also available as bb pr checks)
 
 ```text
-Show build statuses for a pull request's source commit
+Show build statuses for a pull request's source commit (also available as bb pr checks)
 
 Usage:
   bb pr build status <id> [flags]

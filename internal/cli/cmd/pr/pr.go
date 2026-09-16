@@ -2496,7 +2496,10 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 		Use:   "build",
 		Short: "Pull request build status commands",
 	}
-	buildCmd.AddCommand(newBuildStatusCmd("status <id>", "Show build statuses for a pull request's source commit"))
+	// Each half names the other (ADR-050): a reader who found one has no way to
+	// learn the other exists, and `bb pr checks` is the spelling a gh user
+	// reaches for.
+	buildCmd.AddCommand(newBuildStatusCmd("status <id>", "Show build statuses for a pull request's source commit (also available as bb pr checks)"))
 	prCmd.AddCommand(buildCmd)
 	prCmd.AddCommand(newBuildStatusCmd("checks <id>", "Show build statuses for a pull request's source commit (alias for bb pr build status)"))
 
