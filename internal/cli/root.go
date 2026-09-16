@@ -662,7 +662,12 @@ func (options *rootOptions) merge(command config.Overrides) config.Overrides {
 func sendFailingGroupHelpToStderr(root *cobra.Command) {
 	defaultHelp := root.HelpFunc()
 	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		if !cmd.Runnable() && cmd.HasSubCommands() && len(cmd.Flags().Args()) > 0 {
+		unconsumed := cmd.Flags().Args()
+
+		// A caller who asked for help is not the failing invocation: `bb pr
+		// help` and `bb pr bogus --help` are answered, not refused, so their
+		// help goes where help goes.
+		if !cmd.Runnable() && cmd.HasSubCommands() && len(unconsumed) > 0 && !helpWasAskedFor(cmd, unconsumed) {
 			restore := cmd.OutOrStdout()
 			cmd.SetOut(cmd.ErrOrStderr())
 			defer cmd.SetOut(restore)

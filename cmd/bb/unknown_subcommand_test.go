@@ -107,3 +107,38 @@ func TestGroupWithNoArgumentsStillPrintsHelp(t *testing.T) {
 		})
 	}
 }
+
+// Asking a group for help is answered, not refused.
+//
+// `bb pr help` is Cobra's own spelling of `bb help pr` and exited 0 until
+// groups started reporting what they could not match -- after which asking for
+// help printed the help on stderr, exited 2, and under --json put an error
+// envelope on stdout. `bb pr bogus --help` asks the same question about a
+// command that does not exist, and the help that comes back is the answer.
+func TestAskingAGroupForHelpSucceeds(t *testing.T) {
+	t.Parallel()
+
+	for _, invocation := range []string{"pr help", "repo help", "auth server help", "pr bogus --help", "repo bogus -h"} {
+		t.Run(invocation, func(t *testing.T) {
+			t.Parallel()
+
+			stdout := &bytes.Buffer{}
+			stderr := &bytes.Buffer{}
+			args := strings.Fields(invocation)
+
+			root := cli.NewRootCommand()
+			root.SetArgs(args)
+			root.SetErr(stderr)
+
+			if code := executeRootCommand(root, args, stdout, stderr); code != 0 {
+				t.Fatalf("exit code %d, want 0\nstderr: %s", code, stderr.String())
+			}
+			if !strings.Contains(stdout.String(), "Usage:") {
+				t.Fatalf("expected help on stdout, got: %s", stdout.String())
+			}
+			if stderr.Len() > 0 {
+				t.Errorf("a request for help wrote to stderr: %s", stderr.String())
+			}
+		})
+	}
+}
