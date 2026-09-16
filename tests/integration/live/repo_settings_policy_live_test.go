@@ -120,10 +120,25 @@ func TestLiveRepoSettingsAutoMergeLifecycle(t *testing.T) {
 	if !strings.Contains(getOutput, "true") {
 		t.Fatalf("expected auto-merge to read back as enabled, got: %s", getOutput)
 	}
+	// Off is the default, so on can only be the set having been stored.
+	if enabled, ok := decodeJSONMap(t, getOutput)["enabled"].(bool); !ok || !enabled {
+		t.Fatalf("auto-merge does not read back as enabled: %s", getOutput)
+	}
+
+	// The same scope question as auto-decline: after the delete, the setting in
+	// force is not the repository's own.
+	autoMerge := "/rest/api/latest/projects/" + seeded.Key + "/repos/" + repo.Slug + "/settings/auto-merge"
+	if scope := repoPolicyScope(t, autoMerge); scope != "REPOSITORY" {
+		t.Fatalf("auto-merge scope before the delete = %s, want REPOSITORY", scope)
+	}
 
 	deleteOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "auto-merge", "delete", "--repo", repoRef, "--yes")
 	if err != nil {
 		t.Fatalf("auto-merge delete failed: %v\noutput: %s", err, deleteOutput)
+	}
+
+	if scope := repoPolicyScope(t, autoMerge); scope == "REPOSITORY" {
+		t.Fatalf("the repository still has an auto-merge setting of its own after the delete")
 	}
 }
 
