@@ -69,12 +69,15 @@ func TestAConfigLocationThatCannotBeWorkedOutIsNotAnError(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "https://bitbucket.example")
 	t.Setenv("BITBUCKET_TOKEN", "t")
 
-	if _, err := ConfigPath(); err == nil {
-		t.Skip("this platform still resolves a config directory with the variables unset")
-	}
+	// Asserted on every platform. Where these variables decide the location,
+	// unsetting them leaves none to work out; where a platform has another
+	// source, there is a location and no file at it. An environment-only run
+	// has to work either way, and skipping the second case left this test
+	// running on one operating system.
+	_, locationErr := ConfigPath()
 
 	if _, err := LoadFromEnv(); err != nil {
-		t.Fatalf("an unresolvable config location failed an environment-only run: %v", err)
+		t.Fatalf("an environment-only run failed (a config location resolved: %v): %v", locationErr == nil, err)
 	}
 }
 
