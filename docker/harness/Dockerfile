@@ -18,7 +18,9 @@
 #
 # The image tag is therefore the single version pin for the whole harness.
 # Dependabot manages it, and the product version is read back out of the image
-# at build time so nothing has to be kept in sync by hand.
+# at build time so nothing has to be kept in sync by hand. scripts/stack.sh
+# builds this same file on another release's image for a run against an older
+# release, replacing only this line.
 FROM atlassian/bitbucket:10.4.3
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -39,9 +41,12 @@ RUN sed -n 's/^build\.version[[:space:]]*=[[:space:]]*//p' \
 # product's supported window. This should never fire while the base image is the
 # official one — it exists so that a future base change surfaces here instead of
 # as an unexplained ERROR state mid-run.
+#
+# The JVM's major version is printed, not asserted: it follows the release, and
+# this file also builds older ones (Java 17 on 9.2.1, 21 on 10.4.2). A base
+# that is not a Bitbucket product image already fails at the version read above.
 RUN java -version 2>&1 | head -1 \
     && git --version \
-    && java -version 2>&1 | grep -q '"21' \
     && git --version | grep -qvE ' 2\.(48|51|52|53)\.'
 
 RUN mkdir -p /opt/atlassian-sdk \

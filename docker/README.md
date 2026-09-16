@@ -74,21 +74,23 @@ The product version is pinned in exactly one place: the base image tag in
 the tag moves the whole harness together and there is no second constant to keep
 in sync.
 
-### Running more than one version
+### Running another release
 
-Nothing here assumes a single instance. The host ports are overridable, so a
-second version can run alongside this one:
+`RELEASE` runs any release that has an `atlassian/bitbucket` image, next to this
+checkout's own instance. It is how the live suite is run against the older
+releases bb supports:
 
 ```bash
-BITBUCKET_HOST_PORT=8990 BITBUCKET_SSH_HOST_PORT=8999 \
-  docker compose -p bitbucket-10-2 -f docker/compose.yml up -d --wait
+task test:live RELEASE=9.2.1   # starts the instance first, as without RELEASE
+task stack:status RELEASE=9.2.1
+task stack:down RELEASE=9.2.1
 ```
 
-For a genuinely different product version you also need a different base image
-tag. The `FROM` line is deliberately a literal rather than a build argument,
-because Dependabot tracks literal tags reliably and argument-based ones less so.
-Turning it into an argument (or adding a second harness directory) is a small
-change when multi-version support is actually wanted.
+The image is built from the same Dockerfile with only the `FROM` tag replaced,
+so the JVM and git still come from that release's own image. The instance has
+its own compose project, image tag and Docker-assigned ports, and its URL goes
+to `.tmp/bitbucket-<release>.env`. The `FROM` line stays a literal rather than a
+build argument, because Dependabot tracks literal tags reliably.
 
 ## Why the base image is the official Bitbucket image
 
@@ -104,8 +106,10 @@ A rejected git is the dangerous case: the instance logs a clean
 `Started BitbucketServerApplication` and only afterwards parks in `ERROR` when
 the Mesh sidecar fails to wire up. Building on the official product image means
 both come from Atlassian and are correct by construction for the pinned version.
-`harness/Dockerfile` also asserts them at build time so that a future base-image
-change fails the build rather than the suite.
+`harness/Dockerfile` also rejects those git releases at build time, so that a
+future base-image change fails the build rather than the suite. It prints the
+JVM without asserting it, because the Java version follows the release: 9.2.1
+ships Java 17.
 
 ## Database
 

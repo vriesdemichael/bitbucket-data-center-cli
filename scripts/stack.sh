@@ -19,13 +19,17 @@
 # the instance's URL to .tmp/bitbucket.env every time. The live suite, the
 # bootstrap and the fixture purge read it from there.
 #
-# Usage: scripts/stack.sh up|bootstrap|down|restart|reset|status|logs|prune|purge-fixtures
+# A release argument (an atlassian/bitbucket tag such as 9.2.1) acts on an
+# instance of that release instead, next to the checkout's own: its own compose
+# project, image tag, Docker-assigned ports and .tmp/bitbucket-<release>.env. It
+# is how the live suite is run against the older releases bb supports.
+#
+# Usage: scripts/stack.sh up|bootstrap|down|restart|reset|status|logs|prune|purge-fixtures [release]
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
 readonly compose_file=docker/compose.yml
-readonly state_file=.tmp/bitbucket.env
 readonly worktree_label=dev.bb-cli.worktree
 # Each instance is a Bitbucket JVM of about 6GB. Past this many, `up` refuses to
 # start another rather than let the machine swap.
@@ -53,13 +57,48 @@ else
   http_port=0
   ssh_port=0
 fi
-readonly project http_port ssh_port
+
+release="${2:-}"
+if [ -n "$release" ]; then
+  if ! printf '%s' "$release" | grep -qE '^[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+    echo "Not a Bitbucket release: '${release}'. Give an atlassian/bitbucket image tag, such as 9.2.1." >&2
+    exit 2
+  fi
+  project="${project}-${release//./-}"
+  # Never the main checkout's 7990: its own instance may be using it.
+  http_port=0
+  ssh_port=0
+  state_file=".tmp/bitbucket-${release}.env"
+  harness_tag="$release"
+  # Appended to the task commands this script suggests, so they name the same instance.
+  task_release=" RELEASE=${release}"
+else
+  state_file=.tmp/bitbucket.env
+  harness_tag=local
+  task_release=""
+fi
+readonly project http_port ssh_port release state_file harness_tag task_release
 
 compose() {
   BITBUCKET_HOST_PORT="$http_port" \
     BITBUCKET_SSH_HOST_PORT="$ssh_port" \
     BB_STACK_WORKTREE="$worktree" \
+    BB_HARNESS_TAG="$harness_tag" \
     docker compose -p "$project" -f "$compose_file" "$@"
+}
+
+# build_release_image builds the harness for a release other than the one the
+# Dockerfile pins, from the same file with only the FROM tag replaced. The JVM,
+# git and product version all follow from the base image, as they do for the
+# pinned release, and the pin stays the one Dependabot moves (ADR-042).
+build_release_image() {
+  local dockerfile
+  dockerfile="$(sed "s#^FROM atlassian/bitbucket:.*#FROM atlassian/bitbucket:${release}#" docker/harness/Dockerfile)"
+  if ! printf '%s\n' "$dockerfile" | grep -qx "FROM atlassian/bitbucket:${release}"; then
+    echo "docker/harness/Dockerfile has no 'FROM atlassian/bitbucket:<tag>' line to replace." >&2
+    return 1
+  fi
+  printf '%s\n' "$dockerfile" | docker build --tag "bitbucket-cli-harness:${release}" --file - docker/harness
 }
 
 running_container() {
@@ -143,7 +182,7 @@ bootstrap() {
 }
 
 up() {
-  local others count age
+  local others count age build
   prune
 
   if [ -z "$(running_container)" ]; then
@@ -166,16 +205,23 @@ up() {
 
   # --build so a change to the harness reaches a checkout that already has the
   # image: compose builds only a missing one. With nothing changed it rebuilds
-  # from cache in seconds and leaves a running container alone.
-  if ! compose up -d --build --wait; then
+  # from cache in seconds and leaves a running container alone. A release's
+  # image is built just before, from its own tag, and compose must not build
+  # the pinned one over it.
+  build=--build
+  if [ -n "$release" ]; then
+    build_release_image
+    build=--no-build
+  fi
+  if ! compose up -d "$build" --wait; then
     echo "" >&2
     echo "The stack did not come up healthy." >&2
     echo "" >&2
     echo "On a first start the ~800MB download can outlast the start period;" >&2
-    echo "'task stack:logs' shows progress. Otherwise check 'task stack:status'," >&2
+    echo "'task stack:logs${task_release}' shows progress. Otherwise check 'task stack:status${task_release}'," >&2
     echo "then:" >&2
     echo "" >&2
-    echo "    task stack:restart" >&2
+    echo "    task stack:restart${task_release}" >&2
     exit 1
   fi
 
@@ -192,9 +238,9 @@ status() {
   local remaining
   compose ps
   if remaining="$(remaining_seconds)"; then
-    echo "SDK licence: the instance stops itself in $(( remaining / 60 ))m; 'task stack:up' then starts it with a new one"
+    echo "SDK licence: the instance stops itself in $(( remaining / 60 ))m; 'task stack:up${task_release}' then starts it with a new one"
   else
-    echo "SDK licence: not running (the instance stops itself when its licence ages out; 'task stack:up' starts it)"
+    echo "SDK licence: not running (the instance stops itself when its licence ages out; 'task stack:up${task_release}' starts it)"
   fi
   if [ -f "$state_file" ]; then
     # shellcheck disable=SC1090
@@ -225,7 +271,7 @@ case "${1:-}" in
     bash scripts/purge-live-fixtures.sh "$BITBUCKET_URL"
     ;;
   *)
-    echo "usage: scripts/stack.sh up|bootstrap|down|restart|reset|status|logs|prune|purge-fixtures" >&2
+    echo "usage: scripts/stack.sh up|bootstrap|down|restart|reset|status|logs|prune|purge-fixtures [release]" >&2
     exit 2
     ;;
 esac

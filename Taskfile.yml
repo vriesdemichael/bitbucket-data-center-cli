@@ -506,11 +506,18 @@ tasks:
     # so -- which read as the directory being set while the suite still ran
     # from the repository root and could not find its fixture.
     dir: tests/integration/live
+    # RELEASE=<atlassian/bitbucket tag> runs the suite against an instance of
+    # that release instead of the pinned one. The suite reads the release to
+    # find that instance's own file in .tmp.
+    env:
+      BB_STACK_RELEASE: '{{.RELEASE}}'
     cmds:
       # The instance stops itself when its licence ages out, so a run starts it
       # rather than failing against a stopped one. A running instance is left
       # alone.
       - task: stack:up
+        vars:
+          RELEASE: '{{.RELEASE}}'
       - task: test:live:build
       # Absolute and forward-slashed. Task's shell reads a backslash as an
       # escape, so ROOT_DIR verbatim arrives as C:Users... and reports "not
@@ -587,38 +594,39 @@ tasks:
 
   # The stack tasks act on this checkout's own instance: the main checkout's on
   # localhost:7990, a linked worktree's on ports Docker assigns. The logic lives
-  # in scripts/stack.sh, which says why.
+  # in scripts/stack.sh, which says why. RELEASE=<atlassian/bitbucket tag> acts
+  # on this checkout's instance of that release instead.
   stack:up:
     desc: Start this checkout's local Bitbucket instance and enable basic auth (no licence key required)
-    cmd: bash scripts/stack.sh up
+    cmd: bash scripts/stack.sh up {{.RELEASE}}
 
   stack:bootstrap:
     desc: Enable basic auth on this checkout's running instance (and apply a licence key if one is set)
-    cmd: bash scripts/stack.sh bootstrap
+    cmd: bash scripts/stack.sh bootstrap {{.RELEASE}}
 
   stack:down:
     desc: Stop this checkout's local Bitbucket instance
-    cmd: bash scripts/stack.sh down
+    cmd: bash scripts/stack.sh down {{.RELEASE}}
 
   stack:purge-fixtures:
     desc: Remove the LT* projects the live suite left on this checkout's instance (needs it up)
-    cmd: bash scripts/stack.sh purge-fixtures
+    cmd: bash scripts/stack.sh purge-fixtures {{.RELEASE}}
 
   stack:reset:
     desc: Tear down this checkout's instance and its Maven cache volume, then start it again
-    cmd: bash scripts/stack.sh reset
+    cmd: bash scripts/stack.sh reset {{.RELEASE}}
 
   stack:restart:
     desc: Restart this checkout's instance (also issues a fresh 3h SDK licence)
-    cmd: bash scripts/stack.sh restart
+    cmd: bash scripts/stack.sh restart {{.RELEASE}}
 
   stack:status:
     desc: Show this checkout's instance, how long before it stops itself, and every local instance
-    cmd: bash scripts/stack.sh status
+    cmd: bash scripts/stack.sh status {{.RELEASE}}
 
   stack:logs:
     desc: Tail this checkout's Bitbucket logs
-    cmd: bash scripts/stack.sh logs
+    cmd: bash scripts/stack.sh logs {{.RELEASE}}
 
   stack:prune:
     desc: Remove local Bitbucket instances whose worktree no longer exists

@@ -22,8 +22,9 @@ services:
       context: ./harness
     # Deliberately unversioned: the product version is pinned once, in the base
     # image tag in harness/Dockerfile. A version here would be a second constant
-    # to keep in sync.
-    image: bitbucket-cli-harness:local
+    # to keep in sync. scripts/stack.sh sets BB_HARNESS_TAG only for a run
+    # against another release, whose image it builds and tags itself.
+    image: bitbucket-cli-harness:${BB_HARNESS_TAG:-local}
     # No container_name: compose names the container after the project, and
     # scripts/stack.sh gives each checkout a project of its own. The label says
     # which checkout, so the instance cap can count instances and pruning can

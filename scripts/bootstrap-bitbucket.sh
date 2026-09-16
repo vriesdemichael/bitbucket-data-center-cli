@@ -248,8 +248,27 @@ authenticate_websudo() {
   log "WebSudo POST HTTP status: ${http_code}"
 }
 
+# basic_auth_accepted reports whether the admin credentials already work over
+# basic auth, on an endpoint only an administrator may read.
+basic_auth_accepted() {
+  local http_code
+  http_code=$(curl -s -o /dev/null -w '%{http_code}' \
+    -u "${ADMIN_USERNAME}:${ADMIN_PASSWORD}" \
+    "${BASE_URL}/rest/api/latest/admin/users?limit=1" || true)
+  [ "$http_code" = "200" ]
+}
+
 enable_basic_auth() {
   local http_code
+
+  # Checked first because there may be nothing to enable, and on an older
+  # release the steps below cannot run. Bitbucket 10 refuses basic auth until it
+  # is turned on; 9.2.1 accepts it out of the box and answers the TSV login with
+  # 404, so enabling it unconditionally stopped a 9.x instance from bootstrapping.
+  if basic_auth_accepted; then
+    log "Basic authentication is already accepted; nothing to enable."
+    return 0
+  fi
 
   authenticate_admin_session
   authenticate_websudo

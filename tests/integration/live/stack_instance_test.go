@@ -12,8 +12,14 @@ import (
 
 // stackInstanceFile is where scripts/stack.sh up records this checkout's own
 // Bitbucket instance: its URL, whose port Docker assigns in a linked worktree,
-// and its container.
-const stackInstanceFile = ".tmp/bitbucket.env"
+// and its container. An instance of another release, which `task test:live
+// RELEASE=<tag>` runs against, has a file of its own.
+func stackInstanceFile() string {
+	if release := strings.TrimSpace(os.Getenv(stackReleaseVariable)); release != "" {
+		return ".tmp/bitbucket-" + release + ".env"
+	}
+	return ".tmp/bitbucket.env"
+}
 
 // The variables the suite keeps the instance under once it has read the file.
 // They are set on the process, so a test that clears BITBUCKET_URL can still
@@ -22,6 +28,10 @@ const (
 	stackInstanceURLVariable       = "BB_STACK_URL"
 	stackInstanceContainerVariable = "BB_STACK_CONTAINER"
 )
+
+// stackReleaseVariable names the release a run is pointed at, when it is not
+// the one docker/harness/Dockerfile pins.
+const stackReleaseVariable = "BB_STACK_RELEASE"
 
 // applyStackInstanceToProcess points the suite at this checkout's instance.
 //
@@ -60,7 +70,7 @@ func readStackInstance() (map[string]string, bool) {
 		directory = parent
 	}
 
-	values, err := godotenv.Read(filepath.Join(directory, filepath.FromSlash(stackInstanceFile)))
+	values, err := godotenv.Read(filepath.Join(directory, filepath.FromSlash(stackInstanceFile())))
 	if err != nil || strings.TrimSpace(values["BITBUCKET_URL"]) == "" {
 		return nil, false
 	}
