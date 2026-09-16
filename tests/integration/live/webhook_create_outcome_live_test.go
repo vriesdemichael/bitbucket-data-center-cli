@@ -72,6 +72,9 @@ func TestLiveWebhookCreateLooksBeforeReportingAnUnknownOutcome(t *testing.T) {
 			if count := liveWebhooksNamed(t, ctx, harness, scope.listPath, name); count != 1 {
 				t.Fatalf("%d webhooks named %s, want the one create", count, name)
 			}
+			if stored := liveWebhookNamed(t, ctx, harness, scope.listPath, name); stored["url"] != receiver {
+				t.Errorf("the webhook named %s was stored with url %v, want %s", name, stored["url"], receiver)
+			}
 		})
 
 		t.Run(scope.name+" create that never arrived stays unknown", func(t *testing.T) {

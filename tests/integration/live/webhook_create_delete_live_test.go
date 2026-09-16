@@ -35,9 +35,11 @@ func TestLiveWebhookCreateAndDelete(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// Not bb's default event, so an --event that never arrived cannot read back
+	// as one that did.
 	name := testsupport.UniqueName("live-wh-create-")
 	createOutput, err := executeLiveCLI(t, "--json", "webhook", "create",
-		name, "http://localhost:7990/status", "--event", "repo:refs_changed")
+		name, "http://localhost:7990/status", "--event", "pr:opened")
 	if err != nil {
 		t.Fatalf("webhook create failed: %v\noutput: %s", err, createOutput)
 	}
@@ -54,6 +56,8 @@ func TestLiveWebhookCreateAndDelete(t *testing.T) {
 	if !strings.Contains(listOutput, name) {
 		t.Fatalf("expected the created webhook in the listing, got: %s", listOutput)
 	}
+	expectWebhookStoredAsSent(t, webhookAsStored(t, webhookID),
+		sentWebhook{name: name, url: "http://localhost:7990/status", events: []string{"pr:opened"}})
 
 	deleteOutput, err := executeLiveCLI(t, "--json", "webhook", "delete", webhookID, "--yes")
 	if err != nil {
@@ -66,5 +70,8 @@ func TestLiveWebhookCreateAndDelete(t *testing.T) {
 	}
 	if strings.Contains(afterDelete, name) {
 		t.Fatalf("expected the webhook to be gone from the listing after delete, got: %s", afterDelete)
+	}
+	if _, found := webhookInListing(t, afterDelete, webhookID); found {
+		t.Fatalf("webhook %s is still listed after its delete: %s", webhookID, afterDelete)
 	}
 }
