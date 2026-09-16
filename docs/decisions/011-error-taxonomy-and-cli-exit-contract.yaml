@@ -10,11 +10,20 @@ decision: >
 
   unknown_outcome is exit 13 and means the request reached the server and no usable answer came
   back, so bb cannot say whether it was applied: a mutation whose connection was lost, timed out or
-  was interrupted after it was sent, that a gateway answered with 502 or 504, or that Bitbucket
-  answered with an error it raised while writing the answer. It sits apart from
+  was interrupted after it was sent, that a gateway answered with 502 or 504, that Bitbucket
+  answered with 500, or that Bitbucket answered with an error it raised while writing the answer.
+  A 500 is Bitbucket raising an error rather than refusing the request, and it can raise one after
+  applying part of what was asked; the retry policy already refuses to replay a 5xx on a method it
+  does not replay, so reporting it as transient asked the caller to do what the policy would not.
+  503 stays transient: it says the request was not processed. It sits apart from
   transient, which invites a retry; from permanent, which says the work did not happen; and from
   cancelled, exit 12, an interrupt that stopped the request before the server could act on it. A
   mutation that may have been applied has to be checked rather than repeated.
+
+  A status that arrived is an answer, whatever became of the body behind it. A reply cut short
+  after 201 says the change was applied, and is reported as applied and not to be sent again;
+  one cut short after a 4xx says it was refused. Only a mutation with no status at all is
+  unknown.
 
   Where bb can tell what a mutation made, it makes that check itself. A webhook create lists the
   scope's webhooks before and after, and one new webhook matching the request is reported as

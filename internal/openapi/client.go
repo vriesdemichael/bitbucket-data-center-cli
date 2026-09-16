@@ -82,6 +82,10 @@ func (doer classifyingDoer) Do(request *http.Request) (*http.Response, error) {
 		return nil, exchange.Classify(err)
 	}
 
+	// The status is the outcome, so a body that fails to read after it is not
+	// an unknown one.
+	exchange.Answered(response.StatusCode)
+
 	// Answered here rather than by the service that reads the status: the
 	// service has the status and not the method, and a gateway's 502 or 504
 	// means something different for a request that is never replayed.
