@@ -137,6 +137,13 @@ func (exchange *Exchange) ClassifyRead(err error) error {
 // change was refused. Without it, a body that failed to read reported "no
 // answer came back", which is only true while none has.
 func (exchange *Exchange) Answered(status int) {
+	// A status outside the HTTP range is not one: something else was passed,
+	// and recording a truncated number would make answered() classify from a
+	// value nothing sent. Zero already means "nothing came back".
+	if status < 100 || status > 599 {
+		return
+	}
+
 	exchange.status.Store(int32(status))
 }
 
