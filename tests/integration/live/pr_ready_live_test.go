@@ -40,6 +40,7 @@ func TestLivePRReady(t *testing.T) {
 	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username, "REPO_READ"); err != nil {
 		t.Fatalf("grant reviewer read access failed: %v", err)
 	}
+	assertLifecycleRepoPermission(t, seeded.Key+"/"+repo.Slug, reviewer.Username, "REPO_READ")
 
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -345,6 +346,7 @@ func TestLivePRReadyByAReaderIsRefused(t *testing.T) {
 	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reader.Username, "REPO_READ"); err != nil {
 		t.Fatalf("grant read access failed: %v", err)
 	}
+	assertLifecycleRepoPermission(t, seeded.Key+"/"+repo.Slug, reader.Username, "REPO_READ")
 
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 

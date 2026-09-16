@@ -249,6 +249,25 @@ func assertLifecycleForkStored(t *testing.T, projectKey, forkSlug, forkName, ori
 	}
 }
 
+// assertLifecycleRepoPermission reads a user's permission on a repository back
+// through bb repo permissions list, for a grant made through the harness. A
+// review accepted from the user shows only that they can read.
+func assertLifecycleRepoPermission(t *testing.T, repoRef, username, permission string) {
+	t.Helper()
+
+	output := mustLiveCLI(t, "repo", "permissions", "list", "--repo", repoRef, "--all")
+	entries, _ := decodeJSONMap(t, output)["entries"].([]any)
+	held := []any{}
+	for _, entry := range entries {
+		if record, _ := entry.(map[string]any); record["name"] == username {
+			held = append(held, record["permission"])
+		}
+	}
+	if !reflect.DeepEqual(held, []any{permission}) {
+		t.Errorf("%s holds %v on %s, want [%s]:\n%s", username, held, repoRef, permission, output)
+	}
+}
+
 // assertLivePRState runs a transition with no --version and checks the state it
 // lands in.
 func assertLivePRState(t *testing.T, prID, action, wantState string) {
@@ -328,6 +347,7 @@ func TestLivePRUpdateKeepsReviewers(t *testing.T) {
 	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username, "REPO_READ"); err != nil {
 		t.Fatalf("grant reviewer read access failed: %v", err)
 	}
+	assertLifecycleRepoPermission(t, seeded.Key+"/"+repo.Slug, reviewer.Username, "REPO_READ")
 
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
@@ -421,6 +441,7 @@ func TestLiveReviewerFlagsAcceptTheReviewerGroupPrefix(t *testing.T) {
 	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, member.Username, "REPO_READ"); err != nil {
 		t.Fatalf("grant member read access failed: %v", err)
 	}
+	assertLifecycleRepoPermission(t, seeded.Key+"/"+repo.Slug, member.Username, "REPO_READ")
 
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
