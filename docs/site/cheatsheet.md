@@ -15,7 +15,7 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 
 | Goal | Command | Notes |
 |---|---|---|
-| Log in with a token | `printf '%s' "$TOKEN" \| bb auth login https://bitbucket.example.com --token-stdin` | Stores securely in OS keyring |
+| Log in with a token | `bb auth login https://bitbucket.example.com --token-stdin` | Reads the token from stdin; stores it in the OS keyring |
 | Check auth & connection | `bb auth status` | Validates credentials and server reachability |
 | Check the configuration | `bb doctor` | Every invalid key in every config file, and where each setting comes from; needs no host |
 | Configure git credentials | `bb auth setup-git` | One-time setup so `git push`/`git pull` authenticate via `bb` |
@@ -58,7 +58,7 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Check out into custom branch | `bb pr checkout 42 --branch review-42` | Avoids local branch collisions |
 | Target via browser URL | `bb pr checkout https://bitbucket.example.com/projects/PROJ/repos/my-repo/pull-requests/42` | No `--repo` flag or local clone needed |
 | Target via branch name | `bb pr checkout feature/retry` | Resolves the open PR for that branch |
-| Target via hash shorthand | `bb pr checkout #42` | Convenient hash notation |
+| Target via hash shorthand | `bb pr checkout '#42'` | Convenient hash notation |
 | View PR diff in terminal | `bb pr diff 42` | Unified patch against target branch |
 | View PR status & blockers | `bb pr get 42` | Summary of approvals, tasks, and CI checks |
 | Create a pull request | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "Add retries"` | Opens new pull request |
@@ -323,8 +323,8 @@ You can add short git aliases to make `bb` commands feel native to git:
 
 ```bash
 # Run 'git pr status' or 'git pr checkout 42'
-git config --global alias.pr "!bb pr"
+git config --global alias.pr '!bb pr'
 
 # Run 'git browse' to open current repository in browser
-git config --global alias.browse "!bb browse"
+git config --global alias.browse '!bb browse'
 ```

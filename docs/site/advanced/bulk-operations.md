@@ -160,7 +160,7 @@ Each entry in `operations` names a `type` and carries that type's fields.
 | `repo.permission.group.grant` | `group`, `permission` |
 | `repo.webhook.create` | `name`, `url` |
 | `repo.settings.auto-merge` | `enabled` |
-| `repo.settings.auto-decline` | `enabled` |
+| `repo.settings.auto-decline` | `enabled`; `inactivityWeeks` when enabled |
 | `repo.pull-request-settings.required-approvers-count` | `count` |
 | `repo.pull-request-settings.required-all-tasks-complete` | `requiredAllTasksComplete` |
 | `repo.default-task.create` | `description` |
@@ -223,9 +223,9 @@ The plan and status artifacts have published schemas too, under
 
 ## Where artifacts live
 
-`bb bulk` writes plan and run state to the OS temp directory by default. Set
-`BB_BULK_STATUS_DIR` somewhere durable if runs need to survive a reboot, or
-somewhere shared for a team runner — see
+`bb bulk` writes run state to `bulk-status` beside the stored configuration
+file, so it follows `BB_CONFIG_PATH`; a plan is written only where `--output`
+says. Set `BB_BULK_STATUS_DIR` somewhere shared for a team runner — see
 [Environment Variables](../reference/environment.md#bulk-operations).
 
 ## See also

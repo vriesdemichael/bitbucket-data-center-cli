@@ -38,7 +38,7 @@ Each archive has its own SBOM, generated from the binary inside it and named aft
 VERSION="[[ bb_version ]]"
 gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
   --repo vriesdemichael/bitbucket-data-center-cli \
-  --predicate-type https://spdx.dev/Document
+  --predicate-type https://spdx.dev/Document/v2.3
 ```
 
 To inspect an SBOM itself, download it and verify its signature like any other artifact:
