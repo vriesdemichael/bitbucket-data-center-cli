@@ -17,22 +17,17 @@ func storedFixture() StoredConfig {
 	}
 }
 
-// The non-strict resolver falls back to the default host on purpose: it answers
-// "which server should bb talk to", so `bb pr list` works without --host.
-func TestResolveStoredCredentialsFallsBackToDefaultHost(t *testing.T) {
-	t.Parallel()
-
-	_, ok := resolveStoredCredentials(storedFixture(), "https://unconfigured.example.org")
-	if !ok {
-		t.Fatal("expected the default-host fallback to resolve for bb's own commands")
-	}
-}
-
-// The strict resolver must not. This is the regression guard for a real defect:
-// the git credential helper originally used the non-strict lookup, so when git
-// asked it for github.com credentials it returned the Bitbucket token — handing
-// the credential to an unrelated host, which is the exact failure the helper
-// exists to prevent.
+// There is one resolver, and it does not fall back to the default host.
+//
+// A lookup that did existed for bb's own commands, and the host it answered for
+// is chosen by whatever pointed bb at a server: a .env in any parent directory,
+// a cloned repository's .bb/config.yaml, a URL given to `bb api`, or --host on
+// an MCP server. Each of those took the token stored for the user's own
+// Bitbucket and offered it elsewhere.
+//
+// This is also the regression guard for the defect that came first: the git
+// credential helper originally used the non-strict lookup, so when git asked it
+// for github.com credentials it returned the Bitbucket token.
 func TestResolveStoredCredentialsStrictDoesNotFallBackToDefaultHost(t *testing.T) {
 	t.Parallel()
 

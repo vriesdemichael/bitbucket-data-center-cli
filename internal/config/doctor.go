@@ -748,7 +748,11 @@ func (r resolution) storedProfile(host string) (string, string, StoredProfile, m
 		{TierWorkspace, StoredConfig{Hosts: r.workspace.Hosts}},
 		{TierSystem, r.system.StoredConfig()},
 	} {
-		if key, profile, found := storedProfileFor(candidate.config, host); found {
+		// Strict, because the loader is: a credential is released only to the
+		// host it was stored for, so reporting the default host's credential
+		// for a host that matches nothing would describe a run that cannot
+		// happen (ADR-086 asks the two to agree).
+		if key, profile, found := matchStoredHost(candidate.config, host); found {
 			return candidate.tier, key, profile, candidate.config.InsecureSecrets, true
 		}
 	}

@@ -394,7 +394,7 @@ func resolveCloneHTTPAuth(cfg config.AppConfig, cloneHost string) (config.AppCon
 	if matched, ok, err := config.MatchStoredHost(cloneHost); err != nil {
 		return config.AppConfig{}, "", false, err
 	} else if ok {
-		storedAuth, found, err := config.LoadStoredAuthForHost(matched.Host)
+		storedAuth, found, err := config.LoadStoredAuthForHostStrict(matched.Host)
 		if err != nil {
 			return config.AppConfig{}, "", false, err
 		}
@@ -403,7 +403,11 @@ func resolveCloneHTTPAuth(cfg config.AppConfig, cloneHost string) (config.AppCon
 		}
 	}
 
-	storedAuth, ok, err := config.LoadStoredAuthForHost(cloneHost)
+	// Strict: the credential goes to git, which sends it to whatever host is
+	// being cloned. The loose lookup answers a host it has never seen with the
+	// default host's credential, so `bb clone https://elsewhere/...` handed the
+	// user's Bitbucket token to elsewhere.
+	storedAuth, ok, err := config.LoadStoredAuthForHostStrict(cloneHost)
 	if err != nil {
 		return config.AppConfig{}, "", false, err
 	}
