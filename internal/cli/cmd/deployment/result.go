@@ -29,7 +29,8 @@ type Deployment struct {
 	URL                      string            `json:"url,omitempty" jsonschema:"Link to the deployment in the deploying system."`
 	Environment              Environment       `json:"environment,omitzero" jsonschema:"Environment deployed to."`
 	Repository               result.Repository `json:"repository,omitzero" jsonschema:"Repository the deployed commit belongs to."`
-	FromCommit               string            `json:"fromCommit,omitempty" jsonschema:"Commit that was deployed."`
+	ToCommit                 string            `json:"toCommit,omitempty" jsonschema:"Commit that was deployed, the one the deployment was created on."`
+	FromCommit               string            `json:"fromCommit,omitempty" jsonschema:"Commit the previous deployment of this key to this environment deployed, so what this one brought in is everything after it. Absent on the first."`
 	DeploymentSequenceNumber int64             `json:"deploymentSequenceNumber,omitempty" jsonschema:"Ordinal of this deployment within its environment, which is how two deployments of the same key are told apart."`
 	LastUpdated              int64             `json:"lastUpdated,omitempty" jsonschema:"When the record last changed, in milliseconds since the epoch."`
 }
@@ -84,6 +85,9 @@ func deploymentFrom(upstream openapigenerated.RestDeployment) Deployment {
 			Type:        safederef.String(upstream.Environment.Type),
 			URL:         safederef.String(upstream.Environment.Url),
 		}
+	}
+	if upstream.ToCommit != nil {
+		converted.ToCommit = safederef.String(upstream.ToCommit.Id)
 	}
 	if upstream.FromCommit != nil {
 		converted.FromCommit = safederef.String(upstream.FromCommit.Id)
