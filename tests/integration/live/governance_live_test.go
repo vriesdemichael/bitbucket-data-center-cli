@@ -799,6 +799,37 @@ func TestLiveReviewerGroupsAndDefaultReviewersCLI(t *testing.T) {
 	if names := governanceDefaultReviewerNames(t, elsewhere); len(names) != 0 {
 		t.Errorf("a query into %s drew %v from a condition that applies into master", source, names)
 	}
+
+	// Those queries name one repository on both sides, so they cannot tell the
+	// two repository ids apart. A fork can: Bitbucket looks each ref up in the
+	// repository given for its side and refuses one that is not there, so a
+	// branch only the fork has, into one only the upstream has, is answered
+	// only when each id went to its own side.
+	forkSlug := repo.Slug + "-reviewers-fork"
+	fork := postLiveJSON(t, fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s", seeded.Key, repo.Slug), map[string]any{
+		"name":    forkSlug,
+		"slug":    forkSlug,
+		"project": map[string]any{"key": seeded.Key},
+	})
+	forkID, ok := numericOrStringID(fork["id"])
+	if !ok {
+		t.Fatalf("the fork answered without an id: %v", fork)
+	}
+	const forkOnly, upstreamOnly = "feature/fork-only", "feature/upstream-only"
+	if err := harness.pushCommitOnBranch(seeded.Key, forkSlug, forkOnly, "fork-only.txt"); err != nil {
+		t.Fatalf("push a branch to the fork failed: %v", err)
+	}
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, upstreamOnly, "upstream-only.txt"); err != nil {
+		t.Fatalf("push a branch to the upstream failed: %v", err)
+	}
+
+	fromFork, err := executeLiveCLI(t, "--json", "pr", "default-reviewers", "--repo", repoRef, "--source-ref", "refs/heads/"+forkOnly, "--target-ref", "refs/heads/"+upstreamOnly, "--source-repo-id", forkID, "--target-repo-id", repoID)
+	if err != nil {
+		t.Fatalf("a query from the fork's branch into the upstream's was refused, so a repository id went to the wrong side: %v\noutput: %s", err, fromFork)
+	}
+	if names := governanceDefaultReviewerNames(t, fromFork); len(names) != 0 {
+		t.Errorf("a query from %s into %s drew %v from a condition on neither", forkOnly, upstreamOnly, names)
+	}
 }
 
 // governanceSeedCondition creates a condition for a dry run to be tried
