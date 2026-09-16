@@ -49,8 +49,15 @@ a different name and a registry type. The names are not the YAML spellings:
 | `UpdateSignatureIssuer` | `REG_SZ` | `update_signature_issuer` |
 | `AllowUnverifiedUpdate` | boolean | `allow_unverified_update` |
 
-A **boolean** is a `REG_DWORD` of `0` or `1`, or a `REG_SZ` of `true` or `false`.
-Write it one of those two ways. A `REG_DWORD` other than `0` reads as true.
+A **boolean** is a `REG_DWORD` of `0` or `1`, or a `REG_SZ`. A `REG_DWORD` other
+than `0` reads as true. The string form takes the spellings an administrator is
+likely to write, in any case: `true`/`false`, `1`/`0`, `yes`/`no`, `on`/`off`,
+`enable`/`disable`, `enabled`/`disabled`.
+
+A value `bb` cannot read is not treated as unset. The restrictive side of that
+control applies until it is corrected — keyring storage mandated, insecure TLS
+refused, updates disabled, plain-HTTP updates refused, unverified updates
+refused — and `bb doctor` reports the value and what is in force meanwhile.
 
 An empty string value is treated as unset, so a `REG_SZ` left blank does not
 mandate an empty path or an empty host list.
