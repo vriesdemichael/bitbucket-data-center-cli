@@ -106,7 +106,9 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 		map[string]any{"user": map[string]any{"name": reviewer.Username}, "role": "REVIEWER"}); err != nil {
 		t.Fatalf("add the reviewer failed: %v", err)
 	}
-	prReviewAssertSoleReviewer(t, prReviewPullRequest(t, pullRequestID), reviewer.Username, "UNAPPROVED")
+	pullRequest := prReviewPullRequest(t, pullRequestID)
+	prReviewAssertOpened(t, pullRequest, prReviewHarnessTitle, branch)
+	prReviewAssertSoleReviewer(t, pullRequest, reviewer.Username, "UNAPPROVED")
 
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
 
@@ -220,6 +222,7 @@ func TestLivePullRequestReviewDryRuns(t *testing.T) {
 		t.Fatalf("create pull request failed: %v", err)
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	prReviewAssertOpened(t, prReviewPullRequest(t, pullRequestID), prReviewHarnessTitle, branch)
 
 	const draft = "a draft the dry runs must not touch"
 	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", draft, "--pending"); err != nil {
@@ -302,6 +305,7 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 		t.Fatalf("create pull request failed: %v", err)
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	prReviewAssertOpened(t, prReviewPullRequest(t, pullRequestID), prReviewHarnessTitle, branch)
 
 	addOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID,
 		"--text", "comment that gets a reaction", "--blocker")
@@ -500,6 +504,7 @@ func TestLivePullRequestApplySuggestion(t *testing.T) {
 		t.Fatalf("create pull request failed: %v", err)
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	prReviewAssertOpened(t, prReviewPullRequest(t, pullRequestID), prReviewHarnessTitle, branch)
 
 	const suggested = "branch=rewritten-by-suggestion"
 	suggestionText := "please change this\n\n" + "```suggestion\n" + suggested + "\n```"
@@ -587,6 +592,7 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 		t.Fatalf("create pull request failed: %v", err)
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	prReviewAssertOpened(t, prReviewPullRequest(t, pullRequestID), prReviewHarnessTitle, branch)
 
 	// A blocker comment is what Bitbucket now calls a task.
 	addOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID,
@@ -705,6 +711,7 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 		t.Fatalf("create pull request failed: %v", err)
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	prReviewAssertOpened(t, prReviewPullRequest(t, pullRequestID), prReviewHarnessTitle, branch)
 
 	addComment := func(what string, args ...string) string {
 		t.Helper()
@@ -947,9 +954,12 @@ func prReviewPullRequest(t *testing.T, prID string) map[string]any {
 	return extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", prID)))
 }
 
-// prReviewAssertOpened fails unless a pull request opened with
-// createLivePRForRegression was stored with the title and source branch it was
-// given, into master.
+// prReviewHarnessTitle is the title harness.createPullRequest gives every pull
+// request it opens.
+const prReviewHarnessTitle = "Live test PR"
+
+// prReviewAssertOpened fails unless a pull request was stored with the title and
+// source branch it was opened with, into master.
 func prReviewAssertOpened(t *testing.T, pullRequest map[string]any, title, sourceBranch string) {
 	t.Helper()
 

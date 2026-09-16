@@ -187,8 +187,8 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 		if status := held(t); status != "APPROVED" {
 			t.Fatalf("status = %q, want APPROVED", status)
 		}
-		if published := prReviewWithText(prReviewPublished(t, prID), "a draft to publish"); len(published) != 1 || published[0]["state"] != "OPEN" {
-			t.Errorf("want the draft published once, OPEN; got %v", published)
+		if published := prReviewWithText(prReviewPublished(t, prID), "a draft to publish"); len(published) != 1 || published[0]["state"] != "OPEN" || published[0]["pending"] != false {
+			t.Errorf("want the draft published once, OPEN and no longer pending; got %v", published)
 		}
 		if drafts := prReviewDrafts(t, prID); len(drafts) != 0 {
 			t.Errorf("the review still holds drafts after complete: %v", drafts)

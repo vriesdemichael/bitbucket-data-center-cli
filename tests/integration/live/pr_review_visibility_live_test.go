@@ -228,11 +228,21 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 
 	var listedPullRequest *pullrequestservice.PullRequest
 	for index := range listed {
+		fromBranch := branch
 		if fmt.Sprintf("%d", listed[index].ID) == pullRequestID {
 			listedPullRequest = &listed[index]
 		}
-		if fmt.Sprintf("%d", listed[index].ID) == declinedID && listed[index].State != "DECLINED" {
-			t.Errorf("pull request %s is %s after the decline, want DECLINED", declinedID, listed[index].State)
+		if fmt.Sprintf("%d", listed[index].ID) == declinedID {
+			fromBranch = declinedBranch
+			if listed[index].State != "DECLINED" {
+				t.Errorf("pull request %s is %s after the decline, want DECLINED", declinedID, listed[index].State)
+			}
+		}
+		// Each stored as it was opened: the harness's title, from the branch it
+		// was given, into master.
+		if listed[index].Title != prReviewHarnessTitle || listed[index].SourceBranch != fromBranch || listed[index].TargetBranch != "master" {
+			t.Errorf("pull request %d = title %q, %s -> %s; want %q, %s -> master", listed[index].ID,
+				listed[index].Title, listed[index].SourceBranch, listed[index].TargetBranch, prReviewHarnessTitle, fromBranch)
 		}
 	}
 	if listedPullRequest == nil {
