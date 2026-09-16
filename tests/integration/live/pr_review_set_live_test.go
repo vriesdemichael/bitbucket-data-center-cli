@@ -48,12 +48,18 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username, "REPO_WRITE"); err != nil {
 		t.Fatalf("grant the reviewer write access failed: %v", err)
 	}
+	prReviewAssertRepoPermission(t, reviewer.Username, "REPO_WRITE")
 	if _, err := harness.liveJSON(ctx, http.MethodPost,
 		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/participants",
 			seeded.Key, repo.Slug, prID),
 		map[string]any{"user": map[string]any{"name": reviewer.Username}, "role": "REVIEWER"}); err != nil {
 		t.Fatalf("add the reviewer failed: %v", err)
 	}
+	pullRequest := prReviewPullRequest(t, prID)
+	if pullRequest["title"] != "Review status" {
+		t.Fatalf("title = %v, want Review status", pullRequest["title"])
+	}
+	prReviewAssertSoleReviewer(t, pullRequest, reviewer.Username, "UNAPPROVED")
 
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
 
@@ -76,6 +82,9 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 
 	t.Run("a dry run predicts the change without making it", func(t *testing.T) {
 		before := held(t)
+		if before != "UNAPPROVED" {
+			t.Fatalf("the reviewer holds %q before any review, want UNAPPROVED", before)
+		}
 
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "set", prID, "NEEDS_WORK", "--repo", repoRef)
 		assertLivePreview(t, output, "update")
@@ -104,6 +113,10 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 	t.Run("a dry run over the status already held predicts a no-op", func(t *testing.T) {
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "set", prID, "NEEDS_WORK", "--repo", repoRef)
 		assertLivePreview(t, output, "no-op")
+
+		if status := held(t); status != "NEEDS_WORK" {
+			t.Fatalf("the dry run changed the status to %q", status)
+		}
 	})
 
 	t.Run("the no-op is found under a token with no configured username", func(t *testing.T) {
@@ -123,18 +136,44 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		if token == "" {
 			t.Fatalf("no token in the create output:\n%s", createOutput)
 		}
-		if tokenID, ok := numericOrStringID(created["id"]); ok {
-			defer func() {
-				_, _ = executeLiveCLI(t, "auth", "token", "revoke", tokenID, "--user", reviewer.Username, "--yes")
-			}()
+		tokenID, ok := numericOrStringID(created["id"])
+		if !ok {
+			t.Fatalf("no token id in the create output:\n%s", createOutput)
+		}
+		// A cleanup rather than a defer, registered before the token takes over:
+		// cleanups run last-in first-out, so this one runs as the reviewer again.
+		t.Cleanup(func() {
+			_, _ = executeLiveCLI(t, "auth", "token", "revoke", tokenID, "--user", reviewer.Username, "--yes")
+		})
+
+		if stored := decodeJSONMap(t, mustLiveCLI(t, "auth", "token", "get", tokenID, "--user", reviewer.Username)); stored["name"] != tokenName {
+			t.Fatalf("stored token name = %v, want %s", stored["name"], tokenName)
+		}
+		// bb's token read publishes neither of these, and Bitbucket returns both.
+		raw := decodeJSONMap(t, mustLiveCLI(t, "api", "/rest/access-tokens/latest/users/"+reviewer.Username+"/"+tokenID))
+		if permissions, _ := raw["permissions"].([]any); len(permissions) != 1 || permissions[0] != "REPO_WRITE" {
+			t.Errorf("stored permissions = %v, want [REPO_WRITE]", raw["permissions"])
+		}
+		createdDate, _ := raw["createdDate"].(float64)
+		if expiryDate, _ := raw["expiryDate"].(float64); expiryDate-createdDate != float64(24*time.Hour/time.Millisecond) {
+			t.Errorf("the token expires at %v, created at %v; want one day apart", raw["expiryDate"], raw["createdDate"])
 		}
 
-		t.Setenv("BITBUCKET_USERNAME", "")
-		t.Setenv("BITBUCKET_PASSWORD", "")
-		t.Setenv("BITBUCKET_TOKEN", token)
+		prReviewAuthenticateWithTokenAlone(t, token)
+		if mode := decodeJSONMap(t, mustLiveCLI(t, "auth", "status"))["authMode"]; mode != "token" {
+			t.Fatalf("authMode = %v, want token", mode)
+		}
+		identity, _ := decodeJSONMap(t, mustLiveCLI(t, "auth", "identity"))["user"].(map[string]any)
+		if identity["name"] != reviewer.Username {
+			t.Fatalf("the token authenticates as %v, want %s", identity["name"], reviewer.Username)
+		}
 
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "set", prID, "NEEDS_WORK", "--repo", repoRef)
 		assertLivePreview(t, output, "no-op")
+
+		if status := held(t); status != "NEEDS_WORK" {
+			t.Fatalf("the dry run changed the status to %q", status)
+		}
 	})
 
 	t.Run("unapprove over NEEDS_WORK predicts an update, not a no-op", func(t *testing.T) {
@@ -158,4 +197,23 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 			t.Fatalf("status = %q, want UNAPPROVED", status)
 		}
 	})
+}
+
+// prReviewAuthenticateWithTokenAlone makes the rest of a test's CLI calls
+// authenticate with the token and with nothing else.
+//
+// A parent that registered a user keeps that user's name and password on every
+// call its subtests make, and they rank ahead of the environment, so a token
+// set beside them was never sent. A registration naming nobody is nearer and
+// takes their place, which leaves the credential to the environment -- and the
+// environment then holds the token and no username at all. It is the process's
+// environment, which is why a test calling this cannot be parallel.
+func prReviewAuthenticateWithTokenAlone(t *testing.T, token string) {
+	t.Helper()
+
+	setLiveCredentials(t, restrictedUser{})
+	for _, name := range []string{"BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD", "ADMIN_USER", "ADMIN_PASSWORD"} {
+		t.Setenv(name, "")
+	}
+	t.Setenv("BITBUCKET_TOKEN", token)
 }
