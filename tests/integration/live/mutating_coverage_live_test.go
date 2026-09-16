@@ -886,6 +886,9 @@ func TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict(t *testing.T) {
 	if !strings.Contains(output, "409") && !strings.Contains(err.Error(), "409") {
 		t.Fatalf("expected a 409 conflict, got: %v\noutput: %s", err, output)
 	}
+	if !apperrors.IsKind(err, apperrors.KindConflict) {
+		t.Errorf("expected kind conflict, got: %v", err)
+	}
 
 	// Refused means nothing was rebased: the branch has not moved.
 	if tip := mutatedBranchTip(t, branch); tip != tipBefore {
