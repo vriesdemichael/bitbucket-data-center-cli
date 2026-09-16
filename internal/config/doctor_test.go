@@ -351,7 +351,9 @@ func TestUpdateBaseURLInTheUsersOwnFileOverridesTheSystemMirror(t *testing.T) {
 	if setting.Value != "https://user-mirror.example.com" || setting.Source.Kind != TierStored {
 		t.Errorf("update_base_url = %q from %+v, want the user's mirror from the stored file", setting.Value, setting.Source)
 	}
-	if want := []string{"policies.update_base_url", "UpdateBaseURL"}; !slices.Equal(shadowedNames(setting), want) {
+	// Inside the system tier the registry outranks the file, the way it does
+	// for every other policy key: the two orderings are listed strongest first.
+	if want := []string{"UpdateBaseURL", "policies.update_base_url"}; !slices.Equal(shadowedNames(setting), want) {
 		t.Errorf("shadowed = %q, want %q", shadowedNames(setting), want)
 	}
 }

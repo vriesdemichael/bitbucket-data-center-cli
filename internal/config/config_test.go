@@ -2262,7 +2262,18 @@ func TestResolveUpdateBaseURLPoliciesVariants(t *testing.T) {
 		t.Fatalf("expected policy-singular-mirror, got %s, err: %v", url, err)
 	}
 
-	// 3. Error on invalid URL
+	// 3. policies: outranks the top level, as it does for every other policy
+	// key. This one resolver walked the file's own keys instead of reading the
+	// merged policy, so the top level won here and nowhere else.
+	if err := os.WriteFile(sysPath, []byte("update_base_url: https://top-level-mirror.local\npolicies:\n  update_base_url: https://policies-mirror.local\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	url, err = ResolveUpdateBaseURL("")
+	if err != nil || url != "https://policies-mirror.local" {
+		t.Fatalf("expected the policies mirror to outrank the top level, got %s, err: %v", url, err)
+	}
+
+	// 4. Error on invalid URL
 	_, err = ResolveUpdateBaseURL(":\x7finvalid")
 	if err == nil {
 		t.Fatal("expected error on invalid URL")

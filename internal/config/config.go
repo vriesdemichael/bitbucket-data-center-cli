@@ -1461,23 +1461,25 @@ func ResolveUpdateBaseURL(flagValue string) (string, error) {
 			return normalizeURL(stored.UpdateBaseURL), nil
 		}
 	}
-	sys, err := LoadSystemConfig()
-	if err != nil {
-		return "", unreadableConfig(SystemConfigPath, "system configuration", err)
-	}
-	if strings.TrimSpace(sys.UpdateBaseURL) != "" {
-		return normalizeURL(sys.UpdateBaseURL), nil
-	}
-	if sys.Policies != nil && strings.TrimSpace(sys.Policies.UpdateBaseURL) != "" {
-		return normalizeURL(sys.Policies.UpdateBaseURL), nil
-	}
-	if sys.Policy != nil && strings.TrimSpace(sys.Policy.UpdateBaseURL) != "" {
-		return normalizeURL(sys.Policy.UpdateBaseURL), nil
-	}
+	// The system tier is read as policy, which is what it is: the file's top
+	// level, then policies:, then policy:, then the Windows registry, later
+	// winning (LoadPolicy).
+	//
+	// Walking the file's own keys here inverted both halves of that -- the top
+	// level beat policies:, and anything in the file beat the registry -- so a
+	// fleet whose group policy named a mirror kept fetching from whatever
+	// %ProgramData%\bb\config.yaml said, which is neither what
+	// system-policy.md documents nor what any other policy key does. A damaged
+	// file is an error here too (#567), rather than a silent fall through to
+	// GitHub.
 	policy, err := LoadPolicy()
-	if err == nil && strings.TrimSpace(policy.UpdateBaseURL) != "" {
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(policy.UpdateBaseURL) != "" {
 		return normalizeURL(policy.UpdateBaseURL), nil
 	}
+
 	return "https://api.github.com", nil
 }
 
