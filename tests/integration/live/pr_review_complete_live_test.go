@@ -55,12 +55,18 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username, "REPO_WRITE"); err != nil {
 		t.Fatalf("grant the reviewer write access failed: %v", err)
 	}
+	prReviewAssertRepoPermission(t, reviewer.Username, "REPO_WRITE")
 	if _, err := harness.liveJSON(ctx, http.MethodPost,
 		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/participants",
 			seeded.Key, repo.Slug, prID),
 		map[string]any{"user": map[string]any{"name": reviewer.Username}, "role": "REVIEWER"}); err != nil {
 		t.Fatalf("add the reviewer failed: %v", err)
 	}
+	pullRequest := prReviewPullRequest(t, prID)
+	if pullRequest["title"] != "Review complete without a draft" {
+		t.Fatalf("title = %v, want Review complete without a draft", pullRequest["title"])
+	}
+	prReviewAssertSoleReviewer(t, pullRequest, reviewer.Username, "UNAPPROVED")
 
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
 
@@ -84,6 +90,12 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 	// Posted straight onto the pull request, the way the skill had agents post
 	// their findings: no draft review comes into existence.
 	mustLiveCLI(t, "pr", "comment", "add", prID, "--text", "the unit tests fail", "--repo", repoRef)
+	if published := prReviewPublished(t, prID); len(published) != 1 || published[0]["text"] != "the unit tests fail" || published[0]["state"] != "OPEN" {
+		t.Fatalf("published comments = %v, want only the one posted, OPEN", published)
+	}
+	if drafts := prReviewDrafts(t, prID); len(drafts) != 0 {
+		t.Fatalf("posting a comment started a draft review: %v", drafts)
+	}
 
 	setCommand := fmt.Sprintf("bb pr review set %s NEEDS_WORK --repo %s", prID, repoRef)
 
@@ -92,6 +104,13 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 		assertLivePreview(t, output, "blocked")
 		if !strings.Contains(output, setCommand) {
 			t.Errorf("expected the preview to name %q:\n%s", setCommand, output)
+		}
+
+		if status := held(t); status != "UNAPPROVED" {
+			t.Errorf("the dry run changed the status to %q", status)
+		}
+		if drafts := prReviewDrafts(t, prID); len(drafts) != 0 {
+			t.Errorf("the dry run started a draft review: %v", drafts)
 		}
 	})
 
@@ -109,8 +128,12 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 		if exception := apperrors.DetailsOf(err)["upstreamException"]; exception != noDraftReviewException {
 			t.Errorf("upstreamException = %q, want %q", exception, noDraftReviewException)
 		}
-		if status := held(t); status == "NEEDS_WORK" {
+		status := held(t)
+		if status == "NEEDS_WORK" {
 			t.Fatalf("the status was set although the command failed")
+		}
+		if status != "UNAPPROVED" {
+			t.Fatalf("status = %q after the refused completion, want UNAPPROVED", status)
 		}
 	})
 
@@ -126,6 +149,7 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 		if strings.Contains(err.Error(), "bb pr review set") {
 			t.Errorf("no status was asked for, yet the failure suggests setting one:\n%v", err)
 		}
+		prReviewAssertNotPublished(t, prID, "please add tests")
 	})
 
 	t.Run("with neither flag the failure says there is no draft review", func(t *testing.T) {
@@ -151,16 +175,25 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 
 	t.Run("with a draft review the preview predicts the update and complete sets the status", func(t *testing.T) {
 		mustLiveCLI(t, "pr", "comment", "add", prID, "--text", "a draft to publish", "--pending", "--repo", repoRef)
+		prReviewAssertOnlyDraft(t, prID, "a draft to publish")
 
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "complete", prID, "--status", "APPROVED", "--repo", repoRef)
 		assertLivePreview(t, output, "update")
 		if status := held(t); status != "NEEDS_WORK" {
 			t.Fatalf("the dry run changed the status to %q", status)
 		}
+		prReviewAssertOnlyDraft(t, prID, "a draft to publish")
+		prReviewAssertNotPublished(t, prID, "a draft to publish")
 
 		mustLiveCLI(t, "pr", "review", "complete", prID, "--status", "APPROVED", "--repo", repoRef)
 		if status := held(t); status != "APPROVED" {
 			t.Fatalf("status = %q, want APPROVED", status)
+		}
+		if published := prReviewWithText(prReviewPublished(t, prID), "a draft to publish"); len(published) != 1 || published[0]["state"] != "OPEN" {
+			t.Errorf("want the draft published once, OPEN; got %v", published)
+		}
+		if drafts := prReviewDrafts(t, prID); len(drafts) != 0 {
+			t.Errorf("the review still holds drafts after complete: %v", drafts)
 		}
 	})
 }
