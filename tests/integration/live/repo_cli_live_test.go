@@ -340,7 +340,7 @@ func TestLiveCLIRepoListAndComments(t *testing.T) {
 	if !strings.Contains(aggregatePRCommentListOutput, `"source": "activities"`) {
 		t.Fatalf("expected activities source in aggregate pr comment list output: %s", aggregatePRCommentListOutput)
 	}
-	// The whole pull request, so both: the one on no file and the one on a line.
+	// The whole pull request, so the comment on no file as well as those on a line.
 	aggregateThreads, _ := decodeJSONMap(t, aggregatePRCommentListOutput)["threads"].([]any)
 	if thread := repoCLIEntryWithID(t, aggregateThreads, prCommentID); thread["text"] != "live cli pr comment" || thread["anchor"] != nil {
 		t.Errorf("thread %s = text %v, anchor %v; want %q on no file", prCommentID, thread["text"], thread["anchor"], "live cli pr comment")
@@ -465,9 +465,9 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 		t.Fatalf("expected an entries list in permissions list output: %s", permissionListOutput)
 	}
 
-	// Whoever the harness authenticates as. The username used to come from the
-	// environment alone, and a run on a token has none there, so the grant and
-	// its check were skipped without a word.
+	// Whoever the harness authenticates as, and unconditionally: the grant and
+	// its check used to run only when the environment named a user, and would
+	// have been skipped without a word when it did not.
 	username := harness.username()
 	if held := repoCLIPermissionEntry(t, permissionListOutput, username); held != nil {
 		t.Fatalf("%s already holds %v on the fresh repository, so a grant would prove nothing: %s", username, held["permission"], permissionListOutput)
