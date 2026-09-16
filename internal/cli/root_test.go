@@ -1777,6 +1777,45 @@ func TestIssueCommandIsNotOffered(t *testing.T) {
 	}
 }
 
+// TestTokenScopeIsNotFilledFromTheGitRemote is `bb auth token`'s --repo meaning
+// something else.
+//
+// Everywhere else --repo names the repository a command acts in, and inference
+// filling it from the git remote is the convenience it exists for. Under
+// `auth token` it selects the scope of the token itself, so inference turned
+// `bb auth token revoke <id>` inside a checkout into a revoke of a repository
+// token, against a repository the caller never named. It also made --yes
+// refuse, because a target taken from the remote is not a target the caller
+// named (confirm.go).
+func TestTokenScopeIsNotFilledFromTheGitRemote(t *testing.T) {
+	t.Parallel()
+
+	root := NewRootCommand()
+
+	for _, path := range [][]string{
+		{"auth", "token", "list"},
+		{"auth", "token", "get"},
+		{"auth", "token", "create"},
+		{"auth", "token", "update"},
+		{"auth", "token", "revoke"},
+	} {
+		command, _, err := root.Find(path)
+		if err != nil {
+			t.Fatalf("resolve %v: %v", path, err)
+		}
+
+		// Inherited: --repo is persistent on the `auth token` group. Cobra merges
+		// a parent's persistent flags into a leaf's own set when it runs, which
+		// is why the inference pre-run finds it there.
+		if command.InheritedFlags().Lookup("repo") == nil && command.Flags().Lookup("repo") == nil {
+			t.Fatalf("%v must offer --repo for this test to mean anything", path)
+		}
+		if command.Annotations[annotationNoAmbientRepoInference] != "true" {
+			t.Errorf("%v must opt out of ambient repository inference: its --repo picks the token's scope, not a repository to work in", path)
+		}
+	}
+}
+
 // TestRepoSettingsPullRequestsUpdateDryRunStateful is live now, in
 // TestLiveGovernanceDryRunPredictionsReadRealState.
 //

@@ -317,6 +317,20 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	}
 	tokenCmd.AddCommand(revokeCmd)
 
+	// --repo here says which token to act on -- a repository-scoped one --
+	// rather than which repository to act in. Ambient inference fills an empty
+	// --repo from the git remote, which turned `bb auth token revoke <id>` in a
+	// checkout into a revoke of a repository token, and made --yes refuse
+	// because the target had not been named (confirm.go). The literal matches
+	// cli.annotationNoAmbientRepoInference; this package cannot import
+	// internal/cli, and the test of that name pins them together.
+	for _, sub := range tokenCmd.Commands() {
+		if sub.Annotations == nil {
+			sub.Annotations = map[string]string{}
+		}
+		sub.Annotations["bb/no-ambient-repo-inference"] = "true"
+	}
+
 	return tokenCmd
 }
 
