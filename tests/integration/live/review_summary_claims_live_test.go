@@ -43,6 +43,9 @@ func TestLiveReviewSummaryNeverOverclaims(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 	prID := createLivePRForRegression(t, branch, "Overclaim", "--no-default-reviewers", "--no-codeowners")
+	if title := prReviewPullRequest(t, prID)["title"]; title != "Overclaim" {
+		t.Fatalf("title = %v, want Overclaim", title)
+	}
 
 	// One unresolved comment and deliberately no task, so every count the
 	// blocker-comment tally can produce is a truthful zero.
@@ -52,12 +55,21 @@ func TestLiveReviewSummaryNeverOverclaims(t *testing.T) {
 		map[string]any{"text": "an unresolved comment"}); err != nil {
 		t.Fatalf("create the comment failed: %v", err)
 	}
+	// Which is only true if it was stored as an ordinary comment and nothing
+	// else was.
+	if published := prReviewPublished(t, prID); len(published) != 1 || published[0]["text"] != "an unresolved comment" ||
+		published[0]["severity"] != "NORMAL" || published[0]["state"] != "OPEN" {
+		t.Fatalf("published comments = %v, want only the one posted, NORMAL and OPEN", published)
+	}
 
 	t.Run("a partial measurement does not answer actionRequired", func(t *testing.T) {
 		summary := liveReviewSummary(t, mustLiveCLI(t, "pr", "get", prID, "--no-review-summary"))
 
 		if summary["countsSource"] != "blocker_comments" {
 			t.Fatalf("countsSource = %#v, want blocker_comments", summary["countsSource"])
+		}
+		if summary["openTasks"] != float64(0) {
+			t.Errorf("openTasks = %#v, want the truthful zero the tally measured", summary["openTasks"])
 		}
 		if _, present := summary["actionRequired"]; present {
 			t.Errorf("actionRequired = %#v; the threads were never counted, so there is no answer to give",
