@@ -5,6 +5,7 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"regexp"
 	"slices"
 	"strings"
@@ -415,6 +416,8 @@ func TestLivePullRequestListingFilters(t *testing.T) {
 	}
 
 	t.Run("the state filter excludes what it says", func(t *testing.T) {
+		// OPEN is also what Bitbucket lists when sent no state, so this cannot show
+		// the state arriving; --state closed and --state all below can.
 		open := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "open"))
 		if contains(open, declined) {
 			t.Errorf("the declined pull request %s survived --state open: %v", declined, open)
@@ -468,6 +471,54 @@ func TestLivePullRequestListingFilters(t *testing.T) {
 	})
 
 	t.Run("pr status lists what is waiting on the caller", func(t *testing.T) {
+		// Two pull requests somebody else opens with the caller as reviewer, and
+		// the caller approves one. Without them every pull request here is the
+		// caller's own, and a dashboard that dropped the role or the review
+		// status bb sends would answer exactly the same.
+		admin := harness.config.BitbucketUsername
+		author, err := harness.createLicensedUser(ctx)
+		if err != nil {
+			t.Fatalf("create the other author failed: %v", err)
+		}
+		if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, author.Username, "REPO_READ"); err != nil {
+			t.Fatalf("grant the other author read access failed: %v", err)
+		}
+		assertLifecycleRepoPermission(t, seeded.Key+"/"+repo.Slug, author.Username, "REPO_READ")
+
+		reviewRequests := make([]string, 0, 2)
+		for index, branch := range []string{"feature/filter-waiting", "feature/filter-approved"} {
+			if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, fmt.Sprintf("review-%d.txt", index)); err != nil {
+				t.Fatalf("push %s failed: %v", branch, err)
+			}
+			title := "Review " + branch
+			created, err := harness.liveJSONAs(ctx, author, http.MethodPost,
+				fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests", seeded.Key, repo.Slug),
+				map[string]any{
+					"title":     title,
+					"fromRef":   map[string]any{"id": "refs/heads/" + branch},
+					"toRef":     map[string]any{"id": "refs/heads/master"},
+					"reviewers": []any{map[string]any{"user": map[string]any{"name": admin}}},
+				})
+			if err != nil {
+				t.Fatalf("create %s as %s failed: %v", branch, author.Username, err)
+			}
+			id := trimNumeric(created["id"])
+			stored := readLifecyclePR(t, id)
+			assertLifecyclePRStored(t, stored, map[string]any{
+				"title":          title,
+				"authorUsername": author.Username,
+				"sourceBranch":   branch,
+				"targetBranch":   "master",
+			})
+			if names := decodeLivePRReviewers(t, stored); len(names) != 1 || !strings.EqualFold(names[0], admin) {
+				t.Fatalf("pull request %s stored the reviewers %v, want exactly [%s]", id, names, admin)
+			}
+			reviewRequests = append(reviewRequests, id)
+		}
+		waiting, approved := reviewRequests[0], reviewRequests[1]
+		mustLiveCLI(t, "pr", "review", "approve", approved)
+		assertLiveReviewerApproval(t, approved, admin, true)
+
 		// A different endpoint entirely -- the cross-repository dashboard --
 		// reached through the command that exists for it. --all, because the
 		// dashboard spans every repository the suite has open.
@@ -493,8 +544,8 @@ func TestLivePullRequestListingFilters(t *testing.T) {
 		}
 
 		// bb asks the dashboard for the caller's open pull requests as author,
-		// and for what waits on their review: the declined one is authored too,
-		// and nobody reviews their own.
+		// and for the open ones still waiting on their review: the declined one
+		// is authored too, and nobody reviews their own.
 		created := section("createdByYou")
 		if !contains(created, ids[0]) || !contains(created, ids[1]) {
 			t.Errorf("createdByYou lists %v from this repository, want the open %v", created, ids[:2])
@@ -502,8 +553,15 @@ func TestLivePullRequestListingFilters(t *testing.T) {
 		if contains(created, declined) {
 			t.Errorf("createdByYou lists the declined pull request %s: %v", declined, created)
 		}
-		if reviewing := section("requestingYourReview"); len(reviewing) != 0 {
-			t.Errorf("requestingYourReview lists the caller's own pull requests %v", reviewing)
+		for _, other := range reviewRequests {
+			if contains(created, other) {
+				t.Errorf("createdByYou lists %s, which %s opened: %v", other, author.Username, created)
+			}
+		}
+		// Exactly the one still waiting: not the caller's own, and not the one
+		// the caller has already approved.
+		if reviewing := section("requestingYourReview"); !slices.Equal(reviewing, []string{waiting}) {
+			t.Errorf("requestingYourReview lists %v from this repository, want only %s", reviewing, waiting)
 		}
 	})
 }
