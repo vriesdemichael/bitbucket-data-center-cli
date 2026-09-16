@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,9 +69,9 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 	// HTTP remote caused the Bitbucket token to be sent to that host too.
 	//
 	// A credential helper cannot be used here because it would have to be
-	// configured before the repository exists. Instead the header is passed
-	// with -c so it lives only in this process's argv, and the persistent
-	// credential path is set up afterwards by `bb auth setup-git`.
+	// configured before the repository exists. The header is passed for this
+	// one command instead, and the persistent credential path is set up
+	// afterwards by `bb auth setup-git`.
 	var headerVal string
 	if options.AuthToken != "" {
 		headerVal = fmt.Sprintf("Authorization: Bearer %s", options.AuthToken)
@@ -79,17 +80,7 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 		headerVal = fmt.Sprintf("Authorization: Basic %s", base64.StdEncoding.EncodeToString([]byte(auth)))
 	}
 
-	var args []string
-	if headerVal != "" {
-		// Scope the header to the host being cloned from. An unscoped
-		// http.extraHeader applies to every host git contacts, including any
-		// redirect target.
-		if scope := httpConfigScope(repositoryURL); scope != "" {
-			args = append(args, "-c", fmt.Sprintf("http.%s.extraHeader=%s", scope, headerVal))
-		} else {
-			args = append(args, "-c", fmt.Sprintf("http.extraHeader=%s", headerVal))
-		}
-	}
+	args, env := cloneCredentialConfig(repositoryURL, headerVal, backend.gitReadsConfigFromEnvironment(ctx))
 	args = append(args, "clone")
 	if options.Branch != "" {
 		args = append(args, "--branch", options.Branch)
@@ -102,11 +93,100 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 	}
 	args = append(args, repositoryURL, options.Directory)
 
-	if _, err := backend.run(ctx, runOptions{args: args}); err != nil {
+	if _, err := backend.run(ctx, runOptions{args: args, env: env}); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// cloneCredentialConfig decides how the credential reaches git: in the child's
+// environment where git reads configuration from there, and on the command line
+// where it does not.
+//
+// A command line is not private. /proc/<pid>/cmdline can be read by any local
+// account for as long as the clone runs, and `ps` prints it, so the token was
+// visible to anyone else on the machine. /proc/<pid>/environ is readable only
+// by the owner of the process.
+//
+// The header stays scoped to the host being cloned from either way. An unscoped
+// http.extraHeader is attached to every host git contacts, including a redirect
+// target.
+func cloneCredentialConfig(repositoryURL, headerVal string, environmentConfig bool) (args, env []string) {
+	if headerVal == "" {
+		return nil, nil
+	}
+
+	key := "http.extraHeader"
+	if scope := httpConfigScope(repositoryURL); scope != "" {
+		key = fmt.Sprintf("http.%s.extraHeader", scope)
+	}
+
+	if environmentConfig {
+		return nil, []string{
+			"GIT_CONFIG_COUNT=1",
+			"GIT_CONFIG_KEY_0=" + key,
+			"GIT_CONFIG_VALUE_0=" + headerVal,
+		}
+	}
+
+	return []string{"-c", fmt.Sprintf("%s=%s", key, headerVal)}, nil
+}
+
+// gitVersionNumber picks the version out of `git version 2.43.0.windows.1`.
+var gitVersionNumber = regexp.MustCompile(`(\d+)\.(\d+)`)
+
+// gitReadsConfigFromEnvironment reports whether git takes configuration from
+// GIT_CONFIG_COUNT and its pairs, which it has done since 2.31.
+//
+// An older git ignores them without saying so, and a clone that needed the
+// credential would fail as an authentication error instead. Asking costs one
+// `git --version` per clone, against a network operation.
+func (backend *Backend) gitReadsConfigFromEnvironment(ctx context.Context) bool {
+	version, err := backend.Version(ctx)
+	if err != nil {
+		return false
+	}
+
+	return gitVersionAtLeast(version, 2, 31)
+}
+
+// withoutGitConfigPairs drops the configuration variables already in the
+// environment, so the pair being set here is the one git reads.
+func withoutGitConfigPairs(environment []string) []string {
+	kept := make([]string, 0, len(environment))
+
+	for _, entry := range environment {
+		name, _, found := strings.Cut(entry, "=")
+		if found && strings.HasPrefix(name, "GIT_CONFIG_") {
+			continue
+		}
+		kept = append(kept, entry)
+	}
+
+	return kept
+}
+
+func gitVersionAtLeast(version string, major, minor int) bool {
+	match := gitVersionNumber.FindStringSubmatch(version)
+	if len(match) != 3 {
+		return false
+	}
+
+	foundMajor, err := strconv.Atoi(match[1])
+	if err != nil {
+		return false
+	}
+	foundMinor, err := strconv.Atoi(match[2])
+	if err != nil {
+		return false
+	}
+
+	if foundMajor != major {
+		return foundMajor > major
+	}
+
+	return foundMinor >= minor
 }
 
 // credentialArgs renders credentials as leading `git -c` arguments, scoped to
@@ -390,6 +470,9 @@ func (backend *Backend) ListRemotes(ctx context.Context, repositoryDirectory str
 type runOptions struct {
 	cwd  string
 	args []string
+	// env carries configuration the child needs but the command line must not
+	// hold, such as a credential (see cloneCredentialConfig).
+	env []string
 }
 
 type runResult struct {
@@ -504,6 +587,12 @@ func (backend *Backend) run(ctx context.Context, options runOptions) (runResult,
 		command.Dir = options.cwd
 	}
 	command.Env = ScopeFreeEnv()
+	if len(options.env) > 0 {
+		// The inherited pairs go first, because two definitions of one variable
+		// are not merged: on Linux the first wins, so an inherited
+		// GIT_CONFIG_COUNT would hide the pair being set here.
+		command.Env = append(withoutGitConfigPairs(command.Env), options.env...)
+	}
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
