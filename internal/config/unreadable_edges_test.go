@@ -32,12 +32,25 @@ func TestAKeyringKeyWithNoConfigLocationIsTheHost(t *testing.T) {
 	t.Setenv("APPDATA", "")
 	t.Setenv("HOME", "")
 	t.Setenv("XDG_CONFIG_HOME", "")
-	if _, err := ConfigPath(); err == nil {
-		t.Skip("this platform still resolves a config directory with the variables unset")
+
+	const host = "https://bitbucket.example"
+	key := credentialKey(host)
+
+	// Both outcomes are asserted rather than one being skipped: where these
+	// variables decide the location, unsetting them leaves none and the key is
+	// the host alone; where a platform has another source for it, there is a
+	// location and the key is that host scoped to the file. Skipping the second
+	// left this test running on one operating system.
+	if _, err := ConfigPath(); err != nil {
+		if key != hostKey(host) {
+			t.Fatalf("credentialKey = %q, want the host key with no config location", key)
+		}
+
+		return
 	}
 
-	if key := credentialKey("https://bitbucket.example"); key != hostKey("https://bitbucket.example") {
-		t.Fatalf("credentialKey = %q, want the host key", key)
+	if !strings.HasPrefix(key, hostKey(host)+"#") {
+		t.Fatalf("credentialKey = %q, want the host key scoped to the config file", key)
 	}
 }
 
