@@ -858,6 +858,9 @@ func TestLivePermissionCommentUpdateDryRunDeniedWithoutRepoRead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create pull request failed: %v", err)
 	}
+	if fixture := extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", prID))); fixture["sourceBranch"] != prBranch || fixture["targetBranch"] != "master" {
+		t.Fatalf("pull request %s merges %v into %v, want %s into master", prID, fixture["sourceBranch"], fixture["targetBranch"], prBranch)
+	}
 
 	commentOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "create", "--pr", prID, "--text", "ownership precheck fixture")
 	if err != nil {
