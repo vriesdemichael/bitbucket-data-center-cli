@@ -483,10 +483,7 @@ func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) 
 		t.Fatalf("expected no required-build side-effect from create dry-run\nbefore: %s\nafter: %s", listBeforeCreateOutput, listAfterCreateOutput)
 	}
 
-	requiredID, requiredAvailable := createRequiredBuildCheckWithRetry(t, body)
-	if !requiredAvailable {
-		t.Fatalf("required-build endpoint unavailable for update/delete dry-run assertions")
-	}
+	requiredID := createRequiredBuildCheckWithRetry(t, body)
 
 	listBeforeUpdateOutput, err := executeLiveCLI(t, "--json", "build", "required", "list", "--limit", "200")
 	if err != nil {

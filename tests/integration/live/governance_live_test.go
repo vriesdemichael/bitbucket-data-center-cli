@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 func TestLiveGovernanceCLI(t *testing.T) {
@@ -44,9 +46,18 @@ func TestLiveGovernanceCLI(t *testing.T) {
 		t.Fatalf("expected a group listing in output: %s", output)
 	}
 
-	// Try to grant to stash-users if it exists (usually does in local stack)
-	_, _ = executeLiveCLI(t, "project", "permissions", "groups", "grant", seeded.Key, "stash-users", "PROJECT_READ")
-	_, _ = executeLiveCLI(t, "repo", "settings", "security", "permissions", "groups", "grant", "stash-users", "REPO_READ", "--repo", seeded.Key+"/"+repo.Slug)
+	// stash-users is the group every licensed user is in, so the grant is not a
+	// maybe. Both of these discarded their result, which is a command that can
+	// stop working without anything noticing.
+	grantOutput, err := executeLiveCLI(t, "project", "permissions", "groups", "grant", seeded.Key, "stash-users", "PROJECT_READ")
+	if err != nil {
+		t.Fatalf("project group permission grant failed: %v\noutput: %s", err, grantOutput)
+	}
+
+	grantOutput, err = executeLiveCLI(t, "repo", "settings", "security", "permissions", "groups", "grant", "stash-users", "REPO_READ", "--repo", seeded.Key+"/"+repo.Slug)
+	if err != nil {
+		t.Fatalf("repo group permission grant failed: %v\noutput: %s", err, grantOutput)
+	}
 
 	// Test listing reviewer conditions
 	output, err = executeLiveCLI(t, "--json", "reviewer", "condition", "list", "--project", seeded.Key)
@@ -57,25 +68,42 @@ func TestLiveGovernanceCLI(t *testing.T) {
 		t.Fatalf("expected conditions in output: %s", output)
 	}
 
-	// Reviewer condition lifecycle
-	output, err = executeLiveCLI(t, "--json", "reviewer", "condition", "create", `{"requiredApprovals": 1}`, "--repo", seeded.Key+"/"+repo.Slug)
-	if err == nil {
-		// If successfully created (depends on default-reviewers plugin), we'll try to extract the ID and update/delete it
-		var id string
-		if strings.Contains(output, `"id":`) {
-			// Basic extraction for JSON output
-			parts := strings.Split(output, `"id":`)
-			if len(parts) > 1 {
-				idStr := strings.TrimSpace(strings.Split(parts[1], ",")[0])
-				idStr = strings.TrimSpace(strings.Split(idStr, "}")[0])
-				id = idStr
-			}
-		}
+	// Reviewer condition lifecycle, asserted rather than attempted. Create,
+	// update and delete used to run inside an `if err == nil` with their own
+	// errors discarded, so all three were untested whenever the create failed --
+	// and the id was sliced out of the text rather than decoded.
+	//
+	// The payload it used to send -- requiredApprovals on its own -- is one
+	// Bitbucket refuses with "a sourceMatcher with ID and type is required",
+	// which is how long that create had not run.
+	reviewerID, err := harness.userID(ctx, harness.username())
+	if err != nil {
+		t.Fatalf("look up the reviewer id: %v", err)
+	}
+	condition := fmt.Sprintf(`{
+		"sourceMatcher": {"id": "ANY_REF", "type": {"id": "ANY_REF"}},
+		"targetMatcher": {"id": "refs/heads/master", "type": {"id": "BRANCH"}},
+		"reviewers": [{"id": %d}],
+		"requiredApprovals": 1
+	}`, reviewerID)
 
-		if id != "" {
-			_, _ = executeLiveCLI(t, "--json", "reviewer", "condition", "update", id, `{"requiredApprovals": 2}`, "--repo", seeded.Key+"/"+repo.Slug)
-			_, _ = executeLiveCLI(t, "--json", "reviewer", "condition", "delete", id, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
-		}
+	output, err = executeLiveCLI(t, "--json", "reviewer", "condition", "create", condition, "--repo", seeded.Key+"/"+repo.Slug)
+	if err != nil {
+		t.Fatalf("reviewer condition create failed: %v\noutput: %s", err, output)
+	}
+	conditionID, ok := numericOrStringID(decodeJSONMap(t, output)["id"])
+	if !ok {
+		t.Fatalf("the create answered without an id: %s", output)
+	}
+
+	updateOutput, err := executeLiveCLI(t, "--json", "reviewer", "condition", "update", conditionID, strings.Replace(condition, "\"requiredApprovals\": 1", "\"requiredApprovals\": 2", 1), "--repo", seeded.Key+"/"+repo.Slug)
+	if err != nil {
+		t.Fatalf("reviewer condition update failed: %v\noutput: %s", err, updateOutput)
+	}
+
+	deleteOutput, err := executeLiveCLI(t, "--json", "reviewer", "condition", "delete", conditionID, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
+	if err != nil {
+		t.Fatalf("reviewer condition delete failed: %v\noutput: %s", err, deleteOutput)
 	}
 
 	// --- Issue 33: PR Governance ---
@@ -486,75 +514,108 @@ func TestLiveReviewerGroupsAndDefaultReviewersCLI(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	// 1. List project-scoped reviewer groups (even if empty)
+	// Every call below is asserted rather than logged. Half of this test used to
+	// run its command, log whatever came back and carry on, so a reviewer-group
+	// surface that stopped working -- or one whose id could no longer be read
+	// out of the create -- was a green run with a line in the output nobody
+	// reads. A dependency that cannot be reached fails the test.
+	repoRef := seeded.Key + "/" + repo.Slug
+	groupName := testsupport.UniqueName("lt-reviewer-group-")
+	// Bitbucket refuses an empty reviewer group, so every create below names a
+	// member. The permissive version of this test never found that out: its
+	// create failed and the whole lifecycle was skipped.
+	member := harness.username()
+
+	// 1. List project-scoped reviewer groups (empty is an answer).
 	output, err := executeLiveCLI(t, "--json", "reviewer-group", "list", "--project", seeded.Key)
 	if err != nil {
-		t.Logf("project reviewer-group list skipped/failed: %v", err)
-	} else if !strings.Contains(output, `"reviewerGroups"`) {
-		t.Fatalf("expected reviewer_groups in output: %s", output)
+		t.Fatalf("project reviewer-group list failed: %v\noutput: %s", err, output)
+	}
+	if !strings.Contains(output, `"reviewerGroups"`) {
+		t.Fatalf("expected reviewerGroups in output: %s", output)
 	}
 
-	// 2. List repository-scoped reviewer groups
-	output, err = executeLiveCLI(t, "--json", "reviewer-group", "list", "--repo", seeded.Key+"/"+repo.Slug)
+	// 2. List repository-scoped reviewer groups.
+	output, err = executeLiveCLI(t, "--json", "reviewer-group", "list", "--repo", repoRef)
 	if err != nil {
-		t.Logf("repo reviewer-group list skipped/failed: %v", err)
-	} else if !strings.Contains(output, `"reviewerGroups"`) {
-		t.Fatalf("expected reviewer_groups in output: %s", output)
+		t.Fatalf("repo reviewer-group list failed: %v\noutput: %s", err, output)
+	}
+	if !strings.Contains(output, `"reviewerGroups"`) {
+		t.Fatalf("expected reviewerGroups in output: %s", output)
 	}
 
-	// 3. Dry-run create repository reviewer group
-	dryRunOut, err := executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "create", "test-live-group", "--repo", seeded.Key+"/"+repo.Slug)
-	if err == nil {
-		if !strings.Contains(dryRunOut, `"intent": "reviewer-group.create"`) {
-			t.Fatalf("expected intent in dry-run create, got: %s", dryRunOut)
-		}
+	// 3. Dry-run create.
+	dryRunOut, err := executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "create", groupName, "--repo", repoRef, "--users", member)
+	if err != nil {
+		t.Fatalf("reviewer-group create dry-run failed: %v\noutput: %s", err, dryRunOut)
+	}
+	if !strings.Contains(dryRunOut, `"intent": "reviewer-group.create"`) {
+		t.Fatalf("expected intent in dry-run create, got: %s", dryRunOut)
 	}
 
-	// 4. Create repository-scoped reviewer group
-	createOut, err := executeLiveCLI(t, "--json", "reviewer-group", "create", "test-live-group", "--repo", seeded.Key+"/"+repo.Slug, "--description", "live desc")
-	if err == nil {
-		var id string
-		if strings.Contains(createOut, `"id":`) {
-			parts := strings.Split(createOut, `"id":`)
-			if len(parts) > 1 {
-				idStr := strings.TrimSpace(strings.Split(parts[1], ",")[0])
-				idStr = strings.TrimSpace(strings.Split(idStr, "}")[0])
-				id = idStr
-			}
-		}
-
-		if id != "" {
-			// Dry-run update
-			_, _ = executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "update", id, "--repo", seeded.Key+"/"+repo.Slug, "--description", "new live desc")
-
-			// Update
-			_, _ = executeLiveCLI(t, "--json", "reviewer-group", "update", id, "--repo", seeded.Key+"/"+repo.Slug, "--description", "new live desc")
-
-			// List users
-			usersOut, err := executeLiveCLI(t, "--json", "reviewer-group", "users", id, "--repo", seeded.Key+"/"+repo.Slug)
-			if err == nil && !strings.Contains(usersOut, `"users"`) {
-				t.Fatalf("expected users in output: %s", usersOut)
-			}
-
-			// Dry-run delete
-			_, _ = executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "delete", id, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
-
-			// Delete
-			_, _ = executeLiveCLI(t, "--json", "reviewer-group", "delete", id, "--repo", seeded.Key+"/"+repo.Slug, "--yes")
-		}
+	// 4. Create, and read the id back rather than slicing it out of the text.
+	createOut, err := executeLiveCLI(t, "--json", "reviewer-group", "create", groupName, "--repo", repoRef, "--users", member, "--description", "live desc")
+	if err != nil {
+		t.Fatalf("reviewer-group create failed: %v\noutput: %s", err, createOut)
+	}
+	groupID, ok := numericOrStringID(decodeJSONMap(t, createOut)["id"])
+	if !ok {
+		t.Fatalf("the create answered without an id, so nothing below could run: %s", createOut)
 	}
 
-	// 5. Default Reviewers
+	updateDryRunOut, err := executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "update", groupID, "--repo", repoRef, "--description", "new live desc")
+	if err != nil {
+		t.Fatalf("reviewer-group update dry-run failed: %v\noutput: %s", err, updateDryRunOut)
+	}
+
+	updateOut, err := executeLiveCLI(t, "--json", "reviewer-group", "update", groupID, "--repo", repoRef, "--description", "new live desc")
+	if err != nil {
+		t.Fatalf("reviewer-group update failed: %v\noutput: %s", err, updateOut)
+	}
+	if !strings.Contains(updateOut, "new live desc") {
+		t.Fatalf("the update did not report the new description: %s", updateOut)
+	}
+
+	usersOut, err := executeLiveCLI(t, "--json", "reviewer-group", "users", groupID, "--repo", repoRef)
+	if err != nil {
+		t.Fatalf("reviewer-group users failed: %v\noutput: %s", err, usersOut)
+	}
+	if !strings.Contains(usersOut, `"users"`) {
+		t.Fatalf("expected users in output: %s", usersOut)
+	}
+
+	deleteDryRunOut, err := executeLiveCLI(t, "--json", "--dry-run", "reviewer-group", "delete", groupID, "--repo", repoRef, "--yes")
+	if err != nil {
+		t.Fatalf("reviewer-group delete dry-run failed: %v\noutput: %s", err, deleteDryRunOut)
+	}
+
+	deleteOut, err := executeLiveCLI(t, "--json", "reviewer-group", "delete", groupID, "--repo", repoRef, "--yes")
+	if err != nil {
+		t.Fatalf("reviewer-group delete failed: %v\noutput: %s", err, deleteOut)
+	}
+
+	// The state is read back, because a delete that reports success and leaves
+	// the group behind is the failure this whole lifecycle exists to catch.
+	afterOut, err := executeLiveCLI(t, "--json", "reviewer-group", "list", "--repo", repoRef)
+	if err != nil {
+		t.Fatalf("repo reviewer-group list after delete failed: %v\noutput: %s", err, afterOut)
+	}
+	if strings.Contains(afterOut, groupName) {
+		t.Fatalf("the deleted group is still listed: %s", afterOut)
+	}
+
+	// 5. Default reviewers.
 	repoResp, err := harness.client.GetRepositoryWithResponse(ctx, seeded.Key, repo.Slug)
 	if err != nil {
 		t.Fatalf("failed to get repository details: %v", err)
 	}
 	repoID := fmt.Sprintf("%d", *repoResp.ApplicationjsonCharsetUTF8200.Id)
 
-	defOut, err := executeLiveCLI(t, "--json", "pr", "default-reviewers", "--repo", seeded.Key+"/"+repo.Slug, "--source-ref", "refs/heads/master", "--target-ref", "refs/heads/master", "--source-repo-id", repoID, "--target-repo-id", repoID)
+	defOut, err := executeLiveCLI(t, "--json", "pr", "default-reviewers", "--repo", repoRef, "--source-ref", "refs/heads/master", "--target-ref", "refs/heads/master", "--source-repo-id", repoID, "--target-repo-id", repoID)
 	if err != nil {
-		t.Logf("pr default-reviewers failed: %v", err)
-	} else if !strings.Contains(defOut, `"defaultReviewers"`) {
-		t.Fatalf("expected default_reviewers in output: %s", defOut)
+		t.Fatalf("pr default-reviewers failed: %v\noutput: %s", err, defOut)
+	}
+	if !strings.Contains(defOut, `"defaultReviewers"`) {
+		t.Fatalf("expected defaultReviewers in output: %s", defOut)
 	}
 }
