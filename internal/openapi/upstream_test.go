@@ -57,6 +57,35 @@ func TestATruncatedBodyIsCutInCharacters(t *testing.T) {
 	}
 }
 
+// TestTheFullBodyFlagShowsAnEnvelopeToo is the flag meaning one thing.
+//
+// The summary prefers Bitbucket's own sentences, which replaces the body rather
+// than shortening it, so --full-error-body changed nothing for a JSON error --
+// the shape a Bitbucket server answers with, and the shape somebody passing the
+// flag is looking at. The help says "the whole upstream response body".
+//
+// Not parallel: the flag is process-wide, and Go runs the parallel tests in
+// this package after the ones that are not.
+func TestTheFullBodyFlagShowsAnEnvelopeToo(t *testing.T) {
+	envelope := []byte(`{"errors":[{"message":"Authors may not update their status.","exceptionName":"com.atlassian.bitbucket.pull.InvalidPullRequestRoleException"}]}`)
+
+	summarised := MapStatusError(400, envelope).Error()
+	if strings.Contains(summarised, "exceptionName") {
+		t.Fatalf("the default answer is the summary, not the body: %s", summarised)
+	}
+
+	SetFullUpstreamBodies(true)
+	t.Cleanup(func() { SetFullUpstreamBodies(false) })
+
+	whole := MapStatusError(400, envelope).Error()
+	if !strings.Contains(whole, "exceptionName") {
+		t.Fatalf("--full-error-body still summarised a JSON envelope: %s", whole)
+	}
+	if !strings.Contains(whole, "Authors may not update their status.") {
+		t.Fatalf("--full-error-body dropped the sentence the summary would have kept: %s", whole)
+	}
+}
+
 // MissingPayload pasted the raw body, so an SSO login page answering 200 put
 // all of itself, and whatever it echoed, into the message.
 func TestAPayloadTheClientCouldNotReadIsSummarised(t *testing.T) {

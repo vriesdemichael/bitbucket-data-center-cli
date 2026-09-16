@@ -385,6 +385,14 @@ func summarizeUpstream(body []byte) string {
 		return ""
 	}
 
+	// Checked before the envelope, not only before the truncation. An envelope
+	// is summarised hardest of all -- its sentences replace the body rather
+	// than shorten it -- so a JSON error was the one shape --full-error-body
+	// could not reveal, which is the shape somebody debugging a server has.
+	if fullUpstreamBodies.Load() {
+		return trimmed
+	}
+
 	if messages := upstreamMessages([]byte(trimmed)); len(messages) > 0 {
 		return diagnostics.RedactText(strings.Join(messages, "; "))
 	}
@@ -393,7 +401,7 @@ func summarizeUpstream(body []byte) string {
 	// through one, which put invalid UTF-8 on stderr and overstated how much
 	// was left out.
 	characters := []rune(trimmed)
-	if fullUpstreamBodies.Load() || len(characters) <= upstreamBodyLimit {
+	if len(characters) <= upstreamBodyLimit {
 		return trimmed
 	}
 
