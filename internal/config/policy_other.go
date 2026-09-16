@@ -6,6 +6,11 @@ func loadPlatformPolicy() PolicyConfig {
 	return PolicyConfig{}
 }
 
+// loadPlatformPolicyWithProblems has nothing to read and so nothing to report.
+func loadPlatformPolicyWithProblems() (PolicyConfig, []PolicyProblem) {
+	return PolicyConfig{}, nil
+}
+
 // machineConfigPath is the fixed location of the administrative policy file.
 func machineConfigPath() string {
 	return "/etc/bb/config.yaml"

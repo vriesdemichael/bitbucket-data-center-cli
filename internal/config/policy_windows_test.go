@@ -4,6 +4,7 @@ package config
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -52,7 +53,7 @@ func TestParseRegistryPolicy(t *testing.T) {
 		},
 	}
 
-	p1 := parseRegistryPolicy(readerInt)
+	p1, _ := parseRegistryPolicy(readerInt)
 	if p1.RequireKeyring == nil || !*p1.RequireKeyring {
 		t.Errorf("expected RequireKeyring=true, got %v", p1.RequireKeyring)
 	}
@@ -82,7 +83,7 @@ func TestParseRegistryPolicy(t *testing.T) {
 		},
 	}
 
-	p2 := parseRegistryPolicy(readerStr)
+	p2, _ := parseRegistryPolicy(readerStr)
 	if p2.RequireKeyring == nil || !*p2.RequireKeyring {
 		t.Errorf("expected RequireKeyring=true from string, got %v", p2.RequireKeyring)
 	}
@@ -113,7 +114,7 @@ func TestParseRegistryPolicyUpdateTrust(t *testing.T) {
 		},
 	}
 
-	policy := parseRegistryPolicy(reader)
+	policy, _ := parseRegistryPolicy(reader)
 	if policy.UpdateTrustedRoot != `C:\ProgramData\bb\trusted_root.json` {
 		t.Errorf("expected UpdateTrustedRoot, got %s", policy.UpdateTrustedRoot)
 	}
@@ -136,11 +137,110 @@ func TestParseRegistryPolicyUpdateTrust(t *testing.T) {
 			"AllowHTTPUpdate":       "true",
 		},
 	}
-	stringPolicy := parseRegistryPolicy(stringForm)
+	stringPolicy, _ := parseRegistryPolicy(stringForm)
 	if stringPolicy.AllowUnverifiedUpdate == nil || *stringPolicy.AllowUnverifiedUpdate {
 		t.Errorf("expected AllowUnverifiedUpdate=false from string value, got %v", stringPolicy.AllowUnverifiedUpdate)
 	}
 	if stringPolicy.AllowHTTPUpdate == nil || !*stringPolicy.AllowHTTPUpdate {
 		t.Errorf("expected AllowHTTPUpdate=true from string value, got %v", stringPolicy.AllowHTTPUpdate)
 	}
+}
+
+// TestRegistryPolicyDoesNotFailOpen is an administrator's control disappearing
+// without a word.
+//
+// A REG_SZ that strconv.ParseBool rejected was dropped, so DisableUpdate=yes
+// left self-update enabled and AllowHTTPUpdate=no left plain HTTP permitted,
+// with the policy page saying the opposite. A damaged policy file fails closed;
+// the registry has to behave the same way.
+func TestRegistryPolicyDoesNotFailOpen(t *testing.T) {
+	t.Parallel()
+
+	t.Run("the spellings a policy is written in", func(t *testing.T) {
+		t.Parallel()
+
+		policy, problems := parseRegistryPolicy(&mockRegistryReader{
+			strings: map[string]string{
+				"RequireKeyring":          "yes",
+				"AllowInsecureSkipVerify": "off",
+				"DisableUpdate":           "Enabled",
+				"AllowHTTPUpdate":         "No",
+				"AllowUnverifiedUpdate":   "disabled",
+			},
+		})
+
+		if len(problems) != 0 {
+			t.Fatalf("a readable policy reported problems: %+v", problems)
+		}
+		for name, got := range map[string]*bool{
+			"RequireKeyring":          policy.RequireKeyring,
+			"AllowInsecureSkipVerify": policy.AllowInsecureSkipVerify,
+			"DisableUpdate":           policy.DisableUpdate,
+			"AllowHTTPUpdate":         policy.AllowHTTPUpdate,
+			"AllowUnverifiedUpdate":   policy.AllowUnverifiedUpdate,
+		} {
+			if got == nil {
+				t.Errorf("%s was dropped", name)
+			}
+		}
+		if policy.RequireKeyring == nil || !*policy.RequireKeyring {
+			t.Error("RequireKeyring=yes did not read as true")
+		}
+		if policy.DisableUpdate == nil || !*policy.DisableUpdate {
+			t.Error("DisableUpdate=Enabled did not read as true")
+		}
+		if policy.AllowHTTPUpdate == nil || *policy.AllowHTTPUpdate {
+			t.Error("AllowHTTPUpdate=No did not read as false")
+		}
+	})
+
+	t.Run("a value that cannot be read at all", func(t *testing.T) {
+		t.Parallel()
+
+		policy, problems := parseRegistryPolicy(&mockRegistryReader{
+			strings: map[string]string{
+				"DisableUpdate":   "sometimes",
+				"AllowHTTPUpdate": "maybe",
+			},
+		})
+
+		if policy.DisableUpdate == nil || !*policy.DisableUpdate {
+			t.Error("an unreadable DisableUpdate left self-update enabled")
+		}
+		if policy.AllowHTTPUpdate == nil || *policy.AllowHTTPUpdate {
+			t.Error("an unreadable AllowHTTPUpdate left plain HTTP permitted")
+		}
+
+		if len(problems) != 2 {
+			t.Fatalf("expected both values reported, got %+v", problems)
+		}
+		for _, problem := range problems {
+			if problem.Name != "DisableUpdate" && problem.Name != "AllowHTTPUpdate" {
+				t.Errorf("unexpected problem: %+v", problem)
+			}
+			for _, want := range []string{problem.Name, "is in force"} {
+				if !strings.Contains(problem.Message, want) {
+					t.Errorf("the message does not say %q: %s", want, problem.Message)
+				}
+			}
+		}
+	})
+
+	t.Run("a DWORD is still read as a number", func(t *testing.T) {
+		t.Parallel()
+
+		policy, problems := parseRegistryPolicy(&mockRegistryReader{
+			integers: map[string]uint64{"DisableUpdate": 0, "RequireKeyring": 1},
+		})
+
+		if len(problems) != 0 {
+			t.Fatalf("a DWORD policy reported problems: %+v", problems)
+		}
+		if policy.DisableUpdate == nil || *policy.DisableUpdate {
+			t.Error("DisableUpdate=0 did not read as false")
+		}
+		if policy.RequireKeyring == nil || !*policy.RequireKeyring {
+			t.Error("RequireKeyring=1 did not read as true")
+		}
+	})
 }

@@ -3,6 +3,7 @@
 package config
 
 import (
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -44,24 +45,80 @@ func platformPolicyDescription() string {
 }
 
 func loadPlatformPolicy() PolicyConfig {
+	policy, _ := loadPlatformPolicyWithProblems()
+
+	return policy
+}
+
+func loadPlatformPolicyWithProblems() (PolicyConfig, []PolicyProblem) {
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, registryPolicyKey, registry.QUERY_VALUE)
 	if err != nil {
-		return PolicyConfig{}
+		return PolicyConfig{}, nil
 	}
 	defer func() { _ = k.Close() }()
 
 	return parseRegistryPolicy(k)
 }
 
-func parseRegistryPolicy(k registryReader) PolicyConfig {
-	var policy PolicyConfig
+// registryBool reads a boolean policy value.
+//
+// A value that is present but unreadable is not the same as one that is
+// absent: an administrator set it, and treating it as unset switches the
+// control off without a word. DWORD or a string spelling is accepted, and
+// anything else takes the restrictive side and is reported.
+func registryBool(k registryReader, name string, restrictive bool) (*bool, *PolicyProblem) {
+	if value, _, err := k.GetIntegerValue(name); err == nil {
+		parsed := value != 0
 
-	if val, _, err := k.GetIntegerValue("RequireKeyring"); err == nil {
-		b := val != 0
-		policy.RequireKeyring = &b
-	} else if strVal, _, err := k.GetStringValue("RequireKeyring"); err == nil {
-		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
-			policy.RequireKeyring = &b
+		return &parsed, nil
+	}
+
+	raw, _, err := k.GetStringValue(name)
+	if err != nil {
+		return nil, nil
+	}
+	if strings.TrimSpace(raw) == "" {
+		return nil, nil
+	}
+
+	if parsed, ok := parsePolicyBool(raw); ok {
+		return &parsed, nil
+	}
+
+	inForce := restrictive
+
+	return &inForce, &PolicyProblem{
+		Name: name,
+		Message: fmt.Sprintf(
+			"%s is set to %q in %s, which is not true or false; %s is in force until it is corrected",
+			name, strings.TrimSpace(raw), platformPolicyDescription(), strconv.FormatBool(restrictive),
+		),
+	}
+}
+
+func parseRegistryPolicy(k registryReader) (PolicyConfig, []PolicyProblem) {
+	var policy PolicyConfig
+	var problems []PolicyProblem
+
+	// The restrictive side of each control: the one that keeps a guarantee
+	// rather than lifting it, so an unreadable value cannot open anything.
+	for _, flag := range []struct {
+		name        string
+		restrictive bool
+		into        **bool
+	}{
+		{"RequireKeyring", true, &policy.RequireKeyring},
+		{"AllowInsecureSkipVerify", false, &policy.AllowInsecureSkipVerify},
+		{"DisableUpdate", true, &policy.DisableUpdate},
+		{"AllowHTTPUpdate", false, &policy.AllowHTTPUpdate},
+		{"AllowUnverifiedUpdate", false, &policy.AllowUnverifiedUpdate},
+	} {
+		value, problem := registryBool(k, flag.name, flag.restrictive)
+		if value != nil {
+			*flag.into = value
+		}
+		if problem != nil {
+			problems = append(problems, *problem)
 		}
 	}
 
@@ -84,35 +141,8 @@ func parseRegistryPolicy(k registryReader) PolicyConfig {
 		}
 	}
 
-	if val, _, err := k.GetIntegerValue("AllowInsecureSkipVerify"); err == nil {
-		b := val != 0
-		policy.AllowInsecureSkipVerify = &b
-	} else if strVal, _, err := k.GetStringValue("AllowInsecureSkipVerify"); err == nil {
-		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
-			policy.AllowInsecureSkipVerify = &b
-		}
-	}
-
-	if val, _, err := k.GetIntegerValue("DisableUpdate"); err == nil {
-		b := val != 0
-		policy.DisableUpdate = &b
-	} else if strVal, _, err := k.GetStringValue("DisableUpdate"); err == nil {
-		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
-			policy.DisableUpdate = &b
-		}
-	}
-
 	if val, _, err := k.GetStringValue("UpdateBaseURL"); err == nil && strings.TrimSpace(val) != "" {
 		policy.UpdateBaseURL = strings.TrimSpace(val)
-	}
-
-	if val, _, err := k.GetIntegerValue("AllowHTTPUpdate"); err == nil {
-		b := val != 0
-		policy.AllowHTTPUpdate = &b
-	} else if strVal, _, err := k.GetStringValue("AllowHTTPUpdate"); err == nil {
-		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
-			policy.AllowHTTPUpdate = &b
-		}
 	}
 
 	if val, _, err := k.GetStringValue("UpdateTrustedRoot"); err == nil && strings.TrimSpace(val) != "" {
@@ -131,14 +161,5 @@ func parseRegistryPolicy(k registryReader) PolicyConfig {
 		policy.UpdateSignatureIssuer = strings.TrimSpace(val)
 	}
 
-	if val, _, err := k.GetIntegerValue("AllowUnverifiedUpdate"); err == nil {
-		b := val != 0
-		policy.AllowUnverifiedUpdate = &b
-	} else if strVal, _, err := k.GetStringValue("AllowUnverifiedUpdate"); err == nil {
-		if b, parseErr := strconv.ParseBool(strings.TrimSpace(strVal)); parseErr == nil {
-			policy.AllowUnverifiedUpdate = &b
-		}
-	}
-
-	return policy
+	return policy, problems
 }
