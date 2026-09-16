@@ -49,6 +49,7 @@ func TestLivePullRequestCheckout(t *testing.T) {
 	}
 
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	assertLifecyclePRHarnessStored(t, pullRequestID, sourceBranch, defaultBranchName)
 
 	cloneDir := filepath.Join(t.TempDir(), "clone")
 	cloneOutput, err := executeLiveCLI(t, "repo", "clone", seeded.Key+"/"+repo.Slug, cloneDir)
@@ -82,6 +83,10 @@ func TestLivePullRequestCheckout(t *testing.T) {
 	}
 	if data["fork"] != false {
 		t.Fatalf("expected a same-repository checkout, got: %s", output)
+	}
+	// Where checkout found the source, which it reads from the pull request.
+	if data["sourceBranch"] != sourceBranch || data["sourceRepository"] != seeded.Key+"/"+repo.Slug {
+		t.Fatalf("expected the source %s in %s/%s, got: %s", sourceBranch, seeded.Key, repo.Slug, output)
 	}
 
 	// The branch is actually checked out, not merely fetched.
@@ -179,6 +184,9 @@ func TestLivePullRequestCheckoutFromAFork(t *testing.T) {
 	if forkSlug == "" {
 		t.Fatalf("the fork has no slug:\n%s", forkOutput)
 	}
+	// The name and project sent, read back rather than taken from the fork
+	// command's answer; a fork with no project lands in the caller's own.
+	assertLifecycleForkStored(t, seeded.Key, forkSlug, forkName, upstream.Slug)
 
 	const sourceBranch = "feature/from-the-fork"
 	if err := harness.pushCommitOnBranch(seeded.Key, forkSlug, sourceBranch, "from-the-fork.txt"); err != nil {
@@ -205,6 +213,13 @@ func TestLivePullRequestCheckoutFromAFork(t *testing.T) {
 	if pullRequestID == "0" {
 		t.Fatalf("the created pull request has no id: %#v", created)
 	}
+	assertLifecyclePRStored(t, readLifecyclePR(t, pullRequestID), map[string]any{
+		"title":            "From the fork",
+		"sourceBranch":     sourceBranch,
+		"targetBranch":     "master",
+		"sourceRepository": map[string]any{"projectKey": seeded.Key, "slug": forkSlug},
+		"repository":       map[string]any{"projectKey": seeded.Key, "slug": upstream.Slug},
+	})
 
 	cloneDir := filepath.Join(t.TempDir(), "upstream-clone")
 	if output, err := executeLiveCLI(t, "repo", "clone", seeded.Key+"/"+upstream.Slug, cloneDir); err != nil {
@@ -228,6 +243,9 @@ func TestLivePullRequestCheckoutFromAFork(t *testing.T) {
 	data := decodeJSONMap(t, output)
 	if data["fork"] != true {
 		t.Fatalf("a pull request from a fork was not reported as one: %s", output)
+	}
+	if data["sourceBranch"] != sourceBranch || data["sourceRepository"] != seeded.Key+"/"+forkSlug {
+		t.Fatalf("expected the source %s in %s/%s, got: %s", sourceBranch, seeded.Key, forkSlug, output)
 	}
 
 	// The branch is prefixed so it cannot collide with a local branch of the

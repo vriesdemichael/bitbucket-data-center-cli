@@ -5,6 +5,7 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -37,20 +38,27 @@ func TestLivePullRequestBuildStatuses(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
-	prID := createLivePRForRegression(t, branch, "Has build statuses", "--no-default-reviewers", "--no-codeowners")
+	prID := createLifecyclePR(t, branch, "Has build statuses", "--no-default-reviewers", "--no-codeowners")
 
 	// The statuses hang off the source commit, so it has to be the pull
 	// request's own head rather than any commit in the repository.
 	commit := currentLivePRSourceCommit(t, prID)
 
+	// Each status differs from the others in every field, and its name from its
+	// key, so a field filled from somewhere else -- one state for all three, the
+	// key for the name -- cannot read back as the one sent.
 	const statusCount = 3
+	states := [statusCount]string{"SUCCESSFUL", "FAILED", "INPROGRESS"}
+	sent := make(map[string]map[string]any, statusCount)
 	for index := range statusCount {
 		key := fmt.Sprintf("build-%d", index)
+		name := fmt.Sprintf("Build number %d", index)
 		mustLiveCLI(t, "build", "status", "set", commit,
 			"--key", key,
-			"--state", "SUCCESSFUL",
+			"--state", states[index],
 			"--url", "http://example.invalid/"+key,
-			"--name", key)
+			"--name", name)
+		sent[key] = map[string]any{"key": key, "state": states[index], "url": "http://example.invalid/" + key, "name": name}
 	}
 
 	t.Run("the statuses are readable through the pull request", func(t *testing.T) {
@@ -59,6 +67,16 @@ func TestLivePullRequestBuildStatuses(t *testing.T) {
 			key := fmt.Sprintf("build-%d", index)
 			if !strings.Contains(output, key) {
 				t.Errorf("expected %s in the pull request build statuses:\n%s", key, output)
+			}
+		}
+
+		statuses := lifecycleListing(t, output, "statuses")
+		if len(statuses) != statusCount {
+			t.Errorf("expected %d build statuses, got %d:\n%s", statusCount, len(statuses), output)
+		}
+		for _, status := range statuses {
+			if want := sent[asString(status["key"])]; !reflect.DeepEqual(status, want) {
+				t.Errorf("a build status reads back as %v, want %v", status, want)
 			}
 		}
 	})
@@ -89,6 +107,10 @@ func TestLivePullRequestBuildStatuses(t *testing.T) {
 		}
 		if found != 1 {
 			t.Errorf("--limit 1 returned %d of %d statuses:\n%s", found, statusCount, output)
+		}
+
+		if statuses := lifecycleListing(t, output, "statuses"); len(statuses) != 1 || !reflect.DeepEqual(statuses[0], sent[asString(statuses[0]["key"])]) {
+			t.Errorf("--limit 1 returned %v, want one of the statuses sent", statuses)
 		}
 	})
 }
