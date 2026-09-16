@@ -124,6 +124,12 @@ func remedyForAuthFailure(err error, bitbucketURL string) string {
 		return fmt.Sprintf("the credential was rejected; run 'bb auth login %s' again", strings.TrimSpace(bitbucketURL))
 	case apperrors.IsKind(err, apperrors.KindTransient):
 		return "the host did not answer; check the URL, and see 'Networks, Proxies and TLS' in the docs if you are behind a proxy or an internal CA"
+	case apperrors.IsKind(err, apperrors.KindPermanent):
+		// A rejected certificate, a refused handshake and a host that does not
+		// resolve are permanent now, and they were transient when this remedy
+		// was written: the reader who most needs the TLS page stopped being
+		// pointed at it.
+		return "the connection did not get as far as an answer; check the URL, and see 'Networks, Proxies and TLS' in the docs if you are behind a proxy or an internal CA"
 	default:
 		return "check BITBUCKET_URL and network reachability"
 	}
