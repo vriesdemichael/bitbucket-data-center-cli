@@ -390,7 +390,7 @@ When testing CLI commands that prompt the user for confirmation (e.g., typing `y
 When testing configuration loading, validation errors, or environment variables, always use `-count=1` with `go test` to ensure that cached test results do not mask test execution or state pollution.
 
 ### Handling Missing OpenAPI Fields
-The generated OpenAPI client model may sometimes omit fields (e.g., the `Id` field in `RestWebhook`). When a generated model is missing necessary fields for CLI representation or JSON output, define a custom local struct (e.g., `WebhookModel` in `internal/cli/project_webhook.go`) to correctly decode the server's response.
+The generated OpenAPI client model may sometimes omit fields (e.g., the `Id` field in `RestWebhook`). When a generated model is missing necessary fields for CLI representation or JSON output, define a local result type (e.g., `result.Webhook` in `internal/cli/result/webhook.go`) and read the decoded payload field by field. Reading each field on its own terms rather than round-tripping through a typed struct means one unexpected field type loses that field instead of the whole object.
 
 ### Stateful Dry-Run Permission Mocking
 Stateful dry-runs require verifying project/repository administrator status before proceeding (e.g., `CheckProjectAdmin`). In CLI integration tests simulating dry-run execution, ensure the mock API server registers the user permissions check endpoint (`/rest/api/latest/projects/{projectKey}/permissions/users` or similar) to prevent 404/authorization errors during dry-run validation.

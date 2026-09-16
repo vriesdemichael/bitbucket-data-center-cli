@@ -1,13 +1,13 @@
 ---
 name: bb-bulk
-description: DEPRECATED, removed in v5.0.0 — prefer project-level settings. Plan, review, and execute multi-repository bulk governance policies, declarative repository configurations, permissions, webhooks, PR settings, branch settings, and staged rollouts across Bitbucket Data Center repositories using bb.
+description: DEPRECATED, due for removal in v5.0.0 — prefer project-level settings. Plan, review, and execute multi-repository bulk governance policies, declarative repository configurations, permissions, webhooks, PR settings, branch settings, and staged rollouts across Bitbucket Data Center repositories using bb.
 ---
 
 # bb-bulk — Multi-Repository Bulk Governance Skill
 
-> **Deprecated — scheduled for removal in v5.0.0.** `bb bulk` still works and is
-> still supported until it is removed, and it warns on stderr on every
-> invocation. **Do not choose it for new work.**
+> **Deprecated — due for removal in v5.0.0.** `bb bulk` works and is supported
+> until it is removed, and warns on stderr on every invocation. **Do not choose
+> it for new work.**
 >
 > Most of what it does is settable once at the project level, where Bitbucket
 > cascades it to every repository: use `bb project permissions`,
@@ -177,18 +177,21 @@ bb bulk plan -f policy.yaml -o .tmp/bulk-plan.json --json
 Plan artifacts can be validated in two complementary ways:
 
 1. **Automatic Built-in Verification**:
-   `bb bulk apply` automatically compiles and validates the plan against `PlanJSONSchema()` and verifies the integrity of `planHash` before executing any API calls against Bitbucket:
+   `bb bulk apply` validates the plan against the published plan schema and verifies the integrity of `planHash` before executing any API calls against Bitbucket:
    - Fails with a `validation` error if `apiVersion` is not `bb.io/v1alpha1`, `kind` is not `BulkPlan`, or schema fields are malformed.
    - Fails if the SHA-256 `planHash` calculated over the plan payload does not match the embedded `planHash` (preventing manual tampering or corrupted artifacts).
 
 2. **Pre-execution Verification via CLI / Schema Validators**:
    You can validate the generated `.tmp/bulk-plan.json` against the schema in CI or pre-commit hooks using standard JSON Schema validation tools:
    ```bash
+   # Fetch the published schema once:
+   curl -sSLO https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/bulk-plan.schema.json
+
    # Using check-jsonschema:
-   check-jsonschema --schemafile docs/reference/schemas/bulk-plan.schema.json .tmp/bulk-plan.json
+   check-jsonschema --schemafile bulk-plan.schema.json .tmp/bulk-plan.json
 
    # Or using ajv-cli:
-   npx ajv-cli validate -s docs/reference/schemas/bulk-plan.schema.json -d .tmp/bulk-plan.json
+   npx ajv-cli validate -s bulk-plan.schema.json -d .tmp/bulk-plan.json
    ```
 
    Key required fields in the plan schema:
