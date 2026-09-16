@@ -870,10 +870,28 @@ func TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict(t *testing.T) {
 		t.Fatalf("the update left the pull request at version %v, want above %d", bumped["version"], staleVersion)
 	}
 
+	// The bump's version was current, so its success cannot show that the number
+	// reached Bitbucket: an update that dropped it and read the version itself
+	// succeeds the same way. Behind now, the same number has to be refused.
+	if output, err := executeLiveCLI(t, "--json", "pr", "update", prID, "--title", "Not stored", "--version", stale); err == nil {
+		t.Fatalf("an update at the version the bump replaced succeeded:\n%s", output)
+	} else if !apperrors.IsKind(err, apperrors.KindConflict) {
+		t.Errorf("expected kind conflict for an update at a stale version, got: %v", err)
+	}
+	if title := mutatedPullRequest(t, prID)["title"]; title != "Bumped" {
+		t.Errorf("the title is %v after a refused update, want Bumped", title)
+	}
+
 	// Now give the rebase something to replay. Whatever this does to the
 	// version, the number above is behind it.
+	masterBefore := mutatedBranchTip(t, "master")
 	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", "moved-ahead.txt", "the target moved\n"); err != nil {
 		t.Fatalf("advancing master failed: %v", err)
+	}
+	// Read back: a push that did not land leaves the rebase nothing to replay,
+	// which is not the refusal this test is about.
+	if tip := mutatedBranchTip(t, "master"); tip == masterBefore {
+		t.Fatalf("master is still at %s after the push meant to move it", tip)
 	}
 
 	tipBefore := mutatedBranchTip(t, branch)
