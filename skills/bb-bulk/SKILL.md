@@ -426,7 +426,7 @@ On failure, stdout is the error envelope and exit is non-zero:
     "exitCode": 5,
     "details": { "operationId": "op-…" }
   },
-  "meta": { "bbVersion": "v4.0.0" }
+  "meta": { "bbVersion": "v4.1.0" }
 }
 ```
 
