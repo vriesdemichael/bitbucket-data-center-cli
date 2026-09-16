@@ -454,12 +454,25 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	}
 
 	if os.Getenv("BB_DISABLE_STORED_CONFIG") != "1" {
-		stored, foundStored := resolveStoredCredentials(storedConfig, config.BitbucketURL)
+		// Strict: a credential is released only to the host it was stored for.
+		//
+		// resolveStoredCredentials falls back to the default host's credential
+		// when nothing matches, and the host is decided by inputs an attacker
+		// reaches: a .env file in any parent directory, a cloned repository's
+		// .bb/config.yaml, `bb api http://elsewhere/...`, or --host on an MCP
+		// server a prompt-injected agent drives. Any of those took the token
+		// stored for the user's own Bitbucket and sent it there.
+		//
+		// bb auth git-credential already answers a host it has nothing for with
+		// silence; this is the same rule on the path every other command takes.
+		// Aliases and the http/https pair still match, because matchStoredHost
+		// resolves those before the fallback was ever reached.
+		stored, foundStored := resolveStoredCredentialsStrict(storedConfig, config.BitbucketURL)
 		if !foundStored && len(workspaceConfig.Hosts) > 0 {
-			stored, foundStored = resolveStoredCredentials(StoredConfig{Hosts: workspaceConfig.Hosts}, config.BitbucketURL)
+			stored, foundStored = resolveStoredCredentialsStrict(StoredConfig{Hosts: workspaceConfig.Hosts}, config.BitbucketURL)
 		}
 		if !foundStored && len(sysConfig.Hosts) > 0 {
-			stored, foundStored = resolveStoredCredentials(sysConfig.StoredConfig(), config.BitbucketURL)
+			stored, foundStored = resolveStoredCredentialsStrict(sysConfig.StoredConfig(), config.BitbucketURL)
 		}
 		if foundStored {
 			adoptedStoredSecret := false
@@ -1764,39 +1777,6 @@ func matchStoredHost(stored StoredConfig, runtimeURL string) (string, StoredProf
 	return "", StoredProfile{}, false
 }
 
-func resolveStoredCredentials(stored StoredConfig, runtimeURL string) (AppConfig, bool) {
-	key, profile, ok := storedProfileFor(stored, runtimeURL)
-	if !ok {
-		return AppConfig{}, false
-	}
-
-	return credentialsForStoredHost(stored, key, profile), true
-}
-
-// storedProfileFor is the profile resolveStoredCredentials takes credentials
-// from, and the key it is filed under. bb doctor asks the same question to say
-// where a credential comes from, and asking it here keeps the two answers one.
-func storedProfileFor(stored StoredConfig, runtimeURL string) (string, StoredProfile, bool) {
-	if len(stored.Hosts) == 0 {
-		return "", StoredProfile{}, false
-	}
-
-	if key, profile, ok := matchStoredHost(stored, runtimeURL); ok {
-		return key, profile, true
-	}
-
-	// No host matched, so fall back to the configured default. This is what
-	// makes `bb pr list` work against the active server without repeating
-	// --host, and it is why callers that pass credentials to other programs
-	// must use resolveStoredCredentialsStrict instead.
-	profile, ok := stored.Hosts[stored.DefaultHost]
-	if stored.DefaultHost == "" || !ok {
-		return "", StoredProfile{}, false
-	}
-
-	return stored.DefaultHost, profile, true
-}
-
 // resolveStoredCredentialsStrict resolves credentials only for a host that is
 // actually configured, with no default-host fallback.
 func resolveStoredCredentialsStrict(stored StoredConfig, runtimeURL string) (AppConfig, bool) {
@@ -1989,24 +1969,14 @@ func keyringUnavailableError(cause error) error {
 	)
 }
 
-func LoadStoredAuthForHost(runtimeURL string) (AppConfig, bool, error) {
-	stored, err := LoadStoredConfig()
-	if err != nil {
-		return AppConfig{}, false, err
-	}
-
-	resolved, ok := resolveStoredCredentials(stored, runtimeURL)
-	return resolved, ok, nil
-}
-
-// LoadStoredAuthForHostStrict resolves credentials for exactly the given host,
-// with no fallback to the configured default.
+// LoadStoredAuthForHostStrict resolves credentials for exactly the given host.
 //
-// Use this whenever the credentials are about to be handed to another program.
-// LoadStoredAuthForHost answers "which server should bb talk to", and will
-// happily return the default server's credentials for a host it has never seen
-// — correct for bb's own commands, and a credential leak for anything that
-// passes the result outward.
+// There is no other kind, and the name keeps saying so. A lookup that fell back
+// to the configured default host used to exist for bb's own commands, and it
+// answered for whichever host the caller had been pointed at: one named by a
+// cloned repository's .env or .bb/config.yaml, by a URL given to `bb api`, or
+// by --host. Aliases and the http/https pair are matches, not fallbacks, and
+// still resolve.
 func LoadStoredAuthForHostStrict(runtimeURL string) (AppConfig, bool, error) {
 	stored, err := LoadStoredConfig()
 	if err != nil {

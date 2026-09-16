@@ -591,7 +591,7 @@ func TestConfigAuthModeAndLogoutBranches(t *testing.T) {
 }
 
 func TestResolveStoredCredentialsAndLoadFromStoredHost(t *testing.T) {
-	if _, ok := resolveStoredCredentials(StoredConfig{}, "http://localhost:7990"); ok {
+	if _, ok := resolveStoredCredentialsStrict(StoredConfig{}, "http://localhost:7990"); ok {
 		t.Fatal("expected not found when stored config is empty")
 	}
 
@@ -619,9 +619,16 @@ func TestResolveStoredCredentialsAndLoadFromStoredHost(t *testing.T) {
 		t.Fatalf("save stored config: %v", err)
 	}
 
-	resolved, ok := resolveStoredCredentials(stored, "http://unknown.local:7990")
+	// A host nothing was stored for gets nothing, whatever the default host
+	// is: the default-host fallback was how a repository could point bb at a
+	// server of its choosing and be handed the user's token.
+	if _, ok := resolveStoredCredentialsStrict(stored, "http://unknown.local:7990"); ok {
+		t.Fatal("an unconfigured host resolved the default host's credentials")
+	}
+
+	resolved, ok := resolveStoredCredentialsStrict(stored, "http://stored.local:7990")
 	if !ok {
-		t.Fatal("expected stored credentials via default host")
+		t.Fatal("expected stored credentials for the stored host")
 	}
 	if resolved.BitbucketURL != "http://stored.local:7990" || resolved.BitbucketUsername != "stored-user" || resolved.BitbucketPassword != "stored-pass" {
 		t.Fatalf("unexpected resolved stored credentials: %+v", resolved)
@@ -950,9 +957,9 @@ func TestResolveStoredCredentialsCrossScheme(t *testing.T) {
 			},
 		}
 
-		resolved, ok := resolveStoredCredentials(stored, "http://bitbucket.corp")
+		resolved, ok := resolveStoredCredentialsStrict(stored, "http://bitbucket.corp")
 		if !ok {
-			t.Fatal("expected cross-scheme fallback to find credentials")
+			t.Fatal("expected the same host under the other scheme to find credentials")
 		}
 		if resolved.BitbucketToken != "secret-token" {
 			t.Fatalf("expected token secret-token, got %q", resolved.BitbucketToken)
@@ -969,9 +976,9 @@ func TestResolveStoredCredentialsCrossScheme(t *testing.T) {
 			},
 		}
 
-		resolved, ok := resolveStoredCredentials(stored, "https://bitbucket.corp")
+		resolved, ok := resolveStoredCredentialsStrict(stored, "https://bitbucket.corp")
 		if !ok {
-			t.Fatal("expected cross-scheme fallback to find credentials")
+			t.Fatal("expected the same host under the other scheme to find credentials")
 		}
 		if resolved.BitbucketToken != "bob-token" {
 			t.Fatalf("expected token bob-token, got %q", resolved.BitbucketToken)
@@ -990,7 +997,7 @@ func TestResolveStoredCredentialsCrossScheme(t *testing.T) {
 			},
 		}
 
-		resolved, ok := resolveStoredCredentials(stored, "https://bitbucket.corp")
+		resolved, ok := resolveStoredCredentialsStrict(stored, "https://bitbucket.corp")
 		if !ok {
 			t.Fatal("expected credentials to be found")
 		}
@@ -1014,13 +1021,13 @@ func TestHostKeyAltScheme(t *testing.T) {
 	}
 }
 
-func TestLoadStoredAuthForHost(t *testing.T) {
+func TestLoadStoredAuthForHostStrict(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
 	// Empty config → not found.
-	_, ok, err := LoadStoredAuthForHost("https://stored.bitbucket.example")
+	_, ok, err := LoadStoredAuthForHostStrict("https://stored.bitbucket.example")
 	if err != nil {
 		t.Fatalf("unexpected error on empty config: %v", err)
 	}
@@ -1033,7 +1040,7 @@ func TestLoadStoredAuthForHost(t *testing.T) {
 		t.Fatalf("save login failed: %v", err)
 	}
 
-	cfg, ok, err := LoadStoredAuthForHost("https://stored.bitbucket.example")
+	cfg, ok, err := LoadStoredAuthForHostStrict("https://stored.bitbucket.example")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1047,7 +1054,7 @@ func TestLoadStoredAuthForHost(t *testing.T) {
 	// Config path that's a directory → LoadStoredConfig fails → error propagated.
 	dirAsConfig := t.TempDir()
 	t.Setenv("BB_CONFIG_PATH", dirAsConfig)
-	_, _, err = LoadStoredAuthForHost("https://stored.bitbucket.example")
+	_, _, err = LoadStoredAuthForHostStrict("https://stored.bitbucket.example")
 	if err == nil {
 		t.Fatal("expected error when config path is a directory")
 	}
@@ -1081,7 +1088,7 @@ func TestHostAliasesCRUDAndLookup(t *testing.T) {
 		t.Fatalf("expected canonical host, got %q", match.Host)
 	}
 
-	resolved, ok := resolveStoredCredentials(StoredConfig{
+	resolved, ok := resolveStoredCredentialsStrict(StoredConfig{
 		Hosts: map[string]StoredProfile{
 			"https://bitbucket.example": {URL: "https://bitbucket.example", Aliases: []string{"git.example.org:7999"}, AuthMode: "token"},
 		},
@@ -1297,7 +1304,7 @@ func TestAliasOperationsAdditionalBranches(t *testing.T) {
 	}
 
 	stored.Hosts["https://empty-auth.example"] = StoredProfile{URL: "https://empty-auth.example", Aliases: []string{"git.empty.example:22"}, AuthMode: "none"}
-	resolved, ok := resolveStoredCredentials(stored, "git@git.empty.example:scm/PRJ/repo.git")
+	resolved, ok := resolveStoredCredentialsStrict(stored, "git@git.empty.example:scm/PRJ/repo.git")
 	if !ok || resolved.BitbucketURL != "https://empty-auth.example" {
 		t.Fatalf("expected alias credential resolution to return canonical host even without secrets, got ok=%v cfg=%+v", ok, resolved)
 	}
