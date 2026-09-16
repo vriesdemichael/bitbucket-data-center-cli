@@ -380,8 +380,14 @@ func summarizeUpstream(body []byte) string {
 	// echoes the request line, a clone URL or an Authorization header puts a
 	// live credential in the body it sends back, and nothing on this path was
 	// removing it.
-	trimmed := diagnostics.RedactText(strings.TrimSpace(string(body)))
-	if trimmed == "" {
+	// Parsed before anything rewrites it, and redacted afterwards, because the
+	// two passes fought each other: redaction ran first, and in a body carrying
+	// an escaped header -- {"errors":[{"message":"rejected Authorization:
+	// \"Bearer X\""}]} -- it replaced the backslash, which broke the escape.
+	// The envelope then failed to parse, and the fallback returned the raw body
+	// with the credential still in it, right after a [REDACTED] marker.
+	raw := strings.TrimSpace(string(body))
+	if raw == "" {
 		return ""
 	}
 
@@ -390,11 +396,18 @@ func summarizeUpstream(body []byte) string {
 	// than shorten it -- so a JSON error was the one shape --full-error-body
 	// could not reveal, which is the shape somebody debugging a server has.
 	if fullUpstreamBodies.Load() {
-		return trimmed
+		return diagnostics.RedactText(raw)
 	}
 
-	if messages := upstreamMessages([]byte(trimmed)); len(messages) > 0 {
+	// The sentences are decoded, so a credential inside one is in the shape the
+	// patterns are written for rather than hidden behind JSON escaping.
+	if messages := upstreamMessages([]byte(raw)); len(messages) > 0 {
 		return diagnostics.RedactText(strings.Join(messages, "; "))
+	}
+
+	trimmed := diagnostics.RedactText(raw)
+	if trimmed == "" {
+		return ""
 	}
 
 	// Counted and cut in characters, not bytes. A byte slice can end halfway

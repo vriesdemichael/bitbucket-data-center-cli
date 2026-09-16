@@ -32,6 +32,17 @@ func TestRedactTextCatchesTheShapesACredentialArrivesIn(t *testing.T) {
 		"an X-Auth-Token header":                  "X-Auth-Token: " + secret,
 		"a password in JSON that does not parse":  `{"password":"` + secret + `",`,
 		"a secret in JSON inside a page":          `<script>var config = {"apiToken":"` + secret + `"};</script>`,
+		// A body that arrives as JSON escapes the quotes around a header it
+		// quotes back. The pattern matched the backslash alone, which replaced
+		// the escape and left the token: redacted-looking, and not redacted.
+		"an escaped Authorization value in an envelope": `{"errors":[{"message":"rejected Authorization: \"Bearer ` + secret + `\""}]}`,
+		"an escaped Authorization value in a field":     `{"detail":"headers {\"Authorization\": \"Bearer ` + secret + `\"}"}`,
+		"a bare scheme and credential":                  "the server rejected Bearer " + secret,
+		"a form body":                                   "sent password=" + secret + "&user=admin",
+		"a form fragment with no separator":             "bad body: password=" + secret,
+		"a passphrase field":                            `{"passphrase":"` + secret + `"}`,
+		"a private key field":                           `{"private_key":"` + secret + `"}`,
+		"an XML element":                                "<credentials><password>" + secret + "</password></credentials>",
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
