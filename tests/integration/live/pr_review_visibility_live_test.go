@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -67,9 +68,14 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 		PullRequestID: pullRequestID,
 	}
 
-	if _, err := commentSvc.Create(ctx, commentTarget, "please handle the nil case"); err != nil {
+	created, err := commentSvc.Create(ctx, commentTarget, "please handle the nil case")
+	if err != nil {
 		t.Fatalf("create pull request comment failed: %v", err)
 	}
+	if created.Id == nil {
+		t.Fatal("created comment is missing an id")
+	}
+	commentID := *created.Id
 
 	prSvc := pullrequestservice.NewService(httpclient.NewFromConfig(harness.config))
 
@@ -117,18 +123,38 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	if summary.UnresolvedInline < 1 {
 		t.Fatalf("expected the inline comment to keep its anchor, got summary %#v", summary)
 	}
+	// Exactly, not at least: the pull request holds these three and nothing
+	// else, so a duplicated or an extra thread is as wrong as a missing one.
+	if summary.Unresolved != 3 || summary.OpenTasks != 1 || summary.UnresolvedInline != 1 || len(threads) != 3 {
+		t.Fatalf("summary = %#v over %d threads, want 3 unresolved, 1 open task, 1 inline", summary, len(threads))
+	}
 
 	foundTask := false
 	foundInline := false
+	foundComment := false
 	for _, thread := range threads {
 		if thread.ID == taskID && thread.Kind == pullrequestactivityservice.ThreadKindTask {
 			foundTask = true
+			if thread.Text != "add a regression test" {
+				t.Errorf("task text = %q, want the text it was created with", thread.Text)
+			}
 		}
 		if inline.ID != 0 && thread.ID == inline.ID {
 			if thread.Anchor == nil || thread.Anchor.Path != "review-visibility.txt" || thread.Anchor.Line != 1 {
 				t.Fatalf("expected the inline anchor to survive decoding, got %#v", thread.Anchor)
 			}
 			foundInline = true
+			if thread.Anchor.LineType != "ADDED" || thread.Kind != pullrequestactivityservice.ThreadKindComment || thread.Text != "this line needs a guard" {
+				t.Errorf("inline thread = line type %q, kind %q, text %q; want ADDED, comment and the text it was created with",
+					thread.Anchor.LineType, thread.Kind, thread.Text)
+			}
+		}
+		if thread.ID == commentID {
+			foundComment = true
+			if thread.Kind != pullrequestactivityservice.ThreadKindComment || thread.Anchor != nil || thread.Text != "please handle the nil case" {
+				t.Errorf("comment thread = kind %q, anchor %#v, text %q; want an unanchored comment with the text it was created with",
+					thread.Kind, thread.Anchor, thread.Text)
+			}
 		}
 	}
 	if !foundTask {
@@ -136,6 +162,9 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	}
 	if !foundInline {
 		t.Fatalf("expected inline comment %d in the thread list, got %#v", inline.ID, threads)
+	}
+	if !foundComment {
+		t.Fatalf("expected comment %d in the thread list, got %#v", commentID, threads)
 	}
 
 	// The decode itself, against a timeline Bitbucket built rather than one
@@ -146,6 +175,9 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	extracted := pullrequestactivityservice.ExtractComments(activities)
 	if len(extracted) < 2 {
 		t.Fatalf("expected the comments to be extracted from the timeline, got %d", len(extracted))
+	}
+	if len(extracted) != 3 {
+		t.Fatalf("extracted %d comments from the timeline, want the 3 created", len(extracted))
 	}
 
 	var sawNonComment bool
@@ -169,15 +201,38 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	//    `bb pr list` renders for free. Bitbucket 10.x sends them here but not
 	//    on the single pull request endpoint, which is why `pr get` falls back
 	//    to the blocker-comment tally instead of these.
-	listed, err := prSvc.List(ctx, repoRef, pullrequestservice.ListOptions{State: "open", MaxResults: 25})
+	//
+	//    Listed with state all beside a declined pull request, which the
+	//    default of open would leave out, so the listing shows the state was
+	//    applied. 25 is a page size over two pull requests, which nothing here
+	//    can show was applied.
+	declinedBranch := testsupport.UniqueName("lt-review-vis-declined-")
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, declinedBranch, "declined.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	declinedID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, declinedBranch, "master")
+	if err != nil {
+		t.Fatalf("create the pull request to decline failed: %v", err)
+	}
+	if _, err := prSvc.Decline(ctx, repoRef, declinedID, nil); err != nil {
+		t.Fatalf("decline pull request failed: %v", err)
+	}
+
+	listed, err := prSvc.List(ctx, repoRef, pullrequestservice.ListOptions{State: "all", MaxResults: 25})
 	if err != nil {
 		t.Fatalf("list pull requests failed: %v", err)
+	}
+	if len(listed) != 2 {
+		t.Fatalf("listed %d pull requests, want the open one and the declined one: %#v", len(listed), listed)
 	}
 
 	var listedPullRequest *pullrequestservice.PullRequest
 	for index := range listed {
 		if fmt.Sprintf("%d", listed[index].ID) == pullRequestID {
 			listedPullRequest = &listed[index]
+		}
+		if fmt.Sprintf("%d", listed[index].ID) == declinedID && listed[index].State != "DECLINED" {
+			t.Errorf("pull request %s is %s after the decline, want DECLINED", declinedID, listed[index].State)
 		}
 	}
 	if listedPullRequest == nil {
@@ -191,6 +246,11 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	}
 	if listedPullRequest.CommentCount == nil || *listedPullRequest.CommentCount < 1 {
 		t.Fatalf("expected properties.commentCount to be reported, got %#v", listedPullRequest.CommentCount)
+	}
+	// Bitbucket counts the task only as a task, so the comment and the inline
+	// comment make 2.
+	if *listedPullRequest.OpenTaskCount != 1 || *listedPullRequest.CommentCount != 2 {
+		t.Fatalf("property counters = %d open tasks, %d comments; want 1 and 2", *listedPullRequest.OpenTaskCount, *listedPullRequest.CommentCount)
 	}
 
 	// The other half of that asymmetry, asserted rather than assumed. Get and
@@ -246,10 +306,18 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	if !ok || len(listedThreads) < 2 {
 		t.Fatalf("expected at least the comment and the task in unresolved output: %s", listOutput)
 	}
+	unresolved, _ := prReviewThreadList(t, listOutput)
+	want := prReviewSorted(strconv.FormatInt(commentID, 10), strconv.FormatInt(inline.ID, 10), strconv.FormatInt(taskID, 10))
+	if ids := prReviewIDs(unresolved); !slices.Equal(ids, want) {
+		t.Fatalf("unresolved threads = %v, want exactly the comment, the inline comment and the task %v", ids, want)
+	}
 
 	// 5. Resolving the task must move it out of the open set.
 	if err := resolveBlockerComment(ctx, harness, seeded.Key, repo.Slug, pullRequestID, taskID); err != nil {
 		t.Fatalf("resolve task failed: %v", err)
+	}
+	if state := prReviewComment(t, pullRequestID, strconv.FormatInt(taskID, 10))["state"]; state != "RESOLVED" {
+		t.Fatalf("task state = %v after the resolve, want RESOLVED", state)
 	}
 
 	afterActivities, err := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug}, pullRequestID, pullrequestactivityservice.ListOptions{MaxResults: pullrequestactivityservice.AllResults})
@@ -262,6 +330,9 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 	}
 	if afterSummary.ResolvedTasks < 1 {
 		t.Fatalf("expected a resolved task to be counted, got %#v", afterSummary)
+	}
+	if afterSummary.ResolvedTasks != 1 || afterSummary.Unresolved != 2 {
+		t.Fatalf("after the resolve summary = %#v, want 1 resolved task and the 2 comments still unresolved", afterSummary)
 	}
 }
 
