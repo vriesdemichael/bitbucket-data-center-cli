@@ -5904,7 +5904,7 @@ Update pull request metadata
 ```text
 Update a pull request's title, description, draft state or reviewers.
 
---version is required: Bitbucket refuses the update if the pull request has moved on since that version, rather than overwriting someone else's change.
+Bitbucket refuses an update carrying a version the pull request has moved on from, rather than overwriting someone else's change. bb reads that version, so --version is only needed to assert a particular one: pass it and a pull request that has changed since is reported instead of updated.
 
 To mark a draft ready for review, or turn a pull request back into a draft, use bb pr ready.
 
@@ -5916,12 +5916,12 @@ Aliases:
 
 Examples:
   # Update title and description
-  bb pr update 42 --repo PROJ/repo --version 1 --title "New title"
+  bb pr update 42 --repo PROJ/repo --title "New title"
 
   # Mark a draft PR as ready for review
-  bb pr update 42 --repo PROJ/repo --version 1 --draft=false
+  bb pr update 42 --repo PROJ/repo --draft=false
 
-  # Convert an open PR to draft
+  # Refuse the update if the pull request has changed since version 1
   bb pr update 42 --repo PROJ/repo --version 1 --draft
 
 Flags:
@@ -5929,7 +5929,7 @@ Flags:
       --draft                Set draft state: --draft to mark as draft, --draft=false to mark as ready for review
       --reviewers strings    Replace the reviewers (repeatable or comma-separated, accepts @group syntax); omit to keep the current reviewers, pass "" to clear them
       --title string         Updated pull request title
-      --version int          Expected pull request version
+      --version int          Expected pull request version; omit to act on whatever version is current
 ```
 
 ??? note "Global flags"

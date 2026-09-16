@@ -121,7 +121,11 @@ type CreateInput struct {
 type UpdateInput struct {
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
-	Version     int    `json:"version"`
+	// Version is the optimistic lock. Nil means bb reads the current version
+	// and sends that, the way merge, decline, reopen and rebase do (#532); a
+	// value asserts a specific version, and a conflict is reported rather than
+	// retried.
+	Version *int `json:"version,omitempty"`
 	// Draft, when non-nil, sets or clears the draft flag on the pull request.
 	Draft *bool `json:"draft,omitempty"`
 	// Reviewers, when non-nil, replaces the reviewer set. Nil means "leave it
@@ -384,34 +388,72 @@ func (service *Service) Update(ctx context.Context, repository RepositoryRef, pu
 		return PullRequest{}, err
 	}
 
-	// Validate before fetching. The reviewer echo below costs a request, and a
-	// caller who named no field or a negative version should hear that
-	// immediately rather than after a round trip -- ADR-054, and the reason
-	// this is not simply folded into the block that follows.
-	payload, err := buildUpdatePayload(input)
-	if err != nil {
+	// Validate before fetching. The reads below cost a request, and a caller
+	// who named no field or a negative version should hear that immediately
+	// rather than after a round trip -- ADR-054, and the reason this is not
+	// simply folded into the block that follows.
+	if err := validateUpdateInput(input); err != nil {
 		return PullRequest{}, err
 	}
 
-	// Read the pull request when the caller did not name a reviewer set, so the
-	// existing one can be echoed back. Without it the PUT drops every reviewer,
-	// which is what #511 reported: an update to the description silently
-	// emptied a set of six.
-	if input.Reviewers == nil {
-		current, err := service.Get(ctx, repository, resolvedID)
+	send := func(current PullRequest) (PullRequest, error) {
+		version := current.Version
+		if input.Version != nil {
+			version = *input.Version
+		}
+
+		payload := buildUpdatePayload(input, version)
+
+		// The existing reviewer set is echoed back when the caller did not name
+		// one. Without it the PUT drops every reviewer, which is what #511
+		// reported: an update to the description silently emptied a set of six.
+		if input.Reviewers == nil {
+			payload["reviewers"] = reviewerEcho(current)
+		}
+
+		var response pullRequestValue
+		if err := service.client.PutJSON(ctx, fmt.Sprintf("%s/%s", pullRequestPath(repository), resolvedID), nil, payload, &response); err != nil {
+			return PullRequest{}, err
+		}
+
+		return mapPullRequest(response), nil
+	}
+
+	// The version is an optimistic lock the caller has no reason to know, so bb
+	// reads it rather than demanding it -- #532, applied to merge, decline,
+	// reopen and rebase, and missed here. It left --version as the one required
+	// flag on the command that edits a title, so changing a title took a
+	// get_pull_request first, and a stale read turned an edit into a 409.
+	//
+	// Read here it can also go stale between the read and the write (#598), so
+	// this is the same retry those transitions get. A version the caller
+	// asserted is not retried: the conflict is the answer they asked for.
+	if input.Version == nil {
+		var updated PullRequest
+		err := service.writeAtCurrentVersion(ctx, repository, resolvedID, func(current PullRequest) error {
+			var sendErr error
+			updated, sendErr = send(current)
+
+			return sendErr
+		})
 		if err != nil {
 			return PullRequest{}, err
 		}
 
-		payload["reviewers"] = reviewerEcho(current)
+		return updated, nil
 	}
 
-	var response pullRequestValue
-	if err := service.client.PutJSON(ctx, fmt.Sprintf("%s/%s", pullRequestPath(repository), resolvedID), nil, payload, &response); err != nil {
+	if input.Reviewers != nil {
+		// The caller supplied both halves; there is nothing to read.
+		return send(PullRequest{})
+	}
+
+	current, err := service.Get(ctx, repository, resolvedID)
+	if err != nil {
 		return PullRequest{}, err
 	}
 
-	return mapPullRequest(response), nil
+	return send(current)
 }
 
 func (service *Service) Merge(ctx context.Context, repository RepositoryRef, pullRequestID string, version *int) (PullRequest, error) {
@@ -1177,13 +1219,29 @@ func hasUpdatableField(payload map[string]any, reviewersRequested bool) bool {
 	return false
 }
 
-func buildUpdatePayload(input UpdateInput) (map[string]any, error) {
+// validateUpdateInput refuses an update that cannot be sent, before anything is
+// read.
+func validateUpdateInput(input UpdateInput) error {
+	if input.Version != nil && *input.Version < 0 {
+		return apperrors.New(apperrors.KindValidation, "version must be greater than or equal to 0", nil)
+	}
+
+	if strings.TrimSpace(input.Title) == "" &&
+		strings.TrimSpace(input.Description) == "" &&
+		input.Draft == nil &&
+		input.Reviewers == nil {
+		return apperrors.New(apperrors.KindValidation, "at least one of title, description, draft, or reviewers is required", nil)
+	}
+
+	return nil
+}
+
+// buildUpdatePayload is the body of the PUT, at the version the caller asserted
+// or the one bb read.
+func buildUpdatePayload(input UpdateInput, version int) map[string]any {
 	payload := map[string]any{}
 
-	if input.Version < 0 {
-		return nil, apperrors.New(apperrors.KindValidation, "version must be greater than or equal to 0", nil)
-	}
-	payload["version"] = input.Version
+	payload["version"] = version
 
 	if title := strings.TrimSpace(input.Title); title != "" {
 		payload["title"] = title
@@ -1213,11 +1271,7 @@ func buildUpdatePayload(input UpdateInput) (map[string]any, error) {
 		payload["reviewers"] = reviewers
 	}
 
-	if !hasUpdatableField(payload, input.Reviewers != nil) {
-		return nil, apperrors.New(apperrors.KindValidation, "at least one of title, description, draft, or reviewers is required", nil)
-	}
-
-	return payload, nil
+	return payload
 }
 
 func normalizeBranchRef(branch string) string {

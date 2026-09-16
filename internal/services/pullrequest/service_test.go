@@ -83,7 +83,7 @@ func TestPullRequestUpdateValidation(t *testing.T) {
 	service := NewService(httpclient.NewFromConfig(config.AppConfig{BitbucketURL: "http://localhost:7990"}))
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
-	_, err := service.Update(context.Background(), repo, "30", UpdateInput{Version: 0})
+	_, err := service.Update(context.Background(), repo, "30", UpdateInput{Version: intPtr(0)})
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected update validation error, got: %v", err)
 	}
@@ -292,14 +292,10 @@ func TestBuildUpdatePayloadWithDraft(t *testing.T) {
 	t.Parallel()
 
 	trueVal := true
-	payload, err := buildUpdatePayload(UpdateInput{
-		Title:   "Updated title",
-		Version: 1,
-		Draft:   &trueVal,
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	payload := buildUpdatePayload(UpdateInput{
+		Title: "Updated title",
+		Draft: &trueVal,
+	}, 1)
 
 	if payload["draft"] != true {
 		t.Fatalf("expected draft=true in update payload, got %v", payload["draft"])
@@ -310,13 +306,7 @@ func TestBuildUpdatePayloadDraftOnlyRequiresVersion(t *testing.T) {
 	t.Parallel()
 
 	falseVal := false
-	payload, err := buildUpdatePayload(UpdateInput{
-		Version: 2,
-		Draft:   &falseVal,
-	})
-	if err != nil {
-		t.Fatalf("expected draft-only update to succeed, got: %v", err)
-	}
+	payload := buildUpdatePayload(UpdateInput{Draft: &falseVal}, 2)
 
 	if payload["draft"] != false {
 		t.Fatalf("expected draft=false in update payload, got %v", payload["draft"])
@@ -329,7 +319,7 @@ func TestBuildUpdatePayloadDraftOnlyRequiresVersion(t *testing.T) {
 func TestBuildUpdatePayloadValidationRequiresField(t *testing.T) {
 	t.Parallel()
 
-	_, err := buildUpdatePayload(UpdateInput{Version: 1})
+	err := validateUpdateInput(UpdateInput{Version: intPtr(1)})
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected validation error exit code 2 when no fields set, got: %v", err)
 	}
@@ -742,7 +732,7 @@ func TestUpdateRequiresAFieldTheCallerNamed(t *testing.T) {
 	t.Parallel()
 
 	t.Run("version alone is not a change", func(t *testing.T) {
-		_, err := buildUpdatePayload(UpdateInput{Version: 3})
+		err := validateUpdateInput(UpdateInput{Version: intPtr(3)})
 		if err == nil {
 			t.Fatal("expected a validation error when nothing was named")
 		}
@@ -752,20 +742,24 @@ func TestUpdateRequiresAFieldTheCallerNamed(t *testing.T) {
 	})
 
 	t.Run("reviewers alone is a change", func(t *testing.T) {
-		payload, err := buildUpdatePayload(UpdateInput{Version: 3, Reviewers: &[]string{"alice"}})
-		if err != nil {
+		input := UpdateInput{Version: intPtr(3), Reviewers: &[]string{"alice"}}
+		if err := validateUpdateInput(input); err != nil {
 			t.Fatalf("--reviewers on its own must be accepted: %v", err)
 		}
+
+		payload := buildUpdatePayload(input, 3)
 		if _, ok := payload["reviewers"]; !ok {
 			t.Error("the payload carries no reviewers key")
 		}
 	})
 
 	t.Run("an empty reviewers list is a change, and clears", func(t *testing.T) {
-		payload, err := buildUpdatePayload(UpdateInput{Version: 3, Reviewers: &[]string{}})
-		if err != nil {
+		input := UpdateInput{Version: intPtr(3), Reviewers: &[]string{}}
+		if err := validateUpdateInput(input); err != nil {
 			t.Fatalf(`--reviewers "" must be accepted: %v`, err)
 		}
+
+		payload := buildUpdatePayload(input, 3)
 		reviewers, ok := payload["reviewers"].([]map[string]any)
 		if !ok || len(reviewers) != 0 {
 			t.Errorf("reviewers = %#v, want an empty list", payload["reviewers"])

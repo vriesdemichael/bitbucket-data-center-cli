@@ -666,14 +666,15 @@ func New(deps Dependencies) *cobra.Command {
 		Aliases: []string{"edit"},
 		Short:   "Update pull request metadata",
 		Long: "Update a pull request's title, description, draft state or reviewers.\n\n" +
-			"--version is required: Bitbucket refuses the update if the pull request has moved on since that " +
-			"version, rather than overwriting someone else's change.\n\n" +
+			"Bitbucket refuses an update carrying a version the pull request has moved on from, rather than " +
+			"overwriting someone else's change. bb reads that version, so --version is only needed to assert a " +
+			"particular one: pass it and a pull request that has changed since is reported instead of updated.\n\n" +
 			"To mark a draft ready for review, or turn a pull request back into a draft, use bb pr ready.",
 		Example: "  # Update title and description\n" +
-			"  bb pr update 42 --repo PROJ/repo --version 1 --title \"New title\"\n\n" +
+			"  bb pr update 42 --repo PROJ/repo --title \"New title\"\n\n" +
 			"  # Mark a draft PR as ready for review\n" +
-			"  bb pr update 42 --repo PROJ/repo --version 1 --draft=false\n\n" +
-			"  # Convert an open PR to draft\n" +
+			"  bb pr update 42 --repo PROJ/repo --draft=false\n\n" +
+			"  # Refuse the update if the pull request has changed since version 1\n" +
 			"  bb pr update 42 --repo PROJ/repo --version 1 --draft",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -692,6 +693,13 @@ func New(deps Dependencies) *cobra.Command {
 			var draft *bool
 			if cmd.Flags().Changed("draft") {
 				draft = &updateDraft
+			}
+
+			// Nil is "whatever version it is now", which is what the service
+			// reads for a caller who did not assert one.
+			var version *int
+			if cmd.Flags().Changed("version") {
+				version = &updateVersion
 			}
 
 			if deps.DryRunEnabled() {
@@ -736,7 +744,7 @@ func New(deps Dependencies) *cobra.Command {
 
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
 					Intent:          "pr.update",
-					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "title": updateTitle, "description": updateDescription, "version": updateVersion, "draft": draft},
+					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID, "title": updateTitle, "description": updateDescription, "version": version, "draft": draft},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
@@ -774,7 +782,7 @@ func New(deps Dependencies) *cobra.Command {
 			updated, err := service.Update(cmd.Context(), repo, target.PullRequestID, pullrequestservice.UpdateInput{
 				Title:       updateTitle,
 				Description: updateDescription,
-				Version:     updateVersion,
+				Version:     version,
 				Draft:       draft,
 				Reviewers:   reviewers,
 			})
@@ -792,10 +800,9 @@ func New(deps Dependencies) *cobra.Command {
 	}
 	updateCmd.Flags().StringVar(&updateTitle, "title", "", "Updated pull request title")
 	updateCmd.Flags().StringVar(&updateDescription, "description", "", "Updated pull request description")
-	updateCmd.Flags().IntVar(&updateVersion, "version", 0, "Expected pull request version")
+	updateCmd.Flags().IntVar(&updateVersion, "version", 0, "Expected pull request version; omit to act on whatever version is current")
 	updateCmd.Flags().BoolVar(&updateDraft, "draft", false, "Set draft state: --draft to mark as draft, --draft=false to mark as ready for review")
 	updateCmd.Flags().StringSliceVar(&updateReviewers, "reviewers", nil, "Replace the reviewers (repeatable or comma-separated, accepts @group syntax); omit to keep the current reviewers, pass \"\" to clear them")
-	_ = updateCmd.MarkFlagRequired("version")
 	prCmd.AddCommand(updateCmd)
 
 	var transitionVersion int

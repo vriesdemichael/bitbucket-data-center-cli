@@ -599,12 +599,12 @@ func specGetFileContent() Spec {
 			// As with get_pr_diff: the file itself is the text content, not the
 			// JSON encoding of the envelope around it.
 			return &mcp.CallToolResult{
-				Content: []mcp.Content{&mcp.TextContent{Text: string(content)}},
-			}, GetFileContentOutput{
-				Path:    in.Path,
-				At:      in.At,
-				Content: string(content),
-			}, nil
+					Content: []mcp.Content{&mcp.TextContent{Text: string(content)}},
+				}, GetFileContentOutput{
+					Path:    in.Path,
+					At:      in.At,
+					Content: string(content),
+				}, nil
 		}
 	})
 }
@@ -648,7 +648,7 @@ func specUpdatePullRequest() Spec {
 				pullrequestservice.UpdateInput{
 					Title:       in.Title,
 					Description: in.Description,
-					Version:     in.Version,
+					Version:     &in.Version,
 					Draft:       in.Draft,
 				},
 			)

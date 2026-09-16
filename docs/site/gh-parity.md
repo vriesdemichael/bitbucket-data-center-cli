@@ -19,7 +19,7 @@ path rather than in a flag.
 | `gh pr create` | `bb pr create` | |
 | `gh pr list` | `bb pr list` | |
 | `gh pr view 42` | `bb pr get 42` | `bb pr view` works as an alias |
-| `gh pr edit 42` | `bb pr update 42` | `bb pr edit` works as an alias. `--version` is required — Bitbucket uses optimistic locking, so an update names the version it expects |
+| `gh pr edit 42` | `bb pr update 42` | `bb pr edit` works as an alias. Pass `--version` to have the update refused if the pull request changed since you read it |
 | `gh pr close 42` | `bb pr decline 42` | `bb pr close` works as an alias |
 | `gh pr checks 42` | `bb pr build status 42` | `bb pr checks` works as an alias |
 | `gh pr merge 42` | `bb pr merge 42` | |
