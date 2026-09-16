@@ -33,13 +33,22 @@ func TestDoctorReportsAnUpdateMirrorBBUpdateWouldRefuse(t *testing.T) {
 			files:    plainMirror,
 			registry: PolicyConfig{AllowHTTPUpdate: httpOptIn(true)},
 		},
+		"a plain-HTTP mirror policy forbids": {
+			files: map[string]string{
+				TierStored: "update_base_url: http://mirror.example.com\n",
+				TierSystem: "policies:\n  allow_http_update: false\n",
+			},
+			problem: "which administrative policy forbids (allow_http_update)",
+		},
+		// The refusal a run meets first: asking for plain HTTP where policy
+		// forbids it fails before any URL is looked at, whatever the URL is.
 		"a plain-HTTP mirror policy forbids, despite BB_ALLOW_HTTP_UPDATE": {
 			files: map[string]string{
 				TierStored: "update_base_url: http://mirror.example.com\n",
 				TierSystem: "policies:\n  allow_http_update: false\n",
 			},
 			environment: map[string]string{"BB_ALLOW_HTTP_UPDATE": "1"},
-			problem:     "which administrative policy forbids (allow_http_update)",
+			problem:     "BB_ALLOW_HTTP_UPDATE is refused",
 		},
 	}
 
