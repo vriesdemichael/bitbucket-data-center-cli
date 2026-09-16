@@ -50,6 +50,7 @@ func TestLivePRCommentAnchors(t *testing.T) {
 	var rootID string
 
 	t.Run("an added line takes an anchored comment", func(t *testing.T) {
+		// bb always sends diffType EFFECTIVE, which Bitbucket also stores when none is sent, so no read shows it arrived.
 		output := mustLiveCLI(t, "pr", "comment", "add", prID,
 			"--text", "on the added line", "--path", file, "--line", "1", "--line-type", "ADDED")
 
@@ -58,13 +59,32 @@ func TestLivePRCommentAnchors(t *testing.T) {
 			t.Fatalf("no comment id in:\n%s", output)
 		}
 		assertLiveCommentAnchoredTo(t, output, file)
+
+		// That was the add's own answer; this is what was kept. ADDED is also
+		// what bb sends without --line-type, and TO what Bitbucket stores for an
+		// added line given no file type, so it is the removed line below that
+		// shows --line-type arrives, and the context line in
+		// TestLiveInlineCommentAnchoring that shows the file type does.
+		assertCommentReadBack(t, commentStoredOnPR(t, prID, rootID), map[string]any{
+			"text": "on the added line", "anchor.path": file, "anchor.line": float64(1), "anchor.lineType": "ADDED", "anchor.fileType": "TO",
+		})
 	})
 
 	t.Run("a removed line anchors to the original file", func(t *testing.T) {
+		// bb always sends diffType EFFECTIVE, which Bitbucket also stores when none is sent, so no read shows it arrived.
 		output := mustLiveCLI(t, "pr", "comment", "add", prID,
 			"--text", "on the removed line", "--path", file, "--line", "1", "--line-type", "REMOVED")
 
 		assertLiveCommentAnchoredTo(t, output, file)
+
+		id := commentIDFrom(t, output)
+		if id == "" {
+			t.Fatalf("no comment id in:\n%s", output)
+		}
+		// FROM is the only file type Bitbucket takes for a removed line.
+		assertCommentReadBack(t, commentStoredOnPR(t, prID, id), map[string]any{
+			"text": "on the removed line", "anchor.path": file, "anchor.line": float64(1), "anchor.lineType": "REMOVED", "anchor.fileType": "FROM",
+		})
 	})
 
 	t.Run("a reply hangs off its parent", func(t *testing.T) {
@@ -75,12 +95,25 @@ func TestLivePRCommentAnchors(t *testing.T) {
 		output := mustLiveCLI(t, "pr", "comment", "add", prID,
 			"--text", "replying inline", "--parent-id", rootID)
 
-		if id := commentIDFrom(t, output); id == "" || id == rootID {
+		id := commentIDFrom(t, output)
+		if id == "" || id == rootID {
 			t.Fatalf("expected a distinct reply id, got %q", id)
 		}
 		if !strings.Contains(output, "\"parentId\"") {
 			t.Errorf("expected the reply to name its parent:\n%s", output)
 		}
+
+		// That parentId is bb repeating --parent-id back, and a read of the reply
+		// alone does not carry its parent. The listing on the file does:
+		// Bitbucket nests a reply under its root and bb reports the nesting as
+		// parentId, where a parent that was dropped would leave the reply off the
+		// file altogether.
+		listing := mustLiveCLI(t, "pr", "comment", "list", prID, "--path", file, "--full")
+		stored, ok := commentListedWithID(commentsListedOnFile(t, listing), id)
+		if !ok {
+			t.Fatalf("reply %s is not listed on the file its parent is anchored to:\n%s", id, listing)
+		}
+		assertCommentReadBack(t, stored, map[string]any{"text": "replying inline", "parentId": commentIDAsJSONNumber(t, rootID), "reply": true})
 	})
 }
 
@@ -128,6 +161,7 @@ func TestLivePRWatchAndUnwatch(t *testing.T) {
 
 	// Both directions, because a watch that cannot be undone is its own bug and
 	// an unwatch that silently does nothing looks the same as one that works.
+	// Neither can be read back: GET on the watch endpoint answers 405, and no pull request field says who watches.
 	mustLiveCLI(t, "pr", "watch", prID)
 	mustLiveCLI(t, "pr", "unwatch", prID)
 
