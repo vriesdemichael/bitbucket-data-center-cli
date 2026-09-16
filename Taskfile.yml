@@ -247,6 +247,7 @@ tasks:
       - task: client:verify
       - task: quality:spec-coverage:verify
       - task: quality:command-reach:verify
+      - task: quality:mock-inventory:verify
       - task: test:live:compile
       - task: docs:lint
       - task: docs:verify-generated
@@ -384,6 +385,21 @@ tasks:
     desc: Verify committed OpenAPI spec coverage artifact is current (static analysis; needs no Bitbucket instance)
     cmds:
       - go run ./tools/quality-report -spec-coverage -verify-report -spec-coverage-file docs/quality/spec-coverage.json
+
+  quality:mock-inventory:
+    desc: Print the mocked servers left in the unit suite and what each one assumes
+    cmds:
+      - go run ./tools/mock-inventory
+
+  quality:mock-inventory:update:
+    desc: Update the committed mocked-server inventory and the task list beside it
+    cmds:
+      - go run ./tools/mock-inventory -write
+
+  quality:mock-inventory:verify:
+    desc: Fail when a mocked server arrives, leaves or changes class without the record being updated (static analysis; needs no Bitbucket instance)
+    cmds:
+      - go run ./tools/mock-inventory -verify
 
   quality:command-reach:
     desc: Print which CLI commands the live suite proves work against a real Bitbucket

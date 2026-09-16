@@ -180,6 +180,7 @@ func main() {
 	roots := flag.String("roots", "internal,tools,cmd", "Comma-separated directories to scan")
 	out := flag.String("out", "docs/quality/unit-test-mock-inventory.json", "Where to write the inventory")
 	write := flag.Bool("write", false, "Write the inventory to disk")
+	verify := flag.Bool("verify", false, "Fail when the committed inventory is not what a scan finds now")
 	flag.Parse()
 
 	entries := []entry{}
@@ -201,6 +202,14 @@ func main() {
 
 	current := buildReport(entries)
 	printSummary(current)
+
+	if *verify {
+		if err := verifyAgainst(*out, current); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+		fmt.Printf("%s is current\n", *out)
+	}
 
 	if *write {
 		encoded, err := json.MarshalIndent(current, "", "  ")
@@ -355,4 +364,75 @@ func actionMeaning(action Action) string {
 	}
 
 	return ""
+}
+
+// verifyAgainst compares the committed inventory with what a scan finds now.
+//
+// The inventory is a record of what the suite still assumes about Bitbucket,
+// and a record nothing checks drifts: it was committed at 177 entries and read
+// 181 by the time anybody looked, so the file said the sweep had removed four
+// mocks nobody had touched. Every other quality artifact is verified in
+// quality:verify; this one was written by hand when somebody remembered.
+func verifyAgainst(path string, current report) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read %s: %w (run: go run ./tools/mock-inventory -write)", path, err)
+	}
+
+	var committed report
+	if err := json.Unmarshal(raw, &committed); err != nil {
+		return fmt.Errorf("parse %s: %w", path, err)
+	}
+
+	// Keyed by where a mock lives and what it assumes, not by its line: a test
+	// edited above one shifts every line below it, and a gate that fails for
+	// that trains people to regenerate without reading. -write refreshes the
+	// lines; this fails for a mock that arrives, leaves or changes class.
+	key := func(item entry) string {
+		return fmt.Sprintf("%s %s [%s]", filepath.ToSlash(item.File), item.Function, item.Class)
+	}
+
+	// Counted rather than set-tested: one function can open several servers,
+	// and two of three disappearing is exactly what this has to report.
+	was := map[string]int{}
+	for _, item := range committed.Entries {
+		was[key(item)]++
+	}
+
+	var added []string
+	for _, item := range current.Entries {
+		if was[key(item)] > 0 {
+			was[key(item)]--
+			continue
+		}
+		added = append(added, key(item))
+	}
+
+	var removed []string
+	for gone, count := range was {
+		for range count {
+			removed = append(removed, gone)
+		}
+	}
+
+	if len(added) == 0 && len(removed) == 0 && committed.Summary.Servers == current.Summary.Servers {
+		return nil
+	}
+
+	sort.Strings(added)
+	sort.Strings(removed)
+
+	message := &strings.Builder{}
+	fmt.Fprintf(message, "%s is out of date: it records %d mocked servers and the tree has %d.\n",
+		path, committed.Summary.Servers, current.Summary.Servers)
+	for _, item := range added {
+		fmt.Fprintf(message, "  + %s\n", item)
+	}
+	for _, item := range removed {
+		fmt.Fprintf(message, "  - %s\n", item)
+	}
+	fmt.Fprint(message, "\nA new mocked server needs a directive saying what it assumes (ADR-079, AGENTS.md).\n"+
+		"Update the record with: go run ./tools/mock-inventory -write")
+
+	return fmt.Errorf("%s", message.String())
 }

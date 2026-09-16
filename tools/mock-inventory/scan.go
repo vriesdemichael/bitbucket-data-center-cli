@@ -46,7 +46,7 @@ func scan(root string) ([]entry, error) {
 		if err != nil {
 			return err
 		}
-		if !strings.Contains(source, "httptest.NewServer") && !strings.Contains(source, "httptest.NewTLSServer") {
+		if !strings.Contains(source, "httptest.New") {
 			return nil
 		}
 
@@ -167,7 +167,16 @@ func isMockServerCall(call *ast.CallExpr) bool {
 		return false
 	}
 
-	return selector.Sel.Name == "NewServer" || selector.Sel.Name == "NewTLSServer"
+	// NewUnstartedServer is the third spelling, and the inventory could not see
+	// it: a test that has to configure its server before it listens -- a client
+	// certificate, a connection counter -- opens one this way, and those are
+	// exactly the mocks worth having in the record.
+	switch selector.Sel.Name {
+	case "NewServer", "NewTLSServer", "NewUnstartedServer":
+		return true
+	}
+
+	return false
 }
 
 // externalService reports whether a package talks to something other than

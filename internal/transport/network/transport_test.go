@@ -89,6 +89,10 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return m.roundTripFunc(req)
 }
 
+// mock-inventory: unreachable-state — a server demanding a client certificate,
+// signed by a CA made for the test. The live instance has no mutual TLS and
+// cannot be given any, and the subject is our transport's TLS configuration
+// rather than anything Bitbucket answers.
 func TestNewSafeTransport(t *testing.T) {
 	t.Parallel()
 

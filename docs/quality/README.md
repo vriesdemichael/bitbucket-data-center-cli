@@ -14,7 +14,7 @@ exists.
 |---|---|---|---|
 | `command-reach.json` | which CLI commands the live suite proves work against a real Bitbucket | `task quality:command-reach:update` | `task quality:command-reach:verify` |
 | `spec-coverage.json` | which `(method, path)` operations from the Bitbucket spec the CLI reaches | `task quality:spec-coverage:update` | `task quality:spec-coverage:verify` |
-| `unit-test-mock-inventory.json` | every mocked Bitbucket server left in the unit suite, and what each one assumes | `go run ./tools/mock-inventory -write` | `go run ./tools/mock-inventory` |
+| `unit-test-mock-inventory.json` | every mocked Bitbucket server left in the unit suite, and what each one assumes | `go run ./tools/mock-inventory -write` | `go run ./tools/mock-inventory -verify` |
 
 Both verify commands are static analysis: they read the Cobra command tree, the live test sources,
 the OpenAPI spec and the services source. Neither starts Bitbucket, so both run in the fast CI job

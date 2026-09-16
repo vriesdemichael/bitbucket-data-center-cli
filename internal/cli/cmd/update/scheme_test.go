@@ -38,6 +38,8 @@ func fetchThrough(t *testing.T, transport http.RoundTripper, target string) (str
 	return string(body), nil
 }
 
+// mock-inventory: external-service — a release mirror over plain HTTP, not
+// Bitbucket; the subject is which scheme bb update will fetch over.
 func plainHTTPServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
@@ -48,6 +50,8 @@ func plainHTTPServer(t *testing.T) *httptest.Server {
 	return server
 }
 
+// mock-inventory: external-service — the server stands in for a release
+// mirror; no Bitbucket route or payload is involved.
 func TestTheUpdateTransportRefusesPlainHTTPUnlessPermitted(t *testing.T) {
 	t.Parallel()
 
@@ -66,6 +70,8 @@ func TestTheUpdateTransportRefusesPlainHTTPUnlessPermitted(t *testing.T) {
 
 // TestAnHTTPSMirrorCannotRedirectToPlainHTTP is why the check sits on the
 // transport: the base URL is https, and only the redirect is not.
+// mock-inventory: external-service — a release mirror that redirects; the
+// subject is bb update's transport, and Bitbucket serves no releases.
 func TestAnHTTPSMirrorCannotRedirectToPlainHTTP(t *testing.T) {
 	t.Parallel()
 
@@ -109,6 +115,8 @@ func TestTheReleaseClientKeepsTheRefusalsKind(t *testing.T) {
 
 // TestARefusedManifestAddressIsReportedOnce is the fallback path: the mirror
 // does not hold the asset, and the manifest's own address for it is refused.
+// mock-inventory: external-service — two release mirrors, one of which refuses;
+// the assertion is about the address bb update reports, not about Bitbucket.
 func TestARefusedManifestAddressIsReportedOnce(t *testing.T) {
 	t.Parallel()
 
@@ -224,6 +232,8 @@ func TestUpdateRefusesAPlainHTTPMirrorBeforeFetchingAnything(t *testing.T) {
 // configured base URL. An https mirror that redirects to http, or a manifest
 // naming an http asset, uses plain HTTP without the base URL ever saying so --
 // and with --allow-http given for something else, that run was silent.
+// mock-inventory: external-service — a release mirror redirecting to plain
+// HTTP; what is asserted is the warning bb prints, not a Bitbucket answer.
 func TestAPermittedRedirectToPlainHTTPWarns(t *testing.T) {
 	t.Parallel()
 
