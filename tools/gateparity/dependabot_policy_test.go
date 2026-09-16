@@ -199,20 +199,7 @@ func TestDependabotProposesUpdatesAgainstNext(t *testing.T) {
 	t.Run("auto-merge holds a pull request based elsewhere", func(t *testing.T) {
 		lines := readLines(t, filepath.Join(root, dependabotAutomergePath))
 
-		baseCheck := regexp.MustCompile(`base\??\.ref\s*!==\s*'` + dependabotTargetBranch + `'`)
-		held := false
-		for index, line := range lines {
-			if !baseCheck.MatchString(line) {
-				continue
-			}
-			for _, following := range lines[index:min(index+8, len(lines))] {
-				if strings.Contains(following, "should_merge") && strings.Contains(following, "'false'") {
-					held = true
-				}
-			}
-		}
-
-		if !held {
+		if !holdsBaseOtherThan(lines, dependabotTargetBranch) {
 			t.Errorf(
 				"%s does not decline a pull request whose base is not %s.\n"+
 					"Dependabot opens security updates against main whatever %s says, and the\n"+
@@ -221,4 +208,93 @@ func TestDependabotProposesUpdatesAgainstNext(t *testing.T) {
 			)
 		}
 	})
+}
+
+// holdsBaseOtherThan reports whether the workflow declines a pull request based
+// on any branch but this one.
+//
+// The whole guard is matched, not the comparison inside it. A comparison is
+// text that can still be there while nothing acts on it: `if (false && pr.base
+// ?.ref !== 'next')` kept an earlier version of this test green, which is the
+// failure ADR-067 exists to catch. The block it guards has to refuse the merge
+// and return, because setting should_merge false and carrying on would be
+// overwritten by the eligible line below it.
+func holdsBaseOtherThan(lines []string, branch string) bool {
+	guard := regexp.MustCompile(`^\s*if \(pr\.base\??\.ref !== '` + regexp.QuoteMeta(branch) + `'\) \{\s*$`)
+
+	for index, line := range lines {
+		if !guard.MatchString(line) {
+			continue
+		}
+
+		refused, returned := false, false
+		for _, following := range lines[index:min(index+12, len(lines))] {
+			if strings.Contains(following, "should_merge") && strings.Contains(following, "'false'") {
+				refused = true
+			}
+			if refused && strings.TrimSpace(following) == "return;" {
+				returned = true
+			}
+			if strings.TrimSpace(following) == "}" && refused {
+				break
+			}
+		}
+
+		if refused && returned {
+			return true
+		}
+	}
+
+	return false
+}
+
+// TestTheBaseHoldScannerFindsAHoldThatDoesNotHold breaks the guard the way a
+// careless edit would, because a governance test nobody has seen fail is a
+// governance test nobody knows works (ADR-067).
+func TestTheBaseHoldScannerFindsAHoldThatDoesNotHold(t *testing.T) {
+	t.Parallel()
+
+	held := []string{
+		"            if (pr.base?.ref !== 'next') {",
+		"              core.notice(`PR #${pr.number} is based on ${pr.base?.ref}, not next.`);",
+		"              core.setOutput('should_merge', 'false');",
+		"              return;",
+		"            }",
+	}
+	if !holdsBaseOtherThan(held, "next") {
+		t.Error("the scanner does not recognise the hold this repository ships")
+	}
+
+	for name, sabotaged := range map[string][]string{
+		"dead code": {
+			"            if (false && pr.base?.ref !== 'next') {",
+			"              core.setOutput('should_merge', 'false');",
+			"              return;",
+			"            }",
+		},
+		"another branch": {
+			"            if (pr.base?.ref !== 'main') {",
+			"              core.setOutput('should_merge', 'false');",
+			"              return;",
+			"            }",
+		},
+		"noticed but not refused": {
+			"            if (pr.base?.ref !== 'next') {",
+			"              core.notice(`PR #${pr.number} is based elsewhere.`);",
+			"            }",
+		},
+		"refused but not returned": {
+			"            if (pr.base?.ref !== 'next') {",
+			"              core.setOutput('should_merge', 'false');",
+			"            }",
+			"            core.setOutput('should_merge', 'true');",
+		},
+		"removed entirely": {
+			"            const isDependabot = pr.user?.login === 'dependabot[bot]';",
+		},
+	} {
+		if holdsBaseOtherThan(sabotaged, "next") {
+			t.Errorf("the scanner accepted a hold sabotaged by %q", name)
+		}
+	}
 }
