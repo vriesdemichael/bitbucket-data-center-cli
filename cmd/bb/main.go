@@ -49,9 +49,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 
 	finished := make(chan struct{})
 	defer close(finished)
-	go superviseInterrupt(ctx, finished, interruptGrace, stop, func() {
-		reportInterrupt(args, stdout, stderr)
-	})
+	go superviseInterrupt(ctx, finished, interruptGrace, stop, args, stdout, stderr)
 
 	cmd.SetContext(ctx)
 	cmd.SetArgs(args)
@@ -72,7 +70,7 @@ var interruptGrace = 2 * time.Second
 // there does not notice a cancelled context. v4.0.0 had no handler at all, so
 // the first interrupt ended the process; keeping the terminal waiting for a
 // second one that prints nothing is worse than either.
-func superviseInterrupt(ctx context.Context, finished <-chan struct{}, grace time.Duration, stop, answer func()) {
+func superviseInterrupt(ctx context.Context, finished <-chan struct{}, grace time.Duration, stop func(), args []string, stdout, stderr io.Writer) {
 	select {
 	case <-ctx.Done():
 	case <-finished:
@@ -87,18 +85,26 @@ func superviseInterrupt(ctx context.Context, finished <-chan struct{}, grace tim
 	select {
 	case <-finished:
 	case <-timer.C:
-		answer()
+		interruptAnswer(args, stdout, stderr)
 	}
 }
 
-// reportInterrupt writes what executeRootCommand would have written for a
-// cancelled run, and ends the process, because what it was waiting for is not
-// going to return.
+// interruptAnswer ends the process once the answer is written. A test replaces
+// it, because os.Exit would take the test binary with it.
+var interruptAnswer = reportInterrupt
+
+func reportInterrupt(args []string, stdout, stderr io.Writer) {
+	os.Exit(writeInterruptAnswer(args, stdout, stderr))
+}
+
+// writeInterruptAnswer writes what executeRootCommand would have written for a
+// cancelled run, and returns its exit code, because what the command is waiting
+// for is not going to return.
 //
 // The raw arguments decide whether stdout is a machine contract. The parsed
 // flag belongs to a command that is still running, and reading it from here
 // would be a data race.
-func reportInterrupt(args []string, stdout, stderr io.Writer) {
+func writeInterruptAnswer(args []string, stdout, stderr io.Writer) int {
 	err := apperrors.New(apperrors.KindCancelled, "interrupted", nil)
 
 	if argsRequestJSON(args) {
@@ -108,7 +114,8 @@ func reportInterrupt(args []string, stdout, stderr io.Writer) {
 	}
 
 	fmt.Fprintln(stderr, err.Error())
-	os.Exit(apperrors.ExitCode(err))
+
+	return apperrors.ExitCode(err)
 }
 
 func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io.Writer) int {
