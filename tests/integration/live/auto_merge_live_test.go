@@ -4,6 +4,7 @@ package live_test
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -43,11 +44,15 @@ func TestLivePullRequestAutoMergeEnable(t *testing.T) {
 	}
 
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	assertLifecyclePRHarnessStored(t, pullRequestID, branch, "master")
 
 	// The server rejects arming with 403 unless the repository permits
 	// auto-merge at all.
 	if output, err := executeLiveCLI(t, "repo", "settings", "auto-merge", "set", "--enabled", "--repo", repoRef); err != nil {
 		t.Fatalf("enable repository auto-merge failed: %v\noutput: %s", err, output)
+	}
+	if settings := decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "auto-merge", "get", "--repo", repoRef)); settings["enabled"] != true {
+		t.Fatalf("repository auto-merge reads back as enabled=%v, want true", settings["enabled"])
 	}
 
 	// A blocker, so the pull request cannot merge on the spot. Without one it
@@ -55,6 +60,11 @@ func TestLivePullRequestAutoMergeEnable(t *testing.T) {
 	// — would never be exercised.
 	if output, err := executeLiveCLI(t, "repo", "settings", "pull-requests", "update-approvers", "--count", "1", "--repo", repoRef); err != nil {
 		t.Fatalf("require an approver failed: %v\noutput: %s", err, output)
+	}
+	// Read back, because a pending auto-merge below shows only that something
+	// blocks the merge, not that it is this count.
+	if got := approverCountFrom(t, decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "pull-requests", "get", "--repo", repoRef))); got != "1" {
+		t.Fatalf("requiredApprovers reads back as %s, want 1", got)
 	}
 
 	output, err := executeLiveCLI(t, "--json", "pr", "auto-merge", "enable", pullRequestID, "--repo", repoRef)
@@ -85,9 +95,21 @@ func TestLivePullRequestAutoMergeEnable(t *testing.T) {
 		t.Fatalf("expected the server to report auto-merge armed, got: %s", getOutput)
 	}
 
+	// Parsed, and the strategy with it. bb sends no-ff when no --strategy is
+	// given, and Bitbucket reports no strategy at all for an auto-merge armed
+	// without one, so a strategy it dropped reads back absent.
+	armed, _ := decodeJSONMap(t, getOutput)["autoMerge"].(map[string]any)
+	if armed["enabled"] != true || armed["strategyId"] != "no-ff" {
+		t.Fatalf("auto-merge reads back as %v, want enabled with strategy no-ff", armed)
+	}
+
 	// And it can be cancelled again, which only works if something was armed.
 	if disableOutput, err := executeLiveCLI(t, "pr", "auto-merge", "disable", pullRequestID, "--repo", repoRef); err != nil {
 		t.Fatalf("pr auto-merge disable failed: %v\noutput: %s", err, disableOutput)
+	}
+	disabled, _ := decodeJSONMap(t, mustLiveCLI(t, "pr", "auto-merge", "get", pullRequestID, "--repo", repoRef))["autoMerge"].(map[string]any)
+	if disabled["enabled"] != false {
+		t.Fatalf("auto-merge reads back as %v after it was disabled", disabled)
 	}
 
 	// A selector that is neither a pull request id nor a branch with one.
@@ -133,14 +155,29 @@ func TestLivePullRequestAutoMergeMergesImmediately(t *testing.T) {
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "auto-merge-now.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
-	prID := createLivePRForRegression(t, branch, "Merges immediately", "--no-default-reviewers", "--no-codeowners")
+	prID := createLifecyclePR(t, branch, "Merges immediately", "--no-default-reviewers", "--no-codeowners")
 
 	if output, err := executeLiveCLI(t, "repo", "settings", "auto-merge", "set", "--enabled", "--repo", repoRef); err != nil {
 		t.Fatalf("enable repository auto-merge failed: %v\noutput: %s", err, output)
 	}
+	if settings := decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "auto-merge", "get", "--repo", repoRef)); settings["enabled"] != true {
+		t.Fatalf("repository auto-merge reads back as enabled=%v, want true", settings["enabled"])
+	}
+
+	// Squash offered beside no-ff, and no-ff left the default, so the merge
+	// below comes out squashed only if the strategy it names is the one used.
+	mustLiveCLI(t, "repo", "settings", "pull-requests", "set-strategy", "squash", "--repo", repoRef)
+	mustLiveCLI(t, "repo", "settings", "pull-requests", "set-strategy", "no-ff", "--repo", repoRef)
+	strategies := decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "pull-requests", "get", "--repo", repoRef))
+	if strategies["defaultMergeStrategy"] != "no-ff" || !lifecycleStrategyEnabled(strategies, "squash") {
+		t.Fatalf("merge strategies read back as %v, want squash enabled and no-ff the default", strategies)
+	}
+
+	sourceCommit := currentLivePRSourceCommit(t, prID)
+	baseCommit, _ := lifecycleMasterHead(t, repoRef)
 
 	// Nothing blocks this one, so arming it should merge it.
-	output := mustLiveCLI(t, "pr", "auto-merge", "enable", prID, "--repo", repoRef)
+	output := mustLiveCLI(t, "pr", "auto-merge", "enable", prID, "--strategy", "squash", "--repo", repoRef)
 
 	autoMerge, ok := decodeJSONMap(t, output)["autoMerge"].(map[string]any)
 	if !ok {
@@ -160,6 +197,20 @@ func TestLivePullRequestAutoMergeMergesImmediately(t *testing.T) {
 		t.Fatalf("state = %q, want MERGED", state)
 	}
 
+	// Nothing is left pending on the server either.
+	pending, _ := decodeJSONMap(t, mustLiveCLI(t, "pr", "auto-merge", "get", prID, "--repo", repoRef))["autoMerge"].(map[string]any)
+	if pending["enabled"] != false {
+		t.Errorf("an immediate merge reads back with auto-merge %v", pending)
+	}
+
+	// The strategy by its effect: a squash is one new commit whose only parent
+	// is where master was. no-ff, the default, would have made a merge commit
+	// with the source commit as its second parent.
+	head, parents := lifecycleMasterHead(t, repoRef)
+	if head == sourceCommit || !slices.Equal(parents, []string{baseCommit}) {
+		t.Errorf("master is at %s with parents %v; a squash of %s onto %s has one parent, the latter", head, parents, sourceCommit, baseCommit)
+	}
+
 	// The human line has to say the same thing as the payload.
 	//
 	// A second pull request, because the first is merged and cannot be armed
@@ -170,7 +221,7 @@ func TestLivePullRequestAutoMergeMergesImmediately(t *testing.T) {
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, second, "auto-merge-now-2.txt"); err != nil {
 		t.Fatalf("push the second branch failed: %v", err)
 	}
-	secondID := createLivePRForRegression(t, second, "Merges immediately too", "--no-default-reviewers", "--no-codeowners")
+	secondID := createLifecyclePR(t, second, "Merges immediately too", "--no-default-reviewers", "--no-codeowners")
 
 	human := mustLiveHumanCLI(t, "pr", "auto-merge", "enable", secondID, "--repo", repoRef)
 	if !strings.Contains(human, "immediately") {
@@ -179,4 +230,40 @@ func TestLivePullRequestAutoMergeMergesImmediately(t *testing.T) {
 	if strings.Contains(human, "Enabled auto-merge") {
 		t.Errorf("the human output claims a pending auto-merge after an immediate merge:\n%s", human)
 	}
+	// The line reports a merge, so the pull request has to be merged.
+	assertLifecyclePRStored(t, readLifecyclePR(t, secondID), map[string]any{"state": "MERGED"})
+}
+
+// lifecycleStrategyEnabled reports whether repo settings pull-requests get lists
+// a merge strategy as enabled.
+func lifecycleStrategyEnabled(settings map[string]any, strategyID string) bool {
+	strategies, _ := settings["mergeStrategies"].([]any)
+	for _, entry := range strategies {
+		if strategy, ok := entry.(map[string]any); ok && strategy["id"] == strategyID {
+			return strategy["enabled"] == true
+		}
+	}
+
+	return false
+}
+
+// lifecycleMasterHead reads the newest commit on master, the default branch of
+// every seeded repository, and the ids of its parents.
+func lifecycleMasterHead(t *testing.T, repoRef string) (string, []string) {
+	t.Helper()
+
+	output := mustLiveCLI(t, "commit", "list", "--limit", "1", "--repo", repoRef)
+	commits, _ := decodeJSONMap(t, output)["commits"].([]any)
+	if len(commits) != 1 {
+		t.Fatalf("expected the head of master, got:\n%s", output)
+	}
+
+	head, _ := commits[0].(map[string]any)
+	listed, _ := head["parents"].([]any)
+	parents := make([]string, 0, len(listed))
+	for _, parent := range listed {
+		parents = append(parents, asString(parent))
+	}
+
+	return asString(head["id"]), parents
 }

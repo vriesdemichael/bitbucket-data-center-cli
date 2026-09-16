@@ -49,7 +49,7 @@ func TestLivePRReady(t *testing.T) {
 	}
 
 	const description = "kept across the draft change"
-	prID := createLivePRForRegression(t, branch, "Marked ready by bb pr ready",
+	prID := createLifecyclePR(t, branch, "Marked ready by bb pr ready",
 		"--draft", "--description", description, "--reviewers", reviewer.Username,
 		"--no-default-reviewers", "--no-codeowners")
 	if !livePRIsDraft(t, prID) {
@@ -57,6 +57,7 @@ func TestLivePRReady(t *testing.T) {
 	}
 
 	// The preview first, so it is judged against a draft and has to leave one.
+	draftVersion := currentLivePRVersion(t, prID)
 	preview, err := executeLiveCLI(t, "--dry-run", "--json", "pr", "ready", prID)
 	if err != nil {
 		t.Fatalf("pr ready --dry-run failed: %v\noutput: %s", err, preview)
@@ -66,6 +67,9 @@ func TestLivePRReady(t *testing.T) {
 	}
 	if !livePRIsDraft(t, prID) {
 		t.Fatal("pr ready --dry-run took the pull request out of draft")
+	}
+	if after := currentLivePRVersion(t, prID); after != draftVersion {
+		t.Errorf("pr ready --dry-run moved the version from %s to %s", draftVersion, after)
 	}
 
 	output, err := executeLiveCLI(t, "--json", "pr", "ready", prID)
@@ -102,6 +106,9 @@ func TestLivePRReady(t *testing.T) {
 	if !strings.Contains(human, "already ready for review") {
 		t.Errorf("expected the human output to say it was already ready, got:\n%s", human)
 	}
+	if after := currentLivePRVersion(t, prID); after != version {
+		t.Errorf("the human no-op moved the version from %s to %s", version, after)
+	}
 
 	noop, err := executeLiveCLI(t, "--dry-run", "--json", "pr", "ready", prID)
 	if err != nil {
@@ -109,6 +116,9 @@ func TestLivePRReady(t *testing.T) {
 	}
 	if !strings.Contains(noop, `"predictedAction": "no-op"`) {
 		t.Errorf("asking for the state it already holds was not predicted a no-op:\n%s", noop)
+	}
+	if after := currentLivePRVersion(t, prID); after != version {
+		t.Errorf("the no-op preview moved the version from %s to %s", version, after)
 	}
 
 	undone, err := executeLiveCLI(t, "--json", "pr", "ready", prID, "--undo")
@@ -123,12 +133,19 @@ func TestLivePRReady(t *testing.T) {
 	}
 	assertLivePRKeptItsReviewerAndDescription(t, prID, reviewer.Username, description)
 
+	undoneVersion := currentLivePRVersion(t, prID)
 	undoneAgain, err := executeLiveCLI(t, "--json", "pr", "ready", prID, "--undo")
 	if err != nil {
 		t.Fatalf("pr ready --undo on a draft must succeed: %v\noutput: %s", err, undoneAgain)
 	}
 	if changed, _ := decodeJSONMap(t, undoneAgain)["changed"].(bool); changed {
 		t.Errorf("a pull request already a draft reported a change:\n%s", undoneAgain)
+	}
+	if !livePRIsDraft(t, prID) {
+		t.Error("a second pr ready --undo took the pull request out of draft")
+	}
+	if after := currentLivePRVersion(t, prID); after != undoneVersion {
+		t.Errorf("the version moved from %s to %s although it was already a draft", undoneVersion, after)
 	}
 }
 
@@ -160,10 +177,14 @@ func TestLivePRReadyOnADeclinedPullRequestIsRefused(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
-	prID := createLivePRForRegression(t, branch, "Declined before it was ready", "--no-default-reviewers", "--no-codeowners")
+	prID := createLifecyclePR(t, branch, "Declined before it was ready", "--no-default-reviewers", "--no-codeowners")
 	if output, err := executeLiveCLI(t, "--json", "pr", "decline", prID); err != nil {
 		t.Fatalf("pr decline failed: %v\noutput: %s", err, output)
 	}
+	assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"state": "DECLINED"})
+
+	// Read before the preview, so the comparison at the end spans it as well.
+	version := currentLivePRVersion(t, prID)
 
 	preview, err := executeLiveCLI(t, "--dry-run", "--json", "pr", "ready", prID)
 	if err != nil {
@@ -172,8 +193,9 @@ func TestLivePRReadyOnADeclinedPullRequestIsRefused(t *testing.T) {
 	if !strings.Contains(preview, `"predictedAction": "blocked"`) {
 		t.Errorf("a draft change on a declined pull request was not predicted blocked:\n%s", preview)
 	}
-
-	version := currentLivePRVersion(t, prID)
+	if after := currentLivePRVersion(t, prID); after != version {
+		t.Errorf("pr ready --dry-run moved the version from %s to %s", version, after)
+	}
 
 	output, err := executeLiveCLI(t, "--json", "pr", "ready", prID)
 	if err == nil {
@@ -227,14 +249,31 @@ func TestLivePRDraftChangeWithAStaleVersionNamesTheException(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 
-	prID := createLivePRForRegression(t, branch, "Changed under a stale version", "--draft", "--no-default-reviewers", "--no-codeowners")
+	prID := createLifecyclePR(t, branch, "Changed under a stale version", "--draft", "--no-default-reviewers", "--no-codeowners")
 
 	stale := currentLivePRVersion(t, prID)
 	mustLiveCLI(t, "pr", "ready", prID)
 
+	// The move the rest depends on, read back: out of draft, at a newer version.
+	if livePRIsDraft(t, prID) {
+		t.Fatal("pr ready left the pull request a draft")
+	}
+	current := currentLivePRVersion(t, prID)
+	if current == stale {
+		t.Fatalf("pr ready left the version at %s", stale)
+	}
+
 	output, err := executeLiveCLI(t, "--json", "pr", "update", prID, "--version", stale, "--draft")
 	if err == nil {
 		t.Fatalf("a draft change carrying a stale version succeeded:\n%s", output)
+	}
+
+	// Refused, so the draft flag it carried did not land.
+	if livePRIsDraft(t, prID) {
+		t.Error("the refused update made the pull request a draft")
+	}
+	if after := currentLivePRVersion(t, prID); after != current {
+		t.Errorf("the refused update moved the version from %s to %s", current, after)
 	}
 
 	details := apperrors.DetailsOf(err)
@@ -313,7 +352,8 @@ func TestLivePRReadyByAReaderIsRefused(t *testing.T) {
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "reader.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
-	prID := createLivePRForRegression(t, branch, "Only a writer may mark this ready", "--draft", "--no-default-reviewers", "--no-codeowners")
+	prID := createLifecyclePR(t, branch, "Only a writer may mark this ready", "--draft", "--no-default-reviewers", "--no-codeowners")
+	version := currentLivePRVersion(t, prID)
 
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reader)
 
@@ -335,6 +375,9 @@ func TestLivePRReadyByAReaderIsRefused(t *testing.T) {
 
 	if !livePRIsDraft(t, prID) {
 		t.Fatal("the pull request is no longer a draft after a refused change")
+	}
+	if after := currentLivePRVersion(t, prID); after != version {
+		t.Errorf("the refused change moved the version from %s to %s", version, after)
 	}
 }
 
