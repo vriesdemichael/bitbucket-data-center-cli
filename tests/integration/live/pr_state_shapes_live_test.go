@@ -318,9 +318,10 @@ func TestLivePullRequestHumanOutput(t *testing.T) {
 		}
 	})
 
-	// `pr activity` alone is the command group, which prints its help and
-	// succeeds, so this passed without listing anything. Nor is a timeline ever
-	// empty: opening the pull request is its first entry, and here its only one.
+	// `pr activity <id>` names the command group, which printed its help here
+	// without an error, so this passed without listing anything. Nor is a
+	// timeline ever empty: opening the pull request is its first entry, and here
+	// its only one.
 	t.Run("the activity listing names the opening", func(t *testing.T) {
 		output := mustLiveHumanCLI(t, "pr", "activity", "list", prID)
 		if strings.TrimSpace(output) == "" {
@@ -434,9 +435,9 @@ func TestLivePullRequestListingFilters(t *testing.T) {
 	})
 
 	t.Run("a limit below the total cuts the answer", func(t *testing.T) {
-		// The total first. all is also the one state only Bitbucket can apply:
-		// bb sends it and keeps every answer, and a server that dropped it would
-		// list the two open pull requests alone.
+		// The total first. --state all is also the one state only Bitbucket can
+		// apply: bb sends it and keeps every answer, where a server that dropped
+		// it would list the two open pull requests alone.
 		all := listedIDs(t, mustLiveCLI(t, "pr", "list", "--state", "all"))
 		if len(all) != len(ids) {
 			t.Errorf("--state all returned %v, want the %d seeded %v", all, len(ids), ids)
