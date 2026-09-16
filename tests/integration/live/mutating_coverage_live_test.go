@@ -5,13 +5,16 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // Real mutating coverage for the commands #532 found were only ever run under
@@ -58,6 +61,11 @@ func TestLivePRReviewApprovalCycle(t *testing.T) {
 
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 	prID := createLivePRForRegression(t, branch, "Approval cycle", "--no-default-reviewers", "--no-codeowners")
+	assertMutatedPullRequestOpened(t, prID, "Approval cycle", branch)
+
+	// Read as the admin, before the switch below: the level itself, because
+	// approving needs only read access and a lower grant would pass the cycle.
+	assertMutatedRepoPermissionLevel(t, seeded.Key+"/"+repo.Slug, false, reviewer.Username, "REPO_WRITE")
 
 	// From here the CLI runs as the reviewer, not the author.
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
@@ -126,6 +134,49 @@ func assertLiveReviewerApproval(t *testing.T, prID, username string, wantApprove
 	t.Fatalf("%s is not a reviewer on the pull request\noutput: %s", username, output)
 }
 
+// mutatedPullRequest reads a pull request back through `pr get`, after a
+// command has changed it.
+func mutatedPullRequest(t *testing.T, prID string) map[string]any {
+	t.Helper()
+
+	return extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", prID)))
+}
+
+// assertMutatedPullRequestOpened reads back the pull request a test opened.
+// Every later step leans on it, so its title and branches are checked as
+// stored rather than taken from the create's own reply.
+func assertMutatedPullRequestOpened(t *testing.T, prID, title, sourceBranch string) {
+	t.Helper()
+
+	stored := mutatedPullRequest(t, prID)
+	if stored["title"] != title || stored["sourceBranch"] != sourceBranch || stored["targetBranch"] != "master" {
+		t.Fatalf("pull request %s is %q from %v into %v, want %q from %s into master",
+			prID, stored["title"], stored["sourceBranch"], stored["targetBranch"], title, sourceBranch)
+	}
+}
+
+// assertMutatedReviewerRoles checks that a pull request has exactly these
+// reviewers, each in the role given.
+//
+// Presence is not enough: bb lists every participant, so a user stored as a
+// PARTICIPANT rather than a REVIEWER is on the list too.
+func assertMutatedReviewerRoles(t *testing.T, prID string, want map[string]string) {
+	t.Helper()
+
+	reviewers, _ := mutatedPullRequest(t, prID)["reviewers"].([]any)
+	got := make(map[string]string, len(reviewers))
+	for _, entry := range reviewers {
+		fields, _ := entry.(map[string]any)
+		name, _ := fields["name"].(string)
+		role, _ := fields["role"].(string)
+		got[name] = role
+	}
+
+	if !maps.Equal(got, want) {
+		t.Fatalf("pull request %s has reviewers %v, want %v", prID, got, want)
+	}
+}
+
 // TestLivePRReviewerAddAndRemove covers `pr review reviewer add` and
 // `pr review reviewer remove`.
 func TestLivePRReviewerAddAndRemove(t *testing.T) {
@@ -150,6 +201,8 @@ func TestLivePRReviewerAddAndRemove(t *testing.T) {
 	}
 
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	repoRef := seeded.Key + "/" + repo.Slug
+	assertMutatedRepoPermissionLevel(t, repoRef, false, reviewer.Username, "REPO_READ")
 
 	branch := "feature/reviewer-add-remove"
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "reviewers.txt"); err != nil {
@@ -157,6 +210,7 @@ func TestLivePRReviewerAddAndRemove(t *testing.T) {
 	}
 
 	prID := createLivePRForRegression(t, branch, "Reviewer add and remove", "--no-default-reviewers", "--no-codeowners")
+	assertMutatedPullRequestOpened(t, prID, "Reviewer add and remove", branch)
 
 	if names := currentLivePRReviewers(t, prID); len(names) != 0 {
 		t.Fatalf("expected the pull request to start with no reviewers, got %v", names)
@@ -169,6 +223,7 @@ func TestLivePRReviewerAddAndRemove(t *testing.T) {
 	if names := currentLivePRReviewers(t, prID); !containsFold(names, reviewer.Username) {
 		t.Fatalf("expected %s to be a reviewer, got %v", reviewer.Username, names)
 	}
+	assertMutatedReviewerRoles(t, prID, map[string]string{reviewer.Username: "REVIEWER"})
 
 	// The id in the result is the pull request's, not the participant
 	// response's -- that payload carries no id, so reading it from there
@@ -187,11 +242,15 @@ func TestLivePRReviewerAddAndRemove(t *testing.T) {
 	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, second.Username, "REPO_READ"); err != nil {
 		t.Fatalf("grant the second reviewer read access failed: %v", err)
 	}
+	assertMutatedRepoPermissionLevel(t, repoRef, false, second.Username, "REPO_READ")
 
 	humanAdd := mustLiveHumanCLI(t, "pr", "review", "reviewer", "add", prID, "--user", second.Username)
 	if !strings.Contains(humanAdd, "pull request #"+prID) {
 		t.Errorf("the human line names the wrong pull request:\n%s", humanAdd)
 	}
+	// The line above is the command's own account; the pull request is the
+	// evidence that the second reviewer was stored beside the first.
+	assertMutatedReviewerRoles(t, prID, map[string]string{reviewer.Username: "REVIEWER", second.Username: "REVIEWER"})
 
 	removeOutput, err := executeLiveCLI(t, "--json", "pr", "review", "reviewer", "remove", prID, "--user", reviewer.Username, "--yes")
 	if err != nil {
@@ -205,6 +264,9 @@ func TestLivePRReviewerAddAndRemove(t *testing.T) {
 	if names := currentLivePRReviewers(t, prID); containsFold(names, reviewer.Username) {
 		t.Fatalf("expected %s to have been removed, got %v", reviewer.Username, names)
 	}
+	// Only the one named: a remove that cleared every participant would pass the
+	// check above.
+	assertMutatedReviewerRoles(t, prID, map[string]string{second.Username: "REVIEWER"})
 }
 
 // TestLiveBranchDefaultSet covers `branch default set`.
@@ -298,6 +360,9 @@ func TestLiveBranchModelUpdate(t *testing.T) {
 	}
 
 	before := currentLiveDefaultBranch(t)
+	if before == branch {
+		t.Fatalf("the repository already defaults to %s, so this would prove nothing", branch)
+	}
 
 	output, err := executeLiveCLI(t, "--json", "branch", "model", "update", branch)
 	if err != nil {
@@ -309,6 +374,11 @@ func TestLiveBranchModelUpdate(t *testing.T) {
 
 	if restore, err := executeLiveCLI(t, "--json", "branch", "model", "update", before); err != nil {
 		t.Fatalf("restoring the branch model default failed: %v\noutput: %s", err, restore)
+	}
+	// The restore is a second update, with a different branch, and gets the same
+	// read.
+	if after := currentLiveDefaultBranch(t); after != before {
+		t.Fatalf("the branch model default was not restored: got %q, want %q", after, before)
 	}
 }
 
@@ -345,12 +415,43 @@ func TestLiveRepoAdminFork(t *testing.T) {
 	if !strings.Contains(listOutput, forkName) {
 		t.Fatalf("the fork %s is not in the project listing:\n%s", forkName, listOutput)
 	}
+	var listed []map[string]any
+	if err := decodeJSONEnvelopeData(listOutput, &listed); err != nil {
+		t.Fatalf("repo list returned invalid JSON: %v\n%s", err, listOutput)
+	}
+	inProject := false
+	for _, entry := range listed {
+		if entry["slug"] == forkName && entry["projectKey"] == seeded.Key {
+			inProject = true
+		}
+	}
+	if !inProject {
+		t.Fatalf("no repository %s/%s in the project listing:\n%s", seeded.Key, forkName, listOutput)
+	}
+
+	// The fields the command sent, as stored. Both differ from what Bitbucket
+	// does without them: a fork with no project lands in the caller's personal
+	// project, and one with no name takes its origin's. The origin is the
+	// repository the request addressed.
+	stored, ok := decodeJSONMap(t, mustLiveCLI(t, "repo", "get", "--repo", seeded.Key+"/"+forkName, "--readme=false"))["repository"].(map[string]any)
+	if !ok {
+		t.Fatalf("repo get returned no repository for %s/%s", seeded.Key, forkName)
+	}
+	if stored["name"] != forkName || stored["projectKey"] != seeded.Key {
+		t.Errorf("the fork is stored as %v in %v, want %s in %s", stored["name"], stored["projectKey"], forkName, seeded.Key)
+	}
+	if origin, _ := stored["origin"].(map[string]any); origin["projectKey"] != seeded.Key || origin["slug"] != repo.Slug {
+		t.Errorf("the fork's origin is %v, want %s/%s", stored["origin"], seeded.Key, repo.Slug)
+	}
 
 	syncOutput, err := executeLiveCLI(t, "--json", "repo", "sync", "status", "--repo", seeded.Key+"/"+forkName)
 	if err != nil {
 		t.Fatalf("repo sync status on the fork failed: %v\noutput: %s", err, syncOutput)
 	}
 	if !strings.Contains(syncOutput, `"available": true`) {
+		t.Fatalf("the new repository does not report as a fork:\n%s", syncOutput)
+	}
+	if available, _ := decodeJSONMap(t, syncOutput)["available"].(bool); !available {
 		t.Fatalf("the new repository does not report as a fork:\n%s", syncOutput)
 	}
 }
@@ -384,6 +485,7 @@ func TestLiveProjectPermissionsGrantAndRevoke(t *testing.T) {
 	t.Run("grant then revoke a user", func(t *testing.T) {
 		mustLiveCLI(t, "project", "permissions", "grant", seeded.Key, user.Username, "PROJECT_READ")
 		assertLiveProjectPermission(t, seeded.Key, false, user.Username, true)
+		assertMutatedProjectPermissionLevel(t, seeded.Key, false, user.Username, "PROJECT_READ")
 
 		mustLiveCLI(t, "project", "permissions", "revoke", seeded.Key, user.Username, "--yes")
 		assertLiveProjectPermission(t, seeded.Key, false, user.Username, false)
@@ -394,6 +496,7 @@ func TestLiveProjectPermissionsGrantAndRevoke(t *testing.T) {
 	t.Run("grant then revoke through the users subcommand", func(t *testing.T) {
 		mustLiveCLI(t, "project", "permissions", "grant", seeded.Key, user.Username, "PROJECT_WRITE")
 		assertLiveProjectPermission(t, seeded.Key, false, user.Username, true)
+		assertMutatedProjectPermissionLevel(t, seeded.Key, false, user.Username, "PROJECT_WRITE")
 
 		mustLiveCLI(t, "project", "permissions", "users", "revoke", seeded.Key, user.Username, "--yes")
 		assertLiveProjectPermission(t, seeded.Key, false, user.Username, false)
@@ -402,6 +505,7 @@ func TestLiveProjectPermissionsGrantAndRevoke(t *testing.T) {
 	t.Run("grant then revoke a group", func(t *testing.T) {
 		mustLiveCLI(t, "project", "permissions", "grant", "--group", seeded.Key, licensedGroup, "PROJECT_READ")
 		assertLiveProjectPermission(t, seeded.Key, true, licensedGroup, true)
+		assertMutatedProjectPermissionLevel(t, seeded.Key, true, licensedGroup, "PROJECT_READ")
 
 		mustLiveCLI(t, "project", "permissions", "groups", "revoke", seeded.Key, licensedGroup, "--yes")
 		assertLiveProjectPermission(t, seeded.Key, true, licensedGroup, false)
@@ -434,6 +538,7 @@ func TestLiveRepoPermissionsGrantAndRevoke(t *testing.T) {
 	t.Run("grant then revoke a user", func(t *testing.T) {
 		mustLiveCLI(t, "repo", "permissions", "grant", user.Username, "REPO_READ", "--repo", repoRef)
 		assertLiveRepoPermission(t, repoRef, false, user.Username, true)
+		assertMutatedRepoPermissionLevel(t, repoRef, false, user.Username, "REPO_READ")
 
 		mustLiveCLI(t, "repo", "permissions", "revoke", user.Username, "--repo", repoRef, "--yes")
 		assertLiveRepoPermission(t, repoRef, false, user.Username, false)
@@ -442,6 +547,7 @@ func TestLiveRepoPermissionsGrantAndRevoke(t *testing.T) {
 	t.Run("grant then revoke a group", func(t *testing.T) {
 		mustLiveCLI(t, "repo", "permissions", "grant", "--group", licensedGroup, "REPO_READ", "--repo", repoRef)
 		assertLiveRepoPermission(t, repoRef, true, licensedGroup, true)
+		assertMutatedRepoPermissionLevel(t, repoRef, true, licensedGroup, "REPO_READ")
 
 		mustLiveCLI(t, "repo", "permissions", "revoke", "--group", licensedGroup, "--repo", repoRef, "--yes")
 		assertLiveRepoPermission(t, repoRef, true, licensedGroup, false)
@@ -451,12 +557,14 @@ func TestLiveRepoPermissionsGrantAndRevoke(t *testing.T) {
 	t.Run("revoke through repo settings security permissions", func(t *testing.T) {
 		mustLiveCLI(t, "repo", "permissions", "grant", user.Username, "REPO_WRITE", "--repo", repoRef)
 		assertLiveRepoPermission(t, repoRef, false, user.Username, true)
+		assertMutatedRepoPermissionLevel(t, repoRef, false, user.Username, "REPO_WRITE")
 
 		mustLiveCLI(t, "repo", "settings", "security", "permissions", "users", "revoke", user.Username, "--repo", repoRef, "--yes")
 		assertLiveRepoPermission(t, repoRef, false, user.Username, false)
 
 		mustLiveCLI(t, "repo", "permissions", "grant", "--group", licensedGroup, "REPO_WRITE", "--repo", repoRef)
 		assertLiveRepoPermission(t, repoRef, true, licensedGroup, true)
+		assertMutatedRepoPermissionLevel(t, repoRef, true, licensedGroup, "REPO_WRITE")
 
 		mustLiveCLI(t, "repo", "settings", "security", "permissions", "groups", "revoke", licensedGroup, "--repo", repoRef, "--yes")
 		assertLiveRepoPermission(t, repoRef, true, licensedGroup, false)
@@ -525,6 +633,48 @@ func assertLivePermissionEntry(t *testing.T, output, name string, want bool) {
 	}
 }
 
+func assertMutatedProjectPermissionLevel(t *testing.T, projectKey string, group bool, name, level string) {
+	t.Helper()
+
+	args := []string{"project", "permissions", "list", projectKey, "--all"}
+	if group {
+		args = append(args, "--group")
+	}
+	assertMutatedPermissionLevel(t, mustLiveCLI(t, args...), name, level)
+}
+
+func assertMutatedRepoPermissionLevel(t *testing.T, repoRef string, group bool, name, level string) {
+	t.Helper()
+
+	args := []string{"repo", "permissions", "list", "--repo", repoRef, "--all"}
+	if group {
+		args = append(args, "--group")
+	}
+	assertMutatedPermissionLevel(t, mustLiveCLI(t, args...), name, level)
+}
+
+// assertMutatedPermissionLevel checks the level a listing reports for one
+// subject. assertLivePermissionEntry asks only whether the subject is listed,
+// and a grant stored at any other level is listed too.
+func assertMutatedPermissionLevel(t *testing.T, output, name, level string) {
+	t.Helper()
+
+	entries, _ := decodeJSONMap(t, output)["entries"].([]any)
+	for _, entry := range entries {
+		record, _ := entry.(map[string]any)
+		if subject, _ := record["name"].(string); subject != name {
+			continue
+		}
+		if got, _ := record["permission"].(string); got != level {
+			t.Fatalf("%s holds %q, want %q\nlisting: %s", name, got, level, output)
+		}
+
+		return
+	}
+
+	t.Fatalf("%s holds no permission, want %q\nlisting: %s", name, level, output)
+}
+
 // TestLivePRRebase covers `pr rebase`, whose only live coverage was a dry run.
 //
 // The command is invoked the way a caller does, without --version. That is the
@@ -550,6 +700,7 @@ func TestLivePRRebase(t *testing.T) {
 	}
 
 	prID := createLivePRForRegression(t, branch, "Needs a rebase", "--no-default-reviewers", "--no-codeowners")
+	assertMutatedPullRequestOpened(t, prID, "Needs a rebase", branch)
 
 	// The target has to move, or there is nothing to rebase onto and the
 	// command could report success without doing anything.
@@ -566,6 +717,7 @@ func TestLivePRRebase(t *testing.T) {
 	waitForLivePRVersionAbove(t, prID, versionBefore)
 
 	before := currentLivePRSourceCommit(t, prID)
+	masterTip := mutatedBranchTip(t, "master")
 
 	output, err := executeLiveCLI(t, "--json", "pr", "rebase", prID)
 	if err != nil {
@@ -594,6 +746,43 @@ func TestLivePRRebase(t *testing.T) {
 	// The pull request catches up, and how long that takes is Bitbucket's
 	// business rather than a reason to fail.
 	waitForLivePRSourceCommit(t, prID, toHash)
+
+	// The hashes above are the rebase's own report. What it did is on the
+	// branch: the ref points at the new commit, and that commit sits directly on
+	// the moved master. A merge would have two parents, and a replay onto the old
+	// target would have that commit as its parent instead.
+	if tip := mutatedBranchTip(t, branch); tip != toHash {
+		t.Errorf("%s points at %s, the rebase reported %s", branch, tip, toHash)
+	}
+	rebased, _ := decodeJSONMap(t, mustLiveCLI(t, "commit", "get", toHash))["commit"].(map[string]any)
+	if parents, _ := rebased["parents"].([]any); len(parents) != 1 || parents[0] != masterTip {
+		t.Errorf("the rebased commit's parents are %v, want [%s], the tip of master", rebased["parents"], masterTip)
+	}
+}
+
+// mutatedBranchTip reads the commit a branch points at from the branch listing:
+// the ref itself, which moves before a pull request's view of it does.
+func mutatedBranchTip(t *testing.T, branch string) string {
+	t.Helper()
+
+	output := mustLiveCLI(t, "branch", "list", "--filter", branch, "--all")
+	branches, _ := decodeJSONMap(t, output)["branches"].([]any)
+	for _, entry := range branches {
+		fields, _ := entry.(map[string]any)
+		if fields["displayId"] != branch {
+			continue
+		}
+		tip, _ := fields["latestCommit"].(string)
+		if tip == "" {
+			t.Fatalf("branch %s has no latestCommit: %s", branch, output)
+		}
+
+		return tip
+	}
+
+	t.Fatalf("no branch %s in the listing: %s", branch, output)
+
+	return ""
 }
 
 // waitForLivePRVersionAbove waits for Bitbucket to bump the pull request's
@@ -648,6 +837,7 @@ func TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict(t *testing.T) {
 	}
 
 	prID := createLivePRForRegression(t, branch, "Rebased with a stale version", "--no-default-reviewers", "--no-codeowners")
+	assertMutatedPullRequestOpened(t, prID, "Rebased with a stale version", branch)
 
 	// Bump the version before the target moves, not after.
 	//
@@ -665,11 +855,28 @@ func TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict(t *testing.T) {
 		t.Fatalf("bumping the version failed: %v\noutput: %s", err, output)
 	}
 
+	// The bump is this test's premise, so it is read back rather than assumed:
+	// an update that stored nothing leaves the version where it was, and then
+	// only the rescope below could make `stale` stale.
+	bumped := mutatedPullRequest(t, prID)
+	if bumped["title"] != "Bumped" {
+		t.Errorf("the title is %v after the update, want Bumped", bumped["title"])
+	}
+	staleVersion, err := strconv.Atoi(stale)
+	if err != nil {
+		t.Fatalf("pull request version %q is not a number: %v", stale, err)
+	}
+	if version, _ := bumped["version"].(float64); int(version) <= staleVersion {
+		t.Fatalf("the update left the pull request at version %v, want above %d", bumped["version"], staleVersion)
+	}
+
 	// Now give the rebase something to replay. Whatever this does to the
 	// version, the number above is behind it.
 	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", "moved-ahead.txt", "the target moved\n"); err != nil {
 		t.Fatalf("advancing master failed: %v", err)
 	}
+
+	tipBefore := mutatedBranchTip(t, branch)
 
 	// The caller named a version that is genuinely behind.
 	output, err := executeLiveCLI(t, "--json", "pr", "rebase", prID, "--version", stale)
@@ -678,6 +885,11 @@ func TestLivePRRebaseWithAnExplicitVersionStillReportsAConflict(t *testing.T) {
 	}
 	if !strings.Contains(output, "409") && !strings.Contains(err.Error(), "409") {
 		t.Fatalf("expected a 409 conflict, got: %v\noutput: %s", err, output)
+	}
+
+	// Refused means nothing was rebased: the branch has not moved.
+	if tip := mutatedBranchTip(t, branch); tip != tipBefore {
+		t.Errorf("%s moved from %s to %s under a refused rebase", branch, tipBefore, tip)
 	}
 }
 
@@ -727,7 +939,9 @@ func TestLivePRRebaseWithNothingToDo(t *testing.T) {
 
 	// The target is left alone, so the branch is already on top of it.
 	prID := createLivePRForRegression(t, branch, "Nothing to rebase", "--no-default-reviewers", "--no-codeowners")
+	assertMutatedPullRequestOpened(t, prID, "Nothing to rebase", branch)
 	before := currentLivePRSourceCommit(t, prID)
+	tipBefore := mutatedBranchTip(t, branch)
 
 	output, err := executeLiveCLI(t, "--json", "pr", "rebase", prID)
 	if err != nil {
@@ -749,6 +963,16 @@ func TestLivePRRebaseWithNothingToDo(t *testing.T) {
 	}
 	if !strings.Contains(human, "nothing to rebase") {
 		t.Errorf("expected the human output to say nothing happened, got:\n%s", human)
+	}
+
+	// The second rebase was sent as well, and the words above are its own
+	// account. The pull request's view of its source lags the ref, so the ref is
+	// read too: a rebase that did move the branch shows there first.
+	if after := currentLivePRSourceCommit(t, prID); after != before {
+		t.Errorf("the source commit moved from %s to %s with nothing to rebase", before, after)
+	}
+	if tip := mutatedBranchTip(t, branch); tip != tipBefore {
+		t.Errorf("%s moved from %s to %s with nothing to rebase", branch, tipBefore, tip)
 	}
 }
 
@@ -792,35 +1016,113 @@ func TestLiveDefaultTaskUpdateKeepsItsMatchers(t *testing.T) {
 	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// Every write below is read back from the listing as well as from its own
+	// reply, and each update sends a description the task does not already
+	// have, so one that was dropped cannot read back as stored.
 	t.Run("repository scope", func(t *testing.T) {
+		tasks := fmt.Sprintf("/rest/default-tasks/latest/projects/%s/repos/%s/tasks", seeded.Key, repo.Slug)
+
 		created := mustLiveCLI(t, "repo", "default-task", "add", "Check the changelog",
 			"--repo", repoRef, "--source-ref", "feature/*", "--target-ref", "main")
 		id := taskIDFrom(t, decodeJSONMap(t, created), "task")
+		assertMutatedDefaultTask(t, harness, mustLiveCLI(t, "repo", "default-task", "list", "--repo", repoRef), tasks, id,
+			mutatedDefaultTask{"Check the changelog", "feature/*", "PATTERN", "main", "BRANCH"})
 
 		updated := mustLiveCLI(t, "repo", "default-task", "update", id,
 			"--repo", repoRef, "--description", "Check the changelog and the ADR")
 		assertTaskMatchers(t, decodeJSONMap(t, updated), "task", "feature/*", "main")
+		assertMutatedDefaultTask(t, harness, mustLiveCLI(t, "repo", "default-task", "list", "--repo", repoRef), tasks, id,
+			mutatedDefaultTask{"Check the changelog and the ADR", "feature/*", "PATTERN", "main", "BRANCH"})
 
 		// The escape hatch still has to exist: an empty ref widens on purpose.
 		widened := mustLiveCLI(t, "repo", "default-task", "update", id,
-			"--repo", repoRef, "--description", "Check the changelog and the ADR", "--source-ref", "")
+			"--repo", repoRef, "--description", "Check the changelog and the ADR on every branch", "--source-ref", "")
 		assertTaskMatchers(t, decodeJSONMap(t, widened), "task", anyRefMatcher, "main")
+		assertMutatedDefaultTask(t, harness, mustLiveCLI(t, "repo", "default-task", "list", "--repo", repoRef), tasks, id,
+			mutatedDefaultTask{"Check the changelog and the ADR on every branch", anyRefMatcher, "ANY_REF", "main", "BRANCH"})
 
 		// And an explicit ref still changes the one it names, only.
 		retargeted := mustLiveCLI(t, "repo", "default-task", "update", id,
-			"--repo", repoRef, "--description", "Check the changelog and the ADR", "--target-ref", "develop")
+			"--repo", repoRef, "--description", "Check the changelog and the ADR before develop", "--target-ref", "develop")
 		assertTaskMatchers(t, decodeJSONMap(t, retargeted), "task", anyRefMatcher, "develop")
+		assertMutatedDefaultTask(t, harness, mustLiveCLI(t, "repo", "default-task", "list", "--repo", repoRef), tasks, id,
+			mutatedDefaultTask{"Check the changelog and the ADR before develop", anyRefMatcher, "ANY_REF", "develop", "BRANCH"})
 	})
 
 	t.Run("project scope", func(t *testing.T) {
+		tasks := fmt.Sprintf("/rest/default-tasks/latest/projects/%s/tasks", seeded.Key)
+
 		created := mustLiveCLI(t, "project", "default-task", "add", seeded.Key, "Sign the release",
 			"--source-ref", "release/*", "--target-ref", "main")
 		id := taskIDFrom(t, decodeJSONMap(t, created), "")
+		assertMutatedDefaultTask(t, harness, mustLiveCLI(t, "project", "default-task", "list", seeded.Key), tasks, id,
+			mutatedDefaultTask{"Sign the release", "release/*", "PATTERN", "main", "BRANCH"})
 
 		updated := mustLiveCLI(t, "project", "default-task", "update", seeded.Key, id,
 			"--description", "Sign the release notes")
 		assertTaskMatchers(t, decodeJSONMap(t, updated), "", "release/*", "main")
+		assertMutatedDefaultTask(t, harness, mustLiveCLI(t, "project", "default-task", "list", seeded.Key), tasks, id,
+			mutatedDefaultTask{"Sign the release notes", "release/*", "PATTERN", "main", "BRANCH"})
 	})
+}
+
+// mutatedDefaultTask is a default task as it should be stored: its description,
+// and each matcher's ref with the kind of matcher it is.
+type mutatedDefaultTask struct {
+	description        string
+	source, sourceKind string
+	target, targetKind string
+}
+
+// assertMutatedDefaultTask reads a default task back twice. bb's listing gives
+// the description and the refs. The matcher kinds come from Bitbucket directly,
+// because bb's output leaves them out -- and a kind is not a detail: a BRANCH
+// matcher on feature/* matches only a branch called exactly that.
+func assertMutatedDefaultTask(t *testing.T, harness *liveHarness, listing, restPath, id string, want mutatedDefaultTask) {
+	t.Helper()
+
+	var listed any
+	if err := decodeJSONEnvelopeData(listing, &listed); err != nil {
+		t.Fatalf("default-task list returned invalid JSON: %v\n%s", err, listing)
+	}
+	task, ok := findByID(listed, id)
+	if !ok {
+		t.Fatalf("default task %s is not in the listing: %s", id, listing)
+	}
+	source, _ := task["sourceMatcher"].(map[string]any)
+	target, _ := task["targetMatcher"].(map[string]any)
+	if task["description"] != want.description || source["displayId"] != want.source || target["displayId"] != want.target {
+		t.Errorf("default task %s is %q from %v to %v, want %q from %s to %s",
+			id, task["description"], source["displayId"], target["displayId"], want.description, want.source, want.target)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	page, err := harness.liveJSON(ctx, http.MethodGet, restPath, nil)
+	if err != nil {
+		t.Fatalf("read the default tasks back: %v", err)
+	}
+	stored, ok := findByID(page["values"], id)
+	if !ok {
+		t.Fatalf("default task %s is not in %s: %v", id, restPath, page)
+	}
+	if got := mutatedMatcherKind(stored["sourceMatcher"]); got != want.sourceKind {
+		t.Errorf("default task %s has a %s source matcher, want %s", id, got, want.sourceKind)
+	}
+	if got := mutatedMatcherKind(stored["targetMatcher"]); got != want.targetKind {
+		t.Errorf("default task %s has a %s target matcher, want %s", id, got, want.targetKind)
+	}
+}
+
+// mutatedMatcherKind is the type id of a ref matcher as Bitbucket returns it,
+// {"type": {"id": "PATTERN", ...}}.
+func mutatedMatcherKind(matcher any) string {
+	fields, _ := matcher.(map[string]any)
+	kind, _ := fields["type"].(map[string]any)
+	id, _ := kind["id"].(string)
+
+	return id
 }
 
 // anyRefMatcher is the id Bitbucket echoes for "matches any ref". It is not the
@@ -898,12 +1200,15 @@ func TestLiveDefaultBranchMustExist(t *testing.T) {
 
 	before := currentLiveDefaultBranch(t)
 
+	// --json sits in each row rather than in an append around the spread, which
+	// is the shape tools/command-reach reads: prepended, the command words were
+	// out of its sight and these two invocations went uncounted.
 	for _, command := range [][]string{
-		{"branch", "default", "set", "does-not-exist"},
-		{"branch", "model", "update", "does-not-exist"},
+		{"--json", "branch", "default", "set", "does-not-exist"},
+		{"--json", "branch", "model", "update", "does-not-exist"},
 	} {
-		t.Run(strings.Join(command, " "), func(t *testing.T) {
-			output, err := executeLiveCLI(t, append([]string{"--json"}, command...)...)
+		t.Run(strings.Join(command[1:], " "), func(t *testing.T) {
+			output, err := executeLiveCLI(t, command...)
 			if err == nil {
 				t.Fatalf("a branch that does not exist must be refused, got:\n%s", output)
 			}
@@ -924,6 +1229,9 @@ func TestLiveDefaultBranchMustExist(t *testing.T) {
 			t.Fatalf("default branch = %q, want %q", after, branch)
 		}
 		mustLiveCLI(t, "branch", "default", "set", before)
+		if after := currentLiveDefaultBranch(t); after != before {
+			t.Fatalf("default branch was not restored: got %q, want %q", after, before)
+		}
 	})
 }
 
@@ -957,6 +1265,28 @@ func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
 	if err := harness.createReviewerGroup(ctx, seeded.Key, repo.Slug, groupName, member.Username); err != nil {
 		t.Fatalf("create reviewer group failed: %v", err)
 	}
+	// A second group beside it, so a delete can be seen to take only the group
+	// it names: with one group, a name resolved to the wrong id and a delete of
+	// the right one leave the same empty listing.
+	keptName := testsupport.UniqueName("kept_")
+	if err := harness.createReviewerGroup(ctx, seeded.Key, repo.Slug, keptName, member.Username); err != nil {
+		t.Fatalf("create the second reviewer group failed: %v", err)
+	}
+
+	// Both fixtures as stored: the name, the scope and the member each was sent
+	// with. The members come from the listing, not from `reviewer-group users`:
+	// that endpoint answers with the members who can review in the repository,
+	// and this member was never given access to it, so it reads as empty.
+	groups := mutatedReviewerGroups(t, mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef))
+	if len(groups) != 2 {
+		t.Fatalf("want exactly the two groups just created, got %v", groups)
+	}
+	for _, name := range []string{groupName, keptName} {
+		if stored := groups[name]; stored.scope != "REPOSITORY" || !slices.Equal(stored.members, []string{member.Username}) {
+			t.Errorf("group %s is %+v, want scope REPOSITORY and members [%s]", name, stored, member.Username)
+		}
+	}
+	keptID := groups[keptName].id
 
 	t.Run("a name that exists is deleted", func(t *testing.T) {
 		mustLiveCLI(t, "reviewer-group", "delete", groupName, "--repo", repoRef, "--yes")
@@ -964,6 +1294,9 @@ func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
 		listing := mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef)
 		if strings.Contains(listing, groupName) {
 			t.Fatalf("the group survived the delete:\n%s", listing)
+		}
+		if after := mutatedReviewerGroups(t, listing); len(after) != 1 || after[keptName].id != keptID {
+			t.Fatalf("want only %s (id %s) left after the delete, got %v", keptName, keptID, after)
 		}
 	})
 
@@ -981,7 +1314,42 @@ func TestLiveReviewerGroupDeleteAcceptsAName(t *testing.T) {
 		if !apperrors.IsKind(err, apperrors.KindNotFound) {
 			t.Errorf("expected kind not_found, got: %v\noutput: %s", err, output)
 		}
+
+		// And nothing was deleted in its place.
+		if after := mutatedReviewerGroups(t, mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef)); len(after) != 1 || after[keptName].id != keptID {
+			t.Errorf("want %s (id %s) untouched by a refused delete, got %v", keptName, keptID, after)
+		}
 	})
+}
+
+// mutatedReviewerGroup is one reviewer group as a listing reports it.
+type mutatedReviewerGroup struct {
+	id, scope string
+	members   []string
+}
+
+// mutatedReviewerGroups reads a reviewer-group listing into its groups, by name.
+func mutatedReviewerGroups(t *testing.T, output string) map[string]mutatedReviewerGroup {
+	t.Helper()
+
+	entries, _ := decodeJSONMap(t, output)["reviewerGroups"].([]any)
+	groups := make(map[string]mutatedReviewerGroup, len(entries))
+	for _, entry := range entries {
+		fields, _ := entry.(map[string]any)
+		name, _ := fields["name"].(string)
+		group := mutatedReviewerGroup{}
+		group.id, _ = numericOrStringID(fields["id"])
+		group.scope, _ = fields["scope"].(string)
+		users, _ := fields["users"].([]any)
+		for _, user := range users {
+			member, _ := user.(map[string]any)
+			username, _ := member["name"].(string)
+			group.members = append(group.members, username)
+		}
+		groups[name] = group
+	}
+
+	return groups
 }
 
 // TestLiveDefaultBranchFoundPastTheFirstPage is the boundary the existence
@@ -1027,12 +1395,44 @@ func TestLiveDefaultBranchFoundPastTheFirstPage(t *testing.T) {
 	// Refs are made directly: pushing 120 branches through git would dominate
 	// the runtime for no extra signal.
 	const decoys = 120
+	wantDecoys := make(map[string]bool, decoys)
 	for index := range decoys {
 		name := fmt.Sprintf("a-%s-%03d", target, index)
 		if _, err := harness.liveJSON(ctx, http.MethodPost,
 			fmt.Sprintf("/rest/branch-utils/latest/projects/%s/repos/%s/branches", seeded.Key, repo.Slug),
 			map[string]any{"name": name, "startPoint": commits[0]}); err != nil {
 			t.Fatalf("create branch %s: %v", name, err)
+		}
+		wantDecoys[name] = true
+	}
+
+	// The premise, read back rather than assumed. Every decoy is stored, at the
+	// commit it was started from, and the target is not on the first page of
+	// the filtered listing -- the page a one-page scan would stop at. Were the
+	// server to sort the target first, this test would pass without the guard
+	// ever reading a second page.
+	matchingOutput := mustLiveCLI(t, "branch", "list", "--filter", target, "--all")
+	matching, _ := decodeJSONMap(t, matchingOutput)["branches"].([]any)
+	if len(matching) != decoys+1 {
+		t.Fatalf("want %d branches matching %q, got %d:\n%s", decoys+1, target, len(matching), matchingOutput)
+	}
+	for _, entry := range matching {
+		fields, _ := entry.(map[string]any)
+		name, _ := fields["displayId"].(string)
+		if name == target {
+			continue
+		}
+		if !wantDecoys[name] {
+			t.Fatalf("branch %s matches %q and is neither the target nor a decoy", name, target)
+		}
+		if fields["latestCommit"] != commits[0] {
+			t.Errorf("decoy %s points at %v, want %s", name, fields["latestCommit"], commits[0])
+		}
+	}
+	firstPage, _ := decodeJSONMap(t, mustLiveCLI(t, "branch", "list", "--filter", target, "--limit", "25"))["branches"].([]any)
+	for _, entry := range firstPage {
+		if fields, _ := entry.(map[string]any); fields["displayId"] == target {
+			t.Fatalf("%s is on the first page of its own filter, so this proves nothing past it", target)
 		}
 	}
 
@@ -1048,9 +1448,14 @@ func TestLiveDefaultBranchFoundPastTheFirstPage(t *testing.T) {
 	if output, err := executeLiveCLI(t, "--json", "branch", "default", "set", target+"-does-not-exist"); err == nil {
 		t.Fatalf("expected a branch that does not exist to be refused, got:\n%s", output)
 	}
+	if after := currentLiveDefaultBranch(t); after != target {
+		t.Fatalf("the default branch moved to %q despite the refusal, want %q", after, target)
+	}
 
 	mustLiveCLI(t, "branch", "default", "set", before)
-
+	if after := currentLiveDefaultBranch(t); after != before {
+		t.Fatalf("default branch was not restored: got %q, want %q", after, before)
+	}
 }
 
 // TestLiveAdminHealthReportsLimitedAuth covers what `admin health` says when
