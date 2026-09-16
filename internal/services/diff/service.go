@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -458,7 +459,10 @@ func (service *Service) streamRefRawDiff(ctx context.Context, repo RepositoryRef
 		return string(response.Body), nil
 	}
 
-	response, err := service.client.StreamRawDiff1WithResponse(ctx, repo.ProjectKey, repo.Slug, strings.TrimSpace(path), &openapigenerated.StreamRawDiff1Params{Since: params.Since, Until: params.Until})
+	// Asked for text. The file-scoped diff answers a request that states no
+	// preference with Bitbucket's JSON diff document, and bb printed that as the
+	// patch.
+	response, err := service.client.StreamRawDiff1WithResponse(ctx, repo.ProjectKey, repo.Slug, strings.TrimSpace(path), &openapigenerated.StreamRawDiff1Params{Since: params.Since, Until: params.Until}, acceptPlainText)
 	if err != nil {
 		return "", apperrors.Transport("failed to stream raw diff for file path", err)
 	}
@@ -467,6 +471,13 @@ func (service *Service) streamRefRawDiff(ctx context.Context, repo RepositoryRef
 	}
 
 	return string(response.Body), nil
+}
+
+// acceptPlainText asks for the text form of an endpoint that also serves JSON.
+func acceptPlainText(_ context.Context, request *http.Request) error {
+	request.Header.Set("Accept", "text/plain")
+
+	return nil
 }
 
 func validateRepoRef(repo RepositoryRef) error {
