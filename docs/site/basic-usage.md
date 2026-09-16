@@ -214,7 +214,7 @@ Example machine output (`bb --json auth status`):
   "data": {
     "ok": true,
     "bitbucketUrl": "https://bitbucket.acme.corp",
-    "bitbucketVersionTarget": "[[ bitbucket_version ]]",
+    "bitbucketVersionTarget": "",
     "authMode": "token",
     "authSource": "stored",
     "credentialStorage": "keyring",
@@ -266,5 +266,14 @@ bb --dry-run project create DEMO --name "Demo Project"
 Example human output (`bb auth status`):
 
 ```text
-Target Bitbucket: https://bitbucket.acme.corp (expected version [[ bitbucket_version ]], auth=token, source=stored)
+Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored)
 ```
+
+`authSource` says where the credential came from: `stored` from a configuration
+file or the keyring, `env` from `BITBUCKET_TOKEN` or the basic-auth variables,
+and `env/default` when neither supplied one.
+
+`bitbucketVersionTarget` is empty unless an operator pinned a version by setting
+`BITBUCKET_VERSION_TARGET`, and the human rendering leaves the version out
+entirely when it is. It records a version for your own environment; `bb` does
+not pin one, and nothing branches on it.
