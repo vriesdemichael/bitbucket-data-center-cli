@@ -186,15 +186,123 @@ IDE's own environment block. See
 
 ## `OS keyring is unavailable and keyring-backed storage is required`
 
-A headless Linux host or an SSH session with no D-Bus session bus. Either start
-one:
+A headless Linux host, an SSH session, or a container. `bb` reaches the keyring
+through the freedesktop Secret Service API, so it needs two things on Linux: a
+D-Bus session bus, and a Secret Service provider listening on it. A session bus
+alone is not enough — with no provider there is nothing to answer, and the
+storage still fails.
 
 ```bash
-eval $(dbus-launch --sh-syntax)
+eval "$(dbus-launch --sh-syntax)"
+gnome-keyring-daemon --start --components=secrets
 ```
 
-or supply the credential through `BITBUCKET_TOKEN`, which stores nothing on
-disk and is the right answer in CI and containers.
+The daemon also has to be **unlocked**. A login keyring created with a password
+stays locked until something supplies it, and a locked keyring refuses reads the
+same way a missing one does. `libsecret`, KWallet's Secret Service interface and
+`keepassxc` with Secret Service enabled all work in place of
+`gnome-keyring-daemon`.
+
+**On a server, in a container or in CI, do not do any of this.** Supply the
+credential through `BITBUCKET_TOKEN` instead. It stores nothing on disk, needs
+no session bus, and satisfies a `BB_REQUIRE_KEYRING` policy, because there is no
+plaintext fallback to refuse.
+
+<!-- docs-lint: message-of bb -->
+
+## `bitbucket API returned 401: Authentication failed`
+
+```text
+authentication: bitbucket API returned 401: Authentication failed. Please check your credentials and try again.
+```
+
+The token is wrong, revoked, or expired. Bitbucket personal access tokens can be
+created with an expiry, and nothing warns you as it approaches. Exit status is
+`3`, and the error `kind` is `authentication`.
+
+```bash
+bb auth status
+```
+
+That names the host the credential was tried against, which is the other half of
+the answer: a token that is valid on one instance is not on another. Create a
+replacement and store it:
+
+```bash
+bb auth token-url --host https://bitbucket.example.com
+printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+```
+
+If `BITBUCKET_TOKEN` is set in your environment it wins over anything stored, so
+logging in again changes nothing until you unset it. `bb auth status` reports
+which one is in use as `source=env` rather than `source=stored`.
+
+<!-- docs-lint: message-of bb -->
+
+## `bitbucket API returned 401: You are not currently licensed to use Bitbucket`
+
+```text
+authorization: bitbucket API returned 401: You are not currently licensed to use Bitbucket.
+Please contact your administrator to resolve this issue.
+```
+
+The credential is valid and the account is not licensed. Bitbucket answers this
+with `401` rather than `403`, but it is not an authentication problem: the error
+`kind` is `authorization`, because logging in again cannot fix it. Only an
+administrator granting the licence can.
+
+The same `kind` covers a licensed account that lacks a permission, which
+Bitbucket also reports as `401`:
+
+```text
+authorization: bitbucket API returned 401: You are not permitted to access this resource
+```
+
+Both exit `3`. To tell them apart in a script, read `error.details.upstreamException`
+under `--json`: a licence problem is `NoAccessAuthenticationException` and a
+permission problem is `AuthorisationException`. Branch on that rather than on the
+wording, which Bitbucket rewrites between releases.
+
+<!-- docs-lint: message-of bb -->
+
+## `repository is required (use --repo PROJECT/slug ...)`
+
+```text
+validation: repository is required (use --repo PROJECT/slug or set BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
+```
+
+The command needs a repository and could not work one out. `bb` infers one from
+the git remotes of the directory you are standing in, so this means either you
+are not inside a Bitbucket clone, or its remotes point somewhere `bb` has no
+host configured for. Name the repository instead:
+
+```bash
+bb pr list --repo PROJECT/my-repo
+```
+
+`git remote -v` shows what `bb` had to work with. A URL on a hostname that is
+not your configured Bitbucket host — an SSH clone host on a different name, for
+instance — is not matched; `bb auth alias add` teaches `bb` that the two are the
+same instance.
+
+<!-- docs-lint: message-of bb -->
+
+## `ambiguous git remote context ...`
+
+```text
+validation: ambiguous git remote context (origin=PROJ/api@https://bitbucket.example.com, upstream=PLATFORM/api@https://bitbucket.example.com); specify --repo PROJECT/slug and/or set active server with auth server use --host
+```
+
+The clone has remotes naming more than one repository and `bb` will not pick. A
+side remote next to `origin` is not ambiguous — `origin` wins, which is git's
+own convention — but an `upstream` remote is the deliberate exception, because
+the convention that puts a fork on `origin` puts the repository people work
+against on `upstream`. There is no defensible default between the two.
+
+The message lists every candidate it found, as `remote=PROJECT/slug@host`. Pass
+`--repo PROJECT/slug` for the one you meant. When the candidates differ by host
+rather than by repository, `bb auth server use` sets which instance is the
+default.
 
 ## A command refuses and blames administrative policy
 
