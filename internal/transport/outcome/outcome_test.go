@@ -3,8 +3,10 @@ package outcome_test
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -248,6 +250,41 @@ func TestARejectedCertificateIsPermanent(t *testing.T) {
 	}
 }
 
+// TestAServerThatRefusesTheHandshakeIsPermanent is the mTLS case (ADR-060).
+//
+// Under TLS 1.3 the client finishes the handshake before the server checks the
+// client certificate, so a refusal arrives as an alert on the first read --
+// after the request headers went out. That counted as "the request was sent":
+// a POST became unknown_outcome, telling the caller to go and check whether a
+// server that never ran a handler had applied it.
+func TestAServerThatRefusesTheHandshakeIsPermanent(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("the handshake should have failed before any request was served")
+	}))
+	server.TLS = &tls.Config{ClientAuth: tls.RequireAnyClientCert, MinVersion: tls.VersionTLS13}
+	server.Config.ErrorLog = log.New(io.Discard, "", 0)
+	server.StartTLS()
+	t.Cleanup(server.Close)
+
+	// The client trusts the server and presents no certificate, which is what
+	// an mTLS deployment meets when the certificate is missing or expired.
+	request, _ := http.NewRequest(http.MethodPost, server.URL, nil)
+	tracked, exchange := outcome.Track(request)
+
+	_, err := server.Client().Do(tracked)
+	if err == nil {
+		t.Fatal("a server requiring a client certificate accepted a request without one")
+	}
+
+	classified := exchange.Classify(err)
+	assertKind(t, classified, apperrors.KindPermanent, "refused the TLS connection")
+	if outcome.Retriable(classified) {
+		t.Fatal("a refused handshake is retriable, so every command tries it three times")
+	}
+}
+
 // A name that does not resolve depends on the resolver the test runs under,
 // so it is classified from the error value rather than provoked.
 func TestAnUnresolvableHostIsPermanent(t *testing.T) {
@@ -273,10 +310,15 @@ func TestAGatewayAnswerToAMutationHasAnUnknownOutcome(t *testing.T) {
 		// Replayable: a gateway failure is only a failure to answer.
 		{method: http.MethodPut, status: http.StatusGatewayTimeout},
 		{method: http.MethodGet, status: http.StatusBadGateway},
-		// Bitbucket's own 5xx and 503 are the server answering, not a gateway
-		// losing the answer, so they map as they always have.
-		{method: http.MethodPost, status: http.StatusInternalServerError},
+		// A 500 is Bitbucket raising an error, which it can do after applying
+		// part of what was asked. The retry policy refuses to replay a 5xx on
+		// this method for that reason, and transient told the caller's wrapper
+		// to replay it anyway.
+		{method: http.MethodPost, status: http.StatusInternalServerError, want: apperrors.KindUnknownOutcome},
+		// 503 says the request was not processed, so it is a retry.
 		{method: http.MethodPost, status: http.StatusServiceUnavailable},
+		// A replayable method loses nothing either way.
+		{method: http.MethodPut, status: http.StatusInternalServerError},
 	} {
 		request, _ := http.NewRequest(testCase.method, "http://bitbucket.example", nil)
 		_, exchange := outcome.Track(request)

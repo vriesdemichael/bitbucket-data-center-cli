@@ -33,6 +33,9 @@ import (
 type Exchange struct {
 	method string
 	wrote  atomic.Bool
+	// status is what the server answered, once it has answered. Zero means
+	// nothing came back.
+	status atomic.Int32
 }
 
 type exchangeKey struct{}
@@ -86,6 +89,9 @@ func (exchange *Exchange) Classify(err error) error {
 	case certificateRejected(err):
 		return apperrors.New(apperrors.KindPermanent,
 			"the server's TLS certificate was rejected, which retrying will not change", err)
+	case handshakeRefused(err):
+		return apperrors.New(apperrors.KindPermanent,
+			"the server refused the TLS connection, which retrying will not change", err)
 	case hostUnresolvable(err):
 		return apperrors.New(apperrors.KindPermanent,
 			"the host does not resolve, which retrying will not change", err)
@@ -111,6 +117,10 @@ func (exchange *Exchange) ClassifyRead(err error) error {
 
 	exchange.wrote.Store(true)
 
+	if status := int(exchange.status.Load()); status != 0 {
+		return exchange.answered(status, err)
+	}
+
 	switch {
 	case exchange.mayHaveApplied():
 		return exchange.unknown(err)
@@ -118,6 +128,39 @@ func (exchange *Exchange) ClassifyRead(err error) error {
 		return apperrors.New(apperrors.KindCancelled, "reading the response was interrupted", err)
 	default:
 		return apperrors.Transport("failed to read the response", err)
+	}
+}
+
+// Answered records the status the server replied with.
+//
+// The status is the outcome: 201 says the change was applied and 409 says it
+// was refused. Without it, a body that failed to read reported "no answer came
+// back", which is only true while none has.
+func (exchange *Exchange) Answered(status int) {
+	exchange.status.Store(int32(status))
+}
+
+// answered classifies a body that failed to read after the server had already
+// said what it did.
+//
+// Applied is not a retry: repeating a POST that succeeded creates a second
+// pull request or comment, which is the whole reason unknown_outcome exists.
+// Refused is not unknown either. What went missing in both cases is the
+// payload, not the outcome.
+func (exchange *Exchange) answered(status int, err error) error {
+	switch {
+	case status >= 200 && status < 300 && !retrypolicy.Replayable(exchange.method):
+		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
+			"Bitbucket applied the %s and answered %d, but its response could not be read: do not send it again",
+			exchange.method, status), err)
+	case status >= 400 && status < 500:
+		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
+			"Bitbucket refused the %s with %d, and the response could not be read",
+			exchange.method, status), err)
+	default:
+		return apperrors.Transport(fmt.Sprintf(
+			"Bitbucket answered the %s with %d, and the response could not be read",
+			exchange.method, status), err)
 	}
 }
 
@@ -130,16 +173,27 @@ func (exchange *Exchange) ClassifyRead(err error) error {
 // exactly the replay the policy refused. mapped is what the status would
 // otherwise have been reported as, kept as the cause so its message survives.
 func (exchange *Exchange) Status(status int, mapped error) error {
-	if status != http.StatusBadGateway && status != http.StatusGatewayTimeout {
-		return nil
-	}
 	if retrypolicy.Replayable(exchange.method) {
 		return nil
 	}
 
-	return apperrors.New(apperrors.KindUnknownOutcome, fmt.Sprintf(
-		"a gateway answered the %s with %d, so whether Bitbucket applied it is unknown: check before sending it again",
-		exchange.method, status), mapped)
+	switch status {
+	case http.StatusBadGateway, http.StatusGatewayTimeout:
+		return apperrors.New(apperrors.KindUnknownOutcome, fmt.Sprintf(
+			"a gateway answered the %s with %d, so whether Bitbucket applied it is unknown: check before sending it again",
+			exchange.method, status), mapped)
+	case http.StatusInternalServerError:
+		// Bitbucket raised the error itself, which it can do after applying
+		// part of what was asked. The retry policy already refuses to replay a
+		// 5xx on this method for that reason; reporting it as transient told
+		// the caller's wrapper to perform exactly the replay the policy
+		// declined. 503 is not here: it says the request was not processed.
+		return apperrors.New(apperrors.KindUnknownOutcome, fmt.Sprintf(
+			"Bitbucket answered the %s with 500, so whether it was applied is unknown: check before sending it again",
+			exchange.method), mapped)
+	default:
+		return nil
+	}
 }
 
 // AnswerFailed reports a request Bitbucket answered with an error it raised
@@ -233,6 +287,27 @@ func certificateRejected(err error) bool {
 		errors.As(err, &unknownAuthority) ||
 		errors.As(err, &invalid) ||
 		errors.As(err, &hostname)
+}
+
+// handshakeRefused reports a TLS alert the server sent.
+//
+// Under TLS 1.3 the client finishes the handshake before the server checks a
+// client certificate, so a refusal arrives as an alert on the first read --
+// after the request headers went out. Without this it counted as "the request
+// was sent": a POST became unknown_outcome and a GET was retried three times,
+// though no handler ever ran. mTLS deployments meet it on every command.
+func handshakeRefused(err error) bool {
+	// A received alert arrives as a net.OpError whose Op is "remote error",
+	// carrying an alert type crypto/tls keeps unexported. tls.AlertError is
+	// checked too, which is the shape a QUIC transport returns.
+	var alert tls.AlertError
+	if errors.As(err, &alert) {
+		return true
+	}
+
+	var operation *net.OpError
+
+	return errors.As(err, &operation) && operation.Op == "remote error"
 }
 
 func hostUnresolvable(err error) bool {
