@@ -56,6 +56,13 @@ func TestLivePRReady(t *testing.T) {
 	if !livePRIsDraft(t, prID) {
 		t.Fatal("expected the pull request to be created as a draft")
 	}
+	// Read back before the draft changes are held to keeping them, so a create
+	// that dropped either is not reported as a draft change losing it.
+	created := readLifecyclePR(t, prID)
+	assertLifecyclePRStored(t, created, map[string]any{"description": description})
+	if names := decodeLivePRReviewers(t, created); len(names) != 1 || !strings.EqualFold(names[0], reviewer.Username) {
+		t.Fatalf("the create stored the reviewers %v, want exactly [%s]", names, reviewer.Username)
+	}
 
 	// The preview first, so it is judged against a draft and has to leave one.
 	draftVersion := currentLivePRVersion(t, prID)
@@ -251,6 +258,9 @@ func TestLivePRDraftChangeWithAStaleVersionNamesTheException(t *testing.T) {
 	}
 
 	prID := createLifecyclePR(t, branch, "Changed under a stale version", "--draft", "--no-default-reviewers", "--no-codeowners")
+	if !livePRIsDraft(t, prID) {
+		t.Fatal("expected the pull request to be created as a draft")
+	}
 
 	stale := currentLivePRVersion(t, prID)
 	mustLiveCLI(t, "pr", "ready", prID)
@@ -355,6 +365,9 @@ func TestLivePRReadyByAReaderIsRefused(t *testing.T) {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 	prID := createLifecyclePR(t, branch, "Only a writer may mark this ready", "--draft", "--no-default-reviewers", "--no-codeowners")
+	if !livePRIsDraft(t, prID) {
+		t.Fatal("expected the pull request to be created as a draft")
+	}
 	version := currentLivePRVersion(t, prID)
 
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reader)
