@@ -223,6 +223,16 @@ func TestLivePullRequestAutoMergeMergesImmediately(t *testing.T) {
 	}
 	secondID := createLifecyclePR(t, second, "Merges immediately too", "--no-default-reviewers", "--no-codeowners")
 
+	// Armed without --strategy, so bb sends no-ff. Squash is made the default
+	// first: a no-ff that did not arrive would merge this one squashed.
+	mustLiveCLI(t, "repo", "settings", "pull-requests", "set-strategy", "squash", "--repo", repoRef)
+	strategies = decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "pull-requests", "get", "--repo", repoRef))
+	if strategies["defaultMergeStrategy"] != "squash" || !lifecycleStrategyEnabled(strategies, "no-ff") {
+		t.Fatalf("merge strategies read back as %v, want no-ff enabled and squash the default", strategies)
+	}
+	secondSource := currentLivePRSourceCommit(t, secondID)
+	secondBase, _ := lifecycleMasterHead(t, repoRef)
+
 	human := mustLiveHumanCLI(t, "pr", "auto-merge", "enable", secondID, "--repo", repoRef)
 	if !strings.Contains(human, "immediately") {
 		t.Errorf("the human output does not report the immediate merge:\n%s", human)
@@ -232,6 +242,12 @@ func TestLivePullRequestAutoMergeMergesImmediately(t *testing.T) {
 	}
 	// The line reports a merge, so the pull request has to be merged.
 	assertLifecyclePRStored(t, readLifecyclePR(t, secondID), map[string]any{"state": "MERGED"})
+
+	// And merged no-ff: a merge commit whose parents are where master was and
+	// the source commit, where the squash default would have left one parent.
+	if head, parents := lifecycleMasterHead(t, repoRef); !slices.Equal(parents, []string{secondBase, secondSource}) {
+		t.Errorf("master is at %s with parents %v; a no-ff merge of %s onto %s has both as parents", head, parents, secondSource, secondBase)
+	}
 }
 
 // lifecycleStrategyEnabled reports whether repo settings pull-requests get lists
