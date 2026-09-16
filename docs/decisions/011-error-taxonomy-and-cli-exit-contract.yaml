@@ -20,10 +20,11 @@ decision: >
   cancelled, exit 12, an interrupt that stopped the request before the server could act on it. A
   mutation that may have been applied has to be checked rather than repeated.
 
-  A status that arrived is an answer, whatever became of the body behind it. A reply cut short
-  after 201 says the change was applied, and is reported as applied and not to be sent again;
-  one cut short after a 4xx says it was refused. Only a mutation with no status at all is
-  unknown.
+  A status that arrived says whether the work was refused, not that it landed. A reply cut short
+  after a 4xx is reported as refused rather than unknown: nothing was applied, and sending it
+  again will be refused again. A 2xx settles nothing, because behind SSO or a proxy a login page
+  can answer 200 to a write nobody authenticated, so a mutation whose body was lost stays
+  unknown_outcome.
 
   Where bb can tell what a mutation made, it makes that check itself. A webhook create lists the
   scope's webhooks before and after, and one new webhook matching the request is reported as

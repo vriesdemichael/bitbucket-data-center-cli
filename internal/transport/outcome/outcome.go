@@ -133,9 +133,9 @@ func (exchange *Exchange) ClassifyRead(err error) error {
 
 // Answered records the status the server replied with.
 //
-// The status is the outcome: 201 says the change was applied and 409 says it
-// was refused. Without it, a body that failed to read reported "no answer came
-// back", which is only true while none has.
+// A status is what bb knows when the body behind it is lost: a 409 says the
+// change was refused. Without it, a body that failed to read reported "no
+// answer came back", which is only true while none has.
 func (exchange *Exchange) Answered(status int) {
 	exchange.status.Store(int32(status))
 }
@@ -143,19 +143,27 @@ func (exchange *Exchange) Answered(status int) {
 // answered classifies a body that failed to read after the server had already
 // said what it did.
 //
-// Applied is not a retry: repeating a POST that succeeded creates a second
-// pull request or comment, which is the whole reason unknown_outcome exists.
-// Refused is not unknown either. What went missing in both cases is the
-// payload, not the outcome.
+// A 4xx settles it: the change was refused, nothing was applied, and sending it
+// again will be refused again. What went missing is the payload, not the
+// outcome -- so reporting that as unknown sent the caller to check a state the
+// status had already told them.
+//
+// A 2xx does not settle it. It is not proof that a mutation landed: behind SSO
+// or a reverse proxy, a write nobody authenticated is answered with a redirect
+// to a login page, which the client follows, so the 200 that comes back belongs
+// to that page and not to the request -- Bitbucket itself answers 401, but bb
+// is not always talking to Bitbucket directly. The body that would say which of
+// the two this was is the part that was lost, so it stays unknown_outcome: look
+// before sending it again.
 func (exchange *Exchange) answered(status int, err error) error {
 	switch {
-	case status >= 200 && status < 300 && !retrypolicy.Replayable(exchange.method):
-		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
-			"Bitbucket applied the %s and answered %d, but its response could not be read: do not send it again",
-			exchange.method, status), err)
 	case status >= 400 && status < 500:
 		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
-			"Bitbucket refused the %s with %d, and the response could not be read",
+			"the %s was refused with %d, and the response could not be read",
+			exchange.method, status), err)
+	case status >= 200 && status < 300 && !retrypolicy.Replayable(exchange.method):
+		return apperrors.New(apperrors.KindUnknownOutcome, fmt.Sprintf(
+			"the %s was answered with %d, but the response could not be read, so whether it was applied is unknown: check before sending it again",
 			exchange.method, status), err)
 	default:
 		return apperrors.Transport(fmt.Sprintf(

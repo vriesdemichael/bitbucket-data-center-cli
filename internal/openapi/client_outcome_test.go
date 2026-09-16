@@ -88,27 +88,48 @@ func TestAMutationOnTheGeneratedClientWhoseAnswerWasLostHasAnUnknownOutcome(t *t
 	}
 }
 
-// TestAStatusThatArrivedSaysWhatHappened: a status is an answer.
+// TestAStatusThatArrivedSaysWhetherTheChangeWasRefused: a 4xx settles it, and
+// a 2xx does not.
 //
-// The body being cut short loses the payload, not the outcome: 201 says the
-// project was created. Reported as unknown_outcome, it sent the caller to check
-// something the reply had already told them, and exit 13 reads as "we do not
-// know" when bb does.
-func TestAStatusThatArrivedSaysWhatHappened(t *testing.T) {
+// A body cut short after a 409 loses the payload, not the outcome: the change
+// was refused and repeating it will be refused again. Reported as
+// unknown_outcome, it sent the caller to check something the reply had already
+// told them.
+//
+// A 201 is the other way round. It is not proof that the mutation landed:
+// behind SSO a write nobody authenticated is answered with a redirect to a
+// login page, which the client follows, so the status can belong to that page
+// rather than to the POST -- and the body that would say which is the part
+// that was lost.
+func TestAStatusThatArrivedSaysWhetherTheChangeWasRefused(t *testing.T) {
 	t.Parallel()
 
-	baseURL, _ := hangUpAfterReading(t, func(conn net.Conn) {
-		_, _ = io.WriteString(conn, "HTTP/1.1 201 Created\r\nContent-Type: application/json\r\nContent-Length: 64\r\n\r\n{\"key\"")
+	refusedURL, _ := hangUpAfterReading(t, func(conn net.Conn) {
+		_, _ = io.WriteString(conn, "HTTP/1.1 409 Conflict\r\nContent-Type: application/json\r\nContent-Length: 64\r\n\r\n{\"err")
 	})
 
-	_, err := generatedClient(t, baseURL).CreateProjectWithResponse(context.Background(), openapigenerated.RestProject{})
+	_, err := generatedClient(t, refusedURL).CreateProjectWithResponse(context.Background(), openapigenerated.RestProject{})
 	err = apperrors.Transport("failed to create project", err)
 
 	if !apperrors.IsKind(err, apperrors.KindPermanent) {
-		t.Fatalf("got %v, want permanent: the project was created", err)
+		t.Fatalf("got %v, want permanent: the project was refused", err)
 	}
-	if !strings.Contains(err.Error(), "do not send it again") {
-		t.Fatalf("the message does not say the POST landed: %v", err)
+	if !strings.Contains(err.Error(), "refused with 409") {
+		t.Fatalf("the message does not say the POST was refused: %v", err)
+	}
+
+	createdURL, _ := hangUpAfterReading(t, func(conn net.Conn) {
+		_, _ = io.WriteString(conn, "HTTP/1.1 201 Created\r\nContent-Type: application/json\r\nContent-Length: 64\r\n\r\n{\"key\"")
+	})
+
+	_, err = generatedClient(t, createdURL).CreateProjectWithResponse(context.Background(), openapigenerated.RestProject{})
+	err = apperrors.Transport("failed to create project", err)
+
+	if !apperrors.IsKind(err, apperrors.KindUnknownOutcome) || apperrors.ExitCode(err) != 13 {
+		t.Fatalf("got %v (exit %d), want unknown_outcome and exit 13", err, apperrors.ExitCode(err))
+	}
+	if !strings.Contains(err.Error(), "check before sending it again") {
+		t.Fatalf("the message does not send the caller to look: %v", err)
 	}
 }
 
