@@ -6,9 +6,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -63,6 +65,10 @@ func postLiveJSON(t *testing.T, path string, payload any) map[string]any {
 // A pending review only exists as the sum of its draft comments, so the three
 // commands cannot be tested apart: discard has nothing to discard and complete
 // has nothing to publish unless a pending comment was added first.
+//
+// The review is a reviewer's, not the author's. Bitbucket completes an author's
+// review with 200 and drops the status it carries, since an author holds none
+// (OPENAPI-027), so a --status sent as the author could never be read back.
 func TestLivePullRequestPendingReview(t *testing.T) {
 	t.Parallel()
 
@@ -86,6 +92,24 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	reviewer, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create reviewer failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username, "REPO_WRITE"); err != nil {
+		t.Fatalf("grant the reviewer write access failed: %v", err)
+	}
+	prReviewAssertRepoPermission(t, reviewer.Username, "REPO_WRITE")
+	if _, err := harness.liveJSON(ctx, http.MethodPost,
+		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/participants",
+			seeded.Key, repo.Slug, pullRequestID),
+		map[string]any{"user": map[string]any{"name": reviewer.Username}, "role": "REVIEWER"}); err != nil {
+		t.Fatalf("add the reviewer failed: %v", err)
+	}
+	prReviewAssertSoleReviewer(t, prReviewPullRequest(t, pullRequestID), reviewer.Username, "UNAPPROVED")
+
+	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
+
 	// A draft comment is what brings a pending review into existence.
 	const draftText = "draft comment from the live suite"
 	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", draftText, "--pending"); err != nil {
@@ -99,6 +123,7 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 	if !strings.Contains(pendingOutput, draftText) {
 		t.Fatalf("expected the draft comment in the pending review, got: %s", pendingOutput)
 	}
+	prReviewAssertOnlyDraft(t, pullRequestID, draftText)
 
 	// A draft is not visible as a comment until the review is completed, which
 	// is the whole point of the pending state.
@@ -109,6 +134,7 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 	if strings.Contains(listWhilePending, draftText) {
 		t.Fatalf("expected the draft to stay out of the published comments, got: %s", listWhilePending)
 	}
+	prReviewAssertNotPublished(t, pullRequestID, draftText)
 
 	if _, err := executeLiveCLI(t, "--json", "pr", "review", "discard", pullRequestID); err != nil {
 		t.Fatalf("pr review discard failed: %v", err)
@@ -121,6 +147,12 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 	if strings.Contains(afterDiscard, draftText) {
 		t.Fatalf("expected the discarded draft to be gone, got: %s", afterDiscard)
 	}
+	// Gone from the review is also what publishing looks like from there, so
+	// the comments have to be read too.
+	if drafts := prReviewDrafts(t, pullRequestID); len(drafts) != 0 {
+		t.Fatalf("the review still holds drafts after discard: %v", drafts)
+	}
+	prReviewAssertNotPublished(t, pullRequestID, draftText)
 
 	// Complete publishes drafts rather than dropping them, which is the
 	// difference from discard and the reason both need covering.
@@ -128,9 +160,11 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", publishedText, "--pending"); err != nil {
 		t.Fatalf("second pr comment add --pending failed: %v", err)
 	}
+	prReviewAssertOnlyDraft(t, pullRequestID, publishedText)
 
+	const completionText = "completing the review from the live suite"
 	completeOutput, err := executeLiveCLI(t, "--json", "pr", "review", "complete", pullRequestID,
-		"--status", "NEEDS_WORK", "--comment", "completing the review from the live suite")
+		"--status", "NEEDS_WORK", "--comment", completionText)
 	if err != nil {
 		t.Fatalf("pr review complete failed: %v\noutput: %s", err, completeOutput)
 	}
@@ -141,6 +175,20 @@ func TestLivePullRequestPendingReview(t *testing.T) {
 	}
 	if !strings.Contains(listAfterComplete, publishedText) {
 		t.Fatalf("expected completing the review to publish the draft, got: %s", listAfterComplete)
+	}
+
+	prReviewAssertSoleReviewer(t, prReviewPullRequest(t, pullRequestID), reviewer.Username, "NEEDS_WORK")
+	published := prReviewPublished(t, pullRequestID)
+	for _, text := range []string{publishedText, completionText} {
+		if matching := prReviewWithText(published, text); len(matching) != 1 || matching[0]["state"] != "OPEN" {
+			t.Errorf("want one published OPEN comment reading %q, got %v", text, matching)
+		}
+	}
+	if discarded := prReviewWithText(published, draftText); len(discarded) != 0 {
+		t.Errorf("completing the review published the draft discarded before it: %v", discarded)
+	}
+	if drafts := prReviewDrafts(t, pullRequestID); len(drafts) != 0 {
+		t.Errorf("the review still holds drafts after complete: %v", drafts)
 	}
 }
 
@@ -177,6 +225,7 @@ func TestLivePullRequestReviewDryRuns(t *testing.T) {
 	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", draft, "--pending"); err != nil {
 		t.Fatalf("pr comment add --pending failed: %v", err)
 	}
+	prReviewAssertOnlyDraft(t, pullRequestID, draft)
 
 	draftIsStillPending := func(t *testing.T) {
 		t.Helper()
@@ -188,6 +237,10 @@ func TestLivePullRequestReviewDryRuns(t *testing.T) {
 		if !strings.Contains(output, draft) {
 			t.Fatalf("the dry run acted on the review: the draft is gone\n%s", output)
 		}
+		// Still the one draft and still unpublished: completing the review
+		// would have moved it out of the review and into the comments.
+		prReviewAssertOnlyDraft(t, pullRequestID, draft)
+		prReviewAssertNotPublished(t, pullRequestID, draft)
 	}
 
 	t.Run("adding a pending comment", func(t *testing.T) {
@@ -201,6 +254,9 @@ func TestLivePullRequestReviewDryRuns(t *testing.T) {
 		if strings.Contains(listing, "predicted only") {
 			t.Fatalf("the dry run created the comment:\n%s", listing)
 		}
+		// Nor as a published comment, which the review would not list.
+		prReviewAssertOnlyDraft(t, pullRequestID, draft)
+		prReviewAssertNotPublished(t, pullRequestID, "predicted only")
 	})
 
 	t.Run("completing the review", func(t *testing.T) {
@@ -261,6 +317,9 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected a comment id in the add output: %s", addOutput)
 	}
+	if stored := prReviewComment(t, pullRequestID, commentID); stored["text"] != "comment that gets a reaction" || stored["severity"] != "BLOCKER" {
+		t.Fatalf("stored comment = text %v, severity %v; want the text as sent and BLOCKER", stored["text"], stored["severity"])
+	}
 
 	reactOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "react", pullRequestID, commentID, "thumbsup")
 	if err != nil {
@@ -274,6 +333,9 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 	if !strings.Contains(getOutput, "thumbsup") {
 		t.Fatalf("expected the reaction on the comment, got: %s", getOutput)
 	}
+	if reactors := prReviewReactors(prReviewCommentIn(t, getOutput), "thumbsup"); !slices.Equal(reactors, []string{harness.username()}) {
+		t.Fatalf("thumbsup is held by %v, want [%s]", reactors, harness.username())
+	}
 
 	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "react", pullRequestID, commentID, "thumbsup", "--remove"); err != nil {
 		t.Fatalf("pr comment react --remove failed: %v", err)
@@ -285,6 +347,9 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 	}
 	if strings.Contains(afterRemove, "thumbsup") {
 		t.Fatalf("expected the reaction to be gone, got: %s", afterRemove)
+	}
+	if reactors := prReviewReactors(prReviewCommentIn(t, afterRemove), "thumbsup"); len(reactors) != 0 {
+		t.Fatalf("thumbsup is still held by %v after --remove", reactors)
 	}
 
 	// A reply, and then the listing that has to show it. Bitbucket nests a
@@ -308,6 +373,7 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 	if !strings.Contains(listOutput, `"reply": true`) || !strings.Contains(listOutput, `"parentId"`) {
 		t.Fatalf("the reply did not say what it answers: %s", listOutput)
 	}
+	prReviewAssertReplyTo(t, prReviewEntries(t, decodeJSONMap(t, listOutput), "comments"), replyText, commentID)
 
 	humanList, err := executeLiveCLI(t, "pr", "comment", "list", pullRequestID, "--full", "--state", "all")
 	if err != nil {
@@ -325,6 +391,9 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 		"--text", secondReplyText, "--parent-id", commentID); err != nil {
 		t.Fatalf("second pr comment add --parent-id failed: %v", err)
 	}
+	bothReplies := prReviewPublished(t, pullRequestID)
+	prReviewAssertReplyTo(t, bothReplies, replyText, commentID)
+	prReviewAssertReplyTo(t, bothReplies, secondReplyText, commentID)
 
 	// Asserted on the key rather than on which reply texts appear. The
 	// activity timeline emits an activity per comment action, so whether a
@@ -356,6 +425,14 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 	if total, _ := collapsedSummary["totalThreads"].(float64); total != 1 {
 		t.Fatalf("totalThreads = %v, want 1: a reply was counted as a thread of its own\n%s", collapsedSummary["totalThreads"], collapsed)
 	}
+	collapsedThreads, _ := prReviewThreadList(t, collapsed)
+	if ids := prReviewIDs(collapsedThreads); !slices.Equal(ids, []string{commentID}) {
+		t.Fatalf("threads = %v, want only the comment the replies answer, %s", ids, commentID)
+	}
+	lastReply, _ := collapsedThreads[0]["lastReply"].(map[string]any)
+	if collapsedThreads[0]["replyCount"] != float64(2) || lastReply["text"] != secondReplyText {
+		t.Errorf("replyCount = %v, lastReply = %v; want 2 and the second reply", collapsedThreads[0]["replyCount"], lastReply)
+	}
 
 	withReplies, err := executeLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID, "--state", "all", "--with-replies")
 	if err != nil {
@@ -366,6 +443,13 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 	}
 	if !strings.Contains(withReplies, replyText) || !strings.Contains(withReplies, secondReplyText) {
 		t.Fatalf("--with-replies did not carry every reply: %s", withReplies)
+	}
+	expandedThreads, _ := prReviewThreadList(t, withReplies)
+	if ids := prReviewIDs(expandedThreads); !slices.Equal(ids, []string{commentID}) {
+		t.Fatalf("threads = %v with --with-replies, want only %s", ids, commentID)
+	}
+	if texts := prReviewTexts(t, expandedThreads[0], "replies"); !slices.Equal(texts, []string{replyText, secondReplyText}) {
+		t.Errorf("replies = %q, want both, oldest first", texts)
 	}
 
 	// --blocker reads a different endpoint from every other listing above:
@@ -380,6 +464,10 @@ func TestLivePullRequestCommentReaction(t *testing.T) {
 	}
 	if !strings.Contains(blockerList, "comment that gets a reaction") {
 		t.Fatalf("the blocker listing dropped the task it was asked for: %s", blockerList)
+	}
+	blockerThreads, _ := prReviewThreadList(t, blockerList)
+	if ids := prReviewIDs(blockerThreads); !slices.Equal(ids, []string{commentID}) || blockerThreads[0]["kind"] != "task" {
+		t.Errorf("blocker threads = %v, want only %s as a task", blockerThreads, commentID)
 	}
 }
 
@@ -433,9 +521,15 @@ func TestLivePullRequestApplySuggestion(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected an id on the fixture comment: %v", comment)
 	}
+	stored := prReviewComment(t, pullRequestID, commentID)
+	if stored["text"] != suggestionText {
+		t.Fatalf("stored text = %q, want the suggestion as sent", stored["text"])
+	}
+	prReviewAssertAnchor(t, stored, fileName, 1, "ADDED")
 
+	const commitMessage = "apply suggestion from the live suite"
 	applyOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "apply-suggestion", pullRequestID, commentID,
-		"--commit-message", "apply suggestion from the live suite")
+		"--commit-message", commitMessage)
 	if err != nil {
 		t.Fatalf("pr comment apply-suggestion failed: %v\noutput: %s", err, applyOutput)
 	}
@@ -447,6 +541,21 @@ func TestLivePullRequestApplySuggestion(t *testing.T) {
 	}
 	if !strings.Contains(catOutput, suggested) {
 		t.Fatalf("expected the suggestion to be applied to %s, got: %s", fileName, catOutput)
+	}
+	// The whole file, not a line of it: the suggestion replaces line 1, and the
+	// file had no other.
+	content, _ := decodeJSONMap(t, mustLiveCLI(t, "repo", "cat", fileName, "--at", branch))["content"].(string)
+	if lines := strings.Split(strings.TrimSuffix(content, "\n"), "\n"); !slices.Equal(lines, []string{suggested}) {
+		t.Errorf("%s now reads %q, want only the suggested line", fileName, lines)
+	}
+
+	// The changed file says nothing about the message: a server writing its own
+	// would have changed it just the same. The specification names the
+	// property the message goes in wrongly (OPENAPI-015), which is why it is
+	// read back from the commit.
+	commits := prReviewEntries(t, decodeJSONMap(t, mustLiveCLI(t, "pr", "commits", pullRequestID)), "commits")
+	if len(commits) == 0 || commits[0]["message"] != commitMessage {
+		t.Errorf("the newest commit on the pull request is %v, want one with the message %q", commits, commitMessage)
 	}
 }
 
@@ -494,6 +603,10 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected a comment id in the add output: %s", addOutput)
 	}
+	if stored := prReviewComment(t, pullRequestID, commentID); stored["text"] != "blocker to resolve" || stored["severity"] != "BLOCKER" || stored["state"] != "OPEN" {
+		t.Fatalf("stored comment = text %v, severity %v, state %v; want the text as sent, BLOCKER and OPEN",
+			stored["text"], stored["severity"], stored["state"])
+	}
 
 	// An open blocker counts against the pull request, which is what makes
 	// resolving it mean something.
@@ -520,6 +633,9 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 	if !strings.Contains(afterResolve, "RESOLVED") {
 		t.Fatalf("expected the comment to read as RESOLVED, got: %s", afterResolve)
 	}
+	if state := prReviewCommentIn(t, afterResolve)["state"]; state != "RESOLVED" {
+		t.Fatalf("state = %v after resolve, want RESOLVED", state)
+	}
 
 	reopenOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, commentID)
 	if err != nil {
@@ -533,14 +649,23 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 	if !strings.Contains(afterReopen, `"state": "OPEN"`) {
 		t.Fatalf("expected the comment to read as OPEN again, got: %s", afterReopen)
 	}
+	if state := prReviewCommentIn(t, afterReopen)["state"]; state != "OPEN" {
+		t.Fatalf("state = %v after reopen, want OPEN", state)
+	}
 
 	// Resolving twice in a row exercises the version being re-read each time.
 	// A cached version would make the second call fail with a 409.
 	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "resolve", pullRequestID, commentID); err != nil {
 		t.Fatalf("second resolve failed: %v", err)
 	}
+	if state := prReviewComment(t, pullRequestID, commentID)["state"]; state != "RESOLVED" {
+		t.Fatalf("state = %v after the second resolve, want RESOLVED", state)
+	}
 	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, commentID); err != nil {
 		t.Fatalf("second reopen failed: %v", err)
+	}
+	if state := prReviewComment(t, pullRequestID, commentID)["state"]; state != "OPEN" {
+		t.Fatalf("state = %v after the second reopen, want OPEN", state)
 	}
 }
 
@@ -601,7 +726,7 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 
 	// 1. The three shapes of feedback, all through the CLI.
 	remarkText := "a remark on the pull request as a whole"
-	addComment("pull request remark", "--text", remarkText)
+	remarkID := addComment("pull request remark", "--text", remarkText)
 
 	inlineText := "this line needs a guard"
 	inlineID := addComment("inline remark",
@@ -613,6 +738,28 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 
 	prBlockerText := "add a regression test before merging"
 	prBlockerID := addComment("pull request blocker", "--text", prBlockerText, "--blocker")
+
+	// Each one read back as stored: its text, whether it blocks, and whether
+	// and where it is anchored.
+	for _, sent := range []struct {
+		id, text, severity string
+		inline             bool
+	}{
+		{remarkID, remarkText, "NORMAL", false},
+		{inlineID, inlineText, "NORMAL", true},
+		{inlineBlockerID, inlineBlockerText, "BLOCKER", true},
+		{prBlockerID, prBlockerText, "BLOCKER", false},
+	} {
+		stored := prReviewComment(t, pullRequestID, sent.id)
+		if stored["text"] != sent.text || stored["severity"] != sent.severity {
+			t.Errorf("comment %s = text %v, severity %v; want %q, %s", sent.id, stored["text"], stored["severity"], sent.text, sent.severity)
+		}
+		if sent.inline {
+			prReviewAssertAnchor(t, stored, reviewedFile, 1, "ADDED")
+		} else if stored["anchor"] != nil {
+			t.Errorf("comment %s was posted without an anchor and stored one: %v", sent.id, stored["anchor"])
+		}
+	}
 
 	// 2. An inline blocker has to keep both facts: that it blocks, and where it
 	// points. Losing the anchor makes it unactionable; losing the kind makes it
@@ -635,6 +782,24 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 	if !strings.Contains(tasksOnly, reviewedFile) {
 		t.Fatalf("the inline blocker lost its anchor: %s", tasksOnly)
 	}
+	// Tied to the thread each fact belongs to: the pull request blocker alone
+	// reads as a task, and the inline one alone carries the file name.
+	taskThreads, _ := prReviewThreadList(t, tasksOnly)
+	if ids := prReviewIDs(taskThreads); !slices.Equal(ids, prReviewSorted(inlineBlockerID, prBlockerID)) {
+		t.Fatalf("task threads = %v, want exactly the two blockers %s and %s", ids, inlineBlockerID, prBlockerID)
+	}
+	for _, thread := range taskThreads {
+		id, _ := numericOrStringID(thread["id"])
+		anchor, anchored := thread["anchor"].(map[string]any)
+		switch {
+		case thread["kind"] != "task":
+			t.Errorf("blocker %s is listed as %v, want task", id, thread["kind"])
+		case id == inlineBlockerID && (!anchored || anchor["path"] != reviewedFile || anchor["line"] != float64(1)):
+			t.Errorf("the inline blocker is anchored at %v, want %s line 1", thread["anchor"], reviewedFile)
+		case id == prBlockerID && anchored:
+			t.Errorf("the pull request blocker is anchored at %v, want no anchor", anchor)
+		}
+	}
 
 	// 3. The blocker-comments endpoint is a different source from the timeline
 	// and must agree with it about what blocks.
@@ -649,6 +814,9 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 		if !strings.Contains(blockerList, want) {
 			t.Fatalf("the blocker endpoint dropped %q: %s", want, blockerList)
 		}
+	}
+	if blockerThreads, _ := prReviewThreadList(t, blockerList); !slices.Equal(prReviewIDs(blockerThreads), prReviewSorted(inlineBlockerID, prBlockerID)) {
+		t.Fatalf("blocker threads = %v, want exactly %s and %s", prReviewIDs(blockerThreads), inlineBlockerID, prBlockerID)
 	}
 
 	// 4. The gate. This is what an agent reads to decide whether the pull
@@ -696,12 +864,20 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 	if !strings.Contains(resolved, reviewedFile) {
 		t.Fatalf("resolving the blocker lost its anchor: %s", resolved)
 	}
+	resolvedComment := prReviewCommentIn(t, resolved)
+	if resolvedComment["state"] != "RESOLVED" {
+		t.Fatalf("state = %v after resolve, want RESOLVED", resolvedComment["state"])
+	}
+	prReviewAssertAnchor(t, resolvedComment, reviewedFile, 1, "ADDED")
 	assertTaskCounts("one blocker resolved", 1, 1)
 
 	// 6. Reopening puts it back, so a reviewer who resolved too eagerly is not
 	// stuck.
 	if output, reopenErr := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, inlineBlockerID); reopenErr != nil {
 		t.Fatalf("pr comment reopen failed: %v\noutput: %s", reopenErr, output)
+	}
+	if state := prReviewComment(t, pullRequestID, inlineBlockerID)["state"]; state != "OPEN" {
+		t.Errorf("state = %v after reopen, want OPEN", state)
 	}
 	assertTaskCounts("blocker reopened", 2, 0)
 
@@ -711,6 +887,9 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 	for _, id := range []string{inlineBlockerID, prBlockerID} {
 		if output, resolveErr := executeLiveCLI(t, "--json", "pr", "comment", "resolve", pullRequestID, id); resolveErr != nil {
 			t.Fatalf("pr comment resolve %s failed: %v\noutput: %s", id, resolveErr, output)
+		}
+		if state := prReviewComment(t, pullRequestID, id)["state"]; state != "RESOLVED" {
+			t.Errorf("blocker %s state = %v after resolve, want RESOLVED", id, state)
 		}
 	}
 	assertTaskCounts("every blocker resolved", 0, 2)
@@ -725,6 +904,16 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 	}
 	if strings.Contains(remaining, inlineBlockerText) || strings.Contains(remaining, prBlockerText) {
 		t.Fatalf("a resolved blocker is still listed as unresolved: %s", remaining)
+	}
+	unresolvedThreads, _ := prReviewThreadList(t, remaining)
+	if ids := prReviewIDs(unresolvedThreads); !slices.Equal(ids, prReviewSorted(remarkID, inlineID)) {
+		t.Fatalf("unresolved threads = %v, want exactly the remarks %s and %s", ids, remarkID, inlineID)
+	}
+	for _, thread := range unresolvedThreads {
+		if id, _ := numericOrStringID(thread["id"]); thread["kind"] != "comment" ||
+			(id == remarkID && thread["text"] != remarkText) || (id == inlineID && thread["text"] != inlineText) {
+			t.Errorf("unresolved thread %s = kind %v, text %v; want the remark as posted", id, thread["kind"], thread["text"])
+		}
 	}
 
 	// 9. A blocker cannot be a reply, and bb says so itself rather than letting
@@ -743,4 +932,238 @@ func TestLivePullRequestBlockerReviewLoop(t *testing.T) {
 	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
 		t.Errorf("refusal kind = %v, want validation so a caller can branch on it", kind)
 	}
+	prReviewAssertNotPublished(t, pullRequestID, "a blocker that replies")
+}
+
+// The helpers below read what a review wrote back through bb's own read
+// commands, so each assertion compares a stored field with the value that was
+// sent rather than searching an output for it. They rely on the repository
+// context and the credentials the calling test registered.
+
+// prReviewPullRequest reads a pull request back through `pr get`.
+func prReviewPullRequest(t *testing.T, prID string) map[string]any {
+	t.Helper()
+
+	return extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "get", prID)))
+}
+
+// prReviewAssertSoleReviewer fails unless the pull request names exactly one
+// reviewer, holding the REVIEWER role and the status given. bb lists a
+// PARTICIPANT among the reviewers too, and setting a status adds one, so the
+// role is what shows the reviewer was stored as asked.
+func prReviewAssertSoleReviewer(t *testing.T, pullRequest map[string]any, username, status string) {
+	t.Helper()
+
+	reviewers, _ := pullRequest["reviewers"].([]any)
+	if len(reviewers) != 1 {
+		t.Fatalf("reviewers = %v, want only %s", pullRequest["reviewers"], username)
+	}
+	reviewer, _ := reviewers[0].(map[string]any)
+	if reviewer["name"] != username || reviewer["role"] != "REVIEWER" || reviewer["status"] != status {
+		t.Fatalf("reviewer = %v, want %s as REVIEWER holding %s", reviewer, username, status)
+	}
+}
+
+// prReviewAssertRepoPermission fails unless the repository grants the user
+// exactly the permission given.
+func prReviewAssertRepoPermission(t *testing.T, username, permission string) {
+	t.Helper()
+
+	entries := prReviewEntries(t, decodeJSONMap(t, mustLiveCLI(t, "repo", "permissions", "list", "--all")), "entries")
+	for _, entry := range entries {
+		if entry["name"] != username {
+			continue
+		}
+		if entry["permission"] != permission {
+			t.Fatalf("%s holds %v on the repository, want %s", username, entry["permission"], permission)
+		}
+
+		return
+	}
+	t.Fatalf("%s holds no permission on the repository: %v", username, entries)
+}
+
+// prReviewDrafts reads the caller's draft review through `pr review get`, the
+// one read that lists a comment nobody else can see yet.
+func prReviewDrafts(t *testing.T, prID string) []map[string]any {
+	t.Helper()
+
+	return prReviewEntries(t, decodeJSONMap(t, mustLiveCLI(t, "pr", "review", "get", prID)), "comments")
+}
+
+// prReviewPublished reads every published comment on a pull request, replies
+// included, through the ungrouped listing.
+func prReviewPublished(t *testing.T, prID string) []map[string]any {
+	t.Helper()
+
+	return prReviewEntries(t, decodeJSONMap(t, mustLiveCLI(t, "pr", "comment", "list", prID, "--full", "--state", "all")), "comments")
+}
+
+// prReviewAssertOnlyDraft fails unless the caller's review holds exactly one
+// draft, reading text and still in the PENDING state.
+func prReviewAssertOnlyDraft(t *testing.T, prID, text string) {
+	t.Helper()
+
+	drafts := prReviewDrafts(t, prID)
+	if len(drafts) != 1 || drafts[0]["text"] != text || drafts[0]["state"] != "PENDING" {
+		t.Fatalf("drafts = %v, want only %q in the PENDING state", drafts, text)
+	}
+}
+
+// prReviewAssertNotPublished fails when any published comment reads text.
+func prReviewAssertNotPublished(t *testing.T, prID, text string) {
+	t.Helper()
+
+	if published := prReviewWithText(prReviewPublished(t, prID), text); len(published) != 0 {
+		t.Fatalf("a comment reading %q was published: %v", text, published)
+	}
+}
+
+// prReviewComment reads one comment back through `pr comment get`.
+func prReviewComment(t *testing.T, prID, commentID string) map[string]any {
+	t.Helper()
+
+	return prReviewCommentIn(t, mustLiveCLI(t, "pr", "comment", "get", prID, commentID))
+}
+
+// prReviewCommentIn takes the comment out of a `pr comment get` output.
+func prReviewCommentIn(t *testing.T, output string) map[string]any {
+	t.Helper()
+
+	comment, ok := decodeJSONMap(t, output)["comment"].(map[string]any)
+	if !ok {
+		t.Fatalf("no comment object in the output: %s", output)
+	}
+
+	return comment
+}
+
+// prReviewAssertAnchor fails unless a stored comment is anchored to the file,
+// line and side of the diff given.
+func prReviewAssertAnchor(t *testing.T, comment map[string]any, path string, line int, lineType string) {
+	t.Helper()
+
+	anchor, _ := comment["anchor"].(map[string]any)
+	if anchor["path"] != path || anchor["line"] != float64(line) || anchor["lineType"] != lineType {
+		t.Errorf("comment %v is anchored at %v, want %s line %d (%s)", comment["id"], comment["anchor"], path, line, lineType)
+	}
+}
+
+// prReviewAssertReplyTo fails unless exactly one of the comments reads text,
+// and it is stored as a reply to parentID.
+func prReviewAssertReplyTo(t *testing.T, comments []map[string]any, text, parentID string) {
+	t.Helper()
+
+	replies := prReviewWithText(comments, text)
+	if len(replies) != 1 {
+		t.Fatalf("want one comment reading %q, got %v", text, replies)
+	}
+	if parent, _ := numericOrStringID(replies[0]["parentId"]); replies[0]["reply"] != true || parent != parentID {
+		t.Errorf("%q = reply %v, parentId %v; want a reply to %s", text, replies[0]["reply"], replies[0]["parentId"], parentID)
+	}
+}
+
+// prReviewThreadList decodes a `pr comment list` output into its threads and
+// its summary.
+func prReviewThreadList(t *testing.T, output string) ([]map[string]any, map[string]any) {
+	t.Helper()
+
+	data := decodeJSONMap(t, output)
+	summary, ok := data["summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("no summary in the comment listing: %s", output)
+	}
+
+	return prReviewEntries(t, data, "threads"), summary
+}
+
+// prReviewEntries reads the list of objects under key.
+func prReviewEntries(t *testing.T, data map[string]any, key string) []map[string]any {
+	t.Helper()
+
+	values, ok := data[key].([]any)
+	if !ok {
+		t.Fatalf("no %s list in %v", key, data)
+	}
+	entries := make([]map[string]any, 0, len(values))
+	for _, value := range values {
+		entry, ok := value.(map[string]any)
+		if !ok {
+			t.Fatalf("%s holds %v, which is not an object", key, value)
+		}
+		entries = append(entries, entry)
+	}
+
+	return entries
+}
+
+// prReviewTexts lists the text of each object under key, in order.
+func prReviewTexts(t *testing.T, data map[string]any, key string) []string {
+	t.Helper()
+
+	entries := prReviewEntries(t, data, key)
+	texts := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		text, _ := entry["text"].(string)
+		texts = append(texts, text)
+	}
+
+	return texts
+}
+
+// prReviewWithText keeps the entries whose text is exactly text.
+func prReviewWithText(entries []map[string]any, text string) []map[string]any {
+	var matching []map[string]any
+	for _, entry := range entries {
+		if entry["text"] == text {
+			matching = append(matching, entry)
+		}
+	}
+
+	return matching
+}
+
+// prReviewIDs lists the ids of comments or threads, sorted, so a listing can be
+// compared with exactly what it should hold.
+func prReviewIDs(entries []map[string]any) []string {
+	ids := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		id, _ := numericOrStringID(entry["id"])
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+
+	return ids
+}
+
+// prReviewSorted is the ids given, sorted the way prReviewIDs sorts them.
+func prReviewSorted(ids ...string) []string {
+	sorted := slices.Clone(ids)
+	slices.Sort(sorted)
+
+	return sorted
+}
+
+// prReviewReactors names the users holding a reaction on a comment. Bitbucket
+// keeps reactions under the comment's undocumented properties, one entry per
+// emoticon with the users who chose it.
+func prReviewReactors(comment map[string]any, shortcut string) []string {
+	properties, _ := comment["properties"].(map[string]any)
+	reactions, _ := properties["reactions"].([]any)
+
+	var names []string
+	for _, value := range reactions {
+		reaction, _ := value.(map[string]any)
+		if emoticon, _ := reaction["emoticon"].(map[string]any); emoticon["shortcut"] != shortcut {
+			continue
+		}
+		users, _ := reaction["users"].([]any)
+		for _, entry := range users {
+			user, _ := entry.(map[string]any)
+			name, _ := user["name"].(string)
+			names = append(names, name)
+		}
+	}
+
+	return names
 }
