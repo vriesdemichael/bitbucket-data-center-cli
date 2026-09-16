@@ -262,14 +262,9 @@ bb ai mcp serve --project PAYMENTS --audit-file /var/log/bb/mcp-audit.jsonl
 - **https-Only Update URLs**: `bb update` refuses a plain-HTTP mirror, download or redirect unless a user opts in with `--allow-http` or `BB_ALLOW_HTTP_UPDATE`; `allow_http_update: false` in system policy removes that option.
 
 #### 3. Audit Test Procedure
-```bash
-VERSION="[[ bb_version ]]"
-cosign verify-blob \
-  --bundle "bb_${VERSION}_linux_amd64.tar.gz.sigstore.json" \
-  --certificate-identity 'https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main' \
-  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  "bb_${VERSION}_linux_amd64.tar.gz"
-```
+The signature, provenance and SBOM checks are one procedure, written once in
+[Release Verification](enterprise-hardening.md#1-release-verification-pre-deployment).
+Run it against the artifact under audit.
 
 #### 4. Residual Gap & Tracking
 - **Update bypass: resolved.** Administrative killswitches (`BB_DISABLE_UPDATE=1`, `disable_update: true` in system configuration), compile-time removal (`-tags no_self_update`), and custom release mirrors (`--base-url`, `BB_UPDATE_BASE_URL`, `update_base_url`) each stop `bb update` from going around a package manager ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). On a host with no internet access a mirror also needs an offline Sigstore trust root (`update_trusted_root`), without which signature verification cannot complete ([ADR-063](../adr/063-offline-release-signature-verification.md)).

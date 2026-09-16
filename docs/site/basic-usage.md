@@ -14,8 +14,12 @@ search:
 - Pull requests and quality controls (`pr`, `build`, `insights`)
 - Project-level administration (`project`, `admin`)
 - Cross-project discovery (`search`)
-- Multi-repository policy automation (`bulk`)
 - `gh`-style repository ergonomics for Bitbucket (`repo clone`, `browse`)
+
+Project-level settings cascade to every repository in the project, so
+`bb project permissions`, `bb project webhook`, `bb project default-task` and
+`bb project branch-restriction` are how a policy is applied across many
+repositories at once.
 
 Use [All Commands](reference/commands/index.md) for complete command and argument coverage.
 

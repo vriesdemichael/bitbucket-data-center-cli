@@ -1,9 +1,10 @@
 # Bulk Operations
 
-!!! danger "Deprecated — scheduled for removal in v5.0.0"
+!!! danger "Deprecated — due for removal in v5.0.0"
 
-    `bb bulk` still works and is still supported until it is removed. **Do not
-    start with it.** If you already use it, the migration is below.
+    `bb bulk` works and is supported until it is removed, and warns on stderr on
+    every invocation. **Do not start with it.** If you already use it, the
+    migration is below.
 
     **Why.** Its nine operations are all repository *configuration*, and four of
     them — user and group permissions, webhooks, default tasks — are settable
@@ -31,66 +32,14 @@
     `bb project branch-restriction` is worth knowing about too: it has no
     repository-level equivalent, so it was never reachable through bulk at all.
 
+The rest of this page is reference for a policy that already exists: the three
+commands, what a selector reaches, and the fields each operation takes. It is
+not a place to start — see the migration table above for that.
+
 `bb bulk` applies one reviewed change across many repositories. It is a
 three-step workflow — write a policy, plan it, apply the plan — and the split
 exists so that what gets applied is a thing you looked at rather than a
 selector evaluated at the moment of writing.
-
-## End to end
-
-A policy that turns auto-merge on for every service repository in one project.
-
-```yaml
-apiVersion: bb.io/v1alpha1
-selector:
-  projectKey: PROJECT_1
-  repoPattern: "rep_*"
-operations:
-  - type: repo.settings.auto-merge
-    enabled: true
-```
-
-**Plan it.** Nothing is changed; the server is contacted only to work out which
-repositories match.
-
-```bash
-bb bulk plan --file policy.yaml --output plan.json
-```
-
-```text
-Bulk plan ready: 1 target(s), 1 operation(s), hash=sha256:b249cfc312b41b8b70e3b3ac4d157542cf16165605055c74ddbf5176409e523c
-PROJECT_1/rep_1
-  - set auto-merge enabled=true
-```
-
-Read the target list before going further. It is the answer to "what does this
-policy actually reach", and it is the only point at which that is cheap to check.
-
-**Apply the plan.** Not the policy — the plan, so what runs is what you read.
-
-```bash
-bb bulk apply --from-plan plan.json
-```
-
-```text
-Bulk apply op-6924f61604466369: success
-Plan hash: sha256:b249cfc312b41b8b70e3b3ac4d157542cf16165605055c74ddbf5176409e523c
-Targets: total=1 successful=1 failed=0
-Operations: total=1 successful=1 failed=0 skipped=0
-PROJECT_1/rep_1  success
-  - success  repo.settings.auto-merge
-Inspect saved status with: bb bulk status op-6924f61604466369
-```
-
-The plan hash appears in both, so a run can be tied back to the plan that was
-reviewed.
-
-**Read the status later.** The run is saved under its operation id, so you do not
-need to have kept the terminal.
-
-```bash
-bb bulk status op-6924f61604466369
-```
 
 ## The three commands
 
