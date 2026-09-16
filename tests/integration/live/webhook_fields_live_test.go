@@ -8,9 +8,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	neturl "net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -52,14 +54,20 @@ func executeLiveCLISplit(t *testing.T, stdin string, args ...string) (string, st
 // seedWebhookWithCredentials creates a webhook carrying both credentials,
 // through the API rather than through bb, so the test does not depend on the
 // code it is checking to have put them there.
+//
+// It reads them back the same way. Bitbucket answers 201 to a property it
+// drops, and a credential it dropped would leave every leak check built on this
+// webhook with nothing to find.
 func seedWebhookWithCredentials(t *testing.T, ctx context.Context, harness *liveHarness, projectKey, slug, url string) string {
 	t.Helper()
 
 	path := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/webhooks", projectKey, slug)
 	created, err := harness.liveJSON(ctx, http.MethodPost, path, map[string]any{
-		"name":                    "canary",
-		"url":                     url,
-		"events":                  []string{"repo:refs_changed"},
+		"name":   "canary",
+		"url":    url,
+		"events": []string{"repo:refs_changed"},
+		// Bitbucket's default, so no read tells it from a drop; the deliveries
+		// TestLiveWebhookEndpointPasswordSurvivesAnUpdate waits for are its effect.
 		"active":                  true,
 		"sslVerificationRequired": false,
 		"configuration":           map[string]any{"secret": secretCanary},
@@ -68,8 +76,89 @@ func seedWebhookWithCredentials(t *testing.T, ctx context.Context, harness *live
 	if err != nil {
 		t.Fatalf("seed the webhook: %v", err)
 	}
+	id := fmt.Sprintf("%v", created["id"])
 
-	return fmt.Sprintf("%v", created["id"])
+	stored, err := harness.liveJSON(ctx, http.MethodGet, path+"/"+id, nil)
+	if err != nil {
+		t.Fatalf("read the seeded webhook back: %v", err)
+	}
+	configuration, _ := stored["configuration"].(map[string]any)
+	credentials, _ := stored["credentials"].(map[string]any)
+	if stored["name"] != "canary" || stored["url"] != url || !slices.Equal(webhookEventsOf(stored), []string{"repo:refs_changed"}) ||
+		stored["sslVerificationRequired"] != false || configuration["secret"] != secretCanary || credentials["username"] != "hookuser" {
+		t.Fatalf("the seeded webhook was not stored as sent: %#v", stored)
+	}
+
+	// The password never comes back on a read. A test ping's delivery record
+	// says what Bitbucket sends, and this ping goes to Bitbucket's own status
+	// page, so a receiver the webhook points at sees nothing of it.
+	query := neturl.Values{"webhookId": {id}, "url": {"http://localhost:7990/status"}}
+	ping, err := harness.liveJSON(ctx, http.MethodPost, path+"/test?"+query.Encode(), map[string]any{})
+	if err != nil {
+		t.Fatalf("ping the seeded webhook: %v", err)
+	}
+	request, _ := ping["request"].(map[string]any)
+	headers, _ := request["headers"].(map[string]any)
+	if want := webhookBasicAuthorization("hookuser", passwordCanary); headers["Authorization"] != want {
+		t.Fatalf("a ping from the seeded webhook carried Authorization %v, want the seeded credentials", headers["Authorization"])
+	}
+
+	return id
+}
+
+// webhookSecretAsStored reads a webhook's shared secret back through bb webhook
+// get --reveal-secret, the one read that hands it over.
+func webhookSecretAsStored(t *testing.T, id string) string {
+	t.Helper()
+
+	stdout, stderr, err := executeLiveCLISplit(t, "", "--json", "webhook", "get", id, "--reveal-secret")
+	if err != nil {
+		t.Fatalf("webhook get --reveal-secret failed: %v\n%s%s", err, stdout, stderr)
+	}
+	hook, ok := decodeJSONMap(t, stdout)["webhook"].(map[string]any)
+	if !ok {
+		t.Fatalf("no webhook in the get output: %s", stdout)
+	}
+	secret, _ := hook["secret"].(string)
+
+	return secret
+}
+
+// webhookCredentialsAsDelivered is the Authorization header a test ping from a
+// webhook carries, empty when it carries none.
+//
+// Bitbucket never returns the endpoint password. The delivery record bb webhook
+// test --reveal-secret publishes is where it says what it sends.
+func webhookCredentialsAsDelivered(t *testing.T, id string) string {
+	t.Helper()
+
+	stdout, stderr, err := executeLiveCLISplit(t, "", "--json", "webhook", "test", id, "--reveal-secret")
+	if err != nil {
+		t.Fatalf("webhook test --reveal-secret failed: %v\n%s%s", err, stdout, stderr)
+	}
+	request, _ := decodeJSONMap(t, stdout)["request"].(map[string]any)
+	headers, ok := request["headers"].(map[string]any)
+	if !ok {
+		t.Fatalf("no request headers in the delivery record: %s", stdout)
+	}
+	authorization, _ := headers["Authorization"].(string)
+
+	return authorization
+}
+
+// webhooksNamedInListing returns every webhook with a name in a --json listing.
+// Every one, because Bitbucket accepts identical webhooks.
+func webhooksNamedInListing(t *testing.T, output, name string) []map[string]any {
+	t.Helper()
+
+	named := []map[string]any{}
+	for _, hook := range webhooksInListing(t, output) {
+		if hook["name"] == name {
+			named = append(named, hook)
+		}
+	}
+
+	return named
 }
 
 // TestLiveWebhookCredentialsNeverReachStdout is the guard on #522's real
@@ -200,6 +289,11 @@ func TestLiveWebhookRevealSecretIsDeliberate(t *testing.T) {
 		if !strings.Contains(stdout, encoded) {
 			t.Errorf("the delivery record was still redacted with --reveal-secret:\n%s", stdout)
 		}
+		request, _ := decodeJSONMap(t, stdout)["request"].(map[string]any)
+		headers, _ := request["headers"].(map[string]any)
+		if headers["Authorization"] != "Basic "+encoded {
+			t.Errorf("the delivery record's Authorization = %v, want the stored credentials:\n%s", headers["Authorization"], stdout)
+		}
 		if !strings.Contains(stderr, "--reveal-secret") {
 			t.Errorf("nothing on stderr said a credential had been printed: %q", stderr)
 		}
@@ -269,6 +363,17 @@ func TestLiveWebhookFieldsAreSettableAndPublished(t *testing.T) {
 		if username, _ := hook["credentialsUsername"].(string); username != "hookuser" {
 			t.Errorf("credentialsUsername = %q, want hookuser", username)
 		}
+		expectWebhookStoredAsSent(t, hook,
+			sentWebhook{name: name, url: "http://localhost:7990/status", events: []string{"repo:refs_changed"}})
+		// The read above says whether a secret is there. Which secret, and the
+		// password no read returns, come from the two paths that hand a
+		// credential over when asked.
+		if secret := webhookSecretAsStored(t, id); secret != secretCanary {
+			t.Errorf("secret = %q, want the one given on stdin", secret)
+		}
+		if delivered := webhookCredentialsAsDelivered(t, id); delivered != webhookBasicAuthorization("hookuser", passwordCanary) {
+			t.Errorf("a test ping carried Authorization %q, want hookuser and the password from BB_WEBHOOK_PASSWORD", delivered)
+		}
 	})
 
 	t.Run("an update that mentions one field leaves the others alone", func(t *testing.T) {
@@ -290,6 +395,21 @@ func TestLiveWebhookFieldsAreSettableAndPublished(t *testing.T) {
 		if username, _ := hook["credentialsUsername"].(string); username != "hookuser" {
 			t.Errorf("the endpoint credentials were lost by an update that did not mention them: %q", username)
 		}
+		if secret := webhookSecretAsStored(t, id); secret != secretCanary {
+			t.Errorf("an update that did not mention the shared secret left %q", secret)
+		}
+		if delivered := webhookCredentialsAsDelivered(t, id); delivered != webhookBasicAuthorization("hookuser", passwordCanary) {
+			t.Errorf("a test ping carried Authorization %q after an update that did not mention the password", delivered)
+		}
+
+		// And back to false. True is what Bitbucket stores when an update
+		// leaves the field out, so only false shows the update carried it.
+		if output, err := executeLiveCLI(t, "--json", "webhook", "update", id, "--ssl-verification=false"); err != nil {
+			t.Fatalf("webhook update --ssl-verification=false failed: %v\noutput: %s", err, output)
+		}
+		if verification, ok := readBack(t)["sslVerificationRequired"].(bool); !ok || verification {
+			t.Error("sslVerificationRequired was not changed back to false")
+		}
 	})
 
 	t.Run("the endpoint username can be changed on its own", func(t *testing.T) {
@@ -302,6 +422,10 @@ func TestLiveWebhookFieldsAreSettableAndPublished(t *testing.T) {
 		if username, _ := readBack(t)["credentialsUsername"].(string); username != "otheruser" {
 			t.Errorf("credentialsUsername = %q, want otheruser", username)
 		}
+		// On its own: the password stays, and a delivery is the only place it shows.
+		if delivered := webhookCredentialsAsDelivered(t, id); delivered != webhookBasicAuthorization("otheruser", passwordCanary) {
+			t.Errorf("a test ping carried Authorization %q, want otheruser with the password it already had", delivered)
+		}
 	})
 
 	t.Run("removing the endpoint credentials takes a flag of its own", func(t *testing.T) {
@@ -310,6 +434,10 @@ func TestLiveWebhookFieldsAreSettableAndPublished(t *testing.T) {
 		}
 		if username, _ := readBack(t)["credentialsUsername"].(string); username != "" {
 			t.Errorf("--no-credentials left credentials in place: %q", username)
+		}
+		// The password with them, or deliveries would still authenticate.
+		if delivered := webhookCredentialsAsDelivered(t, id); delivered != "" {
+			t.Errorf("a test ping still carried Authorization %q after --no-credentials", delivered)
 		}
 	})
 
@@ -328,6 +456,10 @@ func TestLiveWebhookFieldsAreSettableAndPublished(t *testing.T) {
 		if err == nil {
 			t.Error("--no-secret with --secret-stdin was accepted; one of the two has to win and neither should")
 		}
+		// Refused rather than sent: the secret removed above is still absent.
+		if configured, _ := readBack(t)["secretConfigured"].(bool); configured {
+			t.Error("the refused update set the shared secret anyway")
+		}
 	})
 
 	t.Run("two secrets cannot share one stdin", func(t *testing.T) {
@@ -335,6 +467,9 @@ func TestLiveWebhookFieldsAreSettableAndPublished(t *testing.T) {
 			"--json", "webhook", "update", id, "--secret-stdin", "--credentials-password-stdin")
 		if err == nil {
 			t.Error("both --*-stdin flags were accepted, and there is only one stdin")
+		}
+		if configured, _ := readBack(t)["secretConfigured"].(bool); configured {
+			t.Error("the refused update set the shared secret anyway")
 		}
 	})
 }
@@ -376,6 +511,10 @@ func TestLiveWebhookDryRunNamesTheSecretWithoutPrintingIt(t *testing.T) {
 	listing := mustLiveCLI(t, "--json", "webhook", "list")
 	if strings.Contains(listing, "preview") {
 		t.Errorf("the dry run created the webhook:\n%s", listing)
+	}
+	// The repository is this test's own and had no webhook before the dry run.
+	if hooks := webhooksInListing(t, listing); len(hooks) != 0 {
+		t.Errorf("the repository holds %d webhooks after a dry run: %v", len(hooks), hooks)
 	}
 }
 
@@ -450,6 +589,9 @@ func TestLiveWebhookEndpointPasswordSurvivesAnUpdate(t *testing.T) {
 	if output, err := executeLiveCLI(t, "--json", "webhook", "update", id, "--name", "renamed"); err != nil {
 		t.Fatalf("webhook update failed: %v\noutput: %s", err, output)
 	}
+	if renamed := webhookAsStored(t, id)["name"]; renamed != "renamed" {
+		t.Errorf("name = %v after the update, want renamed", renamed)
+	}
 
 	if header := push(t, "creds/after", "after.txt"); header != expected {
 		t.Errorf("Authorization after the update = %q, want the seeded credentials; "+
@@ -460,13 +602,17 @@ func TestLiveWebhookEndpointPasswordSurvivesAnUpdate(t *testing.T) {
 	// update that names the username without a password. bb sends the
 	// credentials object back with the username alone, which is all it can do
 	// -- and the delivery is where it shows that Bitbucket keeps the password
-	// it already had.
-	if output, err := executeLiveCLI(t, "--json", "webhook", "update", id, "--credentials-username", "hookuser"); err != nil {
+	// it already had. Another username, so the delivery also shows the update
+	// arrived: the same one would read the same if it had not.
+	if output, err := executeLiveCLI(t, "--json", "webhook", "update", id, "--credentials-username", "otheruser"); err != nil {
 		t.Fatalf("webhook update --credentials-username failed: %v\noutput: %s", err, output)
 	}
+	if username := webhookAsStored(t, id)["credentialsUsername"]; username != "otheruser" {
+		t.Errorf("credentialsUsername = %v after the update, want otheruser", username)
+	}
 
-	if header := push(t, "creds/username-only", "username-only.txt"); header != expected {
-		t.Errorf("Authorization after a username-only credentials update = %q, want the seeded credentials; "+
+	if header := push(t, "creds/username-only", "username-only.txt"); header != webhookBasicAuthorization("otheruser", passwordCanary) {
+		t.Errorf("Authorization after a username-only credentials update = %q, want otheruser with the seeded password; "+
 			"naming the username dropped the password that went with it", header)
 	}
 }
@@ -594,6 +740,11 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 		if !strings.Contains(status, "BB_WEBHOOK_SECRET") {
 			t.Errorf("the recorded failure did not name the variable that was missing:\n%s", status)
 		}
+
+		// Rather than run without it: the apply created nothing.
+		if hooks := webhooksNamedInListing(t, mustLiveCLI(t, "webhook", "list", "--limit", "50"), "bulk-hook"); len(hooks) != 0 {
+			t.Errorf("the refused apply created %d webhooks named bulk-hook: %v", len(hooks), hooks)
+		}
 	})
 
 	t.Run("two webhooks in one plan can name two different variables", func(t *testing.T) {
@@ -641,6 +792,21 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 		if strings.Contains(listing, secretCanary) {
 			t.Errorf("a secret reached the listing:\n%s", listing)
 		}
+
+		// Each holding the secret its own variable held, which is the claim.
+		for name, secret := range map[string]string{"hook-one": secretCanary, "hook-two": secretCanary + "-second"} {
+			hooks := webhooksNamedInListing(t, listing, name)
+			if len(hooks) != 1 {
+				t.Errorf("%d webhooks named %s, want 1", len(hooks), name)
+				continue
+			}
+			expectWebhookStoredAsSent(t, hooks[0],
+				sentWebhook{name: name, url: "http://localhost:7990/status", events: []string{"repo:refs_changed"}})
+			id, _ := numericOrStringID(hooks[0]["id"])
+			if stored := webhookSecretAsStored(t, id); stored != secret {
+				t.Errorf("%s holds secret %q, want the one its own variable held", name, stored)
+			}
+		}
 	})
 
 	t.Run("an apply with the variable set configures the secret", func(t *testing.T) {
@@ -669,6 +835,23 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 		if !strings.Contains(listing, `"secretConfigured": true`) {
 			t.Errorf("no webhook came out of the apply with a secret configured:\n%s", listing)
 		}
+
+		// The one this apply made, by name: the webhooks the subtest above
+		// created have secrets too, and satisfy the check above on their own.
+		hooks := webhooksNamedInListing(t, listing, "bulk-hook")
+		if len(hooks) != 1 {
+			t.Fatalf("%d webhooks named bulk-hook after the apply, want 1:\n%s", len(hooks), listing)
+		}
+		expectWebhookStoredAsSent(t, hooks[0],
+			sentWebhook{name: "bulk-hook", url: "http://localhost:7990/status", events: []string{"repo:refs_changed"}})
+		// The policy's false, which Bitbucket does not store unless it is sent.
+		if verification, ok := hooks[0]["sslVerificationRequired"].(bool); !ok || verification {
+			t.Errorf("sslVerificationRequired = %v, want the policy's false", hooks[0]["sslVerificationRequired"])
+		}
+		id, _ := numericOrStringID(hooks[0]["id"])
+		if secret := webhookSecretAsStored(t, id); secret != secretCanary {
+			t.Errorf("bulk-hook holds secret %q, want the one BB_WEBHOOK_SECRET held", secret)
+		}
 	})
 
 	t.Run("a create response is not a reliable source for the secret", func(t *testing.T) {
@@ -695,9 +878,10 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 		for attempt := range 10 {
 			name := fmt.Sprintf("echo-probe-%d", attempt)
 			created, err := harness.liveJSON(ctx, http.MethodPost, path, map[string]any{
-				"name":          name,
-				"url":           "http://localhost:7990/status",
-				"events":        []string{"repo:refs_changed"},
+				"name":   name,
+				"url":    "http://localhost:7990/status",
+				"events": []string{"repo:refs_changed"},
+				// Bitbucket's default, so no read tells it from a drop; nothing here depends on it.
 				"active":        true,
 				"configuration": map[string]any{"secret": secretCanary},
 			})
@@ -726,6 +910,8 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 				t.Fatalf("a read did not return the secret it was created with, so the "+
 					"asymmetry this test records has changed: %#v", got["configuration"])
 			}
+			expectWebhookStoredAsSent(t, got,
+				sentWebhook{name: name, url: "http://localhost:7990/status", events: []string{"repo:refs_changed"}})
 		}
 
 		if echoed == 0 && empty == 0 && raced == 0 {
@@ -775,11 +961,24 @@ func TestLiveWebhookListingsAreUsable(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	names := make([]string, 0, 2)
 	for index := range 2 {
 		name := fmt.Sprintf("listing-%d-%s", index, testsupport.UniqueSuffix())
 		if output, err := executeLiveCLI(t, "--json", "webhook", "create", name, "http://localhost:7990/status"); err != nil {
 			t.Fatalf("create webhook %d failed: %v\noutput: %s", index, err, output)
 		}
+		names = append(names, name)
+	}
+
+	// Both stored as created, before either listing is judged on them.
+	created := mustLiveCLI(t, "webhook", "list", "--limit", "50")
+	for _, name := range names {
+		hooks := webhooksNamedInListing(t, created, name)
+		if len(hooks) != 1 {
+			t.Fatalf("%d webhooks named %s, want 1:\n%s", len(hooks), name, created)
+		}
+		expectWebhookStoredAsSent(t, hooks[0],
+			sentWebhook{name: name, url: "http://localhost:7990/status", events: []string{"repo:refs_changed"}})
 	}
 
 	t.Run("a truncated listing says so", func(t *testing.T) {
