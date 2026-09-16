@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -425,15 +426,24 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 		t.Fatalf("expected an entries list in permissions list output: %s", permissionListOutput)
 	}
 
-	username := harness.config.BitbucketUsername
-	if strings.TrimSpace(username) != "" {
-		grantOutput, grantErr := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "users", "grant", username, "repo_write")
-		if grantErr != nil {
-			t.Fatalf("repo settings permissions users grant failed: %v\noutput: %s", grantErr, grantOutput)
-		}
-		if asString(decodeJSONMap(t, grantOutput)["status"]) != "ok" {
-			t.Fatalf("expected grant status ok, got: %s", grantOutput)
-		}
+	// Whoever the harness authenticates as. The username used to come from the
+	// environment alone, and a run on a token has none there, so the grant and
+	// its check were skipped without a word.
+	username := harness.username()
+	if held := repoCLIPermissionEntry(t, permissionListOutput, username); held != nil {
+		t.Fatalf("%s already holds %v on the fresh repository, so a grant would prove nothing: %s", username, held["permission"], permissionListOutput)
+	}
+	grantOutput, grantErr := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "users", "grant", username, "repo_write")
+	if grantErr != nil {
+		t.Fatalf("repo settings permissions users grant failed: %v\noutput: %s", grantErr, grantOutput)
+	}
+	if asString(decodeJSONMap(t, grantOutput)["status"]) != "ok" {
+		t.Fatalf("expected grant status ok, got: %s", grantOutput)
+	}
+	grantedListOutput := mustLiveCLI(t, "repo", "settings", "security", "permissions", "users", "list", "--limit", "100")
+	granted := repoCLIPermissionEntry(t, grantedListOutput, username)
+	if granted == nil || granted["permission"] != "REPO_WRITE" {
+		t.Fatalf("%s does not hold REPO_WRITE after a grant of repo_write: %s", username, grantedListOutput)
 	}
 
 	webhooksListOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "list")
@@ -444,21 +454,37 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	if _, ok := webhooksListPayload["webhooks"]; !ok {
 		t.Fatalf("expected webhooks field in webhooks list output: %s", webhooksListOutput)
 	}
+	if existing := repoCLIWebhooksIn(t, webhooksListOutput); len(existing) != 0 {
+		t.Fatalf("the fresh repository already has webhooks: %v", existing)
+	}
 
+	// Neither --event nor --active is what bb sends when the flag is absent: the
+	// event defaults to repo:refs_changed alone, and active to true. A flag that
+	// never reached the request reads back as the default, not as this.
 	webhookName := testsupport.UniqueName("lt-cli-webhook-")
-	createWebhookOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create", webhookName, "http://localhost:65535/hook", "--event", "repo:refs_changed")
+	createWebhookOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create", webhookName, "http://localhost:65535/hook",
+		"--event", "repo:refs_changed", "--event", "pr:merged", "--active=false")
 	if err != nil {
 		t.Fatalf("repo settings workflow webhooks create failed: %v\noutput: %s", err, createWebhookOutput)
 	}
+	// Failing rather than skipping the delete: without an id nothing below it
+	// ran, and the test still passed.
 	webhookID, ok := webhookIDFromCreateOutput(createWebhookOutput)
-	if ok {
-		deleteWebhookOutput, deleteErr := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
-		if deleteErr != nil {
-			t.Fatalf("repo settings workflow webhooks delete failed: %v\noutput: %s", deleteErr, deleteWebhookOutput)
-		}
-		if asString(decodeJSONMap(t, deleteWebhookOutput)["status"]) != "ok" {
-			t.Fatalf("expected webhook delete status ok, got: %s", deleteWebhookOutput)
-		}
+	if !ok {
+		t.Fatalf("expected webhook id in create output, got: %s", createWebhookOutput)
+	}
+	storedWebhook := repoCLIEntryWithID(t, repoCLIWebhooksIn(t, mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list")), webhookID)
+	repoCLIAssertWebhook(t, storedWebhook, webhookName, "http://localhost:65535/hook", false, "pr:merged", "repo:refs_changed")
+
+	deleteWebhookOutput, deleteErr := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
+	if deleteErr != nil {
+		t.Fatalf("repo settings workflow webhooks delete failed: %v\noutput: %s", deleteErr, deleteWebhookOutput)
+	}
+	if asString(decodeJSONMap(t, deleteWebhookOutput)["status"]) != "ok" {
+		t.Fatalf("expected webhook delete status ok, got: %s", deleteWebhookOutput)
+	}
+	if remaining := repoCLIWebhooksIn(t, mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list")); len(remaining) != 0 {
+		t.Fatalf("webhooks still listed after the delete: %v", remaining)
 	}
 
 	pullRequestsGetOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "get")
@@ -468,6 +494,11 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	getPayload := decodeJSONMap(t, pullRequestsGetOutput)
 	if _, ok := getPayload["requiredApprovers"]; !ok {
 		t.Fatalf("expected the pull request settings in get output: %s", pullRequestsGetOutput)
+	}
+	// What a fresh repository holds. Every update below sends something else,
+	// so one that was dropped reads back as this.
+	if getPayload["requiredAllTasksComplete"] != false || getPayload["requiredApprovers"] != float64(0) {
+		t.Fatalf("a fresh repository should require neither tasks nor approvals: %s", pullRequestsGetOutput)
 	}
 
 	pullRequestsUpdateOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true")
@@ -480,6 +511,9 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	if decodeJSONMap(t, pullRequestsUpdateOutput)["requiredAllTasksComplete"] != true {
 		t.Fatalf("expected the update to be reflected in the settings, got: %s", pullRequestsUpdateOutput)
 	}
+	if stored := repoCLIPullRequestSettings(t)["requiredAllTasksComplete"]; stored != true {
+		t.Fatalf("requiredAllTasksComplete reads back as %v after setting it to true", stored)
+	}
 
 	pullRequestsApproversOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "update-approvers", "--count", "2")
 	if err != nil {
@@ -488,6 +522,9 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	if _, ok := decodeJSONMap(t, pullRequestsApproversOutput)["requiredApprovers"]; !ok {
 		t.Fatalf("expected the approver count in the update-approvers output, got: %s", pullRequestsApproversOutput)
 	}
+	if stored := repoCLIPullRequestSettings(t)["requiredApprovers"]; stored != float64(2) {
+		t.Fatalf("requiredApprovers reads back as %v after setting it to 2", stored)
+	}
 
 	humanPermissionListOutput, err := executeLiveCLI(t, "repo", "settings", "security", "permissions", "users", "list", "--limit", "10")
 	if err != nil {
@@ -495,6 +532,12 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	}
 	if strings.TrimSpace(humanPermissionListOutput) == "" {
 		t.Fatalf("expected non-empty human permissions output")
+	}
+	// The empty-listing notice is not empty either. A person reads the display
+	// name, which is what the row carries.
+	display := asString(granted["displayName"])
+	if line := repoCLIHumanLine(humanPermissionListOutput, display); display == "" || !strings.HasSuffix(line, "REPO_WRITE") {
+		t.Fatalf("expected the human listing to show %q with REPO_WRITE, got: %s", display, humanPermissionListOutput)
 	}
 
 	// The seeded repository has no webhooks, so the listing says so rather
@@ -516,13 +559,22 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	if !strings.Contains(humanPullRequestsGetOutput, "Required tasks complete:") {
 		t.Fatalf("expected human pull-request settings output, got: %s", humanPullRequestsGetOutput)
 	}
+	if !strings.HasSuffix(repoCLIHumanLine(humanPullRequestsGetOutput, "Required tasks complete:"), " true") ||
+		!strings.HasSuffix(repoCLIHumanLine(humanPullRequestsGetOutput, "Required approvers:"), " 2") {
+		t.Fatalf("expected the human settings to show the values stored above, got: %s", humanPullRequestsGetOutput)
+	}
 
+	// Back to false and to one: each differs from what the updates above
+	// stored, so a dropped update reads back as true and two.
 	humanPullRequestsUpdateOutput, err := executeLiveCLI(t, "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=false")
 	if err != nil {
 		t.Fatalf("repo settings pull-requests update (human) failed: %v\noutput: %s", err, humanPullRequestsUpdateOutput)
 	}
 	if !strings.Contains(humanPullRequestsUpdateOutput, "Updated pull-request settings") {
 		t.Fatalf("expected human pull-requests update output, got: %s", humanPullRequestsUpdateOutput)
+	}
+	if stored := repoCLIPullRequestSettings(t)["requiredAllTasksComplete"]; stored != false {
+		t.Fatalf("requiredAllTasksComplete reads back as %v after setting it to false", stored)
 	}
 
 	humanPullRequestsApproversOutput, err := executeLiveCLI(t, "repo", "settings", "pull-requests", "update-approvers", "--count", "1")
@@ -531,6 +583,9 @@ func TestLiveCLIRepoSettingsSurface(t *testing.T) {
 	}
 	if !strings.Contains(humanPullRequestsApproversOutput, "Updated pull-request settings") {
 		t.Fatalf("expected human pull-requests update-approvers output, got: %s", humanPullRequestsApproversOutput)
+	}
+	if stored := repoCLIPullRequestSettings(t)["requiredApprovers"]; stored != float64(1) {
+		t.Fatalf("requiredApprovers reads back as %v after setting it to 1", stored)
 	}
 }
 
@@ -556,6 +611,10 @@ func TestLiveCLIRepoPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("permissions users list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
+	// Not held yet, so a grant that was really sent would be in the listing.
+	if held := repoCLIPermissionEntry(t, listBeforeOutput, username); held != nil {
+		t.Fatalf("%s already holds %v, so a sent grant could change nothing: %s", username, held["permission"], listBeforeOutput)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "users", "grant", username, "REPO_WRITE")
 	if err != nil {
@@ -567,6 +626,9 @@ func TestLiveCLIRepoPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 	if !strings.Contains(dryRunOutput, `"intent": "repo.permission.user.grant"`) {
 		t.Fatalf("expected intent in dry-run output, got: %s", dryRunOutput)
 	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
+		t.Fatalf("expected the grant to be predicted as a create, got %q: %s", predicted, dryRunOutput)
+	}
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "users", "list", "--limit", "200")
 	if err != nil {
@@ -575,6 +637,9 @@ func TestLiveCLIRepoPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no permission side-effect from dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	}
+	if held := repoCLIPermissionEntry(t, listAfterOutput, username); held != nil {
+		t.Fatalf("the dry run left %s holding %v: %s", username, held["permission"], listAfterOutput)
 	}
 }
 
@@ -599,6 +664,10 @@ func TestLiveCLIRepoPermissionsGroupGrantDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("permissions groups list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
+	// Not held yet, so a grant that was really sent would be in the listing.
+	if held := repoCLIPermissionEntry(t, listBeforeOutput, group); held != nil {
+		t.Fatalf("%s already holds %v, so a sent grant could change nothing: %s", group, held["permission"], listBeforeOutput)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "grant", group, "REPO_READ")
 	if err != nil {
@@ -606,6 +675,9 @@ func TestLiveCLIRepoPermissionsGroupGrantDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.permission.group.grant"`) {
 		t.Fatalf("expected repo.permission.group.grant intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
+		t.Fatalf("expected the grant to be predicted as a create, got %q: %s", predicted, dryRunOutput)
 	}
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "groups", "list", "--limit", "200")
@@ -615,6 +687,9 @@ func TestLiveCLIRepoPermissionsGroupGrantDryRunNoSideEffect(t *testing.T) {
 
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no group permission side-effect from dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	}
+	if held := repoCLIPermissionEntry(t, listAfterOutput, group); held != nil {
+		t.Fatalf("the dry run left %s holding %v: %s", group, held["permission"], listAfterOutput)
 	}
 }
 
@@ -634,17 +709,29 @@ func TestLiveCLIRepoPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// A grant for the dry run to preview removing. The subject used to be a user
+	// who does not exist, whose revoke leaves the listing as it was whether it
+	// is sent or not.
+	username := harness.username()
+	mustLiveCLI(t, "repo", "settings", "security", "permissions", "users", "grant", username, "REPO_WRITE")
+
 	listBeforeOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "users", "list", "--limit", "200")
 	if err != nil {
 		t.Fatalf("permissions users list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
+	if held := repoCLIPermissionEntry(t, listBeforeOutput, username); held == nil || held["permission"] != "REPO_WRITE" {
+		t.Fatalf("%s does not hold REPO_WRITE after a grant of it: %s", username, listBeforeOutput)
+	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "users", "revoke", "dryrun-missing-user", "--yes")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "users", "revoke", username, "--yes")
 	if err != nil {
 		t.Fatalf("permissions users revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.permission.user.revoke"`) {
 		t.Fatalf("expected repo.permission.user.revoke intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
+		t.Fatalf("expected the revoke to be predicted as a delete, got %q: %s", predicted, dryRunOutput)
 	}
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "users", "list", "--limit", "200")
@@ -654,6 +741,9 @@ func TestLiveCLIRepoPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
 
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no user permission side-effect from revoke dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	}
+	if held := repoCLIPermissionEntry(t, listAfterOutput, username); held == nil || held["permission"] != "REPO_WRITE" {
+		t.Fatalf("the revoke dry run changed what %s holds: %s", username, listAfterOutput)
 	}
 }
 
@@ -673,17 +763,29 @@ func TestLiveCLIRepoPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// A grant for the dry run to preview removing, for the same reason as the
+	// user revoke: a group holding nothing is left as it was by a revoke that
+	// was really sent.
+	const group = "stash-users"
+	mustLiveCLI(t, "repo", "settings", "security", "permissions", "groups", "grant", group, "REPO_READ")
+
 	listBeforeOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "groups", "list", "--limit", "200")
 	if err != nil {
 		t.Fatalf("permissions groups list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
+	if held := repoCLIPermissionEntry(t, listBeforeOutput, group); held == nil || held["permission"] != "REPO_READ" {
+		t.Fatalf("%s does not hold REPO_READ after a grant of it: %s", group, listBeforeOutput)
+	}
 
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "revoke", "dryrun-missing-group", "--yes")
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "revoke", group, "--yes")
 	if err != nil {
 		t.Fatalf("permissions groups revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.permission.group.revoke"`) {
 		t.Fatalf("expected repo.permission.group.revoke intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
+		t.Fatalf("expected the revoke to be predicted as a delete, got %q: %s", predicted, dryRunOutput)
 	}
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "groups", "list", "--limit", "200")
@@ -693,6 +795,9 @@ func TestLiveCLIRepoPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
 
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no group permission side-effect from revoke dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	}
+	if held := repoCLIPermissionEntry(t, listAfterOutput, group); held == nil || held["permission"] != "REPO_READ" {
+		t.Fatalf("the revoke dry run changed what %s holds: %s", group, listAfterOutput)
 	}
 }
 
@@ -716,6 +821,9 @@ func TestLiveCLIRepoWebhookCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("webhooks list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
+	if existing := repoCLIWebhooksIn(t, listBeforeOutput); len(existing) != 0 {
+		t.Fatalf("the fresh repository already has webhooks: %v", existing)
+	}
 
 	name := testsupport.UniqueName("lt-dryrun-webhook-")
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "workflow", "webhooks", "create", name, "http://localhost:65535/hook", "--event", "repo:refs_changed")
@@ -728,6 +836,9 @@ func TestLiveCLIRepoWebhookCreateDryRunNoSideEffect(t *testing.T) {
 	if !strings.Contains(dryRunOutput, `"intent": "repo.webhook.create"`) {
 		t.Fatalf("expected repo.webhook.create intent, got: %s", dryRunOutput)
 	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
+		t.Fatalf("expected the webhook to be predicted as a create, got %q: %s", predicted, dryRunOutput)
+	}
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "list")
 	if err != nil {
@@ -736,6 +847,9 @@ func TestLiveCLIRepoWebhookCreateDryRunNoSideEffect(t *testing.T) {
 
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no webhook side-effect from dry-run create\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
+	}
+	if created := repoCLIWebhooksIn(t, listAfterOutput); len(created) != 0 {
+		t.Fatalf("the dry run left a webhook behind: %v", created)
 	}
 }
 
@@ -759,6 +873,10 @@ func TestLiveCLIRepoPullRequestSettingsUpdateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pull-request settings get before failed: %v\noutput: %s", err, settingsBeforeOutput)
 	}
+	// False to begin with, so an update to true that was really sent shows.
+	if before := decodeJSONMap(t, settingsBeforeOutput)["requiredAllTasksComplete"]; before != false {
+		t.Fatalf("requiredAllTasksComplete is %v on a fresh repository, want false: %s", before, settingsBeforeOutput)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true")
 	if err != nil {
@@ -770,6 +888,9 @@ func TestLiveCLIRepoPullRequestSettingsUpdateDryRunNoSideEffect(t *testing.T) {
 	if !strings.Contains(dryRunOutput, `"intent": "repo.pull-request-settings.update"`) {
 		t.Fatalf("expected repo.pull-request-settings.update intent, got: %s", dryRunOutput)
 	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected the settings change to be predicted as an update, got %q: %s", predicted, dryRunOutput)
+	}
 
 	settingsAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "get")
 	if err != nil {
@@ -778,6 +899,9 @@ func TestLiveCLIRepoPullRequestSettingsUpdateDryRunNoSideEffect(t *testing.T) {
 
 	if settingsBeforeOutput != settingsAfterOutput {
 		t.Fatalf("expected no pull-request settings side-effect from dry-run update\nbefore: %s\nafter: %s", settingsBeforeOutput, settingsAfterOutput)
+	}
+	if after := decodeJSONMap(t, settingsAfterOutput)["requiredAllTasksComplete"]; after != false {
+		t.Fatalf("requiredAllTasksComplete is %v after the dry run, want false", after)
 	}
 }
 
@@ -801,6 +925,10 @@ func TestLiveCLIRepoPullRequestSettingsUpdateApproversDryRunNoSideEffect(t *test
 	if err != nil {
 		t.Fatalf("pull-request settings get before failed: %v\noutput: %s", err, settingsBeforeOutput)
 	}
+	// None required to begin with, so a count of two that was really sent shows.
+	if before := decodeJSONMap(t, settingsBeforeOutput)["requiredApprovers"]; before != float64(0) {
+		t.Fatalf("requiredApprovers is %v on a fresh repository, want 0: %s", before, settingsBeforeOutput)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "update-approvers", "--count", "2")
 	if err != nil {
@@ -812,6 +940,9 @@ func TestLiveCLIRepoPullRequestSettingsUpdateApproversDryRunNoSideEffect(t *test
 	if !strings.Contains(dryRunOutput, `"intent": "repo.pull-request-settings.update-approvers"`) {
 		t.Fatalf("expected update-approvers intent, got: %s", dryRunOutput)
 	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected the approver count to be predicted as an update, got %q: %s", predicted, dryRunOutput)
+	}
 
 	settingsAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "get")
 	if err != nil {
@@ -820,6 +951,9 @@ func TestLiveCLIRepoPullRequestSettingsUpdateApproversDryRunNoSideEffect(t *test
 
 	if settingsBeforeOutput != settingsAfterOutput {
 		t.Fatalf("expected no pull-request settings side-effect from update-approvers dry-run\nbefore: %s\nafter: %s", settingsBeforeOutput, settingsAfterOutput)
+	}
+	if after := decodeJSONMap(t, settingsAfterOutput)["requiredApprovers"]; after != float64(0) {
+		t.Fatalf("requiredApprovers is %v after the dry run, want 0", after)
 	}
 }
 
@@ -843,6 +977,12 @@ func TestLiveCLIRepoPullRequestSettingsSetStrategyDryRunNoSideEffect(t *testing.
 	if err != nil {
 		t.Fatalf("pull-request settings get before failed: %v\noutput: %s", err, settingsBeforeOutput)
 	}
+	// Not squash to begin with, so a default of squash that was really sent
+	// shows.
+	strategyBefore, _ := decodeJSONMap(t, settingsBeforeOutput)["defaultMergeStrategy"].(string)
+	if strategyBefore == "" || strategyBefore == "squash" {
+		t.Fatalf("defaultMergeStrategy is %q on a fresh repository, want a strategy other than squash: %s", strategyBefore, settingsBeforeOutput)
+	}
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "pull-requests", "set-strategy", "squash")
 	if err != nil {
@@ -850,6 +990,9 @@ func TestLiveCLIRepoPullRequestSettingsSetStrategyDryRunNoSideEffect(t *testing.
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.pull-request-settings.set-strategy"`) {
 		t.Fatalf("expected set-strategy intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
+		t.Fatalf("expected the strategy change to be predicted as an update, got %q: %s", predicted, dryRunOutput)
 	}
 
 	settingsAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "get")
@@ -859,6 +1002,9 @@ func TestLiveCLIRepoPullRequestSettingsSetStrategyDryRunNoSideEffect(t *testing.
 
 	if settingsBeforeOutput != settingsAfterOutput {
 		t.Fatalf("expected no pull-request settings side-effect from set-strategy dry-run\nbefore: %s\nafter: %s", settingsBeforeOutput, settingsAfterOutput)
+	}
+	if after := decodeJSONMap(t, settingsAfterOutput)["defaultMergeStrategy"]; after != strategyBefore {
+		t.Fatalf("defaultMergeStrategy is %v after the dry run, want %s", after, strategyBefore)
 	}
 }
 
@@ -878,8 +1024,10 @@ func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// An event other than the one bb subscribes to when --event is absent, so a
+	// fixture stored without it reads back differently.
 	createName := testsupport.UniqueName("lt-dryrun-webhook-del-")
-	createOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create", createName, "http://localhost:65535/hook", "--event", "repo:refs_changed")
+	createOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "create", createName, "http://localhost:65535/hook", "--event", "pr:opened")
 	if err != nil {
 		t.Fatalf("webhook create fixture failed: %v\noutput: %s", err, createOutput)
 	}
@@ -892,6 +1040,8 @@ func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("webhooks list before failed: %v\noutput: %s", err, listBeforeOutput)
 	}
+	// The fixture has to be there for a delete that was really sent to remove.
+	repoCLIAssertWebhook(t, repoCLIEntryWithID(t, repoCLIWebhooksIn(t, listBeforeOutput), webhookID), createName, "http://localhost:65535/hook", true, "pr:opened")
 
 	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
 	if err != nil {
@@ -899,6 +1049,9 @@ func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
 	}
 	if !strings.Contains(dryRunOutput, `"intent": "repo.webhook.delete"`) {
 		t.Fatalf("expected repo.webhook.delete intent, got: %s", dryRunOutput)
+	}
+	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
+		t.Fatalf("expected the webhook to be predicted as a delete, got %q: %s", predicted, dryRunOutput)
 	}
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "list")
@@ -909,8 +1062,13 @@ func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
 	if listBeforeOutput != listAfterOutput {
 		t.Fatalf("expected no webhook side-effect from delete dry-run\nbefore: %s\nafter: %s", listBeforeOutput, listAfterOutput)
 	}
+	repoCLIAssertWebhook(t, repoCLIEntryWithID(t, repoCLIWebhooksIn(t, listAfterOutput), webhookID), createName, "http://localhost:65535/hook", true, "pr:opened")
 
-	_, _ = executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
+	// The real delete, checked like any other: it used to discard its error.
+	mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "delete", webhookID, "--yes")
+	if remaining := repoCLIWebhooksIn(t, mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list")); len(remaining) != 0 {
+		t.Fatalf("webhooks still listed after the delete: %v", remaining)
+	}
 }
 
 func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
@@ -1817,6 +1975,98 @@ func repoCLIAssertPRCommentGone(t *testing.T, prID, commentID string) {
 	if !apperrors.IsKind(err, apperrors.KindNotFound) {
 		t.Fatalf("comment %s on pull request %s: want not found after the delete, got %v\n%s", commentID, prID, err, output)
 	}
+}
+
+// repoCLIPermissionEntry finds the entry a repository permission listing holds
+// for one user or group, or nil when it names them nowhere.
+func repoCLIPermissionEntry(t *testing.T, output, name string) map[string]any {
+	t.Helper()
+
+	entries, ok := decodeJSONMap(t, output)["entries"].([]any)
+	if !ok {
+		t.Fatalf("expected an entries list in: %s", output)
+	}
+	for _, entry := range entries {
+		fields, _ := entry.(map[string]any)
+		if subject, _ := fields["name"].(string); strings.EqualFold(subject, name) {
+			return fields
+		}
+	}
+
+	return nil
+}
+
+// repoCLIWebhooksIn reads the webhooks out of a webhook listing.
+func repoCLIWebhooksIn(t *testing.T, output string) []any {
+	t.Helper()
+
+	webhooks, ok := decodeJSONMap(t, output)["webhooks"].([]any)
+	if !ok {
+		t.Fatalf("expected a webhooks array in: %s", output)
+	}
+
+	return webhooks
+}
+
+// repoCLIAssertWebhook checks a webhook read back holds what it was created
+// with. Events are compared as a set: the order they are stored in is not
+// something a caller asked for.
+func repoCLIAssertWebhook(t *testing.T, webhook map[string]any, name, url string, active bool, events ...string) {
+	t.Helper()
+
+	if webhook["name"] != name || webhook["url"] != url || webhook["active"] != active {
+		t.Errorf("webhook %v = name %v, url %v, active %v; want %s, %s, %t", webhook["id"], webhook["name"], webhook["url"], webhook["active"], name, url, active)
+	}
+
+	stored, _ := webhook["events"].([]any)
+	got := make([]string, 0, len(stored))
+	for _, event := range stored {
+		got = append(got, asString(event))
+	}
+	want := append([]string{}, events...)
+	sort.Strings(got)
+	sort.Strings(want)
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("webhook %v subscribes to %v, want %v", webhook["id"], got, want)
+	}
+}
+
+// repoCLIPullRequestSettings reads the repository's pull request settings back.
+func repoCLIPullRequestSettings(t *testing.T) map[string]any {
+	t.Helper()
+
+	return decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "pull-requests", "get"))
+}
+
+// repoCLIHumanLine returns the first line of human output that mentions text,
+// trimmed, or "" when none does.
+func repoCLIHumanLine(output, text string) string {
+	for _, line := range strings.Split(output, "\n") {
+		if strings.Contains(line, text) {
+			return strings.TrimSpace(line)
+		}
+	}
+
+	return ""
+}
+
+// repoCLIPredictedAction reads what a dry run says the command would do, from
+// the preview's first item.
+//
+// A dry run is read back by showing nothing changed, which only means
+// something where a real run would have changed it. The prediction is the
+// preview agreeing that it would have.
+func repoCLIPredictedAction(t *testing.T, output string) string {
+	t.Helper()
+
+	items, _ := decodeJSONMap(t, output)["items"].([]any)
+	if len(items) == 0 {
+		t.Fatalf("no items in the preview: %s", output)
+	}
+	item, _ := items[0].(map[string]any)
+	predicted, _ := item["predictedAction"].(string)
+
+	return predicted
 }
 
 // repoCLIAssertOutOfDate checks a write was refused as a conflict, the refusal
