@@ -260,10 +260,10 @@ bb pr comment resolve 42 131 --repo MYPROJ/payments
 bb pr comment reopen 42 131 --repo MYPROJ/payments
 ```
 
-Resolving is what closing a task became: Bitbucket removed pull request tasks in
-8.0 and folded them into blocker comments, so `resolve` on the comment is the
-whole of it. `bb pr task *` is gone — it called the removed endpoint and could
-never have worked.
+Resolving a comment is how a task is closed. Bitbucket has no separate pull
+request task object: tasks are blocker comments, so `resolve` on the comment is
+the whole of it. Nothing under `bb pr` manages tasks separately, and the comment
+subcommands above are the entire surface for them.
 
 Re-run the listing afterwards to confirm the thread count dropped. Note that
 reviewers resolve their own threads, so an addressed comment stays unresolved
@@ -353,7 +353,7 @@ bb repo archive --repo MYPROJ/payments --format tar.gz -o - > archive.tar.gz
 
 `bb` does not manage plugin hooks or hook scripts. Both configure code that runs
 inside Bitbucket on every push, and neither belongs in a CLI workflow — see
-[Server-Side Hooks](advanced/server-side-hooks.md). Use `webhook` to have
+[Server-Side Hooks](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/server-side-hooks/). Use `webhook` to have
 Bitbucket call out to a service you control instead.
 
 ### 12. SSH keys and HTTP Access Tokens
@@ -533,7 +533,7 @@ Check `described` before reading `schema`. Four answers are possible:
   command forwards whatever Bitbucket sent without reading a field. You get an envelope, but
   what is inside it is the server's to decide. Parse defensively.
 
-Almost every command is now in the first group: its schema is derived from the typed
+Almost every command falls in the first group: its schema is derived from the typed
 result it fills in, so it cannot describe something other than what it emits. The rest say
 which of the others they are, and why.
 

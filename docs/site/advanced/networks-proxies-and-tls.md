@@ -115,8 +115,10 @@ You can also persist client certificates per host in your stored profile:
 printf '%s' "$abc" | bb auth login https://bitbucket.example.com --token-stdin --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key
 ```
 
-Both files must be PEM-encoded. If either `--client-cert` or `--client-key` is specified without
-the other, `bb` fails immediately with `BB_CLIENT_CERT and BB_CLIENT_KEY must be set together`.
+Both files must be PEM-encoded. Supplying one without the other fails immediately, and the
+message names the input you actually used for each half — so passing only the flag says
+`--client-cert and BB_CLIENT_KEY must be set together`, and exporting only the variable says
+`BB_CLIENT_CERT and BB_CLIENT_KEY must be set together`.
 
 ## Diagnosing a connection
 
