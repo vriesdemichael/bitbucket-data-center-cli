@@ -88,7 +88,19 @@ func (p *PermissionChecker) CheckRepoPermission(ctx context.Context, projectKey,
 
 // CheckProjectWrite verifies if the caller has PROJECT_WRITE on a project.
 func (p *PermissionChecker) CheckProjectWrite(ctx context.Context, projectKey string) error {
-	cacheKey := fmt.Sprintf("project:%s:PROJECT_WRITE", projectKey)
+	return p.checkProjectListed(ctx, projectKey, "PROJECT_WRITE")
+}
+
+// checkProjectListed verifies the caller holds a permission on a project by
+// finding the project among those Bitbucket lists for that permission.
+//
+// Bitbucket has no key filter on that listing, only a name filter, and the
+// name filter matches every project whose name contains the one given, sorted
+// by name. Asked for one project named "Probe X", it answered with "Alpha
+// Probe X", so the listing is read page by page until the key turns up
+// (observed on 10.4.3).
+func (p *PermissionChecker) checkProjectListed(ctx context.Context, projectKey, permission string) error {
+	cacheKey := fmt.Sprintf("project:%s:%s", projectKey, permission)
 	if err, ok := p.cache[cacheKey]; ok {
 		return err
 	}
@@ -112,49 +124,47 @@ func (p *PermissionChecker) CheckProjectWrite(ctx context.Context, projectKey st
 	}
 
 	name := *projResp.ApplicationjsonCharsetUTF8200.Name
-	perm := "PROJECT_WRITE"
-	limit := float32(1)
-	params := &openapigenerated.GetProjectsParams{
-		Name:       &name,
-		Permission: &perm,
-		Limit:      &limit,
-	}
+	limit := float32(25)
+	var start float32
+	for {
+		params := &openapigenerated.GetProjectsParams{
+			Name:       &name,
+			Permission: &permission,
+			Limit:      &limit,
+			Start:      &start,
+		}
 
-	resp, err := p.client.GetProjectsWithResponse(ctx, params)
-	if err != nil {
-		err = transportFailure(err)
-		p.cache[cacheKey] = err
-		return err
-	}
-	if resp.StatusCode() >= 400 {
-		err := openapi.MapStatusError(resp.StatusCode(), resp.Body)
-		p.cache[cacheKey] = err
-		return err
-	}
+		resp, err := p.client.GetProjectsWithResponse(ctx, params)
+		if err != nil {
+			err = transportFailure(err)
+			p.cache[cacheKey] = err
+			return err
+		}
+		if resp.StatusCode() >= 400 {
+			err := openapi.MapStatusError(resp.StatusCode(), resp.Body)
+			p.cache[cacheKey] = err
+			return err
+		}
 
-	if resp.ApplicationjsonCharsetUTF8200 == nil || resp.ApplicationjsonCharsetUTF8200.Values == nil || len(*resp.ApplicationjsonCharsetUTF8200.Values) == 0 {
-		err := apperrors.New(apperrors.KindAuthorization, fmt.Sprintf("insufficient permission: PROJECT_WRITE required on project %s", projectKey), nil)
-		p.cache[cacheKey] = err
-		return err
-	}
+		page := resp.ApplicationjsonCharsetUTF8200
+		if page != nil && page.Values != nil {
+			for _, proj := range *page.Values {
+				if proj.Key != nil && strings.EqualFold(*proj.Key, projectKey) {
+					p.cache[cacheKey] = nil
+					return nil
+				}
+			}
+		}
 
-	// Verify the key matches just in case
-	found := false
-	for _, proj := range *resp.ApplicationjsonCharsetUTF8200.Values {
-		if proj.Key != nil && strings.EqualFold(*proj.Key, projectKey) {
-			found = true
+		if page == nil || page.IsLastPage == nil || *page.IsLastPage || page.NextPageStart == nil {
 			break
 		}
+		start = float32(*page.NextPageStart)
 	}
 
-	if !found {
-		err := apperrors.New(apperrors.KindAuthorization, fmt.Sprintf("insufficient permission: PROJECT_WRITE required on project %s", projectKey), nil)
-		p.cache[cacheKey] = err
-		return err
-	}
-
-	p.cache[cacheKey] = nil
-	return nil
+	err = apperrors.New(apperrors.KindAuthorization, fmt.Sprintf("insufficient permission: %s required on project %s", permission, projectKey), nil)
+	p.cache[cacheKey] = err
+	return err
 }
 
 // CheckProjectAdmin verifies if the caller has PROJECT_ADMIN on a project.
@@ -187,73 +197,7 @@ func (p *PermissionChecker) CheckProjectAdmin(ctx context.Context, projectKey st
 
 // CheckProjectRead verifies if the caller has PROJECT_READ on a project.
 func (p *PermissionChecker) CheckProjectRead(ctx context.Context, projectKey string) error {
-	cacheKey := fmt.Sprintf("project:%s:PROJECT_READ", projectKey)
-	if err, ok := p.cache[cacheKey]; ok {
-		return err
-	}
-
-	// First resolve the project name
-	projResp, err := p.client.GetProjectWithResponse(ctx, projectKey)
-	if err != nil {
-		err = transportFailure(err)
-		p.cache[cacheKey] = err
-		return err
-	}
-	if projResp.StatusCode() >= 400 {
-		err := openapi.MapStatusError(projResp.StatusCode(), projResp.Body)
-		p.cache[cacheKey] = err
-		return err
-	}
-	if projResp.ApplicationjsonCharsetUTF8200 == nil || projResp.ApplicationjsonCharsetUTF8200.Name == nil {
-		err := apperrors.New(apperrors.KindInternal, fmt.Sprintf("failed to resolve project name for key %s", projectKey), nil)
-		p.cache[cacheKey] = err
-		return err
-	}
-
-	name := *projResp.ApplicationjsonCharsetUTF8200.Name
-	perm := "PROJECT_READ"
-	limit := float32(1)
-	params := &openapigenerated.GetProjectsParams{
-		Name:       &name,
-		Permission: &perm,
-		Limit:      &limit,
-	}
-
-	resp, err := p.client.GetProjectsWithResponse(ctx, params)
-	if err != nil {
-		err = transportFailure(err)
-		p.cache[cacheKey] = err
-		return err
-	}
-	if resp.StatusCode() >= 400 {
-		err := openapi.MapStatusError(resp.StatusCode(), resp.Body)
-		p.cache[cacheKey] = err
-		return err
-	}
-
-	if resp.ApplicationjsonCharsetUTF8200 == nil || resp.ApplicationjsonCharsetUTF8200.Values == nil || len(*resp.ApplicationjsonCharsetUTF8200.Values) == 0 {
-		err := apperrors.New(apperrors.KindAuthorization, fmt.Sprintf("insufficient permission: PROJECT_READ required on project %s", projectKey), nil)
-		p.cache[cacheKey] = err
-		return err
-	}
-
-	// Verify the key matches just in case
-	found := false
-	for _, proj := range *resp.ApplicationjsonCharsetUTF8200.Values {
-		if proj.Key != nil && strings.EqualFold(*proj.Key, projectKey) {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		err := apperrors.New(apperrors.KindAuthorization, fmt.Sprintf("insufficient permission: PROJECT_READ required on project %s", projectKey), nil)
-		p.cache[cacheKey] = err
-		return err
-	}
-
-	p.cache[cacheKey] = nil
-	return nil
+	return p.checkProjectListed(ctx, projectKey, "PROJECT_READ")
 }
 
 // InspectRepoPermissions probes REPO_READ, REPO_WRITE, and REPO_ADMIN for the caller on the
