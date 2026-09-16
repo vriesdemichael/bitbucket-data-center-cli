@@ -32,7 +32,7 @@ gh attestation verify "bb_${VERSION}_linux_amd64.tar.gz" \
 ```
 
 ### C. Software Bill of Materials (SPDX 2.3 SBOM)
-Each archive has its own SBOM, generated from the binary inside it and named after the archive (`bb_${VERSION}_linux_amd64.spdx.json`). The `.deb` and `.rpm` install the `_noupdate` binary and are attested with its SBOM (`bb_${VERSION}_linux_amd64_noupdate.spdx.json`). Verify that the released archive is attested with its SBOM:
+Each archive has its own SBOM, generated from the binary inside it and named after the archive (`bb_${VERSION}_linux_amd64.spdx.json`). It lists the Go modules that binary links, the Go standard library it was linked with, and each module's licence. Dependencies differ by platform, so an SBOM describes one platform only. The `.deb` and `.rpm` install the `_noupdate` binary and are attested with its SBOM (`bb_${VERSION}_linux_amd64_noupdate.spdx.json`). Before a release is published, each SBOM is checked against the build information the Go linker wrote into its binary. Verify that the released archive is attested with its SBOM:
 
 ```bash
 VERSION="[[ bb_version ]]"

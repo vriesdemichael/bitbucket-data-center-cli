@@ -62,33 +62,45 @@ or regenerate all docs artifacts:
 task docs:generate
 ```
 
-## IDE integration for YAML policy files
+## Configuration file schema
 
-Add a schema comment at the top of a bulk policy YAML file:
+[config.schema.json](schemas/config.schema.json) describes every `bb`
+configuration file — the system one, a workspace `.bb/config.yaml`, and your own.
+It is what `bb doctor` checks a file against, so an editor validating from it
+reports the same keys `bb doctor` would.
+
+## IDE integration for YAML files
+
+Add a schema comment at the top of the file, and your editor validates as you
+type:
+
+```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/config.schema.json
+policies:
+  require_keyring: true
+  allowed_hosts:
+    - https://bitbucket.example.com
+```
+
+A relative reference works for local development, where the files sit beside
+each other:
+
+```yaml
+# yaml-language-server: $schema=../reference/schemas/config.schema.json
+```
+
+The bulk policy schema is used the same way, by a bulk policy file:
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/bulk-policy.schema.json
 apiVersion: bb.io/v1alpha1
-selector:
-  projectKey: TEST
-operations:
-  - type: repo.permission.user.grant
-    username: ci-bot
-    permission: REPO_WRITE
-```
-
-Equivalent repository-relative schema association is also valid for local development:
-
-```yaml
-# yaml-language-server: $schema=../reference/schemas/bulk-policy.schema.json
 ```
 
 ## Schema usage guidance
 
-- Use policy schema for authoring bulk policy YAML/JSON input files.
-- Use plan schema to validate reviewed plan artifacts produced by `bb bulk plan`.
-- Use apply-status schema to validate outputs from `bb bulk apply` and `bb bulk status`.
+- Use the configuration schema to author or validate a `bb` configuration file.
 - Use `bb <command> --describe` to get the schema for a command's `--json` data payload.
+- Use the bulk policy schema for authoring a `bb bulk` policy file, the plan schema to validate what `bb bulk plan` wrote, and the apply-status schema for `bb bulk apply` and `bb bulk status` output.
 
 ## The envelope, and the failure envelope
 

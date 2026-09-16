@@ -80,39 +80,17 @@ cosign verify-blob \
   sha256sums.txt
 ```
 
-Each archive carries its own bundle too, so you can verify an individual
-artifact the same way (`bb_linux_amd64.tar.gz.sigstore.json`), or use the
-build provenance attestation:
-
-```bash
-gh attestation verify bb_linux_amd64.tar.gz \
-  --repo vriesdemichael/bitbucket-data-center-cli
-```
+Each archive carries its own bundle too, so an individual artifact verifies the
+same way (`bb_linux_amd64.tar.gz.sigstore.json`), and every archive has its own
+attested SPDX 2.3 SBOM.
 
 The signing identity is pinned to the release workflow on `refs/heads/main`;
 `bb update` hard-fails on an identity mismatch rather than trusting release
 metadata.
 
-### Software Bill of Materials
-
-Every release archive has its own SPDX 2.3 SBOM, generated from the binary
-inside it: the Go modules that binary links, the Go standard library it was
-linked with, and each module's licence. The dependencies differ by platform, so
-each SBOM describes one platform only. It is named after its archive
-(`bb_linux_amd64.spdx.json` for `bb_linux_amd64.tar.gz`). The `.deb` and `.rpm`
-install the `_noupdate` binary, so they share its SBOM
-(`bb_linux_amd64_noupdate.spdx.json`). Before a release is published, each SBOM
-is checked against the build information the Go linker wrote into its binary.
-
-Each SBOM is signed and checksummed like every other artifact, and attested
-against every artifact it describes, so the link between the SBOM and the
-artifact is itself verifiable rather than asserted:
-
-```bash
-gh attestation verify bb_linux_amd64.tar.gz \
-  --repo vriesdemichael/bitbucket-data-center-cli \
-  --predicate-type https://spdx.dev/Document/v2.3
-```
+The full procedure — per-archive signatures, build provenance attestations, and
+verifying an SBOM against the artifact it describes — is written once, in
+[Release Verification](docs/site/advanced/enterprise-hardening.md#1-release-verification-pre-deployment).
 
 ## Credential handling
 
