@@ -128,10 +128,10 @@ func TestBranchValidationErrors(t *testing.T) {
 	server := newMockBranchServer(t)
 	deps := newTestDependencies(t, server.URL, false, false)
 
-	// A non-numeric restriction id is not refused here; it goes to the server
-	// and the server refuses it. That is live in
-	// TestLiveCLIBranchRestrictionLifecycle, which asks a real instance what it
-	// makes of "abc" -- the version here asked a stub whose default was 404.
+	// A non-numeric restriction id is not among these. The service refuses it
+	// before anything is sent, which its own tests cover, and
+	// TestLiveCLIBranchRestrictionLifecycle shows a real instance is left as it
+	// was -- the version here asked a stub whose default was 404.
 	cases := [][]string{
 		{"restriction", "create", "--type", "read-only", "--matcher-id", ""},
 		{"restriction", "create", "--type", "read-only", "--matcher-id", "main", "--access-key-id", "-1"},

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 
@@ -115,6 +116,9 @@ func (service *Service) GetRestriction(ctx context.Context, projectKey string, i
 	if trimmedID == "" {
 		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation, "restriction id is required", nil)
 	}
+	if err := checkRestrictionID(trimmedID); err != nil {
+		return openapigenerated.RestRefRestriction{}, err
+	}
 
 	response, err := service.client.GetRestrictionWithResponse(ctx, trimmedProject, trimmedID)
 	if err != nil {
@@ -155,12 +159,10 @@ func (service *Service) upsertRestriction(ctx context.Context, projectKey string
 		return service.createRestriction(ctx, trimmedProject, bodyEntry)
 	}
 
-	// Refused before anything is sent, as for a repository restriction (ADR-054):
-	// the id is a path segment, and a value that cannot name a restriction came
-	// back from the server as a not-found.
-	if _, err := strconv.Atoi(trimmedUpdateID); err != nil {
-		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation,
-			fmt.Sprintf("restriction id must be a number, got %q", trimmedUpdateID), nil)
+	// Refused before anything is sent, as for a repository restriction: a value
+	// that cannot name a restriction came back from the server as a not-found.
+	if err := checkRestrictionID(trimmedUpdateID); err != nil {
+		return openapigenerated.RestRefRestriction{}, err
 	}
 
 	// The same order as a repository restriction's update, for the same reason:
@@ -303,6 +305,9 @@ func (service *Service) DeleteRestriction(ctx context.Context, projectKey string
 	if trimmedID == "" {
 		return apperrors.New(apperrors.KindValidation, "restriction id is required", nil)
 	}
+	if err := checkRestrictionID(trimmedID); err != nil {
+		return err
+	}
 
 	response, err := service.client.DeleteRestrictionWithResponse(ctx, trimmedProject, trimmedID)
 	if err != nil {
@@ -310,6 +315,23 @@ func (service *Service) DeleteRestriction(ctx context.Context, projectKey string
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+// checkRestrictionID refuses an id Bitbucket cannot route, before anything is
+// sent (ADR-054).
+//
+// The id is a path segment, and one that is not a 32-bit integer never reaches
+// the restriction resource: Bitbucket answers 404 with an empty body under a
+// JSON content type. The generated client cannot decode that, so
+// `branch-restriction get PROJ abc` reported a transient failure -- exit 10, try
+// again -- for an id that can never name a restriction.
+func checkRestrictionID(id string) error {
+	if _, err := strconv.ParseInt(id, 10, 32); err != nil {
+		return apperrors.New(apperrors.KindValidation,
+			fmt.Sprintf("restriction id must be a number no larger than %d, got %q", math.MaxInt32, id), nil)
+	}
+
+	return nil
 }
 
 func normalizeProjectRestrictionType(value string) (openapigenerated.GetRestrictionsParamsType, error) {

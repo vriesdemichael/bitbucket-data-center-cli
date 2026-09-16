@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 
@@ -386,6 +387,9 @@ func (service *Service) GetRestriction(ctx context.Context, repo RepositoryRef, 
 	if trimmedID == "" {
 		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation, "restriction id is required", nil)
 	}
+	if err := checkRestrictionID(trimmedID); err != nil {
+		return openapigenerated.RestRefRestriction{}, err
+	}
 
 	response, err := service.client.GetRestriction1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID)
 	if err != nil {
@@ -417,13 +421,11 @@ func (service *Service) upsertRestriction(ctx context.Context, repo RepositoryRe
 
 	trimmedUpdateID := strings.TrimSpace(id)
 	if trimmedUpdateID != "" {
-		// The id is a path segment, so a value that cannot name a restriction is
-		// refused before anything is sent (ADR-054). `restriction update bad`
-		// reached the server and came back as a not-found, which reads like the
-		// restriction is gone rather than like the id was never an id.
-		if _, err := strconv.Atoi(trimmedUpdateID); err != nil {
-			return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation,
-				fmt.Sprintf("restriction id must be a number, got %q", trimmedUpdateID), nil)
+		// Refused before anything is sent. `restriction update bad` reached the
+		// server and came back as a not-found, which reads like the restriction
+		// is gone rather than like the id was never an id.
+		if err := checkRestrictionID(trimmedUpdateID); err != nil {
+			return openapigenerated.RestRefRestriction{}, err
 		}
 	}
 
@@ -516,6 +518,9 @@ func (service *Service) DeleteRestriction(ctx context.Context, repo RepositoryRe
 	if trimmedID == "" {
 		return apperrors.New(apperrors.KindValidation, "restriction id is required", nil)
 	}
+	if err := checkRestrictionID(trimmedID); err != nil {
+		return err
+	}
 
 	response, err := service.client.DeleteRestriction1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID)
 	if err != nil {
@@ -523,6 +528,23 @@ func (service *Service) DeleteRestriction(ctx context.Context, repo RepositoryRe
 	}
 
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
+}
+
+// checkRestrictionID refuses an id Bitbucket cannot route, before anything is
+// sent (ADR-054).
+//
+// The id is a path segment, and one that is not a 32-bit integer never reaches
+// the restriction resource: Bitbucket answers 404 with an empty body under a
+// JSON content type. The generated client cannot decode that, so `restriction
+// get abc` reported a transient failure -- exit 10, try again -- for an id that
+// can never name a restriction.
+func checkRestrictionID(id string) error {
+	if _, err := strconv.ParseInt(id, 10, 32); err != nil {
+		return apperrors.New(apperrors.KindValidation,
+			fmt.Sprintf("restriction id must be a number no larger than %d, got %q", math.MaxInt32, id), nil)
+	}
+
+	return nil
 }
 
 func validateRepositoryRef(repo RepositoryRef) error {

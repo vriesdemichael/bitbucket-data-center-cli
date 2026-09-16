@@ -57,6 +57,20 @@ func TestBranchServiceValidationAndHelpers(t *testing.T) {
 		t.Fatal("expected restriction id parse validation error")
 	}
 
+	// Ids Bitbucket does not route, which it answers with a 404 the generated
+	// client cannot decode. One past the largest 32-bit integer is one of them.
+	for _, id := range []string{"abc", "2147483648"} {
+		if _, err := service.GetRestriction(context.Background(), repo, id); !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Fatalf("GetRestriction(%q) = %v, want a validation error", id, err)
+		}
+		if err := service.DeleteRestriction(context.Background(), repo, id); !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Fatalf("DeleteRestriction(%q) = %v, want a validation error", id, err)
+		}
+		if _, err := service.UpdateRestriction(context.Background(), repo, id, RestrictionUpsertInput{Type: "read-only", MatcherID: "refs/heads/main"}); !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Fatalf("UpdateRestriction(%q) = %v, want a validation error", id, err)
+		}
+	}
+
 	if normalizeBranchRef("main") != "refs/heads/main" {
 		t.Fatal("expected normalizeBranchRef to add refs/heads prefix")
 	}
