@@ -138,6 +138,10 @@ func TestLiveCodeOwnersPatternSyntax(t *testing.T) {
 				"--from-ref", branch, "--to-ref", "refs/heads/master",
 				"--title", testCase.name, "--codeowners", "--no-default-reviewers")
 
+			// The stored pull request must hold the reviewers the create
+			// answered with, so the checks below are checks on what was kept.
+			governancePullRequestAsStored(t, output, testCase.name, branch, "master")
+
 			reviewers := decodeLivePRReviewers(t, decodeJSONMap(t, output))
 			for _, want := range testCase.want {
 				if !containsFold(reviewers, want) {
@@ -232,6 +236,10 @@ func TestLiveCodeOwnersOwnerSyntax(t *testing.T) {
 		output := mustLiveCLI(t, "pr", "create",
 			"--from-ref", branch, "--to-ref", "refs/heads/master",
 			"--title", "owners for "+directory, "--codeowners", "--no-default-reviewers")
+
+		// Read back, so what each subtest concludes about these reviewers holds
+		// for the stored pull request and not only for the create's answer.
+		governancePullRequestAsStored(t, output, "owners for "+directory, branch, "master")
 
 		return decodeLivePRReviewers(t, decodeJSONMap(t, output))
 	}

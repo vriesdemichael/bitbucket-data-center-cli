@@ -151,5 +151,6 @@ func TestLiveCodeOwnersEndpointContract(t *testing.T) {
 		if id, _ := extractPRData(decodeJSONMap(t, output))["id"].(float64); id == 0 {
 			t.Errorf("pr create with --codeowners did not report an id:\n%s", output)
 		}
+		governancePullRequestAsStored(t, output, "Opens with code owners on", "feature/still-works", "master")
 	})
 }
