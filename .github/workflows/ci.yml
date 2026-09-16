@@ -1,9 +1,10 @@
 name: CI
 
-# next is the v4 integration branch (issue #487). It is listed here because a
-# workflow that triggers only on main leaves the train branch ungated: a pull
-# request into next would report no checks at all, and CI Complete -- the one
-# required status -- would never appear.
+# next is the branch every change targets, whatever release is being built
+# towards (issue #487, ADR-066). It is listed here because a workflow that
+# triggers only on main leaves the train branch ungated: a pull request into
+# next would report no checks at all, and CI Complete -- the one required
+# status -- would never appear.
 on:
   pull_request:
     branches:
@@ -223,16 +224,17 @@ jobs:
       - name: Verify documented bb invocations are valid
         run: task docs:lint
 
+      # Reported, never enforced. A deprecation can sit on next for weeks before
+      # the major that removes it ships, and failing the build from the moment
+      # it is due would fail every unrelated pull request for the rest of the
+      # window.
+      - name: Report deprecations due for removal
+        run: go run ./tools/deprecation-check -annotate
+
       # The docs job builds the site from freshly generated artifacts, which
       # passes whether or not the committed copies match. Nothing in CI compared
       # the two, so a schema change with its regenerated files left uncommitted
       # went green.
-      # Reported, never enforced. A breaking change can land on next weeks
-      # before the major ships, and failing the build from that moment would
-      # fail every unrelated pull request for the rest of the window.
-      - name: Report deprecations due for removal
-        run: go run ./tools/deprecation-check -annotate
-
       - name: Verify committed generated docs artifacts are current
         run: task docs:verify-generated
 

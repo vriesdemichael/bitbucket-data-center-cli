@@ -32,7 +32,11 @@ vars:
   # take it, or raise it for a machine and a Bitbucket that can.
   LIVE_PARALLEL: '12'
   DOCS_PROJECT_DIR: docs
-  COVERAGE_BASE_REF: origin/main
+  # The branch a change is measured against, which is the branch it targets:
+  # everything targets next (ADR-066), and main is 140 commits behind it between
+  # promotions, so diffing against main read the whole train as one patch.
+  # Override it when working against another base.
+  COVERAGE_BASE_REF: origin/next
 
 tasks:
   default:
@@ -351,12 +355,11 @@ tasks:
 
   quality:coverage:
     desc: Run the combined (unit + live) global and patch coverage gates. Needs the stack up
-    # COVERAGE_BASE_REF is the branch the patch gate diffs against, and it is a
-    # variable because the answer stopped being "main" when next arrived:
-    # working on a branch off the v4 integration branch means
-    # COVERAGE_BASE_REF=origin/next, or the whole divergence reads as the patch.
+    # COVERAGE_BASE_REF is the branch the patch gate diffs against. It defaults
+    # to next, which is what every change targets; pass another when a branch is
+    # cut from somewhere else, or the whole divergence reads as the patch.
     cmds:
-      - git fetch origin main
+      - git fetch origin {{trimPrefix "origin/" .COVERAGE_BASE_REF}}
       - task: test:unit:coverage
       - task: test:live:coverage
       - go run ./tools/quality-report -coverprofile .tmp/coverage.unit.out -live-coverprofile .tmp/coverage.live.out -base-ref {{.COVERAGE_BASE_REF}} -min-global-combined {{.CI_COVERAGE_MIN_GLOBAL_COMBINED}} -min-patch {{.CI_COVERAGE_MIN_PATCH}} -min-patch-lines {{.CI_COVERAGE_MIN_PATCH_LINES}} -max-uncovered-small-patch {{.CI_COVERAGE_MAX_UNCOVERED_SMALL_PATCH}}
