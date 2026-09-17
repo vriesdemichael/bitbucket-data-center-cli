@@ -39,17 +39,19 @@ func TestLiveTopLevelBrowse(t *testing.T) {
 	}
 	// The URL has to name this repository on this host: a browse command that
 	// prints a plausible but wrong URL fails silently for the user, who lands on
-	// the wrong page rather than seeing an error.
-	if !strings.Contains(output, seeded.Key) || !strings.Contains(output, repo.Slug) {
-		t.Fatalf("expected the repository in the browse URL, got: %s", output)
+	// the wrong page rather than seeing an error. So the whole URL, since the key
+	// and slug can both appear in a URL that is not this repository's page.
+	repositoryURL := strings.TrimSuffix(harness.config.BitbucketURL, "/") + "/projects/" + seeded.Key + "/repos/" + repo.Slug
+	if got := strings.TrimSpace(output); got != repositoryURL {
+		t.Fatalf("browse printed %q, want %q", got, repositoryURL)
 	}
 
 	fileOutput, err := executeLiveCLI(t, "browse", "--no-browser", "seed.txt", "--repo", repoRef)
 	if err != nil {
 		t.Fatalf("browse of a path failed: %v\noutput: %s", err, fileOutput)
 	}
-	if !strings.Contains(fileOutput, "seed.txt") {
-		t.Fatalf("expected the path in the browse URL, got: %s", fileOutput)
+	if got, want := strings.TrimSpace(fileOutput), repositoryURL+"/browse/seed.txt"; got != want {
+		t.Fatalf("browse of seed.txt printed %q, want %q", got, want)
 	}
 }
 
@@ -67,7 +69,7 @@ func TestLiveTopLevelClone(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -92,6 +94,20 @@ func TestLiveTopLevelClone(t *testing.T) {
 	}
 	if strings.TrimSpace(headOutput) == "" {
 		t.Fatal("expected the clone to have a checked-out branch")
+	}
+
+	// The repository named, over the protocol asked for: its seeded commit is
+	// what is checked out, and origin is its HTTP clone URL.
+	if head, err := runGitCapture(cloneDir, "rev-parse", "HEAD"); err != nil || strings.TrimSpace(head) != repo.CommitIDs[0] {
+		t.Errorf("the clone is at %q (%v), want the seeded commit %s", strings.TrimSpace(head), err, repo.CommitIDs[0])
+	}
+	origin, err := runGitCapture(cloneDir, "remote", "get-url", "origin")
+	if err != nil {
+		t.Fatalf("reading the clone's origin failed: %v", err)
+	}
+	origin = strings.TrimSpace(origin)
+	if !strings.HasPrefix(origin, "http") || !strings.HasSuffix(strings.ToLower(origin), strings.ToLower("/scm/"+seeded.Key+"/"+repo.Slug+".git")) {
+		t.Errorf("the clone's origin is %q, want the HTTP clone URL of %s/%s", origin, seeded.Key, repo.Slug)
 	}
 }
 
@@ -145,8 +161,8 @@ func TestLiveAISkillLifecycle(t *testing.T) {
 	}
 	// What show prints and what install writes have to be the same document, or
 	// one of the two is describing a skill nobody has.
-	if strings.TrimSpace(string(contents)) == "" {
-		t.Fatalf("expected the installed skill to have content at %s", installedPath)
+	if strings.TrimSpace(string(contents)) != strings.TrimSpace(showOutput) {
+		t.Fatalf("the skill installed at %s (%d bytes) is not the document ai skill show prints (%d bytes)", installedPath, len(contents), len(showOutput))
 	}
 
 	removeOutput, err := executeLiveCLI(t, "ai", "skill", "remove", "--yes")

@@ -222,6 +222,14 @@ func TestLiveCLIExplicitRepoOverridesAmbiguousInference(t *testing.T) {
 		t.Fatalf("build upstream url: %v", err)
 	}
 
+	// The upstream is the one named, and it has a branch origin does not: both
+	// hold master, so a listing of origin, the remote an inference would reach
+	// for first, would otherwise pass for the listing asked for.
+	const targetBranch = "feature/explicit-target"
+	if err := harness.pushCommitOnBranch(seeded.Key, seeded.Repos[1].Slug, targetBranch, "target.txt"); err != nil {
+		t.Fatalf("push %s on the upstream failed: %v", targetBranch, err)
+	}
+
 	workingDirectory := t.TempDir()
 	if err := runGit(workingDirectory, "init"); err != nil {
 		t.Fatalf("git init failed: %v", err)
@@ -244,7 +252,7 @@ func TestLiveCLIExplicitRepoOverridesAmbiguousInference(t *testing.T) {
 		_ = os.Chdir(originalDirectory)
 	})
 
-	target := seeded.Key + "/" + seeded.Repos[0].Slug
+	target := seeded.Key + "/" + seeded.Repos[1].Slug
 	output, err := executeLiveCLI(t, "branch", "list", "--limit", "5", "--repo", target)
 	if err != nil {
 		t.Fatalf("expected explicit --repo to bypass ambiguity, got err=%v output=%s", err, output)
@@ -252,6 +260,9 @@ func TestLiveCLIExplicitRepoOverridesAmbiguousInference(t *testing.T) {
 
 	if strings.Contains(output, "ambiguous git remote context") {
 		t.Fatalf("did not expect ambiguity message when --repo is explicit, got: %s", output)
+	}
+	if !strings.Contains(output, targetBranch) {
+		t.Fatalf("the listing lacks %s, so it is not the branches of %s: %s", targetBranch, target, output)
 	}
 }
 

@@ -36,12 +36,29 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 	}
 
 	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// A user and a group, each holding a permission, so every listing has
+	// something in it. Empty listings are all equal, and a shallow spelling that
+	// lost --group would still have matched the deep group listing.
+	user, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create user failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, user.Username,
+		openapigenerated.SetPermissionForUserParamsPermissionREPOWRITE); err != nil {
+		t.Fatalf("grant the user repository write failed: %v", err)
+	}
+	assertMutatedRepoPermissionLevel(t, repoRef, false, user.Username, "REPO_WRITE")
+	mustLiveCLI(t, "repo", "settings", "security", "permissions", "groups", "grant", licensedGroup, "repo_read")
+	assertMutatedRepoPermissionLevel(t, repoRef, true, licensedGroup, "REPO_READ")
 
 	deepUserList, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "users", "list", "--limit", "100")
 	if err != nil {
 		t.Fatalf("deep users list failed: %v\noutput: %s", err, deepUserList)
 	}
+	assertAliasListing(t, "deep users listing", deepUserList, user.Username, licensedGroup)
 	shallowUserList, err := executeLiveCLI(t, "--json", "repo", "permissions", "list", "--limit", "100")
 	if err != nil {
 		t.Fatalf("shallow permissions list failed: %v\noutput: %s", err, shallowUserList)
@@ -54,6 +71,7 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("deep groups list failed: %v\noutput: %s", err, deepGroupList)
 	}
+	assertAliasListing(t, "deep groups listing", deepGroupList, licensedGroup, user.Username)
 	shallowGroupList, err := executeLiveCLI(t, "--json", "repo", "permissions", "list", "--group", "--limit", "100")
 	if err != nil {
 		t.Fatalf("shallow permissions list --group failed: %v\noutput: %s", err, shallowGroupList)
@@ -108,10 +126,24 @@ func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// The same reason as the repository twin: listings with nothing in them are
+	// equal whatever each spelling asked for.
+	user, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create user failed: %v", err)
+	}
+	if err := harness.grantProjectPermission(ctx, seeded.Key, user.Username, "PROJECT_READ"); err != nil {
+		t.Fatalf("grant the user project read failed: %v", err)
+	}
+	assertMutatedProjectPermissionLevel(t, seeded.Key, false, user.Username, "PROJECT_READ")
+	mustLiveCLI(t, "project", "permissions", "groups", "grant", seeded.Key, licensedGroup, "PROJECT_WRITE")
+	assertMutatedProjectPermissionLevel(t, seeded.Key, true, licensedGroup, "PROJECT_WRITE")
+
 	deepUserList, err := executeLiveCLI(t, "--json", "project", "permissions", "users", "list", seeded.Key, "--limit", "100")
 	if err != nil {
 		t.Fatalf("deep project users list failed: %v\noutput: %s", err, deepUserList)
 	}
+	assertAliasListing(t, "deep project users listing", deepUserList, user.Username, licensedGroup)
 	shallowUserList, err := executeLiveCLI(t, "--json", "project", "permissions", "list", seeded.Key, "--limit", "100")
 	if err != nil {
 		t.Fatalf("shallow project permissions list failed: %v\noutput: %s", err, shallowUserList)
@@ -124,6 +156,7 @@ func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("deep project groups list failed: %v\noutput: %s", err, deepGroupList)
 	}
+	assertAliasListing(t, "deep project groups listing", deepGroupList, licensedGroup, user.Username)
 	shallowGroupList, err := executeLiveCLI(t, "--json", "project", "permissions", "list", "--group", seeded.Key, "--limit", "100")
 	if err != nil {
 		t.Fatalf("shallow project permissions list --group failed: %v\noutput: %s", err, shallowGroupList)
@@ -154,6 +187,24 @@ func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 	}
 	if deepRevoke != shallowRevoke {
 		t.Fatalf("project permissions revoke --group diverged\ndeep:    %s\nshallow: %s", deepRevoke, shallowRevoke)
+	}
+}
+
+// assertAliasListing checks that a permission listing names holds and does not
+// name lacks: the user in a users listing and not the group, or the other way
+// about. Other entries may be there too -- a project's creator holds its admin
+// permission explicitly.
+func assertAliasListing(t *testing.T, listing, output, holds, lacks string) {
+	t.Helper()
+
+	entries, _ := decodeJSONMap(t, output)["entries"].([]any)
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		record, _ := entry.(map[string]any)
+		names = append(names, asString(record["name"]))
+	}
+	if !slices.Contains(names, holds) || slices.Contains(names, lacks) {
+		t.Fatalf("the %s names %v, want %s among them and not %s:\n%s", listing, names, holds, lacks, output)
 	}
 }
 
@@ -304,6 +355,16 @@ func TestLivePullRequestStatus(t *testing.T) {
 		approved, pending := ids[0], ids[1]
 		if output, err := executeLiveCLI(t, "--json", "pr", "review", "approve", approved); err != nil {
 			t.Fatalf("approve failed: %v\noutput: %s", err, output)
+		}
+
+		// What the section is narrowed on, read back from each pull request
+		// rather than inferred from the section: the reviewer the harness added,
+		// approved on one and not yet on the other.
+		for id, want := range map[string]string{approved: "APPROVED", pending: "UNAPPROVED"} {
+			participant, found := repoCLIReviewerIn(t, mustLiveCLI(t, "pr", "get", id), reviewer.Username)
+			if !found || participant["role"] != "REVIEWER" || participant["status"] != want {
+				t.Fatalf("%s is on pull request %s as %v, want a %s REVIEWER", reviewer.Username, id, participant, want)
+			}
 		}
 
 		output, err := executeLiveCLI(t, "--json", "pr", "status")

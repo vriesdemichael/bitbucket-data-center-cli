@@ -4,6 +4,7 @@ package live_test
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -17,13 +18,20 @@ func TestLiveCLIBrowseLifecycle(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2})
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// A commit on master that leaves seed.txt alone, so the history of seed.txt
+	// has one to leave out: both seeded commits change it, and a history that
+	// lost its path would list them just the same.
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", "other.txt", "not seed.txt\n"); err != nil {
+		t.Fatalf("push a commit that does not touch seed.txt failed: %v", err)
+	}
 
 	// Tree
 	treeOutput, err := executeLiveCLI(t, "repo", "browse", "tree", "--limit", "25")
@@ -80,5 +88,10 @@ func TestLiveCLIBrowseLifecycle(t *testing.T) {
 	// history should show commits that modified seed.txt
 	if !strings.Contains(historyOutput, "seed commit") {
 		t.Fatalf("expected history output content, got: %s", historyOutput)
+	}
+
+	// Exactly the two that did, newest first, and not the one after them.
+	if ids := listedCommitIDs(t, mustLiveCLI(t, "repo", "browse", "history", "seed.txt")); !slices.Equal(ids, repo.CommitIDs) {
+		t.Fatalf("the history of seed.txt lists %v, want the seeded commits %v", ids, repo.CommitIDs)
 	}
 }

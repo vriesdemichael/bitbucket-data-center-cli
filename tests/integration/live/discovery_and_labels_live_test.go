@@ -4,6 +4,7 @@ package live_test
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -26,7 +27,7 @@ func TestLiveSearchCommands(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedIsolatedProject(ctx, 1, 2)
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 3)
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -52,6 +53,14 @@ func TestLiveSearchCommands(t *testing.T) {
 	if !strings.Contains(reposOutput, repo.Slug) {
 		t.Fatalf("expected the seeded repository in search results, got: %s", reposOutput)
 	}
+	// And nothing the name does not match: a search that lost its query answers
+	// with the first page of every repository, which on a shared instance may
+	// hold this one too.
+	for _, slug := range commandCoverageFieldValues(t, reposOutput, "slug") {
+		if !strings.Contains(strings.ToLower(slug), strings.ToLower(repo.Slug)) {
+			t.Errorf("searching for %q found %q", repo.Slug, slug)
+		}
+	}
 
 	commitsOutput, err := executeLiveCLI(t, "--json", "search", "commits", "--repo", repoRef, "--limit", "10")
 	if err != nil {
@@ -69,31 +78,28 @@ func TestLiveSearchCommands(t *testing.T) {
 	// query parameter that is built wrong does not fail -- it comes back with
 	// the wrong commits, or with all of them.
 	t.Run("the commit filters narrow the answer", func(t *testing.T) {
-		// Not a skip on a short history: the repository is seeded with two
-		// commits, so fewer than two is a broken fixture rather than a reason
-		// to pass. A test that can skip itself passes whether or not the
-		// command works, which is what command-reach refuses to count.
+		// Not a skip on a short history: the repository is seeded with three
+		// commits, so fewer is a broken fixture rather than a reason to pass. A
+		// test that can skip itself passes whether or not the command works,
+		// which is what command-reach refuses to count.
 		commits, err := harness.listCommitIDs(ctx, seeded.Key, repo.Slug, 10)
 		if err != nil {
 			t.Fatalf("list commit ids failed: %v", err)
 		}
-		if len(commits) < 2 {
-			t.Fatalf("the seeded repository has %d commits, want at least two to bound a range", len(commits))
+		if len(commits) != 3 {
+			t.Fatalf("the seeded repository has %d commits, want three to bound a range inside", len(commits))
 		}
-		newest, oldest := commits[0], commits[len(commits)-1]
+		newest, middle, oldest := commits[0], commits[1], commits[2]
 
-		// since is exclusive and until inclusive, so the range excludes the
-		// commit it starts from.
+		// since is exclusive and until inclusive, so the range from the oldest
+		// to the middle one holds the middle one alone. Neither end is where the
+		// listing would stop without it: without --since the oldest is in too,
+		// and without --until the newest.
 		ranged := mustLiveCLI(t, "search", "commits", "--repo", repoRef,
-			"--since", oldest, "--until", newest, "--limit", "50")
-		bounded, _ := decodeJSONMap(t, ranged)["commits"].([]any)
-
-		all := mustLiveCLI(t, "search", "commits", "--repo", repoRef, "--limit", "50")
-		everything, _ := decodeJSONMap(t, all)["commits"].([]any)
-
-		if len(bounded) >= len(everything) {
-			t.Errorf("--since/--until returned %d of %d commits, so the range was not applied:\n%s",
-				len(bounded), len(everything), ranged)
+			"--since", oldest, "--until", middle, "--limit", "50")
+		if ids := listedCommitIDs(t, ranged); !slices.Equal(ids, []string{middle}) {
+			t.Errorf("--since %s --until %s returned %v, want [%s] (the newest is %s):\n%s",
+				oldest, middle, ids, middle, newest, ranged)
 		}
 
 		// A path nothing touches, so the filter has something to exclude.
@@ -113,6 +119,23 @@ func TestLiveSearchCommands(t *testing.T) {
 	if !strings.Contains(prsOutput, "pullRequests") {
 		t.Fatalf("expected a pull_requests payload, got: %s", prsOutput)
 	}
+}
+
+// listedCommitIDs reads the ids of a commit listing, in the order it lists them.
+func listedCommitIDs(t *testing.T, output string) []string {
+	t.Helper()
+
+	commits, ok := decodeJSONMap(t, output)["commits"].([]any)
+	if !ok {
+		t.Fatalf("no commits in the listing:\n%s", output)
+	}
+	ids := make([]string, 0, len(commits))
+	for _, entry := range commits {
+		commit, _ := entry.(map[string]any)
+		ids = append(ids, asString(commit["id"]))
+	}
+
+	return ids
 }
 
 // TestLiveRepoLabelAndWatchLifecycle covers repo label add, list and remove
