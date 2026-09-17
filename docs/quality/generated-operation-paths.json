@@ -582,6 +582,10 @@
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/webhooks/%s"
     },
+    "ListParticipants": {
+      "method": "GET",
+      "path": "/api/latest/projects/%s/repos/%s/pull-requests/%s/participants"
+    },
     "React1": {
       "method": "PUT",
       "path": "/comment-likes/latest/projects/%s/repos/%s/pull-requests/%s/comments/%s/reactions/%s"
