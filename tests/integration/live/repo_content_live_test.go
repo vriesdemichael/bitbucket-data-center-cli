@@ -275,10 +275,16 @@ func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
 	}
 	assertMatcherID(t, stored, "sourceMatcher", "refs/heads/feature/*")
 	assertMatcherID(t, stored, "targetMatcher", "refs/heads/master")
+	// The kinds bb inferred from the refs and sent: a glob as a pattern, a
+	// branch as a branch, and no ref as any.
+	assertMatcherType(t, stored, "sourceMatcher", "PATTERN")
+	assertMatcherType(t, stored, "targetMatcher", "BRANCH")
 	if anyRefID, ok := numericOrStringID(anyRefData["id"]); ok {
 		anyRef := repoContentDefaultTask(t, repoRef, anyRefID)
 		assertMatcherID(t, anyRef, "sourceMatcher", "ANY_REF_MATCHER_ID")
 		assertMatcherID(t, anyRef, "targetMatcher", "ANY_REF_MATCHER_ID")
+		assertMatcherType(t, anyRef, "sourceMatcher", "ANY_REF")
+		assertMatcherType(t, anyRef, "targetMatcher", "ANY_REF")
 	}
 
 	if _, err := executeLiveCLI(t, "--json", "repo", "default-task", "update", taskID,
@@ -293,6 +299,8 @@ func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
 	}
 	assertMatcherID(t, updated, "sourceMatcher", "refs/heads/feature/*")
 	assertMatcherID(t, updated, "targetMatcher", "refs/heads/master")
+	assertMatcherType(t, updated, "sourceMatcher", "PATTERN")
+	assertMatcherType(t, updated, "targetMatcher", "BRANCH")
 
 	if _, err := executeLiveCLI(t, "--json", "repo", "default-task", "delete", taskID, "--repo", repoRef, "--yes"); err != nil {
 		t.Fatalf("repo default-task delete failed: %v", err)
@@ -323,10 +331,9 @@ func repoContentDefaultTask(t *testing.T, repoRef, id string) map[string]any {
 	return task
 }
 
-// assertMatcherID checks the id of a matcher on a default-task payload. The id
-// is the only part of the matcher bb surfaces, and it is enough: the server
-// rewrites an any-ref matcher's id to ANY_REF_MATCHER_ID, so seeing it back
-// proves the ANY_REF type was accepted rather than merely echoed.
+// assertMatcherID checks the id of a matcher on a default-task payload. The
+// server rewrites an any-ref matcher's id to ANY_REF_MATCHER_ID, so seeing it
+// back proves the ANY_REF type was accepted rather than merely echoed.
 func assertMatcherID(t *testing.T, payload map[string]any, field string, want string) {
 	t.Helper()
 	matcher, ok := payload[field].(map[string]any)
@@ -335,5 +342,17 @@ func assertMatcherID(t *testing.T, payload map[string]any, field string, want st
 	}
 	if got := asString(matcher["id"]); got != want {
 		t.Fatalf("%s id = %q, want %q", field, got, want)
+	}
+}
+
+// assertMatcherType checks the kind of a matcher on a default-task payload.
+func assertMatcherType(t *testing.T, payload map[string]any, field string, want string) {
+	t.Helper()
+	matcher, ok := payload[field].(map[string]any)
+	if !ok {
+		t.Fatalf("expected a %s in the payload, got: %v", field, payload)
+	}
+	if got := asString(matcher["type"]); got != want {
+		t.Errorf("%s type = %q, want %q", field, got, want)
 	}
 }

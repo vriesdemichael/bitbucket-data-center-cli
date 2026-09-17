@@ -1095,10 +1095,10 @@ type mutatedDefaultTask struct {
 	target, targetKind string
 }
 
-// assertMutatedDefaultTask reads a default task back twice. bb's listing gives
-// the description and the refs. The matcher kinds come from Bitbucket directly,
-// because bb's output leaves them out -- and a kind is not a detail: a BRANCH
-// matcher on feature/* matches only a branch called exactly that.
+// assertMutatedDefaultTask reads a default task back twice: through bb's
+// listing, and the matcher kinds again from Bitbucket directly. A kind is not a
+// detail -- a BRANCH matcher on feature/* matches only a branch called exactly
+// that -- and bb's listing left it out until it was checked here.
 func assertMutatedDefaultTask(t *testing.T, harness *liveHarness, listing, restPath, id string, want mutatedDefaultTask) {
 	t.Helper()
 
@@ -1115,6 +1115,9 @@ func assertMutatedDefaultTask(t *testing.T, harness *liveHarness, listing, restP
 	if task["description"] != want.description || source["displayId"] != want.source || target["displayId"] != want.target {
 		t.Errorf("default task %s is %q from %v to %v, want %q from %s to %s",
 			id, task["description"], source["displayId"], target["displayId"], want.description, want.source, want.target)
+	}
+	if source["type"] != want.sourceKind || target["type"] != want.targetKind {
+		t.Errorf("bb lists default task %s as matching %v to %v, want %s to %s", id, source["type"], target["type"], want.sourceKind, want.targetKind)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

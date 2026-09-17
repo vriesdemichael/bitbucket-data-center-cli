@@ -7,9 +7,9 @@ package result
 // which is the value a caller matches on, because publishing an object whose
 // two fields are the same fact twice makes a consumer choose between them.
 //
-// Shared across the rules that use one: default reviewer conditions, required
-// build checks and branch restrictions. Each had its own copy, which is how
-// three descriptions of one Bitbucket object come to disagree.
+// Shared across the rules that use one: default reviewer conditions, default
+// tasks, required build checks and branch restrictions. Each had its own copy,
+// which is how several descriptions of one Bitbucket object come to disagree.
 type RefMatcher struct {
 	ID        string `json:"id,omitempty" jsonschema:"Matcher value: a branch name, a pattern, or a model branch id depending on type."`
 	DisplayID string `json:"displayId,omitempty" jsonschema:"Human-readable form of the same thing."`

@@ -191,9 +191,10 @@ func init() {
 	result.Declare("project branch-restriction update", result.For[SingleRestriction](singleRestrictionEnums))
 	result.Declare("project branch-restriction delete", result.For[RestrictionDeletion](nil))
 
-	result.Declare("project default-task list", result.List[result.DefaultTask](nil))
-	result.Declare("project default-task add", result.For[result.DefaultTask](nil))
-	result.Declare("project default-task update", result.For[result.DefaultTask](nil))
+	taskMatchers := map[string][]string{"sourceMatcher.type": result.RefMatcherTypes, "targetMatcher.type": result.RefMatcherTypes}
+	result.Declare("project default-task list", result.List[result.DefaultTask](taskMatchers))
+	result.Declare("project default-task add", result.For[result.DefaultTask](taskMatchers))
+	result.Declare("project default-task update", result.For[result.DefaultTask](taskMatchers))
 	result.Declare("project default-task delete", result.For[DefaultTaskDeletion](nil))
 
 	result.Declare("project webhook list", result.For[Webhooks](nil))
@@ -273,17 +274,21 @@ func defaultTaskFrom(upstream projectservice.DefaultTask) result.DefaultTask {
 	if upstream.Id != nil {
 		converted.ID = *upstream.Id
 	}
-	if upstream.SourceMatcher != nil {
-		converted.SourceMatcher = result.DefaultTaskMatcher{
-			ID:        safederef.String(upstream.SourceMatcher.Id),
-			DisplayID: safederef.String(upstream.SourceMatcher.DisplayId),
-		}
+	converted.SourceMatcher = defaultTaskMatcherFrom(upstream.SourceMatcher)
+	converted.TargetMatcher = defaultTaskMatcherFrom(upstream.TargetMatcher)
+
+	return converted
+}
+
+// defaultTaskMatcherFrom converts one matcher of a default task, flattening its
+// type to the id; nil stays the zero matcher.
+func defaultTaskMatcherFrom(upstream *projectservice.DefaultTaskMatcher) result.RefMatcher {
+	if upstream == nil {
+		return result.RefMatcher{}
 	}
-	if upstream.TargetMatcher != nil {
-		converted.TargetMatcher = result.DefaultTaskMatcher{
-			ID:        safederef.String(upstream.TargetMatcher.Id),
-			DisplayID: safederef.String(upstream.TargetMatcher.DisplayId),
-		}
+	converted := result.RefMatcher{ID: safederef.String(upstream.Id), DisplayID: safederef.String(upstream.DisplayId)}
+	if upstream.Type != nil {
+		converted.Type = safederef.String(upstream.Type.Id)
 	}
 
 	return converted

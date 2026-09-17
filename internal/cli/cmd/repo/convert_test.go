@@ -227,14 +227,16 @@ func TestDefaultTaskFromFlattensBothMatchers(t *testing.T) {
 
 	id := int64(9)
 	description := "check the changelog"
-	sourceID, sourceDisplay := "refs/heads/feature/*", "feature/*"
-	targetID, targetDisplay := "refs/heads/main", "main"
+	sourceID, sourceDisplay, sourceType := "refs/heads/feature/*", "feature/*", "PATTERN"
+	targetID, targetDisplay, targetType := "refs/heads/main", "main", "BRANCH"
 
 	converted := defaultTaskFrom(reposettings.DefaultTask{
-		Id:            &id,
-		Description:   &description,
-		SourceMatcher: &reposettings.DefaultTaskMatcher{Id: &sourceID, DisplayId: &sourceDisplay},
-		TargetMatcher: &reposettings.DefaultTaskMatcher{Id: &targetID, DisplayId: &targetDisplay},
+		Id:          &id,
+		Description: &description,
+		SourceMatcher: &reposettings.DefaultTaskMatcher{Id: &sourceID, DisplayId: &sourceDisplay,
+			Type: &reposettings.DefaultTaskMatcherType{Id: &sourceType}},
+		TargetMatcher: &reposettings.DefaultTaskMatcher{Id: &targetID, DisplayId: &targetDisplay,
+			Type: &reposettings.DefaultTaskMatcherType{Id: &targetType}},
 	})
 
 	if converted.ID != 9 || converted.Description != description {
@@ -242,6 +244,10 @@ func TestDefaultTaskFromFlattensBothMatchers(t *testing.T) {
 	}
 	if converted.SourceMatcher.ID != sourceID || converted.TargetMatcher.DisplayID != targetDisplay {
 		t.Fatalf("matchers = %+v / %+v", converted.SourceMatcher, converted.TargetMatcher)
+	}
+	// The kind flattened to its id, as every other matcher bb prints.
+	if converted.SourceMatcher.Type != sourceType || converted.TargetMatcher.Type != targetType {
+		t.Fatalf("matcher types = %q / %q, want %s / %s", converted.SourceMatcher.Type, converted.TargetMatcher.Type, sourceType, targetType)
 	}
 
 	if value := defaultTaskValue(nil); value.ID != 0 {

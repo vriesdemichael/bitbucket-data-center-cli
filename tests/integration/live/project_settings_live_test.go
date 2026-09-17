@@ -67,13 +67,15 @@ func TestLiveProjectDefaultTaskLifecycle(t *testing.T) {
 		t.Fatalf("expected the added task in the listing, got: %s", listOutput)
 	}
 
-	// bb's listing carries each matcher's id but not its type, which bb
-	// inferred from the ref and sent -- a glob as a pattern, anything else as a
-	// branch. The type is read from Bitbucket's own listing instead.
+	// Each matcher's type is the kind bb inferred from the ref and sent -- a glob
+	// as a pattern, anything else as a branch. Read from bb's listing, which
+	// is how a caller sees it, and from Bitbucket's own, which is what it holds.
 	rawTasks := "/rest/default-tasks/latest/projects/" + seeded.Key + "/tasks"
 	listed := projectDefaultTasksByID(t, listOutput)
 	assertProjectDefaultTask(t, listed, taskID, "live suite project task", "refs/heads/feature/*", "refs/heads/master")
 	assertProjectDefaultTask(t, listed, anyRefID, "live suite project any-ref task", "ANY_REF_MATCHER_ID", "ANY_REF_MATCHER_ID")
+	assertProjectDefaultTaskMatcherTypes(t, listed, taskID, "PATTERN", "BRANCH")
+	assertProjectDefaultTaskMatcherTypes(t, listed, anyRefID, "ANY_REF", "ANY_REF")
 	stored := rawProjectDefaultTasksByID(t, mustLiveCLI(t, "api", rawTasks))
 	assertProjectDefaultTaskMatcherTypes(t, stored, taskID, "PATTERN", "BRANCH")
 	assertProjectDefaultTaskMatcherTypes(t, stored, anyRefID, "ANY_REF", "ANY_REF")
@@ -107,8 +109,9 @@ func TestLiveProjectDefaultTaskLifecycle(t *testing.T) {
 	assertProjectDefaultTask(t, afterDelete, anyRefID, "live suite project any-ref task", "ANY_REF_MATCHER_ID", "ANY_REF_MATCHER_ID")
 }
 
-// projectDefaultTaskEntry is one default task as a listing reports it: bb's,
-// which leaves the matcher types out, or Bitbucket's own, which has them.
+// projectDefaultTaskEntry is one default task as bb lists it, each matcher's
+// kind flattened to its id. Bitbucket's own listing nests the kind, and is
+// flattened into this shape when it is read.
 type projectDefaultTaskEntry struct {
 	ID            int64                     `json:"id"`
 	Description   string                    `json:"description"`
@@ -117,6 +120,12 @@ type projectDefaultTaskEntry struct {
 }
 
 type projectDefaultTaskMatcher struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+}
+
+// rawProjectDefaultTaskMatcher is a matcher as Bitbucket returns it.
+type rawProjectDefaultTaskMatcher struct {
 	ID   string `json:"id"`
 	Type struct {
 		ID string `json:"id"`
@@ -141,13 +150,27 @@ func rawProjectDefaultTasksByID(t *testing.T, output string) map[string]projectD
 	t.Helper()
 
 	var page struct {
-		Values []projectDefaultTaskEntry `json:"values"`
+		Values []struct {
+			ID            int64                        `json:"id"`
+			Description   string                       `json:"description"`
+			SourceMatcher rawProjectDefaultTaskMatcher `json:"sourceMatcher"`
+			TargetMatcher rawProjectDefaultTaskMatcher `json:"targetMatcher"`
+		} `json:"values"`
 	}
 	if err := decodeJSONEnvelopeData(output, &page); err != nil {
 		t.Fatalf("the default-task endpoint returned invalid JSON: %v\n%s", err, output)
 	}
 
-	return indexProjectDefaultTasks(page.Values)
+	tasks := make([]projectDefaultTaskEntry, 0, len(page.Values))
+	for _, task := range page.Values {
+		tasks = append(tasks, projectDefaultTaskEntry{
+			ID: task.ID, Description: task.Description,
+			SourceMatcher: projectDefaultTaskMatcher{ID: task.SourceMatcher.ID, Type: task.SourceMatcher.Type.ID},
+			TargetMatcher: projectDefaultTaskMatcher{ID: task.TargetMatcher.ID, Type: task.TargetMatcher.Type.ID},
+		})
+	}
+
+	return indexProjectDefaultTasks(tasks)
 }
 
 func indexProjectDefaultTasks(tasks []projectDefaultTaskEntry) map[string]projectDefaultTaskEntry {
@@ -179,8 +202,8 @@ func assertProjectDefaultTaskMatcherTypes(t *testing.T, tasks map[string]project
 	if !found {
 		t.Fatalf("task %s is not in Bitbucket's listing: %+v", id, tasks)
 	}
-	if task.SourceMatcher.Type.ID != source || task.TargetMatcher.Type.ID != target {
-		t.Errorf("task %s matches %s to %s, want %s to %s", id, task.SourceMatcher.Type.ID, task.TargetMatcher.Type.ID, source, target)
+	if task.SourceMatcher.Type != source || task.TargetMatcher.Type != target {
+		t.Errorf("task %s matches %s to %s, want %s to %s", id, task.SourceMatcher.Type, task.TargetMatcher.Type, source, target)
 	}
 }
 

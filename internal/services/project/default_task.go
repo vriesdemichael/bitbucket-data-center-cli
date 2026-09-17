@@ -19,8 +19,15 @@ type DefaultTask struct {
 }
 
 type DefaultTaskMatcher struct {
-	Id        *string `json:"id,omitempty"`
-	DisplayId *string `json:"displayId,omitempty"`
+	Id        *string                 `json:"id,omitempty"`
+	DisplayId *string                 `json:"displayId,omitempty"`
+	Type      *DefaultTaskMatcherType `json:"type,omitempty"`
+}
+
+// DefaultTaskMatcherType is the kind of ref a matcher reads its id as: ANY_REF,
+// BRANCH or PATTERN.
+type DefaultTaskMatcherType struct {
+	Id *string `json:"id,omitempty"`
 }
 
 func (service *Service) ListDefaultTasks(ctx context.Context, projectKey string) ([]DefaultTask, error) {
