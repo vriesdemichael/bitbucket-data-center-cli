@@ -64,7 +64,7 @@ func TestLiveErrorTaxonomy409Conflict(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -72,11 +72,17 @@ func TestLiveErrorTaxonomy409Conflict(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	branchName := "feature/dup-test"
+	// The older of the two seeded commits, where master is not: a create that
+	// dropped its start point would put the branch at master's tip.
+	startPoint := repo.CommitIDs[1]
 
 	// Create branch first time -> must succeed
-	createOutput, createErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", "refs/heads/master")
+	createOutput, createErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", startPoint)
 	if createErr != nil {
 		t.Fatalf("initial branch create failed: %v\noutput: %s", createErr, createOutput)
+	}
+	if tip := mutatedBranchTip(t, branchName); tip != startPoint {
+		t.Fatalf("branch %s was created at %s, want its start point %s", branchName, tip, startPoint)
 	}
 
 	// A second create is a conflict, and exit 5 is the only right answer.
@@ -96,6 +102,10 @@ func TestLiveErrorTaxonomy409Conflict(t *testing.T) {
 	}
 	if !strings.Contains(strings.ToLower(dupOutput+dupErr.Error()), "already exists") && !strings.Contains(strings.ToLower(dupOutput+dupErr.Error()), "conflict") {
 		t.Fatalf("expected error message to mention existing branch or conflict, got: %s", dupOutput)
+	}
+	// The refused create names master, so a branch it had moved would be there.
+	if tip := mutatedBranchTip(t, branchName); tip != startPoint {
+		t.Errorf("the refused create moved branch %s from %s to %s", branchName, startPoint, tip)
 	}
 }
 
@@ -284,7 +294,7 @@ func TestLiveJiraIssuesOnARealPullRequest(t *testing.T) {
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "jira.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
-	prID := createLivePRForRegression(t, branch, "No linked issues", "--no-default-reviewers", "--no-codeowners")
+	prID := createLifecyclePR(t, branch, "No linked issues", "--no-default-reviewers", "--no-codeowners")
 
 	output, err := executeLiveCLI(t, "pr", "jira", prID)
 	if err != nil {
