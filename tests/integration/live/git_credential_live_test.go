@@ -193,7 +193,7 @@ func TestLiveRepoCloneLeavesNoCredentialBehind(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	seeded, err := harness.seedRepo(ctx, repoSeed{WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
@@ -207,6 +207,16 @@ func TestLiveRepoCloneLeavesNoCredentialBehind(t *testing.T) {
 	output, err := executeLiveCLI(t, "repo", "clone", seeded.Key+"/"+repo.Slug, cloneDir)
 	if err != nil {
 		t.Fatalf("repo clone failed: %v\noutput: %s", err, output)
+	}
+
+	// The repository named is the one cloned: every seeded commit is unique to
+	// its repository.
+	head, err := runGitCapture(cloneDir, "rev-parse", "HEAD")
+	if err != nil {
+		t.Fatalf("read the clone's HEAD: %v", err)
+	}
+	if strings.TrimSpace(head) != repo.CommitIDs[0] {
+		t.Errorf("the clone's HEAD is %s, want %s/%s's commit %s", strings.TrimSpace(head), seeded.Key, repo.Slug, repo.CommitIDs[0])
 	}
 
 	configBytes, err := os.ReadFile(filepath.Join(cloneDir, ".git", "config"))

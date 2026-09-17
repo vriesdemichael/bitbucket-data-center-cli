@@ -35,6 +35,10 @@ func TestLiveEnterprisePolicyAllowedHosts(t *testing.T) {
 	}
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	// A second project, so the listing capped at one below has one to leave out.
+	if _, err := harness.seedRepo(ctx, repoSeed{}); err != nil {
+		t.Fatalf("seed a second project failed: %v", err)
+	}
 
 	tempDir := t.TempDir()
 	policyPath := filepath.Join(tempDir, "policy.yaml")
@@ -49,6 +53,13 @@ func TestLiveEnterprisePolicyAllowedHosts(t *testing.T) {
 	output, err := executeLiveCLI(t, "--json", "project", "list", "--limit", "1")
 	if err != nil {
 		t.Fatalf("expected allowed host to succeed against live server, got error: %v\noutput: %s", err, output)
+	}
+	var listed struct {
+		Projects []map[string]any `json:"projects"`
+	}
+	decodeJSONData(t, output, &listed)
+	if len(listed.Projects) != 1 {
+		t.Errorf("project list --limit 1 answered %d projects: %s", len(listed.Projects), output)
 	}
 
 	// 2. Machine policy excludes live harness host: command must be rejected with KindAuthorization
@@ -120,6 +131,11 @@ func TestLiveWorkspaceConfigResolution(t *testing.T) {
 	}
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	// A repository in another project, which the --project filter below has to
+	// leave out.
+	if _, err := harness.seedRepo(ctx, repoSeed{}); err != nil {
+		t.Fatalf("seed another project failed: %v", err)
+	}
 
 	tempDir := t.TempDir()
 	wsPath := filepath.Join(tempDir, "config.yaml")
@@ -146,6 +162,14 @@ func TestLiveWorkspaceConfigResolution(t *testing.T) {
 	}
 	if !strings.Contains(output, repo.Slug) {
 		t.Fatalf("expected repo slug in live output: %s", output)
+	}
+	var listed []struct {
+		ProjectKey string `json:"projectKey"`
+		Slug       string `json:"slug"`
+	}
+	decodeJSONData(t, output, &listed)
+	if len(listed) != 1 || listed[0].ProjectKey != seeded.Key || listed[0].Slug != repo.Slug {
+		t.Fatalf("repo list --project %s = %+v, want only %s/%s", seeded.Key, listed, seeded.Key, repo.Slug)
 	}
 }
 
@@ -337,6 +361,12 @@ func TestLiveEnterprisePolicyRawAPIEscapeHatch(t *testing.T) {
 	}
 	if !strings.Contains(output, seeded.Key) {
 		t.Fatalf("expected live project key in api output: %s", output)
+	}
+	var project struct {
+		Key string `json:"key"`
+	}
+	if err := json.Unmarshal([]byte(output), &project); err != nil || project.Key != seeded.Key {
+		t.Fatalf("bb api answered project %q, want %s (%v): %s", project.Key, seeded.Key, err, output)
 	}
 
 	// 2. Disallowed host: bb api is rejected with KindAuthorization before reaching network
