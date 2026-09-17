@@ -13,7 +13,7 @@ type Group struct {
 	Description string        `json:"description,omitempty" jsonschema:"Description, when one was given."`
 	AvatarURL   string        `json:"avatarUrl,omitempty" jsonschema:"Group avatar, when one is configured."`
 	Scope       string        `json:"scope,omitempty" jsonschema:"PROJECT when the group is defined on the project, REPOSITORY when on the repository itself."`
-	Users       []result.User `json:"users,omitempty" jsonschema:"Members, when the endpoint returned them. Absent is not the same as an empty group: bb reviewer-group users answers that question directly."`
+	Users       []result.User `json:"users,omitempty" jsonschema:"Every member, whether or not they can see the repository, when the endpoint returned them. Absent is not the same as an empty group."`
 }
 
 // Groups is what `bb reviewer-group list` returns.
@@ -23,7 +23,7 @@ type Groups struct {
 
 // Users is what `bb reviewer-group users` returns.
 type Users struct {
-	Users []result.User `json:"users" jsonschema:"Members of the group. Empty rather than absent when the group has none."`
+	Users []result.User `json:"users" jsonschema:"The members who can see the repository. Bitbucket leaves out a member without access to it, so this is empty for a group whose members all lack access; bb reviewer-group list names every member."`
 }
 
 // Deletion is what `bb reviewer-group delete` reports.

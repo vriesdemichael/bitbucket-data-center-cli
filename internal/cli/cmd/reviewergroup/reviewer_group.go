@@ -558,8 +558,11 @@ func New(deps Dependencies) *cobra.Command {
 
 	usersCmd := &cobra.Command{
 		Use:   "users <id>",
-		Short: "List users in a repository reviewer group",
-		Args:  cobra.ExactArgs(1),
+		Short: "List the members of a repository reviewer group who can see the repository",
+		Long: "List the members of a repository reviewer group who can see the repository.\n\n" +
+			"Bitbucket leaves out a member without access to the repository, whom it still keeps in the group. " +
+			"bb reviewer-group list names every member.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" {
 				return apperrors.New(apperrors.KindValidation, "users command is only supported at repository scope (use --repo instead of --project)", nil)

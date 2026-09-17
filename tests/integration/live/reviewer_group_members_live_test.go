@@ -116,6 +116,33 @@ func TestLiveReviewerGroupMembership(t *testing.T) {
 		}
 	})
 
+	// users answers from the repository's side: a member who cannot see it is
+	// kept in the group and left out of the listing. The group listing names
+	// every member, which is what the help of both commands says.
+	t.Run("users leaves out a member who cannot see the repository", func(t *testing.T) {
+		outsider, err := harness.createLicensedUser(ctx)
+		if err != nil {
+			t.Fatalf("create the member without access failed: %v", err)
+		}
+		if held := governanceHeldPermission(t, mustLiveCLI(t, "project", "permissions", "users", "list", seeded.Key), outsider.Username); held != "" {
+			t.Fatalf("%s holds %q on the project, want nothing", outsider.Username, held)
+		}
+		if held := governanceHeldPermission(t, repoGrants, outsider.Username); held != "" {
+			t.Fatalf("%s holds %q on the repository, want nothing", outsider.Username, held)
+		}
+
+		output := mustLiveCLI(t, "reviewer-group", "create", "qa-outsider",
+			"--repo", repoRef, "--users", first.Username+","+outsider.Username)
+		groupID := fmt.Sprintf("%d", int64(decodeJSONMap(t, output)["id"].(float64)))
+
+		if got := membersOf(t, groupID); len(got) != 1 || !containsFold(got, first.Username) {
+			t.Errorf("users lists %v, want only %s, the member who can see the repository", got, first.Username)
+		}
+		if stored := governanceUserNames(listedGroup(t, groupID)["users"]); !governanceSameNames(stored, []string{first.Username, outsider.Username}) {
+			t.Errorf("the group holds %v, want %s and %s", stored, first.Username, outsider.Username)
+		}
+	})
+
 	t.Run("update replaces the membership", func(t *testing.T) {
 		output := mustLiveCLI(t, "reviewer-group", "create", "qa-replace",
 			"--repo", repoRef, "--users", first.Username)

@@ -10877,7 +10877,7 @@ Available Commands:
   delete      Delete a reviewer group
   list        List reviewer groups
   update      Update a reviewer group
-  users       List users in a repository reviewer group
+  users       List the members of a repository reviewer group who can see the repository
 
 Flags:
       --project string   Project key
@@ -11057,10 +11057,12 @@ Flags:
 
 ## `bb reviewer-group users`
 
-List users in a repository reviewer group
+List the members of a repository reviewer group who can see the repository
 
 ```text
-List users in a repository reviewer group
+List the members of a repository reviewer group who can see the repository.
+
+Bitbucket leaves out a member without access to the repository, whom it still keeps in the group. bb reviewer-group list names every member.
 
 Usage:
   bb reviewer-group users <id> [flags]
