@@ -43,6 +43,13 @@ func TestLiveMCPServeIsNotScopedByTheDirectoryItStartsIn(t *testing.T) {
 	}
 	inside, sibling := seeded.Repos[0], seeded.Repos[1]
 
+	// A branch only the sibling has, so its listing cannot be mistaken for the
+	// listing of the repository the server starts inside: both have master.
+	const siblingBranch = "feature/sibling-only"
+	if err := harness.pushCommitOnBranch(seeded.Key, sibling.Slug, siblingBranch, "sibling.txt"); err != nil {
+		t.Fatalf("push %s on the sibling failed: %v", siblingBranch, err)
+	}
+
 	// No --repo in the environment either: the question is what the working
 	// directory does on its own.
 	configureLiveCLIEnv(t, harness, seeded.Key, inside.Slug)
@@ -84,8 +91,12 @@ func TestLiveMCPServeIsNotScopedByTheDirectoryItStartsIn(t *testing.T) {
 			"project": seeded.Key, "repo": sibling.Slug,
 		}, &payload)
 
-		if len(payload.Branches) == 0 {
-			t.Errorf("the sibling repository %s answered with no branches", sibling.Slug)
+		branches := make([]string, 0, len(payload.Branches))
+		for _, branch := range payload.Branches {
+			branches = append(branches, branch.DisplayID)
+		}
+		if !containsFold(branches, siblingBranch) {
+			t.Errorf("list_branches for the sibling repository %s answered with %v, which lacks %s: not the sibling's branches", sibling.Slug, branches, siblingBranch)
 		}
 
 		// And the tools a scoped server cannot bind stay in the catalogue.

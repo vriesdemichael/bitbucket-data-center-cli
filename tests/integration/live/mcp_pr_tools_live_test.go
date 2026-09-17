@@ -287,21 +287,33 @@ func TestLiveMCPGetFileContentReturnsTheFileAsText(t *testing.T) {
 	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", path, content); err != nil {
 		t.Fatalf("push the file failed: %v", err)
 	}
+	// The same path holding something else on a branch, so which of the two
+	// comes back shows the ref arrived: without it the default branch answers.
+	const branch = "feature/other-main"
+	const branchContent = "package main\n\nfunc main() { println(\"branch\") }\n"
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, path, branchContent); err != nil {
+		t.Fatalf("push the file on %s failed: %v", branch, err)
+	}
 
 	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
-		var payload struct {
-			Path    string `json:"path"`
-			Content string `json:"content"`
-		}
-		callAndDecode(t, session, context.Background(), "get_file_content", map[string]any{
-			"project": seeded.Key, "repo": repo.Slug, "path": path, "at": "refs/heads/master",
-		}, &payload)
+		for _, read := range []struct{ at, want string }{
+			{at: "refs/heads/master", want: content},
+			{at: "refs/heads/" + branch, want: branchContent},
+		} {
+			var payload struct {
+				Path    string `json:"path"`
+				Content string `json:"content"`
+			}
+			callAndDecode(t, session, context.Background(), "get_file_content", map[string]any{
+				"project": seeded.Key, "repo": repo.Slug, "path": path, "at": read.at,
+			}, &payload)
 
-		if !strings.Contains(payload.Content, "func main()") {
-			t.Errorf("get_file_content returned %q, want the file that was pushed", payload.Content)
-		}
-		if payload.Path != path {
-			t.Errorf("get_file_content reported path %q, want %q", payload.Path, path)
+			if payload.Content != read.want {
+				t.Errorf("get_file_content at %s returned %q, want the file pushed there, %q", read.at, payload.Content, read.want)
+			}
+			if payload.Path != path {
+				t.Errorf("get_file_content at %s reported path %q, want %q", read.at, payload.Path, path)
+			}
 		}
 	}, "ai", "mcp", "serve")
 }
