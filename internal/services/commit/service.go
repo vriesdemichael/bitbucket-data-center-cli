@@ -2,6 +2,7 @@ package commit
 
 import (
 	"context"
+	"fmt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"strings"
 
@@ -93,6 +94,15 @@ func (service *Service) Get(ctx context.Context, repo RepositoryRef, commitID st
 		return openapigenerated.RestCommit{}, apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
 
+	// A ref with a slash in it, feature/x or refs/heads/x, cannot be a path
+	// segment: Bitbucket answers an encoded slash in the path with a 302 to an
+	// HTML error page (observed on 10.4.3), so `bb commit get feature/x` failed
+	// with a 400 page. The commit listing takes the ref as a query parameter, and
+	// its first entry is the commit the ref points at.
+	if strings.Contains(trimmedID, "/") {
+		return service.getByListing(ctx, repo, trimmedID)
+	}
+
 	response, err := service.client.GetCommitWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, nil)
 	if err != nil {
 		return openapigenerated.RestCommit{}, apperrors.Transport("failed to get repository commit", err)
@@ -106,6 +116,26 @@ func (service *Service) Get(ctx context.Context, repo RepositoryRef, commitID st
 	}
 
 	return openapigenerated.RestCommit{}, nil
+}
+
+// getByListing reads the commit a ref points at as the first entry of the
+// commit listing up to that ref.
+func (service *Service) getByListing(ctx context.Context, repo RepositoryRef, ref string) (openapigenerated.RestCommit, error) {
+	limit := float32(1)
+	response, err := service.client.GetCommitsWithResponse(ctx, repo.ProjectKey, repo.Slug, &openapigenerated.GetCommitsParams{Until: &ref, Limit: &limit})
+	if err != nil {
+		return openapigenerated.RestCommit{}, apperrors.Transport("failed to get repository commit", err)
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return openapigenerated.RestCommit{}, err
+	}
+
+	page := response.ApplicationjsonCharsetUTF8200
+	if page == nil || page.Values == nil || len(*page.Values) == 0 {
+		return openapigenerated.RestCommit{}, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("no commit at %s", ref), nil)
+	}
+
+	return (*page.Values)[0], nil
 }
 
 func (service *Service) Compare(ctx context.Context, repo RepositoryRef, options CompareOptions) ([]openapigenerated.RestCommit, error) {
