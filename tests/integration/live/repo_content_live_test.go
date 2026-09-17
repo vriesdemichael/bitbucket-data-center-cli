@@ -3,12 +3,18 @@
 package live_test
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // TestLiveRepoContentCommands covers repo cat, compare, archive and edit —
@@ -110,11 +116,24 @@ func TestLiveRepoContentCommands(t *testing.T) {
 	if len(archiveBytes) < 2 || archiveBytes[0] != 0x1f || archiveBytes[1] != 0x8b {
 		t.Fatalf("expected a gzip archive, got %d bytes starting %x", len(archiveBytes), archiveBytes[:min(2, len(archiveBytes))])
 	}
+	// And it is this repository's tree as a tar: gzip around anything else, or
+	// around another repository's files, would pass the check above.
+	seedContent, _ := decodeJSONMap(t, mustLiveCLI(t, "repo", "cat", "seed.txt", "--repo", repoRef))["content"].(string)
+	if archived := repoContentArchivedFile(t, archiveBytes, "seed.txt"); archived != seedContent {
+		t.Fatalf("seed.txt in the archive reads %q, the repository's reads %q", archived, seedContent)
+	}
 
+	// The edit goes to a branch that does not exist yet, started from master, so
+	// each value it sends has a read that tells it apart from a default: a new
+	// branch rather than the default one, cut from the branch named, carrying the
+	// message and the content given.
+	const editedBranch = "feature/live-edit"
+	masterTip := nestedJSONMap(t, mustLiveCLI(t, "commit", "get", "master", "--repo", repoRef), "commit")["id"]
 	editOutput, err := executeLiveCLI(t, "--json", "repo", "edit", "live-edit.txt",
 		"--content", "written by the live suite\n",
 		"--message", "live suite edit",
-		"--branch", "master",
+		"--branch", editedBranch,
+		"--source-branch", "master",
 		"--repo", repoRef)
 	if err != nil {
 		t.Fatalf("repo edit failed: %v\noutput: %s", err, editOutput)
@@ -122,12 +141,74 @@ func TestLiveRepoContentCommands(t *testing.T) {
 
 	// Read it back: an edit that reports success and commits nothing is the
 	// failure this catches.
-	afterEdit, err := executeLiveCLI(t, "repo", "cat", "live-edit.txt", "--repo", repoRef)
-	if err != nil {
-		t.Fatalf("repo cat after edit failed: %v\noutput: %s", err, afterEdit)
+	if content := repoContentFileAt(t, repoRef, "live-edit.txt", editedBranch); content != "written by the live suite\n" {
+		t.Fatalf("live-edit.txt on %s reads %q after the edit", editedBranch, content)
 	}
-	if !strings.Contains(afterEdit, "written by the live suite") {
-		t.Fatalf("expected the edited content to be readable, got: %s", afterEdit)
+	edited := nestedJSONMap(t, mustLiveCLI(t, "commit", "get", editedBranch, "--repo", repoRef), "commit")
+	if edited["message"] != "live suite edit" {
+		t.Errorf("the edit's commit message is %v, want %q", edited["message"], "live suite edit")
+	}
+	if parents, _ := edited["parents"].([]any); len(parents) != 1 || parents[0] != masterTip {
+		t.Errorf("the edit's commit has parents %v, want [%v], master's tip", edited["parents"], masterTip)
+	}
+	// Only there: master never had the file.
+	if _, err := executeLiveCLI(t, "--json", "repo", "cat", "live-edit.txt", "--at", "master", "--repo", repoRef); !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Errorf("live-edit.txt on master: want not found, got %v", err)
+	}
+
+	// --source-commit is the version the edit is made against. Behind the file,
+	// the edit has to be refused and change nothing; at the branch tip it lands.
+	if output, err := executeLiveCLI(t, "--json", "repo", "edit", "live-edit.txt",
+		"--content", "not stored\n", "--message", "stale edit", "--branch", editedBranch,
+		"--source-commit", asString(masterTip), "--repo", repoRef); err == nil {
+		t.Fatalf("an edit against a commit that predates the file succeeded:\n%s", output)
+	}
+	if content := repoContentFileAt(t, repoRef, "live-edit.txt", editedBranch); content != "written by the live suite\n" {
+		t.Fatalf("a refused edit changed live-edit.txt to %q", content)
+	}
+	mustLiveCLI(t, "repo", "edit", "live-edit.txt", "--content", "edited again\n", "--message", "current edit",
+		"--branch", editedBranch, "--source-commit", asString(edited["id"]), "--repo", repoRef)
+	if content := repoContentFileAt(t, repoRef, "live-edit.txt", editedBranch); content != "edited again\n" {
+		t.Fatalf("an edit against the branch tip left live-edit.txt as %q", content)
+	}
+}
+
+// repoContentFileAt reads a file's content at a ref through bb repo cat.
+func repoContentFileAt(t *testing.T, repoRef, path, ref string) string {
+	t.Helper()
+
+	content, ok := decodeJSONMap(t, mustLiveCLI(t, "repo", "cat", path, "--at", ref, "--repo", repoRef))["content"].(string)
+	if !ok {
+		t.Fatalf("repo cat %s --at %s returned no content", path, ref)
+	}
+	return content
+}
+
+// repoContentArchivedFile reads one file out of a gzipped tar archive.
+func repoContentArchivedFile(t *testing.T, archive []byte, name string) string {
+	t.Helper()
+
+	unzipped, err := gzip.NewReader(strings.NewReader(string(archive)))
+	if err != nil {
+		t.Fatalf("the archive is not gzip: %v", err)
+	}
+	reader := tar.NewReader(unzipped)
+	for {
+		header, err := reader.Next()
+		if errors.Is(err, io.EOF) {
+			t.Fatalf("no %s in the archive", name)
+		}
+		if err != nil {
+			t.Fatalf("the archive is not a tar: %v", err)
+		}
+		if strings.TrimPrefix(header.Name, "./") != name {
+			continue
+		}
+		content, err := io.ReadAll(reader)
+		if err != nil {
+			t.Fatalf("read %s from the archive: %v", name, err)
+		}
+		return string(content)
 	}
 }
 
@@ -187,12 +268,17 @@ func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
 		})
 	}
 
-	listOutput, err := executeLiveCLI(t, "--json", "repo", "default-task", "list", "--repo", repoRef)
-	if err != nil {
-		t.Fatalf("repo default-task list failed: %v\noutput: %s", err, listOutput)
+	// The replies above are the writes' own; the listing is what was stored.
+	stored := repoContentDefaultTask(t, repoRef, taskID)
+	if stored["description"] != "live suite default task" {
+		t.Errorf("task %s is stored as %q", taskID, stored["description"])
 	}
-	if !strings.Contains(listOutput, "live suite default task") {
-		t.Fatalf("expected the added task in the listing, got: %s", listOutput)
+	assertMatcherID(t, stored, "sourceMatcher", "refs/heads/feature/*")
+	assertMatcherID(t, stored, "targetMatcher", "refs/heads/master")
+	if anyRefID, ok := numericOrStringID(anyRefData["id"]); ok {
+		anyRef := repoContentDefaultTask(t, repoRef, anyRefID)
+		assertMatcherID(t, anyRef, "sourceMatcher", "ANY_REF_MATCHER_ID")
+		assertMatcherID(t, anyRef, "targetMatcher", "ANY_REF_MATCHER_ID")
 	}
 
 	if _, err := executeLiveCLI(t, "--json", "repo", "default-task", "update", taskID,
@@ -200,17 +286,41 @@ func TestLiveRepoDefaultTaskLifecycle(t *testing.T) {
 		t.Fatalf("repo default-task update failed: %v", err)
 	}
 
-	afterUpdate, err := executeLiveCLI(t, "--json", "repo", "default-task", "list", "--repo", repoRef)
-	if err != nil {
-		t.Fatalf("repo default-task list after update failed: %v\noutput: %s", err, afterUpdate)
+	// The description changed and the matchers the update did not name stayed.
+	updated := repoContentDefaultTask(t, repoRef, taskID)
+	if updated["description"] != "live suite default task updated" {
+		t.Errorf("task %s is stored as %q after the update", taskID, updated["description"])
 	}
-	if !strings.Contains(afterUpdate, "live suite default task updated") {
-		t.Fatalf("expected the update to persist, got: %s", afterUpdate)
-	}
+	assertMatcherID(t, updated, "sourceMatcher", "refs/heads/feature/*")
+	assertMatcherID(t, updated, "targetMatcher", "refs/heads/master")
 
 	if _, err := executeLiveCLI(t, "--json", "repo", "default-task", "delete", taskID, "--repo", repoRef, "--yes"); err != nil {
 		t.Fatalf("repo default-task delete failed: %v", err)
 	}
+	var remaining any
+	if err := decodeJSONEnvelopeData(mustLiveCLI(t, "repo", "default-task", "list", "--repo", repoRef), &remaining); err != nil {
+		t.Fatalf("repo default-task list returned invalid JSON: %v", err)
+	}
+	if _, found := findByID(remaining, taskID); found {
+		t.Errorf("task %s is still listed after its delete", taskID)
+	}
+}
+
+// repoContentDefaultTask reads one default task back from the repository's
+// listing.
+func repoContentDefaultTask(t *testing.T, repoRef, id string) map[string]any {
+	t.Helper()
+
+	var listed any
+	listing := mustLiveCLI(t, "repo", "default-task", "list", "--repo", repoRef)
+	if err := decodeJSONEnvelopeData(listing, &listed); err != nil {
+		t.Fatalf("repo default-task list returned invalid JSON: %v\n%s", err, listing)
+	}
+	task, found := findByID(listed, id)
+	if !found {
+		t.Fatalf("task %s is not in the listing: %s", id, listing)
+	}
+	return task
 }
 
 // assertMatcherID checks the id of a matcher on a default-task payload. The id
