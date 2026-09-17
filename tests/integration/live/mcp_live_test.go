@@ -163,7 +163,7 @@ func TestLiveMCPSafetyGateWithholdsUnsafeTools(t *testing.T) {
 
 	harness := newLiveHarness(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
@@ -171,6 +171,7 @@ func TestLiveMCPSafetyGateWithholdsUnsafeTools(t *testing.T) {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	withheld := make([]string, 0)
@@ -181,6 +182,64 @@ func TestLiveMCPSafetyGateWithholdsUnsafeTools(t *testing.T) {
 	}
 	if len(withheld) == 0 {
 		t.Fatal("no tools are withheld by default; the safety gate has nothing to prove")
+	}
+
+	// Something each withheld tool would really change. The calls used to name
+	// pull request 1, which the seeded repository does not have, so Bitbucket
+	// refused them as readily as the gate: a server that let every call through
+	// passed as well.
+	//
+	// The pull request is somebody else's with the caller reviewing it, because
+	// Bitbucket refuses an author's own review, and auto-merge is on for the
+	// repository, because arming it is refused otherwise.
+	author, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create the pull request author failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, author.Username, "REPO_WRITE"); err != nil {
+		t.Fatalf("grant the author write access failed: %v", err)
+	}
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, "feature/mcp-gate", "mcp-gate.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	authored, err := harness.liveJSONAs(ctx, author, http.MethodPost,
+		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests", seeded.Key, repo.Slug),
+		map[string]any{
+			"title":     "Held back by the safety gate",
+			"fromRef":   map[string]any{"id": "refs/heads/feature/mcp-gate"},
+			"toRef":     map[string]any{"id": "refs/heads/master"},
+			"reviewers": []map[string]any{{"user": map[string]any{"name": harness.username()}}},
+		})
+	if err != nil {
+		t.Fatalf("create the authored pull request failed: %v", err)
+	}
+	pullRequestID := fmt.Sprintf("%d", int64(authored["id"].(float64)))
+
+	mustLiveCLI(t, "repo", "settings", "auto-merge", "set", "--enabled", "--repo", repoRef)
+	if settings := decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "auto-merge", "get", "--repo", repoRef)); settings["enabled"] != true {
+		t.Fatalf("auto-merge is not enabled on %s after enabling it: %v", repoRef, settings)
+	}
+
+	before := mcpLivePullRequest(t, repoRef, pullRequestID)
+	if reviewer := mcpLiveReviewer(t, before, harness.username()); reviewer["role"] != "REVIEWER" || reviewer["status"] != "UNAPPROVED" {
+		t.Fatalf("the caller is %v/%v on pull request %s, want an UNAPPROVED REVIEWER", reviewer["role"], reviewer["status"], pullRequestID)
+	}
+	commitID := asString(before["sourceCommit"])
+	buildKey := testsupport.UniqueName("mcp-gate-")
+
+	arguments := map[string]map[string]any{
+		"submit_pr_review":   {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "action": "approve"},
+		"merge_pull_request": {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
+		"enable_auto_merge":  {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
+		"set_build_status":   {"commit_id": commitID, "key": buildKey, "state": "FAILED", "url": "https://ci.example.com/gate"},
+	}
+	for _, name := range withheld {
+		if _, ok := arguments[name]; !ok {
+			t.Errorf("withheld tool %q has no arguments; give it ones it would act on, and read back below that it did not", name)
+		}
+	}
+	if t.Failed() {
+		return
 	}
 
 	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
@@ -198,13 +257,28 @@ func TestLiveMCPSafetyGateWithholdsUnsafeTools(t *testing.T) {
 			// the name can still ask for it, so the call itself must fail.
 			result, callErr := session.CallTool(context.Background(), &mcp.CallToolParams{
 				Name:      name,
-				Arguments: map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": "1"},
+				Arguments: arguments[name],
 			})
 			if callErr == nil && (result == nil || !result.IsError) {
 				t.Errorf("calling withheld tool %q succeeded; the safety gate does not gate", name)
 			}
 		}
 	}, "ai", "mcp", "serve")
+
+	// A refusal is only the gate's if nothing changed.
+	after := mcpLivePullRequest(t, repoRef, pullRequestID)
+	if after["state"] != "OPEN" {
+		t.Errorf("pull request %s is %v after withheld merge_pull_request and enable_auto_merge calls", pullRequestID, after["state"])
+	}
+	if reviewer := mcpLiveReviewer(t, after, harness.username()); reviewer["status"] != "UNAPPROVED" {
+		t.Errorf("the caller's review of pull request %s is %v after a withheld submit_pr_review", pullRequestID, reviewer["status"])
+	}
+	if autoMerge := mcpLiveAutoMerge(t, repoRef, pullRequestID); autoMerge["enabled"] != false {
+		t.Errorf("auto-merge on pull request %s is %v after a withheld enable_auto_merge", pullRequestID, autoMerge)
+	}
+	if status, found := mcpLiveBuildStatuses(t, commitID)[buildKey]; found {
+		t.Errorf("a withheld set_build_status reported build %s on %s: %v", buildKey, commitID, status)
+	}
 }
 
 // TestLiveMCPToolFilteringAdmitsAndExcludes covers --tools and --exclude,
@@ -382,10 +456,11 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 		t.Run("search_repositories", func(t *testing.T) {
 			var payload struct {
 				Repositories []struct {
-					Slug string `json:"slug"`
+					ProjectKey string `json:"project_key"`
+					Slug       string `json:"slug"`
 				} `json:"repositories"`
 			}
-			callAndDecode(t, session, callCtx, "search_repositories", map[string]any{
+			raw := callAndDecode(t, session, callCtx, "search_repositories", map[string]any{
 				"project": seeded.Key,
 			}, &payload)
 
@@ -393,6 +468,11 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 			for _, found_ := range payload.Repositories {
 				if strings.EqualFold(found_.Slug, repo.Slug) {
 					found = true
+				}
+				// The project is what narrows the search: without it the answer
+				// is the first page of every repository on the instance.
+				if found_.ProjectKey != seeded.Key {
+					t.Errorf("search_repositories in %s returned %s/%s: %s", seeded.Key, found_.ProjectKey, found_.Slug, raw)
 				}
 			}
 			if !found {
@@ -698,6 +778,57 @@ func collectionFromCLI(t *testing.T, output, key string) []any {
 	return nil
 }
 
+// mcpLivePullRequest reads a pull request back through `bb pr get`, a request
+// of its own after whatever an MCP tool did to it.
+func mcpLivePullRequest(t *testing.T, repoRef, pullRequestID string) map[string]any {
+	t.Helper()
+
+	return nestedJSONMap(t, mustLiveCLI(t, "pr", "get", pullRequestID, "--repo", repoRef), "pullRequest")
+}
+
+// mcpLiveReviewer finds a user among the reviewers of a pull request that
+// mcpLivePullRequest read, and fails when the user is not there.
+func mcpLiveReviewer(t *testing.T, pullRequest map[string]any, username string) map[string]any {
+	t.Helper()
+
+	reviewers, _ := pullRequest["reviewers"].([]any)
+	for _, entry := range reviewers {
+		if fields, ok := entry.(map[string]any); ok && fields["name"] == username {
+			return fields
+		}
+	}
+	t.Fatalf("%s is not among the reviewers of pull request %v: %v", username, pullRequest["id"], pullRequest["reviewers"])
+
+	return nil
+}
+
+// mcpLiveAutoMerge reads a pull request's pending auto-merge back through `bb
+// pr auto-merge get`.
+func mcpLiveAutoMerge(t *testing.T, repoRef, pullRequestID string) map[string]any {
+	t.Helper()
+
+	return nestedJSONMap(t, mustLiveCLI(t, "pr", "auto-merge", "get", pullRequestID, "--repo", repoRef), "autoMerge")
+}
+
+// mcpLiveBuildStatuses reads the build statuses on a commit back through `bb
+// build status get`, keyed by build key.
+func mcpLiveBuildStatuses(t *testing.T, commitID string) map[string]map[string]any {
+	t.Helper()
+
+	output := mustLiveCLI(t, "build", "status", "get", commitID)
+	var statuses []map[string]any
+	if err := decodeJSONEnvelopeData(output, &statuses); err != nil {
+		t.Fatalf("build status get returned invalid JSON: %v\n%s", err, output)
+	}
+
+	byKey := make(map[string]map[string]any, len(statuses))
+	for _, status := range statuses {
+		byKey[asString(status["key"])] = status
+	}
+
+	return byKey
+}
+
 // TestLiveMCPScopeBoundaryHolds proves the scope boundary against a real
 // Bitbucket, with two projects that both genuinely exist.
 //
@@ -723,6 +854,22 @@ func TestLiveMCPScopeBoundaryHolds(t *testing.T) {
 	}
 
 	configureLiveCLIEnv(t, harness, inScope.Key, inScope.Repos[0].Slug)
+
+	// A pull request the caller wrote on each side, so a listing the scope did
+	// not bind -- the dashboard -- would answer with the out-of-scope one too.
+	openPullRequest := func(project seededProject) string {
+		t.Helper()
+		if err := harness.pushCommitOnBranch(project.Key, project.Repos[0].Slug, "feature/mcp-scope", "mcp-scope.txt"); err != nil {
+			t.Fatalf("push commit on branch in %s failed: %v", project.Key, err)
+		}
+		id, err := harness.createPullRequest(ctx, project.Key, project.Repos[0].Slug, "feature/mcp-scope", "master")
+		if err != nil {
+			t.Fatalf("create pull request in %s failed: %v", project.Key, err)
+		}
+		return id
+	}
+	inScopePullRequest := openPullRequest(inScope)
+	openPullRequest(outOfScope)
 
 	// The out-of-scope repository is readable without the scope, which is what
 	// makes the refusal below meaningful rather than incidental.
@@ -781,10 +928,27 @@ func TestLiveMCPScopeBoundaryHolds(t *testing.T) {
 			// can see, which is exactly what the scope exists to prevent.
 			var payload struct {
 				PullRequests []struct {
-					ID int64 `json:"id"`
+					ID         int64 `json:"id"`
+					Repository *struct {
+						ProjectKey string `json:"project_key"`
+						Slug       string `json:"slug"`
+					} `json:"repository"`
 				} `json:"pull_requests"`
 			}
-			callAndDecode(t, session, callCtx, "list_pull_requests", map[string]any{}, &payload)
+			raw := callAndDecode(t, session, callCtx, "list_pull_requests", map[string]any{}, &payload)
+
+			// Both pull requests are number 1 in their own repository, so the
+			// repository is what tells them apart.
+			if len(payload.PullRequests) != 1 {
+				t.Fatalf("list_pull_requests bound to %s/%s returned %d pull requests, want the one in it: %s",
+					inScope.Key, inScope.Repos[0].Slug, len(payload.PullRequests), raw)
+			}
+			got := payload.PullRequests[0]
+			if fmt.Sprintf("%d", got.ID) != inScopePullRequest || got.Repository == nil ||
+				got.Repository.ProjectKey != inScope.Key || got.Repository.Slug != inScope.Repos[0].Slug {
+				t.Errorf("list_pull_requests bound to %s/%s returned another pull request than %s in it: %s",
+					inScope.Key, inScope.Repos[0].Slug, inScopePullRequest, raw)
+			}
 		})
 
 		t.Run("unboundable tools are withheld", func(t *testing.T) {
@@ -936,6 +1100,13 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 		t.Fatalf("add the reviewer failed: %v", err)
 	}
 
+	// Read back before any review: the reviewer the three actions act on, at
+	// UNAPPROVED, the status approve has to move.
+	added := mcpLiveReviewer(t, mcpLivePullRequest(t, seeded.Key+"/"+repo.Slug, pullRequestID), reviewer.Username)
+	if added["role"] != "REVIEWER" || added["status"] != "UNAPPROVED" {
+		t.Fatalf("%s was added as %v/%v, want an UNAPPROVED REVIEWER", reviewer.Username, added["role"], added["status"])
+	}
+
 	// The server runs as the reviewer, because the review does.
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
 
@@ -975,18 +1146,27 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 				PullRequest struct {
 					Reviewers []struct {
 						Name     string `json:"name"`
+						Role     string `json:"role"`
 						Status   string `json:"status"`
 						Approved bool   `json:"approved"`
 					} `json:"reviewers"`
 				} `json:"pull_request"`
 			}
-			callAndDecode(t, session, callCtx, "get_pull_request", readArguments, &payload)
+			raw := callAndDecode(t, session, callCtx, "get_pull_request", readArguments, &payload)
 
 			for _, participant := range payload.PullRequest.Reviewers {
 				if participant.Name == reviewer.Username {
+					// A review changes the status and never the role.
+					if participant.Role != "REVIEWER" {
+						t.Errorf("%s is read back as %q, want REVIEWER: %s", reviewer.Username, participant.Role, raw)
+					}
 					return participant.Status, participant.Approved
 				}
 			}
+
+			// Returning nothing would read as no approval and no request for
+			// changes, which is exactly what unapprove is checked for.
+			t.Fatalf("%s is not among the reviewers get_pull_request read back: %s", reviewer.Username, raw)
 
 			return "", false
 		}
@@ -1027,9 +1207,13 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 			// after undoing an approval.
 			submit(t, "unapprove")
 
-			if status, approved := statusOf(t); approved || strings.EqualFold(status, "NEEDS_WORK") {
+			status, approved := statusOf(t)
+			if approved || strings.EqualFold(status, "NEEDS_WORK") {
 				t.Fatalf("after unapprove: status=%q approved=%v, want the request for changes cleared too",
 					status, approved)
+			}
+			if status != "UNAPPROVED" {
+				t.Errorf("after unapprove: status=%q, want UNAPPROVED", status)
 			}
 		})
 	}, "ai", "mcp", "serve", "--yolo")
@@ -1058,9 +1242,15 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
+	// The branch changes a file master already has, so its diff has a removed
+	// line to anchor to. ADDED is what bb sends when line_type is missing, so an
+	// anchor that came back ADDED could not show the argument arrived.
 	const anchoredFile = "mcp-comment.txt"
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", anchoredFile, "before\n"); err != nil {
+		t.Fatalf("push the file on master failed: %v", err)
+	}
 	branch := testsupport.UniqueName("lt-mcp-comment-")
-	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, anchoredFile); err != nil {
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, anchoredFile, "after\n"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
 	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
@@ -1101,7 +1291,7 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 
 		const inlineText = "this line needs a guard"
 		inlineID := add(t, map[string]any{
-			"text": inlineText, "path": anchoredFile, "line": 1, "line_type": "ADDED",
+			"text": inlineText, "path": anchoredFile, "line": 1, "line_type": "REMOVED",
 		})
 
 		const replyText = "agreed, will fix"
@@ -1113,8 +1303,9 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 				ID     float64 `json:"id"`
 				Text   string  `json:"text"`
 				Anchor *struct {
-					Path string  `json:"path"`
-					Line float64 `json:"line"`
+					Path     string  `json:"path"`
+					Line     float64 `json:"line"`
+					LineType string  `json:"line_type"`
 				} `json:"anchor"`
 				Replies []struct {
 					ID   float64 `json:"id"`
@@ -1132,14 +1323,26 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 				if thread.Anchor == nil || thread.Anchor.Path != anchoredFile || int(thread.Anchor.Line) != 1 {
 					t.Errorf("the inline comment did not come back anchored where it was put: %#v", thread.Anchor)
 				}
+				if thread.Anchor != nil && thread.Anchor.LineType != "REMOVED" {
+					t.Errorf("the inline comment came back on the %q side, want REMOVED: %s", thread.Anchor.LineType, raw)
+				}
+				if thread.Text != inlineText {
+					t.Errorf("the inline comment came back as %q, want %q", thread.Text, inlineText)
+				}
 				sawInline = true
 			}
 			if thread.ID == plainID {
 				if thread.Anchor != nil {
 					t.Errorf("a plain remark came back anchored: %#v", thread.Anchor)
 				}
+				if thread.Text != plainText {
+					t.Errorf("the plain remark came back as %q, want %q", thread.Text, plainText)
+				}
 				for _, reply := range thread.Replies {
 					if reply.ID == replyID {
+						if reply.Text != replyText {
+							t.Errorf("the reply came back as %q, want %q", reply.Text, replyText)
+						}
 						sawReply = true
 					}
 				}
