@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
@@ -66,8 +67,10 @@ func TestLiveDryRunPreviewsAndLeaveNoTrace(t *testing.T) {
 		output := mustLiveCLI(t, "--dry-run", "project", "create", key, "--name", "Dry run project")
 		assertLivePreview(t, output, "create")
 
-		if _, err := executeLiveCLI(t, "--json", "project", "get", key); err == nil {
-			t.Fatalf("the dry run created project %s", key)
+		// Not found, rather than any failure: a read that failed for another
+		// reason would pass for a project that is not there.
+		if output, err := executeLiveCLI(t, "--json", "project", "get", key); apperrors.ExitCode(err) != 4 {
+			t.Fatalf("project %s after the dry run: exit %d, want 4 (not_found): %v\n%s", key, apperrors.ExitCode(err), err, output)
 		}
 	})
 

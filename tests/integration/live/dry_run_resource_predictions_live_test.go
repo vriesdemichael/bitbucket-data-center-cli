@@ -5,11 +5,14 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveResourceDryRunPredictionsReadRealState is the third of these: the
@@ -66,6 +69,8 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 			t.Fatalf("the created restriction has no id:\n%s", created)
 		}
 		restrictionID := fmt.Sprintf("%d", int(id))
+		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", restrictionID, "--repo", repoRef)),
+			storedRestriction{scope: "REPOSITORY", restrictionType: "read-only", matcherType: "BRANCH", matcherID: matcher})
 
 		predicts(t, "conflict", "branch", "restriction", "create", "--repo", repoRef,
 			"--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher)
@@ -77,14 +82,22 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		commit := repo.CommitIDs[0]
 
 		predicts(t, "no-op", "build", "required", "delete", "999999", "--repo", repoRef)
+		noChecks := mustLiveCLI(t, "build", "required", "list", "--repo", repoRef)
 		predicts(t, "create", "build", "required", "create", "--repo", repoRef,
 			"--body", `{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`)
+		if after := mustLiveCLI(t, "build", "required", "list", "--repo", repoRef); after != noChecks {
+			t.Fatalf("the dry run created the required build check it predicted\nbefore: %s\nafter:  %s", noChecks, after)
+		}
 
 		mustLiveCLI(t, "build", "status", "set", commit, "--key", "ci",
 			"--state", "SUCCESSFUL", "--url", "http://example.invalid/ci")
+		stored := map[string]any{"state": "SUCCESSFUL", "url": "http://example.invalid/ci"}
+		commandCoverageAssertFields(t, "the build status", commandCoverageEntry(t, mustLiveCLI(t, "build", "status", "get", commit), "key", "ci"), stored)
 
+		// Another state, so the update it predicts would show if it were made.
 		predicts(t, "update", "build", "status", "set", commit, "--key", "ci",
-			"--state", "SUCCESSFUL", "--url", "http://example.invalid/ci")
+			"--state", "FAILED", "--url", "http://example.invalid/ci")
+		commandCoverageAssertFields(t, "the build status after its dry run", commandCoverageEntry(t, mustLiveCLI(t, "build", "status", "get", commit), "key", "ci"), stored)
 
 		created := mustLiveCLI(t, "build", "required", "create", "--repo", repoRef,
 			"--body", `{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`)
@@ -93,9 +106,14 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		if !ok {
 			t.Fatalf("the created required build check has no id:\n%s", created)
 		}
+		checkID := fmt.Sprintf("%d", int(id))
+		commandCoverageAssertRequiredCheck(t, mustLiveCLI(t, "build", "required", "list", "--repo", repoRef), checkID, "ci", "refs/heads/master", "BRANCH")
 
-		predicts(t, "update", "build", "required", "update", fmt.Sprintf("%d", int(id)), "--repo", repoRef,
-			"--body", `{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`)
+		// A second build key, which the check would require if the update were
+		// made.
+		predicts(t, "update", "build", "required", "update", checkID, "--repo", repoRef,
+			"--body", `{"buildParentKeys":["ci","lint"],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`)
+		commandCoverageAssertRequiredCheck(t, mustLiveCLI(t, "build", "required", "list", "--repo", repoRef), checkID, "ci", "refs/heads/master", "BRANCH")
 	})
 
 	t.Run("projects and repositories", func(t *testing.T) {
@@ -124,7 +142,11 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		predicts(t, "no-op", "project", "update", seeded.Key, "--name", name)
 
 		predicts(t, "conflict", "repo", "admin", "create", "--project", seeded.Key, "--name", repo.Name)
-		predicts(t, "create", "repo", "admin", "fork", "--repo", repoRef, "--name", "forked-in-a-preview")
+
+		forkName := testsupport.UniqueName("forked-in-a-preview-")
+		predicts(t, "create", "repo", "admin", "fork", "--repo", repoRef, "--name", forkName)
+		assertNoLiveRepositoryNamed(t, forkName, repo.Name)
+
 		predicts(t, "no-op", "repo", "admin", "update", "--repo", repoRef)
 	})
 
@@ -132,6 +154,8 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		predicts(t, "no-op", "tag", "delete", "no-such-tag", "--repo", repoRef)
 
 		mustLiveCLI(t, "tag", "create", "v1", "--repo", repoRef, "--start-point", "master")
+		commandCoverageAssertFields(t, "the tag", decodeJSONMap(t, mustLiveCLI(t, "tag", "view", "v1", "--repo", repoRef)),
+			map[string]any{"displayId": "v1", "latestCommit": repo.CommitIDs[0]})
 
 		predicts(t, "conflict", "tag", "create", "v1", "--repo", repoRef, "--start-point", "master")
 
@@ -142,12 +166,48 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		// a page boundary is what tells a direct lookup from a scan; a
 		// repository with one tag cannot, because both find it.
 		const beyondAPage = 30
+		wantTags := []string{"v1"}
 		for index := range beyondAPage {
 			name := fmt.Sprintf("v2.0.%d", index)
 			mustLiveCLI(t, "tag", "create", name, "--repo", repoRef, "--start-point", "master")
+			wantTags = append(wantTags, name)
+		}
+		// All of them, or the page boundary the next prediction is about is not
+		// there to cross.
+		if listed := commandCoverageFieldValues(t, mustLiveCLI(t, "tag", "list", "--repo", repoRef, "--limit", "100"), "displayId"); !slices.Equal(listed, slices.Sorted(slices.Values(wantTags))) {
+			t.Fatalf("the repository holds tags %v, want %v", listed, slices.Sorted(slices.Values(wantTags)))
 		}
 
 		predicts(t, "conflict", "tag", "create", fmt.Sprintf("v2.0.%d", beyondAPage-1),
 			"--repo", repoRef, "--start-point", "master")
 	})
+}
+
+// assertNoLiveRepositoryNamed checks that no repository the caller can see is
+// named name, through the instance-wide search.
+//
+// A fork lands in the caller's own project, and a lookup under a project key
+// that was wrong would read as the fork being absent. So the search is asked
+// first for controlName, a repository that does exist: an empty answer for name
+// is then about the name.
+func assertNoLiveRepositoryNamed(t *testing.T, name, controlName string) {
+	t.Helper()
+
+	named := func(query string) []any {
+		t.Helper()
+
+		values, ok := decodeJSONMap(t, mustLiveCLI(t, "api", "/rest/api/latest/repos?name="+url.QueryEscape(query)))["values"].([]any)
+		if !ok {
+			t.Fatalf("the repository search for %q answered with no values", query)
+		}
+
+		return values
+	}
+
+	if control := named(controlName); len(control) != 1 {
+		t.Fatalf("the repository search found %d repositories named %q, which exists once", len(control), controlName)
+	}
+	if found := named(name); len(found) != 0 {
+		t.Fatalf("a dry run left repository %q behind: %v", name, found)
+	}
 }

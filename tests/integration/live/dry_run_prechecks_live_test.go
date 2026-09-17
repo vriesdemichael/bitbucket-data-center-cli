@@ -10,6 +10,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveDryRunPrechecksRefuseBeforePlanning covers the rule that a dry run
@@ -150,9 +151,10 @@ func TestLiveDryRunPrechecksRefuseBeforePlanning(t *testing.T) {
 	// would be the opposite failure: telling a caller an operation is closed
 	// when it is open.
 	t.Run("what a reader may do still previews", func(t *testing.T) {
+		readerFork := testsupport.UniqueName("a-reader-may-fork-")
 		permitted := [][]string{
 			{"repo", "comment", "create", "--commit", commit, "--text", "a reader may comment"},
-			{"repo", "admin", "fork", "--repo", repoRef, "--name", "a-reader-may-fork"},
+			{"repo", "admin", "fork", "--repo", repoRef, "--name", readerFork},
 			// Watching is a preference on your own account, not a change to
 			// the repository, so read is the right tier and refusing it would
 			// close something Bitbucket leaves open.
@@ -172,5 +174,8 @@ func TestLiveDryRunPrechecksRefuseBeforePlanning(t *testing.T) {
 				t.Errorf("%s produced no preview:\n%s", strings.Join(args, " "), output)
 			}
 		}
+
+		// The fork preview in particular made no fork, which the reader could.
+		assertNoLiveRepositoryNamed(t, readerFork, repo.Name)
 	})
 }

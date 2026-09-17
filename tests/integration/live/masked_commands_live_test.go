@@ -101,6 +101,9 @@ func TestLiveReviewerConditionUpdateAndDelete(t *testing.T) {
 
 // maskedCondition is what a default-reviewer condition is expected to hold.
 type maskedCondition struct {
+	// scope is PROJECT for a condition written to a project, and REPOSITORY
+	// when left empty.
+	scope      string
 	approvals  float64
 	reviewerID int64
 	// sourceID is left empty for a source matching any ref, which Bitbucket
@@ -132,8 +135,12 @@ func assertMaskedConditionStored(t *testing.T, condition map[string]any, want ma
 	}
 	// --repo decides where the condition is written; a project condition
 	// would be listed here too, inherited, and only its scope tells them apart.
-	if condition["scope"] != "REPOSITORY" {
-		t.Errorf("scope = %v, want REPOSITORY", condition["scope"])
+	scope := want.scope
+	if scope == "" {
+		scope = "REPOSITORY"
+	}
+	if condition["scope"] != scope {
+		t.Errorf("scope = %v, want %s", condition["scope"], scope)
 	}
 
 	reviewers, _ := condition["reviewers"].([]any)
