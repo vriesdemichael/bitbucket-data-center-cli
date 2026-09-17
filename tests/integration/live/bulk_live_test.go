@@ -245,9 +245,11 @@ func TestLiveBulkEveryOperationType(t *testing.T) {
 		"          id: BRANCH",
 		"  - type: repo.settings.auto-merge",
 		"    enabled: true",
+		// Eight weeks, not four: enabled after four is what a repository with no
+		// policy of its own already reads back.
 		"  - type: repo.settings.auto-decline",
 		"    enabled: true",
-		"    inactivityWeeks: 4",
+		"    inactivityWeeks: 8",
 		"  - type: repo.default-task.create",
 		"    description: bulk default task",
 	}, "\n")
@@ -309,9 +311,12 @@ func TestLiveBulkEveryOperationType(t *testing.T) {
 		}
 	}
 
-	// And the state Bitbucket now holds, for the operations whose effect is
-	// readable: a request the server accepted and then ignored would pass
-	// everything above.
+	// And the state Bitbucket now holds, for every one of the nine: a request
+	// the server accepted and then ignored would pass everything above.
+	repoRef := seeded.Key + "/" + repo.Slug
+	assertMutatedRepoPermissionLevel(t, repoRef, false, grantee.Username, "REPO_READ")
+	assertMutatedRepoPermissionLevel(t, repoRef, true, "stash-users", "REPO_READ")
+
 	settings, err := service.GetRepositoryPullRequestSettings(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug})
 	if err != nil {
 		t.Fatalf("read pull request settings failed: %v", err)
@@ -326,6 +331,47 @@ func TestLiveBulkEveryOperationType(t *testing.T) {
 	hooks := mustLiveCLI(t, "--json", "webhook", "list", "--limit", "50")
 	if !strings.Contains(hooks, hookName) {
 		t.Errorf("the webhook the policy created is not in the repository's hooks:\n%s", hooks)
+	}
+	hookListed := false
+	for _, entry := range repoCLIWebhooksIn(t, hooks) {
+		if hook, _ := entry.(map[string]any); hook["name"] == hookName {
+			hookListed = true
+			repoCLIAssertWebhook(t, hook, hookName, "https://example.invalid/bulk-hook", true, "repo:refs_changed")
+		}
+	}
+	if !hookListed {
+		t.Errorf("no webhook named %s to read back", hookName)
+	}
+
+	required := mustLiveCLI(t, "build", "required", "list", "--repo", repoRef)
+	if ids := commandCoverageFieldValues(t, required, "id"); len(ids) != 1 {
+		t.Errorf("the repository has %d required build checks, want the one the policy created:\n%s", len(ids), required)
+	} else {
+		commandCoverageAssertRequiredCheck(t, required, ids[0], "ci", "refs/heads/master", "BRANCH")
+	}
+
+	settingsPath := "/rest/api/latest/projects/" + seeded.Key + "/repos/" + repo.Slug + "/settings/"
+	if autoMerge := decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "auto-merge", "get", "--repo", repoRef)); autoMerge["enabled"] != true {
+		t.Errorf("auto-merge reads back as enabled=%v, want true", autoMerge["enabled"])
+	}
+	if enabled, weeks := repoAutoDeclineReadBack(t, mustLiveCLI(t, "repo", "settings", "auto-decline", "get", "--repo", repoRef)); !enabled || weeks != 8 {
+		t.Errorf("auto-decline reads back enabled=%t after %v weeks, want enabled after 8", enabled, weeks)
+	}
+	// Both policies the repository's own, not inherited from above it.
+	for _, policy := range []string{"auto-merge", "auto-decline"} {
+		if scope := repoPolicyScope(t, settingsPath+policy); scope != "REPOSITORY" {
+			t.Errorf("the %s policy is scoped %s, want REPOSITORY", policy, scope)
+		}
+	}
+
+	tasks, _ := decodeJSONMap(t, mustLiveCLI(t, "repo", "default-task", "list", "--repo", repoRef))["tasks"].([]any)
+	descriptions := make([]string, 0, len(tasks))
+	for _, entry := range tasks {
+		task, _ := entry.(map[string]any)
+		descriptions = append(descriptions, asString(task["description"]))
+	}
+	if len(descriptions) != 1 || descriptions[0] != "bulk default task" {
+		t.Errorf("the repository's default tasks are %q, want the one the policy created", descriptions)
 	}
 }
 

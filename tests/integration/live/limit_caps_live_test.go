@@ -5,6 +5,7 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 )
@@ -63,10 +64,34 @@ func TestLiveLimitActuallyCaps(t *testing.T) {
 		return len(listed)
 	}
 
+	// The names a listing holds under one field of each entry, sorted.
+	named := func(t *testing.T, output, key, field string) []string {
+		t.Helper()
+
+		listed, _ := decodeJSONMap(t, output)[key].([]any)
+		names := make([]string, 0, len(listed))
+		for _, entry := range listed {
+			fields, _ := entry.(map[string]any)
+			names = append(names, asString(fields[field]))
+		}
+
+		return slices.Sorted(slices.Values(names))
+	}
+	// The files the branch adds, one per commit.
+	branchFiles := make([]string, 0, changes)
+	for index := range changes {
+		branchFiles = append(branchFiles, fmt.Sprintf("%s-%d.txt", branch, index))
+	}
+
 	t.Run("pr commits", func(t *testing.T) {
 		all := mustLiveCLI(t, "pr", "commits", pullRequestID, "--all")
 		if total := count(t, all, "commits"); total < changes {
 			t.Fatalf("--all returned %d commits, want at least %d:\n%s", total, changes, all)
+		}
+		// The branch's three and nothing of master's, each once.
+		ids := slices.Compact(named(t, all, "commits", "id"))
+		if len(ids) != changes || slices.Contains(ids, repo.CommitIDs[0]) {
+			t.Fatalf("--all listed commits %v, want the %d the branch adds and not master's %s", ids, changes, repo.CommitIDs[0])
 		}
 
 		limited := mustLiveCLI(t, "pr", "commits", pullRequestID, "--limit", "2")
@@ -80,6 +105,9 @@ func TestLiveLimitActuallyCaps(t *testing.T) {
 		if total := count(t, all, "changes"); total < changes {
 			t.Fatalf("--all returned %d changes, want at least %d:\n%s", total, changes, all)
 		}
+		if paths := named(t, all, "changes", "path"); !slices.Equal(paths, branchFiles) {
+			t.Fatalf("--all listed changes to %v, want %v", paths, branchFiles)
+		}
 
 		limited := mustLiveCLI(t, "pr", "files", pullRequestID, "--limit", "2")
 		if got := count(t, limited, "changes"); got != 2 {
@@ -91,6 +119,15 @@ func TestLiveLimitActuallyCaps(t *testing.T) {
 		all := mustLiveCLI(t, "repo", "browse", "tree", "--at", branch, "--all")
 		if total := count(t, all, "files"); total < changes {
 			t.Fatalf("--all returned %d files, want at least %d:\n%s", total, changes, all)
+		}
+		// The branch's tree, not master's: its three files beside seed.txt.
+		files, _ := decodeJSONMap(t, all)["files"].([]any)
+		listed := make([]string, 0, len(files))
+		for _, file := range files {
+			listed = append(listed, asString(file))
+		}
+		if want := append(slices.Clone(branchFiles), "seed.txt"); !slices.Equal(slices.Sorted(slices.Values(listed)), want) {
+			t.Fatalf("--at %s --all listed %v, want %v", branch, listed, want)
 		}
 
 		limited := mustLiveCLI(t, "repo", "browse", "tree", "--at", branch, "--limit", "2")
@@ -182,6 +219,11 @@ func TestLiveBranchModelInspectAnswersWithOneRef(t *testing.T) {
 			map[string]any{"name": name, "startPoint": commits[0]}); err != nil {
 			t.Fatalf("create branch %s: %v", name, err)
 		}
+		// Read back: a single ref is the answer a repository with no such
+		// branches gives too.
+		if tip := mutatedBranchTip(t, name); tip != commits[0] {
+			t.Fatalf("branch %s is at %s, want %s", name, tip, commits[0])
+		}
 	}
 
 	output := mustLiveCLI(t, "branch", "model", "inspect", commits[0], "--repo", repoRef, "--all")
@@ -189,5 +231,8 @@ func TestLiveBranchModelInspectAnswersWithOneRef(t *testing.T) {
 	if len(refs) != 1 {
 		t.Fatalf("four branches point at the commit and %d refs came back; if Bitbucket has started "+
 			"answering with all of them, `bb branch model inspect` can list and cap them:\n%s", len(refs), output)
+	}
+	if ref, _ := refs[0].(map[string]any); ref["displayId"] != "master" {
+		t.Errorf("the one ref named is %v, want the default branch, master:\n%s", ref["displayId"], output)
 	}
 }

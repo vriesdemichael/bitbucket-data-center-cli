@@ -67,6 +67,11 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 	if v, ok := prData["version"]; ok && v != nil {
 		prVersion = fmt.Sprintf("%v", v)
 	}
+	created := readLifecyclePR(t, prID)
+	assertLifecyclePRStored(t, created, map[string]any{
+		"title": "Hybrid Roundtrip PR", "sourceBranch": "feature/hybrid-test", "targetBranch": "master",
+	})
+	sourceCommit := asString(created["sourceCommit"])
 
 	// 4. In client-2 (separate clone), run bb pr checkout
 	workDir2 := filepath.Join(t.TempDir(), "client-2")
@@ -88,6 +93,10 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(workDir2, "hybrid-proof.txt")); err != nil {
 		t.Fatalf("expected hybrid-proof.txt to exist after bb pr checkout: %v", err)
 	}
+	// At the commit the pull request is from, not merely somewhere the file is.
+	if head, err := runGitCapture(workDir2, "rev-parse", "HEAD"); err != nil || strings.TrimSpace(head) != sourceCommit {
+		t.Fatalf("bb pr checkout left client-2 at %q (%v), want the pull request's source commit %s", strings.TrimSpace(head), err, sourceCommit)
+	}
 
 	// 5. Merge PR via REST API
 	_ = os.Chdir(originalDir)
@@ -95,6 +104,7 @@ func TestLiveHybridGitWireAndRESTRoundtrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr merge failed: %v\noutput: %s", err, mergeOutput)
 	}
+	assertLifecyclePRStored(t, readLifecyclePR(t, prID), map[string]any{"state": "MERGED"})
 
 	// 6. In client-3 (fresh clone after merge), verify commit is now on master
 	workDir3 := filepath.Join(t.TempDir(), "client-3")
@@ -143,6 +153,11 @@ func TestLiveRepoCloneAddsTheUpstreamRemote(t *testing.T) {
 	}
 	if forkSlug == "" {
 		t.Fatalf("the fork has no slug:\n%s", forkOutput)
+	}
+	// The name it was given: without it the fork would take the parent's, which
+	// the project already holds.
+	if !strings.EqualFold(forkSlug, forkName) {
+		t.Fatalf("the fork is %s, want the name it was given, %s", forkSlug, forkName)
 	}
 
 	cloneDir := filepath.Join(t.TempDir(), "fork")

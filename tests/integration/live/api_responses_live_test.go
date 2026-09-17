@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -43,6 +44,18 @@ func TestLiveApiResponseHandling(t *testing.T) {
 
 		if len(all) <= len(single) {
 			t.Fatalf("--paginate returned no more than one page\none page: %d bytes\nall: %d bytes", len(single), len(all))
+		}
+
+		// Every commit of the repository once, in the order the pages hold them:
+		// more bytes could as well be one page read three times.
+		values, _ := decodeJSONMap(t, all)["values"].([]any)
+		ids := make([]string, 0, len(values))
+		for _, entry := range values {
+			commit, _ := entry.(map[string]any)
+			ids = append(ids, asString(commit["id"]))
+		}
+		if !slices.Equal(ids, repo.CommitIDs) {
+			t.Fatalf("--paginate collected commits %v, want the seeded %v", ids, repo.CommitIDs)
 		}
 	})
 

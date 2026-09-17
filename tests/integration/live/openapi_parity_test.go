@@ -14,6 +14,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
@@ -45,6 +46,10 @@ func TestOpenAPIParity(t *testing.T) {
 		_ = cleanupParityData(cleanupCtx, cfg, seeded)
 	})
 
+	if err := verifyParitySeedStored(ctx, cfg, seeded); err != nil {
+		t.Fatalf("the parity data was not stored as sent: %v", err)
+	}
+
 	if err := verifyRepositoryListParity(ctx, cfg, seeded.ProjectKey, seeded.RepoSlug); err != nil {
 		t.Fatalf("repository list parity failed: %v", err)
 	}
@@ -54,6 +59,59 @@ type paritySeed struct {
 	ProjectKey string
 	RepoSlug   string
 	UserName   string
+
+	// What the seed sent, for reading back.
+	ProjectName, RepoName, UserDisplayName, UserEmail string
+}
+
+// verifyParitySeedStored reads the user, project and repository the seed
+// created back, field by field: a 2xx says Bitbucket took the request, not that
+// it kept everything in it.
+func verifyParitySeedStored(ctx context.Context, cfg config.AppConfig, seeded paritySeed) error {
+	client, err := newGeneratedClient(cfg)
+	if err != nil {
+		return err
+	}
+
+	user, err := client.GetUserWithResponse(ctx, seeded.UserName)
+	if err != nil {
+		return fmt.Errorf("read user %s back: %w", seeded.UserName, err)
+	}
+	stored := user.ApplicationjsonCharsetUTF8200
+	if stored == nil {
+		return fmt.Errorf("read user %s back: status %d", seeded.UserName, user.StatusCode())
+	}
+	if safederef.String(stored.DisplayName) != seeded.UserDisplayName || safederef.String(stored.EmailAddress) != seeded.UserEmail {
+		return fmt.Errorf("user %s is stored as %q <%s>, want %q <%s>", seeded.UserName,
+			safederef.String(stored.DisplayName), safederef.String(stored.EmailAddress), seeded.UserDisplayName, seeded.UserEmail)
+	}
+
+	project, err := client.GetProjectWithResponse(ctx, seeded.ProjectKey)
+	if err != nil {
+		return fmt.Errorf("read project %s back: %w", seeded.ProjectKey, err)
+	}
+	if project.ApplicationjsonCharsetUTF8200 == nil {
+		return fmt.Errorf("read project %s back: status %d", seeded.ProjectKey, project.StatusCode())
+	}
+	if name := safederef.String(project.ApplicationjsonCharsetUTF8200.Name); name != seeded.ProjectName {
+		return fmt.Errorf("project %s is named %q, want %q", seeded.ProjectKey, name, seeded.ProjectName)
+	}
+
+	repo, err := client.GetRepositoryWithResponse(ctx, seeded.ProjectKey, seeded.RepoSlug)
+	if err != nil {
+		return fmt.Errorf("read repository %s/%s back: %w", seeded.ProjectKey, seeded.RepoSlug, err)
+	}
+	storedRepo := repo.ApplicationjsonCharsetUTF8200
+	if storedRepo == nil {
+		return fmt.Errorf("read repository %s/%s back: status %d", seeded.ProjectKey, seeded.RepoSlug, repo.StatusCode())
+	}
+	// Not forkable, which a repository is unless told otherwise.
+	if safederef.String(storedRepo.Name) != seeded.RepoName || storedRepo.Forkable == nil || *storedRepo.Forkable {
+		return fmt.Errorf("repository %s/%s is stored as %q with forkable=%v, want %q not forkable",
+			seeded.ProjectKey, seeded.RepoSlug, safederef.String(storedRepo.Name), storedRepo.Forkable, seeded.RepoName)
+	}
+
+	return nil
 }
 
 func verifyHealthParity(ctx context.Context, cfg config.AppConfig) error {
@@ -219,7 +277,7 @@ func seedParityData(ctx context.Context, cfg config.AppConfig) (paritySeed, erro
 	}
 
 	scmID := "git"
-	forkable := true
+	forkable := false
 	createRepoBody := openapigenerated.CreateRepositoryJSONRequestBody{Name: &repoName, ScmId: &scmID, Forkable: &forkable}
 	createRepoResponse, err := client.CreateRepositoryWithResponse(ctx, projectKey, createRepoBody)
 	if err != nil {
@@ -234,7 +292,10 @@ func seedParityData(ctx context.Context, cfg config.AppConfig) (paritySeed, erro
 		repoSlug = *createRepoResponse.ApplicationjsonCharsetUTF8201.Slug
 	}
 
-	return paritySeed{ProjectKey: projectKey, RepoSlug: repoSlug, UserName: userName}, nil
+	return paritySeed{
+		ProjectKey: projectKey, RepoSlug: repoSlug, UserName: userName,
+		ProjectName: projectName, RepoName: repoName, UserDisplayName: "Parity User", UserEmail: userEmail,
+	}, nil
 }
 
 func cleanupParityData(ctx context.Context, cfg config.AppConfig, seeded paritySeed) error {

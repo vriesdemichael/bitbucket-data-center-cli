@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -114,6 +115,27 @@ func TestLiveListingsPageToTheEnd(t *testing.T) {
 		output := mustLiveCLI(t, "branch", "list", "--all")
 		if got := strings.Count(output, "\"displayId\""); got < branches {
 			t.Fatalf("--all returned %d of at least %d branches:\n%s", got, branches, output)
+		}
+
+		// And exactly the branches there are: master and the thirty made above,
+		// each created where it was asked to start. A page read twice would
+		// repeat one, and a create that lost its start point would sit elsewhere.
+		listed, _ := decodeJSONMap(t, output)["branches"].([]any)
+		names := make([]string, 0, len(listed))
+		want := []string{"master"}
+		for index := range branches {
+			want = append(want, fmt.Sprintf("paged-%03d", index))
+		}
+		for _, entry := range listed {
+			branch, _ := entry.(map[string]any)
+			name := asString(branch["displayId"])
+			names = append(names, name)
+			if name != "master" && name != "paged-000" && branch["latestCommit"] != commits[0] {
+				t.Errorf("branch %s is at %v, want its start point %s", name, branch["latestCommit"], commits[0])
+			}
+		}
+		if slices.Sort(names); !slices.Equal(names, want) {
+			t.Fatalf("--all listed %v, want %v", names, want)
 		}
 	})
 }
@@ -228,6 +250,14 @@ func TestLiveBranchRestrictionLimitCaps(t *testing.T) {
 	if count := countRestrictions(t, all); count < restrictions {
 		t.Fatalf("--all returned %d restrictions, want at least %d:\n%s", count, restrictions, all)
 	}
+	// The four made above, each read-only on the branch it names: a count of
+	// four could as well be four of something else.
+	for index := range restrictions {
+		matcher := fmt.Sprintf("refs/heads/capped-%d", index)
+		if found := restrictionsMatching(t, all, "read-only", matcher); len(found) != 1 {
+			t.Errorf("--all holds %d read-only restrictions on %s, want the one created:\n%s", len(found), matcher, all)
+		}
+	}
 
 	limited := mustLiveCLI(t, "branch", "restriction", "list", "--repo", repoRef, "--limit", "2")
 	if count := countRestrictions(t, limited); count != 2 {
@@ -264,21 +294,15 @@ func TestLiveCommitCompareLimitCaps(t *testing.T) {
 	oldest := repo.CommitIDs[len(repo.CommitIDs)-1]
 	newest := repo.CommitIDs[0]
 
-	countCommits := func(t *testing.T, output string) int {
-		t.Helper()
-
-		listed, _ := decodeJSONMap(t, output)["commits"].([]any)
-
-		return len(listed)
-	}
-
 	all := mustLiveCLI(t, "commit", "compare", newest, oldest, "--all")
-	if total := countCommits(t, all); total < 2 {
-		t.Fatalf("the seeded range has %d commits, too few to cap:\n%s", total, all)
+	// Every seeded commit but the oldest, newest first: what the range holds,
+	// which a compare that lost either ref would not answer with.
+	if ids := listedCommitIDs(t, all); !slices.Equal(ids, repo.CommitIDs[:len(repo.CommitIDs)-1]) {
+		t.Fatalf("compare from %s to %s listed %v, want %v", newest, oldest, ids, repo.CommitIDs[:len(repo.CommitIDs)-1])
 	}
 
 	limited := mustLiveCLI(t, "commit", "compare", newest, oldest, "--limit", "1")
-	if count := countCommits(t, limited); count != 1 {
-		t.Fatalf("--limit 1 returned %d commits:\n%s", count, limited)
+	if ids := listedCommitIDs(t, limited); !slices.Equal(ids, []string{newest}) {
+		t.Fatalf("--limit 1 returned %v, want [%s]", ids, newest)
 	}
 }

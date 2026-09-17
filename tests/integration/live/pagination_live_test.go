@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 )
@@ -63,6 +64,22 @@ func TestLiveCommitPaginationOverRealStream(t *testing.T) {
 	if len(envelopeShort.Data.Commits) != 10 {
 		t.Fatalf("expected exactly 10 commits for short query, got %d", len(envelopeShort.Data.Commits))
 	}
+
+	// Twenty-eight different commits, the newest ten of them the ten the short
+	// query returned: a second page that read the first again, or started in
+	// the wrong place, would repeat or skip.
+	ids := make([]string, 0, len(envelope.Data.Commits))
+	for _, commit := range envelope.Data.Commits {
+		ids = append(ids, asString(commit["id"]))
+	}
+	if distinct := slices.Compact(slices.Sorted(slices.Values(ids))); len(distinct) != len(ids) {
+		t.Errorf("the 28 commits hold only %d different ones: %v", len(distinct), ids)
+	}
+	for index, commit := range envelopeShort.Data.Commits {
+		if asString(commit["id"]) != ids[index] {
+			t.Errorf("commit %d of the short query is %v, and of the long one %s", index, commit["id"], ids[index])
+		}
+	}
 }
 
 func TestLiveBranchPaginationOverRealStream(t *testing.T) {
@@ -72,7 +89,7 @@ func TestLiveBranchPaginationOverRealStream(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2})
+	seeded, err := harness.seedRepo(ctx, repoSeed{Commits: 2, WithCommitIDs: true})
 	if err != nil {
 		t.Fatalf("seed project failed: %v", err)
 	}
@@ -81,12 +98,29 @@ func TestLiveBranchPaginationOverRealStream(t *testing.T) {
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	// Create 28 branches to exceed Bitbucket DC's default page size of 25
+	created := []string{"master"}
 	for index := 1; index <= 28; index++ {
 		branchName := fmt.Sprintf("feature/paginated-%02d", index)
 		createOutput, createErr := executeLiveCLI(t, "--json", "branch", "create", branchName, "--start-point", "refs/heads/master")
 		if createErr != nil {
 			t.Fatalf("create branch %s failed: %v\noutput: %s", branchName, createErr, createOutput)
 		}
+		created = append(created, branchName)
+	}
+
+	// Read back, all of them at master's tip: the listings below are counted,
+	// and a count cannot tell the branches created from other ones.
+	stored, _ := decodeJSONMap(t, mustLiveCLI(t, "branch", "list", "--all"))["branches"].([]any)
+	names := make([]string, 0, len(stored))
+	for _, entry := range stored {
+		branch, _ := entry.(map[string]any)
+		names = append(names, asString(branch["displayId"]))
+		if branch["latestCommit"] != repo.CommitIDs[0] {
+			t.Errorf("branch %v is at %v, want master's tip %s", branch["displayId"], branch["latestCommit"], repo.CommitIDs[0])
+		}
+	}
+	if slices.Sort(names); !slices.Equal(names, slices.Sorted(slices.Values(created))) {
+		t.Fatalf("the repository holds branches %v, want %v", names, created)
 	}
 
 	// List branches with limit 26: forces pagination traversal
@@ -106,5 +140,12 @@ func TestLiveBranchPaginationOverRealStream(t *testing.T) {
 
 	if len(envelope.Data.Branches) != 26 {
 		t.Fatalf("expected exactly 26 branches across paginated stream, got %d", len(envelope.Data.Branches))
+	}
+	listed := make([]string, 0, len(envelope.Data.Branches))
+	for _, branch := range envelope.Data.Branches {
+		listed = append(listed, asString(branch["displayId"]))
+	}
+	if distinct := slices.Compact(slices.Sorted(slices.Values(listed))); len(distinct) != len(listed) {
+		t.Errorf("the 26 branches hold only %d different ones: %v", len(distinct), listed)
 	}
 }
