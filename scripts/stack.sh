@@ -105,13 +105,23 @@ running_container() {
   compose ps -q --status running bitbucket 2>/dev/null || true
 }
 
+# licence_issued_at prints when the instance in a container was issued its
+# licence.
+#
+# MSYS_NO_PATHCONV, because Git Bash on Windows rewrites an argument starting
+# with / into a Windows path before docker sees it. The read failed there, so
+# `up` never started an aged instance again and `status` called it not running.
+licence_issued_at() {
+  MSYS_NO_PATHCONV=1 docker exec "$1" cat /tmp/licence-issued-at 2>/dev/null
+}
+
 # age_seconds prints how long ago this checkout's instance was issued its
 # licence, and fails when it is not running.
 age_seconds() {
   local container issued
   container="$(running_container)"
   [ -n "$container" ] || return 1
-  issued="$(docker exec "$container" cat /tmp/licence-issued-at 2>/dev/null)" || return 1
+  issued="$(licence_issued_at "$container")" || return 1
   echo $(( $(date +%s) - issued ))
 }
 
@@ -121,7 +131,7 @@ remaining_seconds() {
   local container issued retire
   container="$(running_container)"
   [ -n "$container" ] || return 1
-  issued="$(docker exec "$container" cat /tmp/licence-issued-at 2>/dev/null)" || return 1
+  issued="$(licence_issued_at "$container")" || return 1
   retire="$(docker exec "$container" printenv BB_LICENCE_RETIRE_SECONDS 2>/dev/null)" || return 1
   echo $(( issued + retire - $(date +%s) ))
 }
