@@ -450,6 +450,9 @@ Responses follow the machine output contract:
   signal — re-running replays mutations across the whole plan.
 - `unknown_outcome` (`exit 13`): A mutation reached Bitbucket and no usable answer came back, so it
   may have been applied. Read the status artifact before re-running.
+- `unsupported` (`exit 14`): An operation asked for something this Bitbucket release cannot do,
+  and the message names the release that can. Nothing was sent for it; change the policy or
+  the instance.
 - `transient` (`exit 10`): A failure a retry may fix. `permanent` or `internal` (`exit 1`):
   one it will not, or a bb bug.
 

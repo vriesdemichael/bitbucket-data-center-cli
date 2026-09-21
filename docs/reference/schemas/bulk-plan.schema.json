@@ -116,6 +116,7 @@
             "not_implemented",
             "cancelled",
             "unknown_outcome",
+            "unsupported",
             "internal"
           ],
           "type": "string"

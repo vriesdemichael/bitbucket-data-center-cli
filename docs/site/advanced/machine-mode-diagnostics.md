@@ -119,6 +119,7 @@ Command failures use deterministic exit codes by error kind.
 - `not_implemented` -> exit code `11`
 - `cancelled` -> exit code `12` (interrupted; not something to retry automatically)
 - `unknown_outcome` -> exit code `13` (the request was sent and whether it was applied is unknown)
+- `unsupported` -> exit code `14` (the Bitbucket instance's version cannot do it; a newer one can)
 - `permanent` and `internal` (or unknown) -> exit code `1`
 
 `unknown_outcome` is the one worth wiring into a script deliberately. It means bb

@@ -38,6 +38,14 @@ const (
 	// repeated. Reporting it as transient sent callers to replay exactly what
 	// the retry policy had already refused to replay (#574).
 	KindUnknownOutcome Kind = "unknown_outcome"
+
+	// KindUnsupported is something the Bitbucket instance's release cannot do
+	// and bb cannot make up for: a capability a later release added.
+	//
+	// Distinct from not_implemented, which is bb lacking something. The remedy
+	// differs -- this one is a newer Bitbucket, not a newer bb -- and a caller
+	// deciding what to tell a person needs to know which.
+	KindUnsupported Kind = "unsupported"
 )
 
 type AppError struct {
@@ -144,6 +152,7 @@ func Kinds() []Kind {
 		KindNotImplemented,
 		KindCancelled,
 		KindUnknownOutcome,
+		KindUnsupported,
 		KindInternal,
 	}
 }
@@ -193,6 +202,8 @@ func ExitCode(err error) int {
 			// Deliberately not in the retriable range: a wrapper that retries on
 			// 10 must not retry this one.
 			return 13
+		case KindUnsupported:
+			return 14
 		default:
 			return 1
 		}

@@ -562,9 +562,9 @@ the installed version.
 
 Check for `error` before reading `data`. `kind` is one of `authentication`,
 `authorization`, `validation`, `not_found`, `conflict`, `transient`, `permanent`,
-`not_implemented`, `cancelled`, `unknown_outcome`, `internal` — so you can tell "fix your
-invocation" from "retry later" without parsing the message. `exitCode` matches the process
-exit status.
+`not_implemented`, `cancelled`, `unknown_outcome`, `unsupported`, `internal` — so you can
+tell "fix your invocation" from "retry later" without parsing the message. `exitCode`
+matches the process exit status.
 
 `cancelled` / exit `12` means somebody interrupted the command. Do not retry it
 automatically: for a mutating command like `bb bulk apply` that re-runs the work the
@@ -573,6 +573,10 @@ operator just stopped. Report it and wait for instruction.
 `unknown_outcome` / exit `13` means the request reached Bitbucket and no usable answer came back,
 so it may have been applied. Never retry it automatically. Check the state first — does
 the pull request, comment or branch exist — and then decide.
+
+`unsupported` / exit `14` means this Bitbucket release cannot do what was asked, and the
+message names the release that can. Nothing was sent, so nothing changed. Retrying and
+rewording the invocation both fail; report it and offer what the release can do instead.
 
 A failure may carry an optional `error.details` object — a flat string map of handles you
 need to act on it. `bb bulk apply` puts `operationId` there, which `bb bulk status <id>`
