@@ -7,8 +7,10 @@ search:
 
 ## Which Bitbucket versions work
 
-`bb` is tested against Bitbucket Data Center [[ bitbucket_version ]] on every
-pull request. A newer release is adopted once the suite passes against it.
+`bb` works with the Bitbucket Data Center releases in
+[Bitbucket Versions](reference/bitbucket-versions.md), and is tested against
+[[ bitbucket_version ]] on every pull request. A newer release is adopted once
+the suite passes against it.
 
 !!! warning "Data Center only — Bitbucket Cloud is not supported"
 

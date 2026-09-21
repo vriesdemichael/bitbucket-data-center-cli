@@ -1,0 +1,43 @@
+---
+search:
+  boost: 0.3
+---
+
+# ADR 088: Every Bitbucket release Atlassian supports is served, and none is dropped
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `088`
+- Title: `Every Bitbucket release Atlassian supports is served, and none is dropped`
+- Category: `architecture`
+- Status: `accepted`
+- Amends: `28, 42`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/088-every-bitbucket-release-atlassian-supports-is-served.yaml`
+
+## Decision
+
+bb serves every Bitbucket Data Center release Atlassian supports, and never drops one. A release past Atlassian's end of support stops being tested, not served. The oldest release served is stated once, in docs/site/reference/bitbucket-versions.md.
+bb is generated against the newest release (ADR-042). An older release behaves the same except where the catalogue in that page says otherwise, and each difference is handled in the call it affects and nowhere else:
+  - The call asks the instance's release through internal/compat, once per instance per process,
+    and only when the request or the answer is one the release changes.
+  - Where bb can make the older release answer as the newest does, it does.
+  - Where it cannot, it refuses before sending, with kind unsupported (exit 14), naming the release
+    that has the capability. A dry run refuses the same way.
+
+A difference is found by running the live suite against the release: `RELEASE=<tag> task test:live`. Every release served passes it at least once, locally; CI runs the newest. A live test whose behaviour differs by release asserts each side, with the boundary stated in the test.
+docs/openapi/fixes.yaml records only where a published specification is wrong about the release it describes (ADR-028). A capability an older release lacks is not a specification error, and is catalogued in the versions page instead.
+
+## Agent Instructions
+
+When a live test fails on an older release and passes on the newest, compare what each release stores before changing anything. A real difference gets a compat.Difference with the release it arrived in, a row in docs/site/reference/bitbucket-versions.md, and either an adaptation or a refusal in the call that differs; the test then asserts both sides against a boundary it states itself. Never branch on the release outside the call that differs, never skip a test on a release, and never send a request an older release answers 200 and ignores. Do not generate a client per release, and do not remove a release from the page when Atlassian ends its support.
+
+## Rationale
+
+Bitbucket answers 2xx to a JSON property it does not know and ignores it, so an older release does not refuse what it cannot do: it does something else. Before 10.2 a required build created to spare pull requests blocks them, while bb reported its scope as absent rather than as enforced. Only the release says which requests those are, and administrators run releases on their own schedule, so the window a tool supports has to include what Atlassian still supports.
+
+## Rejected Alternatives
+
+- `A generated client per release`: Multiplies the generated code by the number of releases for differences that fit in a table, and still needs a release check to choose the client.
+- `Infer the release from what an answer leaves out`: A request cannot be checked that way, and the differences that do harm are in requests. The release is read, and only when a call is one that differs.
+- `Drop a release when Atlassian ends its support`: Nothing about the release changes on that date, and the administrators still running it lose bb for no reason. Testing it stops; serving it does not.

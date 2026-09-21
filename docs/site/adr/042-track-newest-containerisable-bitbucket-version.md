@@ -12,6 +12,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Category: `architecture`
 - Status: `accepted`
 - Supersedes: `018`
+- Amended By: `088`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/042-track-newest-containerisable-bitbucket-version.yaml`
 

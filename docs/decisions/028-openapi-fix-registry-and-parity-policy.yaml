@@ -2,6 +2,7 @@ number: 28
 title: OpenAPI fix registry and parity enforcement
 category: development
 status: accepted
+amended_by: 88
 decision: >
   Maintain a dedicated YAML registry at docs/openapi/fixes.yaml for every workaround,
   sanitizer rule, post-generation fix, or runtime/test adaptation needed on top of

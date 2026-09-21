@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `OpenAPI fix registry and parity enforcement`
 - Category: `development`
 - Status: `accepted`
+- Amended By: `088`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/028-openapi-fix-registry-and-parity-policy.yaml`
 

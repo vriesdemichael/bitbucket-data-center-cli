@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `87`
-- Accepted ADRs: `76`
+- Total ADRs: `88`
+- Accepted ADRs: `77`
 
 ## ADR List
 
@@ -96,4 +96,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 085: A test fixture is named at random, not from the clock](085-a-test-fixture-is-named-at-random.md) (`development`, `accepted`)
 - [ADR 086: bb doctor reports the configuration without loading it](086-bb-doctor-reports-the-configuration-without-loading-it.md) (`architecture`, `accepted`)
 - [ADR 087: Quoted messages are checked against the source that prints them](087-quoted-messages-are-checked-against-the-source-that-prints-them.md) (`development`, `accepted`)
+- [ADR 088: Every Bitbucket release Atlassian supports is served, and none is dropped](088-every-bitbucket-release-atlassian-supports-is-served.md) (`architecture`, `accepted`)
 

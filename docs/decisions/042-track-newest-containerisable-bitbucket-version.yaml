@@ -2,6 +2,7 @@ number: 42
 title: Track the newest containerisable Bitbucket version
 category: architecture
 status: accepted
+amended_by: 88
 supersedes: 18
 decision: >
   Target the newest Bitbucket Data Center version that runs in this project's container stack and
