@@ -15,10 +15,14 @@ exists.
 | `command-reach.json` | which CLI commands the live suite proves work against a real Bitbucket | `task quality:command-reach:update` | `task quality:command-reach:verify` |
 | `spec-coverage.json` | which `(method, path)` operations from the Bitbucket spec the CLI reaches | `task quality:spec-coverage:update` | `task quality:spec-coverage:verify` |
 | `unit-test-mock-inventory.json` | every mocked Bitbucket server left in the unit suite, and what each one assumes | `go run ./tools/mock-inventory -write` | `go run ./tools/mock-inventory -verify` |
+| `bitbucket-releases.json` | which Bitbucket Data Center releases bb serves and runs the live suite against | `task quality:bitbucket-releases:update` | `task quality:bitbucket-releases:verify` |
 
-Both verify commands are static analysis: they read the Cobra command tree, the live test sources,
-the OpenAPI spec and the services source. Neither starts Bitbucket, so both run in the fast CI job
-and in the pre-push hook.
+Every verify command is static analysis: they read the Cobra command tree, the live test sources,
+the OpenAPI spec, the services source, internal/compat and the versions page. None starts Bitbucket,
+so all of them run in the fast CI job and in the pre-push hook.
+
+Which releases passed the live suite is a measurement rather than a baseline, so it is not committed:
+`task test:live:matrix` runs the window and writes the result to `.tmp/`.
 
 `task quality:verify` runs all of them together.
 

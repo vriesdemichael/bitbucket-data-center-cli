@@ -26,6 +26,7 @@ bb is generated against the newest release (ADR-042). An older release behaves t
     that has the capability. A dry run refuses the same way.
 
 A difference is found by running the live suite against the release: `RELEASE=<tag> task test:live`. Every release served passes it at least once, locally; CI runs the newest. A live test whose behaviour differs by release asserts each side, with the boundary stated in the test.
+The window is docs/quality/bitbucket-releases.json, and `task quality:bitbucket-releases:verify` refuses a difference the page does not catalogue, a catalogue entry no call declares, and a stack provisioning a release the window does not name.
 docs/openapi/fixes.yaml records only where a published specification is wrong about the release it describes (ADR-028). A capability an older release lacks is not a specification error, and is catalogued in the versions page instead.
 
 ## Agent Instructions

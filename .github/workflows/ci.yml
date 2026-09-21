@@ -218,6 +218,12 @@ jobs:
       - name: Verify the mocked-server inventory is current
         run: task quality:mock-inventory:verify
 
+      # Catches a difference between Bitbucket releases that internal/compat
+      # acts on and the versions page does not catalogue, or the other way
+      # round, and a stack bumped to a release the window does not name.
+      - name: Verify the window of Bitbucket releases is current
+        run: task quality:bitbucket-releases:verify
+
       # Catches documented commands that do not parse against the real command
       # tree. Six had accumulated by v2.0.2, including the README quickstart and
       # the agent skill, which agents emit verbatim.

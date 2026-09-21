@@ -13,6 +13,7 @@ was built for and no committed file can go stale.
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import re
@@ -40,6 +41,15 @@ FALLBACK_VERSION = "X.Y.Z"
 HARNESS_DOCKERFILE = pathlib.Path(__file__).resolve().parent.parent / "docker" / "harness" / "Dockerfile"
 HARNESS_IMAGE_PATTERN = re.compile(r"^FROM\s+atlassian/bitbucket:(\S+)", re.MULTILINE)
 
+# The releases the live suite is run against, read from the baseline that
+# records them rather than listed again in prose.
+#
+# The window is a claim about what bb serves, and a sentence naming the
+# releases is a copy of it: the copy is what goes stale when a release is added
+# or Atlassian ends support for one. `task quality:bitbucket-releases:verify`
+# holds the baseline, internal/compat and the versions page together.
+RELEASES_BASELINE = pathlib.Path(__file__).resolve().parent / "quality" / "bitbucket-releases.json"
+
 
 def resolve_bitbucket_version() -> str:
     """Version of the Bitbucket image the live harness builds on.
@@ -55,6 +65,29 @@ def resolve_bitbucket_version() -> str:
     match = HARNESS_IMAGE_PATTERN.search(dockerfile)
     return match.group(1) if match else FALLBACK_VERSION
 
+
+
+def resolve_bitbucket_releases_tested() -> str:
+    """Every release the live suite is run against except the newest.
+
+    The newest is named separately, by the macro that reads the stack
+    definition, so naming it here as well would read as two claims about one
+    thing. An unreadable baseline renders the same placeholder the version
+    macros use, so a reader knows the value is missing rather than trusting a
+    wrong one.
+    """
+    try:
+        recorded = json.loads(RELEASES_BASELINE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return FALLBACK_VERSION
+
+    releases = [str(release) for release in recorded.get("releases", [])][:-1]
+    if not releases:
+        return FALLBACK_VERSION
+    if len(releases) == 1:
+        return releases[0]
+
+    return ", ".join(releases[:-1]) + " and " + releases[-1]
 
 
 def _from_environment() -> str | None:
@@ -106,6 +139,7 @@ def define_env(env) -> None:
     env.variables["bb_version"] = bare
     env.variables["bb_version_tag"] = tag
     env.variables["bitbucket_version"] = resolve_bitbucket_version()
+    env.variables["bitbucket_releases_tested"] = resolve_bitbucket_releases_tested()
 
 
 # Files mkdocs copies verbatim instead of running through the macro engine.

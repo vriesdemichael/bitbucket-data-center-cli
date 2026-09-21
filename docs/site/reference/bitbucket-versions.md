@@ -4,8 +4,8 @@
 stays supported after Atlassian ends its support; it is only no longer tested.
 
 The newest release, [[ bitbucket_version ]], is tested on every pull request.
-Every other release in the window — 9.2, 9.3, 9.4, 9.5, 9.6, 10.0, 10.1, 10.2
-and 10.3 — is checked by running that same suite against a real instance of it.
+Every other release in the window — [[ bitbucket_releases_tested ]] — is
+checked by running that same suite against a real instance of it.
 
 ## Where an older release differs
 
@@ -33,3 +33,6 @@ task test:live RELEASE=9.4.24
 
 It starts an instance of that release beside the one already running, and a
 test whose behaviour differs by release checks the side that applies.
+
+`task test:live:matrix` does the same for every release in the window, one
+after another, and writes which of them passed to `.tmp/`.

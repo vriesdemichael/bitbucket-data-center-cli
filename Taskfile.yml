@@ -252,6 +252,7 @@ tasks:
       - task: quality:spec-coverage:verify
       - task: quality:command-reach:verify
       - task: quality:mock-inventory:verify
+      - task: quality:bitbucket-releases:verify
       - task: test:live:compile
       - task: docs:lint
       - task: docs:verify-generated
@@ -404,6 +405,21 @@ tasks:
     cmds:
       - go run ./tools/mock-inventory -verify
 
+  quality:bitbucket-releases:
+    desc: Print the Bitbucket releases bb serves and the differences between them
+    cmds:
+      - go run ./tools/bitbucket-releases
+
+  quality:bitbucket-releases:update:
+    desc: Normalise the committed window of Bitbucket releases
+    cmds:
+      - go run ./tools/bitbucket-releases -write
+
+  quality:bitbucket-releases:verify:
+    desc: Fail when the window, the differences internal/compat declares and the versions page disagree (static analysis; needs no Bitbucket instance)
+    cmds:
+      - go run ./tools/bitbucket-releases -verify
+
   quality:command-reach:
     desc: Print which CLI commands the live suite proves work against a real Bitbucket
     cmds:
@@ -524,6 +540,33 @@ tasks:
       # found"; a relative path is not resolved against the task's dir either,
       # and reports the same thing.
       - '{{ .ROOT_DIR | replace "\\" "/" }}/.tmp/live.test.exe -test.timeout=20m -test.parallel={{.LIVE_PARALLEL}}'
+
+  test:live:matrix:
+    desc: Run the live suite against every Bitbucket release bb serves, one at a time (hours)
+    # ADR-088 asks every release served to pass the suite at least once. The
+    # window it runs is docs/quality/bitbucket-releases.json, so the releases
+    # are not listed twice.
+    #
+    # Which releases passed is a measurement, so it lands in .tmp rather than
+    # in the repository (ADR-045). An instance is stopped after its release
+    # passes and left up after a failure, which is what a re-run needs.
+    cmds:
+      - mkdir -p .tmp
+      - |
+        summary=.tmp/bitbucket-releases-matrix.txt
+        : > "$summary"
+        failed=0
+        for release in $(go run ./tools/bitbucket-releases -list); do
+          if task test:live RELEASE="$release"; then
+            echo "$release: passed" >> "$summary"
+            task stack:down RELEASE="$release"
+          else
+            echo "$release: FAILED" >> "$summary"
+            failed=1
+          fi
+        done
+        cat "$summary"
+        exit "$failed"
 
   release:promote:check:
     desc: Verify next can fast-forward onto main, and that CI passed on it, before promoting
