@@ -138,6 +138,10 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
 					return err
 				}
+				// Refused before planning, as the create is.
+				if err := service.RefuseRestrictionType(cmd.Context(), createType); err != nil {
+					return err
+				}
 
 				restrictions, err := service.ListRestrictions(cmd.Context(), args[0], projectservice.RestrictionListOptions{MaxResults: projectservice.AllResults})
 				if err != nil {
@@ -231,6 +235,9 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			service := projectservice.NewService(client)
 			if deps.DryRunEnabled() {
 				if err := preflight.ProjectAdmin(cmd.Context(), deps.PermissionChecker, client, args[0]); err != nil {
+					return err
+				}
+				if err := service.RefuseRestrictionType(cmd.Context(), updateType); err != nil {
 					return err
 				}
 

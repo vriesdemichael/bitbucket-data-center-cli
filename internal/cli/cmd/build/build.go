@@ -416,6 +416,11 @@ func New(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
+				// Refused before planning, as the real run is: a preview of a
+				// scope the release would ignore describes what will not happen.
+				if err := service.RefuseRequiredBuildScope(cmd.Context(), payload); err != nil {
+					return err
+				}
 
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
 					Intent:          "build.required.create",
@@ -470,6 +475,9 @@ func New(deps Dependencies) *cobra.Command {
 
 			if d.DryRunEnabled() {
 				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+					return err
+				}
+				if err := service.RefuseRequiredBuildScope(cmd.Context(), payload); err != nil {
 					return err
 				}
 

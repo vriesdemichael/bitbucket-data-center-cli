@@ -752,6 +752,10 @@ func New(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
+				// Refused before planning, as the create is.
+				if err := service.RefuseRestrictionType(cmd.Context(), createRestrictionType); err != nil {
+					return err
+				}
 
 				restrictions, err := service.ListRestrictions(cmd.Context(), repo, branchservice.RestrictionListOptions{MaxResults: branchservice.AllResults})
 				if err != nil {
@@ -849,6 +853,9 @@ func New(deps Dependencies) *cobra.Command {
 			service := branchservice.NewService(client)
 			if d.DryRunEnabled() {
 				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
+					return err
+				}
+				if err := service.RefuseRestrictionType(cmd.Context(), updateRestrictionType); err != nil {
 					return err
 				}
 

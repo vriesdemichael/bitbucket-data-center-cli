@@ -9,18 +9,30 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/compat"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
-// TestLiveRequiredBuildScope checks that a required build scoped to the merge
-// queue alone is stored with that scope, and leaves pull requests mergeable.
+// requiredBuildScopeSince is the first release that stores a required build's
+// scope: 10.1.5 answered 200 to both fields and dropped them, 10.2.7 stored
+// them. Stated here rather than read from internal/compat, so that a boundary
+// set wrong there fails on a release instead of agreeing with itself.
+var requiredBuildScopeSince = compat.Release{Major: 10, Minor: 2}
+
+// TestLiveRequiredBuildScope checks what a required build's scope does on the
+// release under test.
 //
-// The scope arrived with merge queues. A server from before them answers 200
-// to both fields and drops them (observed on 10.0.2), so the build is required
-// on every pull request -- while bb, which turns the absent fields into false,
-// still prints requiredForPullRequest=false, exactly what was asked for.
-// Reading the check back through bb cannot see that half of the drop, so the
-// test also asks Bitbucket whether the build blocks a pull request.
+// From 10.2 a build required for the merge queue alone is stored with that
+// scope and leaves pull requests mergeable. An earlier release answers 200 to
+// both fields and drops them, so the build would block every pull request while
+// bb printed the scope that was asked for. bb refuses it there instead, and the
+// test proves both halves: the refusal, and that nothing was made.
+//
+// Either way a check created without a scope reads back as applying to pull
+// requests, as every release enforces it. From 10.2 Bitbucket applies it to the
+// merge queue as well; before it there is no merge queue, and bb reports that
+// rather than the absent fields as false.
 func TestLiveRequiredBuildScope(t *testing.T) {
 	t.Parallel()
 
@@ -33,24 +45,57 @@ func TestLiveRequiredBuildScope(t *testing.T) {
 		t.Fatalf("seed project failed: %v", err)
 	}
 	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	release := harness.release(t)
+
+	// A check on a branch nothing below targets: one on master applying to pull
+	// requests would block the pull request opened there.
+	plainKey := testsupport.UniqueName("unscoped-")
+	plainID := createRequiredBuildCheckWithRetry(t,
+		fmt.Sprintf(`{"buildParentKeys":[%q],"refMatcher":{"id":"refs/heads/unscoped","type":{"id":"BRANCH"}}}`, plainKey))
+	// From 10.2 Bitbucket applies it to the merge queue too, and says so. Before
+	// it there is no merge queue, and bb says that.
+	forMergeQueue := !release.Before(requiredBuildScopeSince)
+
+	t.Run("a check without a scope applies to pull requests", func(t *testing.T) {
+		assertRequiredBuildScope(t, "build required list", mustLiveCLI(t, "build", "required", "list"), plainID, true, forMergeQueue)
+		assertRequiredBuildScope(t, "repo settings pull-requests merge-checks list",
+			mustLiveCLI(t, "repo", "settings", "pull-requests", "merge-checks", "list", "--repo", repoRef), plainID, true, forMergeQueue)
+	})
 
 	buildKey := testsupport.UniqueName("merge-queue-only-")
 	body := fmt.Sprintf(`{"buildParentKeys":[%q],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}},"requiredForPullRequest":false,"requiredForMergeQueue":true}`, buildKey)
-	requiredID := createRequiredBuildCheckWithRetry(t, body)
 
-	var listed any
-	if err := decodeJSONEnvelopeData(mustLiveCLI(t, "build", "required", "list"), &listed); err != nil {
-		t.Fatalf("build required list returned invalid JSON: %v", err)
+	if release.Before(requiredBuildScopeSince) {
+		t.Run("a release without the scope refuses it and changes nothing", func(t *testing.T) {
+			// The update carries the same scope against the check that exists,
+			// so a refusal that came too late would be visible on it.
+			update := fmt.Sprintf(`{"buildParentKeys":[%q],"refMatcher":{"id":"refs/heads/unscoped","type":{"id":"BRANCH"}},"requiredForPullRequest":false,"requiredForMergeQueue":true}`, plainKey)
+			// The command words stay in the literal each row spreads, which is
+			// the shape tools/command-reach can read.
+			for _, args := range [][]string{
+				append([]string{"--json", "--dry-run", "build", "required", "create", "--body"}, body),
+				append([]string{"--json", "build", "required", "create", "--body"}, body),
+				append([]string{"--json", "--dry-run", "build", "required", "update"}, plainID, "--body", update),
+				append([]string{"--json", "build", "required", "update"}, plainID, "--body", update),
+			} {
+				output, err := executeLiveCLI(t, args...)
+				assertUnsupportedOn(t, release, err, output)
+			}
+
+			if listed := mustLiveCLI(t, "build", "required", "list"); strings.Contains(listed, buildKey) {
+				t.Fatalf("a refused create left a check for %s behind:\n%s", buildKey, listed)
+			}
+			assertRequiredBuildScope(t, "build required list", mustLiveCLI(t, "build", "required", "list"), plainID, true, false)
+		})
+
+		return
 	}
-	check, ok := findByID(listed, requiredID)
-	if !ok {
-		t.Fatalf("the check just created (id %s) is not in the list: %v", requiredID, listed)
-	}
-	if check["requiredForPullRequest"] != false || check["requiredForMergeQueue"] != true {
-		t.Errorf("stored scope = requiredForPullRequest %v, requiredForMergeQueue %v; want false, true",
-			check["requiredForPullRequest"], check["requiredForMergeQueue"])
-	}
+
+	requiredID := createRequiredBuildCheckWithRetry(t, body)
+	assertRequiredBuildScope(t, "build required list", mustLiveCLI(t, "build", "required", "list"), requiredID, false, true)
 
 	const branch = "feature/merge-queue-only"
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "merge-queue-only.txt"); err != nil {
@@ -65,6 +110,38 @@ func TestLiveRequiredBuildScope(t *testing.T) {
 	}
 	if human := mustLiveHumanCLI(t, "pr", "get", id); strings.Contains(human, "Merge blockers:") {
 		t.Errorf("a build required only for the merge queue is named as a merge blocker:\n%s", human)
+	}
+}
+
+// assertRequiredBuildScope reads one check's scope out of a listing of required
+// builds.
+func assertRequiredBuildScope(t *testing.T, listing, output, id string, forPullRequest, forMergeQueue bool) {
+	t.Helper()
+
+	var listed any
+	if err := decodeJSONEnvelopeData(output, &listed); err != nil {
+		t.Fatalf("%s returned invalid JSON: %v\n%s", listing, err, output)
+	}
+	check, ok := findByID(listed, id)
+	if !ok {
+		t.Fatalf("check %s is not in %s:\n%s", id, listing, output)
+	}
+	if check["requiredForPullRequest"] != forPullRequest || check["requiredForMergeQueue"] != forMergeQueue {
+		t.Errorf("%s reads check %s as requiredForPullRequest %v, requiredForMergeQueue %v; want %t, %t",
+			listing, id, check["requiredForPullRequest"], check["requiredForMergeQueue"], forPullRequest, forMergeQueue)
+	}
+}
+
+// assertUnsupportedOn checks a command was refused as unsupported by the
+// release under test, in the words a caller reads.
+func assertUnsupportedOn(t *testing.T, release compat.Release, err error, output string) {
+	t.Helper()
+
+	if code := apperrors.ExitCode(err); code != 14 {
+		t.Fatalf("exit %d on %s, want 14 (unsupported): %v\n%s", code, release, err, output)
+	}
+	if message := err.Error(); !strings.Contains(message, "not supported by this Bitbucket version ("+release.String()+")") {
+		t.Errorf("the refusal does not name the release it was refused on: %v", err)
 	}
 }
 

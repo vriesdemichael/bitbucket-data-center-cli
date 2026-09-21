@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/compat"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -92,9 +93,24 @@ func (service *Service) DeleteRepositoryCondition(ctx context.Context, projectKe
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
+// RefuseReviewerGroups refuses a condition naming reviewer groups on a release
+// that would drop them (compat.ConditionReviewerGroups), before anything is
+// sent. Only a condition that names groups asks for the release.
+func (service *Service) RefuseReviewerGroups(ctx context.Context, groups *[]openapigenerated.RestReviewerGroup) error {
+	if groups == nil || len(*groups) == 0 {
+		return nil
+	}
+
+	return compat.ConditionReviewerGroups.Require(ctx, service.client)
+}
+
 func (service *Service) CreateProjectCondition(ctx context.Context, projectKey string, condition openapigenerated.RestDefaultReviewersRequest) (openapigenerated.RestPullRequestCondition, error) {
 	if strings.TrimSpace(projectKey) == "" {
 		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindValidation, "project key is required", nil)
+	}
+
+	if err := service.RefuseReviewerGroups(ctx, condition.ReviewerGroups); err != nil {
+		return openapigenerated.RestPullRequestCondition{}, err
 	}
 
 	response, err := service.client.CreatePullRequestConditionWithResponse(ctx, projectKey, condition)
@@ -125,6 +141,10 @@ func (service *Service) CreateRepositoryCondition(ctx context.Context, projectKe
 		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindValidation, "project key and repository slug are required", nil)
 	}
 
+	if err := service.RefuseReviewerGroups(ctx, condition.ReviewerGroups); err != nil {
+		return openapigenerated.RestPullRequestCondition{}, err
+	}
+
 	response, err := service.client.CreatePullRequestCondition1WithResponse(ctx, projectKey, repositorySlug, condition)
 	if err != nil {
 		return openapigenerated.RestPullRequestCondition{}, apperrors.Transport("failed to create repository reviewer condition", err)
@@ -153,6 +173,10 @@ func (service *Service) UpdateProjectCondition(ctx context.Context, projectKey s
 		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindValidation, "project key and condition ID are required", nil)
 	}
 
+	if err := service.RefuseReviewerGroups(ctx, condition.ReviewerGroups); err != nil {
+		return openapigenerated.RestPullRequestCondition{}, err
+	}
+
 	response, err := service.client.UpdatePullRequestConditionWithResponse(ctx, projectKey, conditionID, condition)
 	if err != nil {
 		return openapigenerated.RestPullRequestCondition{}, apperrors.Transport("failed to update project reviewer condition", err)
@@ -171,6 +195,10 @@ func (service *Service) UpdateProjectCondition(ctx context.Context, projectKey s
 func (service *Service) UpdateRepositoryCondition(ctx context.Context, projectKey, repositorySlug string, conditionID string, condition openapigenerated.UpdatePullRequestCondition1JSONRequestBody) (openapigenerated.RestPullRequestCondition, error) {
 	if strings.TrimSpace(projectKey) == "" || strings.TrimSpace(repositorySlug) == "" || strings.TrimSpace(conditionID) == "" {
 		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindValidation, "project key, repository slug, and condition ID are required", nil)
+	}
+
+	if err := service.RefuseReviewerGroups(ctx, condition.ReviewerGroups); err != nil {
+		return openapigenerated.RestPullRequestCondition{}, err
 	}
 
 	response, err := service.client.UpdatePullRequestCondition1WithResponse(ctx, projectKey, repositorySlug, conditionID, condition)

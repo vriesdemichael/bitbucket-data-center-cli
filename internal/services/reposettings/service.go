@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/compat"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/webhookfields"
@@ -486,6 +487,22 @@ func (service *Service) ListRequiredBuildsMergeChecks(ctx context.Context, repo 
 	var payload any
 	if err := json.Unmarshal(response.Body, &payload); err != nil {
 		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode merge checks payload", err)
+	}
+
+	// The scope a release before compat.RequiredBuildScope enforces and does
+	// not report, filled in so the listing reads the way the newest release's
+	// does. The release is only asked when a check leaves its scope out.
+	page, decoded := payload.(map[string]any)
+	if decoded && response.ApplicationjsonCharsetUTF8200 != nil && response.ApplicationjsonCharsetUTF8200.Values != nil &&
+		compat.RequiredBuildScopeUnreported(*response.ApplicationjsonCharsetUTF8200.Values) {
+		lacks, err := compat.RequiredBuildScope.LackedBy(ctx, service.client)
+		if err != nil {
+			return nil, err
+		}
+		if lacks {
+			values, _ := page["values"].([]any)
+			compat.ReportRequiredBuildScopeIn(values)
+		}
 	}
 
 	return payload, nil

@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/compat"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -163,7 +164,7 @@ func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo Reposi
 		maxResults = 25
 	}
 
-	return openapi.PageThrough(ctx, 0, maxResults,
+	checks, err := openapi.PageThrough(ctx, 0, maxResults,
 		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestRequiredBuildCondition], error) {
 			startValue, limitValue := float32(start), float32(limit)
 			response, err := service.client.GetPageOfRequiredBuildsMergeChecksWithResponse(ctx, repo.ProjectKey, repo.Slug,
@@ -186,10 +187,75 @@ func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo Reposi
 				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
+	if err != nil {
+		return nil, err
+	}
+	if err := service.reportRequiredBuildScope(ctx, checks); err != nil {
+		return nil, err
+	}
+
+	return checks, nil
+}
+
+// RefuseRequiredBuildScope refuses a required build body that asks for a scope
+// the instance's release would silently ignore (compat.RequiredBuildScope). The
+// release is only asked when the body asks for a scope.
+func (service *Service) RefuseRequiredBuildScope(ctx context.Context, payload map[string]any) error {
+	if !compat.AsksForRequiredBuildScope(payload) {
+		return nil
+	}
+
+	return compat.RequiredBuildScope.Require(ctx, service.client)
+}
+
+// reportRequiredBuildScope fills in the scope a release without it enforces,
+// wherever Bitbucket left it out, so an older release reads the way the newest
+// reports the same behaviour. The release is only asked when a scope is missing.
+func (service *Service) reportRequiredBuildScope(ctx context.Context, checks []openapigenerated.RestRequiredBuildCondition) error {
+	if !compat.RequiredBuildScopeUnreported(checks) {
+		return nil
+	}
+	lacks, err := compat.RequiredBuildScope.LackedBy(ctx, service.client)
+	if err != nil {
+		return err
+	}
+	if lacks {
+		compat.ReportRequiredBuildScope(checks)
+	}
+
+	return nil
+}
+
+// requiredBuildCheckMap is a created or updated check, with its scope reported,
+// as the untyped object those commands return.
+func (service *Service) requiredBuildCheckMap(ctx context.Context, check *openapigenerated.RestRequiredBuildCondition) (map[string]any, error) {
+	if check == nil {
+		return map[string]any{}, nil
+	}
+	checks := []openapigenerated.RestRequiredBuildCondition{*check}
+	if err := service.reportRequiredBuildScope(ctx, checks); err != nil {
+		return nil, err
+	}
+
+	encoded, err := json.Marshal(checks[0])
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindInternal, "failed to encode required build merge check response", err)
+	}
+
+	parsed := map[string]any{}
+	if err := json.Unmarshal(encoded, &parsed); err != nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode required build merge check response", err)
+	}
+
+	return parsed, nil
 }
 
 func (service *Service) CreateRequiredBuildCheck(ctx context.Context, repo RepositoryRef, payload map[string]any) (map[string]any, error) {
 	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+
+	if err := service.RefuseRequiredBuildScope(ctx, payload); err != nil {
 		return nil, err
 	}
 
@@ -212,21 +278,7 @@ func (service *Service) CreateRequiredBuildCheck(ctx context.Context, repo Repos
 		return nil, err
 	}
 
-	if response.ApplicationjsonCharsetUTF8200 == nil {
-		return map[string]any{}, nil
-	}
-
-	encoded, err := json.Marshal(response.ApplicationjsonCharsetUTF8200)
-	if err != nil {
-		return nil, apperrors.New(apperrors.KindInternal, "failed to encode required build merge check response", err)
-	}
-
-	parsed := map[string]any{}
-	if err := json.Unmarshal(encoded, &parsed); err != nil {
-		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode required build merge check response", err)
-	}
-
-	return parsed, nil
+	return service.requiredBuildCheckMap(ctx, response.ApplicationjsonCharsetUTF8200)
 }
 
 func (service *Service) UpdateRequiredBuildCheck(ctx context.Context, repo RepositoryRef, id int64, payload map[string]any) (map[string]any, error) {
@@ -235,6 +287,10 @@ func (service *Service) UpdateRequiredBuildCheck(ctx context.Context, repo Repos
 	}
 	if id <= 0 {
 		return nil, apperrors.New(apperrors.KindValidation, "required build merge check id must be > 0", nil)
+	}
+
+	if err := service.RefuseRequiredBuildScope(ctx, payload); err != nil {
+		return nil, err
 	}
 
 	rawPayload, err := json.Marshal(payload)
@@ -257,21 +313,7 @@ func (service *Service) UpdateRequiredBuildCheck(ctx context.Context, repo Repos
 		return nil, err
 	}
 
-	if response.ApplicationjsonCharsetUTF8200 == nil {
-		return map[string]any{}, nil
-	}
-
-	encoded, err := json.Marshal(response.ApplicationjsonCharsetUTF8200)
-	if err != nil {
-		return nil, apperrors.New(apperrors.KindInternal, "failed to encode required build merge check response", err)
-	}
-
-	parsed := map[string]any{}
-	if err := json.Unmarshal(encoded, &parsed); err != nil {
-		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode required build merge check response", err)
-	}
-
-	return parsed, nil
+	return service.requiredBuildCheckMap(ctx, response.ApplicationjsonCharsetUTF8200)
 }
 
 func (service *Service) DeleteRequiredBuildCheck(ctx context.Context, repo RepositoryRef, id int64) error {
@@ -590,11 +632,28 @@ func (service *Service) GetScopedBuildStatus(ctx context.Context, repo Repositor
 		return openapigenerated.RestBuildStatus{}, err
 	}
 
-	if response.ApplicationjsonCharsetUTF8200 != nil {
-		return *response.ApplicationjsonCharsetUTF8200, nil
+	if response.ApplicationjsonCharsetUTF8200 == nil {
+		return openapigenerated.RestBuildStatus{}, nil
 	}
 
-	return openapigenerated.RestBuildStatus{}, nil
+	status := *response.ApplicationjsonCharsetUTF8200
+	// A release before compat.BuildStatusRepository names no repository on the
+	// status; the newest names the one it was read through, which is this one.
+	// The release is only asked when the repository is missing, and a failure to
+	// ask fails the read: a status printed without knowing which it is would be
+	// the commit-level shape, which is a different thing.
+	if status.ProjectKey == nil && status.RepositorySlug == nil {
+		lacks, err := compat.BuildStatusRepository.LackedBy(ctx, service.client)
+		if err != nil {
+			return openapigenerated.RestBuildStatus{}, err
+		}
+		if lacks {
+			projectKey, slug := repo.ProjectKey, repo.Slug
+			status.ProjectKey, status.RepositorySlug = &projectKey, &slug
+		}
+	}
+
+	return status, nil
 }
 
 func (service *Service) DeleteScopedBuildStatus(ctx context.Context, repo RepositoryRef, commitID string, key string) error {

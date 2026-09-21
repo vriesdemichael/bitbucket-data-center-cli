@@ -298,6 +298,9 @@ func New(deps Dependencies) *cobra.Command {
 					if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, pk, slug, openapi.RepoAdmin); err != nil {
 						return err
 					}
+					if err := service.RefuseReviewerGroups(cmd.Context(), condition.ReviewerGroups); err != nil {
+						return err
+					}
 
 					conditions, err := service.ListRepositoryConditions(cmd.Context(), pk, slug)
 					if err != nil {
@@ -347,6 +350,9 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			if d.DryRunEnabled() {
 				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, projectKey); err != nil {
+					return err
+				}
+				if err := service.RefuseReviewerGroups(cmd.Context(), condition.ReviewerGroups); err != nil {
 					return err
 				}
 
@@ -443,6 +449,9 @@ func New(deps Dependencies) *cobra.Command {
 					if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, pk, slug, openapi.RepoAdmin); err != nil {
 						return err
 					}
+					if err := service.RefuseReviewerGroups(cmd.Context(), condition.ReviewerGroups); err != nil {
+						return err
+					}
 
 					conditions, err := service.ListRepositoryConditions(cmd.Context(), pk, slug)
 					if err != nil {
@@ -496,6 +505,9 @@ func New(deps Dependencies) *cobra.Command {
 			}
 			if d.DryRunEnabled() {
 				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, projectKey); err != nil {
+					return err
+				}
+				if err := service.RefuseReviewerGroups(cmd.Context(), condition.ReviewerGroups); err != nil {
 					return err
 				}
 

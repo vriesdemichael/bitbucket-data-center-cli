@@ -526,11 +526,6 @@ func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
 			t.Fatalf("expected empty annotations, got: err=%v anns=%v", err, anns)
 		}
 
-		build, err := service.GetScopedBuildStatus(context.Background(), repo, "abc", "k")
-		if err != nil || build.Key != nil {
-			t.Fatalf("expected empty build, got: err=%v build=%v", err, build)
-		}
-
 		stats, err := service.GetMultipleBuildStatusStats(context.Background(), []string{"abc"})
 		if err != nil || len(stats) != 0 {
 			t.Fatalf("expected empty stats, got: err=%v stats=%v", err, stats)

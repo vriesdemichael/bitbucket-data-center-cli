@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/compat"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -68,7 +69,21 @@ func (service *Service) ListRestrictions(ctx context.Context, projectKey string,
 		params.MatcherId = &options.MatcherID
 	}
 
-	return openapi.PageThrough(ctx, 0, options.MaxResults,
+	// As for a repository's restrictions: a release without no-creates refuses
+	// the filter, so the request goes out without it and the answer is narrowed
+	// here, leaving a project the caller cannot read to answer as it would.
+	narrowToNoCreates := false
+	if compat.IsNoCreates(options.Type) {
+		lacks, err := compat.NoCreatesRestriction.LackedBy(ctx, service.client)
+		if err != nil {
+			return nil, err
+		}
+		if lacks {
+			params.Type, narrowToNoCreates = nil, true
+		}
+	}
+
+	restrictions, err := openapi.PageThrough(ctx, 0, options.MaxResults,
 		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestRefRestriction], error) {
 			// The page size stays what it was. The cap here defaults to a
 			// thousand, and asking for a thousand at once is a different request
@@ -101,6 +116,14 @@ func (service *Service) ListRestrictions(ctx context.Context, projectKey string,
 				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
+	if err != nil {
+		return nil, err
+	}
+	if narrowToNoCreates {
+		return compat.OnlyNoCreates(restrictions), nil
+	}
+
+	return restrictions, nil
 }
 
 // restrictionPageSize is the window this endpoint has always been asked for.
@@ -151,6 +174,9 @@ func (service *Service) upsertRestriction(ctx context.Context, projectKey string
 
 	bodyEntry, err := mapRestrictionInput(input)
 	if err != nil {
+		return openapigenerated.RestRefRestriction{}, err
+	}
+	if err := service.RefuseRestrictionType(ctx, input.Type); err != nil {
 		return openapigenerated.RestRefRestriction{}, err
 	}
 
@@ -257,6 +283,17 @@ func trimmedNonEmpty(values []string) []string {
 		}
 	}
 	return kept
+}
+
+// RefuseRestrictionType refuses a restriction type the instance's release does
+// not have (compat.NoCreatesRestriction), before anything is sent. Only a
+// no-creates restriction asks for the release.
+func (service *Service) RefuseRestrictionType(ctx context.Context, restrictionType string) error {
+	if !compat.IsNoCreates(restrictionType) {
+		return nil
+	}
+
+	return compat.NoCreatesRestriction.Require(ctx, service.client)
 }
 
 // createRestriction sends one restriction to the bulk create.

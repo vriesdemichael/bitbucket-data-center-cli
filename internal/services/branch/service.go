@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/compat"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
@@ -345,12 +346,28 @@ func (service *Service) ListRestrictions(ctx context.Context, repo RepositoryRef
 		params.MatcherId = &matcherID
 	}
 
+	// A release without no-creates refuses the filter rather than applying it,
+	// and holds no restriction of the type. So the request goes out without the
+	// filter and the answer is narrowed here instead: it comes back empty, which
+	// is what such a release holds, and a repository the caller cannot read
+	// still answers as it would for any other listing.
+	narrowToNoCreates := false
+	if compat.IsNoCreates(options.Type) {
+		lacks, err := compat.NoCreatesRestriction.LackedBy(ctx, service.client)
+		if err != nil {
+			return nil, err
+		}
+		if lacks {
+			params.Type, narrowToNoCreates = nil, true
+		}
+	}
+
 	// MaxResults now caps the results, which is what it is named for and what
 	// every other listing does with it. It was the page size, and nothing
 	// capped anything: `bb branch restriction list --limit 5` walked to the
 	// last page and returned all of them. The CLI does not truncate afterwards,
 	// so the flag did nothing at all.
-	return openapi.PageThrough(ctx, 0, options.MaxResults,
+	restrictions, err := openapi.PageThrough(ctx, 0, options.MaxResults,
 		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestRefRestriction], error) {
 			startValue, limitValue := float32(start), float32(limit)
 			pageParams := *params
@@ -376,6 +393,14 @@ func (service *Service) ListRestrictions(ctx context.Context, repo RepositoryRef
 				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
+	if err != nil {
+		return nil, err
+	}
+	if narrowToNoCreates {
+		return compat.OnlyNoCreates(restrictions), nil
+	}
+
+	return restrictions, nil
 }
 
 func (service *Service) GetRestriction(ctx context.Context, repo RepositoryRef, id string) (openapigenerated.RestRefRestriction, error) {
@@ -433,6 +458,9 @@ func (service *Service) upsertRestriction(ctx context.Context, repo RepositoryRe
 	if err != nil {
 		return openapigenerated.RestRefRestriction{}, err
 	}
+	if err := service.RefuseRestrictionType(ctx, input.Type); err != nil {
+		return openapigenerated.RestRefRestriction{}, err
+	}
 
 	if trimmedUpdateID == "" {
 		return service.createRestriction(ctx, repo, bodyEntry)
@@ -468,6 +496,17 @@ func (service *Service) upsertRestriction(ctx context.Context, repo RepositoryRe
 	}
 
 	return created, nil
+}
+
+// RefuseRestrictionType refuses a restriction type the instance's release does
+// not have (compat.NoCreatesRestriction), before anything is sent. Only a
+// no-creates restriction asks for the release.
+func (service *Service) RefuseRestrictionType(ctx context.Context, restrictionType string) error {
+	if !compat.IsNoCreates(restrictionType) {
+		return nil
+	}
+
+	return compat.NoCreatesRestriction.Require(ctx, service.client)
 }
 
 // createRestriction sends one restriction to the bulk create.

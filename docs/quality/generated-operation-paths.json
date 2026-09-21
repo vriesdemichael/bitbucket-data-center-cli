@@ -326,6 +326,10 @@
       "method": "GET",
       "path": "/insights/latest/projects/%s/repos/%s/commits/%s/annotations"
     },
+    "GetApplicationProperties": {
+      "method": "GET",
+      "path": "/api/latest/application-properties"
+    },
     "GetAutoDeclineSettings1": {
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/settings/auto-decline"
