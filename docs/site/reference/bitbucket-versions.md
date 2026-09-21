@@ -34,5 +34,7 @@ task test:live RELEASE=9.4.24
 It starts an instance of that release beside the one already running, and a
 test whose behaviour differs by release checks the side that applies.
 
-`task test:live:matrix` does the same for every release in the window, one
-after another, and writes which of them passed to `.tmp/`.
+`task test:live:matrix` does the same for the oldest release and the newest,
+which is where a difference shows, and `task test:live:matrix RELEASES=all`
+for every release in the window. Either way it writes which of them passed to
+`.tmp/`.

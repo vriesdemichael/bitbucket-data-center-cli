@@ -67,6 +67,7 @@ func main() {
 	write := flag.Bool("write", false, "Rewrite the window, sorted and normalised")
 	verify := flag.Bool("verify", false, "Fail when the window, internal/compat and the versions page disagree")
 	list := flag.Bool("list", false, "Print one release per line, oldest first, for a script to loop over")
+	ends := flag.Bool("ends", false, "With -list, print only the oldest and newest release")
 	flag.Parse()
 
 	recorded, err := readWindow(*path)
@@ -77,7 +78,11 @@ func main() {
 	switch {
 	case *list:
 		sortReleases(recorded.Releases)
-		for _, release := range recorded.Releases {
+		releases := recorded.Releases
+		if *ends {
+			releases = endsOf(releases)
+		}
+		for _, release := range releases {
 			fmt.Println(release)
 		}
 	case *write:
@@ -387,6 +392,20 @@ func parseAll(releases []string) ([]compat.Release, error) {
 	}
 
 	return parsed, nil
+}
+
+// endsOf is the oldest and newest release of a sorted window.
+//
+// They are where a release difference shows: a call that needs something the
+// newest release has fails on the oldest, and the releases between them differ
+// from one end or the other rather than from both. Running the two is most of
+// the answer for a fraction of the hours the whole window takes.
+func endsOf(releases []string) []string {
+	if len(releases) < 2 {
+		return releases
+	}
+
+	return []string{releases[0], releases[len(releases)-1]}
 }
 
 func sortReleases(releases []string) {

@@ -107,6 +107,21 @@ func TestADifferenceOutsideTheWindowIsReported(t *testing.T) {
 	}
 }
 
+// TestTheEndsAreTheOldestAndNewest covers what `task test:live:matrix` runs
+// when it is not asked for the whole window.
+func TestTheEndsAreTheOldestAndNewest(t *testing.T) {
+	t.Parallel()
+
+	window := []string{"9.2.1", "9.4.24", "10.4.3"}
+	if ends := endsOf(window); len(ends) != 2 || ends[0] != "9.2.1" || ends[1] != "10.4.3" {
+		t.Errorf("the ends of %v are %v", window, ends)
+	}
+	// A window of one release is its own ends, rather than that release twice.
+	if ends := endsOf([]string{"10.4.3"}); len(ends) != 1 || ends[0] != "10.4.3" {
+		t.Errorf("the ends of one release are %v", ends)
+	}
+}
+
 // TestTheCommittedWindowHoldsTogether runs the gate over the repository, so the
 // committed window, the declared differences and the page are checked here too
 // rather than only by the task.

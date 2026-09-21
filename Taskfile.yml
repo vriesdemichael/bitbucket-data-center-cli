@@ -542,10 +542,14 @@ tasks:
       - '{{ .ROOT_DIR | replace "\\" "/" }}/.tmp/live.test.exe -test.timeout=20m -test.parallel={{.LIVE_PARALLEL}}'
 
   test:live:matrix:
-    desc: Run the live suite against every Bitbucket release bb serves, one at a time (hours)
-    # ADR-088 asks every release served to pass the suite at least once. The
-    # window it runs is docs/quality/bitbucket-releases.json, so the releases
-    # are not listed twice.
+    desc: Run the live suite against the oldest and newest Bitbucket release bb serves (RELEASES=all for the whole window)
+    # Local and asked for, never scheduled: a release takes minutes to boot and
+    # minutes more to run, and the whole window is hours. The releases come
+    # from docs/quality/bitbucket-releases.json, so they are not listed twice.
+    #
+    # The ends by default, because that is where a difference shows: a call
+    # that needs what the newest release has fails on the oldest. The window in
+    # full is what ADR-088 asks for before a release, and RELEASES=all runs it.
     #
     # Which releases passed is a measurement, so it lands in .tmp rather than
     # in the repository (ADR-045). An instance is stopped after its release
@@ -553,10 +557,12 @@ tasks:
     cmds:
       - mkdir -p .tmp
       - |
+        selection=-ends
+        if [ "{{.RELEASES}}" = "all" ]; then selection=; fi
         summary=.tmp/bitbucket-releases-matrix.txt
         : > "$summary"
         failed=0
-        for release in $(go run ./tools/bitbucket-releases -list); do
+        for release in $(go run ./tools/bitbucket-releases -list $selection); do
           if task test:live RELEASE="$release"; then
             echo "$release: passed" >> "$summary"
             task stack:down RELEASE="$release"

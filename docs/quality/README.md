@@ -22,7 +22,9 @@ the OpenAPI spec, the services source, internal/compat and the versions page. No
 so all of them run in the fast CI job and in the pre-push hook.
 
 Which releases passed the live suite is a measurement rather than a baseline, so it is not committed:
-`task test:live:matrix` runs the window and writes the result to `.tmp/`.
+`task test:live:matrix` runs the oldest release and the newest, `RELEASES=all` runs the whole
+window, and either writes the result to `.tmp/`. It is asked for rather than scheduled: a full window
+takes hours.
 
 `task quality:verify` runs all of them together.
 
