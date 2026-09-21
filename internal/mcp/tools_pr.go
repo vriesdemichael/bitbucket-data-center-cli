@@ -598,13 +598,15 @@ func specGetFileContent() Spec {
 			}
 			// As with get_pr_diff: the file itself is the text content, not the
 			// JSON encoding of the envelope around it.
-			return &mcp.CallToolResult{
-				Content: []mcp.Content{&mcp.TextContent{Text: string(content)}},
-			}, GetFileContentOutput{
-				Path:    in.Path,
-				At:      in.At,
-				Content: string(content),
-			}, nil
+			//
+			// Both values are named rather than returned as literals: a return
+			// of two multi-line composite literals is the one shape successive
+			// gofmt releases indent differently, and the tree is read with
+			// whichever gofmt the reader has installed.
+			text := &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(content)}}}
+			structured := GetFileContentOutput{Path: in.Path, At: in.At, Content: string(content)}
+
+			return text, structured, nil
 		}
 	})
 }
