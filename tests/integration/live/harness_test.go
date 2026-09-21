@@ -622,7 +622,7 @@ func runGit(directory string, args ...string) error {
 			return fmt.Errorf("%s (%w)", hint, lastErr)
 		}
 
-		if attempt >= maxRetries || !isRetriableGitRateLimit(message, args) {
+		if attempt >= maxRetries || !isRetriableGitFailure(message, args) {
 			break
 		}
 
@@ -636,7 +636,22 @@ func runGit(directory string, args ...string) error {
 	return lastErr
 }
 
-func isRetriableGitRateLimit(message string, args []string) bool {
+// isRetriableGitFailure reports whether a failed git command is worth sending
+// again: a network command the server answered with a status it gives while it
+// is momentarily unable to serve, rather than with a refusal.
+//
+// 429 is the server saying it did not do the work. A 5xx over git means the
+// same in practice, because a push is a ref update: replayed after it landed it
+// answers "Everything up-to-date", and replayed after it did not it lands. The
+// seeding push has twice failed with "RPC failed; HTTP 500" while several
+// Bitbucket instances shared the machine, and passed on the next run -- a
+// fixture that fails for the load on the box says nothing about bb. The
+// harness reads its own API calls the same way.
+//
+// Everything else fails on the first attempt. A push refused by a branch
+// restriction or a missing permission is an answer, and waiting four times for
+// it to change would only make the test slower to fail.
+func isRetriableGitFailure(message string, args []string) bool {
 	if len(args) == 0 {
 		return false
 	}
@@ -647,7 +662,15 @@ func isRetriableGitRateLimit(message string, args []string) bool {
 	}
 
 	lowered := strings.ToLower(message)
-	return strings.Contains(lowered, "error: 429") || strings.Contains(lowered, "http 429") || strings.Contains(lowered, "status 429")
+	for _, status := range []string{"429", "500", "502", "503", "504"} {
+		if strings.Contains(lowered, "error: "+status) ||
+			strings.Contains(lowered, "http "+status) ||
+			strings.Contains(lowered, "status "+status) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func retryAfterFromGitOutput(message string) time.Duration {
@@ -919,12 +942,21 @@ func TestRetryAfterParsingHelpers(t *testing.T) {
 		}
 	})
 
-	t.Run("git retry detection limits commands", func(t *testing.T) {
-		if isRetriableGitRateLimit("HTTP 429", []string{"commit"}) {
+	t.Run("git retry detection limits commands and statuses", func(t *testing.T) {
+		if isRetriableGitFailure("HTTP 429", []string{"commit"}) {
 			t.Fatal("expected non-network git command to be non-retriable")
 		}
-		if !isRetriableGitRateLimit("fatal: error: 429", []string{"push", "origin", "master"}) {
+		if !isRetriableGitFailure("fatal: error: 429", []string{"push", "origin", "master"}) {
 			t.Fatal("expected git push 429 to be retriable")
+		}
+		// What an overloaded Bitbucket answers a seeding push with.
+		if !isRetriableGitFailure("error: RPC failed; HTTP 500 curl 22 The requested URL returned error: 500",
+			[]string{"push", "-u", "origin", "master"}) {
+			t.Fatal("expected git push 500 to be retriable")
+		}
+		if isRetriableGitFailure("remote: You are not permitted to write to this repository\nerror: 403",
+			[]string{"push", "origin", "master"}) {
+			t.Fatal("expected a refused push to be non-retriable")
 		}
 	})
 }
