@@ -9,8 +9,8 @@ source_openapi: docs/reference/atlassian/bitbucket-openapi.json
 # A field or endpoint that an older release does not have yet is not a mismatch in
 # the specification, and it is not recorded here. The specification for that
 # release is accurate; the release simply predates the feature. bb works around
-# those with a check on the server's version, and they are catalogued with the
-# compatibility layer instead.
+# those in internal/compat, with a check on the release in the call that differs,
+# and they are catalogued in docs/site/reference/bitbucket-versions.md (ADR-088).
 
 # The registry had never been exercised end to end. It was, during the bump from
 # Bitbucket 10.2 to 10.4.
