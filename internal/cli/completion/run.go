@@ -71,6 +71,25 @@ func answer(
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
+	return answerFrom(ctx, dependencies, target, command, bindings, args, toComplete, source)
+}
+
+// answerFrom is answer once the source is known.
+//
+// Separate so the rules that apply to every source -- the deadline, the guard
+// around a panic, the prefix filter, the cap, what a failure says -- can be
+// held against a source written for the purpose rather than against whichever
+// kind happens to be registered.
+func answerFrom(
+	ctx context.Context,
+	dependencies Dependencies,
+	target slot,
+	command *cobra.Command,
+	bindings map[Kind]string,
+	args []string,
+	toComplete string,
+	source Source,
+) ([]cobra.Completion, cobra.ShellCompDirective) {
 	chosen, prefix, word := splitList(toComplete, target.multi)
 
 	environment := &Environment{
