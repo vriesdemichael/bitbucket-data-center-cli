@@ -97,4 +97,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 086: bb doctor reports the configuration without loading it](086-bb-doctor-reports-the-configuration-without-loading-it.md) (`architecture`, `accepted`)
 - [ADR 087: Quoted messages are checked against the source that prints them](087-quoted-messages-are-checked-against-the-source-that-prints-them.md) (`development`, `accepted`)
 - [ADR 088: Every Bitbucket release Atlassian supports is served, and none is dropped](088-every-bitbucket-release-atlassian-supports-is-served.md) (`architecture`, `accepted`)
+- [ADR 088: Shell completion is declared by the argument's name, and resolved by the command's own code](088-completion-is-declared-by-the-argument-name.md) (`architecture`, `accepted`)
 

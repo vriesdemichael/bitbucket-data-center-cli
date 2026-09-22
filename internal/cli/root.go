@@ -364,6 +364,11 @@ your behalf using the link above.`,
 	nameTheMissingArgument(rootCmd)
 	sendFailingGroupHelpToStderr(rootCmd)
 
+	// Over the finished tree, and for the same reason as the walks above: what
+	// a command accepts is readable from the command, so reading it beats
+	// asking every author to remember a registration call.
+	installCompletions(rootCmd, options)
+
 	// Installed last, over the finished tree, because it wraps every runnable
 	// command it finds. Anything added after this point would not answer
 	// --describe.
@@ -449,6 +454,25 @@ func (options *rootOptions) applyRuntimeFlagOverrides(cmd *cobra.Command) error 
 		return nil
 	}
 
+	options.runtime = runtimeOverridesFromFlags(cmd, options.runtime)
+	applyDiagnosticsFlags(cmd)
+
+	return nil
+}
+
+// runtimeOverridesFromFlags reads the global runtime flags off an invocation.
+//
+// Separated from the hook that applies them because shell completion reads the
+// same flags off the line it is completing: `bb --ca-file ./corp.pem pr merge
+// <tab>` has to reach the instance that bundle is for, and Cobra does not run
+// the hook for a completion request. Two readings of the same flags would
+// drift, and the drift would be invisible -- completion silently offering
+// nothing because it called a host the command would not have called.
+func runtimeOverridesFromFlags(cmd *cobra.Command, base config.Overrides) config.Overrides {
+	if cmd == nil {
+		return base
+	}
+
 	lookupFlag := func(flagName string) *pflag.Flag {
 		if flag := cmd.Flags().Lookup(flagName); flag != nil {
 			return flag
@@ -471,47 +495,62 @@ func (options *rootOptions) applyRuntimeFlagOverrides(cmd *cobra.Command) error 
 		return &value
 	}
 
-	options.runtime.CAFile = changedString("ca-file")
-	options.runtime.ClientCert = changedString("client-cert")
-	options.runtime.ClientKey = changedString("client-key")
-	options.runtime.RequestTimeout = changedString("request-timeout")
-	options.runtime.RetryBackoff = changedString("retry-backoff")
+	base.CAFile = changedString("ca-file")
+	base.ClientCert = changedString("client-cert")
+	base.ClientKey = changedString("client-key")
+	base.RequestTimeout = changedString("request-timeout")
+	base.RetryBackoff = changedString("retry-backoff")
 
 	if raw := changedString("insecure-skip-verify"); raw != nil {
 		value := strings.EqualFold(*raw, "true")
-		options.runtime.InsecureSkipVerify = &value
+		base.InsecureSkipVerify = &value
 	}
 	if raw := changedString("retry-count"); raw != nil {
 		// Cobra parsed this as an Int flag, so Value.String() is always a valid
 		// integer and the error branch is unreachable. A parse failure here would
 		// mean the flag type changed, which the config layer would then reject.
 		if value, err := strconv.Atoi(*raw); err == nil {
-			options.runtime.RetryCount = &value
+			base.RetryCount = &value
 		}
 	}
 
-	// Diagnostics is still read from the environment: it is consumed by
-	// package-level state in internal/diagnostics rather than through
-	// config.AppConfig, so it has no override to carry. Left for its own change.
+	return base
+}
+
+// applyDiagnosticsFlags publishes --log-level and --log-format.
+//
+// Diagnostics is still read from the environment: it is consumed by
+// package-level state in internal/diagnostics rather than through
+// config.AppConfig, so it has no override to carry. Left for its own change.
+//
+// It is not part of runtimeOverridesFromFlags because this writes to the
+// process, and a tab press has no business changing the environment of the
+// shell that spawned it.
+func applyDiagnosticsFlags(cmd *cobra.Command) {
 	for _, diagnostic := range []struct{ flagName, envKey string }{
 		{"log-level", "BB_LOG_LEVEL"},
 		{"log-format", "BB_LOG_FORMAT"},
 	} {
-		value := changedString(diagnostic.flagName)
-		if value == nil {
+		flag := cmd.Flags().Lookup(diagnostic.flagName)
+		if flag == nil {
+			flag = cmd.PersistentFlags().Lookup(diagnostic.flagName)
+		}
+		if flag == nil || !flag.Changed {
 			continue
 		}
-		// Empty is a decision, not an absence -- the same rule the overrides
-		// above follow. Unsetting is how it is expressed here, because this
-		// still travels through the environment.
-		if *value == "" {
-			_ = os.Unsetenv(diagnostic.envKey)
-			continue
-		}
-		_ = os.Setenv(diagnostic.envKey, *value)
-	}
 
-	return nil
+		// Empty is a decision, not an absence -- the same rule the overrides
+		// follow. Unsetting is how it is expressed here, because this still
+		// travels through the environment.
+		value := strings.TrimSpace(flag.Value.String())
+		if value == "" {
+			_ = os.Unsetenv(diagnostic.envKey)
+
+			continue
+		}
+
+		_ = os.Setenv(diagnostic.envKey, value)
+	}
 }
 
 func (options *rootOptions) loadConfigAndClient() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
