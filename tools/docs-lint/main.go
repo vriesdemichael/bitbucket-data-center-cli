@@ -376,12 +376,14 @@ func removeInlineCode(line string) string {
 	return b.String()
 }
 
-// lintMarkdown checks every bb invocation in the shell blocks of one document,
-// as well as markdown dialect rules, release artifact naming, and configuration values.
-func lintMarkdown(file, contents string) ([]finding, int) {
-	return lintMarkdownWithVersion(file, contents, resolveTargetVersion(""))
-}
-
+// lintMarkdownWithVersion checks every bb invocation in the shell blocks of
+// one document, as well as markdown dialect rules, release artifact naming,
+// and configuration values.
+//
+// The version is a parameter rather than resolved here because it comes from
+// the repository's newest release tag, and a caller that resolves it once for
+// a whole run cannot disagree with itself part way through -- nor depend, in a
+// test, on which tags the machine happens to have fetched.
 func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) {
 	var (
 		findings []finding

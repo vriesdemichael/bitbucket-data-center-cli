@@ -327,35 +327,35 @@ func buildTreeCheckout(t *testing.T) string {
 		t.Fatalf("create the checkout directory: %v", err)
 	}
 
-	git(t, origin, "init", "--bare")
-	git(t, checkout, "init")
-	git(t, checkout, "symbolic-ref", "HEAD", "refs/heads/main")
-	git(t, checkout, "config", "user.name", "bb completion test")
-	git(t, checkout, "config", "user.email", "bb-completion-test@example.local")
+	runGit(t, origin, "init", "--bare")
+	runGit(t, checkout, "init")
+	runGit(t, checkout, "symbolic-ref", "HEAD", "refs/heads/main")
+	runGit(t, checkout, "config", "user.name", "bb completion test")
+	runGit(t, checkout, "config", "user.email", "bb-completion-test@example.local")
 
 	write(t, filepath.Join(checkout, "top.txt"), "top\n")
 	write(t, filepath.Join(checkout, "dir", "inner.txt"), "inner\n")
 	write(t, filepath.Join(checkout, "dir", "deeper", "leaf.txt"), "leaf\n")
-	git(t, checkout, "add", ".")
-	git(t, checkout, "commit", "-m", "first commit")
+	runGit(t, checkout, "add", ".")
+	runGit(t, checkout, "commit", "-m", "first commit")
 
-	git(t, checkout, "remote", "add", "origin", filepath.ToSlash(origin))
-	git(t, checkout, "push", "-u", "origin", "main")
+	runGit(t, checkout, "remote", "add", "origin", filepath.ToSlash(origin))
+	runGit(t, checkout, "push", "-u", "origin", "main")
 
-	git(t, checkout, "checkout", "-b", "feature")
+	runGit(t, checkout, "checkout", "-b", "feature")
 	write(t, filepath.Join(checkout, "only-on-feature.txt"), "feature\n")
-	git(t, checkout, "add", "only-on-feature.txt")
-	git(t, checkout, "commit", "-m", "second commit")
-	git(t, checkout, "push", "-u", "origin", "feature")
+	runGit(t, checkout, "add", "only-on-feature.txt")
+	runGit(t, checkout, "commit", "-m", "second commit")
+	runGit(t, checkout, "push", "-u", "origin", "feature")
 
 	// Held only as refs/remotes/origin/feature from here on, which is what a
 	// clone looks like for every branch somebody else pushed.
-	git(t, checkout, "checkout", "main")
-	git(t, checkout, "branch", "-D", "feature")
+	runGit(t, checkout, "checkout", "main")
+	runGit(t, checkout, "branch", "-D", "feature")
 
 	// What a clone records for itself, and the only place the default branch
 	// is written down locally.
-	git(t, checkout, "remote", "set-head", "origin", "main")
+	runGit(t, checkout, "remote", "set-head", "origin", "main")
 
 	return checkout
 }
