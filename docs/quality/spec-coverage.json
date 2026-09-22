@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-openapi.json",
-  "covered": 225,
+  "covered": 226,
   "total": 572,
-  "coverage_percent": 39.33566433566433,
+  "coverage_percent": 39.51048951048951,
   "by_tag": [
     {
       "tag": "",
@@ -77,7 +77,7 @@
     },
     {
       "tag": "Repository",
-      "covered": 62,
+      "covered": 63,
       "total": 99
     },
     {
@@ -887,12 +887,6 @@
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/changes",
       "tag": "Repository",
       "summary": "Get changes made in commit"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/commits/{commitId}/changes",
-      "tag": "Repository",
-      "summary": "Get changes in commit"
     },
     {
       "method": "GET",
