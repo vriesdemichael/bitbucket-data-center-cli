@@ -27,19 +27,12 @@ func authStatusExample(directive, meta string) string {
 
 const bbVersionMeta = "{ \"bbVersion\": \"v4.0.0\" }"
 
-// lintExample lints a fixture against the release its examples name. lintMarkdown
-// would read the newest tag of the checkout the test runs in, so every release
-// turned these fixtures stale and failed tests that are not about versions at all.
-func lintExample(file, contents string) ([]finding, int) {
-	return lintMarkdownWithVersion(file, contents, "4.0.0")
-}
-
 func TestOutputExampleAcceptsAPayloadThatMatchesTheSchema(t *testing.T) {
 	t.Parallel()
 
 	document := authStatusExample("<!-- docs-lint: output-of bb auth status -->", bbVersionMeta)
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 0 {
 		t.Fatalf("expected no findings, got %+v", findings)
@@ -61,7 +54,7 @@ func TestOutputExampleCatchesAFieldTheCommandDoesNotEmit(t *testing.T) {
 		"}\n" +
 		"```\n"
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)
@@ -79,7 +72,7 @@ func TestOutputExampleCatchesAMissingRequiredField(t *testing.T) {
 		"{ \"data\": {}, \"meta\": " + bbVersionMeta + " }\n" +
 		"```\n"
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)
@@ -97,7 +90,7 @@ func TestOutputExampleCatchesTheRenamedVersionField(t *testing.T) {
 	// from.
 	document := authStatusExample("<!-- docs-lint: output-of bb auth status -->", "{ \"version\": \"v4.0.0\" }")
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)
@@ -114,7 +107,7 @@ func TestOutputExampleCatchesTheRemovedContractField(t *testing.T) {
 		"<!-- docs-lint: output-of bb auth status -->",
 		"{ \"bbVersion\": \"v4.0.0\", \"contract\": \"bb.machine/v1\" }")
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)
@@ -135,7 +128,7 @@ func TestOutputExampleRejectsBothDataAndError(t *testing.T) {
 		"{ \"data\": {}, \"error\": { \"kind\": \"internal\" }, \"meta\": " + bbVersionMeta + " }\n" +
 		"```\n"
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)
@@ -155,7 +148,7 @@ func TestEnvelopeShapeDirectiveSkipsTheSchemaButNotTheEnvelope(t *testing.T) {
 		"```json\n" +
 		"{ \"data\": {}, \"meta\": " + bbVersionMeta + " }\n" +
 		"```\n"
-	if findings, _ := lintExample("doc.md", valid); len(findings) != 0 {
+	if findings, _ := lintFixture("doc.md", valid); len(findings) != 0 {
 		t.Fatalf("expected the illustration to be accepted, got %+v", findings)
 	}
 
@@ -163,7 +156,7 @@ func TestEnvelopeShapeDirectiveSkipsTheSchemaButNotTheEnvelope(t *testing.T) {
 		"```json\n" +
 		"{ \"data\": {}, \"meta\": { \"contract\": \"bb.machine/v1\" } }\n" +
 		"```\n"
-	if findings, _ := lintExample("doc.md", broken); len(findings) == 0 {
+	if findings, _ := lintFixture("doc.md", broken); len(findings) == 0 {
 		t.Fatal("expected an exempt block to still be checked for envelope rules")
 	}
 }
@@ -178,7 +171,7 @@ func TestUnannotatedEnvelopeIsReported(t *testing.T) {
 		"{ \"data\": { \"ok\": true }, \"meta\": " + bbVersionMeta + " }\n" +
 		"```\n"
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected the unannotated example to be reported, got %+v", findings)
@@ -201,7 +194,7 @@ func TestUnannotatedCheckIgnoresConfigurationAndArtifacts(t *testing.T) {
 	}
 
 	for _, document := range documents {
-		if findings, _ := lintExample("doc.md", document); len(findings) != 0 {
+		if findings, _ := lintFixture("doc.md", document); len(findings) != 0 {
 			t.Fatalf("expected no findings for a non-envelope block, got %+v", findings)
 		}
 	}
@@ -218,7 +211,7 @@ func TestOutputOfDirectiveNamingAnUndescribedCommand(t *testing.T) {
 		"{ \"data\": {}, \"meta\": " + bbVersionMeta + " }\n" +
 		"```\n"
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)
@@ -238,7 +231,7 @@ func TestOutputDirectiveDoesNotCarryAcrossProse(t *testing.T) {
 		"{ \"data\": { \"ok\": true }, \"meta\": " + bbVersionMeta + " }\n" +
 		"```\n"
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)
@@ -258,7 +251,7 @@ func TestOutputExampleReportsAFailureEnvelopeWithoutASchemaCheck(t *testing.T) {
 		"{ \"error\": { \"kind\": \"validation\", \"message\": \"unknown flag\", \"exitCode\": 2 }, \"meta\": " + bbVersionMeta + " }\n" +
 		"```\n"
 
-	findings, _ := lintExample("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 0 {
 		t.Fatalf("expected a failure envelope to pass, got %+v", findings)
