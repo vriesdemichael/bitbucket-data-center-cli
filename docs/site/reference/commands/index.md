@@ -592,7 +592,7 @@ Field arguments:
 Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading slash (e.g. rest/api/1.0/...) to prevent shell path mangling.
 
 Usage:
-  bb api <path> [flags]
+  bb api <endpoint> [flags]
 
 Examples:
   # GET a pull request settings resource
@@ -1513,7 +1513,7 @@ Get an HTTP access token by ID
 Get an HTTP access token by ID
 
 Usage:
-  bb auth token get <id> [flags]
+  bb auth token get <token-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -1587,7 +1587,7 @@ Revoke an HTTP access token by ID
 Revoke an HTTP access token by ID
 
 Usage:
-  bb auth token revoke <id> [flags]
+  bb auth token revoke <token-id> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -1625,7 +1625,7 @@ Update an HTTP access token name or permissions
 Update an HTTP access token name or permissions
 
 Usage:
-  bb auth token update <id> [flags]
+  bb auth token update <token-id> [flags]
 
 Flags:
       --name string          New name for the access token
@@ -1856,7 +1856,7 @@ Set repository default branch
 Set repository default branch
 
 Usage:
-  bb branch default set <name> [flags]
+  bb branch default set <branch> [flags]
 ```
 
 ??? note "Global flags"
@@ -1890,7 +1890,7 @@ Delete repository branch
 Delete repository branch
 
 Usage:
-  bb branch delete <name> [flags]
+  bb branch delete <branch> [flags]
 
 Flags:
       --end-point string   Expected commit at branch tip
@@ -2048,7 +2048,7 @@ Update repository default branch used by branch model settings
 Update repository default branch used by branch model settings
 
 Usage:
-  bb branch model update <default-branch> [flags]
+  bb branch model update <branch> [flags]
 ```
 
 ??? note "Global flags"
@@ -2168,7 +2168,7 @@ Delete branch restriction
 Delete branch restriction
 
 Usage:
-  bb branch restriction delete <id> [flags]
+  bb branch restriction delete <restriction-id> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -2205,7 +2205,7 @@ Get branch restriction by id
 Get branch restriction by id
 
 Usage:
-  bb branch restriction get <id> [flags]
+  bb branch restriction get <restriction-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -2280,7 +2280,7 @@ Update branch restriction
 Update branch restriction
 
 Usage:
-  bb branch restriction update <id> [flags]
+  bb branch restriction update <restriction-id> [flags]
 
 Flags:
       --access-key-id ints       SSH access key id allowed by restriction (repeatable)
@@ -2558,7 +2558,7 @@ Delete required build merge check
 Delete required build merge check
 
 Usage:
-  bb build required delete <id> [flags]
+  bb build required delete <required-build-id> [flags]
 
 Flags:
       --all         Return every result rather than the first --limit
@@ -2633,7 +2633,7 @@ Update required build merge check
 Update required build merge check
 
 Usage:
-  bb build required update <id> [flags]
+  bb build required update <required-build-id> [flags]
 
 Flags:
       --body string   Raw JSON payload for required build merge check
@@ -3141,7 +3141,7 @@ Get a specific commit
 Get a specific commit
 
 Usage:
-  bb commit get <id> [flags]
+  bb commit get <commit> [flags]
 ```
 
 ??? note "Global flags"
@@ -3215,7 +3215,7 @@ List pull requests containing a commit
 List pull requests containing a commit
 
 Usage:
-  bb commit prs <commitId> [flags]
+  bb commit prs <commit> [flags]
 ```
 
 ??? note "Global flags"
@@ -3455,7 +3455,7 @@ Diff a commit against its parent
 Diff a commit against its parent
 
 Usage:
-  bb diff commit <sha> [flags]
+  bb diff commit <commit> [flags]
 
 Flags:
       --path string   Optional file path for file-scoped diff
@@ -3493,7 +3493,7 @@ Diff a pull request.
 Also available as bb pr diff, which is the gh spelling.
 
 Usage:
-  bb diff pr <id> [flags]
+  bb diff pr <pr-id> [flags]
 
 Flags:
       --name-only   Output only changed file names
@@ -3707,7 +3707,7 @@ Add annotations to a Code Insights report
 Add annotations to a Code Insights report
 
 Usage:
-  bb insights annotation add <commit> <key> [flags]
+  bb insights annotation add <commit> <report-key> [flags]
 
 Flags:
       --body string   Raw JSON array payload for annotations
@@ -3743,7 +3743,7 @@ Delete annotation(s) by external id for a report
 Delete annotation(s) by external id for a report
 
 Usage:
-  bb insights annotation delete <commit> <key> [flags]
+  bb insights annotation delete <commit> <report-key> [flags]
 
 Flags:
       --external-id string   External annotation ID to delete
@@ -3780,7 +3780,7 @@ List annotations for a Code Insights report or commit
 List annotations for a Code Insights report or commit
 
 Usage:
-  bb insights annotation list <commit> [key] [flags]
+  bb insights annotation list <commit> [report-key] [flags]
 
 Flags:
       --all         Return every result rather than the first --limit
@@ -3817,7 +3817,7 @@ Create or replace a Code Insights report annotation
 Create or replace a Code Insights report annotation
 
 Usage:
-  bb insights annotation set <commit> <key> <external-id> [flags]
+  bb insights annotation set <commit> <report-key> <external-id> [flags]
 
 Flags:
       --line int32        Line number containing the annotation
@@ -3899,7 +3899,7 @@ Delete a Code Insights report
 Delete a Code Insights report
 
 Usage:
-  bb insights report delete <commit> <key> [flags]
+  bb insights report delete <commit> <report-key> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -3935,7 +3935,7 @@ Get a Code Insights report
 Get a Code Insights report
 
 Usage:
-  bb insights report get <commit> <key> [flags]
+  bb insights report get <commit> <report-key> [flags]
 ```
 
 ??? note "Global flags"
@@ -4005,7 +4005,7 @@ Create or update a Code Insights report
 Create or update a Code Insights report
 
 Usage:
-  bb insights report set <commit> <key> [flags]
+  bb insights report set <commit> <report-key> [flags]
 
 Flags:
       --body string   Raw JSON payload for Code Insights report
@@ -4144,7 +4144,7 @@ List raw pull request activity items
 List raw pull request activity items. This output is an explicit exception to the stable versioned API and is intended only for AI ingestion and debugging.
 
 Usage:
-  bb pr activity list <id> [flags]
+  bb pr activity list <pr-id> [flags]
 
 Flags:
       --all         Return every result rather than the first --limit
@@ -4221,7 +4221,7 @@ Disable auto-merge on a pull request
 Disable auto-merge on a pull request
 
 Usage:
-  bb pr auto-merge disable <id> [flags]
+  bb pr auto-merge disable <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -4254,7 +4254,7 @@ Enable auto-merge on a pull request
 Enable auto-merge on a pull request
 
 Usage:
-  bb pr auto-merge enable <id> [flags]
+  bb pr auto-merge enable <pr-id> [flags]
 
 Examples:
   # Enable auto-merge with the default strategy (no-ff)
@@ -4297,7 +4297,7 @@ Get auto-merge configuration for a pull request
 Get auto-merge configuration for a pull request
 
 Usage:
-  bb pr auto-merge get <id> [flags]
+  bb pr auto-merge get <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -4368,7 +4368,7 @@ Show build statuses for a pull request's source commit (also available as bb pr 
 Show build statuses for a pull request's source commit (also available as bb pr checks)
 
 Usage:
-  bb pr build status <id> [flags]
+  bb pr build status <pr-id> [flags]
 
 Flags:
       --all         Return every result rather than the first --limit
@@ -4409,7 +4409,7 @@ Same-repository pull requests are checked out from the remote that already point
 The fetch uses the credentials bb is already authenticated with, so no git credential setup is needed first. Pushing afterwards is plain git and does need one: run bb auth setup-git once.
 
 Usage:
-  bb pr checkout <id> [flags]
+  bb pr checkout <pr-id> [flags]
 
 Flags:
       --branch string   Local branch name to use (defaults to the pull request source branch)
@@ -4447,7 +4447,7 @@ Show build statuses for a pull request's source commit (alias for bb pr build st
 Show build statuses for a pull request's source commit (alias for bb pr build status)
 
 Usage:
-  bb pr checks <id> [flags]
+  bb pr checks <pr-id> [flags]
 
 Flags:
       --all         Return every result rather than the first --limit
@@ -4666,7 +4666,7 @@ Without --path this uses the pull request activity timeline to return the aggreg
 Use --unresolved to show only threads still waiting on someone. Use --full to add every comment ungrouped, alongside the thread view rather than in place of it.
 
 Usage:
-  bb pr comment list <id> [flags]
+  bb pr comment list <pr-id> [flags]
 
 Flags:
       --all            Return every result rather than the first --limit
@@ -4812,7 +4812,7 @@ List the commits in a pull request
 List the commits in a pull request
 
 Usage:
-  bb pr commits <id> [flags]
+  bb pr commits <pr-id> [flags]
 
 Flags:
       --all         Return every result rather than the first --limit
@@ -4913,7 +4913,7 @@ Decline a pull request
 Decline a pull request
 
 Usage:
-  bb pr decline <id> [flags]
+  bb pr decline <pr-id> [flags]
 
 Aliases:
   decline, close
@@ -4993,7 +4993,7 @@ Diff a pull request.
 Alias for bb diff pr, which is where the command reference documents it.
 
 Usage:
-  bb pr diff <id> [flags]
+  bb pr diff <pr-id> [flags]
 
 Flags:
       --name-only   Output only changed file names
@@ -5031,7 +5031,7 @@ List the files changed in a pull request
 List the files changed in a pull request
 
 Usage:
-  bb pr files <id> [flags]
+  bb pr files <pr-id> [flags]
 
 Aliases:
   files, changes
@@ -5074,7 +5074,7 @@ Get pull request details. The output carries a review summary describing unresol
 The unresolved thread counts come from the activity timeline, which is paged through; pass --no-review-summary to skip it. When the timeline is unavailable the summary falls back to the blocker-comment tally, then to the counters Bitbucket ships with the pull request. reviewSummary.countsSource reports which was used.
 
 Usage:
-  bb pr get <id> [flags]
+  bb pr get <pr-id> [flags]
 
 Aliases:
   get, view
@@ -5113,7 +5113,7 @@ List Jira issues associated with a pull request
 List Jira issues associated with a pull request
 
 Usage:
-  bb pr jira <id> [flags]
+  bb pr jira <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -5188,7 +5188,7 @@ Merge a pull request
 Merge a pull request
 
 Usage:
-  bb pr merge <id> [flags]
+  bb pr merge <pr-id> [flags]
 
 Flags:
       --version int   Expected pull request version; omit to act on whatever version is current
@@ -5224,7 +5224,7 @@ Show the common ancestor commit of a pull request's source and target branches
 Show the common ancestor commit of a pull request's source and target branches
 
 Usage:
-  bb pr merge-base <id> [flags]
+  bb pr merge-base <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -5299,7 +5299,7 @@ A pull request already in the requested state is left as it is, and the command 
 bb pr update --draft sets the same flag alongside other fields, and takes --version for a caller who wants the change refused if the pull request has moved on since they read it.
 
 Usage:
-  bb pr ready <id> [flags]
+  bb pr ready <pr-id> [flags]
 
 Examples:
   # Mark a draft pull request ready for review
@@ -5342,7 +5342,7 @@ Rebase a pull request
 Rebase a pull request
 
 Usage:
-  bb pr rebase <id> [flags]
+  bb pr rebase <pr-id> [flags]
 
 Flags:
       --version int   Expected pull request version
@@ -5378,7 +5378,7 @@ Reopen a pull request
 Reopen a pull request
 
 Usage:
-  bb pr reopen <id> [flags]
+  bb pr reopen <pr-id> [flags]
 
 Flags:
       --version int   Expected pull request version; omit to act on whatever version is current
@@ -5457,11 +5457,11 @@ Approve a pull request
 ```text
 Approve a pull request.
 
-Shorthand for `bb pr review set <id> APPROVED`. A participant holds one
+Shorthand for `bb pr review set <pr-id> APPROVED`. A participant holds one
 status, so approving replaces a request for changes rather than joining it.
 
 Usage:
-  bb pr review approve <id> [flags]
+  bb pr review approve <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -5500,7 +5500,7 @@ draft comment. Without one it fails and changes nothing. To set a status on its
 own, use `bb pr review set`; to post a comment on its own, use `bb pr comment add`.
 
 Usage:
-  bb pr review complete <id> [flags]
+  bb pr review complete <pr-id> [flags]
 
 Examples:
   # Publish your draft comments
@@ -5544,7 +5544,7 @@ Discard all draft comments and cancel review
 Discard all draft comments and cancel review
 
 Usage:
-  bb pr review discard <id> [flags]
+  bb pr review discard <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -5577,7 +5577,7 @@ Retrieve current draft review details
 Retrieve current draft review details
 
 Usage:
-  bb pr review get <id> [flags]
+  bb pr review get <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -5649,7 +5649,7 @@ Add reviewers to a pull request
 Add reviewers to a pull request
 
 Usage:
-  bb pr review reviewer add <id> [flags]
+  bb pr review reviewer add <pr-id> [flags]
 
 Examples:
   # Add a single reviewer
@@ -5706,7 +5706,7 @@ Remove a reviewer
 Remove a reviewer
 
 Usage:
-  bb pr review reviewer remove <id> [flags]
+  bb pr review reviewer remove <pr-id> [flags]
 
 Flags:
       --user string   Reviewer username
@@ -5752,7 +5752,7 @@ a no-op.
 changes as readily as an approval, which its name does not suggest.
 
 Usage:
-  bb pr review set <id> <status> [flags]
+  bb pr review set <pr-id> <status> [flags]
 
 Examples:
   # Request changes
@@ -5794,13 +5794,13 @@ Clear your review status on a pull request
 ```text
 Clear your review status on a pull request.
 
-Shorthand for `bb pr review set <id> UNAPPROVED`, and it does more than the
+Shorthand for `bb pr review set <pr-id> UNAPPROVED`, and it does more than the
 name suggests: a participant holds one status, so this clears a request for
 changes as readily as an approval. There is no separate verb for withdrawing
 NEEDS_WORK.
 
 Usage:
-  bb pr review unapprove <id> [flags]
+  bb pr review unapprove <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -5872,7 +5872,7 @@ Unwatch a pull request
 Unwatch a pull request
 
 Usage:
-  bb pr unwatch <id> [flags]
+  bb pr unwatch <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -5909,7 +5909,7 @@ Bitbucket refuses an update carrying a version the pull request has moved on fro
 To mark a draft ready for review, or turn a pull request back into a draft, use bb pr ready.
 
 Usage:
-  bb pr update <id> [flags]
+  bb pr update <pr-id> [flags]
 
 Aliases:
   update, edit
@@ -5962,7 +5962,7 @@ Watch a pull request
 Watch a pull request
 
 Usage:
-  bb pr watch <id> [flags]
+  bb pr watch <pr-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -6267,7 +6267,7 @@ Create a new project
 Create a new project
 
 Usage:
-  bb project create <key> [flags]
+  bb project create <project-key> [flags]
 
 Flags:
       --description string   Project description
@@ -6483,7 +6483,7 @@ Delete a project
 Delete a project
 
 Usage:
-  bb project delete <key> [flags]
+  bb project delete <project-key> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -6518,7 +6518,7 @@ Get project details
 Get project details
 
 Usage:
-  bb project get <key> [flags]
+  bb project get <project-key> [flags]
 ```
 
 ??? note "Global flags"
@@ -6632,7 +6632,7 @@ Grant a project permission to a user, or to a group with --group.
 Shallow alias for bb project permissions {users,groups} grant.
 
 Usage:
-  bb project permissions grant <key> <user-or-group> <permission> [flags]
+  bb project permissions grant <project-key> <user-or-group> <permission> [flags]
 
 Flags:
       --group   Treat the argument as a group rather than a user
@@ -6708,7 +6708,7 @@ Grant a project permission to a group.
 Also available as bb project permissions grant --group, one level shallower.
 
 Usage:
-  bb project permissions groups grant <key> <group> <permission> [flags]
+  bb project permissions groups grant <project-key> <group> <permission> [flags]
 ```
 
 ??? note "Global flags"
@@ -6742,7 +6742,7 @@ List groups with project permissions.
 Also available as bb project permissions list --group, one level shallower.
 
 Usage:
-  bb project permissions groups list <key> [flags]
+  bb project permissions groups list <project-key> [flags]
 
 Flags:
       --all         Return every result rather than the first --limit
@@ -6780,7 +6780,7 @@ Revoke a project permission from a group.
 Also available as bb project permissions revoke --group, one level shallower.
 
 Usage:
-  bb project permissions groups revoke <key> <group> [flags]
+  bb project permissions groups revoke <project-key> <group> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -6817,7 +6817,7 @@ List users with project permissions, or groups with --group.
 Shallow alias for bb project permissions {users,groups} list.
 
 Usage:
-  bb project permissions list <key> [flags]
+  bb project permissions list <project-key> [flags]
 
 Flags:
       --all         Return every result rather than the first --limit
@@ -6856,7 +6856,7 @@ Revoke a project permission from a user, or from a group with --group.
 Shallow alias for bb project permissions {users,groups} revoke.
 
 Usage:
-  bb project permissions revoke <key> <user-or-group> [flags]
+  bb project permissions revoke <project-key> <user-or-group> [flags]
 
 Flags:
       --group   Treat the argument as a group rather than a user
@@ -6892,7 +6892,7 @@ Show the caller's effective permissions on a project
 Show the caller's effective permissions on a project
 
 Usage:
-  bb project permissions show <key> [flags]
+  bb project permissions show <project-key> [flags]
 ```
 
 ??? note "Global flags"
@@ -6965,7 +6965,7 @@ Grant a project permission to a user.
 Also available as bb project permissions grant, one level shallower.
 
 Usage:
-  bb project permissions users grant <key> <username> <permission> [flags]
+  bb project permissions users grant <project-key> <username> <permission> [flags]
 ```
 
 ??? note "Global flags"
@@ -6999,7 +6999,7 @@ List users with project permissions.
 Also available as bb project permissions list, one level shallower.
 
 Usage:
-  bb project permissions users list <key> [flags]
+  bb project permissions users list <project-key> [flags]
 
 Flags:
       --all         Return every result rather than the first --limit
@@ -7037,7 +7037,7 @@ Revoke a project permission from a user.
 Also available as bb project permissions revoke, one level shallower.
 
 Usage:
-  bb project permissions users revoke <key> <username> [flags]
+  bb project permissions users revoke <project-key> <username> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -7072,7 +7072,7 @@ Update project details
 Update project details
 
 Usage:
-  bb project update <key> [flags]
+  bb project update <project-key> [flags]
 
 Flags:
       --description string   Project description
@@ -7454,7 +7454,7 @@ Resolve a ref by name to its full ref and commit if applicable
 Resolve a ref by name to its full ref and commit if applicable
 
 Usage:
-  bb ref resolve <name> [flags]
+  bb ref resolve <ref> [flags]
 ```
 
 ??? note "Global flags"
@@ -8455,7 +8455,7 @@ Delete a default checklist task
 Delete a default checklist task
 
 Usage:
-  bb repo default-task delete <id> [flags]
+  bb repo default-task delete <task-id> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -8524,7 +8524,7 @@ Update a default checklist task
 Update a default checklist task
 
 Usage:
-  bb repo default-task update <id> [flags]
+  bb repo default-task update <task-id> [flags]
 
 Flags:
       --description string   New task description
@@ -10389,7 +10389,7 @@ Remove a project or repository SSH access key by ID
 Remove a project or repository SSH access key by ID
 
 Usage:
-  bb repo ssh-key remove <key-id> [flags]
+  bb repo ssh-key remove <access-key-id> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -10762,7 +10762,7 @@ Delete a default reviewer condition
 Delete a default reviewer condition
 
 Usage:
-  bb reviewer condition delete <id> [flags]
+  bb reviewer condition delete <condition-id> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -10835,7 +10835,7 @@ Update a default reviewer condition
 Update a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)
 
 Usage:
-  bb reviewer condition update <id> [json-config] [flags]
+  bb reviewer condition update <condition-id> [json-config] [flags]
 ```
 
 ??? note "Global flags"
@@ -10953,7 +10953,7 @@ Delete a reviewer group
 Delete a reviewer group
 
 Usage:
-  bb reviewer-group delete <id> [flags]
+  bb reviewer-group delete <reviewer-group-id> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -11024,7 +11024,7 @@ Update a reviewer group
 Update a reviewer group
 
 Usage:
-  bb reviewer-group update <id> [flags]
+  bb reviewer-group update <reviewer-group-id> [flags]
 
 Flags:
       --description string   New description of the reviewer group
@@ -11065,7 +11065,7 @@ List the members of a repository reviewer group who can see the repository.
 Bitbucket leaves out a member without access to the repository, whom it still keeps in the group. bb reviewer-group list names every member.
 
 Usage:
-  bb reviewer-group users <id> [flags]
+  bb reviewer-group users <reviewer-group-id> [flags]
 ```
 
 ??? note "Global flags"
@@ -11369,7 +11369,7 @@ Remove a personal SSH key by ID
 Remove a personal SSH key by ID
 
 Usage:
-  bb ssh-key remove <key-id> [flags]
+  bb ssh-key remove <ssh-key-id> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -11486,7 +11486,7 @@ Delete repository tag
 Delete repository tag
 
 Usage:
-  bb tag delete <name> [flags]
+  bb tag delete <tag> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -11563,7 +11563,7 @@ View repository tag
 View repository tag
 
 Usage:
-  bb tag view <name> [flags]
+  bb tag view <tag> [flags]
 ```
 
 ??? note "Global flags"
@@ -11720,7 +11720,7 @@ Delete a repository webhook
 Delete a repository webhook
 
 Usage:
-  bb webhook delete <id> [flags]
+  bb webhook delete <webhook-id> [flags]
 
 Flags:
   -y, --yes   Confirm without being asked
@@ -11756,7 +11756,7 @@ Get a repository webhook by ID
 Get a repository webhook by ID
 
 Usage:
-  bb webhook get <id> [flags]
+  bb webhook get <webhook-id> [flags]
 
 Flags:
       --reveal-secret   Print the webhook's shared secret instead of redacting it
@@ -11830,7 +11830,7 @@ Get repository webhook statistics
 Get repository webhook statistics
 
 Usage:
-  bb webhook stats <id> [flags]
+  bb webhook stats <webhook-id> [flags]
 
 Flags:
       --summary   Get statistics summary instead of detailed stats
@@ -11866,7 +11866,7 @@ Test connection to repository webhook URL by sending a ping event
 Test connection to repository webhook URL by sending a ping event
 
 Usage:
-  bb webhook test <id> [flags]
+  bb webhook test <webhook-id> [flags]
 
 Flags:
       --reveal-secret   Print the endpoint credentials Bitbucket sent instead of redacting it
@@ -11903,7 +11903,7 @@ Update a repository webhook
 Update a repository webhook
 
 Usage:
-  bb webhook update <id> [flags]
+  bb webhook update <webhook-id> [flags]
 
 Flags:
       --active string                 Active status, unchanged when omitted (one of: true, false)

@@ -74,7 +74,7 @@ func TestDiffValidationErrors(t *testing.T) {
 		t.Fatalf("expected error on invalid repo selector")
 	}
 
-	// `diff pr <id> --repo` succeeding was here too, which is not a validation
+	// `diff pr <pr-id> --repo` succeeding was here too, which is not a validation
 	// error and needed a server to say so. It is live in
 	// TestLiveCLICommandCoverage, against a pull request that exists.
 

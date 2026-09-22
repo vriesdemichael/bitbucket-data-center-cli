@@ -26,7 +26,7 @@ func newPullRequestReadyCommand(deps Dependencies, repositorySelector *string) *
 	var undo bool
 
 	cmd := &cobra.Command{
-		Use:   "ready <id>",
+		Use:   "ready <pr-id>",
 		Short: "Mark a draft pull request ready for review, or turn it back into a draft",
 		Long: "Mark a draft pull request ready for review. With --undo, turn an open pull request back into a draft.\n\n" +
 			"bb reads the pull request's current version itself. If the pull request " +

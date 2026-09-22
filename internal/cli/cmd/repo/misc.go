@@ -362,7 +362,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 
 	var updateDesc string
 	updateCmd := &cobra.Command{
-		Use:   "update <id>",
+		Use:   "update <task-id>",
 		Short: "Update a default checklist task",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -415,7 +415,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	_ = updateCmd.MarkFlagRequired("description")
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <id>",
+		Use:   "delete <task-id>",
 		Short: "Delete a default checklist task",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1221,7 +1221,7 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 	repoSshCmd.AddCommand(addCmd)
 
 	removeCmd := &cobra.Command{
-		Use:   "remove <key-id>",
+		Use:   "remove <access-key-id>",
 		Short: "Remove a project or repository SSH access key by ID",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

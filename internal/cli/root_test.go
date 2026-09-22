@@ -1783,10 +1783,10 @@ func TestIssueCommandIsNotOffered(t *testing.T) {
 // Everywhere else --repo names the repository a command acts in, and inference
 // filling it from the git remote is the convenience it exists for. Under
 // `auth token` it selects the scope of the token itself, so inference turned
-// `bb auth token revoke <id>` inside a checkout into a revoke of a repository
-// token, against a repository the caller never named. It also made --yes
-// refuse, because a target taken from the remote is not a target the caller
-// named (confirm.go).
+// `bb auth token revoke <token-id>` inside a checkout into a revoke of a
+// repository token, against a repository the caller never named. It also made
+// --yes refuse, because a target taken from the remote is not a target the
+// caller named (confirm.go).
 func TestTokenScopeIsNotFilledFromTheGitRemote(t *testing.T) {
 	t.Parallel()
 

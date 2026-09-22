@@ -144,7 +144,7 @@ func New(deps Dependencies) *cobra.Command {
 	commitCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{
-		Use:   "get <id>",
+		Use:   "get <commit>",
 		Short: "Get a specific commit",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -239,7 +239,7 @@ it last.
 	commitCmd.AddCommand(compareCmd)
 
 	prsCmd := &cobra.Command{
-		Use:   "prs <commitId>",
+		Use:   "prs <commit>",
 		Short: "List pull requests containing a commit",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

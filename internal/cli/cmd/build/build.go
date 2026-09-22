@@ -454,7 +454,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var updateBody string
 	updateRequiredCmd := &cobra.Command{
-		Use:   "update <id>",
+		Use:   "update <required-build-id>",
 		Short: "Update required build merge check",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -512,7 +512,7 @@ func New(deps Dependencies) *cobra.Command {
 	requiredCmd.AddCommand(updateRequiredCmd)
 
 	deleteRequiredCmd := &cobra.Command{
-		Use:   "delete <id>",
+		Use:   "delete <required-build-id>",
 		Short: "Delete required build merge check",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

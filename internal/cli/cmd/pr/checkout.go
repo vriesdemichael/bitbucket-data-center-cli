@@ -37,7 +37,7 @@ func newPullRequestCheckoutCommand(deps Dependencies, repositorySelector *string
 	var detach bool
 
 	command := &cobra.Command{
-		Use:   "checkout <id>",
+		Use:   "checkout <pr-id>",
 		Short: "Check out a pull request branch locally",
 		Long: "Check out the source branch of a pull request in the current git repository.\n\n" +
 			"Same-repository pull requests are checked out from the remote that already points at the " +

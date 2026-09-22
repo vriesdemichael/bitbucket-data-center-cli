@@ -353,7 +353,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var deleteEndPoint string
 	deleteCmd := &cobra.Command{
-		Use:   "delete <name>",
+		Use:   "delete <branch>",
 		Short: "Delete repository branch",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -444,7 +444,7 @@ func New(deps Dependencies) *cobra.Command {
 	defaultCmd.AddCommand(defaultGetCmd)
 
 	defaultSetCmd := &cobra.Command{
-		Use:   "set <name>",
+		Use:   "set <branch>",
 		Short: "Set repository default branch",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -558,7 +558,7 @@ func New(deps Dependencies) *cobra.Command {
 	modelCmd.AddCommand(modelInspectCmd)
 
 	modelUpdateCmd := &cobra.Command{
-		Use:   "update <default-branch>",
+		Use:   "update <branch>",
 		Short: "Update repository default branch used by branch model settings",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -691,7 +691,7 @@ func New(deps Dependencies) *cobra.Command {
 	restrictionCmd.AddCommand(restrictionListCmd)
 
 	restrictionGetCmd := &cobra.Command{
-		Use:   "get <id>",
+		Use:   "get <restriction-id>",
 		Short: "Get branch restriction by id",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -831,7 +831,7 @@ func New(deps Dependencies) *cobra.Command {
 	var updateGroups []string
 	var updateAccessKeyIDs []int
 	restrictionUpdateCmd := &cobra.Command{
-		Use:   "update <id>",
+		Use:   "update <restriction-id>",
 		Short: "Update branch restriction",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -922,7 +922,7 @@ func New(deps Dependencies) *cobra.Command {
 	restrictionCmd.AddCommand(restrictionUpdateCmd)
 
 	restrictionDeleteCmd := &cobra.Command{
-		Use:   "delete <id>",
+		Use:   "delete <restriction-id>",
 		Short: "Delete branch restriction",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

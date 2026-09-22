@@ -24,7 +24,7 @@ path rather than in a flag.
 | `gh pr checks 42` | `bb pr build status 42` | `bb pr checks` works as an alias |
 | `gh pr merge 42` | `bb pr merge 42` | |
 | `gh pr diff 42` | `bb pr diff 42` | |
-| `gh pr review` | `bb pr review approve`, `bb pr review unapprove`, `bb pr review set` | `set <id> <status>` is the general form; approve and unapprove are the two shorthands |
+| `gh pr review` | `bb pr review approve`, `bb pr review unapprove`, `bb pr review set` | `set <pr-id> <status>` is the general form; approve and unapprove are the two shorthands |
 | `gh pr comment` | `bb pr comment add` | |
 | `gh pr checkout 42` | `bb pr checkout 42` | |
 | `gh pr ready 42` | `bb pr ready 42` | `--undo` turns it back into a draft |

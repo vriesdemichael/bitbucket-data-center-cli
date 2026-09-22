@@ -106,7 +106,7 @@ func newProjectPermissionListCommand(deps Dependencies, subjectFor projectPermis
 	var listPaging paging.Options
 
 	command := &cobra.Command{
-		Use:  "list <key>",
+		Use:  "list <project-key>",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			subject := subjectFor()
@@ -349,12 +349,12 @@ func newProjectPermissionSubjectCommand(deps Dependencies, subject projectPermis
 	listCommand.Long = fmt.Sprintf("List %ss with project permissions.\n\n%s", subject.noun, alsoAvailableAs(shallow+" list", subject.noun))
 
 	grantCommand := newProjectPermissionGrantCommand(deps, resolver)
-	grantCommand.Use = fmt.Sprintf("grant <key> <%s> <permission>", subject.argPlaceholder())
+	grantCommand.Use = fmt.Sprintf("grant <project-key> <%s> <permission>", subject.argPlaceholder())
 	grantCommand.Short = fmt.Sprintf("Grant a project permission to a %s", subject.noun)
 	grantCommand.Long = fmt.Sprintf("Grant a project permission to a %s.\n\n%s", subject.noun, alsoAvailableAs(shallow+" grant", subject.noun))
 
 	revokeCommand := newProjectPermissionRevokeCommand(deps, resolver)
-	revokeCommand.Use = fmt.Sprintf("revoke <key> <%s>", subject.argPlaceholder())
+	revokeCommand.Use = fmt.Sprintf("revoke <project-key> <%s>", subject.argPlaceholder())
 	revokeCommand.Short = fmt.Sprintf("Revoke a project permission from a %s", subject.noun)
 	revokeCommand.Long = fmt.Sprintf("Revoke a project permission from a %s.\n\n%s", subject.noun, alsoAvailableAs(shallow+" revoke", subject.noun))
 
@@ -389,14 +389,14 @@ func addProjectPermissionAliases(parent *cobra.Command, deps Dependencies) {
 	listCommand.Flags().BoolVar(&listGroups, "group", false, "List groups instead of users")
 
 	grantCommand := newProjectPermissionGrantCommand(deps, subjectFrom(&grantGroup))
-	grantCommand.Use = "grant <key> <user-or-group> <permission>"
+	grantCommand.Use = "grant <project-key> <user-or-group> <permission>"
 	grantCommand.Short = "Grant a project permission to a user or group"
 	grantCommand.Long = "Grant a project permission to a user, or to a group with --group.\n\n" +
 		"Shallow alias for " + deep + " grant."
 	grantCommand.Flags().BoolVar(&grantGroup, "group", false, "Treat the argument as a group rather than a user")
 
 	revokeCommand := newProjectPermissionRevokeCommand(deps, subjectFrom(&revokeGroup))
-	revokeCommand.Use = "revoke <key> <user-or-group>"
+	revokeCommand.Use = "revoke <project-key> <user-or-group>"
 	revokeCommand.Short = "Revoke a project permission from a user or group"
 	revokeCommand.Long = "Revoke a project permission from a user, or from a group with --group.\n\n" +
 		"Shallow alias for " + deep + " revoke."
@@ -423,7 +423,7 @@ func newProjectPermissionsCommand(deps Dependencies) *cobra.Command {
 	addProjectPermissionAliases(permissionsCmd, deps)
 
 	permissionsShowCmd := &cobra.Command{
-		Use:   "show <key>",
+		Use:   "show <project-key>",
 		Short: "Show the caller's effective permissions on a project",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

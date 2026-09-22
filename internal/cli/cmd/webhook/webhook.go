@@ -87,7 +87,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var getRevealSecret bool
 	getCmd := &cobra.Command{
-		Use:   "get <id>",
+		Use:   "get <webhook-id>",
 		Short: "Get a repository webhook by ID",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -131,7 +131,7 @@ func New(deps Dependencies) *cobra.Command {
 	var activeVal string
 	var updateFields webhookflags.Fields
 	updateCmd := &cobra.Command{
-		Use:   "update <id>",
+		Use:   "update <webhook-id>",
 		Short: "Update a repository webhook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -206,7 +206,7 @@ func New(deps Dependencies) *cobra.Command {
 	var webhookTestURL string
 	var testRevealSecret bool
 	testCmd := &cobra.Command{
-		Use:   "test <id>",
+		Use:   "test <webhook-id>",
 		Short: "Test connection to repository webhook URL by sending a ping event",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -261,7 +261,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var summary bool
 	statsCmd := &cobra.Command{
-		Use:   "stats <id>",
+		Use:   "stats <webhook-id>",
 		Short: "Get repository webhook statistics",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -433,7 +433,7 @@ func New(deps Dependencies) *cobra.Command {
 	createFields.RegisterCreate(createCmd)
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <id>",
+		Use:   "delete <webhook-id>",
 		Short: "Delete a repository webhook",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
