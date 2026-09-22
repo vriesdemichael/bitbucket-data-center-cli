@@ -52,6 +52,17 @@ func answer(
 	args []string,
 	toComplete string,
 ) ([]cobra.Completion, cobra.ShellCompDirective) {
+	// A slot that really takes a local path asks the shell for one. The flag
+	// side arranges this when it registers; an argument reaches it here, which
+	// is why `bb repo clone PROJ/repo <tab>` offers directories and `bb
+	// ssh-key add <tab>` offers files.
+	switch target.kind {
+	case KindLocalFile:
+		return nil, cobra.ShellCompDirectiveDefault
+	case KindLocalDir:
+		return nil, cobra.ShellCompDirectiveFilterDirs
+	}
+
 	source, known := sources[target.kind]
 	if !known || target.kind == KindFree {
 		debugf("kind %q has no source", target.kind)
