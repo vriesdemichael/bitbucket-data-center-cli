@@ -178,7 +178,7 @@ func TestAReasonWorthActingOnReachesThePrompt(t *testing.T) {
 		return Result{}, apperrors.New(apperrors.KindAuthentication, "not logged in to bitbucket.example.com", nil)
 	}
 	candidates, _ := answerWith(t, actionable, "")
-	if len(candidates) != 1 || !strings.Contains(string(candidates[0]), "not logged in") {
+	if len(candidates) != 1 || !strings.Contains(candidates[0], "not logged in") {
 		t.Errorf("expected the reason as an Active Help line, got %v", candidates)
 	}
 
@@ -218,7 +218,7 @@ func TestTheAnswerIsFilteredCappedAndDeduplicated(t *testing.T) {
 
 	seen := map[string]int{}
 	for _, candidate := range candidates {
-		value, _, _ := strings.Cut(string(candidate), "\t")
+		value, _, _ := strings.Cut(candidate, "\t")
 		seen[value]++
 
 		if !strings.HasPrefix(value, "feature/") {
