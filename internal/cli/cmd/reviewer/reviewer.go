@@ -143,7 +143,7 @@ func New(deps Dependencies) *cobra.Command {
 	conditionCmd.AddCommand(listCmd)
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <id>",
+		Use:   "delete <condition-id>",
 		Short: "Delete a default reviewer condition",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -395,7 +395,7 @@ func New(deps Dependencies) *cobra.Command {
 	conditionCmd.AddCommand(createCmd)
 
 	updateCmd := &cobra.Command{
-		Use:   "update <id> [json-config]",
+		Use:   "update <condition-id> [json-config]",
 		Short: "Update a default reviewer condition",
 		Long:  "Update a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)",
 		Args:  cobra.RangeArgs(1, 2),

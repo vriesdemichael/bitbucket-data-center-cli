@@ -214,7 +214,7 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{
-		Use:     "get <id>",
+		Use:     "get <pr-id>",
 		Aliases: []string{"view"},
 		Short:   "Get pull request details, including outstanding review feedback",
 		Long: "Get pull request details. The output carries a review summary describing unresolved comment " +
@@ -294,7 +294,7 @@ func New(deps Dependencies) *cobra.Command {
 	var commitsPaging paging.Options
 	var commitsStart int
 	commitsCmd := &cobra.Command{
-		Use:   "commits <id>",
+		Use:   "commits <pr-id>",
 		Short: "List the commits in a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -337,7 +337,7 @@ func New(deps Dependencies) *cobra.Command {
 	var filesPaging paging.Options
 	var filesStart int
 	filesCmd := &cobra.Command{
-		Use:     "files <id>",
+		Use:     "files <pr-id>",
 		Aliases: []string{"changes"},
 		Short:   "List the files changed in a pull request",
 		Args:    cobra.ExactArgs(1),
@@ -387,7 +387,7 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd.AddCommand(filesCmd)
 
 	mergeBaseCmd := &cobra.Command{
-		Use:   "merge-base <id>",
+		Use:   "merge-base <pr-id>",
 		Short: "Show the common ancestor commit of a pull request's source and target branches",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -662,7 +662,7 @@ func New(deps Dependencies) *cobra.Command {
 	var updateDraft bool
 	var updateReviewers []string
 	updateCmd := &cobra.Command{
-		Use:     "update <id>",
+		Use:     "update <pr-id>",
 		Aliases: []string{"edit"},
 		Short:   "Update pull request metadata",
 		Long: "Update a pull request's title, description, draft state or reviewers.\n\n" +
@@ -807,7 +807,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var transitionVersion int
 	mergeCmd := &cobra.Command{
-		Use:   "merge <id>",
+		Use:   "merge <pr-id>",
 		Short: "Merge a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -904,7 +904,7 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd.AddCommand(mergeCmd)
 
 	declineCmd := &cobra.Command{
-		Use:     "decline <id>",
+		Use:     "decline <pr-id>",
 		Aliases: []string{"close"},
 		Short:   "Decline a pull request",
 		Args:    cobra.ExactArgs(1),
@@ -974,7 +974,7 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd.AddCommand(declineCmd)
 
 	reopenCmd := &cobra.Command{
-		Use:   "reopen <id>",
+		Use:   "reopen <pr-id>",
 		Short: "Reopen a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1045,11 +1045,11 @@ func New(deps Dependencies) *cobra.Command {
 	reviewCmd := &cobra.Command{Use: "review", Short: "Pull request review commands"}
 
 	reviewApproveCmd := &cobra.Command{
-		Use:   "approve <id>",
+		Use:   "approve <pr-id>",
 		Short: "Approve a pull request",
 		Long: `Approve a pull request.
 
-Shorthand for ` + "`bb pr review set <id> APPROVED`" + `. A participant holds one
+Shorthand for ` + "`bb pr review set <pr-id> APPROVED`" + `. A participant holds one
 status, so approving replaces a request for changes rather than joining it.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1111,11 +1111,11 @@ status, so approving replaces a request for changes rather than joining it.`,
 	reviewCmd.AddCommand(reviewApproveCmd)
 
 	reviewUnapproveCmd := &cobra.Command{
-		Use:   "unapprove <id>",
+		Use:   "unapprove <pr-id>",
 		Short: "Clear your review status on a pull request",
 		Long: `Clear your review status on a pull request.
 
-Shorthand for ` + "`bb pr review set <id> UNAPPROVED`" + `, and it does more than the
+Shorthand for ` + "`bb pr review set <pr-id> UNAPPROVED`" + `, and it does more than the
 name suggests: a participant holds one status, so this clears a request for
 changes as readily as an approval. There is no separate verb for withdrawing
 NEEDS_WORK.`,
@@ -1185,7 +1185,7 @@ NEEDS_WORK.`,
 	reviewCmd.AddCommand(reviewUnapproveCmd)
 
 	reviewSetStatusCmd := &cobra.Command{
-		Use:   "set <id> <status>",
+		Use:   "set <pr-id> <status>",
 		Short: "Set your review status on a pull request",
 		Long: `Set your review status on a pull request.
 
@@ -1288,7 +1288,7 @@ changes as readily as an approval, which its name does not suggest.`,
 	var reviewerDefaultReviewers bool
 	var reviewerCodeOwners bool
 	reviewerAddCmd := &cobra.Command{
-		Use:   "add <id>",
+		Use:   "add <pr-id>",
 		Short: "Add reviewers to a pull request",
 		Example: "  # Add a single reviewer\n" +
 			"  bb pr review reviewer add 42 --repo PROJ/repo --user alice\n\n" +
@@ -1518,7 +1518,7 @@ changes as readily as an approval, which its name does not suggest.`,
 
 	var removeReviewerUsername string
 	reviewerRemoveCmd := &cobra.Command{
-		Use:   "remove <id>",
+		Use:   "remove <pr-id>",
 		Short: "Remove a reviewer",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1583,7 +1583,7 @@ changes as readily as an approval, which its name does not suggest.`,
 	reviewCmd.AddCommand(reviewerCmd)
 
 	reviewGetCmd := &cobra.Command{
-		Use:   "get <id>",
+		Use:   "get <pr-id>",
 		Short: "Retrieve current draft review details",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1636,7 +1636,7 @@ changes as readily as an approval, which its name does not suggest.`,
 	var reviewCompleteStatus string
 	var reviewCompleteComment string
 	reviewCompleteCmd := &cobra.Command{
-		Use:   "complete <id>",
+		Use:   "complete <pr-id>",
 		Short: "Publish draft comments and optionally submit a status change",
 		Long: `Publish your draft review on a pull request: the comments you added with
 ` + "`bb pr comment add --pending`" + `, together with the status and summary comment
@@ -1729,7 +1729,7 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 	reviewCmd.AddCommand(reviewCompleteCmd)
 
 	reviewDiscardCmd := &cobra.Command{
-		Use:   "discard <id>",
+		Use:   "discard <pr-id>",
 		Short: "Discard all draft comments and cancel review",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1782,7 +1782,7 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 	prCmd.AddCommand(reviewCmd)
 
 	jiraCmd := &cobra.Command{
-		Use:   "jira <id>",
+		Use:   "jira <pr-id>",
 		Short: "List Jira issues associated with a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1849,7 +1849,7 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 	var commentWithReplies bool
 	var commentFull bool
 	commentListCmd := &cobra.Command{
-		Use:   "list <id>",
+		Use:   "list <pr-id>",
 		Short: "List comment threads for a pull request, unresolved first",
 		Long: "List pull request comment threads. Bitbucket models a task as a blocker comment, so this " +
 			"returns reviewer comments and tasks in one view, each with its resolution state, anchor and reply count.\n\n" +
@@ -2386,7 +2386,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 
 	var activityPaging paging.Options
 	activityListCmd := &cobra.Command{
-		Use:   "list <id>",
+		Use:   "list <pr-id>",
 		Short: "List raw pull request activity items",
 		Long:  "List raw pull request activity items. This output is an explicit exception to the stable versioned API and is intended only for AI ingestion and debugging.",
 		Args:  cobra.ExactArgs(1),
@@ -2499,9 +2499,9 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	// Each half names the other (ADR-050): a reader who found one has no way to
 	// learn the other exists, and `bb pr checks` is the spelling a gh user
 	// reaches for.
-	buildCmd.AddCommand(newBuildStatusCmd("status <id>", "Show build statuses for a pull request's source commit (also available as bb pr checks)"))
+	buildCmd.AddCommand(newBuildStatusCmd("status <pr-id>", "Show build statuses for a pull request's source commit (also available as bb pr checks)"))
 	prCmd.AddCommand(buildCmd)
-	prCmd.AddCommand(newBuildStatusCmd("checks <id>", "Show build statuses for a pull request's source commit (alias for bb pr build status)"))
+	prCmd.AddCommand(newBuildStatusCmd("checks <pr-id>", "Show build statuses for a pull request's source commit (alias for bb pr build status)"))
 
 	autoMergeCmd := &cobra.Command{
 		Use:   "auto-merge",
@@ -2509,7 +2509,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	}
 
 	autoMergeGetCmd := &cobra.Command{
-		Use:   "get <id>",
+		Use:   "get <pr-id>",
 		Short: "Get auto-merge configuration for a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -2546,7 +2546,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 
 	var autoMergeStrategy string
 	autoMergeEnableCmd := &cobra.Command{
-		Use:   "enable <id>",
+		Use:   "enable <pr-id>",
 		Short: "Enable auto-merge on a pull request",
 		Example: "  # Enable auto-merge with the default strategy (no-ff)\n" +
 			"  bb pr auto-merge enable 42 --repo PROJ/repo\n\n" +
@@ -2619,7 +2619,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	autoMergeCmd.AddCommand(autoMergeEnableCmd)
 
 	autoMergeDisableCmd := &cobra.Command{
-		Use:   "disable <id>",
+		Use:   "disable <pr-id>",
 		Short: "Disable auto-merge on a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -2682,7 +2682,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	prCmd.AddCommand(autoMergeCmd)
 
 	watchCmd := &cobra.Command{
-		Use:   "watch <id>",
+		Use:   "watch <pr-id>",
 		Short: "Watch a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -2734,7 +2734,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	prCmd.AddCommand(watchCmd)
 
 	unwatchCmd := &cobra.Command{
-		Use:   "unwatch <id>",
+		Use:   "unwatch <pr-id>",
 		Short: "Unwatch a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -2787,7 +2787,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 
 	var rebaseVersion int
 	rebaseCmd := &cobra.Command{
-		Use:   "rebase <id>",
+		Use:   "rebase <pr-id>",
 		Short: "Rebase a pull request",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -2999,7 +2999,7 @@ func newPullRequestDiffAlias(deps Dependencies, repositorySelector *string) *cob
 	var nameOnly bool
 
 	command := &cobra.Command{
-		Use:   "diff <id>",
+		Use:   "diff <pr-id>",
 		Short: "Diff a pull request (alias for bb diff pr)",
 		Long:  "Diff a pull request.\n\nAlias for bb diff pr, which is where the command reference documents it.",
 		Args:  cobra.ExactArgs(1),

@@ -111,7 +111,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var reportBody string
 	setReportCmd := &cobra.Command{
-		Use:   "set <commit> <key>",
+		Use:   "set <commit> <report-key>",
 		Short: "Create or update a Code Insights report",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -167,7 +167,7 @@ func New(deps Dependencies) *cobra.Command {
 	reportCmd.AddCommand(setReportCmd)
 
 	reportCmd.AddCommand(&cobra.Command{
-		Use:   "get <commit> <key>",
+		Use:   "get <commit> <report-key>",
 		Short: "Get a Code Insights report",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -186,7 +186,7 @@ func New(deps Dependencies) *cobra.Command {
 	})
 
 	reportCmd.AddCommand(&cobra.Command{
-		Use:   "delete <commit> <key>",
+		Use:   "delete <commit> <report-key>",
 		Short: "Delete a Code Insights report",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -287,7 +287,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var annotationBody string
 	addAnnotationCmd := &cobra.Command{
-		Use:   "add <commit> <key>",
+		Use:   "add <commit> <report-key>",
 		Short: "Add annotations to a Code Insights report",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -335,7 +335,7 @@ func New(deps Dependencies) *cobra.Command {
 	annotationCmd.AddCommand(addAnnotationCmd)
 
 	listAnnotationsCmd := &cobra.Command{
-		Use:   "list <commit> [key]",
+		Use:   "list <commit> [report-key]",
 		Short: "List annotations for a Code Insights report or commit",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -387,7 +387,7 @@ func New(deps Dependencies) *cobra.Command {
 	var setAnnType string
 
 	setAnnotationCmd := &cobra.Command{
-		Use:   "set <commit> <key> <external-id>",
+		Use:   "set <commit> <report-key> <external-id>",
 		Short: "Create or replace a Code Insights report annotation",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -475,7 +475,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var externalID string
 	deleteAnnotationCmd := &cobra.Command{
-		Use:   "delete <commit> <key>",
+		Use:   "delete <commit> <report-key>",
 		Short: "Delete annotation(s) by external id for a report",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {

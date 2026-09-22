@@ -136,7 +136,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	tokenCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{
-		Use:   "get <id>",
+		Use:   "get <token-id>",
 		Short: "Get an HTTP access token by ID",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -247,7 +247,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	var updateName string
 	var updatePerms []string
 	updateCmd := &cobra.Command{
-		Use:   "update <id>",
+		Use:   "update <token-id>",
 		Short: "Update an HTTP access token name or permissions",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -284,7 +284,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	tokenCmd.AddCommand(updateCmd)
 
 	revokeCmd := &cobra.Command{
-		Use:   "revoke <id>",
+		Use:   "revoke <token-id>",
 		Short: "Revoke an HTTP access token by ID",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -319,8 +319,8 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 
 	// --repo here says which token to act on -- a repository-scoped one --
 	// rather than which repository to act in. Ambient inference fills an empty
-	// --repo from the git remote, which turned `bb auth token revoke <id>` in a
-	// checkout into a revoke of a repository token, and made --yes refuse
+	// --repo from the git remote, which turned `bb auth token revoke <token-id>`
+	// in a checkout into a revoke of a repository token, and made --yes refuse
 	// because the target had not been named (confirm.go). The literal matches
 	// cli.annotationNoAmbientRepoInference; this package cannot import
 	// internal/cli, and the test of that name pins them together.

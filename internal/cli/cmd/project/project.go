@@ -133,7 +133,7 @@ func New(deps Dependencies) *cobra.Command {
 	projectCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{
-		Use:   "get <key>",
+		Use:   "get <project-key>",
 		Short: "Get project details",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -163,7 +163,7 @@ func New(deps Dependencies) *cobra.Command {
 	var createName string
 	var createDesc string
 	createCmd := &cobra.Command{
-		Use:   "create <key>",
+		Use:   "create <project-key>",
 		Short: "Create a new project",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -233,7 +233,7 @@ func New(deps Dependencies) *cobra.Command {
 	var updateName string
 	var updateDesc string
 	updateCmd := &cobra.Command{
-		Use:   "update <key>",
+		Use:   "update <project-key>",
 		Short: "Update project details",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -297,7 +297,7 @@ func New(deps Dependencies) *cobra.Command {
 	projectCmd.AddCommand(updateCmd)
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <key>",
+		Use:   "delete <project-key>",
 		Short: "Delete a project",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

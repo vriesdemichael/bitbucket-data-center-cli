@@ -59,7 +59,7 @@ func New(deps Dependencies) *cobra.Command {
 	var paginate bool
 
 	cmd := &cobra.Command{
-		Use:   "api <path>",
+		Use:   "api <endpoint>",
 		Short: "Send a raw HTTP request to the Bitbucket REST API",
 		Long: `Send a raw HTTP request to the Bitbucket REST API as an escape hatch for uncovered endpoints.
 

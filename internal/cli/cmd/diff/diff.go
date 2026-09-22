@@ -121,7 +121,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	var commitPath string
 	commitCmd := &cobra.Command{
-		Use:   "commit <sha>",
+		Use:   "commit <commit>",
 		Short: "Diff a commit against its parent",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -162,7 +162,7 @@ func NewDiffPullRequestCommand(deps Dependencies, repositorySelector *string) *c
 	var nameOnly bool
 
 	command := &cobra.Command{
-		Use:   "pr <id>",
+		Use:   "pr <pr-id>",
 		Short: "Diff a pull request",
 		Long:  "Diff a pull request.\n\nAlso available as bb pr diff, which is the gh spelling.",
 		Args:  cobra.ExactArgs(1),

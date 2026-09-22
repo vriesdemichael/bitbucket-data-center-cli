@@ -121,7 +121,7 @@ func New(deps Dependencies) *cobra.Command {
 	refCmd.AddCommand(listCmd)
 
 	resolveCmd := &cobra.Command{
-		Use:   "resolve <name>",
+		Use:   "resolve <ref>",
 		Short: "Resolve a ref by name to its full ref and commit if applicable",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

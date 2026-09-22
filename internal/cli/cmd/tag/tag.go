@@ -220,7 +220,7 @@ func New(deps Dependencies) *cobra.Command {
 	tagCmd.AddCommand(createCmd)
 
 	tagCmd.AddCommand(&cobra.Command{
-		Use:   "view <name>",
+		Use:   "view <tag>",
 		Short: "View repository tag",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -254,7 +254,7 @@ func New(deps Dependencies) *cobra.Command {
 	})
 
 	tagCmd.AddCommand(&cobra.Command{
-		Use:   "delete <name>",
+		Use:   "delete <tag>",
 		Short: "Delete repository tag",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

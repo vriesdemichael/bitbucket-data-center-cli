@@ -144,7 +144,7 @@ func New(deps Dependencies) *cobra.Command {
 	sshCmd.AddCommand(addCmd)
 
 	removeCmd := &cobra.Command{
-		Use:   "remove <key-id>",
+		Use:   "remove <ssh-key-id>",
 		Short: "Remove a personal SSH key by ID",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

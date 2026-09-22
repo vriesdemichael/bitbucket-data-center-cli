@@ -270,7 +270,7 @@ func New(deps Dependencies) *cobra.Command {
 	reviewerGroupCmd.AddCommand(createCmd)
 
 	updateCmd := &cobra.Command{
-		Use:   "update <id>",
+		Use:   "update <reviewer-group-id>",
 		Short: "Update a reviewer group",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -427,7 +427,7 @@ func New(deps Dependencies) *cobra.Command {
 	reviewerGroupCmd.AddCommand(updateCmd)
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <id>",
+		Use:   "delete <reviewer-group-id>",
 		Short: "Delete a reviewer group",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -557,7 +557,7 @@ func New(deps Dependencies) *cobra.Command {
 	reviewerGroupCmd.AddCommand(deleteCmd)
 
 	usersCmd := &cobra.Command{
-		Use:   "users <id>",
+		Use:   "users <reviewer-group-id>",
 		Short: "List the members of a repository reviewer group who can see the repository",
 		Long: "List the members of a repository reviewer group who can see the repository.\n\n" +
 			"Bitbucket leaves out a member without access to the repository, whom it still keeps in the group. " +

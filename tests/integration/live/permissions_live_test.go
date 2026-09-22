@@ -1159,7 +1159,7 @@ func TestLiveRepoPermissionsShowAsAdmin(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// bb project permissions show <key> — effective permission inspection for the caller.
+// bb project permissions show <project-key> — effective permission inspection for the caller.
 //
 // Same as above: the administrator's answer, then an account's.
 // ---------------------------------------------------------------------------
