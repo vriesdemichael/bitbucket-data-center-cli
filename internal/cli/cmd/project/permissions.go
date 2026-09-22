@@ -167,7 +167,7 @@ func newProjectPermissionGrantCommand(deps Dependencies, subjectFor projectPermi
 			service := projectservice.NewService(client)
 			projectKey := args[0]
 			name := args[1]
-			permission, err := enumflag.Value("permission", args[2], permissionNames)
+			permission, err := enumflag.Value("permission", args[2], PermissionNames)
 			if err != nil {
 				return err
 			}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -17,25 +18,77 @@ type skillInfo struct {
 	content []byte
 }
 
+// Skill names one of the agent skills this binary carries.
+//
+// Exported so shell completion can offer them without writing the names down
+// a second time: `bb ai skill install|remove|show [skill]` takes a positional,
+// which cannot be an enum flag, and a list beside this one is a list that can
+// disagree with what lookupSkill resolves.
+type Skill struct {
+	// Name is the canonical spelling, and the directory the file installs to.
+	Name string
+	// Aliases are the other spellings lookupSkill accepts. Not offered as
+	// completions -- a shell showing both bulk and bb-bulk for one skill is
+	// two candidates that do the same thing.
+	Aliases []string
+	// Summary is what the skill is for, shown beside the name.
+	Summary string
+	content []byte
+}
+
+// Skills are the skills bb ships, in the order `bb ai skill` documents them.
+// The first is what an omitted argument resolves to.
+var Skills = []Skill{
+	{
+		Name:    "bb",
+		Summary: "Driving bb from a coding agent",
+		content: bbskill.Content,
+	},
+	{
+		Name:    "bb-bulk",
+		Aliases: []string{"bulk"},
+		Summary: "Planning and applying bulk changes with bb bulk",
+		content: bbbulkskill.Content,
+	},
+}
+
 func lookupSkill(name string) (skillInfo, error) {
-	switch strings.ToLower(strings.TrimSpace(name)) {
-	case "", "bb":
-		return skillInfo{
-			name:    "bb",
-			content: bbskill.Content,
-		}, nil
-	case "bulk", "bb-bulk":
-		return skillInfo{
-			name:    "bb-bulk",
-			content: bbbulkskill.Content,
-		}, nil
-	default:
-		return skillInfo{}, apperrors.New(
-			apperrors.KindValidation,
-			fmt.Sprintf("unknown skill %q: supported skills are \"bb\", \"bulk\" (or \"bb-bulk\")", name),
-			nil,
-		)
+	wanted := strings.ToLower(strings.TrimSpace(name))
+	if wanted == "" {
+		// No argument means the default skill, which is the first registered.
+		return skillInfo{name: Skills[0].Name, content: Skills[0].content}, nil
 	}
+
+	for _, skill := range Skills {
+		if strings.EqualFold(wanted, skill.Name) {
+			return skillInfo{name: skill.Name, content: skill.content}, nil
+		}
+		for _, alias := range skill.Aliases {
+			if strings.EqualFold(wanted, alias) {
+				return skillInfo{name: skill.Name, content: skill.content}, nil
+			}
+		}
+	}
+
+	return skillInfo{}, apperrors.New(
+		apperrors.KindValidation,
+		fmt.Sprintf("unknown skill %q: supported skills are %s", name, strings.Join(skillSpellings(), ", ")),
+		nil,
+	)
+}
+
+// skillSpellings lists every name the argument accepts, canonical first, so
+// the refusal names the alias the caller may have meant.
+func skillSpellings() []string {
+	spellings := make([]string, 0, len(Skills))
+	for _, skill := range Skills {
+		spellings = append(spellings, strconv.Quote(skill.Name))
+		for _, alias := range skill.Aliases {
+			spellings = append(spellings, strconv.Quote(alias))
+		}
+	}
+
+	return spellings
 }
 
 func newSkillCommand(deps Dependencies) *cobra.Command {

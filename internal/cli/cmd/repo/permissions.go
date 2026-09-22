@@ -168,7 +168,7 @@ func newRepoPermissionGrantCommand(deps Dependencies, repositorySelector *string
 			}
 
 			service := reposettings.NewService(client)
-			permission, err := enumflag.Value("permission", args[1], repoPermissionNames)
+			permission, err := enumflag.Value("permission", args[1], PermissionNames)
 			if err != nil {
 				return err
 			}
