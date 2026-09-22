@@ -363,6 +363,8 @@ The governance guards, so the set is knowable:
 | `TestNoFixtureIsNamedFromTheClock` | no test builds a fixture name from the clock |
 | `gittest` ambient config snapshot | no test reconfigures the repository it runs in |
 | `TestEveryHookRunnableGateRunsOnBothSides` | every gate needing no Bitbucket runs locally and in CI |
+| `TestEveryCompletionSlotIsDeclared` | every argument and every flag that takes a value declares what it accepts |
+| `TestEveryDeclaredArgumentCanBeCompleted` | a command that declares an argument leaves the tree with something completing it |
 
 ### When running tests also uncovers a broken test
 
@@ -382,6 +384,33 @@ Verify the generated docs with:
 ```bash
 task docs:verify-generated
 ```
+
+### Shell completion: name the argument, then write the source
+
+An argument completes because of what it is called. `<pr-id>` is a pull request, `<branch>`
+is a branch that exists, `<name>` is one being created and completes nothing; a flag is what
+its name says, in every command that declares it. The tables are in
+`internal/cli/completion/vocabulary.go`, and `TestEveryCompletionSlotIsDeclared` fails —
+naming the command and the slot — on anything neither table covers. Nothing is registered at
+the command's definition site; one pass over the finished tree installs the lot.
+
+A kind with no source completes nothing, which is how a slot can be declared before its
+source exists. To write one, register it from its own file:
+
+```go
+func init() { register(KindBranch, branchSource) }
+```
+
+Ask the `Environment` for configuration, a client, the repository, the pull request or the
+commit in scope — it resolves each once per tab press, through the same functions the
+command path uses, so completion cannot target a repository the command would not. Never
+print to stdout: the output is a protocol, and a stray line becomes a candidate. Set
+`BB_COMPLETION_DEBUG=1` and run `bb __complete <words>` by hand to see why one came back
+empty; every generated shell script discards stderr, so nothing leaks into a real shell.
+
+ADR-088 has the reasoning. A source that talks to Bitbucket is proved by a live test, like
+everything else here — `tests/integration/live/completion_live_test.go` is the pattern, and
+it asserts the values offered rather than that the call succeeded.
 
 ### Mocking Stdin for CLI Prompts
 When testing CLI commands that prompt the user for confirmation (e.g., typing `y` or `n`), mock the standard input (`os.Stdin`) directly using `os.Pipe()` rather than relying solely on Cobra's `InOrStdin()`. Many standard scanner functions (like `fmt.Scanln`) read directly from `os.Stdin`, bypass Cobra's stream overrides, and will block/fail if real stdin is empty.

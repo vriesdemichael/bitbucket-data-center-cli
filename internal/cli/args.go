@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/usage"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -63,46 +64,11 @@ func nameTheMissingArgument(root *cobra.Command) {
 // positionalPlaceholders are the <required> and [optional] words in a Use
 // line, which is where the command already declares them for its help text.
 //
-// A bracketed group is one placeholder however many spaces it holds. browse
-// declares [<number> | <path> | <commit-sha>], one argument that is any of
-// three, and splitting it on spaces dropped the bars that say so.
+// The parsing lives in internal/cli/usage because shell completion reads the
+// same declaration to learn what each slot accepts, and a second copy of this
+// is exactly the disagreement the Use line is being used to avoid.
 func positionalPlaceholders(use string) []string {
-	var words []string
-	var word strings.Builder
-	depth := 0
-
-	for _, character := range use {
-		switch {
-		case character == ' ' && depth == 0:
-			if word.Len() > 0 {
-				words = append(words, word.String())
-				word.Reset()
-			}
-
-			continue
-		case character == '[' || character == '<':
-			depth++
-		case (character == ']' || character == '>') && depth > 0:
-			depth--
-		}
-		word.WriteRune(character)
-	}
-	if word.Len() > 0 {
-		words = append(words, word.String())
-	}
-
-	if len(words) <= 1 {
-		return nil
-	}
-
-	var placeholders []string
-	for _, candidate := range words[1:] {
-		if strings.HasPrefix(candidate, "<") || strings.HasPrefix(candidate, "[") {
-			placeholders = append(placeholders, candidate)
-		}
-	}
-
-	return placeholders
+	return usage.Placeholders(use)
 }
 
 func countOfArguments(count int) string {
