@@ -86,6 +86,39 @@ func TestEveryShellScriptGoesToTheCallersWriter(t *testing.T) {
 	}
 }
 
+// TestAScriptWithoutDescriptionsIsStillGenerated covers the flag Cobra puts on
+// each of these commands.
+//
+// --no-descriptions asks for a different generator, not a different rendering,
+// so replacing the body of these commands has to honour it -- otherwise the
+// flag would parse, print a script, and be ignored.
+func TestAScriptWithoutDescriptionsIsStillGenerated(t *testing.T) {
+	t.Parallel()
+
+	for _, shell := range []string{"bash", "zsh", "fish", "powershell"} {
+		t.Run(shell, func(t *testing.T) {
+			t.Parallel()
+
+			command := NewRootCommand()
+			script := &bytes.Buffer{}
+			command.SetOut(script)
+			command.SetErr(script)
+			command.SetArgs([]string{"completion", shell, "--no-descriptions"})
+
+			if err := command.Execute(); err != nil {
+				t.Fatalf("generating the %s completion script without descriptions failed: %v", shell, err)
+			}
+
+			// __completeNoDesc is the request a script makes when it was asked
+			// for no descriptions, and the one thing that says which generator
+			// ran.
+			if !strings.Contains(script.String(), "__completeNoDesc") {
+				t.Errorf("the %s script still asks for descriptions: %q", shell, truncate(script.String()))
+			}
+		})
+	}
+}
+
 func truncate(value string) string {
 	if len(value) <= 120 {
 		return value
