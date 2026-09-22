@@ -229,7 +229,10 @@ func (environment *Environment) Commit(context.Context) (string, error) {
 		return bound, nil
 	}
 
-	for _, flagName := range []string{"commit", "at", "ref"} {
+	// --until before --since: `bb search commits --since A --until B` searches
+	// backwards from the later one, so that is the commit the paths on the
+	// line exist at.
+	for _, flagName := range []string{"commit", "at", "ref", "until", "start-point"} {
 		if flagValue := environment.flag(flagName); flagValue != "" {
 			return flagValue, nil
 		}
