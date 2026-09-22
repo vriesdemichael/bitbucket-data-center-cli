@@ -46,16 +46,14 @@ func unresolvable(command *cobra.Command, reason error) *Environment {
 	}
 }
 
-// answeredLocally are the kinds whose values are not Bitbucket's, so an
-// instance nobody can reach is no reason for them to answer with nothing.
+// compiledIn are the kinds whose values ship with the binary, so an instance
+// nobody can reach is no reason for them to answer with nothing.
 //
 // Each says where the values come from. A kind listed here wrongly would be
 // one that quietly stopped needing the server; a kind missing from it would be
 // one that quietly started needing it.
-var answeredLocally = map[Kind]string{
+var compiledIn = map[Kind]string{
 	KindGitHelperOp:     "the three words git calls a credential helper with",
-	KindHost:            "the stored configuration",
-	KindHostAlias:       "the stored configuration",
 	KindLogFormat:       "the diagnostics vocabulary",
 	KindLogLevel:        "the diagnostics vocabulary",
 	KindMCPTool:         "the tools this binary serves",
@@ -65,6 +63,20 @@ var answeredLocally = map[Kind]string{
 	KindSkill:           "the skills this binary ships",
 	KindTokenPermission: "the permissions a token can carry",
 	KindWebhookEvent:    "the event keys this instance's version accepts",
+}
+
+// readThisMachine are the kinds that answer from the stored configuration
+// rather than from the server or from the binary.
+//
+// What they offer depends on what this machine has logged in to, and nothing
+// is a legitimate answer: a fresh checkout, a CI runner, anyone using
+// BITBUCKET_URL and a token from the environment. So the promise held here is
+// only that they answer at all. That they offer the right thing when there is
+// something to offer is source_local_test.go's job, with a configuration it
+// writes itself.
+var readThisMachine = map[Kind]bool{
+	KindHost:      true,
+	KindHostAlias: true,
 }
 
 // TestEverySourceCompletesNothingWhenTheContextCannotBeResolved is the promise
@@ -100,11 +112,14 @@ func TestEverySourceCompletesNothingWhenTheContextCannotBeResolved(t *testing.T)
 
 			select {
 			case result := <-done:
-				local, fromHere := answeredLocally[kind]
+				shipped, isCompiledIn := compiledIn[kind]
 				switch {
-				case fromHere && len(result.Candidates) == 0:
-					t.Errorf("%s completes nothing without a server, though its values are %s", kind, local)
-				case !fromHere && len(result.Candidates) != 0:
+				case readThisMachine[kind]:
+					// Whatever this machine has logged in to, including
+					// nothing. Answering at all is the promise.
+				case isCompiledIn && len(result.Candidates) == 0:
+					t.Errorf("%s completes nothing without a server, though its values are %s", kind, shipped)
+				case !isCompiledIn && len(result.Candidates) != 0:
 					t.Errorf("%s offered %d candidates with nothing resolved: %v", kind, len(result.Candidates), result.Candidates)
 				}
 			case <-time.After(10 * time.Second):
