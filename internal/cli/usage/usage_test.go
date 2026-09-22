@@ -53,9 +53,9 @@ func TestPlaceholdersReadsTheCommandsOwnSignature(t *testing.T) {
 	t.Parallel()
 
 	for use, want := range map[string][]string{
-		"merge <pr-id>":                             {"<pr-id>"},
-		"compare <from> <to>":                       {"<from>", "<to>"},
-		"browse [<number> | <path> | <commit-sha>]": {"[<number> | <path> | <commit-sha>]"},
+		"merge <pr-id>":                                     {"<pr-id>"},
+		"compare <from> <to>":                               {"<from>", "<to>"},
+		"browse [<number> | <path> | <commit-sha>]":         {"[<number> | <path> | <commit-sha>]"},
 		"clone <repository> [directory] [-- <gitflags>...]": {"<repository>", "[directory]", "[-- <gitflags>...]"},
 		"status": nil,
 	} {
