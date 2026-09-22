@@ -32,7 +32,7 @@ func TestConfigInvocationCatchesTheFlagThatSurvivedARelease(t *testing.T) {
 	// scanner, which reads `bb ...` lines and nothing else.
 	document := mcpConfig(`"ai", "mcp", "serve", "--token", "READ_ONLY_PAT"`)
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 1 {
 		t.Fatalf("expected the configured invocation to be counted, got %d checked", checked)
@@ -55,7 +55,7 @@ func TestConfigInvocationAcceptsTheSupportedForm(t *testing.T) {
 	// token supplied through the client's env block.
 	document := mcpConfig(`"ai", "mcp", "serve", "--host", "https://bitbucket.example.com"`)
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 1 {
 		t.Fatalf("expected 1 invocation checked, got %d", checked)
@@ -70,7 +70,7 @@ func TestConfigInvocationChecksToolNamesInArgsArrays(t *testing.T) {
 
 	document := mcpConfig(`"ai", "mcp", "serve", "--tools", "get_pull_request,no_such_tool"`)
 
-	findings, _ := lintMarkdown("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) == 0 {
 		t.Fatal("expected an unknown tool in an args array to be reported")
@@ -93,12 +93,12 @@ func TestConfigInvocationDropsPlaceholderValuesButKeepsTheFlag(t *testing.T) {
 	// still worth checking, and giving the flag a made-up value would report
 	// documentation for the linter's own stand-in.
 	valid := mcpConfig(`"ai", "mcp", "serve", "--host", "${env:BITBUCKET_URL}"`)
-	if findings, _ := lintMarkdown("doc.md", valid); len(findings) != 0 {
+	if findings, _ := lintFixture("doc.md", valid); len(findings) != 0 {
 		t.Fatalf("expected a placeholder value to be accepted, got %+v", findings)
 	}
 
 	retired := mcpConfig(`"ai", "mcp", "serve", "--token", "${env:BITBUCKET_RO_TOKEN}"`)
-	findings, _ := lintMarkdown("doc.md", retired)
+	findings, _ := lintFixture("doc.md", retired)
 	if len(findings) != 1 {
 		t.Fatalf("expected the retired flag to be reported behind a placeholder, got %+v", findings)
 	}
@@ -120,7 +120,7 @@ func TestConfigInvocationIgnoresOtherCommands(t *testing.T) {
 		"}\n" +
 		"```\n"
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 0 {
 		t.Fatalf("expected no bb invocations, got %d checked", checked)
@@ -138,7 +138,7 @@ func TestConfigInvocationReadsAbsoluteAndWindowsCommandPaths(t *testing.T) {
 			"{ \"command\": \"" + command + "\", \"args\": [\"ai\", \"mcp\", \"serve\", \"--token\", \"x\"] }\n" +
 			"```\n"
 
-		findings, _ := lintMarkdown("doc.md", document)
+		findings, _ := lintFixture("doc.md", document)
 		if len(findings) != 1 {
 			t.Fatalf("command %q: expected the invocation to be checked, got %+v", command, findings)
 		}
@@ -155,7 +155,7 @@ func TestConfigInvocationReadsYAMLConfigurations(t *testing.T) {
 		"    args: [\"ai\", \"mcp\", \"serve\", \"--token\", \"x\"]\n" +
 		"```\n"
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 1 {
 		t.Fatalf("expected the YAML invocation to be counted, got %d", checked)
@@ -175,7 +175,7 @@ func TestConfigInvocationIgnoresBlocksThatDoNotParse(t *testing.T) {
 		"  \"args\": [\"ai\", \"mcp\", \"serve\", \"--token\", \"x\"]\n" +
 		"```\n"
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 0 || len(findings) != 0 {
 		t.Fatalf("expected a fragment to be skipped, got %d checked and %+v", checked, findings)
@@ -194,7 +194,7 @@ func TestArgsKeyLinesFallBackWhenTheyCannotBeMatched(t *testing.T) {
 		"}\n" +
 		"```\n"
 
-	findings, _ := lintMarkdown("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)

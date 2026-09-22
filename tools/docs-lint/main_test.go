@@ -17,7 +17,7 @@ func TestLintMarkdownAcceptsValidInvocations(t *testing.T) {
 		"printf '%s' \"$TOKEN\" | bb auth login https://example.com --token-stdin\n" +
 		"```\n"
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 4 {
 		t.Fatalf("expected 4 invocations checked, got %d", checked)
@@ -46,7 +46,7 @@ func TestLintMarkdownCatchesTheRealDefects(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			findings, checked := lintMarkdown("doc.md", "```bash\n"+testCase.command+"\n```\n")
+			findings, checked := lintFixture("doc.md", "```bash\n"+testCase.command+"\n```\n")
 
 			if checked != 1 {
 				t.Fatalf("expected 1 invocation checked, got %d", checked)
@@ -66,7 +66,7 @@ func TestLintMarkdownReportsUsableLineNumbers(t *testing.T) {
 
 	document := "line one\nline two\n\n```bash\nbb auth status\nbb repo inspect --repo A/b\n```\n"
 
-	findings, _ := lintMarkdown("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)
@@ -85,7 +85,7 @@ func TestLintMarkdownIgnoresNonShellBlocks(t *testing.T) {
 	// would report failures for documentation that is correct by construction.
 	document := "```text\nUsage:\n  bb repo view [flags]\n```\n\n```json\n{\"cmd\": \"bb repo view\"}\n```\n"
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 0 {
 		t.Fatalf("expected no invocations checked, got %d", checked)
@@ -100,7 +100,7 @@ func TestLintMarkdownHonoursTheExpectInvalidDirective(t *testing.T) {
 
 	document := "<!-- docs-lint: expect-invalid -->\n```bash\nbb --json repo list --nonexistent-flag\n```\n"
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 1 {
 		t.Fatalf("expected 1 invocation checked, got %d", checked)
@@ -117,7 +117,7 @@ func TestExpectInvalidFailsWhenTheCommandBecomesValid(t *testing.T) {
 
 	document := "<!-- docs-lint: expect-invalid -->\n```bash\nbb auth status\n```\n"
 
-	findings, _ := lintMarkdown("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	if len(findings) != 1 {
 		t.Fatalf("expected a finding for a valid command in an expect-invalid block, got %+v", findings)
@@ -132,7 +132,7 @@ func TestExpectInvalidDirectiveDoesNotCarryAcrossProse(t *testing.T) {
 
 	document := "<!-- docs-lint: expect-invalid -->\n```bash\nbb repo inspect --repo A/b\n```\n\nSome prose.\n\n```bash\nbb auth status\n```\n"
 
-	findings, _ := lintMarkdown("doc.md", document)
+	findings, _ := lintFixture("doc.md", document)
 
 	// The second block is a normal block: a valid command there is fine, and the
 	// directive must not have leaked into it.
@@ -150,7 +150,7 @@ func TestLintMarkdownToleratesCRLF(t *testing.T) {
 	document := strings.ReplaceAll("```bash\nbb repo list --limit 20\n```\n", "\n", "\r\n")
 	normalised := strings.ReplaceAll(document, "\r\n", "\n")
 
-	findings, checked := lintMarkdown("doc.md", normalised)
+	findings, checked := lintFixture("doc.md", normalised)
 
 	if checked != 1 {
 		t.Fatalf("expected 1 invocation checked, got %d", checked)
@@ -166,7 +166,7 @@ func TestLintMarkdownAcceptsHelpAndVersionFlags(t *testing.T) {
 	// Cobra registers these lazily during Execute, which this tool never calls.
 	document := "```bash\nbb --help\nbb repo settings security --help\nbb --version\n```\n"
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 3 {
 		t.Fatalf("expected 3 invocations checked, got %d", checked)
@@ -186,7 +186,7 @@ func TestLintMarkdownHandlesContinuationsAndEnvironmentPrefixes(t *testing.T) {
 		"# bb repo inspect --repo A/b\n" +
 		"```\n"
 
-	findings, checked := lintMarkdown("doc.md", document)
+	findings, checked := lintFixture("doc.md", document)
 
 	if checked != 3 {
 		t.Fatalf("expected 3 invocations checked (the comment is not one), got %d", checked)
@@ -304,7 +304,7 @@ func TestLintMarkdownDialectChecks(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			findings, _ := lintMarkdown("test.md", tc.content)
+			findings, _ := lintFixture("test.md", tc.content)
 			if len(findings) != 1 {
 				t.Fatalf("expected 1 finding, got %d: %+v", len(findings), findings)
 			}
@@ -316,7 +316,7 @@ func TestLintMarkdownDialectChecks(t *testing.T) {
 
 	t.Run("accepts escaped dollar and inline code", func(t *testing.T) {
 		content := "Cost is \\$100, schema is `$schema`, and subshell is `eval $(dbus-launch)`.\n"
-		findings, _ := lintMarkdown("test.md", content)
+		findings, _ := lintFixture("test.md", content)
 		if len(findings) != 0 {
 			t.Fatalf("expected 0 findings, got %+v", findings)
 		}
@@ -324,7 +324,7 @@ func TestLintMarkdownDialectChecks(t *testing.T) {
 
 	t.Run("honours expect-invalid directive for dialect check", func(t *testing.T) {
 		content := "<!-- docs-lint: expect-invalid -->\nThreat $\\leftrightarrow$ Mitigation\n"
-		findings, _ := lintMarkdown("test.md", content)
+		findings, _ := lintFixture("test.md", content)
 		if len(findings) != 0 {
 			t.Fatalf("expected expect-invalid dialect check to pass, got %+v", findings)
 		}
@@ -335,13 +335,13 @@ func TestLintMarkdownMCPToolsValidation(t *testing.T) {
 	t.Parallel()
 
 	docInvalid := "```bash\nbb ai mcp serve --tools non_existent_tool\n```\n"
-	findings, _ := lintMarkdown("test.md", docInvalid)
+	findings, _ := lintFixture("test.md", docInvalid)
 	if len(findings) != 1 || !strings.Contains(findings[0].Problem, `unknown MCP tool "non_existent_tool" in --tools`) {
 		t.Fatalf("expected invalid MCP tool finding, got: %+v", findings)
 	}
 
 	docValid := "```bash\nbb ai mcp serve --tools get_pr_diff,list_pull_requests\n```\n"
-	findings, _ = lintMarkdown("test.md", docValid)
+	findings, _ = lintFixture("test.md", docValid)
 	if len(findings) != 0 {
 		t.Fatalf("expected valid MCP tools to pass, got: %+v", findings)
 	}
@@ -351,25 +351,25 @@ func TestLintConfigMCPToolsValidation(t *testing.T) {
 	t.Parallel()
 
 	docInvalidJSON := "```json\n{\n  \"args\": [\"ai\", \"mcp\", \"serve\", \"--tools\", \"invalid_tool_mcp\"]\n}\n```\n"
-	findings, _ := lintMarkdown("test.md", docInvalidJSON)
+	findings, _ := lintFixture("test.md", docInvalidJSON)
 	if len(findings) != 1 || !strings.Contains(findings[0].Problem, `unknown MCP tool "invalid_tool_mcp" in --tools`) {
 		t.Fatalf("expected finding for invalid tool in json block, got: %+v", findings)
 	}
 
 	docValidJSON := "```json\n{\n  \"args\": [\"ai\", \"mcp\", \"serve\", \"--tools\", \"get_pr_diff,list_pull_requests\"]\n}\n```\n"
-	findings, _ = lintMarkdown("test.md", docValidJSON)
+	findings, _ = lintFixture("test.md", docValidJSON)
 	if len(findings) != 0 {
 		t.Fatalf("expected valid tools in json block to pass, got: %+v", findings)
 	}
 
 	docCompactValid := "```json\n{\"args\":[\"ai\",\"mcp\",\"serve\",\"--tools\",\"get_pull_request,add_pr_comment\"]}\n```\n"
-	findings, _ = lintMarkdown("test.md", docCompactValid)
+	findings, _ = lintFixture("test.md", docCompactValid)
 	if len(findings) != 0 {
 		t.Fatalf("expected compact JSON with valid tools to pass, got: %+v", findings)
 	}
 
 	docCompactInvalid := "```json\n{\"args\":[\"ai\",\"mcp\",\"serve\",\"--tools\",\"get_pull_request,bad_tool_name\"]}\n```\n"
-	findings, _ = lintMarkdown("test.md", docCompactInvalid)
+	findings, _ = lintFixture("test.md", docCompactInvalid)
 	if len(findings) != 1 || !strings.Contains(findings[0].Problem, `unknown MCP tool "bad_tool_name" in --tools`) {
 		t.Fatalf("expected compact JSON with invalid tool to fail, got: %+v", findings)
 	}
@@ -379,7 +379,7 @@ func TestLintMermaidValidation(t *testing.T) {
 	t.Parallel()
 
 	docMermaid := "```mermaid\nflowchart TD\n  A --> B\n```\n"
-	findings, _ := lintMarkdown("test.md", docMermaid)
+	findings, _ := lintFixture("test.md", docMermaid)
 	if len(findings) != 0 {
 		t.Fatalf("expected valid mermaid block with mkdocs.yml configured to pass, got: %+v", findings)
 	}
@@ -389,7 +389,7 @@ func TestLintMarkdownPositionalArityOnZeroArgCommands(t *testing.T) {
 	t.Parallel()
 
 	doc := "```bash\nbb auth logout https://wrong-host.example.com\n```\n"
-	findings, _ := lintMarkdown("test.md", doc)
+	findings, _ := lintFixture("test.md", doc)
 	if len(findings) != 1 || (!strings.Contains(findings[0].Problem, "unknown command") && !strings.Contains(findings[0].Problem, "accepts 0 arg(s)")) {
 		t.Fatalf("expected positional arity error on bb auth logout, got: %+v", findings)
 	}
@@ -700,7 +700,7 @@ func TestUnquotedHashSelectorIsReportedRatherThanAccepted(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			findings, _ := lintMarkdown("doc.md", "```bash\n"+testCase.command+"\n```\n")
+			findings, _ := lintFixture("doc.md", "```bash\n"+testCase.command+"\n```\n")
 
 			reported := false
 			for _, item := range findings {
