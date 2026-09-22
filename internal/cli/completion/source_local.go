@@ -10,10 +10,10 @@ import (
 )
 
 func init() {
-	register(KindLogLevel, fixedSource(logLevels, "how much diagnostics bb writes"))
-	register(KindLogFormat, fixedSource(logFormats, "how diagnostics are written"))
-	register(KindReviewStatus, fixedSource(ReviewStatuses, ""))
-	register(KindGitHelperOp, fixedSource(gitHelperOperations, ""))
+	register(KindLogLevel, describedSource(logLevels))
+	register(KindLogFormat, describedSource(logFormats))
+	register(KindReviewStatus, fixedSource(ReviewStatuses))
+	register(KindGitHelperOp, fixedSource(gitHelperOperations))
 	register(KindHost, hostSource)
 	register(KindHostAlias, hostAliasSource)
 }
@@ -24,16 +24,23 @@ func init() {
 // carry them are the pair enumflag cannot hold: an empty value means "unset
 // BB_LOG_LEVEL" rather than "not given", and enumflag has no way to allow an
 // empty string for one flag without allowing it everywhere.
+//
+// Each value says what it adds, rather than all four repeating what the flag
+// is for. Seen in a real terminal, one description on every value is worse
+// than none: bash and fish print it beside each candidate, so four levels
+// became four copies of the same sentence across two lines, and the thing a
+// reader wants -- which level to pick -- was the part nobody wrote down. zsh
+// collapses them onto one line, which hides the problem rather than fixing it.
 var (
-	logLevels = []string{
-		string(diagnostics.LevelError),
-		string(diagnostics.LevelWarn),
-		string(diagnostics.LevelInfo),
-		string(diagnostics.LevelDebug),
+	logLevels = []Candidate{
+		{Value: string(diagnostics.LevelError), Description: "failures only"},
+		{Value: string(diagnostics.LevelWarn), Description: "and warnings"},
+		{Value: string(diagnostics.LevelInfo), Description: "and what bb is doing"},
+		{Value: string(diagnostics.LevelDebug), Description: "and every request"},
 	}
-	logFormats = []string{
-		string(diagnostics.FormatText),
-		string(diagnostics.FormatJSONL),
+	logFormats = []Candidate{
+		{Value: string(diagnostics.FormatText), Description: "lines for a person"},
+		{Value: string(diagnostics.FormatJSONL), Description: "one JSON object per line"},
 	}
 )
 
@@ -50,15 +57,26 @@ var ReviewStatuses = []string{"APPROVED", "NEEDS_WORK", "UNAPPROVED"}
 // with one of these three words.
 var gitHelperOperations = []string{"get", "store", "erase"}
 
-// fixedSource answers from a list that needs nothing asked.
-func fixedSource(values []string, description string) Source {
-	return func(context.Context, *Environment, Request) (Result, error) {
-		candidates := make([]Candidate, 0, len(values))
-		for _, value := range values {
-			candidates = append(candidates, Candidate{Value: value, Description: description})
-		}
+// fixedSource answers from a list of values that need no describing: the three
+// words git calls a credential helper with, the statuses a review can be set
+// to. A value whose name is the whole explanation is better left alone than
+// given a description that repeats it.
+func fixedSource(values []string) Source {
+	candidates := make([]Candidate, 0, len(values))
+	for _, value := range values {
+		candidates = append(candidates, Candidate{Value: value})
+	}
 
-		return Result{Candidates: candidates, KeepOrder: true}, nil
+	return describedSource(candidates)
+}
+
+// describedSource answers from a list that needs nothing asked.
+func describedSource(candidates []Candidate) Source {
+	return func(context.Context, *Environment, Request) (Result, error) {
+		answer := make([]Candidate, len(candidates))
+		copy(answer, candidates)
+
+		return Result{Candidates: answer, KeepOrder: true}, nil
 	}
 }
 
