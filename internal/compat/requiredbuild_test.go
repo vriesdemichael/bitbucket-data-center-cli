@@ -52,12 +52,14 @@ func TestReportRequiredBuildScopeFillsOnlyWhatWasLeftOut(t *testing.T) {
 		t.Error("checks still read as unreported after the scope was filled in")
 	}
 
-	untyped := []any{map[string]any{"id": float64(1)}, map[string]any{"id": float64(2), "requiredForMergeQueue": true}}
+	// The string is what a listing decoded without a type can hold beside the
+	// checks, and is left alone rather than reached into.
+	untyped := []any{map[string]any{"id": float64(1)}, "not a check", map[string]any{"id": float64(2), "requiredForMergeQueue": true}}
 	ReportRequiredBuildScopeIn(untyped)
 	if first := untyped[0].(map[string]any); first["requiredForPullRequest"] != true || first["requiredForMergeQueue"] != false {
 		t.Errorf("the untyped unreported check reads %v", first)
 	}
-	if second := untyped[1].(map[string]any); second["requiredForMergeQueue"] != true || second["requiredForPullRequest"] != nil {
+	if second := untyped[2].(map[string]any); second["requiredForMergeQueue"] != true || second["requiredForPullRequest"] != nil {
 		t.Errorf("the untyped reported scope was changed: %v", second)
 	}
 }
