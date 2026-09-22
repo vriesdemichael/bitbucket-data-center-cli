@@ -176,6 +176,15 @@ type Dependencies struct {
 	// InferRepository is the git-remote inference the root hook performs,
 	// minus the flag mutation and the notice it prints.
 	InferRepository func(context.Context, config.AppConfig) (*Repository, error)
+	// LocalRepositories is every Bitbucket repository this checkout's remotes
+	// name, origin first.
+	//
+	// The inference answers with one and refuses when the remotes disagree,
+	// because a command acts on one repository. A completion is not choosing:
+	// in a fork, both the fork and its upstream are worth offering, and a
+	// checkout the inference calls ambiguous is exactly where a completion
+	// helps most.
+	LocalRepositories func(context.Context, config.AppConfig) ([]Repository, error)
 	// AmbientInferenceAllowed reports whether a command accepts an inferred
 	// repository at all; bb ai mcp serve and bb auth token require the scope
 	// to be named (ADR-039).
