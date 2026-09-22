@@ -342,7 +342,6 @@ func inferRepositoryContextFromGit(cfg config.AppConfig) (*inferredRepositoryCon
 	return nil, nil
 }
 
-
 // unambiguousOriginCandidate returns the remote named origin when it is the
 // only reasonable reading of the repository's context.
 //
