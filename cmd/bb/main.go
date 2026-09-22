@@ -54,7 +54,28 @@ func run(args []string, stdout, stderr io.Writer) int {
 	cmd.SetContext(ctx)
 	cmd.SetArgs(args)
 
+	// A completion request has nobody to read stderr, and a terminal to write
+	// it over. Cobra ends every one with "Completion ended with directive:
+	// ...", which bash, zsh and fish discard because their generated scripts
+	// redirect it -- and PowerShell's does not, so the line lands on the
+	// prompt the user is typing at. There is nothing else worth saying on the
+	// stderr of a tab press; BB_COMPLETION_DEBUG writes to the real one
+	// directly, for running __complete by hand.
+	if completionRequest(args) {
+		stderr = io.Discard
+		cmd.SetErr(io.Discard)
+	}
+
 	return executeRootCommand(cmd, args, stdout, stderr)
+}
+
+// completionRequest reports the hidden commands a shell calls on a tab press.
+func completionRequest(args []string) bool {
+	if len(args) == 0 {
+		return false
+	}
+
+	return args[0] == cobra.ShellCompRequestCmd || args[0] == cobra.ShellCompNoDescRequestCmd
 }
 
 // interruptGrace is how long an interrupted command has to answer for itself

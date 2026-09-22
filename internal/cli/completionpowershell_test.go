@@ -1,0 +1,95 @@
+package cli
+
+import (
+	"bytes"
+	"strings"
+	"testing"
+)
+
+// TestThePowerShellScriptCompletesNothingWithoutThrowing covers the one line
+// bb rewrites in a script Cobra generates.
+//
+// Measured in PowerShell 7.6, against the unpatched script: asking for a
+// completion that has nothing to offer -- `bb pr merge <tab>` in a repository
+// with no open pull requests -- raised "Cannot process argument because the
+// value of argument completionText is null" at the prompt, because the script
+// returns a bare empty string and PowerShell will not make a CompletionResult
+// from one. With the rewrite it returns the word being completed, and the same
+// press does nothing at all.
+func TestThePowerShellScriptCompletesNothingWithoutThrowing(t *testing.T) {
+	t.Parallel()
+
+	command := NewRootCommand()
+	script := &bytes.Buffer{}
+	command.SetOut(script)
+	command.SetErr(script)
+	command.SetArgs([]string{"completion", "powershell"})
+
+	if err := command.Execute(); err != nil {
+		t.Fatalf("generating the PowerShell completion script failed: %v", err)
+	}
+
+	generated := script.String()
+	if strings.Contains(generated, `            ""`+"\n            return") {
+		t.Error("the generated script still returns a bare empty string, which PowerShell rejects")
+	}
+	if !strings.Contains(generated, "$WordToComplete -ne ''") {
+		t.Error("the generated script does not carry bb's empty-completion correction")
+	}
+}
+
+// TestTheCobraScriptIsCheckedBeforeItIsRewritten is the half that matters when
+// the dependency moves.
+//
+// A rewrite that silently stops matching would leave every PowerShell user
+// with the broken script and nothing to say so. Finding no anchor is an error,
+// not a pass-through.
+//
+// Sabotage that proved it guards: changing one character of
+// brokenEmptyCompletion makes `bb completion powershell` fail with this
+// message instead of printing a script.
+func TestTheCobraScriptIsCheckedBeforeItIsRewritten(t *testing.T) {
+	t.Parallel()
+
+	if _, err := withWorkingEmptyCompletion("a script that has moved on"); err == nil {
+		t.Fatal("rewriting a script without the expected branch returned no error")
+	}
+}
+
+// TestEveryShellScriptGoesToTheCallersWriter guards the reason bb replaces the
+// body of all four generators rather than only PowerShell's.
+//
+// Cobra builds these commands with the writer the root had at the time, so a
+// caller that sets one afterwards -- every test here, and cmd/bb, which wraps
+// stdout to notice a failed write -- was not the one being written to.
+func TestEveryShellScriptGoesToTheCallersWriter(t *testing.T) {
+	t.Parallel()
+
+	for _, shell := range []string{"bash", "zsh", "fish", "powershell"} {
+		t.Run(shell, func(t *testing.T) {
+			t.Parallel()
+
+			command := NewRootCommand()
+			script := &bytes.Buffer{}
+			command.SetOut(script)
+			command.SetErr(script)
+			command.SetArgs([]string{"completion", shell})
+
+			if err := command.Execute(); err != nil {
+				t.Fatalf("generating the %s completion script failed: %v", shell, err)
+			}
+
+			if !strings.Contains(script.String(), "__bb_") && !strings.Contains(script.String(), "__bb") {
+				t.Errorf("the %s script did not reach the writer the caller set: %q", shell, truncate(script.String()))
+			}
+		})
+	}
+}
+
+func truncate(value string) string {
+	if len(value) <= 120 {
+		return value
+	}
+
+	return value[:120] + "…"
+}
