@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -197,8 +198,13 @@ func describe(description string) string {
 	}, strings.TrimSpace(description))
 
 	cleaned = strings.Join(strings.Fields(cleaned), " ")
-	if len(cleaned) > maxDescription {
-		cleaned = strings.TrimSpace(cleaned[:maxDescription-1]) + "…"
+
+	// Counted and cut in runes. A pull request title is prose, and prose is
+	// not ASCII: cutting 72 bytes out of "Wijzig de betaalstroom…" can land
+	// inside a character and hand the shell a byte sequence that is not text.
+	if utf8.RuneCountInString(cleaned) > maxDescription {
+		runes := []rune(cleaned)
+		cleaned = strings.TrimSpace(string(runes[:maxDescription-1])) + "…"
 	}
 
 	return cleaned
