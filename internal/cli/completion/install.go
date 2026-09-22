@@ -59,11 +59,16 @@ func installPositionals(command *cobra.Command, dependencies Dependencies) {
 		toComplete string,
 	) ([]cobra.Completion, cobra.ShellCompDirective) {
 		// Everything after -- belongs to another program: bb repo clone hands
-		// it to git, and bb has nothing to say about git's flags.
-		if dash := invoked.ArgsLenAtDash(); dash >= 0 && len(args) >= dash {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-
+		// it to git, and bb has nothing to say about git's flags. The
+		// declaration already says so -- clone's last placeholder is
+		// [-- <gitflags>...], which is KindFree -- so the position below
+		// answers it.
+		//
+		// Not ArgsLenAtDash, which cannot be read here: Cobra parses the line
+		// once with a -- of its own appended, to work out whether flag
+		// completion still applies, and the count survives into the parse it
+		// does next. It reads 0 on a line with no -- in it at all, so a guard
+		// built on it refuses every completion, silently.
 		position := len(args)
 		if position >= len(kinds) {
 			if !repeating {
