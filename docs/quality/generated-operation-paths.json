@@ -358,6 +358,10 @@
       "method": "GET",
       "path": "/access-tokens/latest/users/%s/%s"
     },
+    "GetChanges": {
+      "method": "GET",
+      "path": "/api/latest/projects/%s/repos/%s/commits/%s/changes"
+    },
     "GetChanges1": {
       "method": "GET",
       "path": "/api/latest/projects/%s/repos/%s/changes"
