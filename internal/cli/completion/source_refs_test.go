@@ -423,50 +423,50 @@ func buildCheckout(t *testing.T) (checkout string, headCommit string) {
 		t.Fatalf("create the checkout directory: %v", err)
 	}
 
-	git(t, origin, "init", "--bare")
-	git(t, checkout, "init")
-	git(t, checkout, "symbolic-ref", "HEAD", "refs/heads/main")
-	git(t, checkout, "config", "user.name", "bb completion test")
-	git(t, checkout, "config", "user.email", "bb-completion-test@example.local")
+	runGit(t, origin, "init", "--bare")
+	runGit(t, checkout, "init")
+	runGit(t, checkout, "symbolic-ref", "HEAD", "refs/heads/main")
+	runGit(t, checkout, "config", "user.name", "bb completion test")
+	runGit(t, checkout, "config", "user.email", "bb-completion-test@example.local")
 
 	write(t, filepath.Join(checkout, "first.txt"), "one\n")
-	git(t, checkout, "add", "first.txt")
-	git(t, checkout, "commit", "-m", "first commit")
+	runGit(t, checkout, "add", "first.txt")
+	runGit(t, checkout, "commit", "-m", "first commit")
 
-	git(t, checkout, "remote", "add", "origin", filepath.ToSlash(origin))
-	git(t, checkout, "push", "-u", "origin", "main")
+	runGit(t, checkout, "remote", "add", "origin", filepath.ToSlash(origin))
+	runGit(t, checkout, "push", "-u", "origin", "main")
 
 	headCommit = strings.TrimSpace(gitOutput(t, checkout, "rev-parse", "HEAD"))
 
-	git(t, checkout, "tag", "-a", "v1.0.0", "-m", "release one")
-	git(t, checkout, "tag", "v0.9.0")
-	git(t, checkout, "push", "origin", "--tags")
+	runGit(t, checkout, "tag", "-a", "v1.0.0", "-m", "release one")
+	runGit(t, checkout, "tag", "v0.9.0")
+	runGit(t, checkout, "push", "origin", "--tags")
 
 	// zeta is the branch this checkout ends up on, and it is deliberately
 	// neither the newest nor the first alphabetically: a ranking that did
 	// nothing would leave alpha at the top under either tie-break git applies.
-	git(t, checkout, "checkout", "-b", "zeta")
+	runGit(t, checkout, "checkout", "-b", "zeta")
 	write(t, filepath.Join(checkout, "second.txt"), "two\n")
-	git(t, checkout, "add", "second.txt")
-	git(t, checkout, "commit", "-m", "second commit")
-	git(t, checkout, "push", "-u", "origin", "zeta")
+	runGit(t, checkout, "add", "second.txt")
+	runGit(t, checkout, "commit", "-m", "second commit")
+	runGit(t, checkout, "push", "-u", "origin", "zeta")
 
-	git(t, checkout, "checkout", "-b", "alpha", "main")
+	runGit(t, checkout, "checkout", "-b", "alpha", "main")
 	write(t, filepath.Join(checkout, "third.txt"), "three\n")
-	git(t, checkout, "add", "third.txt")
-	git(t, checkout, "commit", "-m", "third commit")
-	git(t, checkout, "push", "-u", "origin", "alpha")
+	runGit(t, checkout, "add", "third.txt")
+	runGit(t, checkout, "commit", "-m", "third commit")
+	runGit(t, checkout, "push", "-u", "origin", "alpha")
 
-	git(t, checkout, "checkout", "zeta")
+	runGit(t, checkout, "checkout", "zeta")
 
 	// What a clone records for itself, and the only place the default branch
 	// is written down locally.
-	git(t, checkout, "remote", "set-head", "origin", "main")
+	runGit(t, checkout, "remote", "set-head", "origin", "main")
 
 	return checkout, headCommit
 }
 
-func git(t *testing.T, directory string, args ...string) {
+func runGit(t *testing.T, directory string, args ...string) {
 	t.Helper()
 
 	gitOutput(t, directory, args...)
