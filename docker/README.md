@@ -92,6 +92,14 @@ its own compose project, image tag and Docker-assigned ports, and its URL goes
 to `.tmp/bitbucket-<release>.env`. The `FROM` line stays a literal rather than a
 build argument, because Dependabot tracks literal tags reliably.
 
+Releases run side by side. Nothing here assumes a single instance: starting one
+leaves this checkout's own instance and every other release running, and `task
+stack:status RELEASE=<release>` reports on that release only. How many at
+once is the `BB_STACK_MAX` limit above, and the limit is memory rather than
+ports -- four Bitbucket JVMs is some 24GB. That is why a window is walked one
+release after another by `task test:live:matrix`, and why running two or three
+at a time is a decision about the machine rather than about the stack.
+
 ## Why the base image is the official Bitbucket image
 
 The JVM and git must both fall inside windows the product accepts, and those
