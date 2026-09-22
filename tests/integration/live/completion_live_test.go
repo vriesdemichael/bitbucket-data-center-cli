@@ -5,10 +5,12 @@ package live_test
 import (
 	"bytes"
 	"context"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
@@ -57,8 +59,8 @@ func TestLiveCompletionOffersPullRequests(t *testing.T) {
 		if !strings.Contains(description, "Live test PR") {
 			t.Errorf("expected the pull request's title beside its id, got %q", description)
 		}
-		if directive != directiveNoFileComp {
-			t.Errorf("expected the shell to be told not to fall back to file names, got directive %q", directive)
+		if !forbidsFileNames(directive) {
+			t.Errorf("expected the shell to be told not to fall back to file names, got directive %d", directive)
 		}
 	})
 
@@ -80,8 +82,8 @@ func TestLiveCompletionOffersPullRequests(t *testing.T) {
 		// have candidates, so the directive is not right by accident.
 		_, directive := completeLive(t, "pr", "merge", "--repo", selector, "zzz-no-such-pull-request")
 
-		if directive != directiveNoFileComp {
-			t.Errorf("expected directive %q, got %q", directiveNoFileComp, directive)
+		if !forbidsFileNames(directive) {
+			t.Errorf("expected the no-file-completion bit to be set, got directive %d", directive)
 		}
 	})
 }
@@ -119,8 +121,8 @@ func TestLiveCompletionIsSilentWhenTheServerCannotBeReached(t *testing.T) {
 	if len(candidates) != 0 {
 		t.Errorf("expected no candidates from an unreachable instance, got %v", candidates)
 	}
-	if directive != directiveNoFileComp {
-		t.Errorf("expected directive %q, got %q", directiveNoFileComp, directive)
+	if !forbidsFileNames(directive) {
+		t.Errorf("expected the no-file-completion bit to be set, got directive %d", directive)
 	}
 	if elapsed > 5*time.Second {
 		t.Errorf("a tab press against an unreachable instance took %s; it is bounded to about a second", elapsed)
@@ -129,14 +131,21 @@ func TestLiveCompletionIsSilentWhenTheServerCannotBeReached(t *testing.T) {
 	_ = harness
 }
 
-// directiveNoFileComp is what Cobra prints for ShellCompDirectiveNoFileComp,
-// the instruction that stops the shell listing the working directory.
-const directiveNoFileComp = ":4"
+// forbidsFileNames reports the bit that stops the shell listing the working
+// directory when a completion has nothing to add.
+//
+// A bit rather than the whole value: a source that ranks its answer also sets
+// the keep-order bit, so the directive for a good completion is 36 rather
+// than 4, and an equality check here would fail on the sources that are
+// working hardest.
+func forbidsFileNames(directive int) bool {
+	return directive&int(cobra.ShellCompDirectiveNoFileComp) != 0
+}
 
 // completeLive runs one tab press through the real command tree, the way a
 // shell does: the hidden __complete command, the words typed so far, and the
 // word being completed last.
-func completeLive(t *testing.T, words ...string) (map[string]string, string) {
+func completeLive(t *testing.T, words ...string) (map[string]string, int) {
 	t.Helper()
 
 	output, err := executeLiveCLIUnscoped(t, append([]string{"__complete"}, words...)...)
@@ -149,11 +158,11 @@ func completeLive(t *testing.T, words ...string) (map[string]string, string) {
 
 // parseCompletionOutput reads Cobra's completion protocol: one candidate per
 // line as value<tab>description, then a line holding the directive.
-func parseCompletionOutput(t *testing.T, output string) (map[string]string, string) {
+func parseCompletionOutput(t *testing.T, output string) (map[string]string, int) {
 	t.Helper()
 
 	candidates := map[string]string{}
-	directive := ""
+	directive := -1
 
 	for _, line := range strings.Split(strings.ReplaceAll(output, "\r\n", "\n"), "\n") {
 		line = strings.TrimRight(line, "\r")
@@ -161,7 +170,11 @@ func parseCompletionOutput(t *testing.T, output string) (map[string]string, stri
 		case strings.TrimSpace(line) == "":
 			continue
 		case strings.HasPrefix(line, ":"):
-			directive = strings.TrimSpace(line)
+			parsed, err := strconv.Atoi(strings.TrimSpace(strings.TrimPrefix(line, ":")))
+			if err != nil {
+				t.Fatalf("completion directive %q is not a number: %v", line, err)
+			}
+			directive = parsed
 		case strings.HasPrefix(line, "Completion ended with directive:"):
 			continue
 		default:
@@ -170,7 +183,7 @@ func parseCompletionOutput(t *testing.T, output string) (map[string]string, stri
 		}
 	}
 
-	if directive == "" {
+	if directive < 0 {
 		t.Fatalf("completion output carried no directive line: %q", output)
 	}
 
