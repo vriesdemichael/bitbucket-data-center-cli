@@ -368,6 +368,7 @@ your behalf using the link above.`,
 	// a command accepts is readable from the command, so reading it beats
 	// asking every author to remember a registration call.
 	installCompletions(rootCmd, options)
+	fixPowerShellCompletion(rootCmd)
 
 	// Installed last, over the finished tree, because it wraps every runnable
 	// command it finds. Anything added after this point would not answer
