@@ -163,6 +163,32 @@ func (environment *Environment) Repository(ctx context.Context) (Repository, err
 	return environment.repository, environment.repositoryErr
 }
 
+// LocalRepositories are the Bitbucket repositories this checkout's remotes
+// name, origin first, and none when there is no checkout or none of its
+// remotes is an instance bb is logged in to.
+//
+// A source uses these to put what you are standing in ahead of what the server
+// happens to return first. The reading is the invocation's own, so a
+// completion cannot decide this checkout is one repository while the command
+// decides it is another.
+func (environment *Environment) LocalRepositories(ctx context.Context) []Repository {
+	if environment.dependencies.LocalRepositories == nil {
+		return nil
+	}
+
+	cfg, err := environment.Config(ctx)
+	if err != nil {
+		return nil
+	}
+
+	repositories, err := environment.dependencies.LocalRepositories(ctx, cfg)
+	if err != nil {
+		return nil
+	}
+
+	return repositories
+}
+
 // Project is the project in scope: one named on the line, or the project of
 // the repository in scope.
 func (environment *Environment) Project(ctx context.Context) (string, error) {

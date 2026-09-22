@@ -3,15 +3,10 @@ package completion
 import (
 	"context"
 	"net/url"
-	"os"
-	"sort"
 	"strings"
 	"sync"
 
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
@@ -274,7 +269,10 @@ func localSelectors(ctx context.Context, environment *Environment, bitbucketURL 
 		return nil
 	}
 
-	repositories := bitbucketRemotes(checkoutRemotes(ctx), host)
+	// Through the Environment rather than by reading the remotes here: the
+	// invocation already reads them to decide what repository it is in, and
+	// two readings could disagree about what this checkout is (ADR-088).
+	repositories := onHost(environment.LocalRepositories(ctx), host)
 
 	// The repository the command resolved to leads, when the resolution was
 	// the inference -- that is the one the invocation being completed would
@@ -287,69 +285,31 @@ func localSelectors(ctx context.Context, environment *Environment, bitbucketURL 
 	return repositories
 }
 
-// checkoutRemotes is the git remotes of the repository the caller is standing
-// in, and nothing when they are not standing in one.
-func checkoutRemotes(ctx context.Context) []git.Remote {
-	backend := execgit.New()
-
-	workingDirectory, err := os.Getwd()
-	if err != nil {
-		return nil
-	}
-
-	root, err := backend.RepositoryRoot(ctx, workingDirectory)
-	if err != nil {
-		return nil
-	}
-
-	remotes, err := backend.ListRemotes(ctx, root)
-	if err != nil {
-		return nil
-	}
-
-	return remotes
-}
-
-// bitbucketRemotes are the remotes that name a repository on the instance
-// being completed against, origin first.
+// onHost keeps the checkout's repositories that live on the instance being
+// completed against, in the order the invocation read them.
 //
-// The host has to match. A remote URL is parsed leniently -- a bare owner/name
-// path is accepted, which is exactly what a GitHub remote looks like -- so
-// without the check a repository on another host would be offered as a
-// selector that no Bitbucket call can resolve.
-func bitbucketRemotes(remotes []git.Remote, host string) []Repository {
-	ordered := make([]git.Remote, len(remotes))
-	copy(ordered, remotes)
+// The host has to match. A checkout can have remotes on several instances, and
+// a repository from the wrong one is a selector no call here can resolve --
+// it would complete to a value that 404s.
+func onHost(repositories []Repository, host string) []Repository {
+	kept := make([]Repository, 0, len(repositories))
+	seen := make(map[string]bool, len(repositories))
 
-	// Git's own convention: origin is the repository this clone belongs to,
-	// and a fork or a mirror beside it is a side remote.
-	sort.SliceStable(ordered, func(left, right int) bool {
-		return ordered[left].Name == "origin" && ordered[right].Name != "origin"
-	})
-
-	repositories := make([]Repository, 0, len(ordered))
-	seen := make(map[string]bool, len(ordered))
-
-	for _, remote := range ordered {
-		remoteHost, projectKey, slug, ok := giturl.ParseBitbucketRemote(remote.URL)
-		if !ok || !strings.EqualFold(remoteHost, host) {
+	for _, repository := range repositories {
+		if !strings.EqualFold(hostOf(repository.Host), host) {
 			continue
 		}
 
-		key := strings.ToLower(projectKey + "/" + slug)
+		key := strings.ToLower(repository.ProjectKey + "/" + repository.Slug)
 		if seen[key] {
 			continue
 		}
 		seen[key] = true
 
-		repositories = append(repositories, Repository{
-			ProjectKey: projectKey,
-			Slug:       slug,
-			RemoteName: remote.Name,
-		})
+		kept = append(kept, repository)
 	}
 
-	return repositories
+	return kept
 }
 
 // lead moves the resolved repository to the front, adding it when no remote
@@ -509,6 +469,15 @@ func together[T any](ctx context.Context, listings []func(context.Context) ([]T,
 
 		go func() {
 			defer waiting.Done()
+			defer func() {
+				// run.go recovers the source's own goroutine, not the ones it
+				// starts, so a panic here would end the process with a stack
+				// trace the shell has nowhere to put.
+				if recovered := recover(); recovered != nil {
+					failures[index] = apperrors.New(apperrors.KindInternal, "listing failed", nil)
+					debugf("parallel listing failed: %v", recovered)
+				}
+			}()
 
 			results[index], failures[index] = listing(ctx)
 		}()

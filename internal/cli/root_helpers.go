@@ -171,7 +171,14 @@ func parseRepositorySelector(selector string) (repositorySelector, error) {
 	return repositorySelector{ProjectKey: projectKey, Slug: slug}, nil
 }
 
-func inferRepositoryContextFromGit(cfg config.AppConfig) (*inferredRepositoryContext, error) {
+// gitRepositoryCandidates is every Bitbucket repository this checkout's
+// remotes name, origin first.
+//
+// Split out of the inference below so shell completion can offer the whole set
+// without a second reading of the same remotes: a command acts on one
+// repository and refuses when they disagree, while a completion offering the
+// fork and its upstream is answering the question that was asked (ADR-088).
+func gitRepositoryCandidates(cfg config.AppConfig) ([]inferredRepositoryContext, error) {
 	backend := gitBackendFactory()
 	if backend == nil {
 		return nil, nil
@@ -248,6 +255,28 @@ func inferRepositoryContextFromGit(cfg config.AppConfig) (*inferredRepositoryCon
 		return candidates[left].RemoteName < candidates[right].RemoteName
 	})
 
+	deduplicated := make([]inferredRepositoryContext, 0, len(candidates))
+	seen := map[string]bool{}
+	for _, candidate := range candidates {
+		key := candidate.Host + "\x00" + candidate.ProjectKey + "\x00" + candidate.Slug + "\x00" + candidate.RemoteName
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+
+		deduplicated = append(deduplicated, candidate)
+	}
+
+	return deduplicated, nil
+}
+
+// inferRepositoryContextFromGit is the one repository a command acts on.
+func inferRepositoryContextFromGit(cfg config.AppConfig) (*inferredRepositoryContext, error) {
+	candidates, err := gitRepositoryCandidates(cfg)
+	if err != nil || len(candidates) == 0 {
+		return nil, err
+	}
+
 	unique := map[string]inferredRepositoryContext{}
 	for _, candidate := range candidates {
 		key := candidate.Host + "\x00" + candidate.ProjectKey + "\x00" + candidate.Slug + "\x00" + candidate.RemoteName
@@ -312,6 +341,7 @@ func inferRepositoryContextFromGit(cfg config.AppConfig) (*inferredRepositoryCon
 
 	return nil, nil
 }
+
 
 // unambiguousOriginCandidate returns the remote named origin when it is the
 // only reasonable reading of the repository's context.

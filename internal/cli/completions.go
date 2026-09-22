@@ -47,6 +47,25 @@ func installCompletions(root *cobra.Command, options *rootOptions) {
 			}, nil
 		},
 
+		LocalRepositories: func(_ context.Context, cfg config.AppConfig) ([]completion.Repository, error) {
+			candidates, err := gitRepositoryCandidates(cfg)
+			if err != nil {
+				return nil, err
+			}
+
+			repositories := make([]completion.Repository, 0, len(candidates))
+			for _, candidate := range candidates {
+				repositories = append(repositories, completion.Repository{
+					Host:       candidate.Host,
+					ProjectKey: candidate.ProjectKey,
+					Slug:       candidate.Slug,
+					RemoteName: candidate.RemoteName,
+				})
+			}
+
+			return repositories, nil
+		},
+
 		AmbientInferenceAllowed: func(cmd *cobra.Command) bool {
 			if cmd == nil {
 				return true

@@ -3,7 +3,6 @@ package completion
 import (
 	"testing"
 
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -173,57 +172,49 @@ func TestOrderWithoutACheckoutLeavesTheListingAlone(t *testing.T) {
 	}
 }
 
-// TestBitbucketRemotesKeepsOnlyThisInstance is the check that stops a
-// repository on another host being offered as a selector.
+// TestOnHostKeepsOnlyThisInstance is the check that stops a repository on
+// another instance being offered as a selector.
 //
-// A remote URL is parsed leniently: a bare owner/name path is accepted, which
-// is exactly the shape of a GitHub remote. Without the host comparison,
-// `--repo <tab>` in a checkout that has both would offer a selector no
-// Bitbucket call can resolve.
-func TestBitbucketRemotesKeepsOnlyThisInstance(t *testing.T) {
+// A checkout can have remotes on two Bitbucket instances, and the invocation
+// resolves against one of them. A selector from the other is a value that
+// completes cleanly and then 404s.
+func TestOnHostKeepsOnlyThisInstance(t *testing.T) {
 	t.Parallel()
 
-	remotes := []git.Remote{
-		{Name: "upstream", URL: "https://bitbucket.example.com/scm/PLAT/service.git"},
-		{Name: "github", URL: "git@github.com:someone/service.git"},
-		{Name: "origin", URL: "ssh://git@bitbucket.example.com:7999/plat/fork.git"},
-	}
-
-	repositories := bitbucketRemotes(remotes, "bitbucket.example.com")
+	repositories := onHost([]Repository{
+		{Host: "https://bitbucket.example.com:7990", ProjectKey: "PLAT", Slug: "fork", RemoteName: "origin"},
+		{Host: "https://bitbucket.internal:7990", ProjectKey: "OPS", Slug: "tooling", RemoteName: "internal"},
+		{Host: "https://bitbucket.example.com:7990", ProjectKey: "PLAT", Slug: "service", RemoteName: "upstream"},
+	}, "bitbucket.example.com")
 
 	if len(repositories) != 2 {
-		t.Fatalf("expected the two Bitbucket remotes, got %v", repositories)
+		t.Fatalf("expected the two repositories on this instance, got %v", repositories)
 	}
 	if repositories[0].Slug != "fork" || repositories[0].RemoteName != "origin" {
-		t.Errorf("expected origin first, got %+v", repositories[0])
-	}
-	if repositories[1].ProjectKey != "PLAT" || repositories[1].Slug != "service" {
-		t.Errorf("expected the upstream remote second, got %+v", repositories[1])
+		t.Errorf("expected the order the invocation read them in, got %+v", repositories[0])
 	}
 	for _, repository := range repositories {
-		if repository.Slug == "service" && repository.ProjectKey == "someone" {
-			t.Error("a GitHub remote was offered as a Bitbucket repository")
+		if repository.ProjectKey == "OPS" {
+			t.Error("a repository on another instance was offered as a selector")
 		}
 	}
 }
 
-// TestBitbucketRemotesOffersEachRepositoryOnce covers the fork-and-mirror
-// checkout, where two remotes name the same repository.
-func TestBitbucketRemotesOffersEachRepositoryOnce(t *testing.T) {
+// TestOnHostOffersEachRepositoryOnce covers the fork-and-mirror checkout,
+// where two remotes name the same repository.
+func TestOnHostOffersEachRepositoryOnce(t *testing.T) {
 	t.Parallel()
 
-	remotes := []git.Remote{
-		{Name: "mirror", URL: "https://bb.example.com/scm/PLAT/service.git"},
-		{Name: "origin", URL: "https://bb.example.com/scm/plat/service.git"},
-	}
-
-	repositories := bitbucketRemotes(remotes, "bb.example.com")
+	repositories := onHost([]Repository{
+		{Host: "https://bb.example.com", ProjectKey: "PLAT", Slug: "service", RemoteName: "origin"},
+		{Host: "https://bb.example.com", ProjectKey: "plat", Slug: "service", RemoteName: "mirror"},
+	}, "bb.example.com")
 
 	if len(repositories) != 1 {
 		t.Fatalf("expected one repository from two remotes naming it, got %v", repositories)
 	}
 	if repositories[0].RemoteName != "origin" {
-		t.Errorf("expected origin to be the one kept, got %+v", repositories[0])
+		t.Errorf("expected the first one read to be the one kept, got %+v", repositories[0])
 	}
 }
 
