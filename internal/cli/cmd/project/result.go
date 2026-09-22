@@ -142,10 +142,17 @@ type WebhookDeletion struct {
 	WebhookID string `json:"webhookId" jsonschema:"Identifier of the webhook that was deleted, as it was given on the command line."`
 }
 
+// PermissionNames are the project permissions `bb project permissions grant`
+// accepts, which enumflag.Value checks the <permission> argument against.
+//
+// Exported so shell completion can offer the same three rather than carry a
+// copy: a positional cannot be an enum flag, so this slice is the only
+// authority there is, and a second list beside it would be one nothing checks.
+var PermissionNames = []string{"PROJECT_READ", "PROJECT_WRITE", "PROJECT_ADMIN"}
+
 var (
-	projectTypes    = []string{"NORMAL", "PERSONAL"}
-	permissionNames = []string{"PROJECT_READ", "PROJECT_WRITE", "PROJECT_ADMIN"}
-	subjectKinds    = []string{"user", "group"}
+	projectTypes = []string{"NORMAL", "PERSONAL"}
+	subjectKinds = []string{"user", "group"}
 )
 
 func init() {
@@ -159,9 +166,9 @@ func init() {
 
 	listEnums := map[string][]string{
 		"subject":            subjectKinds,
-		"entries.permission": permissionNames,
+		"entries.permission": PermissionNames,
 	}
-	grantEnums := map[string][]string{"subject": subjectKinds, "permission": permissionNames}
+	grantEnums := map[string][]string{"subject": subjectKinds, "permission": PermissionNames}
 	revokeEnums := map[string][]string{"subject": subjectKinds}
 
 	// The shallow aliases and the per-subject commands are the same code with
@@ -173,7 +180,7 @@ func init() {
 		result.Declare(prefix+" revoke", result.For[PermissionRevocation](revokeEnums))
 	}
 	result.Declare("project permissions show", result.For[EffectivePermissions](map[string][]string{
-		"permissions.permission": permissionNames,
+		"permissions.permission": PermissionNames,
 	}))
 
 	result.Declare("project branch-restriction list", result.For[Restrictions](map[string][]string{
@@ -260,8 +267,8 @@ func permissionEntriesFrom(entries []permissionEntry) []PermissionEntry {
 // comparing rows rather than re-sorting a map whose iteration order Go
 // deliberately randomises.
 func effectivePermissionsFrom(probed map[string]bool) []EffectivePermission {
-	converted := make([]EffectivePermission, 0, len(permissionNames))
-	for _, name := range permissionNames {
+	converted := make([]EffectivePermission, 0, len(PermissionNames))
+	for _, name := range PermissionNames {
 		converted = append(converted, EffectivePermission{Permission: name, Granted: probed[name]})
 	}
 

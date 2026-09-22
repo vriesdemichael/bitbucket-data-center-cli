@@ -15,12 +15,19 @@ import (
 	repositoryservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/repository"
 )
 
+// PermissionNames are the repository permissions `bb repo permissions grant`
+// accepts, which enumflag.Value checks the <permission> argument against.
+//
+// Exported for the same reason as its project counterpart: shell completion
+// offers this slice rather than a copy of it, because the argument is a
+// positional and nothing else declares what it takes.
+var PermissionNames = []string{"REPO_READ", "REPO_WRITE", "REPO_ADMIN"}
+
 var (
-	repoPermissionNames = []string{"REPO_READ", "REPO_WRITE", "REPO_ADMIN"}
-	subjectKinds        = []string{"user", "group"}
-	commentStates       = []string{"OPEN", "RESOLVED", "PENDING"}
-	syncActions         = []string{"MERGE", "DISCARD", "REBASE"}
-	syncRefStates       = []string{"AHEAD", "DIVERGED", "ORPHANED"}
+	subjectKinds  = []string{"user", "group"}
+	commentStates = []string{"OPEN", "RESOLVED", "PENDING"}
+	syncActions   = []string{"MERGE", "DISCARD", "REBASE"}
+	syncRefStates = []string{"AHEAD", "DIVERGED", "ORPHANED"}
 )
 
 func init() {
@@ -66,9 +73,9 @@ func init() {
 
 	listPermissionEnums := map[string][]string{
 		"subject":            subjectKinds,
-		"entries.permission": repoPermissionNames,
+		"entries.permission": PermissionNames,
 	}
-	grantEnums := map[string][]string{"subject": subjectKinds, "permission": repoPermissionNames}
+	grantEnums := map[string][]string{"subject": subjectKinds, "permission": PermissionNames}
 	revokeEnums := map[string][]string{"subject": subjectKinds}
 	// The shallow aliases and the per-subject commands are the same code with
 	// the same payload, so they declare the same schema.
@@ -82,7 +89,7 @@ func init() {
 		result.Declare(prefix+" revoke", result.For[PermissionRevocation](revokeEnums))
 	}
 	result.Declare("repo permissions show", result.For[EffectivePermissions](map[string][]string{
-		"permissions.permission": repoPermissionNames,
+		"permissions.permission": PermissionNames,
 	}))
 
 	result.Declare("repo label list", result.For[Labels](nil))
@@ -188,8 +195,8 @@ func permissionEntriesFrom(entries []permissionEntry) []PermissionEntry {
 // Fixed order, increasing privilege, so two runs compare row by row rather than
 // through a map whose iteration order Go deliberately randomises.
 func effectivePermissionsFrom(probed map[string]bool) []EffectivePermission {
-	converted := make([]EffectivePermission, 0, len(repoPermissionNames))
-	for _, name := range repoPermissionNames {
+	converted := make([]EffectivePermission, 0, len(PermissionNames))
+	for _, name := range PermissionNames {
 		converted = append(converted, EffectivePermission{Permission: name, Granted: probed[name]})
 	}
 
