@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/completion"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/usage"
 )
 
@@ -105,6 +107,44 @@ func TestEveryDeclaredArgumentCanBeCompleted(t *testing.T) {
 
 	sort.Strings(missing)
 	t.Errorf("%d commands take an argument that nothing completes:\n\t%s", len(missing), strings.Join(missing, "\n\t"))
+}
+
+// TestThePositionalStatusMatchesTheFlagThatTakesTheSameValues ties the one
+// vocabulary completion holds twice to the enum that owns it.
+//
+// `bb pr review set <pr-id> <status>` takes as an argument what `bb pr review
+// complete --status` takes as a flag. The flag is an enumflag and validates
+// against its own list; a positional cannot be, so completion carries a copy.
+// Two lists that must agree and no test that they do is how the --state
+// vocabulary in #577 came to advertise values the flag refused.
+//
+// Sabotage that proved it guards: dropping UNAPPROVED from
+// completion.ReviewStatuses fails here naming it.
+func TestThePositionalStatusMatchesTheFlagThatTakesTheSameValues(t *testing.T) {
+	t.Parallel()
+
+	command, _, err := NewRootCommand().Find([]string{"pr", "review", "complete"})
+	if err != nil {
+		t.Fatalf("finding bb pr review complete failed: %v", err)
+	}
+
+	flag := command.Flags().Lookup("status")
+	if flag == nil {
+		t.Fatal("bb pr review complete no longer has a --status flag; the positional <status> now has no authority to match")
+	}
+
+	allowed, isEnum := enumflag.Allowed(flag)
+	if !isEnum {
+		t.Fatal("bb pr review complete --status is no longer an enum flag")
+	}
+
+	if !reflect.DeepEqual(allowed, completion.ReviewStatuses) {
+		t.Errorf(
+			"the values completed for <status> are %v; --status accepts %v",
+			completion.ReviewStatuses,
+			allowed,
+		)
+	}
 }
 
 func walkCommands(command *cobra.Command, visit func(*cobra.Command)) {
