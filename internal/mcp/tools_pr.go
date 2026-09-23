@@ -7,7 +7,6 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
-	browseservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/browse"
 	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commentanchor"
 	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
@@ -562,51 +561,6 @@ func specGetPRDiff() Spec {
 			return &mcp.CallToolResult{
 				Content: []mcp.Content{&mcp.TextContent{Text: result.Patch}},
 			}, GetPRDiffOutput{Diff: result}, nil
-		}
-	})
-}
-
-// GetFileContentInput is the argument set for get_file_content.
-type GetFileContentInput struct {
-	Project string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo    string `json:"repo" jsonschema:"Repository slug"`
-	Path    string `json:"path" jsonschema:"File path in the repository"`
-	At      string `json:"at,omitempty" jsonschema:"Git ref or branch to read from (e.g. refs/heads/main)"`
-}
-
-// GetFileContentOutput names the file payload it holds. The path and ref travel
-// with the content because a model that fetched several files needs to tell
-// them apart in its own context.
-type GetFileContentOutput struct {
-	Path    string `json:"path"`
-	At      string `json:"at,omitempty"`
-	Content string `json:"content"`
-}
-
-func specGetFileContent() Spec {
-	tool := &mcp.Tool{
-		Name:        "get_file_content",
-		Description: "Get the raw content of a file in a repository.",
-		Annotations: readOnly(),
-	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetFileContentInput, GetFileContentOutput] {
-		svc := browseservice.NewService(c.OpenAPI, c.HTTP)
-		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetFileContentInput) (*mcp.CallToolResult, GetFileContentOutput, error) {
-			content, err := svc.Raw(ctx, browseservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.Path, in.At)
-			if err != nil {
-				return nil, GetFileContentOutput{}, fmt.Errorf("get_file_content failed: %w", err)
-			}
-			// As with get_pr_diff: the file itself is the text content, not the
-			// JSON encoding of the envelope around it.
-			//
-			// Both values are named rather than returned as literals: a return
-			// of two multi-line composite literals is the one shape successive
-			// gofmt releases indent differently, and the tree is read with
-			// whichever gofmt the reader has installed.
-			text := &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: string(content)}}}
-			structured := GetFileContentOutput{Path: in.Path, At: in.At, Content: string(content)}
-
-			return text, structured, nil
 		}
 	})
 }
