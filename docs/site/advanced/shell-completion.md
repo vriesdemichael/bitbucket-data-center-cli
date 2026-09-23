@@ -130,7 +130,11 @@ not this one, comes from the server.
 
 ## When nothing is offered
 
-Run the completion by hand with `BB_COMPLETION_DEBUG` set. Give the words after
+`bb doctor` shows where completion is set up for each shell, and reports a
+setup the shell will not run and a saved script that has fallen behind `bb`.
+
+To see why one press comes back empty, run the completion by hand with
+`BB_COMPLETION_DEBUG` set. Give the words after
 `bb` as you typed them, ending with the word being completed, or an empty one
 for a new word:
 
