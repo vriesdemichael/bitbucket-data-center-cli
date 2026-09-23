@@ -418,6 +418,41 @@ func TestRunnerDryRunVerifiesTheInstalledRelease(t *testing.T) {
 	}
 }
 
+// A mirror behind the host it serves has stopped receiving releases. An update
+// cannot tell, since it never downgrades; a dry run fails.
+func TestRunnerDryRunFailsWhenTheMirrorServesAnOlderRelease(t *testing.T) {
+	t.Parallel()
+
+	t.Run("a release that verifies is a conflict", func(t *testing.T) {
+		t.Parallel()
+
+		client := mirrorServing(t, "v1.2.0")
+		verifier := &stubSignatureVerifier{}
+		_, err := NewRunner(mirrorCheckDependencies(t, client, "v1.3.0", verifier)).Run(context.Background(), Options{DryRun: true})
+		if !apperrors.IsKind(err, apperrors.KindConflict) || apperrors.ExitCode(err) != 5 {
+			t.Fatalf("expected a conflict, exit 5, got %v", err)
+		}
+		if !strings.Contains(err.Error(), "latest release v1.2.0 is older than the installed v1.3.0") {
+			t.Fatalf("expected the message to name both versions, got %v", err)
+		}
+		// Verified first, like any release a dry run is served.
+		if verifier.calls != 1 || len(client.downloadCalls) != 3 {
+			t.Fatalf("expected the served release to be verified, got %d verifier calls and downloads %v", verifier.calls, client.downloadCalls)
+		}
+	})
+
+	t.Run("a release that fails a check reports that failure", func(t *testing.T) {
+		t.Parallel()
+
+		client := mirrorServing(t, "v1.2.0")
+		client.downloads["https://mirror.internal/bb_1.2.0_linux_amd64.tar.gz"] = []byte("not the archive")
+		_, err := NewRunner(mirrorCheckDependencies(t, client, "v1.3.0", &stubSignatureVerifier{})).Run(context.Background(), Options{DryRun: true})
+		if !apperrors.IsKind(err, apperrors.KindPermanent) || !strings.Contains(err.Error(), "checksum verification failed") {
+			t.Fatalf("expected the checksum failure, got %v", err)
+		}
+	})
+}
+
 // The checksum file has the entry and the archive beside it is not the one it
 // describes. A dry run that stopped at the entry passed such a mirror.
 func TestRunnerDryRunFailsOnAnArchiveThatDoesNotMatchItsChecksum(t *testing.T) {
