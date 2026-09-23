@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `90`
-- Accepted ADRs: `79`
+- Total ADRs: `91`
+- Accepted ADRs: `80`
 
 ## ADR List
 
@@ -99,4 +99,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 088: Every Bitbucket release Atlassian supports is served, and none is dropped](088-every-bitbucket-release-atlassian-supports-is-served.md) (`architecture`, `accepted`)
 - [ADR 089: Shell completion is declared by the argument's name, and resolved by the command's own code](089-completion-is-declared-by-the-argument-name.md) (`architecture`, `accepted`)
 - [ADR 090: A package sets up what every user shares, and bb sets up what is one user's](090-a-package-sets-up-what-every-user-shares.md) (`development`, `accepted`)
+- [ADR 091: A command may report the state it read through its exit status](091-a-command-may-report-the-state-it-read-through-its-exit-status.md) (`architecture`, `accepted`)
 

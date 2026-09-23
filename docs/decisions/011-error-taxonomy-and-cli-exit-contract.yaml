@@ -2,6 +2,7 @@ number: 11
 title: Error taxonomy and CLI exit contract
 category: architecture
 status: accepted
+amended_by: 91
 decision: >
   Define a stable error taxonomy and map it to deterministic CLI exit codes and structured JSON
   error payloads. The kinds are authentication, authorization, validation, not_found, conflict,

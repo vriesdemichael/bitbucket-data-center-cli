@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // TestLivePullRequestBuildStatuses covers reading build statuses through a pull
@@ -113,4 +115,93 @@ func TestLivePullRequestBuildStatuses(t *testing.T) {
 			t.Errorf("--limit 1 returned %v, want one of the statuses sent", statuses)
 		}
 	})
+}
+
+// TestLivePullRequestChecksExitStatus covers ADR-091. Without --json, bb pr
+// checks exits as gh pr checks does: 1 when a build failed, 8 while one has
+// not finished, and 0 otherwise, a cancelled build included. With --json it
+// exits 0, with every state in the document.
+//
+// Builds are only ever added, each under a key of its own, so nothing depends
+// on how Bitbucket treats a second status under one key. Each is read back
+// through the listing before the exit status is asserted, so the status
+// answers for builds that are really there.
+func TestLivePullRequestChecksExitStatus(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	pullRequest := func(branch string) (string, string) {
+		t.Helper()
+
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, strings.ReplaceAll(branch, "/", "-")+".txt"); err != nil {
+			t.Fatalf("push commit on %s failed: %v", branch, err)
+		}
+		prID := createLifecyclePR(t, branch, "Checks gate "+branch, "--no-default-reviewers", "--no-codeowners")
+
+		return prID, currentLivePRSourceCommit(t, prID)
+	}
+
+	build := func(prID, commit, key, state string, listed map[string]string) {
+		t.Helper()
+
+		mustLiveCLI(t, "build", "status", "set", commit, "--key", key, "--state", state, "--url", "http://example.invalid/"+key)
+		listed[key] = state
+
+		got := map[string]string{}
+		for _, status := range lifecycleListing(t, mustLiveCLI(t, "pr", "build", "status", prID, "--all"), "statuses") {
+			got[asString(status["key"])] = asString(status["state"])
+		}
+		if !reflect.DeepEqual(got, listed) {
+			t.Fatalf("the pull request's builds read back as %v, want %v", got, listed)
+		}
+	}
+
+	// exitOf is the exit status bb gives a text-mode run, which is where the
+	// status reports the builds. It takes the run's results rather than its
+	// words, so each call keeps the command words literal for command-reach.
+	exitOf := func(output string, err error) int {
+		t.Helper()
+
+		code := apperrors.ExitCode(err)
+		t.Logf("exit %d (%v)\n%s", code, err, output)
+
+		return code
+	}
+
+	gated, gatedCommit := pullRequest("feature/checks-gated")
+	gatedBuilds := map[string]string{}
+
+	build(gated, gatedCommit, "still-running", "INPROGRESS", gatedBuilds)
+	if got := exitOf(executeLiveCLI(t, "pr", "checks", gated)); got != 8 {
+		t.Errorf("a build in progress: bb pr checks exited %d, want 8 as gh does", got)
+	}
+
+	build(gated, gatedCommit, "broken", "FAILED", gatedBuilds)
+	if got := exitOf(executeLiveCLI(t, "pr", "checks", gated)); got != 1 {
+		t.Errorf("a failed build beside one in progress: bb pr checks exited %d, want 1, the failure winning", got)
+	}
+	if got := exitOf(executeLiveCLI(t, "pr", "build", "status", gated)); got != 1 {
+		t.Errorf("bb pr build status, the canonical spelling, exited %d where bb pr checks exits 1", got)
+	}
+	if output, err := executeLiveCLI(t, "--json", "pr", "checks", gated); err != nil {
+		t.Errorf("under --json the states are in the document and the exit status is 0, got %v\n%s", err, output)
+	}
+
+	settled, settledCommit := pullRequest("feature/checks-settled")
+	settledBuilds := map[string]string{}
+	build(settled, settledCommit, "passed", "SUCCESSFUL", settledBuilds)
+	build(settled, settledCommit, "called-off", "CANCELLED", settledBuilds)
+	if got := exitOf(executeLiveCLI(t, "pr", "checks", settled)); got != 0 {
+		t.Errorf("a successful build and a cancelled one: bb pr checks exited %d, want 0 as gh does", got)
+	}
 }

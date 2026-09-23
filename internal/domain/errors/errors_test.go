@@ -345,3 +345,14 @@ func TestWithDetailLeavesWrappedErrorsAlone(t *testing.T) {
 		t.Errorf("a wrapped error reported details: %v", details)
 	}
 }
+
+func TestExitCodeOfAStateExitIsItsOwn(t *testing.T) {
+	t.Parallel()
+
+	if got := ExitCode(&StateExit{Code: 8, Reason: "pending"}); got != 8 {
+		t.Errorf("ExitCode = %d, want 8", got)
+	}
+	if got := ExitCode(fmt.Errorf("wrapped: %w", &StateExit{Code: 1, Reason: "failed"})); got != 1 {
+		t.Errorf("ExitCode of a wrapped state = %d, want 1", got)
+	}
+}
