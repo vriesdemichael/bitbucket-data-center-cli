@@ -21,7 +21,7 @@ path rather than in a flag.
 | `gh pr view 42` | `bb pr get 42` | `bb pr view` works as an alias |
 | `gh pr edit 42` | `bb pr update 42` | `bb pr edit` works as an alias. Pass `--version` to have the update refused if the pull request changed since you read it |
 | `gh pr close 42` | `bb pr decline 42` | `bb pr close` works as an alias |
-| `gh pr checks 42` | `bb pr build status 42` | `bb pr checks` works as an alias |
+| `gh pr checks 42` | `bb pr build status 42` | `bb pr checks` works as an alias, and exits as gh's does: `1` when a build failed, `8` while one is running |
 | `gh pr merge 42` | `bb pr merge 42` | |
 | `gh pr diff 42` | `bb pr diff 42` | |
 | `gh pr review` | `bb pr review approve`, `bb pr review unapprove`, `bb pr review set` | `set <pr-id> <status>` is the general form; approve and unapprove are the two shorthands |

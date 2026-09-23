@@ -2443,7 +2443,14 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 		cmd := &cobra.Command{
 			Use:   use,
 			Short: short,
-			Args:  cobra.ExactArgs(1),
+			Long: short + `.
+
+Without --json, the exit status reports the builds, as gh pr checks does: 1
+when one failed, 8 when none failed and one is still in progress or has no
+result, and 0 otherwise, a cancelled build included. It counts every build,
+not only the --limit shown. With --json the exit status is 0 and each build's
+state is in the output.`,
+			Args: cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				cfg, err := deps.LoadConfig()
 				if err != nil {
@@ -2457,34 +2464,42 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 				}
 				repo := target.RepositoryRef()
 
-				statuses, err := service.GetBuildStatuses(cmd.Context(), repo, target.PullRequestID, statusPaging.ServiceLimit())
+				// Text output ends in an exit status that reports the builds
+				// (ADR-091), so it reads all of them: a failed build past --limit
+				// would otherwise pass for green. --limit still decides what is
+				// shown.
+				limit := statusPaging.ServiceLimit()
+				if !deps.JSONEnabled() {
+					limit = pullrequestservice.AllResults
+				}
+				statuses, err := service.GetBuildStatuses(cmd.Context(), repo, target.PullRequestID, limit)
 				if err != nil {
 					return err
 				}
 
 				// The service already stops at the cap (ADR-074); this keeps --limit
 				// honest if one ever does not. A no-op under --all.
-				statuses = paging.Truncate(statusPaging, statuses)
+				shown := paging.Truncate(statusPaging, statuses)
 
 				if deps.JSONEnabled() {
 					return deps.WriteJSONList(cmd.OutOrStdout(), BuildStatuses{
 						Repository:    repositoryOf(repo),
 						PullRequestID: target.PullRequestID,
-						Statuses:      buildStatusesFrom(statuses),
-					}, paging.LimitReached(statusPaging, len(statuses)))
+						Statuses:      buildStatusesFrom(shown),
+					}, paging.LimitReached(statusPaging, len(shown)))
 				}
 
-				if len(statuses) == 0 {
+				if len(shown) == 0 {
 					fmt.Fprintln(cmd.OutOrStdout(), "No build statuses found")
 					return nil
 				}
 
-				for _, s := range statuses {
+				for _, s := range shown {
 					fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", s.Key, s.State, s.URL)
 				}
 				paging.Hint(cmd.ErrOrStderr(), statusPaging, len(statuses))
 
-				return nil
+				return buildsExitStatus(statuses)
 			},
 		}
 		statusPaging.Register(cmd, 25)

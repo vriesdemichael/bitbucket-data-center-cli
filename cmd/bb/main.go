@@ -163,6 +163,14 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 	}
 	executeErr = interrupted(rootCmd, executeErr)
 
+	// A command reporting the state it read through the exit status has not
+	// failed (ADR-091): its output is written, so it is checked like any
+	// other success, and only the code and the reason differ.
+	var state *apperrors.StateExit
+	if errors.As(executeErr, &state) {
+		executeErr = nil
+	}
+
 	if err := cli.ClassifyUsageError(executeErr); err != nil {
 		emitCommandFailureDiagnostic(err, stderr)
 
@@ -188,6 +196,11 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 		emitCommandFailureDiagnostic(failure, stderr)
 		fmt.Fprintln(stderr, failure.Error())
 		return apperrors.ExitCode(failure)
+	}
+
+	if state != nil {
+		fmt.Fprintln(stderr, state.Reason)
+		return state.Code
 	}
 
 	return 0

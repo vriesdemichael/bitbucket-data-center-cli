@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Error taxonomy and CLI exit contract`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `091`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/011-error-taxonomy-and-cli-exit-contract.yaml`
 

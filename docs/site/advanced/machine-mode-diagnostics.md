@@ -130,6 +130,13 @@ Retrying it may repeat work that already happened, so the answer is to check the
 and then decide. That is why it sits outside `transient`, which is the code a retry loop
 should key on.
 
+One command reports what it found through the exit status as well as what happened to
+it: `bb pr checks` (and `bb pr build status`), as `gh pr checks` does. Without `--json`
+it exits `1` when a build failed and `8` when none failed and one is still running or has
+no result. Neither is a failure of bb's: the output is complete, and a line on stderr counts
+the builds. With `--json` it exits `0` and each build's state is in `data`
+([ADR-091](../adr/091-a-command-may-report-the-state-it-read-through-its-exit-status.md)).
+
 `bb webhook create` and `bb project webhook create` make that check themselves: when the
 webhook they asked for is there, they report it and exit `0`.
 

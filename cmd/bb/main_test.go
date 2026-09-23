@@ -452,3 +452,28 @@ func TestExecuteRootCommandSucceedsOnAClosedPipe(t *testing.T) {
 		t.Fatalf("a closed pipe must not fail the command, got exit %d: %s", code, stderr.String())
 	}
 }
+
+// TestAStateExitIsTheCommandsAnswerNotAFailure covers ADR-091: a command that
+// reports the state it read through the exit status keeps its output, puts
+// its reason on stderr, and is not logged or described as a failure.
+func TestAStateExitIsTheCommandsAnswerNotAFailure(t *testing.T) {
+	t.Setenv("BB_LOG_LEVEL", "error")
+	t.Setenv("BB_LOG_FORMAT", "jsonl")
+
+	// Silenced as bb's root is, so Cobra adds neither usage nor its own error line.
+	cmd := &cobra.Command{Use: "test", SilenceUsage: true, SilenceErrors: true, RunE: func(command *cobra.Command, args []string) error {
+		fmt.Fprintln(command.OutOrStdout(), "build-1\tINPROGRESS\thttp://example.invalid")
+		return &apperrors.StateExit{Code: 8, Reason: "1 build is in progress or without a result"}
+	}}
+
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	if exitCode := executeRootCommand(cmd, nil, stdout, stderr); exitCode != 8 {
+		t.Fatalf("expected the state's exit code 8, got %d", exitCode)
+	}
+	if stdout.String() != "build-1\tINPROGRESS\thttp://example.invalid\n" {
+		t.Errorf("the command's output was not kept: %q", stdout.String())
+	}
+	if got := strings.TrimSpace(stderr.String()); got != "1 build is in progress or without a result" {
+		t.Errorf("stderr = %q, want the reason alone, with no failure logged beside it", got)
+	}
+}

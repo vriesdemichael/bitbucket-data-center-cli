@@ -181,6 +181,11 @@ func ExitCode(err error) int {
 		return 0
 	}
 
+	var state *StateExit
+	if errors.As(err, &state) {
+		return state.Code
+	}
+
 	var appError *AppError
 	if errors.As(err, &appError) {
 		switch appError.Kind {

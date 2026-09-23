@@ -4249,7 +4249,13 @@ Use "bb pr build [command] --help" for more information about a command.
 Show build statuses for a pull request's source commit (also available as bb pr checks)
 
 ```text
-Show build statuses for a pull request's source commit (also available as bb pr checks)
+Show build statuses for a pull request's source commit (also available as bb pr checks).
+
+Without --json, the exit status reports the builds, as gh pr checks does: 1
+when one failed, 8 when none failed and one is still in progress or has no
+result, and 0 otherwise, a cancelled build included. It counts every build,
+not only the --limit shown. With --json the exit status is 0 and each build's
+state is in the output.
 
 Usage:
   bb pr build status <pr-id> [flags]
@@ -4328,7 +4334,13 @@ Flags:
 Show build statuses for a pull request's source commit (alias for bb pr build status)
 
 ```text
-Show build statuses for a pull request's source commit (alias for bb pr build status)
+Show build statuses for a pull request's source commit (alias for bb pr build status).
+
+Without --json, the exit status reports the builds, as gh pr checks does: 1
+when one failed, 8 when none failed and one is still in progress or has no
+result, and 0 otherwise, a cancelled build included. It counts every build,
+not only the --limit shown. With --json the exit status is 0 and each build's
+state is in the output.
 
 Usage:
   bb pr checks <pr-id> [flags]
