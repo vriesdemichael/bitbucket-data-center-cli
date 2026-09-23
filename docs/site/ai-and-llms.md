@@ -79,6 +79,7 @@ Where an agent reads a directory of its own, print the skill and redirect it
 there; Cline, for one, reads `~/.cline/skills`:
 
 ```bash
+mkdir -p ~/.cline/skills/bb
 bb ai skill show > ~/.cline/skills/bb/SKILL.md
 ```
 
