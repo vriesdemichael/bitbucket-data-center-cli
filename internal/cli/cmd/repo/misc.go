@@ -2,6 +2,7 @@ package repocmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"io"
@@ -747,6 +748,7 @@ func newRepoCatCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cat <path>",
 		Short: "Output the raw content of a file over REST",
+		Long:  rawFileHelp("Output the raw content of a file over REST."),
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
@@ -762,17 +764,7 @@ func newRepoCatCommand(deps Dependencies) *cobra.Command {
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 			service := browseservice.NewService(client, httpclient.NewFromConfig(cfg))
 
-			content, err := service.Raw(cmd.Context(), repo, args[0], at)
-			if err != nil {
-				return err
-			}
-
-			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), rawFileFrom(browseRepositoryOf(repo), args[0], at, content))
-			}
-
-			_, _ = cmd.OutOrStdout().Write(content)
-			return nil
+			return writeRawFile(cmd, deps, service, repo, args[0], at)
 		},
 	}
 
@@ -780,6 +772,54 @@ func newRepoCatCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().StringVar(&at, "at", "", "Commit ID or ref to cat")
 
 	return cmd
+}
+
+// rawFileHelp is the help of the two commands that write a file's bytes, which
+// behave alike: the limit under --json is theirs.
+func rawFileHelp(summary string) string {
+	return summary + fmt.Sprintf(`
+
+The file is written to stdout as it arrives, byte for byte, whatever its size.
+With --json it is returned inside the document instead -- as text, or as base64
+when it is not text -- which holds it in memory, so a file larger than %d MiB is
+refused under --json.`, maxHeldFileBytes>>20)
+}
+
+// maxHeldFileBytes is the most of a file --json holds in memory. The document
+// wraps the file -- as base64 when it is not text, and then encoded again as
+// JSON -- so it is held several times over. Without --json the bytes go to
+// stdout as they arrive, and nothing is held.
+const maxHeldFileBytes = 64 << 20
+
+// writeRawFile writes a file's bytes, for bb repo cat and bb repo browse raw:
+// to stdout as they arrive, or under --json held and wrapped in the document
+// ADR-014 promises.
+func writeRawFile(cmd *cobra.Command, deps Dependencies, service *browseservice.Service, repo browseservice.RepositoryRef, path, at string) error {
+	if deps.JSONEnabled() {
+		var held download.Memory
+		if err := service.RawTo(cmd.Context(), repo, path, at, &held, maxHeldFileBytes); err != nil {
+			return tooLargeForJSON(err, path)
+		}
+
+		return deps.WriteJSON(cmd.OutOrStdout(), rawFileFrom(browseRepositoryOf(repo), path, at, held.Bytes()))
+	}
+
+	return streamed(service.RawTo(cmd.Context(), repo, path, at, download.To(cmd.OutOrStdout()), 0))
+}
+
+// tooLargeForJSON says what to do about a file over what --json holds: drop the
+// flag, and the file streams to stdout whatever its size.
+//
+// Validation, exit 2: the invocation cannot work for this file, and changing
+// it is the remedy.
+func tooLargeForJSON(err error, path string) error {
+	var limit *download.LimitError
+	if !errors.As(err, &limit) {
+		return err
+	}
+
+	return apperrors.New(apperrors.KindValidation, fmt.Sprintf(
+		"%s is larger than %d MiB, the most --json holds in memory; drop --json to stream the file to stdout", path, limit.Limit>>20), nil)
 }
 
 func newRepoEditCommand(deps Dependencies) *cobra.Command {

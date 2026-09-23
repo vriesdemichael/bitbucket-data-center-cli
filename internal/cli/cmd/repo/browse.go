@@ -82,6 +82,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 	rawCmd := &cobra.Command{
 		Use:   "raw <path>",
 		Short: "Get raw file content",
+		Long:  rawFileHelp("Get raw file content."),
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
@@ -97,21 +98,11 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 			repo := browseservice.RepositoryRef{ProjectKey: repoRef.ProjectKey, Slug: repoRef.Slug}
 			service := browseservice.NewService(client, httpclient.NewFromConfig(cfg))
 
-			content, err := service.Raw(cmd.Context(), repo, args[0], rawAt)
-			if err != nil {
-				return err
-			}
-
 			// Raw means the bytes, unwrapped -- but only without --json. Under
 			// --json stdout is one bb.machine document (ADR-014), and this used
 			// to write the file there instead, which is not a document at all.
-			// bb repo cat reads the same endpoint and already answered this way.
-			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), rawFileFrom(browseRepositoryOf(repo), args[0], rawAt, content))
-			}
-
-			_, _ = cmd.OutOrStdout().Write(content)
-			return nil
+			// bb repo cat reads the same endpoint and answers the same way.
+			return writeRawFile(cmd, deps, service, repo, args[0], rawAt)
 		},
 	}
 	rawCmd.Flags().StringVar(&rawAt, "at", "", "Commit ID or ref")

@@ -6,6 +6,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"io"
 	"os"
 	"path/filepath"
@@ -78,6 +79,43 @@ func zipEntries(t *testing.T, archive []byte) map[string][]byte {
 	}
 
 	return entries
+}
+
+// TestLiveRawFileCommandsWriteTheBytesExactly: bb repo cat and bb repo browse
+// raw write a binary file to stdout byte for byte, and under --json return it
+// as base64 that decodes to the same bytes.
+func TestLiveRawFileCommandsWriteTheBytesExactly(t *testing.T) {
+	t.Parallel()
+
+	repoRef, binary := seedBinaryFile(t, "assets/logo.bin")
+
+	for _, command := range [][]string{
+		{"repo", "cat", "assets/logo.bin", "--repo", repoRef},
+		{"repo", "browse", "raw", "assets/logo.bin", "--repo", repoRef},
+	} {
+		stdout, stderr, err := executeLiveCLISplit(t, "", command...)
+		if err != nil {
+			t.Fatalf("%s failed: %v\nstderr: %s", strings.Join(command[:3], " "), err, stderr)
+		}
+		if !bytes.Equal([]byte(stdout), binary) {
+			t.Fatalf("%s wrote %d bytes that differ from the %d pushed", strings.Join(command[:3], " "), len(stdout), len(binary))
+		}
+	}
+
+	for name, output := range map[string]string{
+		"repo cat":        mustLiveCLI(t, "repo", "cat", "assets/logo.bin", "--repo", repoRef),
+		"repo browse raw": mustLiveCLI(t, "repo", "browse", "raw", "assets/logo.bin", "--repo", repoRef),
+	} {
+		document := decodeJSONMap(t, output)
+		if document["encoding"] != "base64" {
+			t.Fatalf("%s --json encoded a file that is not text as %v", name, document["encoding"])
+		}
+		content, _ := document["content"].(string)
+		decoded, err := base64.StdEncoding.DecodeString(content)
+		if err != nil || !bytes.Equal(decoded, binary) {
+			t.Fatalf("%s --json content decodes to %d bytes (%v) that differ from the %d pushed", name, len(decoded), err, len(binary))
+		}
+	}
 }
 
 // TestLiveRepoArchiveHoldsTheRepositoryExactly: bb repo archive writes the

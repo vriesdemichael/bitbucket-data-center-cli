@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `keep` | 168 | legitimate unit test under ADR-079 |
+| `keep` | 170 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 27 | outside the Bitbucket policy; needs its own decision |
 
@@ -42,6 +42,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/pr/pr_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/project/permissions_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/repo/permissions_test.go` | 2 | 0 | 0 | 2 | 0 |
+| `internal/cli/cmd/repo/rawfile_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/webhook/webhook_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/new_commands_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/permissionchecker/permission_checker_test.go` | 2 | 0 | 0 | 2 | 0 |

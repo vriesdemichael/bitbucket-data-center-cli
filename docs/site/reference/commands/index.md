@@ -7830,7 +7830,12 @@ Flags:
 Get raw file content
 
 ```text
-Get raw file content
+Get raw file content.
+
+The file is written to stdout as it arrives, byte for byte, whatever its size.
+With --json it is returned inside the document instead -- as text, or as base64
+when it is not text -- which holds it in memory, so a file larger than 64 MiB is
+refused under --json.
 
 Usage:
   bb repo browse raw <path> [flags]
@@ -7904,7 +7909,12 @@ Flags:
 Output the raw content of a file over REST
 
 ```text
-Output the raw content of a file over REST
+Output the raw content of a file over REST.
+
+The file is written to stdout as it arrives, byte for byte, whatever its size.
+With --json it is returned inside the document instead -- as text, or as base64
+when it is not text -- which holds it in memory, so a file larger than 64 MiB is
+refused under --json.
 
 Usage:
   bb repo cat <path> [flags]
