@@ -548,7 +548,7 @@ func TestAProfileKeepsItsEncoding(t *testing.T) {
 			t.Parallel()
 
 			target := Target{Shell: PowerShell, Scope: CurrentUser, Path: filepath.Join(t.TempDir(), "profile.ps1"), Shared: true}
-			original := textFile{bom: bom, text: "Write-Host 'héllo'\r\n", newline: "\r\n", mode: 0o644}
+			original := textFile{bom: bom, text: "Write-Host 'héllo'\r\n", newline: "\r\n"}
 			switch name {
 			case "UTF-16 LE":
 				original.order = utf16Order(true)

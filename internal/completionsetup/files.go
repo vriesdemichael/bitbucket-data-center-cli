@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -95,12 +96,12 @@ func firstLines(content []byte, count int) []string {
 }
 
 func installFile(target Target) (Outcome, error) {
-	want := ownFile(target.Shell)
+	want := []byte(ownFile(target.Shell))
 
 	existing, err := os.ReadFile(target.Path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		if err := writeFile(target.Path, []byte(want), 0o644, target.Scope); err != nil {
+		if err := createFile(target.Path, want, target.Scope); err != nil {
 			return Outcome{}, err
 		}
 
@@ -110,16 +111,18 @@ func installFile(target Target) (Outcome, error) {
 	}
 
 	switch {
-	case isOwnFile(existing) && string(existing) == want:
+	case isOwnFile(existing) && bytes.Equal(existing, want):
 		return Outcome{Target: target, Status: Unchanged}, nil
 	case isOwnFile(existing):
-		if err := writeFile(target.Path, []byte(want), 0o644, target.Scope); err != nil {
+		if err := rewriteFile(target.Path, existing, want, target.Scope); err != nil {
 			return Outcome{}, err
 		}
 
 		return Outcome{Target: target, Status: Updated}, nil
+	case isGeneratedScript(target.Shell, existing) && packageLink(target):
+		return Outcome{Target: target, Status: Unchanged, Note: target.Path + " links to the script a package installed, which the package keeps current"}, nil
 	case isGeneratedScript(target.Shell, existing):
-		if err := writeFile(target.Path, []byte(want), 0o644, target.Scope); err != nil {
+		if err := rewriteFile(target.Path, existing, want, target.Scope); err != nil {
 			return Outcome{}, err
 		}
 
@@ -140,15 +143,32 @@ func removeFile(target Target) (Outcome, error) {
 		return Outcome{}, apperrors.New(apperrors.KindInternal, "failed to read "+target.Path, err)
 	}
 
-	if !isOwnFile(existing) && !isGeneratedScript(target.Shell, existing) {
+	switch {
+	case isGeneratedScript(target.Shell, existing) && packageLink(target):
+		return Outcome{Target: target, Status: NotFound, Note: target.Path + " links to the script a package installed, which the package removes"}, nil
+	case !isOwnFile(existing) && !isGeneratedScript(target.Shell, existing):
 		return Outcome{Target: target, Status: NotFound, Note: target.Path + " is not bb's, so it was left alone"}, nil
 	}
 
 	if err := os.Remove(target.Path); err != nil {
-		return Outcome{}, apperrors.New(apperrors.KindInternal, "failed to remove "+target.Path, err)
+		return Outcome{}, changeFailure("remove", target.Path, target.Scope, err)
 	}
 
 	return Outcome{Target: target, Status: Removed}, nil
+}
+
+// packageLink reports a script in a directory every user's shell reads that is
+// a symbolic link, which is how a package manager puts its files there:
+// Homebrew on an Intel Mac links bb's zsh script to where --all-users puts the
+// loader. A package's file is the package's to replace and remove.
+func packageLink(target Target) bool {
+	if target.Scope != AllUsers {
+		return false
+	}
+
+	info, err := os.Lstat(target.Path)
+
+	return err == nil && info.Mode()&os.ModeSymlink != 0
 }
 
 // beginMarker and endMarker bracket the block bb adds to a file it shares, so
@@ -252,9 +272,11 @@ func removeBlock(target Target) (Outcome, error) {
 	// A PowerShell profile that held nothing but bb's block is one install
 	// created, and goes with it; PowerShell runs the same without one. Not a
 	// .zshrc: zsh without one starts its new-user wizard at the next prompt.
-	if target.Shell == PowerShell && strings.TrimSpace(file.text) == "" {
+	// Nor a profile that is a link, which somebody keeps elsewhere and would
+	// lose the link to: it is left, empty.
+	if target.Shell == PowerShell && strings.TrimSpace(file.text) == "" && isRegularFile(target.Path) {
 		if err := os.Remove(target.Path); err != nil {
-			return Outcome{}, apperrors.New(apperrors.KindInternal, "failed to remove "+target.Path, err)
+			return Outcome{}, changeFailure("remove", target.Path, target.Scope, err)
 		}
 
 		return Outcome{Target: target, Status: Removed}, nil
@@ -350,12 +372,13 @@ func defaultNewline(target Target) string {
 // UTF-16 file would corrupt the whole of it. The byte order mark, the
 // encoding and the line endings all go back the way they came.
 type textFile struct {
-	path    string
-	exists  bool
+	path   string
+	exists bool
+	// raw is the file as it was read, which a failed write puts back.
+	raw     []byte
 	bom     []byte
 	order   binary.ByteOrder
 	newline string
-	mode    os.FileMode
 	text    string
 }
 
@@ -366,7 +389,7 @@ var (
 )
 
 func readText(path, newline string) (textFile, error) {
-	file := textFile{path: path, newline: newline, mode: 0o644}
+	file := textFile{path: path, newline: newline}
 
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -376,10 +399,7 @@ func readText(path, newline string) (textFile, error) {
 		return textFile{}, apperrors.New(apperrors.KindInternal, "failed to read "+path, err)
 	}
 	file.exists = true
-
-	if info, err := os.Stat(path); err == nil {
-		file.mode = info.Mode().Perm()
-	}
+	file.raw = raw
 
 	switch {
 	case bytes.HasPrefix(raw, utf8BOM):
@@ -433,40 +453,113 @@ func (file textFile) write(path string, scope Scope) error {
 		encoded = []byte(file.text)
 	}
 
-	return writeFile(path, append(append([]byte{}, file.bom...), encoded...), file.mode, scope)
+	content := append(append([]byte{}, file.bom...), encoded...)
+	if !file.exists {
+		return createFile(path, content, scope)
+	}
+
+	return rewriteFile(path, file.raw, content, scope)
 }
 
-// writeFile replaces path through a temporary file beside it, so a failure
-// part way through leaves the old file rather than half of a new one -- a
-// shell profile cut short is a shell that fails to start cleanly.
-func writeFile(path string, content []byte, mode os.FileMode, scope Scope) error {
+// createFile writes a file that is not there yet, readable by every user: a
+// setup for all of them needs that, and a user's own startup file has it
+// anyway. A failure part way through takes the partial file out again.
+func createFile(path string, content []byte, scope Scope) error {
 	directory := filepath.Dir(path)
 	if err := makeDirectory(directory, scope); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to create "+directory, err)
+		return changeFailure("create", directory, scope, err)
 	}
 
-	temporary, err := os.CreateTemp(directory, "."+filepath.Base(path)+".bb-*")
+	// #nosec G302 G304 -- a path Targets chose, and a file every user's shell
+	// reads, like the others beside it.
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to write "+path, err)
+		return changeFailure("create", path, scope, err)
 	}
-	defer func() { _ = os.Remove(temporary.Name()) }()
 
-	if _, err := temporary.Write(content); err != nil {
-		_ = temporary.Close()
+	_, err = file.Write(content)
+	if closeErr := file.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		_ = os.Remove(path)
 
-		return apperrors.New(apperrors.KindInternal, "failed to write "+path, err)
-	}
-	if err := temporary.Close(); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to write "+path, err)
-	}
-	if err := os.Chmod(temporary.Name(), mode); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to write "+path, err)
-	}
-	if err := os.Rename(temporary.Name(), path); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to write "+path, err)
+		return changeFailure("create", path, scope, err)
 	}
 
 	return nil
+}
+
+// rewriteFile changes a file that is there from old to content in place, and
+// through a symbolic link when it is one, so it stays the file it was: a
+// .zshrc linked from a dotfiles repository stays linked, and a profile keeps
+// its owner, its permissions and, on Windows, its access list. A new file
+// renamed over it would have none of them, and would take the link's place.
+//
+// What was there survives a write that fails part way, such as on a full disk:
+// a startup file cut short is a shell that fails to start cleanly. An install
+// only adds to the end, so only the addition is written, and cut off again on
+// a failure; any other change is written over the file, and on a failure the
+// old content is written back.
+func rewriteFile(path string, old, content []byte, scope Scope) error {
+	// #nosec G304 -- a path Targets chose.
+	file, err := os.OpenFile(path, os.O_WRONLY, 0)
+	if err != nil {
+		return changeFailure("change", path, scope, err)
+	}
+
+	from := 0
+	if bytes.HasPrefix(content, old) {
+		from = len(old)
+	}
+
+	_, err = file.WriteAt(content[from:], int64(from))
+	if err == nil {
+		err = file.Truncate(int64(len(content)))
+	}
+	if err != nil {
+		_, restoreErr := file.WriteAt(old[from:], int64(from))
+		if restoreErr == nil {
+			restoreErr = file.Truncate(int64(len(old)))
+		}
+		_ = file.Close()
+
+		if restoreErr != nil {
+			return apperrors.New(apperrors.KindInternal, fmt.Sprintf(
+				"failed to change %s (%v), and to put back what was there, so check it by hand", path, err), restoreErr)
+		}
+
+		return changeFailure("change", path, scope, err)
+	}
+
+	if err := file.Close(); err != nil {
+		return changeFailure("change", path, scope, err)
+	}
+
+	return nil
+}
+
+func isRegularFile(path string) bool {
+	info, err := os.Lstat(path)
+
+	return err == nil && info.Mode().IsRegular()
+}
+
+// changeFailure is why a file or directory could not be changed. One the
+// operating system refused is not a failure of bb's but a permission the
+// person running it lacks: for a setup that reaches every user, an
+// administrator's.
+func changeFailure(action, path string, scope Scope, err error) error {
+	if !errors.Is(err, fs.ErrPermission) {
+		return apperrors.New(apperrors.KindInternal, "failed to "+action+" "+path, err)
+	}
+
+	if scope == AllUsers {
+		return apperrors.New(apperrors.KindAuthorization, fmt.Sprintf(
+			"only an administrator can %s %s; run this again as one, with sudo or from a PowerShell run as administrator", action, path), err)
+	}
+
+	return apperrors.New(apperrors.KindAuthorization, fmt.Sprintf("you may not %s %s", action, path), err)
 }
 
 // makeDirectory creates where a setup goes. A user's own directories are kept
