@@ -358,11 +358,53 @@ func TestSkillRemoveDeletesFile(t *testing.T) {
 				if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
 					t.Fatalf("expected %s to be removed, but it still exists", dest)
 				}
+				if _, statErr := os.Stat(filepath.Dir(dest)); !os.IsNotExist(statErr) {
+					t.Errorf("the skill's emptied directory %s is still there", filepath.Dir(dest))
+				}
 				if !strings.Contains(buf.String(), "Skill removed: "+dest) {
 					t.Fatalf("the output does not name %s: %q", dest, buf.String())
 				}
 			}
 		})
+	}
+}
+
+// TestSkillRemoveLeavesWhatElseIsInTheSkillsDirectory: remove takes out the
+// file install wrote, and the directory only when nothing else is in it.
+func TestSkillRemoveLeavesWhatElseIsInTheSkillsDirectory(t *testing.T) {
+	dir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	skill := filepath.Join(dir, ".agents", "skills", "bb", "SKILL.md")
+	notes := filepath.Join(filepath.Dir(skill), "notes.md")
+	for _, path := range []string{skill, notes} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("dummy"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cmd := New(testSkillDeps(""))
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetArgs([]string{"skill", "remove"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, err := os.Stat(skill); !os.IsNotExist(err) {
+		t.Errorf("the skill file is still there: %v", err)
+	}
+	if _, err := os.Stat(notes); err != nil {
+		t.Errorf("a file beside the skill went with it: %v", err)
 	}
 }
 
