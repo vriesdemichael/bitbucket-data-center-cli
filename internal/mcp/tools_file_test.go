@@ -121,9 +121,78 @@ func fileViews(t *testing.T) map[string]fileview.View {
 		"document":                 read(fileview.Request{Path: "plan.docx"}, filefixture.Word(filefixture.WordParagraph("A plan."))),
 		"empty document":           read(fileview.Request{Path: "blank.docx"}, filefixture.Word("")),
 		"archive":                  read(fileview.Request{Path: "app.zip"}, filefixture.Zip(filefixture.Entry{Name: "a.txt", Body: []byte("a")})),
+		"audio":                    read(fileview.Request{Path: "beep.wav"}, shortAudio),
+		"audio over the cap":       read(fileview.Request{Path: "talk.wav"}, append(shortAudio, make([]byte, fileview.MediaBytes)...)),
+		"video":                    read(fileview.Request{Path: "demo.mp4"}, shortVideo),
 		"binary":                   read(fileview.Request{Path: "blob.bin"}, []byte{0, 1, 2, 0xFF, 0xFE}),
 		"too large, size declared": fileview.TooLarge(fileview.Request{Path: "big.log"}, fileview.MaxFileBytes, 100<<20),
 		"too large, size unknown":  fileview.TooLarge(fileview.Request{Path: "big.log"}, fileview.MaxFileBytes, -1),
+	}
+}
+
+// shortAudio is the start of a WAV file, which is all a type is read from, and
+// shortVideo the start of an MP4.
+var (
+	shortAudio = append([]byte("RIFF\x24\x10\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00"), make([]byte, 64)...)
+	shortVideo = append([]byte("\x00\x00\x00\x18ftypisom\x00\x00\x02\x00isommp41"), make([]byte, 64)...)
+)
+
+// TestShortMediaComesBackAsItselfBesideItsDescription reads the media content
+// as a client receives it: audio as audio content, and a video -- which MCP
+// has no content for -- as an embedded resource addressed by the file's page.
+func TestShortMediaComesBackAsItselfBesideItsDescription(t *testing.T) {
+	t.Parallel()
+
+	const page = "https://bb.example.com/projects/PROJ/repos/app/browse/demo.mp4?at=main"
+	views := fileViews(t)
+
+	decode := func(t *testing.T, content mcp.Content, target any) {
+		t.Helper()
+
+		wire, err := json.Marshal(content)
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		if err := json.Unmarshal(wire, target); err != nil {
+			t.Fatalf("decode %s: %v", wire, err)
+		}
+	}
+
+	result, structured := fileContentResult(GetFileContentInput{Path: "beep.wav"}, page, views["audio"])
+	if len(result.Content) != 2 || structured.Kind != "audio" || structured.MediaReturned == nil || !*structured.MediaReturned {
+		t.Fatalf("audio came back as %d blocks, kind %s, returned %v", len(result.Content), structured.Kind, structured.MediaReturned)
+	}
+	var audio struct {
+		Type     string `json:"type"`
+		MIMEType string `json:"mimeType"`
+		Data     []byte `json:"data"`
+	}
+	decode(t, result.Content[1], &audio)
+	if audio.Type != "audio" || audio.MIMEType != "audio/wav" || !bytes.Equal(audio.Data, shortAudio) {
+		t.Errorf("the audio block is %q %q of %d bytes, want the file as audio/wav", audio.Type, audio.MIMEType, len(audio.Data))
+	}
+
+	result, structured = fileContentResult(GetFileContentInput{Path: "demo.mp4"}, page, views["video"])
+	if len(result.Content) != 2 || structured.Kind != "video" || structured.MediaReturned == nil || !*structured.MediaReturned {
+		t.Fatalf("video came back as %d blocks, kind %s, returned %v", len(result.Content), structured.Kind, structured.MediaReturned)
+	}
+	var video struct {
+		Type     string `json:"type"`
+		Resource struct {
+			URI      string `json:"uri"`
+			MIMEType string `json:"mimeType"`
+			Blob     []byte `json:"blob"`
+		} `json:"resource"`
+	}
+	decode(t, result.Content[1], &video)
+	if video.Type != "resource" || video.Resource.URI != page || video.Resource.MIMEType != "video/mp4" || !bytes.Equal(video.Resource.Blob, shortVideo) {
+		t.Errorf("the video block is %q at %q, %q of %d bytes; want the file as a video/mp4 resource at its page",
+			video.Type, video.Resource.URI, video.Resource.MIMEType, len(video.Resource.Blob))
+	}
+
+	result, structured = fileContentResult(GetFileContentInput{Path: "talk.wav"}, page, views["audio over the cap"])
+	if len(result.Content) != 1 || structured.MediaReturned == nil || *structured.MediaReturned {
+		t.Errorf("audio over the cap came back as %d blocks, returned %v; want the description alone", len(result.Content), structured.MediaReturned)
 	}
 }
 

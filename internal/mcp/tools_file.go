@@ -35,7 +35,7 @@ type GetFileContentInput struct {
 type GetFileContentOutput struct {
 	Path          string     `json:"path"`
 	At            string     `json:"at,omitempty"`
-	Kind          string     `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; document, a window of the text extracted from a Word, PowerPoint or Excel file; archive, a window of the listing of a zip or tar archive's entries; image, the image, in the content beside this; binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
+	Kind          string     `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; document, a window of the text extracted from a Word, PowerPoint or Excel file; archive, a window of the listing of a zip or tar archive's entries; image, the image, in the content beside this; audio and video, the file itself beside its description when it is small enough (see media_returned); binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
 	MIMEType      string     `json:"mime_type,omitempty" jsonschema:"The file's type, read from its bytes; absent when the file was not read"`
 	Size          *int64     `json:"size,omitempty" jsonschema:"The file's size in bytes; absent when it was too large to read and Bitbucket did not say how large"`
 	WebURL        string     `json:"web_url" jsonschema:"The file's page in Bitbucket, for a person to open"`
@@ -45,6 +45,7 @@ type GetFileContentOutput struct {
 	TotalLines    *int       `json:"total_lines,omitempty" jsonschema:"How many lines the whole text has"`
 	NextStartLine *int       `json:"next_start_line,omitempty" jsonschema:"Where the next window starts: pass it as start_line for the lines that follow. Absent when this window reaches the end"`
 	Image         *FileImage `json:"image,omitempty" jsonschema:"What the image returned is, beside what the file holds"`
+	MediaReturned *bool      `json:"media_returned,omitempty" jsonschema:"For audio and video: true when the file itself came back in the content, as audio or as an embedded resource carrying the video; false when it is larger than this tool returns and only its description did"`
 }
 
 // FileImage says how the image get_file_content returned compares with the
@@ -68,8 +69,9 @@ func specGetFileContent() Spec {
 			"choose it, and each answer says which lines it holds and where the next window starts. A Word, PowerPoint or " +
 			"Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz) as a listing of its " +
 			"entries, both in the same windows. An image (PNG, JPEG, GIF, WebP) comes back as an image, scaled down when it " +
-			"is large, with a note saying so. Any other file is described by its type and size rather than shown, and a file " +
-			"over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) + " is described without being read.",
+			"is large, with a note saying so. Audio and video come back as themselves beside a description when they are small, " +
+			"and as the description alone when not. A PDF or any other file is described by its type and size rather than " +
+			"shown, and a file over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) + " is described without being read.",
 		Annotations: readOnly(),
 		InputSchema: describedInputSchema[GetFileContentInput](map[string]string{
 			"start_line": "First line of the window, counting from 1 (default 1). An answer that stops short of the end gives " +
@@ -165,6 +167,20 @@ func fileContentResult(in GetFileContentInput, webURL string, view fileview.View
 			ReturnedMIMEType: image.MIMEType,
 			ReturnedSize:     len(image.Data),
 			Frames:           image.Frames,
+		}
+	}
+
+	if view.Kind == fileview.KindAudio || view.Kind == fileview.KindVideo {
+		returned := view.Media != nil
+		structured.MediaReturned = &returned
+	}
+	if media := view.Media; media != nil {
+		if view.Kind == fileview.KindVideo {
+			// MCP has no video content. An embedded resource carries any
+			// bytes with their type, addressed by the file's page.
+			content = append(content, &mcp.EmbeddedResource{Resource: &mcp.ResourceContents{URI: webURL, MIMEType: media.MIMEType, Blob: media.Data}})
+		} else {
+			content = append(content, &mcp.AudioContent{Data: media.Data, MIMEType: media.MIMEType})
 		}
 	}
 

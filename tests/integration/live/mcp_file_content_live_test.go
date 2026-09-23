@@ -41,6 +41,7 @@ type liveFileAnswer struct {
 		ReturnedMIMEType string `json:"returned_mime_type"`
 		ReturnedSize     int    `json:"returned_size"`
 	} `json:"image"`
+	MediaReturned *bool `json:"media_returned"`
 }
 
 // liveLargePNG is a 3000 by 2000 PNG over the 3,750,000 bytes an image is
@@ -136,6 +137,10 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 		filefixture.Entry{Name: "app/main.go", Body: []byte("package main\n")},
 		filefixture.Entry{Name: "README.md", Body: []byte("# App\n")},
 	)
+	// A WAV header and a second of 8 kHz silence: small enough to come back
+	// as audio.
+	audio := append([]byte("RIFF\x64\x1f\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x40\x1f\x00\x00\x40\x1f\x00\x00\x01\x00\x08\x00data\x40\x1f\x00\x00"),
+		bytes.Repeat([]byte{0x80}, 8000)...)
 
 	if err := harness.pushFilesOnBranch(seeded.Key, repo.Slug, "master", map[string][]byte{
 		"docs/long.txt":    long,
@@ -145,6 +150,7 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 		"docs/talk.pptx":   slides,
 		"docs/budget.xlsx": workbook,
 		"dist/app.zip":     archive,
+		"sounds/beep.wav":  audio,
 	}); err != nil {
 		t.Fatalf("push the files: %v", err)
 	}
@@ -312,6 +318,21 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 			}
 			if header, _, _ := strings.Cut(mcpResultText(result), "\n"); !strings.Contains(header, "a listing of a zip archive") {
 				t.Errorf("the header does not say it is a listing: %q", header)
+			}
+		})
+
+		t.Run("short audio comes back as audio beside its description", func(t *testing.T) {
+			result, answer := read(t, "sounds/beep.wav", nil)
+
+			if answer.Kind != "audio" || answer.MIMEType != "audio/wav" || answer.MediaReturned == nil || !*answer.MediaReturned {
+				t.Fatalf("sounds/beep.wav came back as %q %q, returned %v; want audio/wav returned", answer.Kind, answer.MIMEType, answer.MediaReturned)
+			}
+			if len(result.Content) != 2 {
+				t.Fatalf("audio came back as %d content blocks, want its description and the audio", len(result.Content))
+			}
+			returned, ok := result.Content[1].(*mcp.AudioContent)
+			if !ok || returned.MIMEType != "audio/wav" || !bytes.Equal(returned.Data, audio) {
+				t.Errorf("the second block is %T, want the %d bytes pushed as audio/wav", result.Content[1], len(audio))
 			}
 		})
 

@@ -34,6 +34,12 @@ const (
 	// KindImage is an image, returned as an image: scaled down when it is
 	// larger than a client takes, and an animation's first frame.
 	KindImage Kind = "image"
+	// KindAudio is audio, returned as audio when it is within MediaBytes and
+	// described when it is not.
+	KindAudio Kind = "audio"
+	// KindVideo is a video, returned as an embedded resource when it is within
+	// MediaBytes and described when it is not.
+	KindVideo Kind = "video"
 	// KindBinary is a file whose bytes are not shown: only a description of
 	// its type and size comes back.
 	KindBinary Kind = "binary"
@@ -70,6 +76,8 @@ type View struct {
 	Window *Window
 	// Image is the image returned, for an image.
 	Image *Image
+	// Media is the audio or video returned, when it is within MediaBytes.
+	Media *Media
 }
 
 // Image is an image returned as an image.
@@ -144,6 +152,9 @@ func Read(request Request, content []byte) (View, error) {
 	}
 	if view, ok, err := readArchive(request, sniffed, content); ok || err != nil {
 		return view, err
+	}
+	if view, ok := readMedia(request, sniffed, content); ok {
+		return view, nil
 	}
 
 	// Last before giving up, and after every signature, because it accepts
