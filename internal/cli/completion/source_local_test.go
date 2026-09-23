@@ -15,8 +15,9 @@ import (
 // that is down is still one you may want to name, and naming it is how you
 // reach the others.
 
-// storedHosts writes a configuration with two instances and points the process
-// at it.
+// storedHosts writes a configuration with three instances and points the
+// process at it: two logged in with a password, one with a token, which is
+// the kind that stores no user name.
 func storedHosts(t *testing.T) {
 	t.Helper()
 
@@ -27,11 +28,16 @@ func storedHosts(t *testing.T) {
 		"  https://bitbucket.example.com:",
 		"    url: https://bitbucket.example.com",
 		"    username: alice",
+		"    auth_mode: basic",
 		"    aliases:",
 		"      - bitbucket.internal",
 		"  https://bitbucket.other.com:",
 		"    url: https://bitbucket.other.com",
 		"    username: bob",
+		"    auth_mode: basic",
+		"  https://bitbucket.tokens.com:",
+		"    url: https://bitbucket.tokens.com",
+		"    auth_mode: token",
 		"",
 	}, "\n")
 
@@ -56,18 +62,25 @@ func TestTheHostsYouAreLoggedInToAreOffered(t *testing.T) {
 		t.Fatalf("listing the stored hosts failed: %v", err)
 	}
 
-	if len(result.Candidates) != 2 {
-		t.Fatalf("expected both stored instances, got %v", result.Candidates)
+	if len(result.Candidates) != 3 {
+		t.Fatalf("expected every stored instance, got %v", result.Candidates)
 	}
 	if result.Candidates[0].Value != "https://bitbucket.example.com" {
 		t.Errorf("expected the default instance first, got %v", result.Candidates)
 	}
-	if !strings.Contains(result.Candidates[0].Description, "alice") ||
-		!strings.Contains(result.Candidates[0].Description, "default") {
-		t.Errorf("expected the user and the default marked, got %q", result.Candidates[0].Description)
-	}
 	if !result.KeepOrder {
 		t.Error("expected the ranking to be kept; a shell would otherwise sort the default away")
+	}
+
+	// Every instance described, so none sits blank beside the others.
+	for _, want := range []Candidate{
+		{Value: "https://bitbucket.example.com", Description: "alice (default)"},
+		{Value: "https://bitbucket.other.com", Description: "bob"},
+		{Value: "https://bitbucket.tokens.com", Description: "access token"},
+	} {
+		if got := descriptionOf(result.Candidates, want.Value); got != want.Description {
+			t.Errorf("%s was described as %q, want %q", want.Value, got, want.Description)
+		}
 	}
 }
 

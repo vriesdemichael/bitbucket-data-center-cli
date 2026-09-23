@@ -93,12 +93,7 @@ func hostSource(_ context.Context, _ *Environment, _ Request) (Result, error) {
 
 	candidates := make([]Candidate, 0, len(stored.Hosts))
 	for host, profile := range stored.Hosts {
-		description := profile.Username
-		if host == stored.DefaultHost {
-			description = strings.TrimSpace(description + " (default)")
-		}
-
-		candidates = append(candidates, Candidate{Value: host, Description: description})
+		candidates = append(candidates, Candidate{Value: host, Description: describeHost(profile, host == stored.DefaultHost)})
 	}
 
 	// The map has no order of its own, and a list that reshuffles between two
@@ -115,6 +110,26 @@ func hostSource(_ context.Context, _ *Environment, _ Request) (Result, error) {
 	})
 
 	return Result{Candidates: candidates, KeepOrder: true}, nil
+}
+
+// describeHost says who this machine signs in to an instance as, and which
+// instance is the default.
+//
+// A token login stores no user name, so describing an instance by its user
+// alone left every one logged in with a token blank beside the default -- and
+// a shell lays out a list in which only some values carry a description with
+// the columns out of line.
+func describeHost(profile config.StoredProfile, isDefault bool) string {
+	description := strings.TrimSpace(profile.Username)
+	if description == "" && strings.TrimSpace(profile.AuthMode) == "token" {
+		description = "access token"
+	}
+
+	if isDefault {
+		description = strings.TrimSpace(description + " (default)")
+	}
+
+	return description
 }
 
 // hostAliasSource offers the alternative names a stored host answers to.
