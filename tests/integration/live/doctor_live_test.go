@@ -48,15 +48,20 @@ func TestLiveDoctorReportsEveryProblemWithoutUsingTheHost(t *testing.T) {
 	}
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(directory, "absent.yaml"))
 
-	// bb doctor also reports the shell completion and agent skills set up in
-	// the home directory. A home of the test's own keeps what this machine has
-	// installed there out of a test about configuration files.
+	// bb doctor also reports the shell completion and agent skills set up on
+	// this machine, which a test about configuration files keeps out: a home
+	// of its own, a working directory outside any checkout, whose skills
+	// would be the project's, and a PATH with no shell on it. PowerShell finds
+	// its profiles through the Documents folder rather than the home
+	// directory, so it is kept from being asked at all.
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	for _, variable := range []string{"XDG_CONFIG_HOME", "XDG_DATA_HOME", "ZDOTDIR", "BASH_COMPLETION_USER_DIR"} {
 		t.Setenv(variable, "")
 	}
+	t.Chdir(t.TempDir())
+	t.Setenv("PATH", t.TempDir())
 
 	// "without using the host" was in the name and in nothing else. The host
 	// bb doctor is pointed at for this test is a listener that fails the test
