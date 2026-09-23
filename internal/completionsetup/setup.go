@@ -70,7 +70,10 @@ func ParseShell(name string) (Shell, error) {
 // own, which is why --shell exists.
 func DetectShell(system System) (Shell, error) {
 	value := strings.TrimSpace(system.Getenv("SHELL"))
-	name := strings.TrimSuffix(path.Base(filepath.ToSlash(value)), ".exe")
+	// Backslashes by hand rather than filepath.ToSlash, which converts only
+	// the separator of the machine running this: a Windows path read anywhere
+	// else would keep its backslashes and name no shell.
+	name := strings.TrimSuffix(path.Base(strings.ReplaceAll(value, `\`, "/")), ".exe")
 
 	switch name {
 	case "bash":
