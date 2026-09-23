@@ -22,12 +22,12 @@ const (
 	skillRepository = "repository"
 )
 
-// The scopes a skill is installed in: a project, which is the working
-// directory, and the user, whose home directory bb ai skill install writes to
-// with --global.
+// The scopes a skill is installed in, named as bb ai skill install --json names
+// them: a project, and global, the home directory that command writes to with
+// --global.
 const (
 	scopeProject = "project"
-	scopeUser    = "user"
+	scopeGlobal  = "global"
 )
 
 // skillInstall is one agent skill in one place.
@@ -44,37 +44,71 @@ type skillInstall struct {
 }
 
 // inspectSkills looks for every skill in every place an agent reads it from:
-// each skill location, under the working directory and the home directory.
+// each skill location, under the project's directories and the home directory.
 //
 // A directory that cannot be worked out is left out: bb ai skill install could
-// not have written there either. So is the working directory when it is the
-// home directory, whose skills are the user's: the same files, reported once.
+// not have written there either. So is a project directory that is the home
+// directory, whose skills are the global ones: the same files, reported once.
 func inspectSkills(machine Machine, version string) []skillInstall {
 	type scoped struct {
 		scope     string
 		directory string
+		// elsewhere is a project directory other than the working one, which
+		// the command that replaces a skill there has to be run in.
+		elsewhere string
 	}
 
 	bases := []scoped{}
-	project, projectErr := machine.WorkingDirectory()
 	home, homeErr := machine.System.HomeDir()
-	if projectErr == nil && (homeErr != nil || !sameDirectory(project, home)) {
-		bases = append(bases, scoped{scope: scopeProject, directory: project})
+	if working, err := machine.WorkingDirectory(); err == nil {
+		for _, directory := range projectDirectories(working) {
+			if homeErr != nil || !sameDirectory(directory, home) {
+				base := scoped{scope: scopeProject, directory: directory}
+				if directory != working {
+					base.elsewhere = directory
+				}
+				bases = append(bases, base)
+			}
+		}
 	}
 	if homeErr == nil {
-		bases = append(bases, scoped{scope: scopeUser, directory: home})
+		bases = append(bases, scoped{scope: scopeGlobal, directory: home})
 	}
 
 	found := []skillInstall{}
 	for _, skill := range ai.Skills {
 		for _, base := range bases {
 			for _, location := range ai.SkillLocations {
-				found = append(found, inspectSkill(skill, base.scope, location.Name, skill.Path(base.directory, location), version))
+				found = append(found, inspectSkill(skill, base.scope, location.Name, skill.Path(base.directory, location), base.elsewhere, version))
 			}
 		}
 	}
 
 	return found
+}
+
+// projectDirectories are where a project's skills can be: the working
+// directory and every directory above it up to the root of the repository it
+// is in, because that is where agents look -- Codex reads each of them, and the
+// others the repository's root, which is where a skill installed for the
+// project usually is when bb doctor runs in a subdirectory. Outside a
+// repository there is no such root, and the working directory is the project.
+func projectDirectories(working string) []string {
+	directories := []string{working}
+	for directory := working; ; {
+		// A file as well as a directory: a linked worktree's .git is a file.
+		if _, err := os.Stat(filepath.Join(directory, ".git")); err == nil {
+			return directories
+		}
+
+		parent := filepath.Dir(directory)
+		if parent == directory {
+			return []string{working}
+		}
+
+		directory = parent
+		directories = append(directories, directory)
+	}
 }
 
 // sameDirectory asks the file system rather than comparing names, which differ
@@ -89,7 +123,7 @@ func sameDirectory(first, second string) bool {
 	return os.SameFile(firstInfo, secondInfo)
 }
 
-func inspectSkill(skill ai.Skill, scope, location, path, version string) skillInstall {
+func inspectSkill(skill ai.Skill, scope, location, path, elsewhere, version string) skillInstall {
 	install := skillInstall{skill: skill, scope: scope, location: location, path: path}
 
 	content, err := os.ReadFile(path)
@@ -111,7 +145,7 @@ func inspectSkill(skill ai.Skill, scope, location, path, version string) skillIn
 	case withLF(skill.Repository()):
 		install.state = skillRepository
 	default:
-		install.problem = "not what this bb installs, but an earlier bb's or an edited copy; " + reinstall(skill, scope) + " replaces it"
+		install.problem = "not what this bb installs, but an earlier bb's or an edited copy; " + reinstall(skill, scope, elsewhere) + " replaces it"
 		install.issue = skillIssue(install)
 	}
 
@@ -129,16 +163,20 @@ func skillIssue(install skillInstall) *issue {
 }
 
 // reinstall is the command that writes this bb's skill over whatever is there,
-// with the shortest name the skill answers to.
-func reinstall(skill ai.Skill, scope string) string {
+// with the shortest name the skill answers to, and where to run it when that is
+// not the working directory: bb ai skill install writes where it runs.
+func reinstall(skill ai.Skill, scope, elsewhere string) string {
 	name := skill.Name
 	if len(skill.Aliases) > 0 {
 		name = skill.Aliases[0]
 	}
 
 	command := "bb ai skill install " + name
-	if scope == scopeUser {
+	if scope == scopeGlobal {
 		command += " --global"
+	}
+	if elsewhere != "" {
+		command += ", run in " + elsewhere + ","
 	}
 
 	return command

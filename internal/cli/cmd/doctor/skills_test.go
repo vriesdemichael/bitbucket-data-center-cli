@@ -81,12 +81,12 @@ func TestSkillsAreReportedInEveryPlaceAnAgentReads(t *testing.T) {
 	wantSkills := []AgentSkill{
 		{Skill: "bb", Scope: scopeProject, Location: "agents", Path: bb.Path(work, agents), State: skillCurrent},
 		{Skill: "bb", Scope: scopeProject, Location: "claude", Path: bb.Path(work, claude), State: skillRepository},
-		{Skill: "bb", Scope: scopeUser, Location: "agents", Path: bb.Path(home, agents), State: skillNotInstalled},
-		{Skill: "bb", Scope: scopeUser, Location: "claude", Path: bb.Path(home, claude), State: skillNotInstalled},
+		{Skill: "bb", Scope: scopeGlobal, Location: "agents", Path: bb.Path(home, agents), State: skillNotInstalled},
+		{Skill: "bb", Scope: scopeGlobal, Location: "claude", Path: bb.Path(home, claude), State: skillNotInstalled},
 		{Skill: "bb-bulk", Scope: scopeProject, Location: "agents", Path: bulk.Path(work, agents), State: skillNotInstalled},
 		{Skill: "bb-bulk", Scope: scopeProject, Location: "claude", Path: bulk.Path(work, claude), State: skillNotInstalled},
-		{Skill: "bb-bulk", Scope: scopeUser, Location: "agents", Path: bulk.Path(home, agents), State: skillNotInstalled},
-		{Skill: "bb-bulk", Scope: scopeUser, Location: "claude", Path: bulk.Path(home, claude), State: skillCurrent},
+		{Skill: "bb-bulk", Scope: scopeGlobal, Location: "agents", Path: bulk.Path(home, agents), State: skillNotInstalled},
+		{Skill: "bb-bulk", Scope: scopeGlobal, Location: "claude", Path: bulk.Path(home, claude), State: skillCurrent},
 	}
 	if report := decodeReport(t, output); !reflect.DeepEqual(report.Skills, wantSkills) {
 		t.Errorf("skills:\n got %+v\nwant %+v", report.Skills, wantSkills)
@@ -125,8 +125,8 @@ func TestASkillAnEarlierBbInstalledOrSomebodyEditedFailsTheRun(t *testing.T) {
 
 	details := apperrors.DetailsOf(err)
 	want := map[string]string{
-		"skill/bb/project/agents":   bb.Path(work, agents) + ": " + notThisBbs + "bb ai skill install bb replaces it",
-		"skill/bb-bulk/user/claude": bulk.Path(home, claude) + ": " + notThisBbs + "bb ai skill install bulk --global replaces it",
+		"skill/bb/project/agents":     bb.Path(work, agents) + ": " + notThisBbs + "bb ai skill install bb replaces it",
+		"skill/bb-bulk/global/claude": bulk.Path(home, claude) + ": " + notThisBbs + "bb ai skill install bulk --global replaces it",
 	}
 	unreadable := details["skill/bb-bulk/project/claude"]
 	delete(details, "skill/bb-bulk/project/claude")
@@ -184,8 +184,8 @@ func TestRunFromTheHomeDirectoryASkillIsReportedOnce(t *testing.T) {
 
 	output, _, err := runDoctorOn(t, machine, config.Diagnosis{}, false)
 	details := apperrors.DetailsOf(err)
-	if len(details) != 1 || details["skill/bb/user/agents"] == "" {
-		t.Errorf("details = %#v, want only skill/bb/user/agents", details)
+	if len(details) != 1 || details["skill/bb/global/agents"] == "" {
+		t.Errorf("details = %#v, want only skill/bb/global/agents", details)
 	}
 	if strings.Count(output, bb.Path(home, agents)) != 1 {
 		t.Errorf("the report names %s more than once:\n%s", bb.Path(home, agents), output)
@@ -197,7 +197,7 @@ func TestRunFromTheHomeDirectoryASkillIsReportedOnce(t *testing.T) {
 		t.Fatalf("a current skill failed the run: %v", err)
 	}
 	for _, install := range decodeReport(t, output).Skills {
-		if install.Scope != scopeUser {
+		if install.Scope != scopeGlobal {
 			t.Errorf("run from the home directory, a skill was reported for the project: %+v", install)
 		}
 	}
@@ -228,12 +228,65 @@ func TestTheSummaryNamesEveryIssueWhereverItIs(t *testing.T) {
 			t.Errorf("error.details lacks %s", key)
 		}
 	}
-	for _, key := range []string{"completion/fish/user", "skill/bb/user/claude"} {
+	for _, key := range []string{"completion/fish/user", "skill/bb/global/claude"} {
 		if details[key] == "" {
 			t.Errorf("error.details lacks %s: %#v", key, details)
 		}
 	}
 	if len(details) != len(brokenDetails)+2 {
 		t.Errorf("error.details has %d entries, want %d: %#v", len(details), len(brokenDetails)+2, details)
+	}
+}
+
+// TestAProjectsSkillIsFoundFromASubdirectory covers bb doctor run below the
+// repository's root, which is where a skill installed for the project usually
+// is and where agents read it. The command that replaces it has to run there,
+// because bb ai skill install writes where it runs, so the issue says where.
+func TestAProjectsSkillIsFoundFromASubdirectory(t *testing.T) {
+	t.Parallel()
+
+	root, home := t.TempDir(), t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	work := filepath.Join(root, "services", "api")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	bb, agents := skillNamed(t, "bb"), locationNamed(t, "agents")
+	put(t, bb.Path(root, agents), bb.Rendered("1.0.0"))
+	machine := (&fakeMachine{home: home, work: work}).machine()
+
+	output, _, err := runDoctorOn(t, machine, config.Diagnosis{}, false)
+	if !strings.Contains(output, "installed in "+bb.Path(root, agents)) {
+		t.Errorf("the skill at the repository's root was not reported:\n%s", output)
+	}
+
+	want := bb.Path(root, agents) + ": not what this bb installs, but an earlier bb's or an edited copy; " +
+		"bb ai skill install bb, run in " + root + ", replaces it"
+	if got := apperrors.DetailsOf(err)["skill/bb/project/agents"]; got != want {
+		t.Errorf("the issue says\n%q\nwant\n%q", got, want)
+	}
+}
+
+// TestProjectDirectoriesStopAtTheRepositoryRoot holds the walk to the
+// repository: nothing above its root is the project's.
+func TestProjectDirectoriesStopAtTheRepositoryRoot(t *testing.T) {
+	t.Parallel()
+
+	root := filepath.Join(t.TempDir(), "repo")
+	work := filepath.Join(root, "a", "b")
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A linked worktree's .git is a file, not a directory.
+	if err := os.WriteFile(filepath.Join(root, ".git"), []byte("gitdir: elsewhere\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	want := []string{work, filepath.Join(root, "a"), root}
+	if got := projectDirectories(work); !reflect.DeepEqual(got, want) {
+		t.Errorf("projectDirectories = %q, want %q", got, want)
 	}
 }
