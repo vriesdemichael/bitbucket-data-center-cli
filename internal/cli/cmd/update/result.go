@@ -30,8 +30,8 @@ type Update struct {
 
 	DryRun        bool   `json:"dryRun" jsonschema:"Whether this run verified the latest release and installed nothing. A dry run verifies that release even when it is the installed version."`
 	Applied       bool   `json:"applied" jsonschema:"Whether the new binary is now in place."`
-	Scheduled     bool   `json:"scheduled" jsonschema:"Whether the swap was deferred to a helper process, which Windows requires because a running binary cannot replace itself."`
-	Staged        bool   `json:"staged" jsonschema:"Whether the new binary was downloaded and verified but not yet swapped in."`
+	Scheduled     bool   `json:"scheduled" jsonschema:"Always false. bb update replaces the binary itself, before it exits, on every operating system."`
+	Staged        bool   `json:"staged" jsonschema:"Always false. A verified binary is put in place by the run that downloads it; none waits to be swapped in."`
 	PlannedAction string `json:"plannedAction,omitempty" jsonschema:"What the run would do, or did."`
 
 	Release  ReleaseSource `json:"release,omitzero" jsonschema:"Where the release was fetched from."`
@@ -68,8 +68,8 @@ type Trust struct {
 // Paths are the filesystem locations a swap touched.
 type Paths struct {
 	Install    string `json:"install,omitempty" jsonschema:"Where the running binary lives, and where a new one is written."`
-	Staged     string `json:"staged,omitempty" jsonschema:"Where the verified new binary is waiting, when the swap was deferred."`
-	SwapResult string `json:"swapResult,omitempty" jsonschema:"File a deferred swap writes its outcome to, so a later run can report whether it worked."`
+	Staged     string `json:"staged,omitempty" jsonschema:"Always empty. No verified binary waits to be swapped in after bb update exits."`
+	SwapResult string `json:"swapResult,omitempty" jsonschema:"Always empty. bb update reports the outcome of the swap itself, in this result or as an error."`
 }
 
 func init() {
@@ -88,8 +88,6 @@ func updateFrom(workflow updateworkflow.Result) Update {
 		LatestVersionComparable:  workflow.LatestVersionComparable,
 		DryRun:                   workflow.DryRun,
 		Applied:                  workflow.Applied,
-		Scheduled:                workflow.Scheduled,
-		Staged:                   workflow.Staged,
 		PlannedAction:            workflow.PlannedAction,
 		Platform:                 workflow.TargetPlatform,
 		Release: ReleaseSource{
@@ -110,9 +108,7 @@ func updateFrom(workflow updateworkflow.Result) Update {
 			Issuer:                  workflow.SignatureIssuer,
 		},
 		Paths: Paths{
-			Install:    workflow.InstallPath,
-			Staged:     workflow.StagedPath,
-			SwapResult: workflow.SwapResultPath,
+			Install: workflow.InstallPath,
 		},
 	}
 }

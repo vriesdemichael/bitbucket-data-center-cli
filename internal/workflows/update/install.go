@@ -1,25 +1,33 @@
 package update
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"syscall"
+	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
-// fileSystem is each call installing a binary makes that can fail. A test
-// replaces one of them to make that step fail and checks what the install left
-// behind; the rest of it still runs against the real file system.
+// fileSystem is each call installing a binary makes that can fail, and the
+// clock it waits on. A test replaces one of them to make that step fail, or
+// time pass, and checks what the install left behind; the rest of it still
+// runs against the real file system.
 type fileSystem struct {
 	createTemp func(dir, pattern string) (*os.File, error)
 	syncFile   func(*os.File) error
 	rename     func(oldPath, newPath string) error
 	remove     func(path string) error
 	syncDir    func(dir string) error
+	now        func() time.Time
+	sleep      func(time.Duration)
 }
 
 func osFileSystem() fileSystem {
@@ -29,12 +37,20 @@ func osFileSystem() fileSystem {
 		rename:     os.Rename,
 		remove:     os.Remove,
 		syncDir:    syncDirectory,
+		now:        time.Now,
+		sleep:      time.Sleep,
 	}
 }
 
-// replaceBinary installs binary over the bb at targetPath.
-func replaceBinary(targetPath string, binary []byte, mode fs.FileMode) error {
-	return osFileSystem().renameOver(targetPath, binary, mode)
+// installBinary puts binary in place of the bb at targetPath, in the way goos
+// lets a running binary be replaced.
+func installBinary(goos, targetPath string, binary []byte, mode fs.FileMode) error {
+	files := osFileSystem()
+	if strings.EqualFold(strings.TrimSpace(goos), "windows") {
+		return files.renameAside(targetPath, binary, mode)
+	}
+
+	return files.renameOver(targetPath, binary, mode)
 }
 
 // renameOver replaces the file at targetPath with binary in one rename.
@@ -69,6 +85,183 @@ func (files fileSystem) renameOver(targetPath string, binary []byte, mode fs.Fil
 	_ = files.syncDir(filepath.Dir(target))
 
 	return nil
+}
+
+// renameAside replaces the binary at targetPath with binary on Windows, which
+// renames a running executable but will not overwrite or delete one. The
+// running binary is renamed aside and the new one renamed into its place.
+//
+// The name it is set aside under is one no other file has, because an earlier
+// one can still be held by a bb running from it; the next run deletes it
+// (RemoveUpdateLeftovers). Each rename waits out another process holding the
+// file for a moment (renameWhenFree). When the new binary cannot be renamed
+// into place, the old one is renamed back, and when that fails too, the error
+// says where bb is.
+func (files fileSystem) renameAside(targetPath string, binary []byte, mode fs.FileMode) error {
+	target, err := installTarget(targetPath)
+	if err != nil {
+		return err
+	}
+
+	temp, err := files.writeBeside(target, binary, mode)
+	if err != nil {
+		return err
+	}
+
+	aside := oldBinaryPath(target)
+	if err := files.renameWhenFree(target, aside); err != nil {
+		return files.discard(temp, changeFailure("move "+target+" aside", err))
+	}
+
+	if err := files.renameWhenFree(temp, target); err != nil {
+		if restoreErr := files.renameWhenFree(aside, target); restoreErr != nil {
+			return files.discard(temp, apperrors.New(
+				apperrors.KindInternal,
+				fmt.Sprintf("failed to move the new binary to %s, and to move the old one back; rename %s to %s to restore bb", target, aside, filepath.Base(target)),
+				errors.Join(err, restoreErr),
+			))
+		}
+
+		return files.discard(temp, changeFailure("move the new binary to "+target, err))
+	}
+
+	return nil
+}
+
+// oldBinaryMarker and the random hex digits after it are what an update adds to
+// the name of the binary it sets aside.
+const (
+	oldBinaryMarker = ".old-"
+	oldBinaryDigits = 16
+)
+
+// oldBinaryPath is a name beside target that no other file has, for the binary
+// an update sets aside.
+func oldBinaryPath(target string) string {
+	suffix := make([]byte, oldBinaryDigits/2)
+	// crypto/rand.Read never fails; it fills the buffer or ends the process.
+	_, _ = rand.Read(suffix)
+
+	return target + oldBinaryMarker + hex.EncodeToString(suffix)
+}
+
+// A virus scanner or a search indexer opens a file it has just seen written or
+// renamed, and holds it for a moment without sharing it. A rename in that
+// moment fails with one of these, and succeeds a moment later. They are
+// Windows error numbers: renameAside is the Windows install.
+const (
+	errorAccessDenied     = syscall.Errno(5)
+	errorSharingViolation = syscall.Errno(32)
+)
+
+// renameRetryBudget is how long a rename waits for another process to let go
+// of a file, as long as the go command waits for its own renames.
+const renameRetryBudget = 2 * time.Second
+
+// renameWhenFree renames oldPath to newPath, and tries again while the rename
+// fails because another process holds the file: after 10ms, then after a pause
+// twice as long each time, until renameRetryBudget has passed. Any other
+// failure, and one that outlasts the budget, is returned as it is.
+func (files fileSystem) renameWhenFree(oldPath, newPath string) error {
+	start := files.now()
+	pause := 10 * time.Millisecond
+
+	for {
+		err := files.rename(oldPath, newPath)
+		if err == nil || !heldByAnotherProcess(err) {
+			return err
+		}
+
+		remaining := renameRetryBudget - files.now().Sub(start)
+		if remaining <= 0 {
+			return err
+		}
+		files.sleep(min(pause, remaining))
+		pause *= 2
+	}
+}
+
+// heldByAnotherProcess reports whether err is how Windows refuses a rename while
+// another process holds the file.
+func heldByAnotherProcess(err error) bool {
+	var errno syscall.Errno
+
+	return errors.As(err, &errno) && (errno == errorAccessDenied || errno == errorSharingViolation)
+}
+
+// oldHelperFiles are what the swap helper of bb releases before this install
+// wrote beside bb.exe: the binary it staged, and the file it recorded its
+// outcome in. Neither is read or written any more.
+var oldHelperFiles = []string{".new", ".update-result.json"}
+
+// RemoveUpdateLeftovers deletes what earlier updates left next to the running
+// bb, which only happens on Windows: the binaries an update set aside, and the
+// files the helper of earlier releases wrote. It runs at the start of every bb
+// run and reports nothing; a binary that another bb is still running from
+// cannot be deleted yet, and waits for a later run.
+func RemoveUpdateLeftovers() {
+	osFileSystem().removeLeftoversOn(runtime.GOOS, os.Executable)
+}
+
+// removeLeftoversOn is RemoveUpdateLeftovers on goos, for the binary executable
+// locates.
+func (files fileSystem) removeLeftoversOn(goos string, executable func() (string, error)) {
+	if !strings.EqualFold(strings.TrimSpace(goos), "windows") {
+		return
+	}
+
+	path, err := executable()
+	if err != nil {
+		return
+	}
+
+	files.removeLeftovers(path)
+}
+
+// removeLeftovers deletes what it can of the files updates left next to
+// executable, and ignores the rest.
+func (files fileSystem) removeLeftovers(executable string) {
+	directory := filepath.Dir(executable)
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		return
+	}
+
+	for _, entry := range entries {
+		if isLeftover(filepath.Base(executable), entry.Name()) {
+			_ = files.remove(filepath.Join(directory, entry.Name()))
+		}
+	}
+}
+
+// isLeftover reports whether name is a file an update left next to executable:
+// a binary it set aside, or exactly one of the helper's files.
+func isLeftover(executable, name string) bool {
+	if isOldBinary(executable, name) {
+		return true
+	}
+
+	for _, suffix := range oldHelperFiles {
+		if strings.EqualFold(name, executable+suffix) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isOldBinary reports whether name is one oldBinaryPath gives a binary set aside
+// from executable. Nothing else matches: not a copy somebody kept as bb.exe.old,
+// and not another program's file in the same directory.
+func isOldBinary(executable, name string) bool {
+	prefix := executable + oldBinaryMarker
+	if len(name) != len(prefix)+oldBinaryDigits || !strings.EqualFold(name[:len(prefix)], prefix) {
+		return false
+	}
+
+	_, err := hex.DecodeString(name[len(prefix):])
+
+	return err == nil
 }
 
 func installTarget(targetPath string) (string, error) {
