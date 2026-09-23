@@ -11,6 +11,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends bash-completion zsh fish tmux ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# bb itself is mounted at run time, built for this platform by the task, so the
-# image does not need rebuilding for every change to bb.
+# bb itself is mounted at run time, built for this platform by the task, and so
+# is the .deb run.sh installs, so the image does not need rebuilding for every
+# change to bb.
 ENTRYPOINT ["bash", "/scripts/run.sh"]

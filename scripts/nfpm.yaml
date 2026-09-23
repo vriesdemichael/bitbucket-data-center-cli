@@ -2,7 +2,7 @@
 # which builds the release artifacts for a release and on every pull request.
 # nfpm expands ${VAR} at runtime; the workflow exports PKG_ARCH, PKG_VERSION,
 # PKG_BINARY and PKG_COMPLETIONS for each Linux architecture before invoking
-# nfpm.
+# nfpm. `task completion:shells` builds the same packages to install them.
 #
 # Top-level fields (arch, version, ...) are always expanded, but env vars in a
 # `contents` entry are only expanded when that entry sets `expand: true`. The

@@ -332,7 +332,8 @@ jobs:
 
   # The completion scripts, in the shells that run them. The Go tests assert on
   # the protocol bb prints; this asserts on what bash, zsh, fish and PowerShell
-  # do with it, which no Go test can see.
+  # do with it, which no Go test can see -- and on where the .deb and .rpm put
+  # the scripts, which only an installed package shows.
   completion-shells:
     name: Shell Completion
     runs-on: ubuntu-latest

@@ -14,8 +14,10 @@
 # the protocol, so the instance is one that refuses every connection, and the
 # values come from the slots that answer without one.
 #
-# Expects bb, bash with bash-completion, zsh, fish, tmux and pwsh on PATH; the
-# Dockerfile beside this builds exactly that. `task completion:shells` runs it.
+# Expects bash with bash-completion, zsh, fish, tmux and pwsh, which the
+# Dockerfile beside this installs, and bb on PATH and the .deb at
+# /packages/bb.deb, which test.sh builds and mounts. `task completion:shells`
+# runs it.
 set -uo pipefail
 
 work="$(mktemp -d)"
@@ -166,11 +168,12 @@ if grep -qF "Completion ended with directive" "$work/pwsh.stderr"; then
 	report pwsh "stderr" "a completion wrote to the terminal" "$(cat "$work/pwsh.stderr")"
 fi
 
-# bb completion install, in shells with nothing else set up: each starts from
-# only what the shell reads by itself, so a completion that appears came from
-# the setup, and one that goes away went with bb completion remove. The user's
-# setup lives under a home of its own; the one for every user in the system
-# directories, which this container, running as root, may write.
+# The .deb and bb completion install, in shells with nothing else set up: each
+# starts from only what the shell reads by itself, so a completion that
+# appears came from the package or the setup, and one that goes away went with
+# it. The user's setup lives under a home of its own; the package and the setup
+# for every user in the system directories, which this container, running as
+# root, may write.
 plain_home() {
 	local home=$1
 	mkdir -p "$home/.config/fish"
@@ -216,6 +219,33 @@ setup() {
 		report "$shell" "bb completion $*" "it failed" "$output"
 	fi
 }
+
+# The .deb test.sh built, installed as a person installs it, and removed again
+# before bb completion install writes to system directories as well: nothing
+# that setup leaves behind can answer for the package.
+if output="$(dpkg -i /packages/bb.deb 2>&1)"; then
+	expect_in deb "post-install message" "$output" "bb ai skill install --global"
+	if ! version="$(/usr/bin/bb --version 2>&1)"; then
+		report deb "the installed bb" "it does not run" "$version"
+	fi
+
+	for shell in bash zsh fish; do
+		home="$work/package-$shell"
+		plain_home "$home"
+		screen="$(completes "$shell" "$home")"
+		expect_in "$shell" "installed by the .deb" "$screen" open closed all
+	done
+
+	if ! output="$(dpkg -r bb 2>&1)"; then
+		report deb "dpkg -r" "it failed" "$output"
+	fi
+	for shell in bash zsh fish; do
+		screen="$(completes "$shell" "$work/package-$shell")"
+		expect_absent "$shell" "removed with the .deb" "$screen" "closed"
+	done
+else
+	report deb "dpkg -i" "it failed" "$output"
+fi
 
 for shell in bash zsh fish powershell; do
 	home="$work/setup-$shell"
