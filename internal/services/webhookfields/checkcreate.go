@@ -22,7 +22,7 @@ const scopeLimit = 1000
 
 // CreateChecked creates a webhook, and when the create ends with an unknown
 // outcome finds out whether the webhook is there instead of passing the doubt
-// on.
+// on. The webhook it made is then read back by id with get (see ReadBack).
 //
 // A timeout, a lost connection, a gateway's 502 or 504, and the 400 Bitbucket
 // sends when writing its answer failed all leave a create unconfirmed; the last
@@ -36,31 +36,35 @@ const scopeLimit = 1000
 // listing that failed. The create is never sent again. A request Bitbucket is
 // still processing can land after a check that missed it, and a second create
 // would then be a duplicate.
-func CreateChecked(ctx context.Context, input CreateInput, list ListPage, create Create) (any, error) {
+func CreateChecked(ctx context.Context, input CreateInput, list ListPage, create Create, get Get) (Written, error) {
 	body, err := NewCreateBody(input)
 	if err != nil {
-		return nil, err
+		return Written{}, err
 	}
 
 	before, err := openapi.PageThrough(ctx, 0, scopeLimit, list)
 	if err != nil {
-		return nil, err
+		return Written{}, err
 	}
 
 	created, err := create(ctx, body)
 	if !apperrors.IsKind(err, apperrors.KindUnknownOutcome) {
-		return created, err
+		if err != nil {
+			return Written{}, err
+		}
+
+		return ReadBack(ctx, IDOf(created), created, body, get), nil
 	}
 
 	after, listErr := openapi.PageThrough(ctx, 0, scopeLimit, list)
 	if listErr != nil {
-		return nil, err
+		return Written{}, err
 	}
 	if found, ok := newlyCreated(before, after, body); ok {
-		return found, nil
+		return ReadBack(ctx, IDOf(found), found, body, get), nil
 	}
 
-	return nil, err
+	return Written{}, err
 }
 
 // DecodePage reads one page of a webhook listing.

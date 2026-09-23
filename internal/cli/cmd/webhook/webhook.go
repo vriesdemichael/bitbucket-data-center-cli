@@ -18,6 +18,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookflags"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -119,7 +120,7 @@ func New(deps Dependencies) *cobra.Command {
 			if d.JSONEnabled() {
 				return d.WriteJSON(cmd.OutOrStdout(), SingleWebhook{Webhook: published})
 			}
-			writeWebhookDetail(cmd.OutOrStdout(), published)
+			webhookoutput.Detail(cmd.OutOrStdout(), published)
 			return nil
 		},
 	}
@@ -176,18 +177,21 @@ func New(deps Dependencies) *cobra.Command {
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
-			updated, err := service.UpdateWebhook(cmd.Context(), repo, args[0], input)
+			written, err := service.UpdateWebhook(cmd.Context(), repo, args[0], input)
 			if err != nil {
 				return err
 			}
+			// The webhook as read back after the update, in both renderings.
+			hook := webhookoutput.Published(cmd.ErrOrStderr(), written, "update")
 			if d.JSONEnabled() {
 				return d.WriteJSON(cmd.OutOrStdout(), Change{
 					Status:     result.OK(),
 					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
-					Webhook:    result.WebhookFrom(updated),
+					Webhook:    hook,
 				})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated webhook:"), style.Secondary.Render(args[0]))
+			webhookoutput.Detail(cmd.OutOrStdout(), hook)
 			return nil
 		},
 	}
@@ -402,12 +406,16 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
-			payload, err := service.CreateRepositoryWebhook(cmd.Context(), repo, input)
+			written, err := service.CreateRepositoryWebhook(cmd.Context(), repo, input)
 			if err != nil {
 				return err
 			}
 
-			hook := result.WebhookFrom(payload)
+			// The webhook as read back after the create, in both renderings.
+			// Bitbucket's answer to the create is not a reliable source for
+			// the shared secret, and publishing it reported a secret that was
+			// set as not configured.
+			hook := webhookoutput.Published(cmd.ErrOrStderr(), written, "create")
 			if d.JSONEnabled() {
 				return d.WriteJSON(cmd.OutOrStdout(), Change{
 					Status:     result.OK(),
@@ -421,10 +429,10 @@ func New(deps Dependencies) *cobra.Command {
 			// takes the id, so a name shown in its place reads as one.
 			if hook.ID != 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(strconv.Itoa(hook.ID)))
-				return nil
+			} else {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook"), style.Secondary.Render(args[0]))
 			}
-
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook"), style.Secondary.Render(args[0]))
+			webhookoutput.Detail(cmd.OutOrStdout(), hook)
 			return nil
 		},
 	}
@@ -495,31 +503,4 @@ func New(deps Dependencies) *cobra.Command {
 
 func boolPtr(v bool) *bool {
 	return &v
-}
-
-// writeWebhookDetail renders one webhook for a human.
-//
-// Every field the model carries, including the two that say whether a
-// credential is configured without saying what it is. The secret and the
-// endpoint password are the reason this exists rather than a JSON dump.
-func writeWebhookDetail(writer io.Writer, hook result.Webhook) {
-	fmt.Fprintf(writer, "%s %s\n", style.Label.Render("ID:"), style.Secondary.Render(strconv.Itoa(hook.ID)))
-	fmt.Fprintf(writer, "%s %s\n", style.Label.Render("Name:"), hook.Name)
-	fmt.Fprintf(writer, "%s %s\n", style.Label.Render("URL:"), hook.URL)
-	fmt.Fprintf(writer, "%s %t\n", style.Label.Render("Active:"), hook.Active)
-	fmt.Fprintf(writer, "%s %s\n", style.Label.Render("Events:"), strings.Join(hook.Events, ", "))
-	if hook.ScopeType != "" {
-		fmt.Fprintf(writer, "%s %s\n", style.Label.Render("Scope:"), hook.ScopeType)
-	}
-	// Absent is its own answer: the server did not say, which is not the same
-	// as saying no.
-	verification := "not reported"
-	if hook.SSLVerificationRequired != nil {
-		verification = strconv.FormatBool(*hook.SSLVerificationRequired)
-	}
-	fmt.Fprintf(writer, "%s %s\n", style.Label.Render("SSL verification required:"), verification)
-	fmt.Fprintf(writer, "%s %t\n", style.Label.Render("Shared secret configured:"), hook.SecretConfigured)
-	if hook.CredentialsUsername != "" {
-		fmt.Fprintf(writer, "%s %s\n", style.Label.Render("Endpoint credentials username:"), hook.CredentialsUsername)
-	}
 }

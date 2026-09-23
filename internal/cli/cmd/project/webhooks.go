@@ -14,6 +14,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookflags"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookoutput"
 	projectservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/project"
 )
 
@@ -118,17 +119,20 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			created, err := service.CreateProjectWebhook(cmd.Context(), args[0], input)
+			written, err := service.CreateProjectWebhook(cmd.Context(), args[0], input)
 			if err != nil {
 				return err
 			}
 
-			hook := result.WebhookFrom(created)
+			// The webhook as read back after the create, in both renderings,
+			// as `bb webhook create` publishes it and for the same reason.
+			hook := webhookoutput.Published(cmd.ErrOrStderr(), written, "create")
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Project: args[0], Webhook: hook})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(strconv.Itoa(hook.ID)))
+			webhookoutput.Detail(cmd.OutOrStdout(), hook)
 			return nil
 		},
 	}
@@ -186,16 +190,19 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			updated, err := service.UpdateProjectWebhook(cmd.Context(), args[0], args[1], input)
+			written, err := service.UpdateProjectWebhook(cmd.Context(), args[0], args[1], input)
 			if err != nil {
 				return err
 			}
 
+			// The webhook as read back after the update, in both renderings.
+			hook := webhookoutput.Published(cmd.ErrOrStderr(), written, "update")
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Project: args[0], Webhook: result.WebhookFrom(updated)})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Project: args[0], Webhook: hook})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Updated.Render("Updated webhook:"), style.Secondary.Render(args[1]))
+			webhookoutput.Detail(cmd.OutOrStdout(), hook)
 			return nil
 		},
 	}
