@@ -278,6 +278,22 @@ func TestLiveWebhookRevealSecretIsDeliberate(t *testing.T) {
 		}
 	})
 
+	// The text rendering too. It warned that the secret had been printed while
+	// printing only whether one was configured, so the flag did nothing there
+	// and the warning said it had.
+	t.Run("the shared secret comes back as text when it is asked for", func(t *testing.T) {
+		stdout, stderr, err := executeLiveCLISplit(t, "", "webhook", "get", id, "--reveal-secret")
+		if err != nil {
+			t.Fatalf("webhook get --reveal-secret failed: %v\n%s", err, stdout)
+		}
+		if secret, _ := webhookDetailField(stdout, "Shared secret"); secret != secretCanary {
+			t.Errorf("the text rendering showed the secret as %q, want the configured one:\n%s", secret, stdout)
+		}
+		if !strings.Contains(stderr, "--reveal-secret") || strings.Contains(stderr, secretCanary) {
+			t.Errorf("stderr did not say, without repeating it, that a credential had been printed: %q", stderr)
+		}
+	})
+
 	t.Run("the endpoint credentials come back when they are asked for", func(t *testing.T) {
 		encoded := base64.StdEncoding.EncodeToString([]byte("hookuser:" + passwordCanary))
 		stdout, stderr, err := executeLiveCLISplit(t, "", "--json", "webhook", "test", id, "--reveal-secret")

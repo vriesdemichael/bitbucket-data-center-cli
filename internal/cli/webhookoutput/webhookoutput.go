@@ -49,7 +49,9 @@ func Published(stderr io.Writer, written webhookfields.Written, write string) re
 //
 // Every field the model carries, including the two that say whether a
 // credential is configured without saying what it is. The secret and the
-// endpoint password are the reason this exists rather than a JSON dump.
+// endpoint password are the reason this exists rather than a JSON dump: the
+// secret is shown only when the model carries it, and only --reveal-secret
+// puts it there.
 func Detail(writer io.Writer, hook result.Webhook) {
 	// An id the server did not send is left out rather than printed as 0,
 	// which the commands that take an id would read as one.
@@ -71,6 +73,9 @@ func Detail(writer io.Writer, hook result.Webhook) {
 	}
 	fmt.Fprintf(writer, "%s %s\n", style.Label.Render("SSL verification required:"), verification)
 	fmt.Fprintf(writer, "%s %t\n", style.Label.Render("Shared secret configured:"), hook.SecretConfigured)
+	if hook.Secret != "" {
+		fmt.Fprintf(writer, "%s %s\n", style.Label.Render("Shared secret:"), hook.Secret)
+	}
 	if hook.CredentialsUsername != "" {
 		fmt.Fprintf(writer, "%s %s\n", style.Label.Render("Endpoint credentials username:"), hook.CredentialsUsername)
 	}
