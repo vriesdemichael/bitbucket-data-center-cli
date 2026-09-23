@@ -118,6 +118,32 @@ func TestLiveRawFileCommandsWriteTheBytesExactly(t *testing.T) {
 	}
 }
 
+// TestLiveAPIWritesABinaryBodyExactly: bb api writes a body that is not text
+// byte for byte. Here that is a file's raw bytes, which it used to trim and end
+// with a newline -- dropping the whitespace this file opens and ends with.
+func TestLiveAPIWritesABinaryBodyExactly(t *testing.T) {
+	t.Parallel()
+
+	repoRef, binary := seedBinaryFile(t, "assets/logo.bin")
+	projectKey, slug, _ := strings.Cut(repoRef, "/")
+	rawPath := "/rest/api/latest/projects/" + projectKey + "/repos/" + slug + "/raw/assets/logo.bin"
+
+	stdout, stderr, err := executeLiveCLISplit(t, "", "api", rawPath)
+	if err != nil {
+		t.Fatalf("bb api %s failed: %v\nstderr: %s", rawPath, err, stderr)
+	}
+	if !bytes.Equal([]byte(stdout), binary) {
+		t.Fatalf("bb api wrote %d bytes that differ from the %d pushed", len(stdout), len(binary))
+	}
+
+	// Text is still formatted: a JSON answer is indented and ends in one
+	// newline, as it always has been.
+	output := mustLiveHumanCLI(t, "api", "/rest/api/latest/projects/"+projectKey)
+	if !strings.HasPrefix(output, "{\n  ") || !strings.HasSuffix(output, "}\n") || strings.HasSuffix(output, "\n\n") {
+		t.Fatalf("a JSON answer was not indented and ended with one newline:\n%q", output)
+	}
+}
+
 // TestLiveRepoArchiveHoldsTheRepositoryExactly: bb repo archive writes the
 // repository's tree, a binary file among it byte for byte, to a file and to
 // standard output. The file is put in place whole: nothing is left beside it.

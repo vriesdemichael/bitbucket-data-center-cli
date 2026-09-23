@@ -6,15 +6,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outwriter"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
@@ -72,6 +75,11 @@ Field arguments:
   --input file           Pass a request body from a file (or '-' for stdin)
   --paginate             Automatically fetch all pages for paginated endpoints
   --host url             Target a specific Bitbucket host URL
+
+A JSON response is printed indented and other text trimmed; anything else -- a
+file's raw bytes, an archive -- is written byte for byte as it arrives. Text is
+held to be formatted, up to 256 MiB. Under --json the response goes into the
+document as JSON or as a string, which carries text only.
 
 Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading slash (e.g. rest/api/1.0/...) to prevent shell path mangling.`,
 		Example: `  # GET a pull request settings resource
@@ -192,6 +200,27 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 				return executePaginated(cmd.Context(), client, path, queryValues, customHeaders, d, cmd.OutOrStdout())
 			}
 
+			// A GET goes through the downloader: the request timeout bounds
+			// each wait rather than the whole answer, so a large file comes
+			// back however long it takes, and a body that is not text goes to
+			// stdout as it arrives rather than being held first.
+			if resolvedMethod == http.MethodGet && len(bodyBytes) == 0 {
+				response := &streamedResponse{out: cmd.OutOrStdout(), path: path, json: d.JSONEnabled()}
+				_, err := client.Download(cmd.Context(), httpclient.RequestOptions{
+					Path:    path,
+					Query:   queryValues,
+					Headers: customHeaders,
+				}, response, 0)
+				if err != nil {
+					if outwriter.ReaderGone(err) {
+						return nil
+					}
+					return err
+				}
+
+				return response.finish(d)
+			}
+
 			resp, err := client.DoRequest(cmd.Context(), httpclient.RequestOptions{
 				Method:  resolvedMethod,
 				Path:    path,
@@ -203,11 +232,11 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 				return err
 			}
 
-			if err := htmlResponseError(resp, path); err != nil {
+			if err := htmlResponseError(resp.Header, path); err != nil {
 				return err
 			}
 
-			return writeResponse(cmd.OutOrStdout(), resp.Body, d)
+			return writeResponse(cmd.OutOrStdout(), resp.Header, resp.Body, d)
 		},
 	}
 
@@ -316,20 +345,20 @@ func executePaginated(
 			return err
 		}
 
-		if err := htmlResponseError(resp, path); err != nil {
+		if err := htmlResponseError(resp.Header, path); err != nil {
 			return err
 		}
 
 		var pageData map[string]any
 		if err := json.Unmarshal(resp.Body, &pageData); err != nil {
 			// Not a JSON object page, write body directly
-			return writeResponse(out, resp.Body, deps)
+			return writeResponse(out, resp.Header, resp.Body, deps)
 		}
 
 		rawValues, hasValues := pageData["values"].([]any)
 		if !hasValues {
 			// Not a standard paginated response envelope
-			return writeResponse(out, resp.Body, deps)
+			return writeResponse(out, resp.Header, resp.Body, deps)
 		}
 
 		if isFirstPage {
@@ -359,7 +388,7 @@ func executePaginated(
 		return apperrors.New(apperrors.KindInternal, "failed to encode paginated response", err)
 	}
 
-	return writeResponse(out, mergedJSON, deps)
+	return writeResponse(out, http.Header{"Content-Type": []string{"application/json"}}, mergedJSON, deps)
 }
 
 // loadConfigForHost resolves the configuration to use, honouring --host.
@@ -400,14 +429,14 @@ func loadConfigForHost(d Dependencies, host string) (config.AppConfig, error) {
 // Only /rest/ paths are judged this way. `bb api` also reaches plugin and
 // servlet endpoints that legitimately render HTML, and refusing those would
 // trade one silent wrong answer for a loud wrong error.
-func htmlResponseError(resp *httpclient.RawResponse, path string) error {
-	if resp == nil {
+func htmlResponseError(header http.Header, path string) error {
+	if header == nil {
 		return nil
 	}
 	if !strings.HasPrefix(strings.TrimPrefix(path, "/"), "rest/") {
 		return nil
 	}
-	if !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "text/html") {
+	if !strings.Contains(strings.ToLower(header.Get("Content-Type")), "text/html") {
 		return nil
 	}
 
@@ -478,7 +507,24 @@ func isAlpha(b byte) bool {
 	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
-func writeResponse(w io.Writer, body []byte, deps Dependencies) error {
+// writeResponse prints a whole response body.
+//
+// Text is formatted as it always was: JSON indented, anything else trimmed, and
+// a newline after either. Anything that is not text (textual has the rule) is
+// written exactly as it came, byte for byte, because trimming it or ending it
+// with a newline changes a file: bb api is also how a file's bytes are fetched.
+//
+// Under --json every body is text, as the document has always held it: a JSON
+// body as its value, anything else as a string. A body that is not valid UTF-8
+// does not survive that -- the encoder replaces each invalid byte with U+FFFD,
+// after the trim -- so --json is not a way to fetch binary content; without it
+// the bytes come back exact.
+func writeResponse(w io.Writer, header http.Header, body []byte, deps Dependencies) error {
+	if !deps.JSONEnabled() && !textual(header, body) {
+		_, err := w.Write(body)
+		return err
+	}
+
 	trimmed := bytes.TrimSpace(body)
 	if len(trimmed) == 0 {
 		return nil
@@ -511,6 +557,115 @@ func writeResponse(w io.Writer, body []byte, deps Dependencies) error {
 
 	_, err := fmt.Fprintln(w, string(trimmed))
 	return err
+}
+
+// textual reports whether a response body is text, which writeResponse
+// formats, rather than bytes it writes exactly.
+//
+// The Content-Type decides first. JSON (application/json, or any type ending
+// in +json), XML (application/xml, or +xml) and every text/* type are text;
+// any other type a response declares is not. A body that declares none, or
+// one that cannot be read, is text when it is valid UTF-8. And whatever the
+// header says, a body that is not valid UTF-8 is not text: a file served as
+// text/plain that holds other bytes is still a file.
+func textual(header http.Header, body []byte) bool {
+	text, declared := declaredText(header.Get("Content-Type"))
+	if declared && !text {
+		return false
+	}
+
+	return utf8.Valid(body)
+}
+
+// declaredText reads a Content-Type: whether it names text, and whether it
+// names anything at all.
+func declaredText(contentType string) (text bool, declared bool) {
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return false, false
+	}
+
+	switch {
+	case strings.HasPrefix(mediaType, "text/"),
+		mediaType == "application/json", strings.HasSuffix(mediaType, "+json"),
+		mediaType == "application/xml", strings.HasSuffix(mediaType, "+xml"):
+		return true, true
+	default:
+		return false, true
+	}
+}
+
+// maxFormattedResponseBytes is the most of a text body bb api holds to format
+// it. Text is formatted whole -- JSON indented, anything else trimmed -- so it
+// is held, and without a deadline on the answer something else has to bound
+// what a server can make bb hold. A body that is not text goes to stdout as it
+// arrives and is not held at all.
+const maxFormattedResponseBytes = 256 << 20
+
+// streamedResponse receives the body of a GET. The response's header decides
+// what it is: bytes that go to stdout as they arrive, or text held until it is
+// whole and then formatted as writeResponse formats it.
+type streamedResponse struct {
+	out  io.Writer
+	path string
+	json bool
+
+	header http.Header
+	// through is set for a body declared as something other than text, which
+	// goes straight to out. One that is undeclared is held, since its bytes
+	// decide.
+	through bool
+	written int64
+	held    bytes.Buffer
+}
+
+// Open decides from the header, before a byte of the body is written.
+func (response *streamedResponse) Open(header http.Header) error {
+	if err := htmlResponseError(header, response.path); err != nil {
+		return err
+	}
+
+	text, declared := declaredText(header.Get("Content-Type"))
+	response.header = header
+	response.through = !response.json && declared && !text
+
+	return nil
+}
+
+func (response *streamedResponse) Write(chunk []byte) (int, error) {
+	if response.through {
+		written, err := response.out.Write(chunk)
+		response.written += int64(written)
+
+		return written, err
+	}
+
+	if response.held.Len()+len(chunk) > maxFormattedResponseBytes {
+		return 0, apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
+			"the response is text larger than %d MiB, the most bb api holds to format it", maxFormattedResponseBytes>>20), nil)
+	}
+
+	return response.held.Write(chunk)
+}
+
+// Rewind starts the body again: always for one held, and for one going
+// through only while nothing has gone out.
+func (response *streamedResponse) Rewind() bool {
+	if response.through {
+		return response.written == 0
+	}
+	response.held.Reset()
+
+	return true
+}
+
+// finish writes a held body, once the download is complete.
+func (response *streamedResponse) finish(deps Dependencies) error {
+	if response.through {
+		return nil
+	}
+
+	return writeResponse(response.out, response.header, response.held.Bytes(), deps)
 }
 
 // httpMethods are the verbs the Bitbucket REST API uses. bb api is the escape

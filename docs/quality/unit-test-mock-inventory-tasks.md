@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `keep` | 170 | legitimate unit test under ADR-079 |
+| `keep` | 171 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 27 | outside the Bitbucket policy; needs its own decision |
 
@@ -59,6 +59,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/transport/download/destination_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/transport/outcome/outcome_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/transport/sigstore/trustedroot_test.go` | 2 | 0 | 0 | 0 | 2 |
+| `internal/cli/cmd/api/download_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/auth/gpg_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/branch/branch_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/build/build_internal_test.go` | 1 | 0 | 0 | 1 | 0 |

@@ -591,6 +591,11 @@ Field arguments:
   --paginate             Automatically fetch all pages for paginated endpoints
   --host url             Target a specific Bitbucket host URL
 
+A JSON response is printed indented and other text trimmed; anything else -- a
+file's raw bytes, an archive -- is written byte for byte as it arrives. Text is
+held to be formatted, up to 256 MiB. Under --json the response goes into the
+document as JSON or as a string, which carries text only.
+
 Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading slash (e.g. rest/api/1.0/...) to prevent shell path mangling.
 
 Usage:
