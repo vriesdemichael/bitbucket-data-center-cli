@@ -1,6 +1,7 @@
 package repocmd
 
 import (
+	"context"
 	"fmt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/inherited"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
@@ -256,6 +258,9 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List default checklist tasks",
+		Long: `List the repository's default checklist tasks, and those it inherits from its
+project, which are marked as inherited. bb project default-task changes an
+inherited one.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -296,7 +301,10 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 				if t.TargetMatcher != nil && t.TargetMatcher.Id != nil {
 					tgt = *t.TargetMatcher.Id
 				}
-				rows[i] = []string{style.Secondary.Render(idStr), style.Resource.Render(desc), src, tgt}
+				rows[i] = []string{
+					style.Secondary.Render(idStr), style.Resource.Render(desc), src, tgt,
+					style.Secondary.Render(inherited.Label(defaultTaskScope(t), repo.ProjectKey)),
+				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
 			return nil
@@ -364,7 +372,11 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update <task-id>",
 		Short: "Update a default checklist task",
-		Args:  cobra.ExactArgs(1),
+		Long: `Update one of the repository's default checklist tasks.
+
+A task the repository inherits from its project is refused; bb project
+default-task update changes it there, for every repository in the project.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -387,15 +399,29 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
+				predicted, reason := "update", "default task will be updated"
+				var blocking []string
+				if err := ownDefaultTask(cmd.Context(), service, repo, args[0], "update"); err != nil {
+					if !apperrors.IsKind(err, apperrors.KindNotFound) {
+						return err
+					}
+					predicted, reason, blocking = "blocked", "default task not found in repository", []string{"default task not found"}
+				}
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
 					Intent:          "repo.default-task.update",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "description": updateDesc, "sourceRef": src, "targetRef": tgt},
 					Action:          "update",
-					PredictedAction: "update",
+					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
-					Reason:          "default task will be updated",
+					Reason:          reason,
+					RequiredState:   []string{"repository default tasks"},
+					BlockingReasons: blocking,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
+			}
+			if err := ownDefaultTask(cmd.Context(), service, repo, args[0], "update"); err != nil {
+				return err
 			}
 			task, err := service.UpdateDefaultTask(cmd.Context(), repo, args[0], updateDesc, src, tgt)
 			if err != nil {
@@ -417,7 +443,11 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <task-id>",
 		Short: "Delete a default checklist task",
-		Args:  cobra.ExactArgs(1),
+		Long: `Delete one of the repository's default checklist tasks.
+
+A task the repository inherits from its project is refused; bb project
+default-task delete deletes it there, for every repository in the project.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -432,15 +462,30 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
+				predicted, reason := "delete", "default task will be deleted"
+				if err := ownDefaultTask(cmd.Context(), service, repo, args[0], "delete"); err != nil {
+					if !apperrors.IsKind(err, apperrors.KindNotFound) {
+						return err
+					}
+					predicted, reason = "no-op", "default task was not found"
+				}
 				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
 					Intent:          "repo.default-task.delete",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
 					Action:          "delete",
-					PredictedAction: "delete",
+					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Supported:       true,
-					Reason:          "default task will be deleted",
+					Reason:          reason,
+					RequiredState:   []string{"repository default tasks"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
+			}
+			// Looked up first: a task inherited from the project is refused,
+			// because the route answers 204 for it and leaves it in place, and
+			// one that is not there is reported as such.
+			if err := ownDefaultTask(cmd.Context(), service, repo, args[0], "delete"); err != nil {
+				return err
 			}
 			err = service.DeleteDefaultTask(cmd.Context(), repo, args[0])
 			if err != nil {
@@ -459,6 +504,26 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	defaultTaskCmd.AddCommand(updateCmd)
 	defaultTaskCmd.AddCommand(deleteCmd)
 	return defaultTaskCmd
+}
+
+// ownDefaultTask looks a task up in the repository's listing, which holds the
+// tasks it inherits from its project as well, and refuses one of those: the
+// repository's route answers 204 for it and leaves it where it is (#657). A
+// task that is not there is not found. change is the subcommand the caller
+// ran, which does the same on the project.
+func ownDefaultTask(ctx context.Context, service *reposettings.Service, repo reposettings.RepositoryRef, id, change string) error {
+	task, err := service.GetDefaultTask(ctx, repo, id)
+	if err != nil {
+		return err
+	}
+
+	if inherited.FromProject(defaultTaskScope(task)) {
+		trimmed := strings.TrimSpace(id)
+		return inherited.Refusal("default task", trimmed, repo.ProjectKey, change,
+			fmt.Sprintf("bb project default-task %s %s %s", change, repo.ProjectKey, trimmed))
+	}
+
+	return nil
 }
 
 func newRepoSyncCommand(deps Dependencies) *cobra.Command {

@@ -16,6 +16,14 @@ type DefaultTask struct {
 	Description   *string             `json:"description,omitempty"`
 	SourceMatcher *DefaultTaskMatcher `json:"sourceMatcher,omitempty"`
 	TargetMatcher *DefaultTaskMatcher `json:"targetMatcher,omitempty"`
+	// Scope is where the task is defined, the same field a repository's
+	// listing uses to tell its own tasks from the project's.
+	Scope *DefaultTaskScope `json:"scope,omitempty"`
+}
+
+// DefaultTaskScope is where a task is defined: PROJECT or REPOSITORY.
+type DefaultTaskScope struct {
+	Type *string `json:"type,omitempty"`
 }
 
 type DefaultTaskMatcher struct {
