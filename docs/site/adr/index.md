@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `93`
-- Accepted ADRs: `82`
+- Total ADRs: `94`
+- Accepted ADRs: `83`
 
 ## ADR List
 
@@ -102,4 +102,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 091: A command may report the state it read through its exit status](091-a-command-may-report-the-state-it-read-through-its-exit-status.md) (`architecture`, `accepted`)
 - [ADR 092: bb update installs the new binary itself, before it exits](092-bb-update-installs-the-new-binary-itself-before-it-exits.md) (`architecture`, `accepted`)
 - [ADR 093: Binary and large downloads go through one downloader](093-binary-and-large-downloads-go-through-one-downloader.md) (`architecture`, `accepted`)
+- [ADR 094: MCP tool results are what a model can use without files or a shell](094-mcp-tool-results-are-what-a-model-can-use-without-files-or-a-shell.md) (`architecture`, `accepted`)
 
