@@ -2,16 +2,18 @@ package completion
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
-	branchservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/branch"
 	commitservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commit"
 	tagservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/tag"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 func init() {
@@ -333,67 +335,147 @@ func localCommitish(ctx context.Context, scope refScope) []Candidate {
 	return append(localNamedRefs(refs, scope.repository.RemoteName), localCommitCandidates(commits)...)
 }
 
-// remoteBranches asks Bitbucket for the branches, and for which one is the
-// default beside it.
+// detailGrace is how long a press waits for the branches' latest commits once
+// it has the branches themselves.
 //
-// Beside rather than after: the default branch is a second endpoint, because
-// the listing's own flag for it does not survive the generated client -- the
-// model reads `default` and Bitbucket sends `isDefault`, so RestBranch.Default
-// is nil for every branch including the default one. Two sequential round
-// trips would be most of the press.
+// Bitbucket works out how far each branch is ahead of and behind the default
+// one in the same request, which costs nothing on a small repository and
+// can cost more than a press has on a large one. A branch list without
+// messages is worth more than no branch list, so the wait is bounded here
+// rather than left to the press's deadline.
+const detailGrace = 400 * time.Millisecond
+
+// remoteBranch is one entry of Bitbucket's branch listing, read directly
+// because the generated model has neither field this needs: it reads
+// `default` where Bitbucket sends `isDefault`, so RestBranch.Default is nil
+// for every branch including the default one, and it has no `metadata`, which
+// is where a detailed listing puts the commit each branch is on.
+type remoteBranch struct {
+	ID        string         `json:"id"`
+	DisplayID string         `json:"displayId"`
+	IsDefault bool           `json:"isDefault"`
+	Metadata  branchMetadata `json:"metadata"`
+}
+
+type branchMetadata struct {
+	LatestCommit *latestCommit `json:"com.atlassian.bitbucket.server.bitbucket-branch:latest-commit-metadata"`
+}
+
+type latestCommit struct {
+	Message string `json:"message"`
+}
+
+// remoteBranches asks Bitbucket for the branches, each with the message of
+// the commit it is on.
+//
+// Two listings of the same page go out together. The plain one is the answer
+// -- the branches, and which one is the default. The detailed one carries the
+// messages, and is waited for only for detailGrace after the plain one lands.
+// That is still two requests, as before: the second used to ask which branch
+// is the default, which the listing now says itself.
 func remoteBranches(ctx context.Context, environment *Environment, scope refScope, prefix string) (Result, error) {
-	client, err := environment.APIClient(ctx)
+	client, err := environment.HTTPClient(ctx)
 	if err != nil {
 		return Result{}, err
 	}
 
-	service := branchservice.NewService(client)
-	repo := branchservice.RepositoryRef{ProjectKey: scope.repository.ProjectKey, Slug: scope.repository.Slug}
+	path := "/rest/api/latest/projects/" + scope.repository.ProjectKey + "/repos/" + scope.repository.Slug + "/branches"
 
-	var (
-		branches      []openapigenerated.RestBranch
-		listErr       error
-		defaultBranch string
-	)
+	detailCtx, cancelDetail := context.WithCancel(ctx)
+	defer cancelDetail()
 
-	inParallel(
-		func() {
-			branches, listErr = service.List(ctx, repo, branchservice.ListOptions{
-				FilterText: strings.TrimSpace(prefix),
-				MaxResults: refPageSize,
-				OrderBy:    modificationOrder,
-			})
-		},
-		func() {
-			reference, err := service.GetDefault(ctx, repo)
-			if err != nil {
-				// A repository with no commits has no default branch, and a
-				// reader without admin rights may not be told which it is.
-				// Neither is a reason to complete nothing.
-				debugf("default branch: %v", err)
-
-				return
+	detailed := make(chan []remoteBranch, 1)
+	go func() {
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				debugf("branch details failed: %v", recovered)
 			}
+		}()
 
-			defaultBranch = nameOf(reference.DisplayId, reference.Id)
-		},
-	)
+		branches, err := listBranches(detailCtx, client, path, prefix, true)
+		if err != nil {
+			debugf("branch details: %v", err)
+		}
+		detailed <- branches
+	}()
 
-	if listErr != nil {
-		return Result{}, listErr
+	branches, err := listBranches(ctx, client, path, prefix, false)
+	if err != nil {
+		return Result{}, err
 	}
 
+	subjects := latestSubjects(awaitBriefly(ctx, detailed, detailGrace))
+
+	defaultBranch := ""
 	candidates := make([]Candidate, 0, len(branches))
 	for _, branch := range branches {
-		name := nameOf(branch.DisplayId, branch.Id)
+		name := nameOf(&branch.DisplayID, &branch.ID)
 		if name == "" {
 			continue
 		}
+		if branch.IsDefault {
+			defaultBranch = name
+		}
 
-		candidates = append(candidates, Candidate{Value: name, Description: describeBranch(name, defaultBranch)})
+		candidates = append(candidates, Candidate{Value: name, Description: describeBranch(branch.IsDefault, subjects[branch.ID])})
 	}
 
 	return Result{Candidates: hoist(candidates, defaultBranch), KeepOrder: true}, nil
+}
+
+// listBranches reads one page of the branch listing, filtered by what was typed.
+func listBranches(ctx context.Context, client *httpclient.Client, path, prefix string, details bool) ([]remoteBranch, error) {
+	query := map[string]string{
+		"limit":   strconv.Itoa(refPageSize),
+		"orderBy": modificationOrder,
+		"details": strconv.FormatBool(details),
+	}
+	if trimmed := strings.TrimSpace(prefix); trimmed != "" {
+		query["filterText"] = trimmed
+	}
+
+	var page struct {
+		Values []remoteBranch `json:"values"`
+	}
+	if err := client.GetJSON(ctx, path, query, &page); err != nil {
+		return nil, err
+	}
+
+	return page.Values, nil
+}
+
+// awaitBriefly takes what arrives on results within grace, or nothing: a
+// press that has its answer does not wait out its whole deadline for
+// something that only describes it.
+func awaitBriefly[T any](ctx context.Context, results <-chan T, grace time.Duration) T {
+	var nothing T
+
+	timer := time.NewTimer(grace)
+	defer timer.Stop()
+
+	select {
+	case result := <-results:
+		return result
+	case <-timer.C:
+		debugf("gave up on descriptions after %s", grace)
+
+		return nothing
+	case <-ctx.Done():
+		return nothing
+	}
+}
+
+// latestSubjects is the first line of each branch's latest commit message,
+// keyed by the branch's full id.
+func latestSubjects(branches []remoteBranch) map[string]string {
+	subjects := make(map[string]string, len(branches))
+	for _, branch := range branches {
+		if commit := branch.Metadata.LatestCommit; commit != nil {
+			subjects[branch.ID] = firstLine(commit.Message)
+		}
+	}
+
+	return subjects
 }
 
 // rankBranches turns a checkout's references into branch candidates: the
@@ -408,7 +490,10 @@ func rankBranches(refs []execgit.Ref, remote string) []Candidate {
 
 	current := ""
 	names := make([]string, 0, len(refs))
-	seen := make(map[string]bool, len(refs))
+	// The subject of the first reference that names the branch, which is
+	// the most recently written of the local branch and its remote-tracking
+	// copy: the listing is newest first.
+	subjects := make(map[string]string, len(refs))
 
 	for _, ref := range refs {
 		name, ok := branchFromRef(ref.Name, remote)
@@ -418,17 +503,17 @@ func rankBranches(refs []execgit.Ref, remote string) []Candidate {
 		if ref.Checked {
 			current = name
 		}
-		if seen[name] {
+		if _, seen := subjects[name]; seen {
 			continue
 		}
 
-		seen[name] = true
+		subjects[name] = ref.Subject
 		names = append(names, name)
 	}
 
 	candidates := make([]Candidate, 0, len(names))
 	for _, name := range names {
-		candidates = append(candidates, Candidate{Value: name, Description: describeBranch(name, defaultBranch)})
+		candidates = append(candidates, Candidate{Value: name, Description: describeBranch(name == defaultBranch, subjects[name])})
 	}
 
 	return hoist(hoist(candidates, defaultBranch), current)
@@ -590,17 +675,27 @@ func hoist(candidates []Candidate, first string) []Candidate {
 	return candidates
 }
 
-// describeBranch says which one is the default.
+// describeBranch gives the subject of the commit a branch is on, and says
+// which one is the default.
 //
-// It is the branch most of these slots mean -- the one a pull request targets,
-// the one a delete will be refused for -- and among forty names it is
-// otherwise indistinguishable.
-func describeBranch(name, defaultBranch string) string {
-	if defaultBranch != "" && name == defaultBranch {
-		return "default branch"
-	}
+// The subject is what tells forty branch names apart, and the default is the
+// branch most of these slots mean -- the one a pull request targets, the one a
+// delete will be refused for. The mark comes first so a long subject cannot
+// push it past where a shell cuts the line.
+//
+// Every branch gets the subject, not only some: a shell lays out a list in
+// which only some values carry a description with the columns out of line.
+func describeBranch(isDefault bool, subject string) string {
+	subject = strings.TrimSpace(subject)
 
-	return ""
+	switch {
+	case isDefault && subject != "":
+		return "default branch: " + subject
+	case isDefault:
+		return "default branch"
+	default:
+		return subject
+	}
 }
 
 // describeTag says what the tag marks. Its name says what it is for and

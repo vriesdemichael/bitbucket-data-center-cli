@@ -12,6 +12,7 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	branchservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/branch"
+	commitservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commit"
 	tagservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/tag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
@@ -45,10 +46,14 @@ func TestLiveCompletionRefs(t *testing.T) {
 	alpha := testsupport.UniqueName("lt-refs-alpha-")
 	beta := testsupport.UniqueName("lt-refs-beta-")
 
-	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, alpha, "alpha.txt"); err != nil {
+	// A message of its own on each, so a description taken from the wrong
+	// branch cannot pass, and a body, which a description leaves out.
+	alphaSubject := "Give " + alpha + " its file"
+	betaSubject := "Give " + beta + " its file"
+	if err := harness.pushCommitWithMessage(seeded.Key, repo.Slug, alpha, "alpha.txt", alphaSubject+"\n\nA body no description shows."); err != nil {
 		t.Fatalf("push the alpha branch failed: %v", err)
 	}
-	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, beta, "beta.txt"); err != nil {
+	if err := harness.pushCommitWithMessage(seeded.Key, repo.Slug, beta, "beta.txt", betaSubject+"\n\nA body no description shows."); err != nil {
 		t.Fatalf("push the beta branch failed: %v", err)
 	}
 
@@ -62,17 +67,30 @@ func TestLiveCompletionRefs(t *testing.T) {
 		}
 	}
 
-	t.Run("a branch slot offers the repository's branches and marks the default", func(t *testing.T) {
+	t.Run("a branch slot offers each branch with its latest commit and marks the default", func(t *testing.T) {
 		offered := completeRefs(t, "branch", "delete", "--repo", selector, "")
 
 		if !offered.has(alpha) || !offered.has(beta) {
 			t.Fatalf("a pushed branch was not offered to `bb branch delete`: %v", offered.values)
 		}
-		if description := offered.descriptions["master"]; description != "default branch" {
-			t.Errorf("the default branch was described as %q, want %q", description, "default branch")
+		if description := offered.descriptions[alpha]; description != alphaSubject {
+			t.Errorf("the alpha branch was described as %q, want %q", description, alphaSubject)
 		}
-		if description := offered.descriptions[alpha]; description != "" {
-			t.Errorf("an ordinary branch was marked as %q", description)
+		if description := offered.descriptions[beta]; description != betaSubject {
+			t.Errorf("the beta branch was described as %q, want %q", description, betaSubject)
+		}
+
+		// The default branch's commit is the seed's, read back rather than
+		// assumed.
+		latest, err := commitservice.NewService(harness.client).List(ctx,
+			commitservice.RepositoryRef{ProjectKey: seeded.Key, Slug: repo.Slug},
+			commitservice.ListOptions{Until: "master", MaxResults: 1})
+		if err != nil || len(latest) != 1 {
+			t.Fatalf("read the latest commit on master: %v (%d commits)", err, len(latest))
+		}
+		subject, _, _ := strings.Cut(strings.TrimSpace(safederef.String(latest[0].Message)), "\n")
+		if want := "default branch: " + subject; offered.descriptions["master"] != want {
+			t.Errorf("the default branch was described as %q, want %q", offered.descriptions["master"], want)
 		}
 
 		// Bitbucket sends the flag as isDefault and the generated model reads

@@ -376,6 +376,16 @@ func (h *liveHarness) pushCommitOnBranch(projectKey, repositorySlug, branch, fil
 // pushFileOnBranch is the same with the content chosen by the caller, for tests
 // that need two sides to conflict rather than merely differ.
 func (h *liveHarness) pushFileOnBranch(projectKey, repositorySlug, branch, fileName, content string) error {
+	return h.pushCommit(projectKey, repositorySlug, branch, fileName, content, "seed branch commit")
+}
+
+// pushCommitWithMessage pushes a branch whose commit says what the caller
+// chose, for a test that has to tell two branches apart by their messages.
+func (h *liveHarness) pushCommitWithMessage(projectKey, repositorySlug, branch, fileName, message string) error {
+	return h.pushCommit(projectKey, repositorySlug, branch, fileName, fmt.Sprintf("branch=%s\n", branch), message)
+}
+
+func (h *liveHarness) pushCommit(projectKey, repositorySlug, branch, fileName, content, message string) error {
 	tempDir := h.t.TempDir()
 
 	if err := runGit(tempDir, "init"); err != nil {
@@ -426,7 +436,7 @@ func (h *liveHarness) pushFileOnBranch(projectKey, repositorySlug, branch, fileN
 	if err := runGit(tempDir, "add", fileName); err != nil {
 		return fmt.Errorf("git add failed: %w", err)
 	}
-	if err := runGit(tempDir, "commit", "-m", "seed branch commit"); err != nil {
+	if err := runGit(tempDir, "commit", "-m", message); err != nil {
 		return fmt.Errorf("git commit failed: %w", err)
 	}
 	if err := runGit(tempDir, "push", "-u", "origin", branch); err != nil {

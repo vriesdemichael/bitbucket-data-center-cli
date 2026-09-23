@@ -408,6 +408,11 @@ print to stdout: the output is a protocol, and a stray line becomes a candidate.
 `BB_COMPLETION_DEBUG=1` and run `bb __complete <words>` by hand to see why one came back
 empty; every generated shell script discards stderr, so nothing leaks into a real shell.
 
+Describe every value a source offers, or none. Bash and fish lay out a list in which only
+some values carry a description with the columns out of line, and zsh splits it in two. So a
+field Bitbucket leaves empty for some values needs a fallback, as a branch gets its latest
+commit message and an instance logged in with a token gets "access token".
+
 ADR-089 has the reasoning. A source that talks to Bitbucket is proved by a live test, like
 everything else here — `tests/integration/live/completion_live_test.go` is the pattern, and
 it asserts the values offered rather than that the call succeeded.
