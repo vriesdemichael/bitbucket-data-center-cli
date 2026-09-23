@@ -18,6 +18,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	githubrelease "github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/githubrelease"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
 	updatesigstore "github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/sigstore"
 	updateworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/update"
 )
@@ -73,7 +74,7 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 	}()
 
 	archive, checksums := servedArchive("bb_1.2.0_linux_amd64.tar.gz")
-	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) (*updateworkflow.Runner, error) {
 		if httpConfig.RequestTimeout != defaultUpdateRequestTimeout {
 			t.Fatalf("expected default request timeout, got %s", httpConfig.RequestTimeout)
 		}
@@ -99,7 +100,7 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 			ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
 			Platform:        func() (string, string) { return "linux", "amd64" },
 			Verifier:        updateCommandSignatureVerifier{},
-		})
+		}), nil
 	}
 
 	root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
@@ -168,7 +169,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 		}()
 
 		archive, checksums := servedArchive("bb_1.2.0_linux_amd64.tar.gz")
-		UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+		UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) (*updateworkflow.Runner, error) {
 			if httpConfig.RequestTimeout != defaultUpdateRequestTimeout {
 				t.Fatalf("expected default request timeout, got %s", httpConfig.RequestTimeout)
 			}
@@ -194,7 +195,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 				ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
 				Platform:        func() (string, string) { return "linux", "amd64" },
 				Verifier:        updateCommandSignatureVerifier{},
-			})
+			}), nil
 		}
 
 		root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
@@ -287,7 +288,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 			UpdateRunnerFactory = originalFactory
 		}()
 
-		UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+		UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) (*updateworkflow.Runner, error) {
 			if httpConfig.RequestTimeout != defaultUpdateRequestTimeout {
 				t.Fatalf("expected default request timeout, got %s", httpConfig.RequestTimeout)
 			}
@@ -297,7 +298,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 				RepositoryName:  "bitbucket-data-center-cli",
 				CurrentVersion:  func() string { return version },
 				ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
-			})
+			}), nil
 		}
 
 		root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
@@ -335,7 +336,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 		t.Setenv("BB_INSECURE_SKIP_VERIFY", "true")
 		t.Setenv("BB_REQUEST_TIMEOUT", "45s")
 
-		UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+		UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) (*updateworkflow.Runner, error) {
 			if httpConfig.RequestTimeout != 45*time.Second {
 				t.Fatalf("expected forwarded timeout, got %s", httpConfig.RequestTimeout)
 			}
@@ -348,7 +349,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 				RepositoryName:  "bitbucket-data-center-cli",
 				CurrentVersion:  func() string { return version },
 				ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
-			})
+			}), nil
 		}
 
 		root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
@@ -376,11 +377,23 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 	})
 
 	t.Run("default UpdateRunnerFactory", func(t *testing.T) {
-		runner := UpdateRunnerFactory("v1.0.0", UpdateCommandHTTPConfig{
+		runner, err := UpdateRunnerFactory("v1.0.0", UpdateCommandHTTPConfig{
 			RequestTimeout: 10 * time.Second,
 		})
-		if runner == nil {
-			t.Fatal("expected non-nil runner from default factory")
+		if err != nil || runner == nil {
+			t.Fatalf("expected a runner from the default factory, got %v", err)
+		}
+	})
+
+	t.Run("default UpdateRunnerFactory stops on TLS settings that do not load", func(t *testing.T) {
+		// A CA bundle that is not there. Carrying on without it reached the
+		// mirror without the CA that signs it, and the failure pointed elsewhere.
+		runner, err := UpdateRunnerFactory("v1.0.0", UpdateCommandHTTPConfig{
+			RequestTimeout: 10 * time.Second,
+			TLSOptions:     network.TLSOptions{CAFile: filepath.Join(t.TempDir(), "missing-ca.pem")},
+		})
+		if runner != nil || !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "missing-ca.pem") {
+			t.Fatalf("got runner %v and %v, want no runner and a validation error naming the CA bundle", runner, err)
 		}
 	})
 }
@@ -476,7 +489,7 @@ func TestUpdateCommandCustomBaseURLFlagAndEnv(t *testing.T) {
 	}()
 
 	capturedBaseURL := ""
-	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) (*updateworkflow.Runner, error) {
 		capturedBaseURL = httpConfig.UpdateBaseURL
 		return updateworkflow.NewRunner(updateworkflow.Dependencies{
 			Releases: updateCommandReleaseClient{
@@ -490,7 +503,7 @@ func TestUpdateCommandCustomBaseURLFlagAndEnv(t *testing.T) {
 			CurrentVersion:  func() string { return "v1.1.0" },
 			ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
 			Platform:        func() (string, string) { return "linux", "amd64" },
-		})
+		}), nil
 	}
 
 	// 1. Via flag --base-url
@@ -724,7 +737,7 @@ func TestUpdateCommandWarnsWhenSignatureVerificationIsSkipped(t *testing.T) {
 	// No signature bundle: the policy is what makes this mirror acceptable.
 	archive, checksums := servedArchive("bb_1.2.0_linux_amd64.tar.gz")
 
-	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) (*updateworkflow.Runner, error) {
 		return updateworkflow.NewRunner(updateworkflow.Dependencies{
 			Releases: updateCommandReleaseClient{
 				release: githubrelease.Release{
@@ -746,7 +759,7 @@ func TestUpdateCommandWarnsWhenSignatureVerificationIsSkipped(t *testing.T) {
 			Platform:                  func() (string, string) { return "linux", "amd64" },
 			SkipSignatureVerification: true,
 			TrustSource:               "none (signature verification disabled by administrative policy)",
-		})
+		}), nil
 	}
 
 	root := &cobra.Command{Use: "bb", Version: "v1.1.0"}
@@ -789,7 +802,7 @@ func TestUpdateCommandDryRunReportsTheInstalledReleaseVerified(t *testing.T) {
 
 	const trustSource = "trusted root file /etc/bb/trusted_root.json"
 	archive, checksums := servedArchive("bb_1.2.0_linux_amd64.tar.gz")
-	UpdateRunnerFactory = func(version string, _ UpdateCommandHTTPConfig) *updateworkflow.Runner {
+	UpdateRunnerFactory = func(version string, _ UpdateCommandHTTPConfig) (*updateworkflow.Runner, error) {
 		return updateworkflow.NewRunner(updateworkflow.Dependencies{
 			Releases: updateCommandReleaseClient{
 				release: githubrelease.Release{
@@ -812,7 +825,7 @@ func TestUpdateCommandDryRunReportsTheInstalledReleaseVerified(t *testing.T) {
 			Platform:        func() (string, string) { return "linux", "amd64" },
 			Verifier:        updateCommandSignatureVerifier{},
 			TrustSource:     trustSource,
-		})
+		}), nil
 	}
 
 	run := func(t *testing.T, asJSON bool) []byte {

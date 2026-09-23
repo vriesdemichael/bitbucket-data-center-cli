@@ -12,6 +12,7 @@ import (
 	sigroot "github.com/sigstore/sigstore-go/pkg/root"
 	sigtuf "github.com/sigstore/sigstore-go/pkg/tuf"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/outcome"
 )
 
 // ErrTrustedRootUnavailable marks the failure to obtain Sigstore trust
@@ -43,7 +44,14 @@ func TrustedRootFromFile(path string) TrustedMaterialProvider {
 	return func(context.Context) (sigroot.TrustedMaterial, error) {
 		trustedRoot, err := sigroot.NewTrustedRootFromPath(resolvedPath)
 		if err != nil {
-			return nil, trustedRootError(fmt.Errorf("reading trusted root %s: %w", resolvedPath, err))
+			// A file on this host that is missing or does not read as a trusted
+			// root reads the same on a retry: it is the configuration to fix,
+			// and reporting it as transient said otherwise (#637).
+			return nil, apperrors.New(
+				apperrors.KindValidation,
+				fmt.Sprintf("failed to load the Sigstore trusted root %s", resolvedPath),
+				fmt.Errorf("%w: %w", ErrTrustedRootUnavailable, err),
+			)
 		}
 		return trustedRoot, nil
 	}
@@ -93,9 +101,13 @@ func (fetcher *httpFetcher) DownloadFile(urlPath string, maxLength int64, _ time
 		return nil, err
 	}
 
-	response, err := fetcher.client.Do(request)
+	// Classified as the release client classifies its requests, so a mirror
+	// certificate this host does not trust reaches the caller as permanent,
+	// where the TUF client passes the error through.
+	tracked, exchange := outcome.Track(request)
+	response, err := fetcher.client.Do(tracked)
 	if err != nil {
-		return nil, err
+		return nil, exchange.Classify(err)
 	}
 	defer func() { _ = response.Body.Close() }()
 

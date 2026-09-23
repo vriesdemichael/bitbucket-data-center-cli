@@ -26,9 +26,9 @@ decision: >
        release caches) instead of hardcoding `https://api.github.com`.
      - Mirror precedence: `--base-url` flag > `BB_UPDATE_BASE_URL` > Workspace Config > User Config > System Config >
        Default (`https://api.github.com`).
-     - When querying custom mirrors, relative asset URLs are resolved against the configured base URL. In air-gapped
-       networks where release manifests reference firewalled `github.com` URLs, the client falls back to downloading
-       assets directly from `{baseURL}/{assetName}`.
+     - When querying custom mirrors, relative asset URLs are resolved under the configured base URL, as a
+       directory. An asset URL off the mirror, such as the `github.com` address a manifest copied from GitHub names,
+       is fetched from `{baseURL}/{assetName}` and never from its own address: every download goes through the mirror.
      - Update URLs are https by default: the base URL, every asset URL a manifest names, and every redirect. Plain
        HTTP needs an explicit opt-in, `bb update --allow-http` or `BB_ALLOW_HTTP_UPDATE`, and warns on every run.
        There is no configuration file key for users, because a workspace file arrives with a cloned repository.

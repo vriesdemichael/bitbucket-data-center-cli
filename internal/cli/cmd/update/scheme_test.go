@@ -113,11 +113,13 @@ func TestTheReleaseClientKeepsTheRefusalsKind(t *testing.T) {
 	}
 }
 
-// TestARefusedManifestAddressIsReportedOnce is the fallback path: the mirror
-// does not hold the asset, and the manifest's own address for it is refused.
-// mock-inventory: external-service — two release mirrors, one of which refuses;
-// the assertion is about the address bb update reports, not about Bitbucket.
-func TestARefusedManifestAddressIsReportedOnce(t *testing.T) {
+// TestAnOffMirrorManifestAddressIsNotFetched: the mirror does not hold the
+// asset, and the manifest's own address for it is off the mirror. That address
+// used to be fetched next, so the scheme guard refused it; now it is not
+// fetched at all, and what is reported is the mirror's answer (#637).
+// mock-inventory: external-service — a release mirror without the asset; the
+// assertion is about the address bb update asks for, not about Bitbucket.
+func TestAnOffMirrorManifestAddressIsNotFetched(t *testing.T) {
 	t.Parallel()
 
 	missing := httptest.NewServer(http.NotFoundHandler())
@@ -125,13 +127,14 @@ func TestARefusedManifestAddressIsReportedOnce(t *testing.T) {
 	client := githubrelease.NewClient(missing.URL, &http.Client{Transport: requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{Allowed: true}, nil)}, "bb/test")
 
 	_, err := client.Download(context.Background(), "ftp://files.example.invalid/sha256sums.txt")
-	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
-		t.Fatalf("expected a validation error, got kind %q: %v", kind, err)
+	if kind := apperrors.KindOf(err); kind != apperrors.KindNotFound {
+		t.Fatalf("expected the mirror's not_found, got kind %q: %v", kind, err)
 	}
-	want := "release asset sha256sums.txt could not be downloaded from the mirror at " + missing.URL + "/sha256sums.txt, and the manifest's own address for it is refused: " +
-		`update URL "ftp://files.example.invalid/sha256sums.txt" must be an absolute https URL`
-	if !strings.Contains(err.Error(), want) || strings.Count(err.Error(), "validation") != 1 {
-		t.Fatalf("expected %q, once, got %v", want, err)
+	if strings.Contains(err.Error(), "must be an absolute https URL") {
+		t.Fatalf("the off-mirror address was fetched, and refused: %v", err)
+	}
+	if !strings.Contains(err.Error(), missing.URL+"/sha256sums.txt") {
+		t.Fatalf("expected the mirror address in the message, got %v", err)
 	}
 }
 
@@ -166,7 +169,7 @@ func TestUpdateRefusesAPlainHTTPMirrorBeforeFetchingAnything(t *testing.T) {
 	t.Cleanup(func() { UpdateRunnerFactory = originalFactory })
 
 	var built *UpdateCommandHTTPConfig
-	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) (*updateworkflow.Runner, error) {
 		built = &httpConfig
 		return updateworkflow.NewRunner(updateworkflow.Dependencies{
 			Releases: updateCommandReleaseClient{
@@ -177,7 +180,7 @@ func TestUpdateRefusesAPlainHTTPMirrorBeforeFetchingAnything(t *testing.T) {
 			CurrentVersion:  func() string { return "v1.1.0" },
 			ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
 			Platform:        func() (string, string) { return "linux", "amd64" },
-		})
+		}), nil
 	}
 
 	run := func(args ...string) (string, error) {

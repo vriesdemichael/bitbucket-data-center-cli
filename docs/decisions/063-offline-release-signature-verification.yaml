@@ -26,7 +26,7 @@ decision: >
   3. Unverified Updates as a Last Resort:
      - `allow_unverified_update: true` skips Sigstore verification. SHA256 checksum verification stays
        mandatory, so corruption is still caught and tampering is not. Every run that uses it prints a
-       warning to stderr, and `signature_skipped: true` appears in the JSON result.
+       warning to stderr, and `trust.signatureSkipped: true` appears in the JSON result.
 
   4. Policy-Only Sourcing:
      - None of the five settings above has an environment variable or flag form. They are read from the

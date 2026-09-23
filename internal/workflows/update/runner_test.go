@@ -743,7 +743,7 @@ func TestRunnerUpdateErrorCases(t *testing.T) {
 		if !apperrors.IsKind(err, apperrors.KindTransient) {
 			t.Fatalf("expected transient error, got %v", err)
 		}
-		if err == nil || !strings.Contains(err.Error(), "retry or use winget, scoop, or manual install") {
+		if err == nil || !strings.Contains(err.Error(), "retry, or install bb with Homebrew, the .deb or .rpm package, or a manual install instead") {
 			t.Fatalf("expected retry guidance in error, got %v", err)
 		}
 	})
@@ -1573,7 +1573,7 @@ func TestRunnerReportsUnavailableTrustMaterialDistinctly(t *testing.T) {
 	if !strings.Contains(err.Error(), "update_trusted_root") {
 		t.Fatalf("expected the message to name the offline trust root setting, got: %v", err)
 	}
-	if strings.Contains(err.Error(), "use winget, scoop, or manual install") {
+	if strings.Contains(err.Error(), "install bb with") {
 		t.Fatalf("expected trust material failures not to be reported as a bad signature, got: %v", err)
 	}
 }

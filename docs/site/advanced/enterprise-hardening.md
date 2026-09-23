@@ -96,7 +96,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
      ```
      This verifies the public releases as published — signed certificate timestamps, the Rekor inclusion promise, and observer timestamps are all checked against keys inside the file — so mirroring artifacts byte-for-byte needs no re-signing. Refresh the file when Sigstore rotates its keys, which is a multi-year event and another file push. Organisations that mirror the Sigstore TUF repository itself can set `update_tuf_url: <url>` instead; the two are mutually exclusive, it must be an absolute `https` URL, and the TUF fetch uses the configured `ca_file` and client certificates.
    - **Re-Signed Artifacts**: Organisations that rebuild or re-sign `bb` against their own Fulcio instance replace the pinned signer with `update_signature_identity` (certificate SAN) and `update_signature_issuer` (OIDC issuer).
-   - **Unverified Updates (Last Resort)**: `allow_unverified_update: true` skips signature verification entirely. SHA256 checksum verification remains mandatory, so this still catches corruption but not tampering; every run prints a warning to stderr and reports `signature_skipped: true` in `--json` output. Prefer an offline trust root.
+   - **Unverified Updates (Last Resort)**: `allow_unverified_update: true` skips signature verification entirely. SHA256 checksum verification remains mandatory, so this still catches corruption but not tampering; every run prints a warning to stderr and reports `trust.signatureSkipped: true` in `--json` output. Prefer an offline trust root.
    - **Policy Only**: `update_trusted_root`, `update_tuf_url`, `update_signature_identity`, `update_signature_issuer` and `allow_unverified_update` are read from system configuration and Windows registry policy only — never from an environment variable or a flag. Each decides who may vouch for a binary `bb` is about to execute, and that decision does not belong to whoever can set a variable in a user's shell. `update_base_url` keeps its flag and environment forms, because signature verification still gates whatever the mirror serves.
    - **Mirror Layout**: The mirror serves a GitHub-release-shaped manifest at `/repos/vriesdemichael/bitbucket-data-center-cli/releases/latest`, or — for generic Artifactory/Nexus repositories — at `/releases/latest` or `/latest`, which `bb` tries in that order:
      ```json
@@ -110,7 +110,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
        ]
      }
      ```
-     Mirror `bb_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows), `sha256sums.txt`, and `sha256sums.txt.sigstore.json` at the base URL. Asset URLs may be relative, as above, or absolute mirror URLs; a manifest copied verbatim from GitHub also works, since `bb` fetches off-mirror asset URLs from `{base_url}/{asset_name}` first rather than stalling on a firewalled `github.com` address. Verify a mirror without replacing any binary:
+     Mirror `bb_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows), `sha256sums.txt`, and `sha256sums.txt.sigstore.json` at the base URL. Asset URLs may be relative, as above, or absolute mirror URLs; a manifest copied verbatim from GitHub also works, since `bb` fetches an off-mirror asset URL from `{base_url}/{asset_name}`, and never from the `github.com` address the manifest names. Verify a mirror without replacing any binary:
      ```bash
      bb update --dry-run --base-url https://artifactory.corp.internal/artifactory/bb-releases
      ```

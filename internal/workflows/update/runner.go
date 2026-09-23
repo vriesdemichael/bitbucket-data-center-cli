@@ -185,7 +185,8 @@ func (runner *Runner) verifyRelease(ctx context.Context, release githubrelease.R
 
 	signatureBundleAsset, hasSignatureBundle := findAsset(release.Assets, checksumAsset.Name+".sigstore.json")
 	if !hasSignatureBundle && !runner.skipSignature {
-		return githubrelease.Asset{}, nil, apperrors.New(apperrors.KindNotFound, "release signature bundle sha256sums.txt.sigstore.json was not found; use winget, scoop, or manual install", nil)
+		return githubrelease.Asset{}, nil, apperrors.New(apperrors.KindNotFound, fmt.Sprintf(
+			"release signature bundle sha256sums.txt.sigstore.json was not found; install bb with %s instead", installAdvice(goos)), nil)
 	}
 
 	result.AssetName = asset.Name
@@ -212,7 +213,7 @@ func (runner *Runner) verifyRelease(ctx context.Context, release githubrelease.R
 
 		signatureVerification, err := runner.verifier.VerifyBlob(ctx, checksumsRaw, bundleRaw)
 		if err != nil {
-			return githubrelease.Asset{}, nil, signatureFailure(err)
+			return githubrelease.Asset{}, nil, signatureFailure(err, goos)
 		}
 		result.SignatureVerified = true
 		result.SignatureIdentity = signatureVerification.CertificateIdentity
@@ -397,7 +398,7 @@ func olderReleaseServed(latestVersion, currentVersion string) error {
 // problem on this host, the second means the artifact is not the one we signed —
 // and conflating them leaves an operator on an air-gapped host debugging a
 // signature that is in fact perfectly good.
-func signatureFailure(err error) error {
+func signatureFailure(err error, goos string) error {
 	kind := apperrors.KindOf(err)
 
 	if errors.Is(err, updatesigstore.ErrTrustedRootUnavailable) {
@@ -408,11 +409,28 @@ func signatureFailure(err error) error {
 		)
 	}
 
-	message := "failed to verify the signed release manifest; use winget, scoop, or manual install"
+	message := fmt.Sprintf("failed to verify the signed release manifest; install bb with %s instead", installAdvice(goos))
 	if kind == apperrors.KindTransient {
-		message = "failed to verify the signed release manifest right now; retry or use winget, scoop, or manual install"
+		message = fmt.Sprintf("failed to verify the signed release manifest right now; retry, or install bb with %s instead", installAdvice(goos))
 	}
 	return apperrors.New(kind, message, err)
+}
+
+// installAdvice names the ways to install bb on goos other than bb update, for
+// when an update cannot be verified: the channels the installation page lists
+// for that system. The same advice on every system sent Linux and macOS users
+// to winget and scoop (#637).
+func installAdvice(goos string) string {
+	switch strings.ToLower(strings.TrimSpace(goos)) {
+	case "windows":
+		return "winget, scoop or a manual install"
+	case "darwin":
+		return "Homebrew or a manual install"
+	case "linux":
+		return "Homebrew, the .deb or .rpm package, or a manual install"
+	default:
+		return "a manual install"
+	}
 }
 
 func archiveName(version, goos, goarch string) string {

@@ -44,10 +44,16 @@ type UpdateCommandHTTPConfig struct {
 	Trust config.UpdateTrust
 }
 
-var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
+// UpdateRunnerFactory builds the runner an update uses.
+//
+// It fails when the TLS settings do not load. The update used to carry on with
+// a bare transport instead, reaching the mirror without the CA that signs it or
+// the client certificate it asks for, so the failure that followed pointed
+// somewhere else (#637).
+var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) (*updateworkflow.Runner, error) {
 	transport, err := network.NewSafeTransport(httpConfig.TLSOptions)
 	if err != nil {
-		transport = &network.SafeTransport{}
+		return nil, apperrors.New(apperrors.KindValidation, "failed to load the TLS settings for bb update", err)
 	}
 
 	baseURL := strings.TrimSpace(httpConfig.UpdateBaseURL)
@@ -87,7 +93,7 @@ var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfi
 		Verifier:                  verifier,
 		SkipSignatureVerification: trust.AllowUnverified,
 		TrustSource:               trustSourceDescription(trust),
-	})
+	}), nil
 }
 
 // trustSourceDescription names where trust material comes from, for the result
@@ -251,7 +257,10 @@ it the way to verify a release mirror, and it fails with exit status 5
 				}
 			}
 
-			runner := UpdateRunnerFactory(cmd.Root().Version, httpConfig)
+			runner, err := UpdateRunnerFactory(cmd.Root().Version, httpConfig)
+			if err != nil {
+				return err
+			}
 			result, err := runner.Run(cmd.Context(), updateworkflow.Options{DryRun: d.DryRunEnabled()})
 			if err != nil {
 				return err

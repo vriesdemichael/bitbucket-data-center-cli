@@ -15,6 +15,7 @@ import (
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/outcome"
 )
 
 const defaultBaseURL = "https://api.github.com"
@@ -76,29 +77,70 @@ func (client *Client) Latest(ctx context.Context, owner, repo string) (Release, 
 
 	var release Release
 	err := client.do(ctx, http.MethodGet, requestURL, &release)
-	if err != nil {
-		// Fallback paths on custom mirrors (e.g. Artifactory / Nexus endpoints),
-		// which serve the manifest at the root of a generic repository rather
-		// than under GitHub's /repos/{owner}/{repo} layout. A mirror that does
-		// not hold the manifest can answer with anything from 404 to 403 or a
-		// gateway error, so any failure is worth a second look — on the default
-		// base URL nothing changes.
-		if client.usesMirror() {
-			fallbackURLs := []string{
-				fmt.Sprintf("%s/releases/latest", client.baseURL),
-				fmt.Sprintf("%s/latest", client.baseURL),
-			}
-			for _, fallbackURL := range fallbackURLs {
-				var fallbackRelease Release
-				if fbErr := client.do(ctx, http.MethodGet, fallbackURL, &fallbackRelease); fbErr == nil && fallbackRelease.TagName != "" {
-					return fallbackRelease, nil
-				}
-			}
-		}
+	if err == nil {
+		return release, nil
+	}
+
+	// Fallback paths on custom mirrors (e.g. Artifactory / Nexus endpoints),
+	// which serve the manifest at the root of a generic repository rather than
+	// under GitHub's /repos/{owner}/{repo} layout. A mirror that does not hold
+	// the manifest can answer with anything from 404 to 403 or a gateway error,
+	// so any failure is worth a second look -- on the default base URL nothing
+	// changes. A refusal is not: the fallbacks are on the same mirror, and the
+	// same policy refuses them.
+	if _, refused := refusal(err); refused || !client.usesMirror() {
 		return Release{}, err
 	}
 
-	return release, nil
+	failures := []manifestFailure{{url: requestURL, err: err}}
+	for _, fallbackURL := range []string{
+		fmt.Sprintf("%s/releases/latest", client.baseURL),
+		fmt.Sprintf("%s/latest", client.baseURL),
+	} {
+		var fallbackRelease Release
+		fallbackErr := client.do(ctx, http.MethodGet, fallbackURL, &fallbackRelease)
+		if fallbackErr == nil && fallbackRelease.TagName != "" {
+			return fallbackRelease, nil
+		}
+		if fallbackErr == nil {
+			fallbackErr = apperrors.New(apperrors.KindPermanent, "the release metadata names no tag_name", nil)
+		}
+		failures = append(failures, manifestFailure{url: fallbackURL, err: fallbackErr})
+	}
+
+	return Release{}, noManifest(failures)
+}
+
+// manifestFailure is one address a mirror was asked for its manifest at, and
+// what came back.
+type manifestFailure struct {
+	url string
+	err error
+}
+
+// noManifest reports every address a mirror was asked for its manifest at.
+//
+// The first failure is rarely the one that matters. A mirror laid out as a
+// generic repository answers 404 at GitHub's /repos path by design, and the
+// address that does hold its manifest may have said something worth reading:
+// broken JSON, a 403, a gateway error. Reporting only the first called a
+// mirror whose manifest was unreadable one that had none (#637). So the kind is
+// that of the first failure that is not a 404, and the message names them all.
+func noManifest(failures []manifestFailure) error {
+	kind := apperrors.KindNotFound
+	for _, failure := range failures {
+		if failed := apperrors.KindOf(failure.err); failed != apperrors.KindNotFound {
+			kind = failed
+			break
+		}
+	}
+
+	reasons := make([]string, 0, len(failures))
+	for _, failure := range failures {
+		reasons = append(reasons, fmt.Sprintf("%s: %s", failure.url, apperrors.MessageOf(failure.err)))
+	}
+
+	return apperrors.New(kind, "no release metadata could be read from the mirror: "+strings.Join(reasons, "; "), nil)
 }
 
 // usesMirror reports whether a release mirror is configured, as opposed to the
@@ -117,57 +159,46 @@ func (client *Client) Download(ctx context.Context, assetURL string) ([]byte, er
 		return nil, apperrors.New(apperrors.KindValidation, "asset URL is required", nil)
 	}
 
-	// Resolve relative URLs against baseURL
+	// A relative asset URL names a file on the mirror, so it resolves against
+	// the base URL as a directory. Resolved against the base URL as given, RFC
+	// 3986 replaces its last segment: under the hardening guide's own
+	// https://artifactory.corp.internal/artifactory/bb-releases,
+	// sha256sums.txt became .../artifactory/sha256sums.txt (#637).
 	parsed, parseErr := url.Parse(resolvedURL)
 	if parseErr == nil && parsed.Scheme == "" {
-		baseURLParsed, baseErr := url.Parse(client.baseURL)
-		if baseErr == nil {
-			resolvedURL = baseURLParsed.ResolveReference(parsed).String()
+		if base, baseErr := url.Parse(client.baseURL + "/"); baseErr == nil {
+			resolvedURL = base.ResolveReference(parsed).String()
 		}
 	}
 
-	// An asset URL that points off the mirror is tried on the mirror first.
-	//
-	// A manifest mirrored from GitHub still carries github.com asset URLs, and
-	// those are exactly the addresses an air-gapped enclave drops rather than
-	// refuses: trying them first costs a full connection timeout per asset —
-	// three of them per update — before the mirror is ever reached.
-	//
-	// A URL that already resolves onto the mirror is left alone. A manifest
-	// authored for the mirror can point at a path of its own choosing, and
-	// second-guessing it with a flattened file name would fetch the wrong
-	// object whenever the two disagree.
-	mirrorURL := ""
-	if client.usesMirror() && !client.hostedOnMirror(resolvedURL) {
-		if assetName := assetFileName(resolvedURL); assetName != "" {
-			mirrorURL = fmt.Sprintf("%s/%s", client.baseURL, assetName)
-			if body, mirrorErr := client.fetchAsset(ctx, mirrorURL); mirrorErr == nil {
-				return body, nil
-			}
-		}
+	if !client.usesMirror() || client.hostedOnMirror(resolvedURL) {
+		// A URL that already resolves onto the mirror is left alone. A manifest
+		// authored for the mirror can point at a path of its own choosing, and
+		// second-guessing it with a flattened file name would fetch the wrong
+		// object whenever the two disagree.
+		return client.fetchAsset(ctx, resolvedURL)
 	}
 
-	body, err := client.fetchAsset(ctx, resolvedURL)
-	if refused, ok := refusal(err); ok && mirrorURL != "" && mirrorURL != resolvedURL {
-		// The manifest's own address was refused rather than unreachable. The
-		// refusal names the fix, so it is reported as it is, once.
-		return nil, apperrors.New(
-			refused.Kind,
-			fmt.Sprintf("release asset %s could not be downloaded from the mirror at %s, and the manifest's own address for it is refused: %s", path.Base(mirrorURL), mirrorURL, refused.Message),
-			nil,
-		)
-	}
-	if err != nil && mirrorURL != "" && mirrorURL != resolvedURL {
-		// Both addresses failed. The mirror is the one the operator configured,
-		// so its failure is the one worth reporting.
-		return nil, apperrors.New(
-			apperrors.KindOf(err),
-			fmt.Sprintf("failed to download release asset from mirror %s or from %s", mirrorURL, resolvedURL),
-			err,
-		)
+	// An asset URL that points off the mirror is fetched from the mirror, by
+	// its file name, and only from there: ADR-059 has every download go
+	// through the configured mirror. A manifest mirrored from GitHub still
+	// carries github.com asset URLs, which an air-gapped enclave drops rather
+	// than refuses, and a mirror that failed used to send bb after them (#637).
+	assetName := assetFileName(resolvedURL)
+	if assetName == "" {
+		return nil, apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
+			"release asset URL %s is not on the mirror at %s, and names no file to fetch from it", resolvedURL, client.baseURL), nil)
 	}
 
-	return body, err
+	mirrorURL := fmt.Sprintf("%s/%s", client.baseURL, assetName)
+	body, err := client.fetchAsset(ctx, mirrorURL)
+	if err != nil {
+		return nil, apperrors.Transport(fmt.Sprintf(
+			"failed to download release asset %s from the mirror at %s; the manifest's own address for it, %s, is off the mirror and is not used",
+			assetName, mirrorURL, resolvedURL), err)
+	}
+
+	return body, nil
 }
 
 // hostedOnMirror reports whether an already-resolved asset URL lives under the
@@ -196,14 +227,16 @@ func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byt
 		request.Header.Set("User-Agent", client.userAgent)
 	}
 
-	response, err := client.http.Do(request)
+	tracked, exchange := outcome.Track(request)
+	response, err := client.http.Do(tracked)
 	if err != nil {
 		if refused, ok := refusal(err); ok {
 			return nil, refused
 		}
-		return nil, apperrors.Transport("failed to download release asset", err)
+		return nil, apperrors.Transport("failed to download release asset", exchange.Classify(err))
 	}
 	defer func() { _ = response.Body.Close() }()
+	exchange.Answered(response.StatusCode)
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return nil, mapHTTPError(response.StatusCode, "failed to download release asset")
@@ -211,7 +244,7 @@ func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byt
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, apperrors.Transport("failed to read release asset", err)
+		return nil, apperrors.Transport("failed to read release asset", exchange.ClassifyRead(err))
 	}
 
 	return body, nil
@@ -227,14 +260,19 @@ func (client *Client) do(ctx context.Context, method, requestURL string, out any
 		request.Header.Set("User-Agent", client.userAgent)
 	}
 
-	response, err := client.http.Do(request)
+	// Classified by the exchange, as every request on the Bitbucket clients
+	// is: a certificate the mirror presents is not a failure a retry fixes,
+	// and wrapping the bare error reported it as transient, exit 10 (#637).
+	tracked, exchange := outcome.Track(request)
+	response, err := client.http.Do(tracked)
 	if err != nil {
 		if refused, ok := refusal(err); ok {
 			return refused
 		}
-		return apperrors.Transport("failed to fetch release metadata", err)
+		return apperrors.Transport("failed to fetch release metadata", exchange.Classify(err))
 	}
 	defer func() { _ = response.Body.Close() }()
+	exchange.Answered(response.StatusCode)
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return mapHTTPError(response.StatusCode, "failed to fetch release metadata")
@@ -242,7 +280,7 @@ func (client *Client) do(ctx context.Context, method, requestURL string, out any
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return apperrors.Transport("failed to read release metadata", err)
+		return apperrors.Transport("failed to read release metadata", exchange.ClassifyRead(err))
 	}
 
 	if err := decodeJSON(body, out); err != nil {
