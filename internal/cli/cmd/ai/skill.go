@@ -296,6 +296,9 @@ func newSkillRemoveCommand(deps Dependencies) *cobra.Command {
 				if err := os.Remove(dest); err != nil {
 					return apperrors.New(apperrors.KindInternal, "failed to remove skill file", err)
 				}
+				// The skill's directory goes too when nothing else is in it:
+				// install made it to hold the file.
+				_ = os.Remove(filepath.Dir(dest))
 				removed = append(removed, dest)
 			}
 
