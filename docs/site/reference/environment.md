@@ -196,6 +196,14 @@ server sent back.
 |---|---|---|
 | `BB_BULK_STATUS_DIR` | `bulk-status` beside the stored configuration file | Where `bb bulk` writes plan and run state. Set it somewhere durable if you need runs to survive a reboot, or somewhere shared for a team runner. |
 
+## Shell completion
+
+| Variable | Default | Effect |
+|---|---|---|
+| `BB_COMPLETION_TIMEOUT` | `1200ms` | How long one tab press may take, as a Go duration, before it gives up and offers nothing. |
+| `BB_COMPLETION_DEBUG` | unset | Any value prints why a completion came back empty, when one is run by hand. See [When nothing is offered](../advanced/shell-completion.md#when-nothing-is-offered). |
+| `BB_ACTIVE_HELP` | unset | `0` turns off the hints bash and zsh show under the prompt. |
+
 ## Development only
 
 These exist for this repository's own test suite. They are not part of the

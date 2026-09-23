@@ -173,6 +173,13 @@ do not need it — SSH authenticates with your key.
 See [Git Authentication](advanced/git-authentication.md) for how it works and how
 to clean up clones made by older versions of `bb`.
 
+## Turn on tab completion
+
+`bb` completes pull request numbers, branches, repositories and people, as well
+as its commands and flags, once your shell loads its completion script.
+[Shell Completion](advanced/shell-completion.md) has the line to add for bash,
+zsh, fish and PowerShell.
+
 ## When something is wrong
 
 `bb doctor` is the first thing to run. It reads the stored, workspace and system

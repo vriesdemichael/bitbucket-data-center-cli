@@ -240,7 +240,7 @@ This registers `bb auth git-credential` in your global git configuration (`~/.gi
 
 ### Recipe 8: Shell Autocompletion Setup
 
-Generate autocompletion scripts for your shell so repository names, commands, and flags autocomplete with `<TAB>`:
+Load `bb`'s completion script in your shell so commands, flags and the values they take — pull requests, branches, repositories, people — complete with `<TAB>`. [Shell Completion](advanced/shell-completion.md) covers what completes and what to do when nothing is offered.
 
 === "Bash"
 
@@ -259,8 +259,8 @@ Generate autocompletion scripts for your shell so repository names, commands, an
 === "Fish"
 
     ```fish
-    # Run once to save completions
-    bb completion fish > ~/.config/fish/completions/bb.fish
+    # Add to ~/.config/fish/config.fish
+    bb completion fish | source
     ```
 
 === "PowerShell"
