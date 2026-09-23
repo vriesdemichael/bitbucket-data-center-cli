@@ -108,6 +108,43 @@ func renameRefused(errno syscall.Errno) error {
 	return &os.LinkError{Op: "rename", Old: "old", New: "new", Err: errno}
 }
 
+// tempDir is a directory for one test, named as an install names it, with its
+// symbolic links resolved: /var is a link to /private/var on macOS, and a
+// Windows temporary directory can be named in its short 8.3 form.
+func tempDir(t *testing.T) string {
+	t.Helper()
+
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("resolve the test directory: %v", err)
+	}
+
+	return dir
+}
+
+// errorPrivilegeNotHeld is how Windows refuses to let a process create a
+// symbolic link when it runs neither as an administrator nor in developer mode.
+const errorPrivilegeNotHeld = syscall.Errno(1314)
+
+// symlink points link at target, and reports whether it could. The one refusal
+// it accepts is a machine that does not let this process create a link, which it
+// logs; any other failure fails the test, so nothing else can make a test that
+// needs a link check less than it says.
+func symlink(t *testing.T, target, link string) bool {
+	t.Helper()
+
+	err := os.Symlink(target, link)
+	if err == nil {
+		return true
+	}
+	if !errors.Is(err, errorPrivilegeNotHeld) {
+		t.Fatalf("link %s to %s: %v", link, target, err)
+	}
+	t.Logf("this machine does not let the test create a symbolic link, so only the part without one ran: %v", err)
+
+	return false
+}
+
 // install writes an installed bb at target and returns its permissions as the
 // file system stores them.
 func install(t *testing.T, target, contents string, mode fs.FileMode) fs.FileMode {
@@ -174,7 +211,7 @@ func directoryEntries(t *testing.T, dir string) []string {
 func TestRenameOverReplacesTheTargetInOneRename(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb")
 	installed := install(t, target, "old", 0o700)
 
@@ -202,7 +239,7 @@ func TestRenameOverReplacesTheTargetInOneRename(t *testing.T) {
 func TestRenameOverGivesANewTargetTheArchivesMode(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb")
 
 	files, calls := recording(target, nil)
@@ -224,7 +261,7 @@ func TestRenameOverGivesANewTargetTheArchivesMode(t *testing.T) {
 func TestRenameOverSucceedsWhenTheDirectoryCannotBeSynced(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb")
 	install(t, target, "old", 0o755)
 
@@ -303,7 +340,7 @@ func TestRenameOverLeavesTheTargetAsItWasWhenAStepFails(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			dir := t.TempDir()
+			dir := tempDir(t)
 			target := filepath.Join(dir, "bb")
 			installed := install(t, target, "old", 0o700)
 
@@ -335,7 +372,7 @@ func TestRenameOverLeavesTheTargetAsItWasWhenAStepFails(t *testing.T) {
 func TestRenameOverReportsAPartialDownloadItCannotRemove(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb")
 	install(t, target, "old", 0o755)
 
@@ -386,7 +423,7 @@ func splitSetAside(t *testing.T, dir, executable string) (setAside, others []str
 func TestRenameAsideSetsTheOldBinaryAsideAndRenamesTheNewOneIn(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb.exe")
 	// Read-only, which Windows keeps too, as an attribute.
 	installed := install(t, target, "old", 0o500)
@@ -417,7 +454,7 @@ func TestRenameAsideSetsTheOldBinaryAsideAndRenamesTheNewOneIn(t *testing.T) {
 func TestRenameAsideNeverReusesAName(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb.exe")
 	install(t, target, "v1", 0o755)
 
@@ -490,7 +527,7 @@ func TestRenameAsideLeavesTheTargetAsItWasWhenAStepFails(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			dir := t.TempDir()
+			dir := tempDir(t)
 			target := filepath.Join(dir, "bb.exe")
 			installed := install(t, target, "old", 0o700)
 
@@ -522,7 +559,7 @@ func TestRenameAsideLeavesTheTargetAsItWasWhenAStepFails(t *testing.T) {
 func TestRenameAsideReportsBothFailuresWhenTheOldBinaryCannotBeMovedBack(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb.exe")
 	install(t, target, "old", 0o755)
 
@@ -597,7 +634,7 @@ func TestRenameAsideWaitsForAFileAnotherProcessHolds(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			dir := t.TempDir()
+			dir := tempDir(t)
 			target := filepath.Join(dir, "bb.exe")
 			install(t, target, "old", 0o755)
 
@@ -622,7 +659,7 @@ func TestRenameAsideWaitsForAFileAnotherProcessHolds(t *testing.T) {
 func TestRenameAsideGivesUpOnAFileHeldTooLong(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb.exe")
 	installed := install(t, target, "old", 0o700)
 
@@ -659,7 +696,7 @@ func TestRenameAsideGivesUpOnAFileHeldTooLong(t *testing.T) {
 func TestRenameAsideWaitsToPutTheOldBinaryBack(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb.exe")
 	install(t, target, "old", 0o755)
 
@@ -703,7 +740,7 @@ func TestRenameAsideDoesNotWaitOutOtherFailures(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			dir := t.TempDir()
+			dir := tempDir(t)
 			target := filepath.Join(dir, "bb.exe")
 			install(t, target, "old", 0o755)
 
@@ -726,7 +763,7 @@ func TestRenameAsideDoesNotWaitOutOtherFailures(t *testing.T) {
 func TestRenameOverDoesNotWait(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	target := filepath.Join(dir, "bb")
 	install(t, target, "old", 0o755)
 
@@ -742,10 +779,111 @@ func TestRenameOverDoesNotWait(t *testing.T) {
 	assertHolds(t, target, "old")
 }
 
+// A bb that a symbolic link starts is updated by replacing the file the link
+// names, whichever way the platform installs. The link stays a link, to the
+// same place, and so starts the new binary.
+func TestInstallBinaryReplacesTheFileALinkNames(t *testing.T) {
+	t.Parallel()
+
+	for _, goos := range []string{"linux", "windows"} {
+		t.Run("installing as on "+goos, func(t *testing.T) {
+			t.Parallel()
+
+			dir := tempDir(t)
+			versions := filepath.Join(dir, "versions")
+			if err := os.Mkdir(versions, 0o755); err != nil {
+				t.Fatalf("make %s: %v", versions, err)
+			}
+			file := filepath.Join(versions, "bb.exe")
+			install(t, file, "old", 0o755)
+			link := filepath.Join(dir, "bb.exe")
+
+			if !symlink(t, file, link) {
+				if err := installBinary(goos, file, []byte("new"), 0o755); err != nil {
+					t.Fatalf("installBinary: %v", err)
+				}
+				assertHolds(t, file, "new")
+				return
+			}
+
+			if err := installBinary(goos, link, []byte("new"), 0o755); err != nil {
+				t.Fatalf("installBinary through %s: %v", link, err)
+			}
+
+			info, err := os.Lstat(link)
+			if err != nil || info.Mode()&fs.ModeSymlink == 0 {
+				t.Fatalf("%s is no longer a symbolic link: %v, %v", link, info, err)
+			}
+			if resolved, err := filepath.EvalSymlinks(link); err != nil || resolved != file {
+				t.Fatalf("%s points at %q, %v; want %s", link, resolved, err, file)
+			}
+			assertHolds(t, file, "new")
+			assertHolds(t, link, "new")
+
+			// Nothing is written beside the link: the install happens beside the
+			// file, where Windows also sets the old binary aside.
+			if entries := directoryEntries(t, dir); !slices.Equal(entries, []string{"bb.exe", "versions"}) {
+				t.Errorf("the link's directory holds %v, want only the link and versions", entries)
+			}
+			setAside, others := splitSetAside(t, versions, "bb.exe")
+			if wantSetAside := map[string]int{"linux": 0, "windows": 1}[goos]; len(setAside) != wantSetAside || !slices.Equal(others, []string{"bb.exe"}) {
+				t.Errorf("versions holds %v and set aside %v, want bb.exe and %d set aside", others, setAside, wantSetAside)
+			}
+		})
+	}
+}
+
+// A run started through a symbolic link looks for leftovers beside the file the
+// link names, where an update set the old binary aside, and beside the link,
+// where the helper wrote.
+func TestRemoveUpdateLeftoversLooksBesideALinkAndTheFileItNames(t *testing.T) {
+	t.Parallel()
+
+	dir := tempDir(t)
+	versions := filepath.Join(dir, "versions")
+	if err := os.Mkdir(versions, 0o755); err != nil {
+		t.Fatalf("make %s: %v", versions, err)
+	}
+	file := filepath.Join(versions, "bb.exe")
+	setAside := file + ".old-0123456789abcdef"
+	for _, path := range []string{file, setAside} {
+		if err := os.WriteFile(path, []byte(filepath.Base(path)), 0o600); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+	}
+	link := filepath.Join(dir, "bb.exe")
+
+	if !symlink(t, file, link) {
+		osFileSystem().removeLeftoversOn("windows", func() (string, error) { return file, nil })
+		if _, err := os.Stat(setAside); !errors.Is(err, fs.ErrNotExist) {
+			t.Fatalf("%s was not removed: %v", setAside, err)
+		}
+		return
+	}
+
+	staged := link + ".new"
+	if err := os.WriteFile(staged, []byte("staged"), 0o600); err != nil {
+		t.Fatalf("write %s: %v", staged, err)
+	}
+
+	osFileSystem().removeLeftoversOn("windows", func() (string, error) { return link, nil })
+
+	for _, path := range []string{setAside, staged} {
+		if _, err := os.Stat(path); !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("%s was not removed: %v", path, err)
+		}
+	}
+	for _, path := range []string{file, link} {
+		if _, err := os.Lstat(path); err != nil {
+			t.Errorf("%s was removed: %v", path, err)
+		}
+	}
+}
+
 func TestRemoveUpdateLeftoversDeletesOnlyWhatUpdatesLeft(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	left := []string{
 		"bb.exe.old-0123456789abcdef",
 		// Set aside by a bb started as BB.EXE; Windows names are not case sensitive.
@@ -790,7 +928,7 @@ func TestRemoveUpdateLeftoversDeletesOnlyWhatUpdatesLeft(t *testing.T) {
 func TestRemoveUpdateLeftoversCarriesOnPastOneItCannotDelete(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
+	dir := tempDir(t)
 	const held, free = "bb.exe.old-0000000000000000", "bb.exe.old-ffffffffffffffff"
 	for _, name := range []string{"bb.exe", held, free} {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(name), 0o600); err != nil {
@@ -821,7 +959,7 @@ func TestRemoveUpdateLeftoversLooksOnlyOnWindows(t *testing.T) {
 		t.Run(goos, func(t *testing.T) {
 			t.Parallel()
 
-			dir := t.TempDir()
+			dir := tempDir(t)
 			executable := filepath.Join(dir, "bb.exe")
 			left := []string{executable + ".old-0123456789abcdef", executable + ".new"}
 			for _, path := range append([]string{executable}, left...) {

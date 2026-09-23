@@ -205,6 +205,11 @@ func RemoveUpdateLeftovers() {
 
 // removeLeftoversOn is RemoveUpdateLeftovers on goos, for the binary executable
 // locates.
+//
+// When bb was started through a symbolic link it looks beside the link and
+// beside the file the link names: an update sets the old binary aside next to
+// the file it replaced (installTarget), and the helper wrote next to the path
+// it was given.
 func (files fileSystem) removeLeftoversOn(goos string, executable func() (string, error)) {
 	if !strings.EqualFold(strings.TrimSpace(goos), "windows") {
 		return
@@ -216,6 +221,9 @@ func (files fileSystem) removeLeftoversOn(goos string, executable func() (string
 	}
 
 	files.removeLeftovers(path)
+	if resolved, err := filepath.EvalSymlinks(path); err == nil && resolved != path {
+		files.removeLeftovers(resolved)
+	}
 }
 
 // removeLeftovers deletes what it can of the files updates left next to
@@ -264,10 +272,20 @@ func isOldBinary(executable, name string) bool {
 	return err == nil
 }
 
+// installTarget is the file an install replaces: the one targetPath names, or,
+// when that is a symbolic link, the file the link points to. Replacing the file
+// keeps the link, so it starts the new binary; replacing the link would leave
+// the file it pointed to behind, out of date. A path that does not resolve,
+// with nothing there yet, is installed as given, as writeFileAtomically in the
+// config package does.
 func installTarget(targetPath string) (string, error) {
 	target := strings.TrimSpace(targetPath)
 	if target == "" {
 		return "", apperrors.New(apperrors.KindValidation, "target executable path is required", nil)
+	}
+
+	if resolved, err := filepath.EvalSymlinks(target); err == nil {
+		return resolved, nil
 	}
 
 	return target, nil
