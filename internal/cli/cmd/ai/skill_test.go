@@ -317,7 +317,13 @@ func TestSkillRemoveDeletesFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
+			// As the OS reports the working directory: on macOS the temporary
+			// directory with /var resolved to /private/var, which is what the
+			// output names.
+			dir, err := filepath.EvalSymlinks(t.TempDir())
+			if err != nil {
+				t.Fatal(err)
+			}
 			origDir, err := os.Getwd()
 			if err != nil {
 				t.Fatal(err)
@@ -363,7 +369,10 @@ func TestSkillRemoveDeletesFile(t *testing.T) {
 // TestSkillRemoveTakesWhicheverCopyIsThere covers a skill installed before bb
 // wrote Claude Code's copy, or one whose other copy was deleted by hand.
 func TestSkillRemoveTakesWhicheverCopyIsThere(t *testing.T) {
-	dir := t.TempDir()
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
 	origDir, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
