@@ -11515,6 +11515,12 @@ file against the configured trust material, unless administrative policy sets
 allow_unverified_update; the checksum file's entry for this platform's archive;
 and the archive itself against that entry.
 
+It puts the new binary in place before it exits. When bb runs through a
+symbolic link, it replaces the file the link names and leaves the link as it
+is. On Windows, which will not delete a running executable, the binary it
+replaced stays beside the new one, as bb.exe.old- and a random suffix, until
+the next bb run deletes it.
+
 With --dry-run, bb update makes the same checks and installs nothing. It checks
 the latest release even when that is the version already installed, which makes
 it the way to verify a release mirror, and it fails with exit status 5
