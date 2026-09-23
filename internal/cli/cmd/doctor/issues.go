@@ -2,6 +2,7 @@ package doctorcmd
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -12,9 +13,13 @@ import (
 type issue struct {
 	key     string
 	message string
+	// summary is what the failure's message calls the issue. Empty for one in
+	// the configuration, which the message counts under its file instead.
+	summary string
 }
 
-// issuesIn lists every issue the report shows, in the order it shows them.
+// issuesIn lists every issue the configuration section of the report shows, in
+// the order it shows them.
 //
 // Facts are not issues: where a setting came from, what it overrides, and that
 // a file holds a plaintext credential, which is the fallback bb uses by design
@@ -103,12 +108,12 @@ func jsonPointer(path []string) string {
 // failureFor is how a run with issues ends, and nil when there is nothing to
 // fix.
 //
-// Permanent, exit 1: the configuration is what is wrong, and running bb doctor
-// again reads the same files. A failure of bb doctor itself is a bug rather
-// than a finding, and keeps whatever kind it has. error.details names every
-// issue under its own key, so a caller acts on the envelope without parsing the
-// message; two findings at one place, such as a value of the wrong type that is
-// also not an allowed one, share that place's entry.
+// Permanent, exit 1: what is wrong is in files on this machine, and running bb
+// doctor again reads the same files. A failure of bb doctor itself is a bug
+// rather than a finding, and keeps whatever kind it has. error.details names
+// every issue under its own key, so a caller acts on the envelope without
+// parsing the message; two findings at one place, such as a value of the wrong
+// type that is also not an allowed one, share that place's entry.
 func failureFor(diagnosis config.Diagnosis, issues []issue) error {
 	if len(issues) == 0 {
 		return nil
@@ -122,13 +127,13 @@ func failureFor(diagnosis config.Diagnosis, issues []issue) error {
 		details[found.key] = found.message
 	}
 
-	failure := apperrors.New(apperrors.KindPermanent, summaryOf(diagnosis, len(issues)), nil)
+	failure := apperrors.New(apperrors.KindPermanent, summaryOf(diagnosis, issues), nil)
 	failure.Details = details
 
 	return failure
 }
 
-func summaryOf(diagnosis config.Diagnosis, count int) string {
+func summaryOf(diagnosis config.Diagnosis, issues []issue) string {
 	parts := []string{}
 	for _, file := range diagnosis.Files {
 		inFile := len(file.Violations) + len(file.Ignored)
@@ -147,6 +152,13 @@ func summaryOf(diagnosis config.Diagnosis, count int) string {
 	if keyringUnreachable(diagnosis) {
 		parts = append(parts, "the keyring")
 	}
+	for _, found := range issues {
+		if found.summary != "" && !slices.Contains(parts, found.summary) {
+			parts = append(parts, found.summary)
+		}
+	}
 
-	return fmt.Sprintf("the configuration has %d %s to fix: %s", count, plural(count, "issue", "issues"), strings.Join(parts, ", "))
+	count := len(issues)
+
+	return fmt.Sprintf("%d %s to fix: %s", count, plural(count, "issue", "issues"), strings.Join(parts, ", "))
 }

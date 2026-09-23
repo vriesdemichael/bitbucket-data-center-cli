@@ -65,12 +65,11 @@ func fixPowerShellCompletion(root *cobra.Command) {
 	}
 
 	for _, shell := range completionCmd.Commands() {
-		generate := generatorFor(shell.Name())
-		if generate == nil {
+		if generatorFor(shell.Name()) == nil {
 			continue
 		}
 
-		patch := patchFor(shell.Name())
+		name := shell.Name()
 
 		// Cobra's own RunE writes to a writer it captured when it built these
 		// commands, which is not the one the caller sets afterwards. Keeping
@@ -82,26 +81,40 @@ func fixPowerShellCompletion(root *cobra.Command) {
 				withDescriptions = flag.Value.String() != "true"
 			}
 
-			script := &bytes.Buffer{}
-			if err := generate(cmd.Root(), script, withDescriptions); err != nil {
+			text, err := completionScript(cmd.Root(), name, withDescriptions)
+			if err != nil {
 				return err
 			}
 
-			text := script.String()
-			if patch != nil {
-				fixed, err := patch(text)
-				if err != nil {
-					return err
-				}
-
-				text = fixed
-			}
-
-			_, err := cmd.OutOrStdout().Write([]byte(text))
+			_, err = cmd.OutOrStdout().Write([]byte(text))
 
 			return err
 		}
 	}
+}
+
+// completionScript is what `bb completion <shell>` prints for root, corrected.
+//
+// One function for the command and for bb doctor, which compares a script
+// somebody saved with it: a doctor comparing against Cobra's uncorrected text
+// would call every script saved from this bb out of date.
+func completionScript(root *cobra.Command, shell string, withDescriptions bool) (string, error) {
+	generate := generatorFor(shell)
+	if generate == nil {
+		return "", apperrors.New(apperrors.KindInternal, "bb generates no completion script for "+shell, nil)
+	}
+
+	script := &bytes.Buffer{}
+	if err := generate(root, script, withDescriptions); err != nil {
+		return "", err
+	}
+
+	patch := patchFor(shell)
+	if patch == nil {
+		return script.String(), nil
+	}
+
+	return patch(script.String())
 }
 
 // generatorFor is Cobra's generator for a shell, behind one signature.

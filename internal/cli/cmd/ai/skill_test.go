@@ -245,6 +245,57 @@ func TestSkillInstallWritesFile(t *testing.T) {
 	}
 }
 
+// TestBbDoctorSeesWhatInstallWrites holds the exports bb doctor reads to the
+// install command: a skill doctor calls current must be byte for byte the file
+// install wrote, in the place install wrote it.
+func TestBbDoctorSeesWhatInstallWrites(t *testing.T) {
+	// The working directory as the OS reports it, which on macOS is the
+	// temporary directory with /var resolved to /private/var.
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(dir)
+
+	for _, skill := range Skills {
+		cmd := New(testSkillDeps("5.6.7"))
+		cmd.SetOut(&bytes.Buffer{})
+		cmd.SetErr(&bytes.Buffer{})
+		cmd.SetArgs([]string{"skill", "install", skill.Name})
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("install %s: %v", skill.Name, err)
+		}
+
+		written, err := os.ReadFile(skill.Path(dir, agentsSkills))
+		if err != nil {
+			t.Fatalf("%s is not where Path says: %v", skill.Name, err)
+		}
+		if string(written) != skill.Rendered("5.6.7") {
+			t.Errorf("%s: install wrote something other than Rendered", skill.Name)
+		}
+		if !strings.HasPrefix(skill.Rendered("5.6.7"), strings.TrimRight(skill.Repository(), "\n")) {
+			t.Errorf("%s: Repository is not the skill Rendered stamps", skill.Name)
+		}
+	}
+
+	if got, want := Skills[0].Repository(), string(bbskill.Content); got != want {
+		t.Error("Repository is not the skill as the repository holds it")
+	}
+
+	want := map[string]string{
+		"agents": filepath.Join(dir, ".agents", "skills", "bb", "SKILL.md"),
+		"claude": filepath.Join(dir, ".claude", "skills", "bb", "SKILL.md"),
+	}
+	if len(SkillLocations) != len(want) {
+		t.Fatalf("SkillLocations = %+v, want %d", SkillLocations, len(want))
+	}
+	for _, location := range SkillLocations {
+		if got := Skills[0].Path(dir, location); got != want[location.Name] {
+			t.Errorf("%s: Path = %q, want %q", location.Name, got, want[location.Name])
+		}
+	}
+}
+
 // TestSkillRemoveDeletesFile tests that `bb ai skill remove` removes an existing file.
 func TestSkillRemoveDeletesFile(t *testing.T) {
 	tests := []struct {

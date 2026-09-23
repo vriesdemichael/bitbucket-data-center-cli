@@ -152,6 +152,44 @@ func TestAScriptWithoutDescriptionsIsStillGenerated(t *testing.T) {
 	}
 }
 
+// TestBbDoctorComparesWithWhatBbCompletionPrints: bb doctor calls a saved
+// script out of date when it differs from completionScript, so that has to be
+// exactly what the command prints, corrections included, or every script saved
+// from this bb would be reported as fallen behind.
+func TestBbDoctorComparesWithWhatBbCompletionPrints(t *testing.T) {
+	t.Parallel()
+
+	for _, shell := range []string{"bash", "zsh", "fish", "powershell"} {
+		for _, withDescriptions := range []bool{true, false} {
+			args := []string{"completion", shell}
+			if !withDescriptions {
+				args = append(args, "--no-descriptions")
+			}
+
+			command := NewRootCommand()
+			printed := &bytes.Buffer{}
+			command.SetOut(printed)
+			command.SetErr(printed)
+			command.SetArgs(args)
+			if err := command.Execute(); err != nil {
+				t.Fatalf("bb %s: %v", strings.Join(args, " "), err)
+			}
+
+			compared, err := completionScript(NewRootCommand(), shell, withDescriptions)
+			if err != nil {
+				t.Fatalf("the script for %s: %v", shell, err)
+			}
+			if compared != printed.String() {
+				t.Errorf("bb %s prints something other than what bb doctor compares with", strings.Join(args, " "))
+			}
+		}
+	}
+
+	if _, err := completionScript(NewRootCommand(), "cmd", true); err == nil {
+		t.Error("a script for a shell bb does not complete was generated")
+	}
+}
+
 func truncate(value string) string {
 	if len(value) <= 120 {
 		return value
