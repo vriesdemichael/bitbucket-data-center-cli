@@ -1120,6 +1120,10 @@ func validate(args []string, requirePositionals bool) string {
 	// non-empty. Without it, a documented `bb --version` reads as an unknown flag.
 	root.Version = "docs-lint"
 
+	if len(args) > 0 && (args[0] == cobra.ShellCompRequestCmd || args[0] == cobra.ShellCompNoDescRequestCmd) {
+		return validateCompletionRequest(root, args[1:])
+	}
+
 	target, remaining, err := root.Find(args)
 	if err != nil {
 		return err.Error()
@@ -1134,10 +1138,8 @@ func validate(args []string, requirePositionals bool) string {
 	// Placeholders stand in for values a reader substitutes, so an invocation
 	// that is only a prefix of a real command path is still wrong: bb would
 	// print help rather than doing what the surrounding prose claims.
-	if target.HasAvailableSubCommands() && len(remaining) > 0 {
-		if first := remaining[0]; !strings.HasPrefix(first, "-") {
-			return fmt.Sprintf("%q is not a subcommand of %q", first, target.CommandPath())
-		}
+	if problem := strayWordUnder(target, remaining); problem != "" {
+		return problem
 	}
 
 	if err := target.ParseFlags(remaining); err != nil {
@@ -1166,6 +1168,41 @@ func validate(args []string, requirePositionals bool) string {
 	if requirePositionals {
 		if err := validatePositionals(target, target.Flags().Args()); err != nil {
 			return err.Error()
+		}
+	}
+
+	return ""
+}
+
+// validateCompletionRequest checks `bb __complete <words>`, the request a shell
+// makes on a tab press, which documentation shows as the way to see why a
+// completion came back empty.
+//
+// Cobra adds the command only while executing, so the tree Find walks does not
+// have it. What follows it is a partial command line whose last word is the one
+// being completed, empty for a new word. That word and any flag waiting for a
+// value are incomplete by design; the words before it still have to name a real
+// command, or the example stops working the day that command is renamed.
+func validateCompletionRequest(root *cobra.Command, words []string) string {
+	if len(words) == 0 {
+		return fmt.Sprintf("%s needs the words to complete, ending with the one being completed", cobra.ShellCompRequestCmd)
+	}
+
+	target, remaining, err := root.Find(words[:len(words)-1])
+	if err != nil {
+		return err.Error()
+	}
+
+	return strayWordUnder(target, remaining)
+}
+
+// strayWordUnder reports a word that should have named a subcommand. Find
+// rejects an unknown word only under the root; below it, the word is left over
+// for a command that takes no such argument.
+func strayWordUnder(target *cobra.Command, remaining []string) string {
+	if target.HasAvailableSubCommands() && len(remaining) > 0 {
+		if first := remaining[0]; !strings.HasPrefix(first, "-") {
+			return fmt.Sprintf("%q is not a subcommand of %q", first, target.CommandPath())
 		}
 	}
 
