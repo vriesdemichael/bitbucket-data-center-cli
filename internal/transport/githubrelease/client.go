@@ -14,11 +14,18 @@ import (
 	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/download"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/outcome"
 )
 
 const defaultBaseURL = "https://api.github.com"
+
+// maxReleaseMetadataBytes caps the manifest bb update reads. GitHub's for one
+// release is tens of kilobytes -- the notes, and an entry for each file -- so
+// four megabytes leaves room to grow while still bounding a mirror that answers
+// with something else entirely.
+const maxReleaseMetadataBytes = 4 << 20
 
 type Asset struct {
 	Name               string `json:"name"`
@@ -34,10 +41,29 @@ type Release struct {
 type Client struct {
 	baseURL   string
 	http      *http.Client
+	downloads *download.Downloader
 	userAgent string
 }
 
-func NewClient(baseURL string, httpClient *http.Client, userAgent string) *Client {
+// Option adjusts how a Client downloads a release's files.
+type Option func(*download.Options)
+
+// Retries has a download that failed in transit tried again count times, with
+// backoff times the attempt number between tries, as the Bitbucket clients do.
+func Retries(count int, backoff time.Duration) Option {
+	return func(options *download.Options) {
+		options.Retries = count
+		options.Backoff = backoff
+	}
+}
+
+// NewClient returns a client for the release API at baseURL, or at GitHub when
+// it is empty.
+//
+// The manifest is an API call and is fetched with httpClient, under its
+// Timeout. A release's files go through a downloader over the same transport,
+// which applies that Timeout to each wait rather than to the whole transfer.
+func NewClient(baseURL string, httpClient *http.Client, userAgent string, options ...Option) *Client {
 	resolvedBaseURL := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if resolvedBaseURL == "" {
 		resolvedBaseURL = defaultBaseURL
@@ -55,9 +81,15 @@ func NewClient(baseURL string, httpClient *http.Client, userAgent string) *Clien
 		}
 	}
 
+	downloadOptions := download.Options{Timeout: httpClient.Timeout}
+	for _, option := range options {
+		option(&downloadOptions)
+	}
+
 	return &Client{
 		baseURL:   resolvedBaseURL,
 		http:      httpClient,
+		downloads: download.New(httpClient, downloadOptions),
 		userAgent: strings.TrimSpace(userAgent),
 	}
 }
@@ -161,7 +193,9 @@ func (client *Client) usesMirror() bool {
 	return client.baseURL != defaultBaseURL
 }
 
-func (client *Client) Download(ctx context.Context, assetURL string) ([]byte, error) {
+// Download fetches one of a release's files and returns it. limit is the most
+// bytes it may have: a file over it is refused rather than read to the end.
+func (client *Client) Download(ctx context.Context, assetURL string, limit int64) ([]byte, error) {
 	if client == nil || client.http == nil {
 		return nil, apperrors.New(apperrors.KindInternal, "release client is not configured", nil)
 	}
@@ -188,7 +222,7 @@ func (client *Client) Download(ctx context.Context, assetURL string) ([]byte, er
 		// authored for the mirror can point at a path of its own choosing, and
 		// second-guessing it with a flattened file name would fetch the wrong
 		// object whenever the two disagree.
-		return client.fetchAsset(ctx, resolvedURL)
+		return client.fetchAsset(ctx, resolvedURL, limit)
 	}
 
 	// An asset URL that points off the mirror is fetched from the mirror, by
@@ -203,7 +237,7 @@ func (client *Client) Download(ctx context.Context, assetURL string) ([]byte, er
 	}
 
 	mirrorURL := fmt.Sprintf("%s/%s", client.baseURL, assetName)
-	body, err := client.fetchAsset(ctx, mirrorURL)
+	body, err := client.fetchAsset(ctx, mirrorURL, limit)
 	if err != nil {
 		return nil, apperrors.Transport(fmt.Sprintf(
 			"failed to download release asset %s from the mirror at %s; the manifest's own address for it, %s, is off the mirror and is not used",
@@ -229,37 +263,30 @@ func assetFileName(assetURL string) string {
 	return name
 }
 
-func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byte, error) {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, resolvedURL, nil)
-	if err != nil {
-		return nil, apperrors.New(apperrors.KindInternal, "failed to build release download request", err)
-	}
-	request.Header.Set("Accept", "application/octet-stream")
+// fetchAsset downloads one file through the downloader: no deadline for the
+// whole transfer, a stall timeout instead, resumed or started again after a
+// failure in transit, and refused once it passes limit.
+func (client *Client) fetchAsset(ctx context.Context, resolvedURL string, limit int64) ([]byte, error) {
+	header := http.Header{}
+	header.Set("Accept", "application/octet-stream")
 	if client.userAgent != "" {
-		request.Header.Set("User-Agent", client.userAgent)
+		header.Set("User-Agent", client.userAgent)
 	}
 
-	tracked, exchange := outcome.Track(request)
-	response, err := client.http.Do(tracked)
+	var body download.Memory
+	_, err := client.downloads.Get(ctx, download.Request{URL: resolvedURL, Header: header, Limit: limit}, &body)
 	if err != nil {
+		var status *download.StatusError
+		if errors.As(err, &status) {
+			return nil, client.statusError(status.StatusCode, "failed to download release asset")
+		}
 		if refused, ok := refusal(err); ok {
 			return nil, refused
 		}
-		return nil, apperrors.Transport("failed to download release asset", exchange.Classify(err))
-	}
-	defer func() { _ = response.Body.Close() }()
-	exchange.Answered(response.StatusCode)
-
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return nil, client.statusError(response.StatusCode, "failed to download release asset")
+		return nil, apperrors.Transport("failed to download release asset", err)
 	}
 
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, apperrors.Transport("failed to read release asset", exchange.ClassifyRead(err))
-	}
-
-	return body, nil
+	return body.Bytes(), nil
 }
 
 func (client *Client) do(ctx context.Context, method, requestURL string, out any) error {
@@ -290,9 +317,13 @@ func (client *Client) do(ctx context.Context, method, requestURL string, out any
 		return client.statusError(response.StatusCode, "failed to fetch release metadata")
 	}
 
-	body, err := io.ReadAll(response.Body)
+	body, err := io.ReadAll(io.LimitReader(response.Body, maxReleaseMetadataBytes+1))
 	if err != nil {
 		return apperrors.Transport("failed to read release metadata", exchange.ClassifyRead(err))
+	}
+	if len(body) > maxReleaseMetadataBytes {
+		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
+			"the release metadata is larger than %d MiB, far more than a release manifest holds", maxReleaseMetadataBytes>>20), nil)
 	}
 
 	if err := decodeJSON(body, out); err != nil {

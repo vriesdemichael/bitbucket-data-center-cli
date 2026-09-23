@@ -2452,6 +2452,36 @@ func ResolveRequestTimeoutWith(overrides Overrides, fallback time.Duration) (tim
 	return timeout, nil
 }
 
+// ResolveRetriesWith resolves how often a transient failure is retried and the
+// backoff between attempts, honouring --retry-count and --retry-backoff ahead of
+// BB_RETRY_COUNT and BB_RETRY_BACKOFF, for bb update as ResolveRequestTimeoutWith
+// does the timeout.
+func ResolveRetriesWith(overrides Overrides) (int, time.Duration, error) {
+	sourced := map[string]bool{}
+
+	count, err := resolveInt(sourced, settingRetryCount, overrides.RetryCount, defaultRetryCount)
+	if err != nil {
+		return 0, 0, apperrors.New(apperrors.KindValidation,
+			nameOf(sourced, settingRetryCount)+" must be a non-negative integer", err)
+	}
+	if count < 0 {
+		return 0, 0, apperrors.New(apperrors.KindValidation,
+			nameOf(sourced, settingRetryCount)+" must be greater than or equal to 0", nil)
+	}
+
+	backoff, err := resolveDuration(sourced, settingRetryBackoff, overrides.RetryBackoff, defaultRetryBackoff)
+	if err != nil {
+		return 0, 0, apperrors.New(apperrors.KindValidation,
+			nameOf(sourced, settingRetryBackoff)+" must be a valid duration (example: 250ms)", err)
+	}
+	if backoff <= 0 {
+		return 0, 0, apperrors.New(apperrors.KindValidation,
+			nameOf(sourced, settingRetryBackoff)+" must be greater than 0", nil)
+	}
+
+	return count, backoff, nil
+}
+
 // suppliedCredentialToken is BITBUCKET_TOKEN, unless the caller named a user.
 //
 // The token and the username/password pair are two answers to "who is this

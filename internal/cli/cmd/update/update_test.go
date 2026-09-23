@@ -33,7 +33,7 @@ func (client updateCommandReleaseClient) Latest(context.Context, string, string)
 	return client.release, client.latestErr
 }
 
-func (client updateCommandReleaseClient) Download(_ context.Context, assetURL string) ([]byte, error) {
+func (client updateCommandReleaseClient) Download(_ context.Context, assetURL string, _ int64) ([]byte, error) {
 	return client.downloads[assetURL], nil
 }
 
@@ -898,11 +898,15 @@ func TestUpdateHonoursTheGlobalFlags(t *testing.T) {
 	caFile := "/tmp/corp-ca.pem"
 	skip := true
 	timeout := "60s"
+	retries := 5
+	backoff := "2s"
 
 	httpConfig, err := LoadUpdateCommandHTTPConfig(config.Overrides{
 		CAFile:             &caFile,
 		InsecureSkipVerify: &skip,
 		RequestTimeout:     &timeout,
+		RetryCount:         &retries,
+		RetryBackoff:       &backoff,
 	})
 	if err != nil {
 		t.Fatalf("loading the update transport config failed: %v", err)
@@ -910,6 +914,10 @@ func TestUpdateHonoursTheGlobalFlags(t *testing.T) {
 
 	if httpConfig.RequestTimeout != 60*time.Second {
 		t.Errorf("request timeout = %v, want the value --request-timeout supplied", httpConfig.RequestTimeout)
+	}
+	// The downloads retry as the API calls do, which they never did at all.
+	if httpConfig.RetryCount != 5 || httpConfig.RetryBackoff != 2*time.Second {
+		t.Errorf("retries = %d every %v, want what --retry-count and --retry-backoff supplied", httpConfig.RetryCount, httpConfig.RetryBackoff)
 	}
 	if httpConfig.TLSOptions.CAFile != caFile {
 		t.Errorf("CA file = %q, want the value --ca-file supplied", httpConfig.TLSOptions.CAFile)
@@ -931,5 +939,15 @@ func TestUpdateBlamesTheFlagItWasGiven(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "--request-timeout") {
 		t.Errorf("error = %q, want it to name the flag rather than BB_REQUEST_TIMEOUT", err.Error())
+	}
+
+	negative := -1
+	if _, err := LoadUpdateCommandHTTPConfig(config.Overrides{RetryCount: &negative}); !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "--retry-count") {
+		t.Errorf("a negative retry count gave %v, want a validation error naming --retry-count", err)
+	}
+	for _, backoff := range []string{"0s", "soon"} {
+		if _, err := LoadUpdateCommandHTTPConfig(config.Overrides{RetryBackoff: &backoff}); !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "--retry-backoff") {
+			t.Errorf("a retry backoff of %q gave %v, want a validation error naming --retry-backoff", backoff, err)
+		}
 	}
 }

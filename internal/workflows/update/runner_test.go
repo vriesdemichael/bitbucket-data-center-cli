@@ -26,6 +26,8 @@ type stubReleaseClient struct {
 	downloadErrs  map[string]error
 	latestCalls   int
 	downloadCalls []string
+	// limits is the cap each asset URL was downloaded under.
+	limits map[string]int64
 }
 
 func (stub *stubReleaseClient) Latest(context.Context, string, string) (githubrelease.Release, error) {
@@ -33,8 +35,12 @@ func (stub *stubReleaseClient) Latest(context.Context, string, string) (githubre
 	return stub.release, stub.latestErr
 }
 
-func (stub *stubReleaseClient) Download(_ context.Context, assetURL string) ([]byte, error) {
+func (stub *stubReleaseClient) Download(_ context.Context, assetURL string, limit int64) ([]byte, error) {
 	stub.downloadCalls = append(stub.downloadCalls, assetURL)
+	if stub.limits == nil {
+		stub.limits = map[string]int64{}
+	}
+	stub.limits[assetURL] = limit
 	if err := stub.downloadErrs[assetURL]; err != nil {
 		return nil, err
 	}
@@ -916,17 +922,17 @@ func TestUpdateHelpers(t *testing.T) {
 		t.Fatalf("unexpected tar extract result: %q %v", string(extracted), err)
 	}
 	tarDefaultMode := buildTarGzArchive(t, "bb", []byte("payload"))
-	if _, mode, err := extractBinaryFromTarGz("bb", tarDefaultMode); err != nil || mode == 0 {
+	if _, mode, err := extractBinaryFromTarGz("bb", tarDefaultMode, maxBinaryBytes); err != nil || mode == 0 {
 		t.Fatalf("expected tar mode, got %o %v", mode, err)
 	}
-	if _, mode, err := extractBinaryFromZip("bb.exe", buildZipArchive(t, "bb.exe", []byte("payload"))); err != nil || mode != 0o755 {
+	if _, mode, err := extractBinaryFromZip("bb.exe", buildZipArchive(t, "bb.exe", []byte("payload")), maxBinaryBytes); err != nil || mode != 0o755 {
 		t.Fatalf("expected default zip mode, got %o %v", mode, err)
 	}
 	zipArchive := buildZipArchive(t, "bb.exe", []byte("payload"))
 	if extracted, _, err := extractBinary("archive.zip", "bb.exe", zipArchive); err != nil || string(extracted) != "payload" {
 		t.Fatalf("unexpected zip extract result: %q %v", string(extracted), err)
 	}
-	if _, _, err := extractBinaryFromZip("bb.exe", buildZipArchive(t, "other.exe", []byte("payload"))); !apperrors.IsKind(err, apperrors.KindNotFound) {
+	if _, _, err := extractBinaryFromZip("bb.exe", buildZipArchive(t, "other.exe", []byte("payload")), maxBinaryBytes); !apperrors.IsKind(err, apperrors.KindNotFound) {
 		t.Fatalf("expected missing zip binary error, got %v", err)
 	}
 	invalidTarBuffer := &bytes.Buffer{}
@@ -937,7 +943,7 @@ func TestUpdateHelpers(t *testing.T) {
 	if err := gzipWriter.Close(); err != nil {
 		t.Fatalf("gzip close: %v", err)
 	}
-	if _, _, err := extractBinaryFromTarGz("bb", invalidTarBuffer.Bytes()); !apperrors.IsKind(err, apperrors.KindPermanent) {
+	if _, _, err := extractBinaryFromTarGz("bb", invalidTarBuffer.Bytes(), maxBinaryBytes); !apperrors.IsKind(err, apperrors.KindPermanent) {
 		t.Fatalf("expected tar read error, got %v", err)
 	}
 	if _, _, err := extractBinary("archive.tar.gz", "bb", []byte("not-a-tar")); !apperrors.IsKind(err, apperrors.KindPermanent) {

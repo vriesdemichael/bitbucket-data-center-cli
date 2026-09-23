@@ -29,8 +29,12 @@ const (
 
 type UpdateCommandHTTPConfig struct {
 	RequestTimeout time.Duration
-	TLSOptions     network.TLSOptions
-	UpdateBaseURL  string
+	// RetryCount and RetryBackoff are retry_count and retry_backoff: how often
+	// a download that failed in transit is tried again, and the wait between.
+	RetryCount    int
+	RetryBackoff  time.Duration
+	TLSOptions    network.TLSOptions
+	UpdateBaseURL string
 	// HTTPPermission decides whether UpdateBaseURL, the assets a manifest names
 	// and any redirect may use plain HTTP.
 	HTTPPermission config.UpdateHTTPPermission
@@ -61,11 +65,16 @@ var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfi
 		baseURL = "https://api.github.com"
 	}
 
+	// The manifest is fetched with this client, and held to its Timeout as an
+	// API call is. The release's files go through a downloader over the same
+	// guarded transport, where the timeout bounds each wait rather than the
+	// whole transfer, so a slow link can still carry the archive.
 	httpClient := &http.Client{Timeout: httpConfig.RequestTimeout, Transport: requireScheme(transport, httpConfig.HTTPPermission, httpConfig.WarnPlainHTTP)}
 	client := githubrelease.NewClient(
 		baseURL,
 		httpClient,
 		fmt.Sprintf("bb/%s", strings.TrimSpace(version)),
+		githubrelease.Retries(httpConfig.RetryCount, httpConfig.RetryBackoff),
 	)
 
 	// The Sigstore TUF mirror stays https whatever the release mirror may use:
@@ -134,6 +143,11 @@ func loadUpdateCommandHTTPConfig(overrides config.Overrides, baseURLFlag string,
 		return UpdateCommandHTTPConfig{}, err
 	}
 
+	retryCount, retryBackoff, err := config.ResolveRetriesWith(overrides)
+	if err != nil {
+		return UpdateCommandHTTPConfig{}, err
+	}
+
 	// The update path downloads and then executes a new binary, so it resolves
 	// TLS through the same policy-aware helper the API client uses rather than
 	// reading BB_* variables directly (issue #448).
@@ -164,6 +178,8 @@ func loadUpdateCommandHTTPConfig(overrides config.Overrides, baseURLFlag string,
 
 	return UpdateCommandHTTPConfig{
 		RequestTimeout: requestTimeout,
+		RetryCount:     retryCount,
+		RetryBackoff:   retryBackoff,
 		Trust:          trust,
 		TLSOptions: network.TLSOptions{
 			CAFile:             tlsSettings.CAFile,

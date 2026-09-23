@@ -8,7 +8,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 |---|---:|---|
 | `keep` | 167 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
-| `decide-separately` | 21 | outside the Bitbucket policy; needs its own decision |
+| `decide-separately` | 27 | outside the Bitbucket policy; needs its own decision |
 
 ## By file
 
@@ -21,13 +21,14 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/pullrequest/service_test.go` | 7 | 0 | 0 | 6 | 1 |
 | `internal/services/branch/service_test.go` | 6 | 0 | 0 | 5 | 1 |
 | `internal/cli/cmd/api/api_test.go` | 5 | 0 | 0 | 5 | 0 |
+| `internal/cli/cmd/update/scheme_test.go` | 5 | 0 | 0 | 0 | 5 |
 | `internal/services/quality/service_test.go` | 5 | 0 | 0 | 4 | 1 |
 | `internal/services/reposettings/service_test.go` | 5 | 0 | 0 | 4 | 1 |
-| `internal/cli/cmd/update/scheme_test.go` | 4 | 0 | 0 | 0 | 4 |
 | `internal/services/browse/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/diff/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/gpgkey/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/services/sshkey/service_test.go` | 4 | 0 | 0 | 3 | 1 |
+| `internal/transport/githubrelease/download_test.go` | 4 | 0 | 0 | 0 | 4 |
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/cli/cmd/reviewer/reviewer_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/cli/pr_inspection_test.go` | 3 | 0 | 0 | 3 | 0 |
@@ -72,6 +73,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/repo/sync_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/reviewergroup/reviewer_group_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/tag/tag_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/cli/cmd/update/download_test.go` | 1 | 0 | 0 | 0 | 1 |
 | `internal/cli/commit_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/pr_checkout_command_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/pr_checkout_failures_test.go` | 1 | 0 | 0 | 1 | 0 |
