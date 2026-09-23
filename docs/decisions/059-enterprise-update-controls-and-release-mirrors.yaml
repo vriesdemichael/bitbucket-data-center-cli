@@ -29,6 +29,9 @@ decision: >
      - When querying custom mirrors, relative asset URLs are resolved under the configured base URL, as a
        directory. An asset URL off the mirror, such as the `github.com` address a manifest copied from GitHub names,
        is fetched from `{baseURL}/{assetName}` and never from its own address: every download goes through the mirror.
+     - A mirror serves the release without authentication: bb update sends no credentials beyond a TLS client
+       certificate. An estate whose artifact server requires a login for every download provisions bb itself, with
+       the `_noupdate` builds, rather than through `bb update`.
      - Update URLs are https by default: the base URL, every asset URL a manifest names, and every redirect. Plain
        HTTP needs an explicit opt-in, `bb update --allow-http` or `BB_ALLOW_HTTP_UPDATE`, and warns on every run.
        There is no configuration file key for users, because a workspace file arrives with a cloned repository.
