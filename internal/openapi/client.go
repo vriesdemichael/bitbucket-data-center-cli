@@ -97,8 +97,10 @@ func (doer classifyingDoer) Do(request *http.Request) (*http.Response, error) {
 	}
 
 	// A 400 is read here too. The one Bitbucket sends when writing its answer
-	// failed leaves a mutation's outcome unknown, and only this layer has the
-	// method. Any other 400 goes on to the service with its body as it came.
+	// failed leaves a mutation's outcome unknown, and a request the retry
+	// transport replays transient once every attempt was answered that way;
+	// only this layer has the method. Any other 400 goes on to the service with
+	// its body as it came.
 	if response.StatusCode == http.StatusBadRequest {
 		body, err := io.ReadAll(response.Body)
 		_ = response.Body.Close()
@@ -106,9 +108,7 @@ func (doer classifyingDoer) Do(request *http.Request) (*http.Response, error) {
 			return nil, exchange.ClassifyRead(err)
 		}
 		if FailedWritingAnswer(response.StatusCode, body) {
-			if unknown := exchange.AnswerFailed(MapStatusError(response.StatusCode, body)); unknown != nil {
-				return nil, unknown
-			}
+			return nil, exchange.AnswerFailed(MapStatusError(response.StatusCode, body))
 		}
 		response.Body = io.NopCloser(bytes.NewReader(body))
 
@@ -201,7 +201,11 @@ func (transport *retryTransport) RoundTrip(request *http.Request) (*http.Respons
 			"duration_ms": time.Since(started).Milliseconds(),
 		})
 
-		if retrypolicy.RetriableStatus(request.Method, response.StatusCode) {
+		retriable, err := retriableAnswer(request.Method, response)
+		if err != nil {
+			return nil, err
+		}
+		if retriable {
 			lastResponse = response
 			retryDelay := retrypolicy.Delay(response.Header, attempt, transport.baseBackoff)
 			fields := map[string]any{
@@ -233,6 +237,24 @@ func (transport *retryTransport) RoundTrip(request *http.Request) (*http.Respons
 	}
 
 	return nil, lastError
+}
+
+// retriableAnswer asks RetriableAnswer about response. A 400 to a method the
+// retry policy replays is the one answer whose body decides it, so only that
+// body is read, and it is put back for whoever reads the response next.
+func retriableAnswer(method string, response *http.Response) (bool, error) {
+	if response.StatusCode != http.StatusBadRequest || !retrypolicy.Replayable(method) {
+		return RetriableAnswer(method, response.StatusCode, nil), nil
+	}
+
+	body, err := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil {
+		return false, err
+	}
+	response.Body = io.NopCloser(bytes.NewReader(body))
+
+	return RetriableAnswer(method, response.StatusCode, body), nil
 }
 
 func sleepWithContext(ctx context.Context, delay time.Duration) error {
