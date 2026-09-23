@@ -401,8 +401,9 @@ func fixContentEncodedPathParams(spec map[string]any) int {
 	return fixed
 }
 
-// schemaPropertyRename records a request property whose name in the spec is not
-// the name the server reads.
+// schemaPropertyRename records a property whose name in the spec is not its
+// name on the wire: one the server reads under another name in a request, or
+// sends under another name in a response.
 type schemaPropertyRename struct {
 	schema       string
 	from         string
@@ -414,7 +415,8 @@ type schemaPropertyRename struct {
 //
 // Only properties whose wire name has been confirmed against a running Bitbucket
 // belong here. A rename is not a workaround for an awkward name: it exists only
-// where sending the documented name fails and sending the other one works.
+// where sending the documented name fails and sending the other one works, or
+// where the server answers with the other name and never the documented one.
 var schemaPropertyRenames = []schemaPropertyRename{
 	{
 		// The apply-suggestion endpoint reads the commit message from `message`.
@@ -425,6 +427,14 @@ var schemaPropertyRenames = []schemaPropertyRename{
 		from:         "commitMessage",
 		to:           "message",
 		alsoRequired: true,
+	},
+	{
+		// A branch listing marks the default branch with `isDefault`. The
+		// documented `default` is never sent, so the field read as unset for
+		// every branch, the default one included (OPENAPI-035).
+		schema: "RestBranch",
+		from:   "default",
+		to:     "isDefault",
 	},
 }
 

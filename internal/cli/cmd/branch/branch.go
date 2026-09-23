@@ -256,7 +256,7 @@ func New(deps Dependencies) *cobra.Command {
 					style.Resource.Render(safederef.String(branch.DisplayId)),
 					style.Secondary.Render(safederef.String(branch.Id)),
 					style.Secondary.Render(safederef.String(branch.LatestCommit)),
-					fmt.Sprintf("default=%t", branch.Default != nil && *branch.Default),
+					fmt.Sprintf("default=%t", branch.IsDefault != nil && *branch.IsDefault),
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)

@@ -93,9 +93,8 @@ func TestLiveCompletionRefs(t *testing.T) {
 			t.Errorf("the default branch was described as %q, want %q", offered.descriptions["master"], want)
 		}
 
-		// Bitbucket sends the flag as isDefault and the generated model reads
-		// it as default, so RestBranch.Default is nil for the default branch
-		// too. The marking above therefore has to come from somewhere else,
+		// Bitbucket marks the default branch with isDefault in the listing
+		// itself (OPENAPI-035), which is where the marking above comes from,
 		// and this is the assertion that notices if it stops.
 		if offered.values[0] != "master" {
 			t.Errorf("the default branch was not offered first: %v", offered.values)

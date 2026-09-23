@@ -346,10 +346,8 @@ func localCommitish(ctx context.Context, scope refScope) []Candidate {
 const detailGrace = 400 * time.Millisecond
 
 // remoteBranch is one entry of Bitbucket's branch listing, read directly
-// because the generated model has neither field this needs: it reads
-// `default` where Bitbucket sends `isDefault`, so RestBranch.Default is nil
-// for every branch including the default one, and it has no `metadata`, which
-// is where a detailed listing puts the commit each branch is on.
+// because the generated model has no `metadata`, which is where a detailed
+// listing puts the commit each branch is on.
 type remoteBranch struct {
 	ID        string         `json:"id"`
 	DisplayID string         `json:"displayId"`
