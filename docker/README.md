@@ -44,7 +44,7 @@ task stack:status    # this instance, how long before it stops itself, every loc
 task stack:logs
 task stack:down
 task stack:reset     # tear down this instance and delete its Maven cache volume
-task stack:prune     # take stopped instances down; remove those whose worktree is gone
+task stack:prune     # take stopped instances down, deleting the cache of a gone worktree's
 ```
 
 `task test:live` runs `task stack:up` first, so starting the stack by hand is
@@ -61,16 +61,22 @@ starts; `task stack:up` writes the current URL to `.tmp/bitbucket.env`, where th
 live suite reads it.
 
 A worktree's first start downloads about 360MB on top of what the image already
-holds. `task stack:up` removes instances whose worktree is gone before it
-starts, and refuses to start a fifth running instance (`BB_STACK_MAX`), since
-each is a Bitbucket JVM of about 6GB.
+holds. `task stack:up` refuses to start a fifth running instance
+(`BB_STACK_MAX`), since each is a Bitbucket JVM of about 6GB.
 
-It also takes down every stopped instance, keeping its Maven cache volume, so
-that only a running instance holds a Docker network. Each network holds a
-subnet from Docker's address pools, and an instance stops itself in a worktree
-nobody comes back to: left in place, enough of them exhaust the pools, and
-Docker Desktop stops answering. A checkout whose instance was taken down gets
-it back from its next `task stack:up`.
+Before it starts, it takes down every other checkout's instance that has
+stopped, so that only a running instance holds a Docker network. Each network
+holds a subnet from Docker's address pools, and an instance stops itself in a
+worktree nobody comes back to: left in place, enough of them exhaust the pools,
+and Docker Desktop stops answering. A stopped instance keeps its Maven cache
+volume and comes back from its checkout's next `task stack:up`; one whose
+worktree is gone loses the cache as well.
+
+A running instance is never touched, even when its worktree looks gone. A
+checkout started from WSL records a `/mnt/c/...` path that Git Bash cannot see,
+and the reverse, so a worktree that exists can look missing from the other
+side. An instance whose worktree really is gone stops itself within three
+hours, and is removed then.
 
 ## Version
 
