@@ -14,6 +14,7 @@ import (
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/fileview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport/filefixture"
 )
 
 func TestFileWebURL(t *testing.T) {
@@ -117,6 +118,9 @@ func fileViews(t *testing.T) map[string]fileview.View {
 		"empty text":               read(fileview.Request{Path: "empty.txt"}, nil),
 		"image":                    read(fileview.Request{Path: "small.png"}, pngOf(t, 40, 30)),
 		"scaled image":             read(fileview.Request{Path: "wide.png"}, pngOf(t, 3000, 1000)),
+		"document":                 read(fileview.Request{Path: "plan.docx"}, filefixture.Word(filefixture.WordParagraph("A plan."))),
+		"empty document":           read(fileview.Request{Path: "blank.docx"}, filefixture.Word("")),
+		"archive":                  read(fileview.Request{Path: "app.zip"}, filefixture.Zip(filefixture.Entry{Name: "a.txt", Body: []byte("a")})),
 		"binary":                   read(fileview.Request{Path: "blob.bin"}, []byte{0, 1, 2, 0xFF, 0xFE}),
 		"too large, size declared": fileview.TooLarge(fileview.Request{Path: "big.log"}, fileview.MaxFileBytes, 100<<20),
 		"too large, size unknown":  fileview.TooLarge(fileview.Request{Path: "big.log"}, fileview.MaxFileBytes, -1),

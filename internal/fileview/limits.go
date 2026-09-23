@@ -48,3 +48,25 @@ const ImagePixels = 50_000_000
 // point past which a photograph's artefacts stop being visible and fine print
 // in it stays sharp.
 const jpegQuality = 85
+
+// DocumentTextBytes is the most text extracted from a Word, PowerPoint or Excel
+// file. The text is held whole to be cut into windows, so it needs a bound, and
+// 8 MiB is some two million tokens: more than a model pages through, and room
+// for any document written to be read rather than a data dump in a workbook.
+const DocumentTextBytes = 8 << 20
+
+// documentXMLBytes is the most XML read out of such a file, decompressed. Its
+// parts are zipped, and a small zip can expand without end; this bounds the
+// work of one read -- a few seconds of parsing -- well past what the text
+// bound usually stops first.
+const documentXMLBytes = 128 << 20
+
+// ArchiveEntries is the most entries an archive's listing holds. A line each,
+// that is a few megabytes of listing, and more than anyone reads a window at a
+// time; the header says when there are more.
+const ArchiveEntries = 100_000
+
+// archiveExpandBytes is the most a gzip-compressed tar is expanded to list it.
+// A tar has no index, so listing one means reading all of it, and a small
+// compressed file can expand without end; this bounds the work of one read.
+const archiveExpandBytes = 1 << 30

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport/filefixture"
 )
 
 // liveFileAnswer is get_file_content's structured answer.
@@ -116,10 +117,34 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 	binary := liveBinaryFile()
 	largePNG := liveLargePNG(t)
 
+	// Each document's order is not its parts' names: the slide and the sheet
+	// that come first are in slide2.xml and sheet2.xml.
+	word := filefixture.Word(filefixture.WordParagraph("Release plan") + filefixture.WordParagraph("Ship on Friday.") +
+		filefixture.WordTable([]string{"Owner", "Task"}, []string{"Ada", "Tag the release"}))
+	slides := filefixture.PowerPoint(
+		filefixture.Slide{Part: "slide2.xml", Texts: []string{"Welcome"}},
+		filefixture.Slide{Part: "slide1.xml", Texts: []string{"Numbers"}, Notes: []string{"Pause here."}},
+	)
+	workbook := filefixture.Excel(
+		filefixture.Workbook{SharedStrings: []string{filefixture.SharedString("Item"), filefixture.SharedString("Cost")}, Styles: []int{0, 14}},
+		filefixture.Sheet{Name: "Summary", Part: "sheet2.xml", Rows: `<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c></row>` +
+			`<row r="2"><c r="A2" t="inlineStr"><is><t>Rent</t></is></c><c r="B2"><f>1000+200</f><v>1200</v></c></row>`},
+		filefixture.Sheet{Name: "Dates", Part: "sheet1.xml", Rows: `<row r="1"><c r="A1" s="1"><v>45292</v></c></row>`},
+	)
+	archive := filefixture.Zip(
+		filefixture.Entry{Name: "app/", Directory: true},
+		filefixture.Entry{Name: "app/main.go", Body: []byte("package main\n")},
+		filefixture.Entry{Name: "README.md", Body: []byte("# App\n")},
+	)
+
 	if err := harness.pushFilesOnBranch(seeded.Key, repo.Slug, "master", map[string][]byte{
 		"docs/long.txt":    long,
 		"assets/blob.bin":  binary,
 		"images/large.png": largePNG,
+		"docs/plan.docx":   word,
+		"docs/talk.pptx":   slides,
+		"docs/budget.xlsx": workbook,
+		"dist/app.zip":     archive,
 	}); err != nil {
 		t.Fatalf("push the files: %v", err)
 	}
@@ -231,6 +256,65 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 			}
 		})
 
+		// The text each document's content holds, extracted in order; the
+		// header says what it came from and what it leaves out.
+		for _, document := range []struct {
+			path, mimeType, from, text string
+			size                       int
+		}{
+			{
+				path: "docs/plan.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+				from: "a Word document", size: len(word),
+				text: "Release plan\nShip on Friday.\nOwner\tTask\nAda\tTag the release\n",
+			},
+			{
+				path: "docs/talk.pptx", mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+				from: "a PowerPoint presentation", size: len(slides),
+				text: "Slide 1\nWelcome\n\nSlide 2\nNumbers\nSpeaker notes:\nPause here.\n",
+			},
+			{
+				path: "docs/budget.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				from: "an Excel workbook", size: len(workbook),
+				text: "Sheet 1: Summary\nItem\tCost\nRent\t1200\n\nSheet 2: Dates\n2024-01-01\n",
+			},
+		} {
+			t.Run("the text of "+document.path+" in order", func(t *testing.T) {
+				result, answer := read(t, document.path, nil)
+
+				if answer.Kind != "document" || answer.MIMEType != document.mimeType || answer.Size == nil || *answer.Size != int64(document.size) {
+					t.Fatalf("%s came back as %q %q of %v bytes, want a document %s of %d",
+						document.path, answer.Kind, answer.MIMEType, deref64(answer.Size), document.mimeType, document.size)
+				}
+				if got := derefText(answer.Content); got != document.text {
+					t.Errorf("the text extracted from %s:\n got %q\nwant %q", document.path, got, document.text)
+				}
+
+				header, _, _ := strings.Cut(mcpResultText(result), "\n")
+				for _, want := range []string{
+					document.path + " at " + at + ": text extracted from " + document.from,
+					"Formatting, pictures and embedded objects are not included.",
+				} {
+					if !strings.Contains(header, want) {
+						t.Errorf("the header does not say %q: %q", want, header)
+					}
+				}
+			})
+		}
+
+		t.Run("a zip archive lists its entries", func(t *testing.T) {
+			result, answer := read(t, "dist/app.zip", nil)
+
+			if answer.Kind != "archive" || answer.MIMEType != "application/zip" || answer.TotalLines == nil || *answer.TotalLines != 3 {
+				t.Fatalf("dist/app.zip came back as %q %q with %v lines, want an archive of 3 entries", answer.Kind, answer.MIMEType, deref(answer.TotalLines))
+			}
+			if got, want := derefText(answer.Content), "app/\tdirectory\napp/main.go\t13 bytes\nREADME.md\t6 bytes\n"; got != want {
+				t.Errorf("the listing is not the entries pushed:\n got %q\nwant %q", got, want)
+			}
+			if header, _, _ := strings.Cut(mcpResultText(result), "\n"); !strings.Contains(header, "a listing of a zip archive") {
+				t.Errorf("the header does not say it is a listing: %q", header)
+			}
+		})
+
 		t.Run("an opaque binary is described by its type and size", func(t *testing.T) {
 			result, answer := read(t, "assets/blob.bin", nil)
 
@@ -259,6 +343,15 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 func deref(value *int) any {
 	if value == nil {
 		return nil
+	}
+
+	return *value
+}
+
+// derefText is a text field that may be absent, as an empty string when it is.
+func derefText(value *string) string {
+	if value == nil {
+		return ""
 	}
 
 	return *value
