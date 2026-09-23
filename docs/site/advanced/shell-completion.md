@@ -7,27 +7,47 @@ branches, marking the default one.
 
 ## Enabling it
 
-Generate the script for your shell and load it from your profile.
+Add one line to the file your shell runs when it starts. The line generates the
+script each time, so completion always matches the `bb` you have installed.
 
-```bash
-bb completion bash > /etc/bash_completion.d/bb
-```
+=== "Bash"
 
-```bash
-bb completion zsh > "${fpath[1]}/_bb"
-```
+    Needs the `bash-completion` package. In `~/.bashrc`:
 
-```bash
-bb completion fish > ~/.config/fish/completions/bb.fish
-```
+    ```bash
+    source <(bb completion bash)
+    ```
 
-For PowerShell, add the output to your profile:
+=== "Zsh"
 
-```powershell
-bb completion powershell | Out-String | Invoke-Expression
-```
+    In `~/.zshrc`, after `compinit` has run:
 
-`bb completion <shell> --help` prints the paths for each platform.
+    ```zsh
+    source <(bb completion zsh)
+    ```
+
+=== "Fish"
+
+    In `~/.config/fish/config.fish`:
+
+    ```fish
+    bb completion fish | source
+    ```
+
+=== "PowerShell"
+
+    In your profile, the file `$PROFILE` names:
+
+    ```powershell
+    bb completion powershell | Out-String | Invoke-Expression
+    ```
+
+Command Prompt (`cmd.exe`) has no programmable completion; use PowerShell.
+
+`bb completion <shell> --help` shows how to install the script as a file
+instead, which saves running `bb` when a shell starts. A file does not follow an
+upgrade, so generate it again after updating `bb`. To list values without their
+descriptions, add `--no-descriptions` to `bb completion <shell>`.
 
 ## What is completed
 
@@ -40,6 +60,7 @@ bb completion powershell | Out-String | Invoke-Expression
 | People | users, groups and reviewer groups, including `@group` inside `--reviewers` |
 | Ids | comments, webhooks, branch restrictions, default tasks, reviewer conditions, required builds, keys and tokens — each with what it names beside it |
 | Fixed values | every flag with a defined set of values, the log levels, review statuses and permissions |
+| This machine | the instances you are logged in to, for `--host`, and the bulk runs saved here, for `bb bulk status` |
 
 Values a server cannot know are not completed: a title, a URL, or the name of
 something being created.
@@ -54,9 +75,9 @@ than a hung terminal.
 **It says nothing when it cannot answer.** A shell prompt is no place for an
 error, so a failed completion offers nothing and prints nothing. It also does
 not fall back to listing your working directory for an argument that wanted a
-branch. In bash and zsh, a reason you can act on — no credentials for this
-instance, a repository that could not be resolved — appears as a hint under
-the prompt.
+branch. In bash and zsh, a reason you can act on — a credential the server
+refused, a repository that could not be resolved — appears as a hint under the
+prompt.
 
 **It completes for the repository the command would act on.** The same
 resolution: `--repo` if you passed one, otherwise the git remote of the
@@ -68,12 +89,36 @@ local git when the repository being completed is the one you are standing in,
 which costs no request at all. Everything else, and every repository that is
 not this one, comes from the server.
 
+## When nothing is offered
+
+Run the completion by hand with `BB_COMPLETION_DEBUG` set. Give the words after
+`bb` as you typed them, ending with the word being completed, or an empty one
+for a new word:
+
+=== "Bash, zsh, fish"
+
+    ```bash
+    BB_COMPLETION_DEBUG=1 bb __complete pr merge ""
+    ```
+
+=== "PowerShell"
+
+    ```powershell
+    $env:BB_COMPLETION_DEBUG = 1; bb __complete pr merge ''
+    ```
+
+Each value it would offer comes out on a line of its own. A line starting
+`completion:` says why there is none: a credential the server refused, a
+repository that could not be resolved, a server that could not be reached, or
+one that did not answer in time (`context deadline exceeded`), which a larger
+`BB_COMPLETION_TIMEOUT` may fix. The last line is an instruction for the shell.
+
 ## Settings
 
 | Variable | Effect |
 |---|---|
 | `BB_COMPLETION_TIMEOUT` | How long a press may take, as a Go duration. The default is `1200ms`. |
-| `BB_COMPLETION_DEBUG` | Prints on stderr why a completion came back empty. Shell scripts discard that stream, so set it and run `bb __complete <words>` by hand. |
+| `BB_COMPLETION_DEBUG` | Any value prints why a completion came back empty. Shells discard it; see [When nothing is offered](#when-nothing-is-offered). |
 | `BB_ACTIVE_HELP` | `0` turns off the hints bash and zsh show under the prompt. |
 
 ## Where the shells differ
