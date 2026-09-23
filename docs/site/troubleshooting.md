@@ -355,6 +355,15 @@ When the message says `--allow-http is refused` or `which administrative policy
 forbids`, the machine's policy sets `allow_http_update: false`, and the section
 above applies.
 
+## A `bb.exe.old-` file sits next to `bb.exe`
+
+`bb update` on Windows left it. Windows will not overwrite or delete the file of
+a program that is running, so the update renames the running `bb.exe` aside and
+puts the new one in its place. The next `bb` command deletes it. One that
+another `bb` is still running from, such as a `bb ai mcp serve` session, stays
+until that process exits and a later command runs. Deleting it yourself is safe
+once no `bb` runs from it.
+
 ## A command exits non-zero and I need to know why
 
 Exit codes are deterministic by error kind:

@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `91`
-- Accepted ADRs: `80`
+- Total ADRs: `92`
+- Accepted ADRs: `81`
 
 ## ADR List
 
@@ -100,4 +100,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 089: Shell completion is declared by the argument's name, and resolved by the command's own code](089-completion-is-declared-by-the-argument-name.md) (`architecture`, `accepted`)
 - [ADR 090: A package sets up what every user shares, and bb sets up what is one user's](090-a-package-sets-up-what-every-user-shares.md) (`development`, `accepted`)
 - [ADR 091: A command may report the state it read through its exit status](091-a-command-may-report-the-state-it-read-through-its-exit-status.md) (`architecture`, `accepted`)
+- [ADR 092: bb update installs the new binary itself, before it exits](092-bb-update-installs-the-new-binary-itself-before-it-exits.md) (`architecture`, `accepted`)
 
