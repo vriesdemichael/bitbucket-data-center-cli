@@ -187,7 +187,7 @@ func TestLiveRepoSettingsCreateWebhook(t *testing.T) {
 	}
 
 	name := testsupport.UniqueName("lt-webhook-")
-	payload, err := service.CreateRepositoryWebhook(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}, reposettings.WebhookCreateInput{
+	written, err := service.CreateRepositoryWebhook(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}, reposettings.WebhookCreateInput{
 		Name:   name,
 		URL:    "http://localhost:65535/hook",
 		Events: []string{"repo:refs_changed"},
@@ -198,10 +198,15 @@ func TestLiveRepoSettingsCreateWebhook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create repository webhook failed: %v", err)
 	}
+	// The service reads what it made back by id; nothing stood in the way of
+	// that read here, so the answer standing in for it would be a defect.
+	if written.Unread != nil {
+		t.Fatalf("the created webhook was not read back: %v", written.Unread)
+	}
 
-	id, ok := extractWebhookID(payload)
+	id, ok := extractWebhookID(written.Webhook)
 	if !ok {
-		t.Fatalf("created webhook payload did not include a valid id: %#v", payload)
+		t.Fatalf("created webhook payload did not include a valid id: %#v", written.Webhook)
 	}
 	stored := repoSettingsWebhookReadBack(t, seeded.Key+"/"+seeded.Repos[0].Slug, id)
 	assertRepoSettingsWebhook(t, stored, name, "http://localhost:65535/hook", false, "repo:refs_changed")
@@ -262,7 +267,7 @@ func TestLiveRepoSettingsDeleteWebhook(t *testing.T) {
 	}
 	repoRef := seeded.Key + "/" + seeded.Repos[0].Slug
 
-	payload, err := service.CreateRepositoryWebhook(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}, reposettings.WebhookCreateInput{
+	written, err := service.CreateRepositoryWebhook(ctx, reposettings.RepositoryRef{ProjectKey: seeded.Key, Slug: seeded.Repos[0].Slug}, reposettings.WebhookCreateInput{
 		Name:   "live-test-webhook",
 		URL:    "http://localhost:65535/hook",
 		Events: []string{"repo:refs_changed"},
@@ -273,9 +278,9 @@ func TestLiveRepoSettingsDeleteWebhook(t *testing.T) {
 		t.Fatalf("create repository webhook failed: %v", err)
 	}
 
-	webhookID, ok := extractWebhookID(payload)
+	webhookID, ok := extractWebhookID(written.Webhook)
 	if !ok {
-		t.Fatalf("created webhook payload did not include a valid id: %#v", payload)
+		t.Fatalf("created webhook payload did not include a valid id: %#v", written.Webhook)
 	}
 
 	// Read before the delete as well as after, so the delete is shown removing

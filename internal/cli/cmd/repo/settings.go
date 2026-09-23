@@ -13,6 +13,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookflags"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
@@ -215,15 +216,19 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
 
-			payload, err := service.CreateRepositoryWebhook(cmd.Context(), repo, input)
+			written, err := service.CreateRepositoryWebhook(cmd.Context(), repo, input)
 			if err != nil {
 				return err
 			}
 
+			// The webhook as read back after the create, in both renderings,
+			// as `bb webhook create` publishes it and for the same reason.
+			hook := webhookoutput.Published(cmd.ErrOrStderr(), written, "create")
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Repository: settingsRepositoryOf(repo), Webhook: result.WebhookFrom(payload)})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Repository: settingsRepositoryOf(repo), Webhook: hook})
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Webhook created:"), style.Resource.Render(args[0]))
+			webhookoutput.Detail(cmd.OutOrStdout(), hook)
 			return nil
 		},
 	}

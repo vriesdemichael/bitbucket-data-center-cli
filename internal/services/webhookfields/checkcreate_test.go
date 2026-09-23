@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -13,8 +14,9 @@ import (
 
 // That a create whose answer was lost shows up in the listing is Bitbucket's
 // behaviour, and the live suite checks it against Bitbucket. What is checked
-// here is bb's side: which webhook counts as the one the create made, and that
-// the create is sent once whatever the check finds.
+// here is bb's side: which webhook counts as the one the create made, that the
+// create is sent once whatever the check finds, and that the webhook it made is
+// the one read back.
 
 func TestNewlyCreatedIsTheOneNewWebhookTheCreateAskedFor(t *testing.T) {
 	t.Parallel()
@@ -90,17 +92,55 @@ func TestCreateCheckedChecksAndNeverSendsTheCreateTwice(t *testing.T) {
 			return nil, err
 		}
 	}
+	// reading answers every read with a webhook marked as read, and records
+	// which ids were asked for.
+	reading := func(asked *[]string) Get {
+		return func(_ context.Context, id string) (any, error) {
+			*asked = append(*asked, id)
+			return map[string]any{"id": id, "read": true}, nil
+		}
+	}
+	// notReading fails the test when a read is made: there is no webhook to
+	// read after a create that did not make one.
+	notReading := func(t *testing.T) Get {
+		return func(context.Context, string) (any, error) {
+			t.Error("read back a webhook the create did not make")
+			return nil, errors.New("unexpected read")
+		}
+	}
+	wasRead := func(written Written) bool {
+		read, _ := written.Webhook.(map[string]any)["read"].(bool)
+		return read && written.Unread == nil
+	}
 
-	t.Run("a webhook that appeared is the answer", func(t *testing.T) {
+	t.Run("a webhook that appeared is the answer, as a read returns it", func(t *testing.T) {
 		t.Parallel()
 
 		var lists, creates int
-		found, err := CreateChecked(context.Background(), input, listings(&lists, pageOf(), pageOf(appeared)), creating(&creates, unknown))
+		var asked []string
+		written, err := CreateChecked(context.Background(), input, listings(&lists, pageOf(), pageOf(appeared)), creating(&creates, unknown), reading(&asked))
 		if err != nil || creates != 1 {
 			t.Fatalf("got %v after %d creates, want the webhook after one", err, creates)
 		}
-		if id, _ := found.(map[string]any)["id"].(float64); id != 7 {
-			t.Fatalf("found %v, want webhook 7", found)
+		if !slices.Equal(asked, []string{"7"}) || !wasRead(written) {
+			t.Fatalf("read back %v and published %+v, want webhook 7 as its read returned it", asked, written)
+		}
+	})
+
+	t.Run("a webhook the create answered with is read back by its id", func(t *testing.T) {
+		t.Parallel()
+
+		answering := func(context.Context, openapigenerated.RestWebhook) (any, error) {
+			return map[string]any{"id": float64(9), "configuration": map[string]any{}}, nil
+		}
+		var lists int
+		var asked []string
+		written, err := CreateChecked(context.Background(), input, listings(&lists, pageOf()), answering, reading(&asked))
+		if err != nil {
+			t.Fatalf("create: %v", err)
+		}
+		if !slices.Equal(asked, []string{"9"}) || !wasRead(written) {
+			t.Fatalf("read back %v and published %+v, want webhook 9 as its read returned it", asked, written)
 		}
 	})
 
@@ -108,7 +148,7 @@ func TestCreateCheckedChecksAndNeverSendsTheCreateTwice(t *testing.T) {
 		t.Parallel()
 
 		var lists, creates int
-		_, err := CreateChecked(context.Background(), input, listings(&lists, pageOf(), pageOf()), creating(&creates, unknown))
+		_, err := CreateChecked(context.Background(), input, listings(&lists, pageOf(), pageOf()), creating(&creates, unknown), notReading(t))
 		if !errors.Is(err, unknown) || creates != 1 {
 			t.Fatalf("got %v after %d creates, want the unknown outcome after one", err, creates)
 		}
@@ -118,7 +158,7 @@ func TestCreateCheckedChecksAndNeverSendsTheCreateTwice(t *testing.T) {
 		t.Parallel()
 
 		var lists, creates int
-		_, err := CreateChecked(context.Background(), input, listings(&lists, pageOf()), creating(&creates, unknown))
+		_, err := CreateChecked(context.Background(), input, listings(&lists, pageOf()), creating(&creates, unknown), notReading(t))
 		if !errors.Is(err, unknown) || creates != 1 {
 			t.Fatalf("got %v after %d creates, want the unknown outcome after one", err, creates)
 		}
@@ -129,7 +169,7 @@ func TestCreateCheckedChecksAndNeverSendsTheCreateTwice(t *testing.T) {
 
 		refused := apperrors.New(apperrors.KindAuthorization, "not allowed", nil)
 		var lists, creates int
-		_, err := CreateChecked(context.Background(), input, listings(&lists, pageOf()), creating(&creates, refused))
+		_, err := CreateChecked(context.Background(), input, listings(&lists, pageOf()), creating(&creates, refused), notReading(t))
 		if !errors.Is(err, refused) || lists != 1 {
 			t.Fatalf("got %v after %d listings, want the refusal after the one before the create", err, lists)
 		}
@@ -139,7 +179,7 @@ func TestCreateCheckedChecksAndNeverSendsTheCreateTwice(t *testing.T) {
 		t.Parallel()
 
 		var lists, creates int
-		if _, err := CreateChecked(context.Background(), input, listings(&lists), creating(&creates, nil)); err == nil || creates != 0 {
+		if _, err := CreateChecked(context.Background(), input, listings(&lists), creating(&creates, nil), notReading(t)); err == nil || creates != 0 {
 			t.Fatalf("got %v after %d creates, want the listing error and no create", err, creates)
 		}
 	})
@@ -148,7 +188,7 @@ func TestCreateCheckedChecksAndNeverSendsTheCreateTwice(t *testing.T) {
 		t.Parallel()
 
 		var lists, creates int
-		_, err := CreateChecked(context.Background(), CreateInput{}, listings(&lists, pageOf()), creating(&creates, nil))
+		_, err := CreateChecked(context.Background(), CreateInput{}, listings(&lists, pageOf()), creating(&creates, nil), notReading(t))
 		if !apperrors.IsKind(err, apperrors.KindValidation) || lists != 0 || creates != 0 {
 			t.Fatalf("got %v after %d listings and %d creates, want validation and no requests", err, lists, creates)
 		}

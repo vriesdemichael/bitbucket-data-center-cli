@@ -105,7 +105,7 @@ func TestProjectWebhookService(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected update error: %v", err)
 		}
-		if res == nil {
+		if res.Webhook == nil {
 			t.Fatal("expected non-nil updated webhook")
 		}
 		// Fields nobody asked to change survive the round trip; the endpoint

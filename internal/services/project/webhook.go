@@ -40,17 +40,20 @@ func (service *Service) ListProjectWebhooks(ctx context.Context, projectKey stri
 
 // WebhookCreateInput and WebhookUpdateInput are the shared shapes: a project
 // webhook and a repository webhook are one object behind two routes.
+// WrittenWebhook is what a create or an update of either returns.
 type (
 	WebhookCreateInput = webhookfields.CreateInput
 	WebhookUpdateInput = webhookfields.UpdateInput
+	WrittenWebhook     = webhookfields.Written
 )
 
-// CreateProjectWebhook creates a project webhook, and looks for it when the
-// create's outcome is unknown (see webhookfields.CreateChecked).
-func (service *Service) CreateProjectWebhook(ctx context.Context, projectKey string, input WebhookCreateInput) (any, error) {
+// CreateProjectWebhook creates a project webhook, looks for it when the
+// create's outcome is unknown, and reads back what it made (see
+// webhookfields.CreateChecked).
+func (service *Service) CreateProjectWebhook(ctx context.Context, projectKey string, input WebhookCreateInput) (WrittenWebhook, error) {
 	trimmedProject := strings.TrimSpace(projectKey)
 	if trimmedProject == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
+		return WrittenWebhook{}, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
 
 	return webhookfields.CreateChecked(ctx, input,
@@ -59,6 +62,9 @@ func (service *Service) CreateProjectWebhook(ctx context.Context, projectKey str
 		},
 		func(ctx context.Context, body openapigenerated.RestWebhook) (any, error) {
 			return service.createProjectWebhook(ctx, trimmedProject, body)
+		},
+		func(ctx context.Context, id string) (any, error) {
+			return service.GetProjectWebhook(ctx, trimmedProject, id)
 		})
 }
 
@@ -148,37 +154,45 @@ func (service *Service) projectWebhookForUpdate(ctx context.Context, projectKey 
 	return current, nil
 }
 
-func (service *Service) UpdateProjectWebhook(ctx context.Context, projectKey string, id string, input WebhookUpdateInput) (any, error) {
+// UpdateProjectWebhook updates a project webhook and reads back what it stored
+// (see webhookfields.ReadBack).
+func (service *Service) UpdateProjectWebhook(ctx context.Context, projectKey string, id string, input WebhookUpdateInput) (WrittenWebhook, error) {
 	trimmedProject := strings.TrimSpace(projectKey)
 	if trimmedProject == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
+		return WrittenWebhook{}, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
 
 	trimmedID := strings.TrimSpace(id)
 	if trimmedID == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
+		return WrittenWebhook{}, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
 	}
 
 	body, err := service.projectWebhookForUpdate(ctx, trimmedProject, trimmedID)
 	if err != nil {
-		return nil, err
+		return WrittenWebhook{}, err
 	}
 	webhookfields.ApplyUpdate(&body, input)
 
 	response, err := service.client.UpdateWebhookWithResponse(ctx, trimmedProject, trimmedID, body)
 	if err != nil {
-		return nil, apperrors.Transport("failed to update project webhook", err)
+		return WrittenWebhook{}, apperrors.Transport("failed to update project webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return nil, err
+		return WrittenWebhook{}, err
 	}
 
+	// Decoded although a read is what gets published: the answer stands in when
+	// that read fails, and one that does not decode is no evidence the update
+	// reached Bitbucket at all -- a proxy's login page answers 200 too -- so it
+	// stays a failure.
 	var payload any
 	if err := json.Unmarshal(response.Body, &payload); err != nil {
-		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode project webhook payload", err)
+		return WrittenWebhook{}, apperrors.New(apperrors.KindPermanent, "failed to decode project webhook payload", err)
 	}
 
-	return payload, nil
+	return webhookfields.ReadBack(ctx, trimmedID, payload, body, func(ctx context.Context, id string) (any, error) {
+		return service.GetProjectWebhook(ctx, trimmedProject, id)
+	}), nil
 }
 
 func (service *Service) DeleteProjectWebhook(ctx context.Context, projectKey string, id string) error {

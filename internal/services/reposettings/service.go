@@ -38,10 +38,12 @@ type WebhookList struct {
 
 // WebhookCreateInput and WebhookUpdateInput are the shared shapes: repository
 // webhooks and project webhooks are one object behind two routes, and the body
-// shaping belongs with the object rather than once per route.
+// shaping belongs with the object rather than once per route. WrittenWebhook is
+// what a create or an update of either returns.
 type (
 	WebhookCreateInput = webhookfields.CreateInput
 	WebhookUpdateInput = webhookfields.UpdateInput
+	WrittenWebhook     = webhookfields.Written
 )
 
 type DefaultTask struct {
@@ -298,11 +300,12 @@ func (service *Service) ListRepositoryWebhooks(ctx context.Context, repo Reposit
 	return WebhookList{Count: count, Payload: payload}, nil
 }
 
-// CreateRepositoryWebhook creates a repository webhook, and looks for it when
-// the create's outcome is unknown (see webhookfields.CreateChecked).
-func (service *Service) CreateRepositoryWebhook(ctx context.Context, repo RepositoryRef, input WebhookCreateInput) (any, error) {
+// CreateRepositoryWebhook creates a repository webhook, looks for it when the
+// create's outcome is unknown, and reads back what it made (see
+// webhookfields.CreateChecked).
+func (service *Service) CreateRepositoryWebhook(ctx context.Context, repo RepositoryRef, input WebhookCreateInput) (WrittenWebhook, error) {
 	if err := validateRepositoryRef(repo); err != nil {
-		return nil, err
+		return WrittenWebhook{}, err
 	}
 
 	return webhookfields.CreateChecked(ctx, input,
@@ -311,6 +314,9 @@ func (service *Service) CreateRepositoryWebhook(ctx context.Context, repo Reposi
 		},
 		func(ctx context.Context, body openapigenerated.RestWebhook) (any, error) {
 			return service.createRepositoryWebhook(ctx, repo, body)
+		},
+		func(ctx context.Context, id string) (any, error) {
+			return service.GetWebhook(ctx, repo, id)
 		})
 }
 
@@ -951,33 +957,42 @@ func (service *Service) webhookForUpdate(ctx context.Context, repo RepositoryRef
 	return current, nil
 }
 
-func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, id string, input WebhookUpdateInput) (any, error) {
+// UpdateWebhook updates a repository webhook and reads back what it stored (see
+// webhookfields.ReadBack).
+func (service *Service) UpdateWebhook(ctx context.Context, repo RepositoryRef, id string, input WebhookUpdateInput) (WrittenWebhook, error) {
 	if err := validateRepositoryRef(repo); err != nil {
-		return nil, err
+		return WrittenWebhook{}, err
 	}
 	trimmedID := strings.TrimSpace(id)
 	if trimmedID == "" {
-		return nil, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
+		return WrittenWebhook{}, apperrors.New(apperrors.KindValidation, "webhook id is required", nil)
 	}
 
 	body, err := service.webhookForUpdate(ctx, repo, trimmedID)
 	if err != nil {
-		return nil, err
+		return WrittenWebhook{}, err
 	}
 	webhookfields.ApplyUpdate(&body, input)
 
 	response, err := service.client.UpdateWebhook1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedID, body)
 	if err != nil {
-		return nil, apperrors.Transport("failed to update webhook", err)
+		return WrittenWebhook{}, apperrors.Transport("failed to update webhook", err)
 	}
 	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return nil, err
+		return WrittenWebhook{}, err
 	}
+	// Decoded although a read is what gets published: the answer stands in when
+	// that read fails, and one that does not decode is no evidence the update
+	// reached Bitbucket at all -- a proxy's login page answers 200 too -- so it
+	// stays a failure.
 	var payload any
 	if err := json.Unmarshal(response.Body, &payload); err != nil {
-		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode webhook payload", err)
+		return WrittenWebhook{}, apperrors.New(apperrors.KindPermanent, "failed to decode webhook payload", err)
 	}
-	return payload, nil
+
+	return webhookfields.ReadBack(ctx, trimmedID, payload, body, func(ctx context.Context, id string) (any, error) {
+		return service.GetWebhook(ctx, repo, id)
+	}), nil
 }
 
 // TestWebhook asks the server to deliver a test payload to a webhook.
