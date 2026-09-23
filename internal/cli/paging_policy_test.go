@@ -65,7 +65,7 @@ func TestOnlyPagingCommandsAdvertisePagingFlags(t *testing.T) {
 
 		var walk func(*cobra.Command)
 		walk = func(cmd *cobra.Command) {
-			if cmd.Name() == "help" || cmd.Name() == "completion" {
+			if cmd.Name() == "help" {
 				return
 			}
 

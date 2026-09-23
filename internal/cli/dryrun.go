@@ -327,6 +327,12 @@ var clientLocalCommands = map[string]struct{}{
 	// update honours --dry-run itself: the flag reaches the workflow, which
 	// reports what it would install rather than installing it.
 	"update": {},
+
+	// Each prints a completion script and changes nothing.
+	"completion bash":       {},
+	"completion zsh":        {},
+	"completion fish":       {},
+	"completion powershell": {},
 }
 
 // clientLocalMutatingCommands change state on this machine and do not honour
@@ -353,6 +359,11 @@ var clientLocalMutatingCommands = map[string]dryRunProfile{
 	// os.WriteFile, and its removal.
 	"ai skill install": {Intent: "ai.skill.install", Action: "write the skill file"},
 	"ai skill remove":  {Intent: "ai.skill.remove", Action: "delete the skill file"},
+
+	// A shell's completion file or a block in its startup file, and their
+	// removal.
+	"completion install": {Intent: "completion.install", Action: "set shell completion up"},
+	"completion remove":  {Intent: "completion.remove", Action: "take shell completion out"},
 
 	// A working copy, and a local branch.
 	"clone":       {Intent: "repo.clone", Action: "clone into a new directory"},
