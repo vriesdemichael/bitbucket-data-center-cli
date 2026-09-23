@@ -585,66 +585,6 @@ func extractBinaryFromZip(binaryName string, archiveBytes []byte) ([]byte, fs.Fi
 	return nil, 0, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("archive does not contain %s", binaryName), nil)
 }
 
-func replaceBinary(targetPath string, binary []byte, mode fs.FileMode) error {
-	resolvedTargetPath := strings.TrimSpace(targetPath)
-	if resolvedTargetPath == "" {
-		return apperrors.New(apperrors.KindValidation, "target executable path is required", nil)
-	}
-
-	targetDir := filepath.Dir(resolvedTargetPath)
-	tempFile, err := os.CreateTemp(targetDir, ".bb-update-*")
-	if err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to create temporary file for update", err)
-	}
-
-	tempPath := tempFile.Name()
-	cleanupTemp := true
-	defer func() {
-		if cleanupTemp {
-			_ = os.Remove(tempPath)
-		}
-	}()
-
-	if _, err := tempFile.Write(binary); err != nil {
-		_ = tempFile.Close()
-		return apperrors.New(apperrors.KindInternal, "failed to write updated binary", err)
-	}
-	if err := tempFile.Close(); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to close updated binary", err)
-	}
-
-	finalMode := mode
-	if info, err := os.Stat(resolvedTargetPath); err == nil {
-		finalMode = info.Mode()
-	}
-	if finalMode == 0 {
-		finalMode = 0o755
-	}
-	if err := os.Chmod(tempPath, finalMode); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to set permissions on updated binary", err)
-	}
-
-	backupPath := resolvedTargetPath + ".bak"
-	_ = os.Remove(backupPath)
-
-	if _, err := os.Stat(resolvedTargetPath); err == nil {
-		if err := os.Rename(resolvedTargetPath, backupPath); err != nil {
-			return apperrors.New(apperrors.KindInternal, "failed to stage existing bb binary for replacement", err)
-		}
-	}
-
-	if err := os.Rename(tempPath, resolvedTargetPath); err != nil {
-		if _, backupErr := os.Stat(backupPath); backupErr == nil {
-			_ = os.Rename(backupPath, resolvedTargetPath)
-		}
-		return apperrors.New(apperrors.KindInternal, "failed to replace bb binary", err)
-	}
-
-	cleanupTemp = false
-	_ = os.Remove(backupPath)
-	return nil
-}
-
 func stageWindowsBinary(targetPath string, binary []byte, mode fs.FileMode) (string, error) {
 	resolvedTargetPath := strings.TrimSpace(targetPath)
 	if resolvedTargetPath == "" {
