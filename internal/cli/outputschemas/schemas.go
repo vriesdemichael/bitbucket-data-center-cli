@@ -1,6 +1,10 @@
-// Package outputschemas defines and exports JSON schemas for each bb command's
-// --json output. Each schema describes the full bb.machine envelope (data and
-// meta) that the command emits to stdout.
+// Package outputschemas holds what the --json output contract says about every
+// command at once: the failure envelope, which is the same for all of them, and
+// the lists of commands that are exempt from a data contract, each with the
+// reason.
+//
+// A command's own payload schema is not here. It is derived from the result
+// type the command fills in (internal/cli/result), and --describe serves it.
 //
 // These schemas are a published contract, and ADR-064 is the record that
 // governs them. Read it before changing one.
@@ -11,22 +15,14 @@
 // release automation cuts a major. The release version is the only
 // compatibility signal consumers have, so an unmarked break reaches them
 // silently through package managers and bb update.
-//
-// If the command you are changing has no schema here, add one in the same
-// change. A schema diff cannot see a payload it does not have, so an
-// unschema'd command has no guarantee at all.
-//
-// Schemas are organized by command group. Schemas() merges all group schemas
-// and is consumed by --describe.
 package outputschemas
 
 import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/docsite"
-	bulkworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/bulk"
 )
 
-// Schemas returns all per-command output JSON schemas keyed by their published
+// Schemas returns the published output JSON schemas keyed by their published
 // file name, identified against the "latest" alias.
 func Schemas() map[string]map[string]any {
 	return SchemasFor(docsite.LatestVersion)
@@ -36,13 +32,6 @@ func Schemas() map[string]map[string]any {
 // published under siteVersion.
 func SchemasFor(siteVersion string) map[string]map[string]any {
 	all := make(map[string]map[string]any)
-
-	// Bulk command group -- the artifact schemas, wrapped in the envelope, and
-	// identified against the same site version as the envelope around them.
-	artifacts := bulkworkflow.SchemasFor(siteVersion)
-	for k, v := range bulkOutputSchemas(artifacts["bulk-plan.schema.json"], artifacts["bulk-apply-status.schema.json"]) {
-		all[k] = v
-	}
 
 	// Failure envelope — one schema for every command, since the shape of a
 	// failure does not vary by command.

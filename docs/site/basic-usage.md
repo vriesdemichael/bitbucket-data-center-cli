@@ -186,7 +186,6 @@ With no terminal, or under `--json`, no command blocks on standard input: it fai
 - `--dry-run` applies to server-mutating Bitbucket commands.
 - `--dry-run` does not apply to local auth/config mutators.
 - Dry-run output includes explicit planning metadata such as planning mode and capability signaling.
-- For bulk workflows, `bulk plan` is the preview mechanism and `bulk apply` executes reviewed plans.
 
 See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and contract details.
 

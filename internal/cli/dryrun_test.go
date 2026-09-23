@@ -51,48 +51,6 @@ func TestIsServerMutatingPath(t *testing.T) {
 	}
 }
 
-func TestRegisterGlobalDryRunInterceptorsBulkApplyRejected(t *testing.T) {
-	t.Parallel()
-
-	options := &rootOptions{DryRun: true, JSON: true}
-	root := &cobra.Command{Use: "bb", SilenceErrors: true, SilenceUsage: true}
-	root.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "")
-	root.PersistentFlags().BoolVar(&options.JSON, "json", false, "")
-
-	originalCalled := false
-	bulkCmd := &cobra.Command{Use: "bulk"}
-	applyCmd := &cobra.Command{
-		Use: "apply",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			originalCalled = true
-			return nil
-		},
-	}
-	bulkCmd.AddCommand(applyCmd)
-	root.AddCommand(bulkCmd)
-
-	registerGlobalDryRunInterceptors(root, options)
-
-	buffer := &bytes.Buffer{}
-	root.SetOut(buffer)
-	root.SetErr(buffer)
-	root.SetArgs([]string{"--dry-run", "--json", "bulk", "apply"})
-
-	err := root.Execute()
-	if err == nil {
-		t.Fatal("expected bulk apply dry-run to be rejected")
-	}
-	if originalCalled {
-		t.Fatal("expected command execution to be intercepted in dry-run mode")
-	}
-	if apperrors.KindOf(err) != apperrors.KindValidation {
-		t.Fatalf("expected validation kind, got: %v", apperrors.KindOf(err))
-	}
-	if !strings.Contains(err.Error(), "bulk apply does not support --dry-run; use bulk plan to preview operations") {
-		t.Fatalf("expected bulk apply guidance in error, got: %v", err)
-	}
-}
-
 func TestRegisterGlobalDryRunInterceptorsProfilePassthroughWhenDisabled(t *testing.T) {
 	t.Parallel()
 

@@ -136,7 +136,6 @@ func TestDescribeNeedsNoArgumentsFlagsOrConfiguration(t *testing.T) {
 		{"repo", "create"},                 // required flags
 		{"tag", "list"},                    // needs a repository and a server
 		{"auth", "status"},                 // needs configuration
-		{"bulk", "apply"},                  // required --from-plan
 		{"project", "permissions", "list"}, // deeply nested, needs a server
 	} {
 		t.Run(strings.Join(command, " "), func(t *testing.T) {
@@ -238,7 +237,7 @@ func TestDescribeDoesNotRelaxValidationForOrdinaryInvocations(t *testing.T) {
 		},
 		{
 			name:      "positional arguments are still enforced",
-			arguments: []string{"bulk", "status"},
+			arguments: []string{"project", "get"},
 			expect:    "arg",
 		},
 	} {

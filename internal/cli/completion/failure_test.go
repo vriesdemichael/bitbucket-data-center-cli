@@ -66,20 +66,16 @@ var compiledIn = map[Kind]string{
 }
 
 // readThisMachine are the kinds that answer from what is stored on this machine
-// -- the configuration, the bulk runs bb has saved -- rather than from the
-// server or from the binary.
+// -- the configuration -- rather than from the server or from the binary.
 //
 // What they offer depends on what this machine has done, and nothing is a
 // legitimate answer: a fresh checkout, a CI runner, anyone using BITBUCKET_URL
-// and a token from the environment, anyone who has never run bb bulk apply.
-// So the promise held here is only that they answer at all. That they offer
-// the right thing when there is something to offer is the job of
-// source_local_test.go and source_bulk_test.go, against state they write
-// themselves.
+// and a token from the environment. So the promise held here is only that they
+// answer at all. That they offer the right thing when there is something to
+// offer is the job of source_local_test.go, against state it writes itself.
 var readThisMachine = map[Kind]bool{
-	KindHost:          true,
-	KindHostAlias:     true,
-	KindBulkOperation: true,
+	KindHost:      true,
+	KindHostAlias: true,
 }
 
 // TestEverySourceCompletesNothingWhenTheContextCannotBeResolved is the promise

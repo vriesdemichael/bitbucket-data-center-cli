@@ -76,7 +76,7 @@ bb --json --log-level warn --log-format jsonl auth status 2> diagnostics.jsonl
 1. Use `--json` and parse only the `data` payload needed for automation.
 2. Branch on the `error` key, or on the exit code, before reading `data`.
 3. Keep diagnostics in separate stderr capture.
-4. Validate bulk artifacts against published schemas when integrating with CI.
+4. Validate `data` against the schema `bb <command> --describe` prints when integrating with CI.
 
 ```bash
 if output=$(bb --json pr get 42 2>/dev/null); then
@@ -139,17 +139,8 @@ does not resolve. bb does not retry those itself either.
 ### Handles on the failure envelope
 
 A failure may carry an optional `error.details` object: a flat map of strings naming what you
-need to act on it. It is absent when there is nothing to carry.
-
-`bb bulk apply` sets `operationId` there, because on the failure path the error envelope is
-the only document written (ADR-075) and the status artifact is reached by id:
-
-```bash
-operationId=$(bb bulk apply --from-plan plan.json --json | jq -r '.error.details.operationId // empty')
-bb bulk status "$operationId" --json
-```
-
-Read handles from `error.details`, not by parsing `error.message`.
+need to act on it. It is absent when there is nothing to carry. Read handles from
+`error.details`, not by parsing `error.message`.
 
 A failure Bitbucket answered carries `upstreamStatus`, the HTTP status, and
 `upstreamException` when Bitbucket named its exception. The exception name is the stable

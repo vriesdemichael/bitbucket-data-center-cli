@@ -22,9 +22,8 @@ import (
 func main() {
 	outputDir := flag.String("out", "docs/reference/schemas/output", "directory for the exported envelope schemas")
 	// A release publishes its own copy of every schema, so each has to claim the
-	// version it is published under rather than the latest alias. bulk-schema-export
-	// took this flag and this did not, so every versioned snapshot identified its
-	// output schemas as /latest/.
+	// version it is published under rather than the latest alias. Without this
+	// flag every versioned snapshot identified its output schemas as /latest/.
 	siteVersion := flag.String("site-version", docsite.LatestVersion, "documentation site version the exported $id values claim")
 	flag.Parse()
 

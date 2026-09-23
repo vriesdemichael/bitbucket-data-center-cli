@@ -1,8 +1,8 @@
 {
   "version": 2,
   "summary": {
-    "runnable_commands": 238,
-    "covered_commands": 238,
+    "runnable_commands": 235,
+    "covered_commands": 235,
     "covered_percent": 100,
     "masked_commands": 0,
     "dry_run_only_commands": 0,
@@ -61,9 +61,6 @@
     "build status get",
     "build status set",
     "build status stats",
-    "bulk apply",
-    "bulk plan",
-    "bulk status",
     "clone",
     "commit compare",
     "commit get",

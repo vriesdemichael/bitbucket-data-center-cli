@@ -1097,6 +1097,27 @@ func decodeJSONData(t *testing.T, value string, target any) {
 	}
 }
 
+// decodeJSONEnvelopeData is decodeJSONData for a caller that wants the error
+// back rather than a failed test.
+func decodeJSONEnvelopeData(value string, target any) error {
+	envelope := map[string]any{}
+	if err := json.Unmarshal([]byte(value), &envelope); err != nil {
+		return err
+	}
+
+	rawData, ok := envelope["data"]
+	if !ok {
+		return os.ErrInvalid
+	}
+
+	encodedData, err := json.Marshal(rawData)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(encodedData, target)
+}
+
 func jsonArrayContainsKey(t *testing.T, output string, key string) bool {
 	t.Helper()
 

@@ -29,20 +29,13 @@ type Entry struct {
 	// "deprecated" leaves the reader to guess whether it still works.
 	Reason string
 
-	// Advice names what to do instead. Not every deprecation has a successor --
-	// bb bulk has none -- so this is prose rather than a replacement identifier.
+	// Advice names what to do instead. Not every deprecation has a successor,
+	// so this is prose rather than a replacement identifier.
 	Advice string
 }
 
 // Entries is the registry.
-var Entries = []Entry{
-	{
-		Name:         "bb bulk",
-		DeprecatedIn: "v4.1.0",
-		Reason:       "its operations are repository configuration, and four of the nine are settable once at the project level, where Bitbucket already cascades them",
-		Advice:       "set project-wide policy with bb project permissions, webhook, default-task and branch-restriction; script bb directly for anything else",
-	},
-}
+var Entries = []Entry{}
 
 // RemoveIn is the major this entry is due to be removed in: the one after the
 // release that started warning about it.

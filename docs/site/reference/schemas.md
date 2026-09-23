@@ -38,30 +38,6 @@ sooner or later. Ask the binary.
 
 ---
 
-## Bulk workflow artifact schemas
-
-The project also publishes JSON schemas for the bulk workflow's standalone plan and policy
-artifacts, which are read and written as files independent of `--json` output.
-
-- [bulk-policy.schema.json](schemas/bulk-policy.schema.json)
-- [bulk-plan.schema.json](schemas/bulk-plan.schema.json)
-- [bulk-apply-status.schema.json](schemas/bulk-apply-status.schema.json)
-
-Schema source-of-truth is generated from Go workflow models in `internal/workflows/bulk/schema.go`.
-
-## Regenerate schemas
-
-```bash
-task docs:export-bulk-schemas
-task docs:publish-bulk-schemas
-```
-
-or regenerate all docs artifacts:
-
-```bash
-task docs:generate
-```
-
 ## Configuration file schema
 
 [config.schema.json](schemas/config.schema.json) describes every `bb`
@@ -89,18 +65,10 @@ each other:
 # yaml-language-server: $schema=../reference/schemas/config.schema.json
 ```
 
-The bulk policy schema is used the same way, by a bulk policy file:
-
-```yaml
-# yaml-language-server: $schema=https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/bulk-policy.schema.json
-apiVersion: bb.io/v1alpha1
-```
-
 ## Schema usage guidance
 
 - Use the configuration schema to author or validate a `bb` configuration file.
 - Use `bb <command> --describe` to get the schema for a command's `--json` data payload.
-- Use the bulk policy schema for authoring a `bb bulk` policy file, the plan schema to validate what `bb bulk plan` wrote, and the apply-status schema for `bb bulk apply` and `bb bulk status` output.
 
 ## The envelope, and the failure envelope
 
@@ -111,10 +79,10 @@ parts are published once rather than repeated in each schema.
 
 Two things `--describe` does not cover. Under `--dry-run` a command that changes
 something answers with a preview rather than its normal `data`, and `--describe`
-still returns the normal schema. And only `bb bulk`'s whole documents are published
-as schemas; for every other command, validate `data` against `--describe` and the
-rest against the parts below. Describing every document whole changes the shape of
-output that exists today, so it is planned for the next major release
+still returns the normal schema. And no command's whole document is published as
+a schema: validate `data` against `--describe` and the rest against the parts
+below. Describing every document whole changes the shape of output that exists
+today, so it is planned for the next major release
 ([#616](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/616)).
 
 - [`output/output.error.schema.json`](schemas/output/output.error.schema.json)

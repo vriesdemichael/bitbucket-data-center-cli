@@ -92,7 +92,6 @@ nav:
       - Enterprise Hardening: advanced/enterprise-hardening.md
       - Security Architecture & Threat Model: advanced/threat-model.md
       - Repository Discovery and Server Switching: advanced/repository-discovery-and-server-switching.md
-      - Bulk Operations: advanced/bulk-operations.md
       - Dry-Run Planning: advanced/dry-run-planning.md
       - Git Authentication: advanced/git-authentication.md
       - Networks, Proxies and TLS: advanced/networks-proxies-and-tls.md

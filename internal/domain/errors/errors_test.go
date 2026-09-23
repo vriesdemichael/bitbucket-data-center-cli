@@ -248,7 +248,7 @@ func TestMessageOf(t *testing.T) {
 func TestWithDetailDoesNotMutateTheErrorItWasGiven(t *testing.T) {
 	t.Parallel()
 
-	shared := New(KindCancelled, "bulk apply was cancelled", nil)
+	shared := New(KindCancelled, "the run was cancelled", nil)
 
 	first := WithDetail(shared, "operation_id", "op-one")
 	second := WithDetail(shared, "operation_id", "op-two")

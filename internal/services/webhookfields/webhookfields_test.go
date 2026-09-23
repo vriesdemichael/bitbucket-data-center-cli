@@ -220,66 +220,6 @@ func TestApplyUpdateOnNothingDoesNothing(t *testing.T) {
 	ApplyUpdate(nil, UpdateInput{Name: "renamed"})
 }
 
-func TestWithoutCredentialsKeepsWhetherAndDropsWhat(t *testing.T) {
-	t.Parallel()
-
-	published, ok := WithoutCredentials(map[string]any{
-		"id":            float64(7),
-		"name":          "hook",
-		"configuration": map[string]any{"secret": "s3cr3t"},
-		"credentials":   map[string]any{"username": "hookuser"},
-	}).(map[string]any)
-	if !ok {
-		t.Fatal("expected an object back")
-	}
-
-	if _, present := published["configuration"]; present {
-		t.Error("the configuration object was published")
-	}
-	if _, present := published["credentials"]; present {
-		t.Error("the credentials object was published")
-	}
-	if configured, _ := published["secretConfigured"].(bool); !configured {
-		t.Error("secretConfigured was not reported for a payload carrying a secret")
-	}
-	if username, _ := published["credentialsUsername"].(string); username != "hookuser" {
-		t.Errorf("credentialsUsername = %q", username)
-	}
-	if published["name"] != "hook" || published["id"] != float64(7) {
-		t.Errorf("the fields that are not credentials were not carried through: %#v", published)
-	}
-}
-
-func TestWithoutCredentialsSaysNothingWhenThePayloadDidNot(t *testing.T) {
-	t.Parallel()
-
-	// A create response carries an empty configuration object about half the
-	// time, for identical requests. There it means "the server did not say",
-	// not "no secret" -- and reporting false would state a fact this payload
-	// cannot know.
-	published, _ := WithoutCredentials(map[string]any{
-		"id":            float64(7),
-		"configuration": map[string]any{},
-	}).(map[string]any)
-
-	if _, present := published["secretConfigured"]; present {
-		t.Errorf("secretConfigured was reported from an empty configuration: %#v", published)
-	}
-}
-
-func TestWithoutCredentialsPassesThroughWhatIsNotAWebhook(t *testing.T) {
-	t.Parallel()
-
-	// The create response is decoded as any, and an instance that answered
-	// with something else should not be turned into a nil.
-	if got := WithoutCredentials("not an object"); got != "not an object" {
-		t.Errorf("WithoutCredentials(%q) = %#v", "not an object", got)
-	}
-	if got := WithoutCredentials(nil); got != nil {
-		t.Errorf("WithoutCredentials(nil) = %#v", got)
-	}
-}
-
 func TestCleanEventsDropsTheBlanksAFlagCollects(t *testing.T) {
 	t.Parallel()
 

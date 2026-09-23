@@ -28,8 +28,8 @@ import (
 // SecretEnv and PasswordEnv are where automation puts the two credentials.
 //
 // The environment rather than a flag, and named here rather than at each call
-// site, because a bulk plan refers to a variable by name and the name it refers
-// to has to be the one the commands read.
+// site, so the flag help, the refusals and a dry run's preview all name the
+// variable the commands read.
 const (
 	//nolint:gosec // G101: the name of a variable, not the credential in it
 	SecretEnv = "BB_WEBHOOK_SECRET"

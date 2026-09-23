@@ -14,7 +14,7 @@ repository cloning and browser navigation ergonomics tailored to Bitbucket-hoste
 
 ## Why teams adopt `bb`
 
-- **Operationally safe by default**: dry-run planning for server mutations and explicit bulk plan/apply workflows.
+- **Operationally safe by default**: dry-run planning for server mutations, and a confirmation before any command that deletes, removes, clears or revokes.
 - **Automation friendly**: every `--json` payload arrives in the same envelope, for CI/CD and internal tooling.
 - **Spec-driven API interactions**: client/server interactions are derived from Bitbucket Data Center's official OpenAPI spec.
 - **Git-native ergonomics**: repository discovery from matching remotes to reduce repetitive `--repo` usage.
@@ -26,7 +26,7 @@ repository cloning and browser navigation ergonomics tailored to Bitbucket-hoste
 - Manage repositories, permissions, hooks, branches, tags, commits, and refs.
 - Work with pull requests, comments, build statuses, and merge checks.
 - Run project/admin operations and cross-repository search.
-- Apply policy-driven multi-repository changes via bulk plan/review/apply workflows.
+- Set permissions, webhooks, default tasks and branch restrictions once per project, where Bitbucket applies them to every repository.
 - Clone repositories and open repository pages quickly (`bb repo clone`, `bb browse`).
 
 ## Quick start
@@ -182,7 +182,7 @@ each problem with its line, needing no host and no network.
   shapes the generated client is built from — it is the provenance of the spec, not a statement
   about which server versions work. Behavior is established by live tests, not the spec.
 - CLI identity and machine contract: `bb`, with the envelope described in [ADR-064](docs/site/adr/064-machine-output-carries-no-contract-version.md)
-- JSON schemas for bulk policy/plan/status published in docs and versioned with releases
+- JSON schemas: `bb <command> --describe` prints a command's output schema from the binary, and the configuration file and failure envelope schemas are published in docs and versioned with releases
 
 ## For contributors
 

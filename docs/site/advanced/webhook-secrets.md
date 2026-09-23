@@ -167,112 +167,9 @@ $ bb webhook create ci https://ci.example.com/hook --dry-run --json
 }
 ```
 
-Naming the variable is also the more useful answer: the mistake a plan makes is
-reading the wrong one. Removing a credential shows as `"will be removed"`.
-
-## Bulk plans hold a variable name
-
-A bulk plan is a file. It gets written to disk, committed, attached to a change
-request and read by whoever reviews it — so a literal secret in one is a secret
-in version control, for the same reason ADR-047 keeps secrets off the command
-line.
-
-The policy therefore names the **variable**, and `bb bulk apply` reads it at
-apply time:
-
-```yaml
-apiVersion: bb.io/v1alpha1
-selector:
-  projectKey: PROJ
-operations:
-  - type: repo.webhook.create
-    name: ci
-    url: https://ci.example.com/hooks/bitbucket
-    events: [repo:refs_changed]
-    sslVerificationRequired: true
-    secretEnv: BB_WEBHOOK_SECRET
-    credentialsUsername: bitbucket
-    credentialsPasswordEnv: BB_WEBHOOK_PASSWORD
-```
-
-- `secretEnv` and `credentialsPasswordEnv` must look like environment variable
-  names (`^[A-Za-z_][A-Za-z0-9_]*$`). A pasted credential almost never does, so
-  the mistake the field invites — reading `secretEnv` as "the secret" — is
-  refused at plan time, by the published JSON schema as you type and by `bb`
-  when it validates the policy.
-- The plan file records the name only. Neither `bb bulk plan` nor the plan on
-  disk carries the value.
-- `bb bulk apply` **refuses** when a named variable is unset, rather than
-  creating a webhook without a secret. A webhook whose deliveries carry no
-  signature is not a smaller version of one whose deliveries do, and finding
-  that out from a receiver that has started rejecting everything is a bad way to
-  find out. The recorded failure names the variable that was missing:
-
-```console
-$ bb bulk apply --from-plan plan.json
-Error: bulk apply op-4f2c… completed with failures
-$ bb bulk status op-4f2c… --json | grep BB_WEBHOOK_SECRET
-"secretEnv names $BB_WEBHOOK_SECRET, which is not set in this environment; export it before applying the plan"
-```
-
-- The same plan applies against different environments without being edited,
-  which is the other thing a name buys over a value.
-- The apply status is printed and written to the status store on disk. It
-  reports `credentialsUsername` for the webhook it created, never the
-  credentials themselves.
-
-!!! note "A create response cannot tell you whether a secret is set"
-
-    Bitbucket answers identical webhook creates inconsistently: some responses
-    carry `configuration.secret` in full, others carry an empty object. Measured
-    against 10.4.2, that is roughly an even split.
-
-    So a bulk apply status omits `secretConfigured` rather than reporting
-    `false` — on a create, an empty configuration means "the server did not
-    say", and claiming otherwise would state a fact the payload cannot know. It
-    also means the apply status has to redact a secret it usually does not
-    receive.
-
-    To confirm a secret was configured, read the webhook: `bb webhook list` and
-    `bb webhook get` answer from the read endpoint, which always returns it.
-
-### Limitation: one secret per operation
-
-A `secretEnv` belongs to an **operation**, and the selector applies every
-operation to every repository it matches. So a plan can create several webhooks
-each reading its own variable:
-
-```yaml
-operations:
-  - type: repo.webhook.create
-    name: ci
-    url: https://ci.example.com/hooks/bitbucket
-    secretEnv: BB_WEBHOOK_SECRET_CI
-  - type: repo.webhook.create
-    name: audit
-    url: https://audit.example.com/hooks/bitbucket
-    secretEnv: BB_WEBHOOK_SECRET_AUDIT
-```
-
-— but every repository the selector matches gets the **same** secret for a given
-operation. There is no way to say "this variable for `service-a`, that one for
-`service-b`" inside one plan.
-
-If each repository needs its own secret, that is one plan per repository (or per
-group of repositories sharing a secret), each applied with its own variable
-exported:
-
-```bash
-for repo in service-a service-b; do
-  BB_WEBHOOK_SECRET="$(vault read -field=value "secret/bitbucket/$repo")" \
-    bb bulk apply --from-plan "plans/$repo.json"
-done
-```
-
-This is a real limitation of the plan model rather than a temporary gap: the
-selector exists precisely so that one operation describes many repositories, and
-per-repository values would make a plan stop being the reviewable artifact it is
-for. A plan whose effect differs per target cannot be read once and understood.
+Naming the variable is also the more useful answer: the mistake a preview is
+there to catch is reading the wrong one. Removing a credential shows as
+`"will be removed"`.
 
 ## Where the fields can be set
 
@@ -285,4 +182,3 @@ for:
 | `bb webhook` | yes | yes |
 | `bb project webhook` | yes | yes |
 | `bb repo settings workflow webhooks` | yes | no update subcommand |
-| `bb bulk` (`repo.webhook.create`) | yes, by variable name | n/a |

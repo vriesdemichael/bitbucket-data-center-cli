@@ -222,9 +222,7 @@ func mergeStrategySource(_ context.Context, _ *Environment, _ Request) (Result, 
 // skillSource offers the agent skills this binary carries.
 //
 // From the registry `bb ai skill show` resolves against, so a skill added
-// there is completed without anything here changing. The aliases are left out
-// on purpose: bulk and bb-bulk install the same file, and a shell offering
-// both is offering a choice that is not one.
+// there is completed without anything here changing.
 func skillSource(_ context.Context, _ *Environment, _ Request) (Result, error) {
 	candidates := make([]Candidate, 0, len(aicmd.Skills))
 	for _, skill := range aicmd.Skills {

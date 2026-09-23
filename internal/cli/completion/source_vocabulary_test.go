@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	aicmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/ai"
 	projectcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/project"
 	repocmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/repo"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
@@ -233,13 +234,11 @@ func TestEveryVocabularyValueCarriesADescription(t *testing.T) {
 	}
 }
 
-// TestASkillIsOfferedByItsCanonicalNameOnly pins the choice not to complete
-// aliases.
-//
-// bulk and bb-bulk install the same file, and a shell listing both offers a
-// choice that is not one. The canonical name is also the directory the file
-// lands in, so it is the one worth learning.
-func TestASkillIsOfferedByItsCanonicalNameOnly(t *testing.T) {
+// TestEveryShippedSkillIsOfferedWithWhatItIsFor holds the completion to the
+// registry `bb ai skill` resolves against: each skill by the name the argument
+// takes, which is also the directory its file lands in, with its summary beside
+// it.
+func TestEveryShippedSkillIsOfferedWithWhatItIsFor(t *testing.T) {
 	t.Parallel()
 
 	result, err := skillSource(context.Background(), nil, Request{})
@@ -247,12 +246,13 @@ func TestASkillIsOfferedByItsCanonicalNameOnly(t *testing.T) {
 		t.Fatalf("skillSource: %v", err)
 	}
 
-	offered := valuesOf(result.Candidates)
-	if !contains(offered, "bb") || !contains(offered, "bb-bulk") {
-		t.Fatalf("expected both shipped skills, got %v", offered)
+	if len(result.Candidates) != len(aicmd.Skills) {
+		t.Fatalf("offered %v, want one candidate for each of the %d shipped skills", valuesOf(result.Candidates), len(aicmd.Skills))
 	}
-	if contains(offered, "bulk") {
-		t.Errorf("bulk is an alias of bb-bulk and should not be offered beside it: %v", offered)
+	for index, skill := range aicmd.Skills {
+		if candidate := result.Candidates[index]; candidate.Value != skill.Name || candidate.Description != skill.Summary {
+			t.Errorf("candidate %d = %+v, want %s with %q beside it", index, candidate, skill.Name, skill.Summary)
+		}
 	}
 }
 

@@ -61,10 +61,10 @@ func TestDeclaredResultsAreReachableThroughDescribe(t *testing.T) {
 // TestEveryCommandIsModelled is the gate this whole change exists to pass.
 //
 // Every runnable command must answer --describe with something true: a schema
-// derived from the result type it fills in, a hand-written schema for the bulk
-// artifacts, or a stated reason it has no data payload at all. Nothing may
-// simply have been forgotten -- that was the state this replaced, where most of
-// the surface published no contract and nothing said so.
+// derived from the result type it fills in, or a stated reason it has no data
+// payload bb can describe. Nothing may simply have been forgotten -- that was
+// the state this replaced, where most of the surface published no contract and
+// nothing said so.
 //
 // A new command fails this test until its author decides which of the three it
 // is. That decision is the point.
@@ -75,7 +75,6 @@ func TestEveryCommandIsModelled(t *testing.T) {
 	for _, path := range result.DeclaredPaths() {
 		declared[path] = true
 	}
-	published := outputschemas.Schemas()
 
 	root := NewRootCommand()
 
@@ -87,7 +86,6 @@ func TestEveryCommandIsModelled(t *testing.T) {
 			case declared[path]:
 			case outputschemas.CommandsWithoutDataContract[path] != "":
 			case outputschemas.CommandsWithoutDeclarableShape[path] != "":
-			case published["output."+strings.ReplaceAll(path, " ", ".")+".schema.json"] != nil:
 			default:
 				t.Errorf("%q neither declares a result type nor says why it has none", path)
 			}
@@ -161,41 +159,6 @@ func TestDescribeAnswersForHelpAndCompletion(t *testing.T) {
 		if !strings.Contains(described.Reason, "does not return a data payload") {
 			t.Errorf("%q reason = %q", path, described.Reason)
 		}
-	}
-}
-
-// TestDescribeAnswersAtTheDataLevel keeps the two sources of schema comparable.
-//
-// A derived schema describes the data payload; the hand-written bulk schemas
-// describe the whole envelope. Serving both under one field meant a consumer
-// validating envelope.data passed for a declared command and rejected every
-// document from a bulk one.
-func TestDescribeAnswersAtTheDataLevel(t *testing.T) {
-	t.Parallel()
-
-	described := describeCommand("bulk plan")
-	if !described.Described {
-		t.Fatalf("bulk plan is published but not described: %+v", described)
-	}
-	document := schemaDocument(t, described)
-	properties, ok := document["properties"].(map[string]any)
-	if !ok {
-		t.Fatalf("schema has no properties: %+v", document)
-	}
-	if _, envelope := properties["meta"]; envelope {
-		t.Error("--describe answered with the envelope rather than the payload")
-	}
-	if _, ok := properties["planHash"]; !ok {
-		t.Errorf("the payload's own fields are missing: %+v", properties)
-	}
-	// The payload is the published plan artifact, identified as that artifact:
-	// its references into $defs resolve against it. What must not reach the
-	// payload is the envelope's identity, under output/.
-	if id, _ := document["$id"].(string); !strings.HasSuffix(id, "/reference/schemas/bulk-plan.schema.json") {
-		t.Errorf("the payload schema is not identified as the plan artifact: %q", id)
-	}
-	if _, ok := document["$defs"]; !ok {
-		t.Error("the payload schema carries no $defs, so its references resolve to nothing")
 	}
 }
 

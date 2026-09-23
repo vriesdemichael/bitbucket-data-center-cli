@@ -39,12 +39,12 @@ func init() {
 	}))
 	result.Declare("ai skill install", result.For[SkillFile](map[string][]string{
 		"status": {"installed"},
-		"skill":  {"bb", "bb-bulk"},
+		"skill":  {"bb"},
 		"scope":  {"project", "global"},
 	}))
 	result.Declare("ai skill remove", result.For[SkillFile](map[string][]string{
 		"status": {"removed", "not_found"},
-		"skill":  {"bb", "bb-bulk"},
+		"skill":  {"bb"},
 		"scope":  {"project", "global"},
 	}))
 }

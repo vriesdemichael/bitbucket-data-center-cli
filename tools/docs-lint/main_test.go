@@ -263,9 +263,9 @@ func TestSplitShellSegmentsIgnoresOperatorsInsideQuotes(t *testing.T) {
 func TestSplitShellSegmentsTrailingComments(t *testing.T) {
 	t.Parallel()
 
-	segments := splitShellSegments(`bb ai skill install bulk # comment here`)
+	segments := splitShellSegments(`bb ai skill install bb # comment here`)
 
-	if len(segments) != 1 || strings.TrimSpace(segments[0]) != "bb ai skill install bulk" {
+	if len(segments) != 1 || strings.TrimSpace(segments[0]) != "bb ai skill install bb" {
 		t.Fatalf("unexpected segments: %+v", segments)
 	}
 
@@ -470,12 +470,12 @@ func TestShellRedirectionAndPlaceholders(t *testing.T) {
 		t.Fatalf("expected args %v, got %v", expectedDiag, diagArgs)
 	}
 
-	placeholderArgs, ok := parseBBSegment("bb bulk status <operation-id>")
+	placeholderArgs, ok := parseBBSegment("bb webhook get <webhook-id>")
 	if !ok {
 		t.Fatal("expected successful parse")
 	}
-	expectedPlaceholder := []string{"bulk", "status", "<operation-id>"}
-	if len(placeholderArgs) != len(expectedPlaceholder) || placeholderArgs[2] != "<operation-id>" {
+	expectedPlaceholder := []string{"webhook", "get", "<webhook-id>"}
+	if len(placeholderArgs) != len(expectedPlaceholder) || placeholderArgs[2] != "<webhook-id>" {
 		t.Fatalf("expected placeholder preserved, got %v", placeholderArgs)
 	}
 }

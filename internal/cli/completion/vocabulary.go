@@ -45,7 +45,6 @@ var placeholderKinds = map[string]Kind{
 	"<number> | <path> | <commit-sha>": KindRepoPath,
 	// Everything after -- belongs to git, which completes its own flags.
 	"-- <gitflags>":     KindFree,
-	"operation-id":      KindBulkOperation,
 	"path":              KindRepoPath,
 	"permission":        KindPermission,
 	"pr-id":             KindPullRequest,
@@ -114,9 +113,7 @@ var flagKinds = map[string]Kind{
 	"expiry-days":                KindFree,
 	"external-id":                KindFree,
 	"field":                      KindFree,
-	"file":                       KindLocalFile,
 	"filter":                     KindFree,
-	"from-plan":                  KindLocalFile,
 	"from-ref":                   KindBranch,
 	"from-repo":                  KindRepository,
 	"group":                      KindGroup,

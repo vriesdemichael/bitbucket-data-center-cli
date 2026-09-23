@@ -26,12 +26,11 @@ import (
 // it is exactly one document (ADR-075).
 //
 // What this does not cover is worth stating, because it was claimed once and
-// was wrong. It does not catch the `bb bulk apply` double-write that ADR-075
-// was written for: apply requires --from-plan, so it fails argument validation
-// before Apply runs and never reaches the code that wrote two documents. That
-// case is covered in internal/cli/cmd/bulk. What this catches is a command
-// whose reachable path prints a payload and then fails -- the same shape,
-// wherever it appears next.
+// was wrong. It reaches only the paths a command can take with no
+// configuration and no server, so a double write deeper in -- the case ADR-075
+// was written for sat behind a required flag and a successful run -- is out of
+// its sight. What this catches is a command whose reachable path prints a
+// payload and then fails -- the same shape, wherever it appears next.
 func TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope(t *testing.T) {
 	sealEnvironment(t)
 
@@ -224,7 +223,6 @@ func sealEnvironment(t *testing.T) {
 	t.Setenv("USERPROFILE", directory)
 	t.Setenv("XDG_CONFIG_HOME", directory)
 	t.Setenv("APPDATA", directory)
-	t.Setenv("BB_BULK_STATUS_DIR", directory+"/bulk")
 
 	t.Setenv("BB_URL", "")
 	t.Setenv("BB_TOKEN", "")

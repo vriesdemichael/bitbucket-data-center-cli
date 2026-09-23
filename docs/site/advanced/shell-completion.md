@@ -99,7 +99,7 @@ descriptions, add `--no-descriptions` to `bb completion <shell>`.
 | People | users, groups and reviewer groups, including `@group` inside `--reviewers` |
 | Ids | comments, webhooks, branch restrictions, default tasks, reviewer conditions, required builds, keys and tokens — each with what it names beside it |
 | Fixed values | every flag with a defined set of values, the log levels, review statuses and permissions |
-| This machine | the instances you are logged in to, for `--host`, and the bulk runs saved here, for `bb bulk status` |
+| This machine | the instances you are logged in to, for `--host` |
 
 Values a server cannot know are not completed: a title, a URL, or the name of
 something being created.

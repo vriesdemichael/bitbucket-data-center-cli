@@ -25,8 +25,8 @@ const (
 	//
 	// It is deliberately not transient. Transient is documented as "retry
 	// later", and a caller that retries a Ctrl-C re-runs the very thing
-	// somebody just interrupted -- for `bb bulk apply` that means replaying
-	// mutations across every repository in the plan.
+	// somebody just interrupted -- for a mutating command, the change they
+	// chose to stop.
 	KindCancelled Kind = "cancelled"
 
 	// KindUnknownOutcome is a request that was sent and whose result never

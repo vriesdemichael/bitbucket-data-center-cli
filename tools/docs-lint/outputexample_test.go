@@ -184,12 +184,11 @@ func TestUnannotatedEnvelopeIsReported(t *testing.T) {
 func TestUnannotatedCheckIgnoresConfigurationAndArtifacts(t *testing.T) {
 	t.Parallel()
 
-	// Only a meta.bbVersion marks a bb machine document. IDE settings and the
-	// persistent bulk artifacts are neither, and are checked elsewhere against
-	// different schemas.
+	// Only a meta.bbVersion marks a bb machine document. IDE settings and a
+	// JSON Schema are neither.
 	documents := []string{
 		mcpConfig(`"ai", "mcp", "serve"`),
-		"```json\n{ \"apiVersion\": \"bb.io/v1alpha1\", \"kind\": \"BulkApplyStatus\", \"status\": \"ok\" }\n```\n",
+		"```json\n{ \"$schema\": \"https://json-schema.org/draft/2020-12/schema\", \"type\": \"object\" }\n```\n",
 		"```json\n{ \"data\": { \"ok\": true } }\n```\n",
 	}
 

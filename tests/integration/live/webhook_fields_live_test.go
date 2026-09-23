@@ -10,9 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	neturl "net/url"
-	"os"
-	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -654,13 +651,27 @@ func TestLiveWebhookEndpointPasswordSurvivesAnUpdate(t *testing.T) {
 	}
 }
 
-// TestLiveBulkWebhookSecretTravelsAsAVariableName covers the plan file.
+// TestLiveWebhookCreateResponseIsNotAReliableSourceForTheSecret records why
+// whether a webhook has a shared secret is a question for a read, never for the
+// answer to a create.
 //
-// A bulk plan is written to disk, committed, attached to a change request and
-// read by whoever reviews it. A literal secret in it is a secret in version
-// control, which is the same reason ADR-047 keeps one off the command line. So
-// the plan names the variable and the apply reads it.
-func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
+// Bitbucket answers identical creates inconsistently: some carry
+// configuration.secret in full, some carry an empty object. Every read carries
+// it. Ten attempts, because two produced both shapes.
+//
+// It is a race, and load decides it. Bitbucket serialises the create response
+// while the configuration it echoes is still being changed: 200 sequential
+// creates against an idle instance echoed the secret 8 times, 800 creates eight
+// at a time 303 times, and 6,400 thirty-two at a time 5,539 times. Once in a
+// while the serialiser trips over the change outright and the create answers
+// 400 with a ConcurrentModificationException through
+// RestWebhook["configuration"] -- seen once in CI, not reproduced in those
+// 7,400 creates. That is the same race lost, not a failed create: the response
+// is written after the webhook is stored, so the read below still has to find
+// it.
+func TestLiveWebhookCreateResponseIsNotAReliableSourceForTheSecret(t *testing.T) {
+	t.Parallel()
+
 	harness := newLiveHarness(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -671,291 +682,52 @@ func TestLiveBulkWebhookSecretTravelsAsAVariableName(t *testing.T) {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 	repo := seeded.Repos[0]
-	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	tempDir := t.TempDir()
-	policyPath := filepath.Join(tempDir, "policy.yaml")
-	planPath := filepath.Join(tempDir, "plan.json")
-	writePolicy := func(t *testing.T, body string) {
-		t.Helper()
-		if err := os.WriteFile(policyPath, []byte(body), 0o600); err != nil {
-			t.Fatalf("write policy: %v", err)
+	path := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/webhooks", seeded.Key, repo.Slug)
+	echoed, empty, raced := 0, 0, 0
+	for attempt := range 10 {
+		name := fmt.Sprintf("echo-probe-%d", attempt)
+		created, err := harness.liveJSON(ctx, http.MethodPost, path, map[string]any{
+			"name":   name,
+			"url":    "http://localhost:7990/status",
+			"events": []string{"repo:refs_changed"},
+			// Bitbucket's default, so no read tells it from a drop; nothing here depends on it.
+			"active":        true,
+			"configuration": map[string]any{"secret": secretCanary},
+		})
+		switch {
+		case err == nil:
+			configuration, _ := created["configuration"].(map[string]any)
+			if secret, _ := configuration["secret"].(string); secret != "" {
+				echoed++
+			} else {
+				empty++
+			}
+		case strings.Contains(err.Error(), "ConcurrentModificationException"):
+			raced++
+			created = liveWebhookNamed(t, ctx, harness, path, name)
+		default:
+			t.Fatalf("create %d: %v", attempt, err)
 		}
+
+		// The read, by contrast, always answers.
+		got, err := harness.liveJSON(ctx, http.MethodGet, fmt.Sprintf("%s/%v", path, created["id"]), nil)
+		if err != nil {
+			t.Fatalf("get %d: %v", attempt, err)
+		}
+		readConfiguration, _ := got["configuration"].(map[string]any)
+		if secret, _ := readConfiguration["secret"].(string); secret != secretCanary {
+			t.Fatalf("a read did not return the secret it was created with, so the "+
+				"asymmetry this test records has changed: %#v", got["configuration"])
+		}
+		expectWebhookStoredAsSent(t, got,
+			sentWebhook{name: name, url: "http://localhost:7990/status", events: []string{"repo:refs_changed"}})
 	}
 
-	writePolicy(t, strings.Join([]string{
-		"apiVersion: bb.io/v1alpha1",
-		"selector:",
-		"  projectKey: " + seeded.Key,
-		"  repositories:",
-		"    - " + repo.Slug,
-		"operations:",
-		"  - type: repo.webhook.create",
-		"    name: bulk-hook",
-		"    url: http://localhost:7990/status",
-		"    sslVerificationRequired: false",
-		"    secretEnv: BB_WEBHOOK_SECRET",
-	}, "\n"))
-
-	t.Run("a literal secret is refused where a variable name belongs", func(t *testing.T) {
-		// The mistake the field invites: reading "secretEnv" as "the secret".
-		writePolicy(t, strings.Join([]string{
-			"apiVersion: bb.io/v1alpha1",
-			"selector:",
-			"  projectKey: " + seeded.Key,
-			"operations:",
-			"  - type: repo.webhook.create",
-			"    name: bulk-hook",
-			"    url: http://localhost:7990/status",
-			"    secretEnv: " + secretCanary + "/not-a-name=",
-		}, "\n"))
-
-		output, err := executeLiveCLI(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath)
-		if err == nil {
-			t.Fatalf("a plan naming a value rather than a variable was accepted:\n%s", output)
-		}
-	})
-
-	writePolicy(t, strings.Join([]string{
-		"apiVersion: bb.io/v1alpha1",
-		"selector:",
-		"  projectKey: " + seeded.Key,
-		"  repositories:",
-		"    - " + repo.Slug,
-		"operations:",
-		"  - type: repo.webhook.create",
-		"    name: bulk-hook",
-		"    url: http://localhost:7990/status",
-		"    sslVerificationRequired: false",
-		"    secretEnv: BB_WEBHOOK_SECRET",
-	}, "\n"))
-
-	planOutput, err := executeLiveCLI(t, "--json", "bulk", "plan", "-f", policyPath, "-o", planPath)
-	if err != nil {
-		t.Fatalf("bulk plan failed: %v\noutput: %s", err, planOutput)
+	if echoed == 0 && empty == 0 && raced == 0 {
+		t.Fatal("no creates were observed at all")
 	}
-
-	t.Run("neither the plan on stdout nor the plan on disk carries the secret", func(t *testing.T) {
-		t.Setenv("BB_WEBHOOK_SECRET", secretCanary)
-		if strings.Contains(planOutput, secretCanary) {
-			t.Errorf("the planned output carried the secret:\n%s", planOutput)
-		}
-		onDisk, err := os.ReadFile(planPath)
-		if err != nil {
-			t.Fatalf("read the plan: %v", err)
-		}
-		if strings.Contains(string(onDisk), secretCanary) {
-			t.Error("the plan file carried the secret, which is the file that gets committed")
-		}
-		if !strings.Contains(string(onDisk), "BB_WEBHOOK_SECRET") {
-			t.Errorf("the plan file did not name the variable to read:\n%s", onDisk)
-		}
-	})
-
-	t.Run("an apply with the variable unset is refused rather than run without it", func(t *testing.T) {
-		t.Setenv("BB_WEBHOOK_SECRET", "")
-		output, err := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", planPath)
-		if err == nil {
-			t.Fatalf("the plan applied without the secret it said it needed:\n%s", output)
-		}
-
-		// A failed apply writes nothing to stdout and leaves the operation id
-		// in the error, so the reason lives in the saved status document.
-		// Reading it is what tells "refused because the variable is unset"
-		// from "refused because the server disliked something else" -- and the
-		// first version of this check could not, so it passed against a build
-		// that had sent an empty secret and been rejected for it.
-		operationID := regexp.MustCompile(`op-[0-9a-f]+`).FindString(err.Error())
-		if operationID == "" {
-			t.Fatalf("the failure named no operation to inspect: %v", err)
-		}
-
-		status, statusErr := executeLiveCLI(t, "--json", "bulk", "status", operationID)
-		if statusErr != nil {
-			t.Fatalf("bulk status %s failed: %v\n%s", operationID, statusErr, status)
-		}
-		if !strings.Contains(status, "BB_WEBHOOK_SECRET") {
-			t.Errorf("the recorded failure did not name the variable that was missing:\n%s", status)
-		}
-
-		// Rather than run without it: the apply created nothing.
-		if hooks := webhooksNamedInListing(t, mustLiveCLI(t, "webhook", "list", "--limit", "50"), "bulk-hook"); len(hooks) != 0 {
-			t.Errorf("the refused apply created %d webhooks named bulk-hook: %v", len(hooks), hooks)
-		}
-	})
-
-	t.Run("two webhooks in one plan can name two different variables", func(t *testing.T) {
-		// The limit is one secret per *operation*, not one per plan: a plan
-		// can create several webhooks each reading its own variable. What it
-		// cannot do is vary the secret across the repositories one operation
-		// matches, because the operation names a single variable and the
-		// selector applies it to all of them. That distinction is documented,
-		// so it is worth holding still.
-		writePolicy(t, strings.Join([]string{
-			"apiVersion: bb.io/v1alpha1",
-			"selector:",
-			"  projectKey: " + seeded.Key,
-			"  repositories:",
-			"    - " + repo.Slug,
-			"operations:",
-			"  - type: repo.webhook.create",
-			"    name: hook-one",
-			"    url: http://localhost:7990/status",
-			"    secretEnv: BB_WEBHOOK_SECRET",
-			"  - type: repo.webhook.create",
-			"    name: hook-two",
-			"    url: http://localhost:7990/status",
-			"    secretEnv: BB_WEBHOOK_SECRET_TWO",
-		}, "\n"))
-
-		twoPlanPath := filepath.Join(tempDir, "two.json")
-		if output, err := executeLiveCLI(t, "--json", "bulk", "plan", "-f", policyPath, "-o", twoPlanPath); err != nil {
-			t.Fatalf("bulk plan with two webhooks failed: %v\noutput: %s", err, output)
-		}
-
-		t.Setenv("BB_WEBHOOK_SECRET", secretCanary)
-		t.Setenv("BB_WEBHOOK_SECRET_TWO", secretCanary+"-second")
-		output, err := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", twoPlanPath)
-		if err != nil {
-			t.Fatalf("bulk apply with two webhooks failed: %v\noutput: %s", err, output)
-		}
-
-		listing := mustLiveCLI(t, "--json", "webhook", "list", "--limit", "50")
-		for _, name := range []string{"hook-one", "hook-two"} {
-			if !strings.Contains(listing, name) {
-				t.Errorf("%s was not created:\n%s", name, listing)
-			}
-		}
-		if strings.Contains(listing, secretCanary) {
-			t.Errorf("a secret reached the listing:\n%s", listing)
-		}
-
-		// Each holding the secret its own variable held, which is the claim.
-		for name, secret := range map[string]string{"hook-one": secretCanary, "hook-two": secretCanary + "-second"} {
-			hooks := webhooksNamedInListing(t, listing, name)
-			if len(hooks) != 1 {
-				t.Errorf("%d webhooks named %s, want 1", len(hooks), name)
-				continue
-			}
-			expectWebhookStoredAsSent(t, hooks[0],
-				sentWebhook{name: name, url: "http://localhost:7990/status", events: []string{"repo:refs_changed"}})
-			id, _ := numericOrStringID(hooks[0]["id"])
-			if stored := webhookSecretAsStored(t, id); stored != secret {
-				t.Errorf("%s holds secret %q, want the one its own variable held", name, stored)
-			}
-		}
-	})
-
-	t.Run("an apply with the variable set configures the secret", func(t *testing.T) {
-		t.Setenv("BB_WEBHOOK_SECRET", secretCanary)
-		output, err := executeLiveCLI(t, "--json", "bulk", "apply", "--from-plan", planPath)
-		if err != nil {
-			t.Fatalf("bulk apply failed: %v\noutput: %s", err, output)
-		}
-		// The apply status is printed here and written to the status store on
-		// disk, and it publishes the webhook Bitbucket answered with rather
-		// than a model of it -- so what it must not carry is the payload's
-		// configuration object, whatever that object happened to contain.
-		if strings.Contains(output, secretCanary) || strings.Contains(output, `"configuration"`) {
-			t.Errorf("the apply status carried the webhook's credentials:\n%s", output)
-		}
-
-		// Deliberately not asserted on the apply status: whether a secret is
-		// configured cannot be read from a create response. Bitbucket echoes
-		// the configuration object on some creates and not others, for
-		// identical requests -- see the contract subtest below. A read is
-		// where that question has an answer.
-		listing := mustLiveCLI(t, "--json", "webhook", "list", "--limit", "50")
-		if strings.Contains(listing, secretCanary) {
-			t.Errorf("the listing carried the secret:\n%s", listing)
-		}
-		if !strings.Contains(listing, `"secretConfigured": true`) {
-			t.Errorf("no webhook came out of the apply with a secret configured:\n%s", listing)
-		}
-
-		// The one this apply made, by name: the webhooks the subtest above
-		// created have secrets too, and satisfy the check above on their own.
-		hooks := webhooksNamedInListing(t, listing, "bulk-hook")
-		if len(hooks) != 1 {
-			t.Fatalf("%d webhooks named bulk-hook after the apply, want 1:\n%s", len(hooks), listing)
-		}
-		expectWebhookStoredAsSent(t, hooks[0],
-			sentWebhook{name: "bulk-hook", url: "http://localhost:7990/status", events: []string{"repo:refs_changed"}})
-		// The policy's false, which Bitbucket does not store unless it is sent.
-		if verification, ok := hooks[0]["sslVerificationRequired"].(bool); !ok || verification {
-			t.Errorf("sslVerificationRequired = %v, want the policy's false", hooks[0]["sslVerificationRequired"])
-		}
-		id, _ := numericOrStringID(hooks[0]["id"])
-		if secret := webhookSecretAsStored(t, id); secret != secretCanary {
-			t.Errorf("bulk-hook holds secret %q, want the one BB_WEBHOOK_SECRET held", secret)
-		}
-	})
-
-	t.Run("a create response is not a reliable source for the secret", func(t *testing.T) {
-		// The quirk the CI run above caught, recorded because it is the reason
-		// two bb surfaces answer this question differently and the reason the
-		// apply status redacts something it usually does not receive.
-		//
-		// Bitbucket answers identical creates inconsistently: some carry
-		// configuration.secret in full, some carry an empty object. Every read
-		// carries it. Ten attempts, because two produced both shapes.
-		//
-		// It is a race, and load decides it. Bitbucket serialises the create
-		// response while the configuration it echoes is still being changed:
-		// 200 sequential creates against an idle instance echoed the secret 8
-		// times, 800 creates eight at a time 303 times, and 6,400 thirty-two at
-		// a time 5,539 times. Once in a while the serialiser trips over the
-		// change outright and the create answers 400 with a
-		// ConcurrentModificationException through RestWebhook["configuration"]
-		// -- seen once in CI, not reproduced in those 7,400 creates. That is the
-		// same race lost, not a failed create: the response is written after
-		// the webhook is stored, so the read below still has to find it.
-		path := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/webhooks", seeded.Key, repo.Slug)
-		echoed, empty, raced := 0, 0, 0
-		for attempt := range 10 {
-			name := fmt.Sprintf("echo-probe-%d", attempt)
-			created, err := harness.liveJSON(ctx, http.MethodPost, path, map[string]any{
-				"name":   name,
-				"url":    "http://localhost:7990/status",
-				"events": []string{"repo:refs_changed"},
-				// Bitbucket's default, so no read tells it from a drop; nothing here depends on it.
-				"active":        true,
-				"configuration": map[string]any{"secret": secretCanary},
-			})
-			switch {
-			case err == nil:
-				configuration, _ := created["configuration"].(map[string]any)
-				if secret, _ := configuration["secret"].(string); secret != "" {
-					echoed++
-				} else {
-					empty++
-				}
-			case strings.Contains(err.Error(), "ConcurrentModificationException"):
-				raced++
-				created = liveWebhookNamed(t, ctx, harness, path, name)
-			default:
-				t.Fatalf("create %d: %v", attempt, err)
-			}
-
-			// The read, by contrast, always answers.
-			got, err := harness.liveJSON(ctx, http.MethodGet, fmt.Sprintf("%s/%v", path, created["id"]), nil)
-			if err != nil {
-				t.Fatalf("get %d: %v", attempt, err)
-			}
-			readConfiguration, _ := got["configuration"].(map[string]any)
-			if secret, _ := readConfiguration["secret"].(string); secret != secretCanary {
-				t.Fatalf("a read did not return the secret it was created with, so the "+
-					"asymmetry this test records has changed: %#v", got["configuration"])
-			}
-			expectWebhookStoredAsSent(t, got,
-				sentWebhook{name: name, url: "http://localhost:7990/status", events: []string{"repo:refs_changed"}})
-		}
-
-		if echoed == 0 && empty == 0 && raced == 0 {
-			t.Fatal("no creates were observed at all")
-		}
-		t.Logf("create responses carrying the secret: %d, without it: %d, lost to the race: %d", echoed, empty, raced)
-	})
+	t.Logf("create responses carrying the secret: %d, without it: %d, lost to the race: %d", echoed, empty, raced)
 }
 
 // liveWebhookNamed finds a webhook by name, for a create whose response was

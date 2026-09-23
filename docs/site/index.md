@@ -27,7 +27,7 @@ hide:
 	<article class="bb-card bb-card-accent">
 		<p class="bb-card-kicker">Operational Safety</p>
 		<h2>Plan server changes before you apply them</h2>
-		<p>Dry-run planning and bulk review/apply workflows reduce the usual risk of shelling directly into enterprise Bitbucket instances.</p>
+		<p>Dry-run planning reduces the usual risk of shelling directly into enterprise Bitbucket instances.</p>
 	</article>
 	<article class="bb-card">
 		<p class="bb-card-kicker">Automation Contract</p>
@@ -67,7 +67,7 @@ hide:
 	<article class="bb-card bb-link-card">
 		<p class="bb-card-kicker">Automate</p>
 		<h2><a href="advanced/">Advanced Topics</a></h2>
-		<p>Dive into repository discovery, dry-run semantics, bulk operations, and diagnostics for higher-trust automation.</p>
+		<p>Dive into repository discovery, dry-run semantics, and diagnostics for higher-trust automation.</p>
 	</article>
 	<article class="bb-card bb-link-card">
 		<p class="bb-card-kicker">Stuck</p>
@@ -111,5 +111,5 @@ hide:
 ## Documentation model
 
 - Command and ADR pages are generated from source-of-truth code and decision records.
-- Bulk policy, plan, and apply schemas are generated from validated workflow models.
+- JSON schemas are exported from the Go source, and `--describe` answers from the binary itself.
 - The hand-written docs focus on usage patterns, safety contracts, and operator workflows around the CLI.

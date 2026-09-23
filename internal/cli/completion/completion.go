@@ -52,7 +52,6 @@ const (
 	KindAccessToken       Kind = "access-token"
 	KindBranch            Kind = "branch"
 	KindBuildKey          Kind = "build-key"
-	KindBulkOperation     Kind = "bulk-operation"
 	KindCommit            Kind = "commit"
 	KindDefaultTask       Kind = "default-task"
 	KindDeploymentKey     Kind = "deployment-key"
