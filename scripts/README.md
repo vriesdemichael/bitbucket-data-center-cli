@@ -8,7 +8,8 @@ Planned scripts:
 Not implemented in minimal scaffold.
 
 Release packaging:
-- `nfpm.yaml`: nFPM template for building the Linux `.deb`/`.rpm` packages in `.github/workflows/release-artifacts.yml`; the workflow exports `PKG_ARCH`, `PKG_VERSION`, and `PKG_BINARY` per architecture
+- `nfpm.yaml`: nFPM template for building the Linux `.deb`/`.rpm` packages in `.github/workflows/release-artifacts.yml`; the workflow exports `PKG_ARCH`, `PKG_VERSION`, `PKG_BINARY`, and `PKG_COMPLETIONS` per architecture
+- `nfpm-postinstall.sh`: the packages' post-install script, which names what each user sets up for themselves
 - `gen_homebrew_formula.py`: render the Homebrew formula pushed to `vriesdemichael/homebrew-tap` from `sha256sums.txt`, in `.github/workflows/release.yml`
 
 Coverage reporting workflow:

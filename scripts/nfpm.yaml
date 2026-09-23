@@ -1,10 +1,17 @@
 # Template consumed by `nfpm package` in .github/workflows/release-artifacts.yml,
 # which builds the release artifacts for a release and on every pull request.
-# nfpm expands ${VAR} at runtime; the workflow exports PKG_ARCH, PKG_VERSION
-# and PKG_BINARY for each Linux architecture before invoking nfpm.
+# nfpm expands ${VAR} at runtime; the workflow exports PKG_ARCH, PKG_VERSION,
+# PKG_BINARY and PKG_COMPLETIONS for each Linux architecture before invoking
+# nfpm.
 #
 # Top-level fields (arch, version, ...) are always expanded, but env vars in a
-# `contents` entry are only expanded when that entry sets `expand: true`.
+# `contents` entry are only expanded when that entry sets `expand: true`. The
+# scripts are never expanded, so their paths are relative to the directory
+# nfpm runs in: the repository root.
+#
+# Every file names its mode. Otherwise nfpm reads it from the file on disk,
+# which is right on the Linux runner and wrong on Windows, where no file has
+# an executable bit.
 name: bb
 arch: ${PKG_ARCH}
 platform: linux
@@ -20,3 +27,39 @@ contents:
   - src: ${PKG_BINARY}
     dst: /usr/bin/bb
     expand: true
+    file_info:
+      mode: 0755
+
+  # Completion for bash, zsh and fish, generated from bb when the package is
+  # built. Each shell searches these directories without being told to, and
+  # loads the file the first time bb is completed.
+  - src: ${PKG_COMPLETIONS}/bb.bash
+    dst: /usr/share/bash-completion/completions/bb
+    expand: true
+    file_info:
+      mode: 0644
+  # zsh reads a different directory on each family. Debian's zsh searches
+  # vendor-completions and never site-functions; Fedora's and RHEL's search
+  # site-functions.
+  - src: ${PKG_COMPLETIONS}/bb.zsh
+    dst: /usr/share/zsh/vendor-completions/_bb
+    packager: deb
+    expand: true
+    file_info:
+      mode: 0644
+  - src: ${PKG_COMPLETIONS}/bb.zsh
+    dst: /usr/share/zsh/site-functions/_bb
+    packager: rpm
+    expand: true
+    file_info:
+      mode: 0644
+  - src: ${PKG_COMPLETIONS}/bb.fish
+    dst: /usr/share/fish/vendor_completions.d/bb.fish
+    expand: true
+    file_info:
+      mode: 0644
+
+# Says what is left for each user to set up, which a package for the whole
+# machine does not do.
+scripts:
+  postinstall: scripts/nfpm-postinstall.sh
