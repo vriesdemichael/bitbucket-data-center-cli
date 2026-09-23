@@ -1,7 +1,9 @@
 package fileview
 
 import (
+	"bytes"
 	"fmt"
+	pathpkg "path"
 	"strings"
 )
 
@@ -15,8 +17,12 @@ type binaryType struct {
 }
 
 // detectBinary names a file that is not text from the type its bytes were
-// sniffed as.
-func detectBinary(_ string, sniffed string) binaryType {
+// sniffed as, and from its name where the bytes say too little.
+func detectBinary(path, sniffed string, content []byte) binaryType {
+	if bytes.HasPrefix(content, oleSignature) {
+		return legacyOffice(path)
+	}
+
 	mimeType := sniffed
 	if strings.HasPrefix(mimeType, "text/") {
 		// A signature did not match and the first 512 bytes looked like
@@ -26,6 +32,29 @@ func detectBinary(_ string, sniffed string) binaryType {
 	}
 
 	return binaryType{mimeType: mimeType, name: nameOf(mimeType), reason: unreadable}
+}
+
+// oleSignature starts a compound file: the container Office wrote its
+// documents in before 2007, and Outlook still writes messages in.
+var oleSignature = []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}
+
+// legacyOffice names a compound file. What it holds is not in its first bytes,
+// so the extension says which application wrote it.
+func legacyOffice(path string) binaryType {
+	const reason = "It is in the binary format Office used before 2007, whose text this tool does not extract, so it is not shown."
+
+	switch strings.ToLower(pathpkg.Ext(path)) {
+	case ".doc", ".dot":
+		return binaryType{mimeType: "application/msword", name: "a Word 97-2003 document", reason: reason}
+	case ".xls", ".xlt":
+		return binaryType{mimeType: "application/vnd.ms-excel", name: "an Excel 97-2003 workbook", reason: reason}
+	case ".ppt", ".pot", ".pps":
+		return binaryType{mimeType: "application/vnd.ms-powerpoint", name: "a PowerPoint 97-2003 presentation", reason: reason}
+	case ".msg":
+		return binaryType{mimeType: "application/vnd.ms-outlook", name: "an Outlook message", reason: unreadable}
+	}
+
+	return binaryType{mimeType: "application/x-ole-storage", name: "a Microsoft compound file", reason: unreadable}
 }
 
 // unreadable is why the bytes of a file of no kind this package converts are

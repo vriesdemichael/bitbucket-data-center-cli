@@ -25,6 +25,12 @@ type Kind string
 const (
 	// KindText is text, returned as a window of numbered lines.
 	KindText Kind = "text"
+	// KindDocument is a Word, PowerPoint or Excel file, returned as a window
+	// of the text extracted from it.
+	KindDocument Kind = "document"
+	// KindArchive is a zip or tar archive, returned as a window of the
+	// listing of its entries.
+	KindArchive Kind = "archive"
 	// KindImage is an image, returned as an image: scaled down when it is
 	// larger than a client takes, and an animation's first frame.
 	KindImage Kind = "image"
@@ -136,6 +142,9 @@ func Read(request Request, content []byte) (View, error) {
 	if _, ok := imageFormats[sniffed]; ok {
 		return readImage(request, sniffed, content, defaultImageLimits), nil
 	}
+	if view, ok, err := readArchive(request, sniffed, content); ok || err != nil {
+		return view, err
+	}
 
 	// Last before giving up, and after every signature, because it accepts
 	// almost any byte: it is what is left of text that is not Unicode, and a
@@ -144,7 +153,7 @@ func Read(request Request, content []byte) (View, error) {
 		return readText(request, text, size)
 	}
 
-	return describeBinary(subjectOf(request), request.WebURL, detectBinary(request.Path, sniffed), size), nil
+	return describeBinary(subjectOf(request), request.WebURL, detectBinary(request.Path, sniffed, content), size), nil
 }
 
 // readText views decoded text as a window of its lines.

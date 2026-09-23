@@ -35,11 +35,11 @@ type GetFileContentInput struct {
 type GetFileContentOutput struct {
 	Path          string     `json:"path"`
 	At            string     `json:"at,omitempty"`
-	Kind          string     `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; image, the image, in the content beside this; binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
+	Kind          string     `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; document, a window of the text extracted from a Word, PowerPoint or Excel file; archive, a window of the listing of a zip or tar archive's entries; image, the image, in the content beside this; binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
 	MIMEType      string     `json:"mime_type,omitempty" jsonschema:"The file's type, read from its bytes; absent when the file was not read"`
 	Size          *int64     `json:"size,omitempty" jsonschema:"The file's size in bytes; absent when it was too large to read and Bitbucket did not say how large"`
 	WebURL        string     `json:"web_url" jsonschema:"The file's page in Bitbucket, for a person to open"`
-	Content       *string    `json:"content,omitempty" jsonschema:"The window's lines as they are in the file, line endings included, so a window covering the whole file is the file"`
+	Content       *string    `json:"content,omitempty" jsonschema:"The window's lines without their numbers: for text, as they are in the file, line endings included, so a window covering the whole file is the file; for a document or an archive, the extracted text or the listing"`
 	StartLine     *int       `json:"start_line,omitempty" jsonschema:"The first line in the window, counting from 1"`
 	EndLine       *int       `json:"end_line,omitempty" jsonschema:"The last line in the window; one less than start_line when there are no lines"`
 	TotalLines    *int       `json:"total_lines,omitempty" jsonschema:"How many lines the whole text has"`
@@ -65,10 +65,11 @@ func specGetFileContent() Spec {
 	tool := &mcp.Tool{
 		Name: "get_file_content",
 		Description: "Read a file in a repository. Text comes back as a window of numbered lines: start_line and line_count " +
-			"choose it, and each answer says which lines it holds and where the next window starts. An image (PNG, JPEG, GIF, " +
-			"WebP) comes back as an image, scaled down when it is large, with a note saying so. Any other file is described " +
-			"by its type and size rather than shown, and a file over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) +
-			" is described without being read.",
+			"choose it, and each answer says which lines it holds and where the next window starts. A Word, PowerPoint or " +
+			"Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz) as a listing of its " +
+			"entries, both in the same windows. An image (PNG, JPEG, GIF, WebP) comes back as an image, scaled down when it " +
+			"is large, with a note saying so. Any other file is described by its type and size rather than shown, and a file " +
+			"over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) + " is described without being read.",
 		Annotations: readOnly(),
 		InputSchema: describedInputSchema[GetFileContentInput](map[string]string{
 			"start_line": "First line of the window, counting from 1 (default 1). An answer that stops short of the end gives " +

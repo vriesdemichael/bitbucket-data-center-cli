@@ -146,6 +146,9 @@ type linedText struct {
 	what string
 	// unit is what a line holds, "line" or "entry", for the count.
 	unit string
+	// layout is a sentence saying how the text is laid out in lines, when
+	// that is not plain.
+	layout string
 	// noun is what "the whole ..." refers to: file, text or listing.
 	noun string
 	// empty is the header, after the subject, when there are no lines.
@@ -173,7 +176,11 @@ func lines(request Request, kind Kind, mimeType string, size int64, form linedTe
 	if cut.total == 0 {
 		header.WriteString(form.empty)
 	} else {
-		header.WriteString(form.what + ", " + plural(cut.total, unit) + ". " + windowSentence(cut, form.noun))
+		header.WriteString(form.what + ", " + plural(cut.total, unit) + ". ")
+		if form.layout != "" {
+			header.WriteString(form.layout + " ")
+		}
+		header.WriteString(windowSentence(cut, form.noun))
 	}
 	if form.note != "" {
 		header.WriteString(" " + form.note)
