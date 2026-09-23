@@ -3,6 +3,7 @@ package updatecmd
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -50,6 +51,13 @@ func releaseAssetsWithBundle(assets []githubrelease.Asset) []githubrelease.Asset
 	return append(assets, githubrelease.Asset{Name: "sha256sums.txt.sigstore.json", BrowserDownloadURL: "https://example.test/sha256sums.txt.sigstore.json"})
 }
 
+// servedArchive is an archive and the checksum file that vouches for it. A dry
+// run hashes the archive but never unpacks it, so any bytes will do.
+func servedArchive(assetName string) (archive, checksums []byte) {
+	archive = []byte("archive " + assetName)
+	return archive, []byte(fmt.Sprintf("%x  %s\n", sha256.Sum256(archive), assetName))
+}
+
 func TestUpdateCommandJSONDryRun(t *testing.T) {
 	if BuildDisablesSelfUpdate {
 		t.Skip("skipping in no_self_update build")
@@ -64,7 +72,7 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 		UpdateRunnerFactory = originalFactory
 	}()
 
-	archiveChecksum := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	archive, checksums := servedArchive("bb_1.2.0_linux_amd64.tar.gz")
 	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
 		if httpConfig.RequestTimeout != defaultUpdateRequestTimeout {
 			t.Fatalf("expected default request timeout, got %s", httpConfig.RequestTimeout)
@@ -80,7 +88,8 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 					}),
 				},
 				downloads: map[string][]byte{
-					"https://example.test/sha256sums.txt":               []byte(fmt.Sprintf("%s  %s\n", archiveChecksum, "bb_1.2.0_linux_amd64.tar.gz")),
+					"https://example.test/bb_1.2.0_linux_amd64.tar.gz":  archive,
+					"https://example.test/sha256sums.txt":               checksums,
 					"https://example.test/sha256sums.txt.sigstore.json": []byte("bundle"),
 				},
 			},
@@ -136,6 +145,9 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 	if reported.Release.AssetName != "bb_1.2.0_linux_amd64.tar.gz" {
 		t.Fatalf("expected asset name in result, got %+v", reported)
 	}
+	if !reported.Trust.SignatureVerified || !reported.Trust.ChecksumAvailable || !reported.Trust.ChecksumVerified {
+		t.Fatalf("expected the dry run to report the signature and the archive verified, got %+v", reported.Trust)
+	}
 }
 
 func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
@@ -155,6 +167,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 			UpdateRunnerFactory = originalFactory
 		}()
 
+		archive, checksums := servedArchive("bb_1.2.0_linux_amd64.tar.gz")
 		UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
 			if httpConfig.RequestTimeout != defaultUpdateRequestTimeout {
 				t.Fatalf("expected default request timeout, got %s", httpConfig.RequestTimeout)
@@ -170,7 +183,8 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 						}),
 					},
 					downloads: map[string][]byte{
-						"https://example.test/sha256sums.txt":               []byte("deadbeef  bb_1.2.0_linux_amd64.tar.gz\n"),
+						"https://example.test/bb_1.2.0_linux_amd64.tar.gz":  archive,
+						"https://example.test/sha256sums.txt":               checksums,
 						"https://example.test/sha256sums.txt.sigstore.json": []byte("bundle"),
 					},
 				},
@@ -202,6 +216,9 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 		output := buffer.String()
 		if !bytes.Contains(buffer.Bytes(), []byte("Dry-run (static, capability=full)")) || !bytes.Contains(buffer.Bytes(), []byte("Update available")) {
 			t.Fatalf("unexpected human output: %s", output)
+		}
+		if !strings.Contains(output, "Signature verified") || !strings.Contains(output, "Checksum verified bb_1.2.0_linux_amd64.tar.gz") {
+			t.Fatalf("expected the dry run to report what it verified, got: %s", output)
 		}
 		if bytes.Contains(buffer.Bytes(), []byte("artifact")) || bytes.Contains(buffer.Bytes(), []byte("planned_action")) {
 			t.Fatalf("human output should not contain raw metadata fields: %s", output)
@@ -704,9 +721,8 @@ func TestUpdateCommandWarnsWhenSignatureVerificationIsSkipped(t *testing.T) {
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(tempDir, "system-config.yaml"))
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
 
-	// A dry run stops before the archive is fetched, so the manifest only has
-	// to carry an entry for the target asset.
-	checksums := "0000000000000000000000000000000000000000000000000000000000000000  bb_1.2.0_linux_amd64.tar.gz\n"
+	// No signature bundle: the policy is what makes this mirror acceptable.
+	archive, checksums := servedArchive("bb_1.2.0_linux_amd64.tar.gz")
 
 	UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfig) *updateworkflow.Runner {
 		return updateworkflow.NewRunner(updateworkflow.Dependencies{
@@ -719,7 +735,8 @@ func TestUpdateCommandWarnsWhenSignatureVerificationIsSkipped(t *testing.T) {
 					},
 				},
 				downloads: map[string][]byte{
-					"https://mirror.internal/sha256sums.txt": []byte(checksums),
+					"https://mirror.internal/bb_1.2.0_linux_amd64.tar.gz": archive,
+					"https://mirror.internal/sha256sums.txt":              checksums,
 				},
 			},
 			RepositoryOwner:           "vriesdemichael",
@@ -753,6 +770,104 @@ func TestUpdateCommandWarnsWhenSignatureVerificationIsSkipped(t *testing.T) {
 	if !strings.Contains(stdout.String(), "Trust material") {
 		t.Fatalf("expected the dry run to report the trust material in use, got: %q", stdout.String())
 	}
+}
+
+// Right after a rollout the mirror serves the version this host runs. The dry
+// run verifies that release anyway, and says so in either output mode.
+func TestUpdateCommandDryRunReportsTheInstalledReleaseVerified(t *testing.T) {
+	if BuildDisablesSelfUpdate {
+		t.Skip("skipping in no_self_update build")
+	}
+
+	t.Setenv("BB_REQUEST_TIMEOUT", "")
+	t.Setenv("BB_CA_FILE", "")
+	t.Setenv("BB_INSECURE_SKIP_VERIFY", "")
+	style.Init(true)
+
+	originalFactory := UpdateRunnerFactory
+	t.Cleanup(func() { UpdateRunnerFactory = originalFactory })
+
+	const trustSource = "trusted root file /etc/bb/trusted_root.json"
+	archive, checksums := servedArchive("bb_1.2.0_linux_amd64.tar.gz")
+	UpdateRunnerFactory = func(version string, _ UpdateCommandHTTPConfig) *updateworkflow.Runner {
+		return updateworkflow.NewRunner(updateworkflow.Dependencies{
+			Releases: updateCommandReleaseClient{
+				release: githubrelease.Release{
+					TagName: "v1.2.0",
+					Assets: releaseAssetsWithBundle([]githubrelease.Asset{
+						{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "https://example.test/bb_1.2.0_linux_amd64.tar.gz"},
+						{Name: "sha256sums.txt", BrowserDownloadURL: "https://example.test/sha256sums.txt"},
+					}),
+				},
+				downloads: map[string][]byte{
+					"https://example.test/bb_1.2.0_linux_amd64.tar.gz":  archive,
+					"https://example.test/sha256sums.txt":               checksums,
+					"https://example.test/sha256sums.txt.sigstore.json": []byte("bundle"),
+				},
+			},
+			RepositoryOwner: "vriesdemichael",
+			RepositoryName:  "bitbucket-data-center-cli",
+			CurrentVersion:  func() string { return version },
+			ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
+			Platform:        func() (string, string) { return "linux", "amd64" },
+			Verifier:        updateCommandSignatureVerifier{},
+			TrustSource:     trustSource,
+		})
+	}
+
+	run := func(t *testing.T, asJSON bool) []byte {
+		t.Helper()
+
+		root := &cobra.Command{Use: "bb", Version: "v1.2.0"}
+		root.AddCommand(New(Dependencies{
+			JSONEnabled:   func() bool { return asJSON },
+			DryRunEnabled: func() bool { return true },
+		}))
+		stdout := &bytes.Buffer{}
+		root.SetOut(stdout)
+		root.SetErr(&bytes.Buffer{})
+		root.SetArgs([]string{"update"})
+		if err := root.Execute(); err != nil {
+			t.Fatalf("Execute returned error: %v", err)
+		}
+		return stdout.Bytes()
+	}
+
+	t.Run("json", func(t *testing.T) {
+		var envelope jsonoutput.Envelope
+		if err := json.Unmarshal(run(t, true), &envelope); err != nil {
+			t.Fatalf("failed to decode json output: %v", err)
+		}
+		encodedData, err := json.Marshal(envelope.Data)
+		if err != nil {
+			t.Fatalf("failed to re-encode json data: %v", err)
+		}
+		var reported Update
+		if err := json.Unmarshal(encodedData, &reported); err != nil {
+			t.Fatalf("failed to decode update result: %v", err)
+		}
+
+		if !reported.DryRun || !reported.UpToDate || reported.UpdateAvailable || reported.PlannedAction != "" {
+			t.Fatalf("expected an up-to-date dry run with nothing planned, got %+v", reported)
+		}
+		if reported.Trust.Source != trustSource || !reported.Trust.SignatureVerified || reported.Trust.Identity == "" || !reported.Trust.ChecksumAvailable || !reported.Trust.ChecksumVerified {
+			t.Fatalf("expected the verified release to be reported, got %+v", reported.Trust)
+		}
+	})
+
+	t.Run("human", func(t *testing.T) {
+		output := string(run(t, false))
+		for _, want := range []string{
+			"bb is up to date v1.2.0",
+			"Trust material " + trustSource,
+			"Signature verified",
+			"Checksum verified bb_1.2.0_linux_amd64.tar.gz",
+		} {
+			if !strings.Contains(output, want) {
+				t.Fatalf("expected %q in the dry run output, got: %s", want, output)
+			}
+		}
+	})
 }
 
 // TestUpdateHonoursTheGlobalFlags covers a regression that had no error to

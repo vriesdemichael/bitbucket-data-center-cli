@@ -319,11 +319,13 @@ func writeUpdateHuman(cmd *cobra.Command, result updateworkflow.Result) {
 //
 // A dry run is the only way to exercise a mirror without replacing a binary, so
 // it is where an operator finds out whether their offline trust root is in use
-// and whether the manifest actually verifies against it. A failure aborts with
-// its own message; this covers the case where everything passed and the
-// operator still needs to see which trust material was used.
+// and whether the release the mirror serves actually verifies against it. It
+// verifies that release even when it is the installed version, so this prints
+// on every dry run that passed. A failure aborts with its own message; this
+// covers the case where everything passed and the operator still needs to see
+// which trust material was used.
 func writeVerificationDetail(writer io.Writer, result updateworkflow.Result) {
-	if !result.DryRun || !result.UpdateAvailable {
+	if !result.DryRun {
 		return
 	}
 
@@ -338,8 +340,8 @@ func writeVerificationDetail(writer io.Writer, result updateworkflow.Result) {
 		fmt.Fprintf(writer, "%s %s %s\n", style.Secondary.Render("Signature"), style.Success.Render("verified"), style.Secondary.Render(result.SignatureIdentity))
 	}
 
-	if result.ChecksumAvailable {
-		fmt.Fprintf(writer, "%s %s\n", style.Secondary.Render("Checksum"), style.Success.Render(fmt.Sprintf("entry present for %s", result.AssetName)))
+	if result.ChecksumVerified {
+		fmt.Fprintf(writer, "%s %s %s\n", style.Secondary.Render("Checksum"), style.Success.Render("verified"), style.Secondary.Render(result.AssetName))
 	}
 }
 

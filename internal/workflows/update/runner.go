@@ -161,6 +161,90 @@ func NewRunner(deps Dependencies) *Runner {
 	}
 }
 
+// verifyRelease makes every check a release has to pass before bb installs it,
+// and records each one in result as it passes:
+//
+//   - the signature on the checksum file, against the configured trust
+//     material, unless policy set allow_unverified_update;
+//   - the checksum file's entry for this platform's archive;
+//   - the archive itself, downloaded and hashed against that entry.
+//
+// An update and a dry run both call it, so a dry run cannot pass a mirror that
+// an update from it would then refuse. It returns the archive it verified.
+func (runner *Runner) verifyRelease(ctx context.Context, release githubrelease.Release, version, goos, goarch string, result *Result) (githubrelease.Asset, []byte, error) {
+	assetName := archiveName(version, goos, goarch)
+	asset, ok := findAsset(release.Assets, assetName)
+	if !ok {
+		return githubrelease.Asset{}, nil, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("release asset %q was not found", assetName), nil)
+	}
+
+	checksumAsset, ok := findAsset(release.Assets, "sha256sums.txt")
+	if !ok {
+		return githubrelease.Asset{}, nil, apperrors.New(apperrors.KindNotFound, "release checksum file sha256sums.txt was not found", nil)
+	}
+
+	signatureBundleAsset, hasSignatureBundle := findAsset(release.Assets, checksumAsset.Name+".sigstore.json")
+	if !hasSignatureBundle && !runner.skipSignature {
+		return githubrelease.Asset{}, nil, apperrors.New(apperrors.KindNotFound, "release signature bundle sha256sums.txt.sigstore.json was not found; use winget, scoop, or manual install", nil)
+	}
+
+	result.AssetName = asset.Name
+	result.AssetURL = asset.BrowserDownloadURL
+	result.ChecksumAssetName = checksumAsset.Name
+	if hasSignatureBundle {
+		result.SignatureBundleAssetName = signatureBundleAsset.Name
+	}
+
+	checksumsRaw, err := runner.releases.Download(ctx, checksumAsset.BrowserDownloadURL)
+	if err != nil {
+		return githubrelease.Asset{}, nil, err
+	}
+
+	if runner.skipSignature {
+		// Policy has accepted an unauthenticated manifest. The checksums below
+		// are still enforced, so this catches corruption but not tampering.
+		result.SignatureSkipped = true
+	} else {
+		bundleRaw, err := runner.releases.Download(ctx, signatureBundleAsset.BrowserDownloadURL)
+		if err != nil {
+			return githubrelease.Asset{}, nil, err
+		}
+
+		signatureVerification, err := runner.verifier.VerifyBlob(ctx, checksumsRaw, bundleRaw)
+		if err != nil {
+			return githubrelease.Asset{}, nil, signatureFailure(err)
+		}
+		result.SignatureVerified = true
+		result.SignatureIdentity = signatureVerification.CertificateIdentity
+		result.SignatureIssuer = signatureVerification.CertificateOIDCIssuer
+		result.TransparencyLogVerified = signatureVerification.TransparencyLogEntriesVerified > 0
+	}
+
+	checksums, err := parseChecksums(checksumsRaw)
+	if err != nil {
+		return githubrelease.Asset{}, nil, err
+	}
+
+	expectedChecksum, ok := checksums[asset.Name]
+	if !ok {
+		return githubrelease.Asset{}, nil, apperrors.New(apperrors.KindPermanent, fmt.Sprintf("checksum entry for %q was not found", asset.Name), nil)
+	}
+	result.ChecksumAvailable = true
+
+	archiveBytes, err := runner.releases.Download(ctx, asset.BrowserDownloadURL)
+	if err != nil {
+		return githubrelease.Asset{}, nil, err
+	}
+
+	actualChecksum := sha256Hex(archiveBytes)
+	if !strings.EqualFold(actualChecksum, expectedChecksum) {
+		return githubrelease.Asset{}, nil, apperrors.New(apperrors.KindPermanent, fmt.Sprintf("checksum verification failed for %s", asset.Name), nil)
+	}
+	result.ChecksumVerified = true
+
+	return asset, archiveBytes, nil
+}
+
 func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) {
 	if runner == nil || runner.releases == nil {
 		return Result{}, apperrors.New(apperrors.KindInternal, "update runner is not configured", nil)
@@ -213,84 +297,26 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 
 	result.UpdateAvailable, result.Comparison = isUpdateAvailable(currentVersion, currentNormalized, latestVersion, latestNormalized)
 	result.UpToDate = !result.UpdateAvailable && result.Comparison == "equal"
-	if !result.UpdateAvailable {
+
+	// An update with nothing newer to install stops here and downloads nothing.
+	// A dry run carries on, because it is how an operator checks a mirror: the
+	// check matters most right after a rollout, when the mirror serves exactly
+	// the version every host already runs.
+	if !result.UpdateAvailable && !options.DryRun {
 		return result, nil
 	}
-
-	assetName := archiveName(latestVersion, goos, goarch)
-	asset, ok := findAsset(release.Assets, assetName)
-	if !ok {
-		return Result{}, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("release asset %q was not found", assetName), nil)
+	if result.UpdateAvailable {
+		result.PlannedAction = plannedAction(goos)
 	}
 
-	checksumAsset, ok := findAsset(release.Assets, "sha256sums.txt")
-	if !ok {
-		return Result{}, apperrors.New(apperrors.KindNotFound, "release checksum file sha256sums.txt was not found", nil)
-	}
-
-	signatureBundleAsset, hasSignatureBundle := findAsset(release.Assets, checksumAsset.Name+".sigstore.json")
-	if !hasSignatureBundle && !runner.skipSignature {
-		return Result{}, apperrors.New(apperrors.KindNotFound, "release signature bundle sha256sums.txt.sigstore.json was not found; use winget, scoop, or manual install", nil)
-	}
-
-	result.AssetName = asset.Name
-	result.AssetURL = asset.BrowserDownloadURL
-	result.ChecksumAssetName = checksumAsset.Name
-	result.PlannedAction = plannedAction(goos)
-	if hasSignatureBundle {
-		result.SignatureBundleAssetName = signatureBundleAsset.Name
-	}
-
-	checksumsRaw, err := runner.releases.Download(ctx, checksumAsset.BrowserDownloadURL)
+	asset, archiveBytes, err := runner.verifyRelease(ctx, release, latestVersion, goos, goarch, &result)
 	if err != nil {
 		return Result{}, err
 	}
-
-	if runner.skipSignature {
-		// Policy has accepted an unauthenticated manifest. The checksums below
-		// are still enforced, so this catches corruption but not tampering.
-		result.SignatureSkipped = true
-	} else {
-		bundleRaw, err := runner.releases.Download(ctx, signatureBundleAsset.BrowserDownloadURL)
-		if err != nil {
-			return Result{}, err
-		}
-
-		signatureVerification, err := runner.verifier.VerifyBlob(ctx, checksumsRaw, bundleRaw)
-		if err != nil {
-			return Result{}, signatureFailure(err)
-		}
-		result.SignatureVerified = true
-		result.SignatureIdentity = signatureVerification.CertificateIdentity
-		result.SignatureIssuer = signatureVerification.CertificateOIDCIssuer
-		result.TransparencyLogVerified = signatureVerification.TransparencyLogEntriesVerified > 0
-	}
-
-	checksums, err := parseChecksums(checksumsRaw)
-	if err != nil {
-		return Result{}, err
-	}
-
-	expectedChecksum, ok := checksums[asset.Name]
-	if !ok {
-		return Result{}, apperrors.New(apperrors.KindPermanent, fmt.Sprintf("checksum entry for %q was not found", asset.Name), nil)
-	}
-	result.ChecksumAvailable = true
 
 	if options.DryRun {
 		return result, nil
 	}
-
-	archiveBytes, err := runner.releases.Download(ctx, asset.BrowserDownloadURL)
-	if err != nil {
-		return Result{}, err
-	}
-
-	actualChecksum := sha256Hex(archiveBytes)
-	if !strings.EqualFold(actualChecksum, expectedChecksum) {
-		return Result{}, apperrors.New(apperrors.KindPermanent, fmt.Sprintf("checksum verification failed for %s", asset.Name), nil)
-	}
-	result.ChecksumVerified = true
 
 	binaryName := binaryFileName(goos)
 	binaryBytes, fileMode, err := extractBinary(asset.Name, binaryName, archiveBytes)

@@ -47,10 +47,15 @@ type stubSignatureVerifier struct {
 	verification updatesigstore.Verification
 	err          error
 	calls        int
+	// artifact and bundle are what the last call was asked to verify.
+	artifact []byte
+	bundle   []byte
 }
 
-func (stub *stubSignatureVerifier) VerifyBlob(context.Context, []byte, []byte) (updatesigstore.Verification, error) {
+func (stub *stubSignatureVerifier) VerifyBlob(_ context.Context, artifact, bundleJSON []byte) (updatesigstore.Verification, error) {
 	stub.calls++
+	stub.artifact = artifact
+	stub.bundle = bundleJSON
 	if stub.err != nil {
 		return updatesigstore.Verification{}, stub.err
 	}
@@ -108,7 +113,8 @@ func TestRunnerDryRunPlansUpdateWithoutWritingBinary(t *testing.T) {
 			},
 		}),
 		downloads: downloadsWithSignatureBundle(map[string][]byte{
-			"https://example.test/sha256sums.txt": []byte(checksum),
+			"https://example.test/sha256sums.txt":              []byte(checksum),
+			"https://example.test/bb_1.2.0_linux_amd64.tar.gz": archive,
 		}),
 	}
 
@@ -133,14 +139,17 @@ func TestRunnerDryRunPlansUpdateWithoutWritingBinary(t *testing.T) {
 	if written {
 		t.Fatal("expected dry-run not to write binary")
 	}
-	if !result.UpdateAvailable || result.Applied || !result.DryRun {
+	if !result.UpdateAvailable || result.Applied || !result.DryRun || result.PlannedAction != "replace" {
 		t.Fatalf("unexpected result: %+v", result)
 	}
-	if !result.ChecksumAvailable || result.ChecksumVerified {
-		t.Fatalf("expected checksum to be available but not verified, got %+v", result)
+	// The archive is fetched and hashed like an update would: a checksum entry
+	// that exists says nothing about whether the archive beside it matches.
+	if !result.ChecksumAvailable || !result.ChecksumVerified {
+		t.Fatalf("expected the archive to be verified against its checksum, got %+v", result)
 	}
-	if len(client.downloadCalls) != 2 || client.downloadCalls[0] != "https://example.test/sha256sums.txt" || client.downloadCalls[1] != "bundle" {
-		t.Fatalf("unexpected dry-run downloads: %+v", client.downloadCalls)
+	want := []string{"https://example.test/sha256sums.txt", "bundle", "https://example.test/bb_1.2.0_linux_amd64.tar.gz"}
+	if strings.Join(client.downloadCalls, " ") != strings.Join(want, " ") {
+		t.Fatalf("dry-run downloads = %v, want %v", client.downloadCalls, want)
 	}
 }
 
@@ -248,7 +257,8 @@ func TestRunnerDryRunCapturesSignatureMetadata(t *testing.T) {
 			},
 		}),
 		downloads: downloadsWithSignatureBundle(map[string][]byte{
-			"https://example.test/sha256sums.txt": []byte(checksum),
+			"https://example.test/sha256sums.txt":              []byte(checksum),
+			"https://example.test/bb_1.2.0_linux_amd64.tar.gz": archive,
 		}),
 	}
 
@@ -277,33 +287,206 @@ func TestRunnerDryRunCapturesSignatureMetadata(t *testing.T) {
 	}
 }
 
-func TestRunnerReturnsUpToDateWithoutDownloads(t *testing.T) {
-	t.Parallel()
+const mirrorTrustSource = "trusted root file /etc/bb/trusted_root.json"
 
-	client := &stubReleaseClient{
-		release:   githubrelease.Release{TagName: "v1.2.0", HTMLURL: "https://example.test/releases/v1.2.0"},
-		downloads: map[string][]byte{},
+// mirrorServing is a mirror whose latest release is version, laid out the way
+// the release workflow publishes one: the linux/amd64 archive, the checksum file
+// with its entry, and the signature bundle. Everything in it verifies.
+func mirrorServing(t *testing.T, version string) *stubReleaseClient {
+	t.Helper()
+
+	assetName := fmt.Sprintf("bb_%s_linux_amd64.tar.gz", strings.TrimPrefix(version, "v"))
+	archive := buildTarGzArchive(t, "bb", []byte("bb "+version))
+
+	return &stubReleaseClient{
+		release: githubrelease.Release{
+			TagName: version,
+			HTMLURL: "https://mirror.internal/releases/" + version,
+			Assets: []githubrelease.Asset{
+				{Name: assetName, BrowserDownloadURL: "https://mirror.internal/" + assetName},
+				{Name: "sha256sums.txt", BrowserDownloadURL: "https://mirror.internal/sha256sums.txt"},
+				{Name: "sha256sums.txt.sigstore.json", BrowserDownloadURL: "https://mirror.internal/sha256sums.txt.sigstore.json"},
+			},
+		},
+		downloads: map[string][]byte{
+			"https://mirror.internal/" + assetName:                 archive,
+			"https://mirror.internal/sha256sums.txt":               []byte(fmt.Sprintf("%s  %s\n", sha256Hex(archive), assetName)),
+			"https://mirror.internal/sha256sums.txt.sigstore.json": []byte("signed-bundle"),
+		},
 	}
+}
 
-	runner := newTestRunner(Dependencies{
+// mirrorCheckDependencies runs a linux/amd64 host that has installed, against
+// client. Installing a binary fails the test: none of these runs may.
+func mirrorCheckDependencies(t *testing.T, client *stubReleaseClient, installed string, verifier *stubSignatureVerifier) Dependencies {
+	t.Helper()
+
+	return Dependencies{
 		Releases:        client,
 		RepositoryOwner: "vriesdemichael",
 		RepositoryName:  "bitbucket-data-center-cli",
-		CurrentVersion:  func() string { return "v1.2.0" },
+		CurrentVersion:  func() string { return installed },
 		ExecutablePath:  func() (string, error) { return "/tmp/bb", nil },
 		Platform:        func() (string, string) { return "linux", "amd64" },
-	})
+		WriteBinary: func(string, []byte, fs.FileMode) error {
+			t.Error("the run installed a binary")
+			return nil
+		},
+		Verifier:    verifier,
+		TrustSource: mirrorTrustSource,
+	}
+}
 
-	result, err := runner.Run(context.Background(), Options{})
+// An update that finds nothing newer to install downloads nothing, even from a
+// mirror whose release would verify. Only a dry run is the mirror check.
+func TestRunnerUpdateWithNothingNewerDownloadsNothing(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		installed  string
+		comparison string
+		upToDate   bool
+	}{
+		{name: "mirror serves the installed release", installed: "v1.2.0", comparison: "equal", upToDate: true},
+		{name: "mirror serves an older release", installed: "v1.3.0", comparison: "current_newer"},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			client := mirrorServing(t, "v1.2.0")
+			verifier := &stubSignatureVerifier{}
+			result, err := NewRunner(mirrorCheckDependencies(t, client, testCase.installed, verifier)).Run(context.Background(), Options{})
+			if err != nil {
+				t.Fatalf("Run returned error: %v", err)
+			}
+			if len(client.downloadCalls) != 0 || verifier.calls != 0 {
+				t.Fatalf("expected nothing fetched or verified, got downloads %v and %d verifier calls", client.downloadCalls, verifier.calls)
+			}
+			if result.UpdateAvailable || result.UpToDate != testCase.upToDate || result.Comparison != testCase.comparison {
+				t.Fatalf("expected comparison %q with upToDate=%v, got %+v", testCase.comparison, testCase.upToDate, result)
+			}
+			if result.SignatureVerified || result.ChecksumAvailable || result.ChecksumVerified || result.PlannedAction != "" {
+				t.Fatalf("expected nothing reported as verified or planned, got %+v", result)
+			}
+		})
+	}
+}
+
+// Right after a rollout the mirror serves the version every host already runs,
+// which is when an operator checks it. The dry run makes every check an update
+// would make, and reports each one.
+func TestRunnerDryRunVerifiesTheInstalledRelease(t *testing.T) {
+	t.Parallel()
+
+	client := mirrorServing(t, "v1.2.0")
+	verifier := &stubSignatureVerifier{}
+	result, err := NewRunner(mirrorCheckDependencies(t, client, "v1.2.0", verifier)).Run(context.Background(), Options{DryRun: true})
 	if err != nil {
 		t.Fatalf("Run returned error: %v", err)
 	}
-	if !result.UpToDate || result.UpdateAvailable {
-		t.Fatalf("expected up-to-date result, got %+v", result)
+
+	checksumURL := "https://mirror.internal/sha256sums.txt"
+	want := []string{checksumURL, "https://mirror.internal/sha256sums.txt.sigstore.json", "https://mirror.internal/bb_1.2.0_linux_amd64.tar.gz"}
+	if strings.Join(client.downloadCalls, " ") != strings.Join(want, " ") {
+		t.Fatalf("downloads = %v, want the checksum file, its signature bundle and the archive: %v", client.downloadCalls, want)
 	}
-	if len(client.downloadCalls) != 0 {
-		t.Fatalf("expected no downloads when already current, got %+v", client.downloadCalls)
+	if verifier.calls != 1 || !bytes.Equal(verifier.artifact, client.downloads[checksumURL]) || string(verifier.bundle) != "signed-bundle" {
+		t.Fatalf("expected one signature check over the served checksum file and bundle, got %d calls over %q with %q", verifier.calls, verifier.artifact, verifier.bundle)
 	}
+
+	if !result.DryRun || !result.UpToDate || result.UpdateAvailable || result.Comparison != "equal" {
+		t.Fatalf("expected an up-to-date dry run, got %+v", result)
+	}
+	if result.TrustSource != mirrorTrustSource {
+		t.Fatalf("trust source = %q, want %q", result.TrustSource, mirrorTrustSource)
+	}
+	if !result.SignatureVerified || result.SignatureSkipped || result.SignatureIdentity == "" || result.SignatureIssuer == "" || !result.TransparencyLogVerified {
+		t.Fatalf("expected the verified signature to be reported, got %+v", result)
+	}
+	if !result.ChecksumAvailable || !result.ChecksumVerified {
+		t.Fatalf("expected the checksum entry and the archive to be reported verified, got %+v", result)
+	}
+	if result.AssetName != "bb_1.2.0_linux_amd64.tar.gz" || result.ChecksumAssetName != "sha256sums.txt" || result.SignatureBundleAssetName != "sha256sums.txt.sigstore.json" {
+		t.Fatalf("expected the verified assets to be named, got %+v", result)
+	}
+	// Verified, but there is nothing to install, so nothing is planned.
+	if result.PlannedAction != "" || result.Applied || result.Scheduled || result.Staged {
+		t.Fatalf("expected nothing planned or installed, got %+v", result)
+	}
+}
+
+// The checksum file has the entry and the archive beside it is not the one it
+// describes. A dry run that stopped at the entry passed such a mirror.
+func TestRunnerDryRunFailsOnAnArchiveThatDoesNotMatchItsChecksum(t *testing.T) {
+	t.Parallel()
+
+	for _, installed := range []string{"v1.2.0", "v1.1.0"} {
+		t.Run("installed "+installed, func(t *testing.T) {
+			t.Parallel()
+
+			client := mirrorServing(t, "v1.2.0")
+			archiveURL := "https://mirror.internal/bb_1.2.0_linux_amd64.tar.gz"
+			// Cut short, as an interrupted mirror sync leaves it.
+			client.downloads[archiveURL] = client.downloads[archiveURL][:len(client.downloads[archiveURL])/2]
+
+			_, err := NewRunner(mirrorCheckDependencies(t, client, installed, &stubSignatureVerifier{})).Run(context.Background(), Options{DryRun: true})
+			if !apperrors.IsKind(err, apperrors.KindPermanent) || !strings.Contains(err.Error(), "checksum verification failed for bb_1.2.0_linux_amd64.tar.gz") {
+				t.Fatalf("expected a checksum failure, got %v", err)
+			}
+		})
+	}
+}
+
+// A dry run is held to the trust policy an update is held to.
+func TestRunnerDryRunWithoutASignatureBundle(t *testing.T) {
+	t.Parallel()
+
+	withoutBundle := func(t *testing.T) *stubReleaseClient {
+		t.Helper()
+		client := mirrorServing(t, "v1.2.0")
+		client.release.Assets = client.release.Assets[:2]
+		return client
+	}
+
+	t.Run("fails while signatures are required", func(t *testing.T) {
+		t.Parallel()
+
+		client := withoutBundle(t)
+		_, err := NewRunner(mirrorCheckDependencies(t, client, "v1.2.0", &stubSignatureVerifier{})).Run(context.Background(), Options{DryRun: true})
+		if !apperrors.IsKind(err, apperrors.KindNotFound) || !strings.Contains(err.Error(), "sha256sums.txt.sigstore.json was not found") {
+			t.Fatalf("expected the missing bundle to be reported, got %v", err)
+		}
+		if len(client.downloadCalls) != 0 {
+			t.Fatalf("expected nothing fetched for a release that cannot be verified, got %v", client.downloadCalls)
+		}
+	})
+
+	t.Run("verifies the archive under allow_unverified_update", func(t *testing.T) {
+		t.Parallel()
+
+		client := withoutBundle(t)
+		verifier := &stubSignatureVerifier{}
+		deps := mirrorCheckDependencies(t, client, "v1.2.0", verifier)
+		deps.SkipSignatureVerification = true
+
+		result, err := NewRunner(deps).Run(context.Background(), Options{DryRun: true})
+		if err != nil {
+			t.Fatalf("Run returned error: %v", err)
+		}
+		if verifier.calls != 0 || !result.SignatureSkipped || result.SignatureVerified || result.SignatureBundleAssetName != "" {
+			t.Fatalf("expected the signature to be reported skipped, got %d verifier calls and %+v", verifier.calls, result)
+		}
+		if !result.ChecksumAvailable || !result.ChecksumVerified {
+			t.Fatalf("expected the archive to be verified against its checksum, got %+v", result)
+		}
+		want := []string{"https://mirror.internal/sha256sums.txt", "https://mirror.internal/bb_1.2.0_linux_amd64.tar.gz"}
+		if strings.Join(client.downloadCalls, " ") != strings.Join(want, " ") {
+			t.Fatalf("downloads = %v, want %v", client.downloadCalls, want)
+		}
+	})
 }
 
 func buildTarGzArchive(t *testing.T, fileName string, contents []byte) []byte {
@@ -663,7 +846,9 @@ func TestRunnerWindowsAndVersionComparisonPaths(t *testing.T) {
 	})
 
 	t.Run("unknown current version", func(t *testing.T) {
-		client := &stubReleaseClient{release: releaseWithSignatureBundle(githubrelease.Release{TagName: "v1.2.0", Assets: []githubrelease.Asset{{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "archive"}, {Name: "sha256sums.txt", BrowserDownloadURL: "checksums"}}}), downloads: downloadsWithSignatureBundle(map[string][]byte{"checksums": []byte("deadbeef  bb_1.2.0_linux_amd64.tar.gz\n")})}
+		archive := buildTarGzArchive(t, "bb", []byte("new-binary"))
+		checksum := fmt.Sprintf("%s  %s\n", sha256Hex(archive), "bb_1.2.0_linux_amd64.tar.gz")
+		client := &stubReleaseClient{release: releaseWithSignatureBundle(githubrelease.Release{TagName: "v1.2.0", Assets: []githubrelease.Asset{{Name: "bb_1.2.0_linux_amd64.tar.gz", BrowserDownloadURL: "archive"}, {Name: "sha256sums.txt", BrowserDownloadURL: "checksums"}}}), downloads: downloadsWithSignatureBundle(map[string][]byte{"checksums": []byte(checksum), "archive": archive})}
 		runner := newTestRunner(Dependencies{Releases: client, RepositoryOwner: "vriesdemichael", RepositoryName: "bitbucket-data-center-cli", CurrentVersion: func() string { return "dev" }, ExecutablePath: func() (string, error) { return "/tmp/bb", nil }, Platform: func() (string, string) { return "linux", "amd64" }})
 		result, err := runner.Run(context.Background(), Options{DryRun: true})
 		if err != nil {
