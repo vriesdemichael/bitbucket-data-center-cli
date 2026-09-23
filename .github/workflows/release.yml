@@ -513,6 +513,52 @@ jobs:
           hash_arm64   = os.environ["HASH_ARM64"]
           base_url     = os.environ["BASE_URL"]
           repo_url     = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}"
+
+          # After an install, bb sets up PowerShell completion and its agent
+          # skill; before an uninstall it takes both out, and an update does
+          # both. Installed for every user ($global), it sets completion up for
+          # every user's PowerShell and leaves the skill to each of them: a
+          # skill lives in a home directory, and no directory that several
+          # agents read one from serves every user.
+          #
+          # A hook finds the app's directory in $dir and runs bb from there,
+          # rather than through the shim, which it cannot count on. A hook that
+          # throws stops Scoop part way through, with bb half installed or half
+          # removed. Nothing here throws by default, but a profile that sets
+          # $ErrorActionPreference to Stop makes a missing bb throw, and a
+          # failing one too with $PSNativeCommandUseErrorActionPreference, so
+          # each step catches its own failure, says so, and lets the rest go
+          # on. The empty line ends the "Running post_install script..." that
+          # Scoop prints without one.
+          invoke_bb = [
+              "function Invoke-Bb {",
+              r'    try { & "$dir\bb.exe" @args; $ok = $LASTEXITCODE -eq 0 } catch { Write-Host $_ -ForegroundColor Red; $ok = $false }',
+              '    if (-not $ok) { Write-Host "bb $args did not succeed, and Scoop carries on without it; run it yourself once the reason is dealt with." -ForegroundColor Yellow }',
+              "}",
+              "Write-Host ''",
+          ]
+          post_install = invoke_bb + [
+              "if ($global) {",
+              "    Invoke-Bb completion install --shell powershell --all-users",
+              "} else {",
+              "    Invoke-Bb completion install --shell powershell",
+              "    Invoke-Bb ai skill install --global",
+              "}",
+          ]
+          pre_uninstall = invoke_bb + [
+              "if ($global) {",
+              "    Invoke-Bb completion remove --shell powershell --all-users --yes",
+              "} else {",
+              "    Invoke-Bb completion remove --shell powershell --yes",
+              "    Invoke-Bb ai skill remove --global --yes",
+              "}",
+          ]
+          notes = [
+              "PowerShell completion and the bb agent skill for coding agents are set up, and scoop uninstall bb takes them out again.",
+              "To take them out and keep bb: bb completion remove --shell powershell --yes, and bb ai skill remove --global --yes.",
+              "Installed with --global, completion is set up for every user instead (bb completion remove --shell powershell --all-users --yes takes it out), and each user who wants the skill runs bb ai skill install --global.",
+          ]
+
           manifest = {
               "version": version_no_v,
               "description": "A CLI for Bitbucket Server / Bitbucket Data Center",
@@ -529,6 +575,9 @@ jobs:
                   },
               },
               "bin": "bb.exe",
+              "post_install": post_install,
+              "pre_uninstall": pre_uninstall,
+              "notes": notes,
               "checkver": {"github": repo_url},
               "autoupdate": {
                   "architecture": {
