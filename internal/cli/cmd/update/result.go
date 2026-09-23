@@ -15,6 +15,10 @@ import (
 //
 // The workflow's own Result type stays flat and unchanged: it is internal, and
 // the shape a caller reads is not obliged to be the shape the code carries.
+//
+// Scheduled, Staged, Paths.Staged and Paths.SwapResult are deprecated and never
+// set. They are registered in internal/deprecation, which decides the major
+// they are removed in (ADR-084).
 type Update struct {
 	CurrentVersion  string `json:"currentVersion" jsonschema:"Version currently installed."`
 	LatestVersion   string `json:"latestVersion" jsonschema:"Newest published release."`
@@ -30,8 +34,8 @@ type Update struct {
 
 	DryRun        bool   `json:"dryRun" jsonschema:"Whether this run verified the latest release and installed nothing. A dry run verifies that release even when it is the installed version."`
 	Applied       bool   `json:"applied" jsonschema:"Whether the new binary is now in place."`
-	Scheduled     bool   `json:"scheduled" jsonschema:"Always false. bb update replaces the binary itself, before it exits, on every operating system."`
-	Staged        bool   `json:"staged" jsonschema:"Always false. A verified binary is put in place by the run that downloads it; none waits to be swapped in."`
+	Scheduled     bool   `json:"scheduled" jsonschema:"Deprecated, and always false: bb update replaces the binary itself, before it exits, on every operating system. Read applied instead."`
+	Staged        bool   `json:"staged" jsonschema:"Deprecated, and always false: the run that downloads a verified binary puts it in place. Read applied instead."`
 	PlannedAction string `json:"plannedAction,omitempty" jsonschema:"What the run would do, or did."`
 
 	Release  ReleaseSource `json:"release,omitzero" jsonschema:"Where the release was fetched from."`
@@ -68,8 +72,8 @@ type Trust struct {
 // Paths are the filesystem locations a swap touched.
 type Paths struct {
 	Install    string `json:"install,omitempty" jsonschema:"Where the running binary lives, and where a new one is written."`
-	Staged     string `json:"staged,omitempty" jsonschema:"Always empty. No verified binary waits to be swapped in after bb update exits."`
-	SwapResult string `json:"swapResult,omitempty" jsonschema:"Always empty. bb update reports the outcome of the swap itself, in this result or as an error."`
+	Staged     string `json:"staged,omitempty" jsonschema:"Deprecated, and always empty: no verified binary waits to be swapped in after bb update exits. Read applied instead."`
+	SwapResult string `json:"swapResult,omitempty" jsonschema:"Deprecated, and always empty: bb update reports the outcome of the swap itself, in this result or as an error. Read applied instead."`
 }
 
 func init() {
