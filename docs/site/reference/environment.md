@@ -60,8 +60,8 @@ bb doctor
 |---|---|---|
 | `BITBUCKET_URL` | none | Base URL of the Bitbucket Data Center instance, including scheme and any context path — `https://bitbucket.example.com` or `https://example.com/bitbucket`. |
 | `BITBUCKET_VERSION_TARGET` | unset | Pins the Bitbucket version `bb` assumes when behaviour differs between releases. Unset means "whatever the server reports". Most operators never set this. |
-| `BB_REQUEST_TIMEOUT` | `20s` | Per-request HTTP timeout, as a Go duration (`45s`, `2m`). Equivalent flag: `--request-timeout`. |
-| `BB_RETRY_COUNT` | `2` | Retry attempts for transient failures — connection errors, 429, 5xx. `0` disables retrying. Equivalent flag: `--retry-count`. |
+| `BB_REQUEST_TIMEOUT` | `20s` | Per-request HTTP timeout, as a Go duration (`45s`, `2m`). A download — `bb update`, `bb repo archive`, `bb repo cat`, `bb repo browse raw`, a `bb api` GET — takes as long as it needs: the timeout applies to each wait for the server, so it fails only when nothing arrives for that long. Equivalent flag: `--request-timeout`. |
+| `BB_RETRY_COUNT` | `2` | Retry attempts for transient failures — connection errors, 429, 5xx. A download that breaks off resumes where it stopped if the server supports ranges, and otherwise starts over — except onto stdout, once bytes have gone out. `0` disables retrying. Equivalent flag: `--retry-count`. |
 | `BB_RETRY_BACKOFF` | `250ms` | Base delay between retries, multiplied by the attempt number. A `Retry-After` header from the server wins over this. Equivalent flag: `--retry-backoff`. |
 
 ## Authentication

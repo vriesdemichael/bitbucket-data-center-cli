@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Transport policy for Bitbucket API calls`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `093`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/009-transport-policy-for-bitbucket-api-calls.yaml`
 
