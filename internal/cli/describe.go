@@ -24,11 +24,10 @@ const describeFlag = "describe"
 // agent can log. A caller checks Described before reading Schema, the same way
 // it checks error before data on the envelope.
 type DescribeResult struct {
-	// Schema is any rather than a map because the two sources produce
-	// different Go values -- a derived *jsonschema.Schema and a decoded
-	// map -- and both encode to the same JSON. Narrowing the field forced the
-	// derived one through a marshal and an unmarshal to become a map that was
-	// then marshalled again.
+	// Schema is any rather than a map because a derived schema is a
+	// *jsonschema.Schema, which encodes to the same JSON a map would.
+	// Narrowing the field forced it through a marshal and an unmarshal to
+	// become a map that was then marshalled again.
 	Command   string `json:"command"`
 	Described bool   `json:"described"`
 	Schema    any    `json:"schema,omitempty"`
@@ -168,10 +167,8 @@ func describeCommand(path string) DescribeResult {
 		return described
 	}
 
-	// A schema derived from the command's own result type wins. It cannot drift
-	// from what the command emits, because it is the same declaration; the
-	// hand-written fallback is what is being retired (#521), and every command
-	// that moves across stops being able to disagree with itself.
+	// A schema derived from the command's own result type. It cannot drift from
+	// what the command emits, because it is the same declaration (#521).
 	if schema, ok := result.SchemaFor(path); ok {
 		described.Described = true
 		described.Schema = schema
@@ -179,41 +176,9 @@ func describeCommand(path string) DescribeResult {
 		return described
 	}
 
-	fileName := "output." + strings.ReplaceAll(path, " ", ".") + ".schema.json"
-	schema, ok := outputschemas.Schemas()[fileName]
-	if !ok {
-		described.Reason = "no output schema is published for this command yet; the payload shape is not guaranteed"
-		return described
-	}
-
-	// The hand-written schemas describe the whole bb.machine envelope, while a
-	// derived one describes the data payload. --describe answers one question,
-	// so it answers at one level: the payload. Serving both levels under one
-	// field meant a consumer validating envelope.data passed for a declared
-	// command and rejected every document from a fallback one, or the reverse.
-	described.Described = true
-	described.Schema = dataSchemaOf(schema)
+	described.Reason = "no output schema is published for this command yet; the payload shape is not guaranteed"
 
 	return described
-}
-
-// dataSchemaOf unwraps an envelope schema to the part that describes the
-// payload.
-//
-// The published files also carry an $id pointing into a schema directory this
-// project no longer publishes, so it is dropped with the rest of the envelope
-// rather than handed to a validator that would try to resolve it.
-func dataSchemaOf(schema map[string]any) map[string]any {
-	properties, ok := schema["properties"].(map[string]any)
-	if !ok {
-		return schema
-	}
-	data, ok := properties["data"].(map[string]any)
-	if !ok {
-		return schema
-	}
-
-	return data
 }
 
 // commandPathWithoutRoot renders the command path the way the rest of the

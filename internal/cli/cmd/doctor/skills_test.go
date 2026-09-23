@@ -49,12 +49,12 @@ func TestSkillsAreReportedInEveryPlaceAnAgentReads(t *testing.T) {
 	t.Parallel()
 
 	work, home := t.TempDir(), t.TempDir()
-	bb, bulk := skillNamed(t, "bb"), skillNamed(t, "bb-bulk")
+	bb := skillNamed(t, "bb")
 	agents, claude := locationNamed(t, "agents"), locationNamed(t, "claude")
 
 	put(t, bb.Path(work, agents), bb.Rendered(testVersion))
 	put(t, bb.Path(work, claude), strings.ReplaceAll(bb.Repository(), "\n", "\r\n"))
-	put(t, bulk.Path(home, claude), bulk.Rendered(testVersion))
+	put(t, bb.Path(home, claude), bb.Rendered(testVersion))
 	machine := (&fakeMachine{home: home, work: work}).machine()
 
 	output, _, err := runDoctorOn(t, machine, config.Diagnosis{}, false)
@@ -63,9 +63,9 @@ func TestSkillsAreReportedInEveryPlaceAnAgentReads(t *testing.T) {
 	}
 	want := strings.Join([]string{
 		"Agent skills",
-		"  bb       installed in " + bb.Path(work, agents),
-		"           installed from the repository in " + bb.Path(work, claude),
-		"  bb-bulk  installed in " + bulk.Path(home, claude),
+		"  bb  installed in " + bb.Path(work, agents),
+		"      installed from the repository in " + bb.Path(work, claude),
+		"      installed in " + bb.Path(home, claude),
 		"",
 		"No issues found.",
 		"",
@@ -82,11 +82,7 @@ func TestSkillsAreReportedInEveryPlaceAnAgentReads(t *testing.T) {
 		{Skill: "bb", Scope: scopeProject, Location: "agents", Path: bb.Path(work, agents), State: skillCurrent},
 		{Skill: "bb", Scope: scopeProject, Location: "claude", Path: bb.Path(work, claude), State: skillRepository},
 		{Skill: "bb", Scope: scopeGlobal, Location: "agents", Path: bb.Path(home, agents), State: skillNotInstalled},
-		{Skill: "bb", Scope: scopeGlobal, Location: "claude", Path: bb.Path(home, claude), State: skillNotInstalled},
-		{Skill: "bb-bulk", Scope: scopeProject, Location: "agents", Path: bulk.Path(work, agents), State: skillNotInstalled},
-		{Skill: "bb-bulk", Scope: scopeProject, Location: "claude", Path: bulk.Path(work, claude), State: skillNotInstalled},
-		{Skill: "bb-bulk", Scope: scopeGlobal, Location: "agents", Path: bulk.Path(home, agents), State: skillNotInstalled},
-		{Skill: "bb-bulk", Scope: scopeGlobal, Location: "claude", Path: bulk.Path(home, claude), State: skillCurrent},
+		{Skill: "bb", Scope: scopeGlobal, Location: "claude", Path: bb.Path(home, claude), State: skillCurrent},
 	}
 	if report := decodeReport(t, output); !reflect.DeepEqual(report.Skills, wantSkills) {
 		t.Errorf("skills:\n got %+v\nwant %+v", report.Skills, wantSkills)
@@ -100,15 +96,15 @@ func TestASkillAnEarlierBbInstalledOrSomebodyEditedFailsTheRun(t *testing.T) {
 	t.Parallel()
 
 	work, home := t.TempDir(), t.TempDir()
-	bb, bulk := skillNamed(t, "bb"), skillNamed(t, "bb-bulk")
+	bb := skillNamed(t, "bb")
 	agents, claude := locationNamed(t, "agents"), locationNamed(t, "claude")
 
 	put(t, bb.Path(work, agents), bb.Rendered("1.0.0"))
-	put(t, bulk.Path(home, agents), bulk.Rendered(testVersion))
-	put(t, bulk.Path(home, claude), bulk.Repository()+"\nA line somebody added.\n")
+	put(t, bb.Path(home, agents), bb.Rendered(testVersion))
+	put(t, bb.Path(home, claude), bb.Repository()+"\nA line somebody added.\n")
 	// A directory where the file should be cannot be read, by bb doctor or by
 	// an agent.
-	if err := os.MkdirAll(bulk.Path(work, claude), 0o755); err != nil {
+	if err := os.MkdirAll(bb.Path(work, claude), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	machine := (&fakeMachine{home: home, work: work}).machine()
@@ -119,32 +115,33 @@ func TestASkillAnEarlierBbInstalledOrSomebodyEditedFailsTheRun(t *testing.T) {
 	if apperrors.KindOf(err) != apperrors.KindPermanent || apperrors.ExitCode(err) != 1 {
 		t.Fatalf("issues must exit 1 as permanent, got %v\n%s", err, output)
 	}
-	if want := "3 issues to fix: the bb skill, the bb-bulk skill"; apperrors.MessageOf(err) != want {
+	// Three issues, one skill: the summary names each thing once.
+	if want := "3 issues to fix: the bb skill"; apperrors.MessageOf(err) != want {
 		t.Errorf("message = %q, want %q", apperrors.MessageOf(err), want)
 	}
 
 	details := apperrors.DetailsOf(err)
 	want := map[string]string{
-		"skill/bb/project/agents":     bb.Path(work, agents) + ": " + notThisBbs + "bb ai skill install bb replaces it",
-		"skill/bb-bulk/global/claude": bulk.Path(home, claude) + ": " + notThisBbs + "bb ai skill install bulk --global replaces it",
+		"skill/bb/project/agents": bb.Path(work, agents) + ": " + notThisBbs + "bb ai skill install bb replaces it",
+		"skill/bb/global/claude":  bb.Path(home, claude) + ": " + notThisBbs + "bb ai skill install bb --global replaces it",
 	}
-	unreadable := details["skill/bb-bulk/project/claude"]
-	delete(details, "skill/bb-bulk/project/claude")
+	unreadable := details["skill/bb/project/claude"]
+	delete(details, "skill/bb/project/claude")
 	if !reflect.DeepEqual(details, want) {
 		t.Errorf("details:\n got %#v\nwant %#v", details, want)
 	}
-	if !strings.HasPrefix(unreadable, bulk.Path(work, claude)+": could not be read: ") {
-		t.Errorf("skill/bb-bulk/project/claude = %q", unreadable)
+	if !strings.HasPrefix(unreadable, bb.Path(work, claude)+": could not be read: ") {
+		t.Errorf("skill/bb/project/claude = %q", unreadable)
 	}
 
 	for _, line := range []string{
-		"  bb       installed in " + bb.Path(work, agents) + "\n" +
-			"           problem: " + notThisBbs + "bb ai skill install bb replaces it\n",
-		"  bb-bulk  installed in " + bulk.Path(work, claude) + "\n" +
-			"           problem: could not be read: ",
-		"           installed in " + bulk.Path(home, agents) + "\n" +
-			"           installed in " + bulk.Path(home, claude) + "\n" +
-			"           problem: " + notThisBbs + "bb ai skill install bulk --global replaces it\n",
+		"  bb  installed in " + bb.Path(work, agents) + "\n" +
+			"      problem: " + notThisBbs + "bb ai skill install bb replaces it\n" +
+			"      installed in " + bb.Path(work, claude) + "\n" +
+			"      problem: could not be read: ",
+		"      installed in " + bb.Path(home, agents) + "\n" +
+			"      installed in " + bb.Path(home, claude) + "\n" +
+			"      problem: " + notThisBbs + "bb ai skill install bb --global replaces it\n",
 		"3 issues to fix.",
 	} {
 		if !strings.Contains(output, line) {

@@ -17,14 +17,6 @@ repositories at once, set the policy once on the project: `bb project permission
 cascade to every repository in the project, so there is nothing to fan out. Anything
 Bitbucket does not scope to a project is a loop over `bb repo list --project PROJ --json`.
 
-`bb bulk` is deprecated and warns at runtime that it will be removed in v5.0.0. Do not
-reach for it in new work. The `bb-bulk` skill documents it for an agent maintaining an
-existing `bulk-policy.yaml`:
-
-```bash
-bb ai skill show bulk
-```
-
 ## Authentication
 
 Before using `bb`, authenticate against your Bitbucket instance:
@@ -567,8 +559,8 @@ tell "fix your invocation" from "retry later" without parsing the message. `exit
 matches the process exit status.
 
 `cancelled` / exit `12` means somebody interrupted the command. Do not retry it
-automatically: for a mutating command like `bb bulk apply` that re-runs the work the
-operator just stopped. Report it and wait for instruction.
+automatically: for a mutating command, a retry re-runs the work the operator just stopped.
+Report it and wait for instruction.
 
 `unknown_outcome` / exit `13` means the request reached Bitbucket and no usable answer came back,
 so it may have been applied. Never retry it automatically. Check the state first — does
@@ -579,9 +571,8 @@ message names the release that can. Nothing was sent, so nothing changed. Retryi
 rewording the invocation both fail; report it and offer what the release can do instead.
 
 A failure may carry an optional `error.details` object — a flat string map of handles you
-need to act on it. `bb bulk apply` puts `operationId` there, which `bb bulk status <id>`
-takes. A failure Bitbucket answered also carries `upstreamStatus` and, when Bitbucket names
-one, `upstreamException`. Read handles from those fields; never scrape them out of
+need to act on it. A failure Bitbucket answered carries `upstreamStatus` and, when Bitbucket
+names one, `upstreamException`. Read handles from those fields; never scrape them out of
 `error.message`.
 
 A listing returns at most `--limit` results. `meta.limitReached: true` means there may be

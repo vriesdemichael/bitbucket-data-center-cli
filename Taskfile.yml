@@ -88,10 +88,6 @@ tasks:
     desc: Export the MCP tool reference from the server's tool registry
     cmd: go run ./tools/mcp-docs-export -out docs/site/reference/mcp-tools.md
 
-  docs:export-bulk-schemas:
-    desc: Export JSON Schemas for bulk policy artifacts
-    cmd: go run ./tools/bulk-schema-export -out docs/reference/schemas
-
   docs:export-config-schema:
     desc: Export JSON Schema for bb configuration and policy files
     cmd: go run ./tools/config-schema-export -out docs/reference/schemas
@@ -106,14 +102,6 @@ tasks:
       - mkdir -p docs/site/reference/schemas/output
       - cp docs/reference/schemas/output/*.schema.json docs/site/reference/schemas/output/
 
-  docs:publish-bulk-schemas:
-    desc: Publish bulk JSON schema files into MkDocs docs directory
-    cmds:
-      - mkdir -p docs/site/reference/schemas
-      - cp docs/reference/schemas/bulk-policy.schema.json docs/site/reference/schemas/bulk-policy.schema.json
-      - cp docs/reference/schemas/bulk-plan.schema.json docs/site/reference/schemas/bulk-plan.schema.json
-      - cp docs/reference/schemas/bulk-apply-status.schema.json docs/site/reference/schemas/bulk-apply-status.schema.json
-
   docs:publish-config-schema:
     desc: Publish config JSON schema file into MkDocs docs directory
     cmds:
@@ -126,8 +114,6 @@ tasks:
       - task: docs:export-command-reference
       - task: docs:export-adr-markdown
       - task: docs:export-mcp-tools
-      - task: docs:export-bulk-schemas
-      - task: docs:publish-bulk-schemas
       - task: docs:export-config-schema
       - task: docs:export-output-schemas
       - task: docs:publish-output-schemas
@@ -183,7 +169,6 @@ tasks:
       # tree the site is built from, so the published copy names the release it
       # belongs to while the committed copies stay on the alias and
       # docs:verify-generated stays stable.
-      - go run ./tools/bulk-schema-export -out docs/site/reference/schemas -site-version '{{.VERSION}}'
       - go run ./tools/output-schema-export -out docs/site/reference/schemas/output -site-version '{{.VERSION}}'
       # latest moves unconditionally: releases are cut from main in version
       # order, so the release being published belongs to the newest major.

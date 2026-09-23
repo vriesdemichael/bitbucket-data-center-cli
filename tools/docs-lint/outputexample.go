@@ -267,8 +267,8 @@ func lintUnannotatedEnvelope(file string, block codeBlock) []finding {
 //
 // Deliberately narrow: a meta object carrying bbVersion is the one thing every
 // envelope has and nothing else in the documentation does. Matching on "data"
-// alone would sweep in bulk artifacts and IDE settings, which are checked
-// elsewhere and against different schemas.
+// alone would sweep in IDE settings and other JSON that is not a bb machine
+// document.
 func looksLikeEnvelope(body string) bool {
 	var document any
 	if err := json.Unmarshal([]byte(strings.TrimSpace(body)), &document); err != nil {

@@ -122,9 +122,9 @@ subprocesses it starts.
 
 An empty value counts as unset. A `--*-stdin` flag wins over the variable, and
 `--no-secret` / `--no-credentials` override both — a variable exported for every
-command must not make removing a credential impossible. Bulk policies name these
-variables rather than holding a value; see
-[Webhook Secrets](../advanced/webhook-secrets.md).
+command must not make removing a credential impossible. See
+[Webhook Secrets](../advanced/webhook-secrets.md) for how both are read, and what
+`bb` refuses to print.
 
 ## Interactivity
 
@@ -189,12 +189,6 @@ For a report of what went wrong, `--log-level debug --log-format jsonl` gives a
 structured trace worth attaching to an issue. `BB_ERROR_HARVEST` is the narrower
 companion: the trace shows what `bb` did, the harvest file shows exactly what the
 server sent back.
-
-## Bulk operations
-
-| Variable | Default | Effect |
-|---|---|---|
-| `BB_BULK_STATUS_DIR` | `bulk-status` beside the stored configuration file | Where `bb bulk` writes plan and run state. Set it somewhere durable if you need runs to survive a reboot, or somewhere shared for a team runner. |
 
 ## Shell completion
 

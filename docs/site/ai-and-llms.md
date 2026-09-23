@@ -83,18 +83,10 @@ mkdir -p ~/.cline/skills/bb
 bb ai skill show > ~/.cline/skills/bb/SKILL.md
 ```
 
-A second skill, `bulk`, covers `bb bulk`. That command is deprecated and warns at
-runtime that it will be removed in v5.0.0, so install this one only to maintain
-a `bulk-policy.yaml` that already exists:
-
-```bash
-bb ai skill install bulk
-```
-
 **Re-run `bb ai skill install` after upgrading `bb`.** Both subcommands print the
 copy compiled into the binary you just ran, so the skill and the command surface
 cannot disagree, and `bb doctor` reports an installed copy that an earlier `bb`
-wrote. The same skills are published through the open agent skills
+wrote. The same skill is published through the open agent skills
 ecosystem for machines where `bb` is not installed yet, but that copy is a
 snapshot taken at release time and can describe a different version
 ([ADR-040](adr/040-agent-skill-distribution-static-npx-and-dynamic-cli.md)):
@@ -119,8 +111,7 @@ agent's sources are the skill or the MCP tool catalogue for what to call,
 - Installation and Quickstart: [Installation and Quickstart](installation-and-quickstart.md)
 - Command Reference: [All Commands](reference/commands/index.md)
 - Machine-readable schemas: [JSON Schemas](reference/schemas.md)
-- AI core skill for agents: [SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
-- Skill for the deprecated `bb bulk`: [Bulk SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md)
+- AI skill for agents: [SKILL.md on GitHub](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
 
 ## Which source answers which question
 

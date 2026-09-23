@@ -107,35 +107,27 @@ preview of a failure rather than an error.
 — your configuration, your git remotes, files on disk — are outside its scope,
 and the flag's own help says so.
 
-Some commands are registered as not benefiting from a preview, `bb bulk apply`
-among them. Every command in the tree is explicitly classified, so a mutating
+A command for which a preview means nothing refuses the flag rather than
+ignoring it: `bb ai mcp serve` starts a live server, and a session cannot be
+previewed. Every command in the tree is explicitly classified, so a mutating
 command cannot quietly fall through unclassified
 ([ADR-070](../adr/070-every-command-is-explicitly-classified-for-dry-run.md)).
 
 Transient network failures during a dry run exit `10`, the same as a real run,
 so a wrapper cannot mistake "I could not check" for "nothing would change".
 
-## Dry run or bulk
+## Across many repositories
 
-They answer different questions, and the difference is how many repositories are
-involved.
+`--dry-run` previews **one command against one target**, so a change across many
+repositories is previewed the way it is made.
 
-`--dry-run` previews **one command against one target**. Use it before a change
-you are about to make by hand.
-
-`bb bulk` plans and applies a reviewed change across **many repositories**. Its
-plan artifact is the preview, and it is reviewable, storable and re-readable in
-a way a printed preview is not. `bb bulk apply` therefore rejects `--dry-run`
-rather than accepting it and doing nothing: the plan already is the dry run, and
-accepting the flag would suggest a second, weaker one exists.
-
-`bb bulk` is **deprecated** and scheduled for removal in v5.0.0; see
-[Bulk Operations](bulk-operations.md) for why, and for what to use instead. A
-loop over `bb` with `--dry-run` is the supported way to preview a change across
-repositories.
+Permissions, webhooks, default tasks and branch restrictions can be set once on
+the project, and Bitbucket applies them to every repository in it: one
+`bb project` command, and one preview. Anything Bitbucket does not scope to a
+project is a loop over `bb repo list --project PROJ --json`, and the same loop
+with `--dry-run` previews each repository in turn.
 
 ## See also
 
-- [Bulk Operations](bulk-operations.md)
 - [Machine Mode and Diagnostics](machine-mode-diagnostics.md) — the envelope these previews arrive in
 - [ADR-078](../adr/078-dry-run-confidence-is-derived-from-a-tier.md) — why confidence is derived rather than declared

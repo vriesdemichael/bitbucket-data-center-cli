@@ -13,9 +13,7 @@ import (
 // By name. The alternative was to ride the dry-run registry, which classifies
 // every command by what it does to the server and would also catch a
 // destructive command that is not named like one. The name is what a user reads
-// before typing, and the one real gap -- bulk apply, which mutates many
-// repositories and is called neither delete nor remove -- leaves with bb bulk in
-// v5 (#608).
+// before typing, so it is what the question keys on.
 var destructiveVerbs = map[string]struct{}{
 	"delete": {},
 	"remove": {},

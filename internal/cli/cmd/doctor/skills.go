@@ -163,15 +163,10 @@ func skillIssue(install skillInstall) *issue {
 }
 
 // reinstall is the command that writes this bb's skill over whatever is there,
-// with the shortest name the skill answers to, and where to run it when that is
-// not the working directory: bb ai skill install writes where it runs.
+// and where to run it when that is not the working directory: bb ai skill
+// install writes where it runs.
 func reinstall(skill ai.Skill, scope, elsewhere string) string {
-	name := skill.Name
-	if len(skill.Aliases) > 0 {
-		name = skill.Aliases[0]
-	}
-
-	command := "bb ai skill install " + name
+	command := "bb ai skill install " + skill.Name
 	if scope == scopeGlobal {
 		command += " --global"
 	}

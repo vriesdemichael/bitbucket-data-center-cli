@@ -425,23 +425,6 @@ func TestAdminHealthPropagatesHardFailure(t *testing.T) {
 	}
 }
 
-func TestBulkCommandAvailableFromRoot(t *testing.T) {
-	t.Parallel()
-
-	command := NewRootCommand()
-	buffer := &bytes.Buffer{}
-	command.SetOut(buffer)
-	command.SetErr(buffer)
-	command.SetArgs([]string{"bulk", "--help"})
-
-	if err := command.Execute(); err != nil {
-		t.Fatalf("expected bulk help to succeed, got: %v", err)
-	}
-	if !strings.Contains(buffer.String(), "plan") || !strings.Contains(buffer.String(), "apply") || !strings.Contains(buffer.String(), "status") {
-		t.Fatalf("expected bulk subcommands in help output, got: %s", buffer.String())
-	}
-}
-
 func TestResolveRepositorySelector(t *testing.T) {
 	t.Run("falls back to the resolved repository", func(t *testing.T) {
 		// The slug comes off the configuration now rather than being read from

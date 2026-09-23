@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	bbskill "github.com/vriesdemichael/bitbucket-data-center-cli/skills/bb"
-	bbbulkskill "github.com/vriesdemichael/bitbucket-data-center-cli/skills/bb-bulk"
 )
 
 type skillInfo struct {
@@ -25,12 +24,8 @@ type skillInfo struct {
 // which cannot be an enum flag, and a list beside this one is a list that can
 // disagree with what lookupSkill resolves.
 type Skill struct {
-	// Name is the canonical spelling, and the directory the file installs to.
+	// Name is what the argument takes, and the directory the file installs to.
 	Name string
-	// Aliases are the other spellings lookupSkill accepts. Not offered as
-	// completions -- a shell showing both bulk and bb-bulk for one skill is
-	// two candidates that do the same thing.
-	Aliases []string
 	// Summary is what the skill is for, shown beside the name.
 	Summary string
 	content []byte
@@ -94,12 +89,6 @@ var Skills = []Skill{
 		Summary: "Driving bb from a coding agent",
 		content: bbskill.Content,
 	},
-	{
-		Name:    "bb-bulk",
-		Aliases: []string{"bulk"},
-		Summary: "Planning and applying bulk changes with bb bulk",
-		content: bbbulkskill.Content,
-	},
 }
 
 func lookupSkill(name string) (skillInfo, error) {
@@ -113,32 +102,24 @@ func lookupSkill(name string) (skillInfo, error) {
 		if strings.EqualFold(wanted, skill.Name) {
 			return skillInfo{name: skill.Name, content: skill.content}, nil
 		}
-		for _, alias := range skill.Aliases {
-			if strings.EqualFold(wanted, alias) {
-				return skillInfo{name: skill.Name, content: skill.content}, nil
-			}
-		}
 	}
 
 	return skillInfo{}, apperrors.New(
 		apperrors.KindValidation,
-		fmt.Sprintf("unknown skill %q: supported skills are %s", name, strings.Join(skillSpellings(), ", ")),
+		fmt.Sprintf("unknown skill %q: supported skills are %s", name, strings.Join(skillNames(), ", ")),
 		nil,
 	)
 }
 
-// skillSpellings lists every name the argument accepts, canonical first, so
-// the refusal names the alias the caller may have meant.
-func skillSpellings() []string {
-	spellings := make([]string, 0, len(Skills))
+// skillNames lists every name the argument accepts, so the refusal says what
+// would have worked.
+func skillNames() []string {
+	names := make([]string, 0, len(Skills))
 	for _, skill := range Skills {
-		spellings = append(spellings, strconv.Quote(skill.Name))
-		for _, alias := range skill.Aliases {
-			spellings = append(spellings, strconv.Quote(alias))
-		}
+		names = append(names, strconv.Quote(skill.Name))
 	}
 
-	return spellings
+	return names
 }
 
 func newSkillCommand(deps Dependencies) *cobra.Command {
@@ -158,7 +139,7 @@ func newSkillShowCommand(deps Dependencies) *cobra.Command {
 	return &cobra.Command{
 		Use:   "show [skill]",
 		Short: "Print an agent skill to stdout",
-		Long: `Print an agent skill to stdout (defaults to "bb", supports "bulk" / "bb-bulk").
+		Long: `Print an agent skill to stdout (defaults to "bb").
 
 The skill is embedded in this binary at compile time, so it works with no
 network connection and without the source repository present.
@@ -166,13 +147,12 @@ network connection and without the source repository present.
 Redirect to the location your coding agent expects:
 
   bb ai skill show > .agents/skills/bb/SKILL.md
-  bb ai skill show bulk > .agents/skills/bb-bulk/SKILL.md
 
 Most agents read .agents/skills/<name>/SKILL.md, and Claude Code reads
 .claude/skills/<name>/SKILL.md; bb ai skill install writes both. For an agent
 that reads a path of its own, consult its documentation.
 
-Baseline skills (fixed at release time) are also distributed via the open
+The baseline skill (fixed at release time) is also distributed via the open
 agent skills ecosystem and can be installed without bb being present:
 
   npx skills add vriesdemichael/bitbucket-data-center-cli
@@ -203,9 +183,9 @@ func newSkillInstallCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install [skill]",
 		Short: "Write an agent skill to the agent skills directories",
-		Long: `Write an agent skill file (defaults to "bb", supports "bulk" / "bb-bulk") where
-coding agents read it: .agents/skills, which most agents read, and
-.claude/skills, which Claude Code reads instead.
+		Long: `Write an agent skill file (defaults to "bb") where coding agents read
+it: .agents/skills, which most agents read, and .claude/skills, which Claude
+Code reads instead.
 
 Project scope (default):
   .agents/skills/<skill>/SKILL.md

@@ -17,7 +17,6 @@ import (
 	branchcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/branch"
 	browsecmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/browse"
 	buildcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/build"
-	bulkcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/bulk"
 	commitcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/commit"
 	deploymentcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/deployment"
 	diffcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/diff"
@@ -48,11 +47,12 @@ import (
 // Run hooks traverse the tree, root first.
 //
 // Cobra runs only the nearest PersistentPreRun by default, so a subcommand
-// group with a hook of its own silently replaced the root's. bb bulk has one,
-// for its deprecation warning, and none of what the root sets up before a
-// command -- --full-error-body among it -- reached plan, apply or status
-// (#574). Set once, at package load: it is process-wide, and assigning it per
-// invocation would race in the parallel command tests.
+// group with a hook of its own silently replaces the root's, and none of what
+// the root sets up before a command -- --full-error-body among it -- reaches
+// the group's commands (#574). A deprecated group warning its users from a hook
+// of its own is the case that found it. Set once, at package load: it is
+// process-wide, and assigning it per invocation would race in the parallel
+// command tests.
 func init() {
 	cobra.EnableTraverseRunHooks = true
 }
@@ -162,11 +162,6 @@ your behalf using the link above.`,
 		RuntimeOverrides:        func() config.Overrides { return options.runtime },
 		WriteJSON:               writeJSON,
 		WriteJSONList:           writeJSONList,
-	}))
-	rootCmd.AddCommand(bulkcmd.New(bulkcmd.Dependencies{
-		JSONEnabled: func() bool { return options.JSON },
-		LoadConfig:  options.loadConfig,
-		WriteJSON:   writeJSON,
 	}))
 	rootCmd.AddCommand(repocmd.New(repocmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },

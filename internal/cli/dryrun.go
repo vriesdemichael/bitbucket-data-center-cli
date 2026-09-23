@@ -19,11 +19,10 @@ const (
 )
 
 type dryRunProfile struct {
-	Intent                  string
-	Action                  string
-	Stateful                bool
-	CapabilityMsg           string
-	DryRunDoesNotAddBenefit bool
+	Intent        string
+	Action        string
+	Stateful      bool
+	CapabilityMsg string
 }
 
 type dryRunItem = dryrunpreview.Item
@@ -182,8 +181,6 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo sync":         {Intent: "repo.sync.trigger", Action: "update", Stateful: true},
 	"repo sync enable":  {Intent: "repo.sync.enable", Action: "update", Stateful: true},
 	"repo sync disable": {Intent: "repo.sync.disable", Action: "update", Stateful: true},
-	// bulk
-	"bulk apply": {Intent: "bulk.apply", Action: "apply", Stateful: false, DryRunDoesNotAddBenefit: true},
 }
 
 type commandClassification int
@@ -234,8 +231,6 @@ var readOnlyCommands = map[string]struct{}{
 	"build required list":             {},
 	"build status get":                {},
 	"build status stats":              {},
-	"bulk plan":                       {},
-	"bulk status":                     {},
 	"commit compare":                  {},
 	"commit get":                      {},
 	"commit list":                     {},
@@ -424,10 +419,6 @@ func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions)
 					return originalRun(cmd, args)
 				}
 
-				if profile.DryRunDoesNotAddBenefit {
-					return dryRunUnsupportedError(path)
-				}
-
 				if profile.Stateful {
 					return originalRun(cmd, args)
 				}
@@ -486,10 +477,6 @@ func dryRunUnsupportedError(path string) error {
 		// A validation error, not not-implemented: nothing is missing here, the
 		// flag does not apply.
 		return apperrors.New(apperrors.KindValidation, reason, nil)
-	}
-
-	if strings.EqualFold(strings.TrimSpace(path), "bulk apply") {
-		return apperrors.New(apperrors.KindValidation, "bulk apply does not support --dry-run; use bulk plan to preview operations", nil)
 	}
 
 	return apperrors.New(apperrors.KindNotImplemented, fmt.Sprintf("dry-run is not implemented for %s", path), nil)

@@ -45,7 +45,7 @@ func TestStylesNoColorProducePlainText(t *testing.T) {
 		{"Secondary", style.Secondary, "abc1234"},
 		{"Empty", style.Empty, "No items found"},
 		{"DryRun", style.DryRun, "Dry-run (static, capability=partial)"},
-		{"Hint", style.Hint, "Inspect saved status with: bb bulk status op-1"},
+		{"Hint", style.Hint, "Check the configuration with: bb doctor"},
 	}
 
 	for _, tc := range cases {

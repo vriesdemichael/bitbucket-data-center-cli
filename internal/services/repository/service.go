@@ -26,8 +26,8 @@ func NewService(client *httpclient.Client) *Service {
 }
 
 // AllResults asks for every repository rather than a page of them. Callers
-// that need a complete set -- bulk planning, an existence check -- must say so,
-// because the zero value is a default page rather than everything (#468).
+// that need a complete set -- an existence check, say -- must say so, because
+// the zero value is a default page rather than everything (#468).
 const AllResults = 1_000_000
 
 type ListOptions struct {

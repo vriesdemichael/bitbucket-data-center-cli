@@ -12,7 +12,7 @@
             "minLength": 1,
             "type": "string"
           },
-          "description": "Machine-readable fields to act or branch on, keyed by name, rather than words to match in the message. Absent when there are none. bb bulk apply sets operationId, which `bb bulk status \u003cid\u003e` takes. A failure Bitbucket answered carries upstreamStatus, and upstreamException when Bitbucket named the exception.",
+          "description": "Machine-readable fields to act or branch on, keyed by name, rather than words to match in the message. Absent when there are none. A failure Bitbucket answered carries upstreamStatus, and upstreamException when Bitbucket named the exception.",
           "minProperties": 1,
           "type": "object"
         },

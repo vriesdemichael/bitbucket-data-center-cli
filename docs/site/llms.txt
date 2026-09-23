@@ -2,8 +2,8 @@
 
 `bb` is the operational CLI for Bitbucket Data Center and Bitbucket Server. It is the
 high-signal command surface for working with self-hosted Bitbucket — pull requests,
-repositories, branches, tags, commits, build status, and multi-repository bulk changes —
-without scraping web pages or inventing API calls. It is not the CLI for Bitbucket Cloud.
+repositories, branches, tags, commits, build status, and project-wide settings — without
+scraping web pages or inventing API calls. It is not the CLI for Bitbucket Cloud.
 
 This file is a setup guide. If you are an agent, work through it in order: install,
 authenticate, then enable either the skill or the MCP server. The last section describes
@@ -87,25 +87,13 @@ which reads only its own directory — project scope. For user scope:
 bb ai skill install --global
 ```
 
-A second skill covers `bb bulk`, which is deprecated: it warns at runtime that it will be
-removed in v5.0.0. Install it only to maintain an existing `bulk-policy.yaml`:
-
-```bash
-bb ai skill install bulk
-```
-
-For new work there is nothing to install. Project-level policy already cascades to every
-repository in the project — `bb project permissions`, `bb project webhook`,
-`bb project default-task` and `bb project branch-restriction` are each set once — and
-anything Bitbucket does not scope to a project is a loop over `bb repo list`.
-
 If the agent expects a different path, print the skill and redirect it:
 
 ```bash
 bb ai skill show > .agents/skills/bb/SKILL.md
 ```
 
-When `bb` is not installed yet, the baseline skills are also published through the open
+When `bb` is not installed yet, the baseline skill is also published through the open
 agent skills ecosystem:
 
 ```bash
@@ -200,16 +188,15 @@ Prefer the published command reference over guessing flags or subcommands.
 - [Docs home](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/): Main navigation for operators and agents
 - [Installation and Quickstart](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/installation-and-quickstart/): Install, authenticate, and run first commands
 - [Command Reference](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/commands/): Exact public command surface and flags
-- [JSON Schemas](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/): Machine contracts for output and bulk inputs
+- [JSON Schemas](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/reference/schemas/): Machine contracts for output and configuration files
 - [Machine Mode and Diagnostics](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/machine-mode-diagnostics/): JSON envelope contract and supportability patterns
 - [Basic Usage](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/basic-usage/): Common workflows and command patterns
 - [Troubleshooting](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/troubleshooting/): The messages bb prints when setup is wrong, and what each means
-- [Advanced Topics](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/): Dry-run, bulk automation, diagnostics, and repository discovery
+- [Advanced Topics](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/): Dry-run, diagnostics, and repository discovery
 - [AI and llms.txt overview](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/ai-and-llms/): How this file and the AI tooling fit together
 - [Architecture Decision Records](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/adr/): Design rationale and system constraints
 - [Changelog](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/changelog/): Release history and release notes
-- [bb AI core skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
-- [bb bulk AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb-bulk/SKILL.md): For a deprecated command, kept for existing policies
+- [bb AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)
 
 If you hit behaviour that does not match this file, open an issue at
 <https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/new>, or ask the user

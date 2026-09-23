@@ -12,7 +12,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	bbskill "github.com/vriesdemichael/bitbucket-data-center-cli/skills/bb"
-	bbbulkskill "github.com/vriesdemichael/bitbucket-data-center-cli/skills/bb-bulk"
 )
 
 // testDeps builds a minimal Dependencies for skill tests.
@@ -39,15 +38,6 @@ func TestBuildSkillStampsVersion(t *testing.T) {
 	result := buildSkill(skill, "1.2.3")
 	if !strings.Contains(result, "1.2.3") {
 		t.Fatal("buildSkill did not inject the version string")
-	}
-
-	bulkSkill, err := lookupSkill("bulk")
-	if err != nil {
-		t.Fatalf("unexpected lookup error: %v", err)
-	}
-	bulkResult := buildSkill(bulkSkill, "1.2.3")
-	if !strings.Contains(bulkResult, "1.2.3") {
-		t.Fatal("buildSkill did not inject the version string into bulk skill")
 	}
 }
 
@@ -83,16 +73,6 @@ func TestSkillShowPrintsSkillContent(t *testing.T) {
 			name:        "explicit bb skill",
 			args:        []string{"skill", "show", "bb"},
 			wantSnippet: "# bb — Bitbucket Data Center CLI",
-		},
-		{
-			name:        "bulk alias",
-			args:        []string{"skill", "show", "bulk"},
-			wantSnippet: "# bb-bulk — Multi-Repository Bulk Governance Skill",
-		},
-		{
-			name:        "bb-bulk alias",
-			args:        []string{"skill", "show", "bb-bulk"},
-			wantSnippet: "# bb-bulk — Multi-Repository Bulk Governance Skill",
 		},
 	}
 
@@ -194,10 +174,10 @@ func TestSkillInstallWritesFile(t *testing.T) {
 			expected: "# bb — Bitbucket Data Center CLI",
 		},
 		{
-			name:     "bulk skill",
-			args:     []string{"skill", "install", "bulk"},
-			relPath:  filepath.Join("skills", "bb-bulk", "SKILL.md"),
-			expected: "# bb-bulk — Multi-Repository Bulk Governance Skill",
+			name:     "named skill",
+			args:     []string{"skill", "install", "bb"},
+			relPath:  filepath.Join("skills", "bb", "SKILL.md"),
+			expected: "# bb — Bitbucket Data Center CLI",
 		},
 	}
 
@@ -309,9 +289,9 @@ func TestSkillRemoveDeletesFile(t *testing.T) {
 			relPath: filepath.Join("skills", "bb", "SKILL.md"),
 		},
 		{
-			name:    "bulk skill",
-			args:    []string{"skill", "remove", "bulk"},
-			relPath: filepath.Join("skills", "bb-bulk", "SKILL.md"),
+			name:    "named skill",
+			args:    []string{"skill", "remove", "bb"},
+			relPath: filepath.Join("skills", "bb", "SKILL.md"),
 		},
 	}
 
@@ -507,19 +487,6 @@ func TestResolveInstallPathProject(t *testing.T) {
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Fatalf("project paths for bb: got %q, want %q", got, want)
 	}
-
-	bulkSkill, _ := lookupSkill("bulk")
-	gotBulk, err := resolveInstallPaths(bulkSkill, false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	wantBulk := []string{
-		filepath.Join(dir, ".agents", "skills", "bb-bulk", "SKILL.md"),
-		filepath.Join(dir, ".claude", "skills", "bb-bulk", "SKILL.md"),
-	}
-	if strings.Join(gotBulk, "|") != strings.Join(wantBulk, "|") {
-		t.Fatalf("project paths for bulk: got %q, want %q", gotBulk, wantBulk)
-	}
 }
 
 // TestResolveInstallPathGlobal tests global (home directory) path resolution.
@@ -539,19 +506,6 @@ func TestResolveInstallPathGlobal(t *testing.T) {
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Fatalf("global paths for bb: got %q, want %q", got, want)
 	}
-
-	bulkSkill, _ := lookupSkill("bulk")
-	gotBulk, err := resolveInstallPaths(bulkSkill, true)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	wantBulk := []string{
-		filepath.Join(home, ".agents", "skills", "bb-bulk", "SKILL.md"),
-		filepath.Join(home, ".claude", "skills", "bb-bulk", "SKILL.md"),
-	}
-	if strings.Join(gotBulk, "|") != strings.Join(wantBulk, "|") {
-		t.Fatalf("global paths for bulk: got %q, want %q", gotBulk, wantBulk)
-	}
 }
 
 // TestSkillInstallGlobalWritesFile tests --global flag writes to home dir.
@@ -564,16 +518,16 @@ func TestSkillInstallGlobalWritesFile(t *testing.T) {
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"skill", "install", "bulk", "--global"})
+	cmd.SetArgs([]string{"skill", "install", "--global"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	for _, agents := range []string{".agents", ".claude"} {
-		dest := filepath.Join(home, agents, "skills", "bb-bulk", "SKILL.md")
+		dest := filepath.Join(home, agents, "skills", "bb", "SKILL.md")
 		if _, err := os.Stat(dest); os.IsNotExist(err) {
-			t.Fatalf("expected the global bulk skill to be written to %s", dest)
+			t.Fatalf("expected the global skill to be written to %s", dest)
 		}
 	}
 }
@@ -617,16 +571,11 @@ func min(a, b int) int {
 func TestCommittedSkillHasNoUnrenderedPlaceholders(t *testing.T) {
 	t.Parallel()
 
-	skills := map[string][]byte{
-		"bb":      bbskill.Content,
-		"bb-bulk": bbbulkskill.Content,
-	}
-
-	for name, content := range skills {
-		committed := string(content)
+	for _, skill := range Skills {
+		committed := skill.Repository()
 		for _, marker := range []string{"{{", "}}"} {
 			if strings.Contains(committed, marker) {
-				t.Errorf("committed %s/SKILL.md contains the template marker %q; it is distributed verbatim by npx", name, marker)
+				t.Errorf("committed %s/SKILL.md contains the template marker %q; it is distributed verbatim by npx", skill.Name, marker)
 			}
 		}
 	}
@@ -639,19 +588,14 @@ func TestCommittedSkillHasNoUnrenderedPlaceholders(t *testing.T) {
 func TestCommittedSkillDoesNotClaimToBeGenerated(t *testing.T) {
 	t.Parallel()
 
-	skills := map[string][]byte{
-		"bb":      bbskill.Content,
-		"bb-bulk": bbbulkskill.Content,
-	}
-
-	for name, content := range skills {
-		committed := strings.ToLower(string(content))
+	for _, skill := range Skills {
+		committed := strings.ToLower(skill.Repository())
 		for _, claim := range []string{
 			"exact capabilities of your installed binary",
 			"version-specific skill",
 		} {
 			if strings.Contains(committed, claim) {
-				t.Errorf("%s/SKILL.md still claims %q, which the static embed does not deliver", name, claim)
+				t.Errorf("%s/SKILL.md still claims %q, which the static embed does not deliver", skill.Name, claim)
 			}
 		}
 	}

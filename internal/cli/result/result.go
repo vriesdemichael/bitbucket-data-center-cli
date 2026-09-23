@@ -31,18 +31,10 @@
 //
 // # When not to declare one
 //
-// A command whose payload is a published artifact keeps its hand-written schema
-// instead, and --describe falls back to it. bb bulk plan, apply and status are
-// the case: their payloads are the bulk artifacts, whose schemas encode
-// conditional rules a Go type cannot express -- "if the selector has a
-// repoPattern then projectKey is required", "if auto-decline is enabled then
-// inactivityWeeks is required". Deriving from the struct would lose exactly the
-// part that makes those files checkable.
-//
 // A command that returns no data payload at all, or one whose shape Bitbucket
 // itself declares as an untyped value, is listed in outputschemas with the
-// reason instead. Those are the only three answers, and
-// TestEveryCommandIsModelled fails a command that gives none of them.
+// reason instead. A declaration and those two lists are the only three answers,
+// and TestEveryCommandIsModelled fails a command that gives none of them.
 package result
 
 import (

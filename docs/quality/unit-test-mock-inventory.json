@@ -1,16 +1,16 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 184,
-    "files": 67,
-    "functions": 175,
+    "mocked_servers": 182,
+    "files": 66,
+    "functions": 173,
     "by_class": {
       "external-service": 18,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 74,
       "unreachable-state": 24,
-      "unreached-guard": 45
+      "unreached-guard": 43
     },
     "behaviour_by_package": {}
   },
@@ -2492,32 +2492,6 @@
       ],
       "action": "decide-separately",
       "reason": "stands in for GitHub or Sigstore, not Bitbucket; the same drift risk applies but ADR-079 does not cover it"
-    },
-    {
-      "file": "internal/workflows/bulk/runner_test.go",
-      "line": 62,
-      "function": "TestServiceRunnerValidationBranches",
-      "class": "unreached-guard",
-      "signals": [
-        "closes-on-cleanup",
-        "handler-supplied-by-the-caller",
-        "fails-if-the-server-is-reached"
-      ],
-      "action": "keep",
-      "reason": "asserts that no request is made, which needs no server to be true"
-    },
-    {
-      "file": "internal/workflows/bulk/runner_test.go",
-      "line": 121,
-      "function": "TestAutoDeclineRejectsOutOfRangeInactivityWeeks",
-      "class": "unreached-guard",
-      "signals": [
-        "closes-on-cleanup",
-        "handler-supplied-by-the-caller",
-        "fails-if-the-server-is-reached"
-      ],
-      "action": "keep",
-      "reason": "asserts that no request is made, which needs no server to be true"
     }
   ]
 }
