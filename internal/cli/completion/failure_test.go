@@ -83,7 +83,7 @@ var readThisMachine = map[Kind]bool{
 }
 
 // TestEverySourceCompletesNothingWhenTheContextCannotBeResolved is the promise
-// ADR-088 makes, held against every kind at once.
+// ADR-089 makes, held against every kind at once.
 //
 // A source that panicked, blocked, or returned candidates it invented would
 // fail here. The registry is walked rather than listed so a kind added later
