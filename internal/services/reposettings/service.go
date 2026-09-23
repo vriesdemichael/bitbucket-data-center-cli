@@ -712,26 +712,46 @@ func (service *Service) UnwatchRepository(ctx context.Context, repo RepositoryRe
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
+// ListDefaultTasks returns every default task of the repository: its own, and
+// those it inherits from its project. Every page of them, where it used to
+// return Bitbucket's first page of 25 alone, so a longer list was cut short and
+// a task looked up by id on a later page was not found.
 func (service *Service) ListDefaultTasks(ctx context.Context, repo RepositoryRef) ([]DefaultTask, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-	response, err := service.client.GetDefaultTasks1WithResponse(ctx, repo.ProjectKey, repo.Slug, nil)
-	if err != nil {
-		return nil, apperrors.Transport("failed to list default tasks", err)
-	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return nil, err
-	}
+
+	return openapi.PageThrough(ctx, 0, AllResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[DefaultTask], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			response, err := service.client.GetDefaultTasks1WithResponse(ctx, repo.ProjectKey, repo.Slug,
+				&openapigenerated.GetDefaultTasks1Params{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[DefaultTask]{}, apperrors.Transport("failed to list default tasks", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[DefaultTask]{}, err
+			}
+
+			return decodeDefaultTaskPage(response.Body)
+		})
+}
+
+// decodeDefaultTaskPage reads one page of a default-task listing, which the
+// generated client leaves undecoded.
+func decodeDefaultTaskPage(body []byte) (openapi.Page[DefaultTask], error) {
 	var page struct {
-		Values []DefaultTask `json:"values"`
+		Values        []DefaultTask `json:"values"`
+		IsLastPage    *bool         `json:"isLastPage"`
+		NextPageStart *int          `json:"nextPageStart"`
 	}
-	if len(response.Body) > 0 {
-		if err := json.Unmarshal(response.Body, &page); err != nil {
-			return nil, apperrors.New(apperrors.KindPermanent, "failed to decode default tasks list", err)
+	if len(body) > 0 {
+		if err := json.Unmarshal(body, &page); err != nil {
+			return openapi.Page[DefaultTask]{}, apperrors.New(apperrors.KindPermanent, "failed to decode default tasks list", err)
 		}
 	}
-	return page.Values, nil
+
+	return openapi.Page[DefaultTask]{Values: page.Values, IsLastPage: page.IsLastPage, NextPageStart: page.NextPageStart}, nil
 }
 
 func (service *Service) AddDefaultTask(ctx context.Context, repo RepositoryRef, description string, sourceRef *string, targetRef *string) (*DefaultTask, error) {

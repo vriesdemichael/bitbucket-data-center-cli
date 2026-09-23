@@ -36,24 +36,32 @@ func (service *Service) ListDefaultTasks(ctx context.Context, projectKey string)
 		return nil, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
 
-	response, err := service.client.GetDefaultTasksWithResponse(ctx, trimmedProject, nil)
-	if err != nil {
-		return nil, apperrors.Transport("failed to list project default tasks", err)
-	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return nil, err
-	}
+	// Every page, where it used to return Bitbucket's first page of 25 alone.
+	return openapi.PageThrough(ctx, 0, AllResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[DefaultTask], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			response, err := service.client.GetDefaultTasksWithResponse(ctx, trimmedProject,
+				&openapigenerated.GetDefaultTasksParams{Start: &startValue, Limit: &limitValue})
+			if err != nil {
+				return openapi.Page[DefaultTask]{}, apperrors.Transport("failed to list project default tasks", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[DefaultTask]{}, err
+			}
 
-	var page struct {
-		Values []DefaultTask `json:"values"`
-	}
-	if len(response.Body) > 0 {
-		if err := json.Unmarshal(response.Body, &page); err != nil {
-			return nil, apperrors.New(apperrors.KindPermanent, "failed to decode default tasks list", err)
-		}
-	}
+			var page struct {
+				Values        []DefaultTask `json:"values"`
+				IsLastPage    *bool         `json:"isLastPage"`
+				NextPageStart *int          `json:"nextPageStart"`
+			}
+			if len(response.Body) > 0 {
+				if err := json.Unmarshal(response.Body, &page); err != nil {
+					return openapi.Page[DefaultTask]{}, apperrors.New(apperrors.KindPermanent, "failed to decode default tasks list", err)
+				}
+			}
 
-	return page.Values, nil
+			return openapi.Page[DefaultTask]{Values: page.Values, IsLastPage: page.IsLastPage, NextPageStart: page.NextPageStart}, nil
+		})
 }
 
 func (service *Service) AddDefaultTask(ctx context.Context, projectKey string, description string, sourceRef *string, targetRef *string) (*DefaultTask, error) {
