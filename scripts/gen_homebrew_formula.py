@@ -42,7 +42,7 @@ def render_formula(version: str, repository: str, hashes: dict[str, str]) -> str
     # PowerShell. The agent skill is left to each user, as the caveats say: it
     # lives in a home directory, and no directory that several agents read a
     # skill from serves every user of a machine.
-    base_url =f"https://github.com/{repository}/releases/download/v{version}"
+    base_url = f"https://github.com/{repository}/releases/download/v{version}"
     repo_url = f"https://github.com/{repository}"
     darwin_arm = hash_for(hashes, version, "darwin_arm64")
     darwin_amd = hash_for(hashes, version, "darwin_amd64")
