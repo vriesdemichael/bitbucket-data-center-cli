@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 206,
-    "files": 68,
-    "functions": 194,
+    "mocked_servers": 212,
+    "files": 70,
+    "functions": 200,
     "by_class": {
-      "external-service": 21,
+      "external-service": 27,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 95,
@@ -466,8 +466,21 @@
       "reviewed": true
     },
     {
+      "file": "internal/cli/cmd/update/download_test.go",
+      "line": 47,
+      "function": "brokenOnceMirror",
+      "class": "external-service",
+      "signals": [
+        "serves-bitbucket-routes",
+        "inspects-the-request-path"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror whose first archive",
+      "reviewed": true
+    },
+    {
       "file": "internal/cli/cmd/update/scheme_test.go",
-      "line": 46,
+      "line": 50,
       "function": "plainHTTPServer",
       "class": "external-service",
       "signals": [
@@ -479,7 +492,7 @@
     },
     {
       "file": "internal/cli/cmd/update/scheme_test.go",
-      "line": 79,
+      "line": 83,
       "function": "TestAnHTTPSMirrorCannotRedirectToPlainHTTP",
       "class": "external-service",
       "signals": [
@@ -491,7 +504,19 @@
     },
     {
       "file": "internal/cli/cmd/update/scheme_test.go",
-      "line": 125,
+      "line": 113,
+      "function": "TestTheReleaseFilesAreDownloadedBehindTheGuard",
+      "class": "external-service",
+      "signals": [
+        "inspects-the-request-path"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror that redirects an asset",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/update/scheme_test.go",
+      "line": 153,
       "function": "TestAnOffMirrorManifestAddressIsNotFetched",
       "class": "external-service",
       "signals": [
@@ -503,7 +528,7 @@
     },
     {
       "file": "internal/cli/cmd/update/scheme_test.go",
-      "line": 244,
+      "line": 272,
       "function": "TestAPermittedRedirectToPlainHTTPWarns",
       "class": "external-service",
       "signals": [
@@ -2196,7 +2221,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 19,
+      "line": 23,
       "function": "TestClientLatest",
       "class": "external-service",
       "signals": [
@@ -2209,7 +2234,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 43,
+      "line": 47,
       "function": "TestClientDownloadMapsNotFound",
       "class": "external-service",
       "signals": [
@@ -2221,7 +2246,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 86,
+      "line": 90,
       "function": "TestClientLatestValidationAndErrorPaths",
       "class": "external-service",
       "signals": [
@@ -2234,7 +2259,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 99,
+      "line": 103,
       "function": "TestClientLatestValidationAndErrorPaths",
       "class": "external-service",
       "signals": [
@@ -2247,7 +2272,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 112,
+      "line": 116,
       "function": "TestClientLatestValidationAndErrorPaths",
       "class": "external-service",
       "signals": [
@@ -2260,7 +2285,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 214,
+      "line": 218,
       "function": "TestClientMirrorFallback",
       "class": "external-service",
       "signals": [
@@ -2273,7 +2298,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 239,
+      "line": 243,
       "function": "TestClientDownloadRelativeAndMirrorFallback",
       "class": "external-service",
       "signals": [
@@ -2285,7 +2310,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 278,
+      "line": 282,
       "function": "TestClientDownloadPrefersMirrorOverManifestURL",
       "class": "external-service",
       "signals": [
@@ -2296,7 +2321,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 284,
+      "line": 288,
       "function": "TestClientDownloadPrefersMirrorOverManifestURL",
       "class": "external-service",
       "signals": [
@@ -2304,18 +2329,6 @@
       ],
       "action": "decide-separately",
       "reason": "stands in for GitHub or Sigstore, not Bitbucket; the same drift risk applies but ADR-079 does not cover it"
-    },
-    {
-      "file": "internal/transport/githubrelease/client_test.go",
-      "line": 315,
-      "function": "TestClientDownloadNeverFetchesAnAssetOffTheMirror",
-      "class": "external-service",
-      "signals": [
-        "answers-any-request"
-      ],
-      "action": "decide-separately",
-      "reason": "a release mirror and the host a mirrored",
-      "reviewed": true
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
@@ -2331,7 +2344,19 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 352,
+      "line": 323,
+      "function": "TestClientDownloadNeverFetchesAnAssetOffTheMirror",
+      "class": "external-service",
+      "signals": [
+        "answers-any-request"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror and the host a mirrored",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/githubrelease/client_test.go",
+      "line": 356,
       "function": "TestClientDownloadResolvesRelativeAssetsUnderAPathPrefixedMirror",
       "class": "external-service",
       "signals": [
@@ -2344,7 +2369,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 405,
+      "line": 409,
       "function": "TestClientLatestReportsWhatEveryMirrorAddressSaid",
       "class": "external-service",
       "signals": [
@@ -2357,7 +2382,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 465,
+      "line": 469,
       "function": "TestClientSaysAMirrorThatWantsCredentialsIsNotSupported",
       "class": "external-service",
       "signals": [
@@ -2370,7 +2395,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 508,
+      "line": 512,
       "function": "TestClientReportsAMirrorCertificateItDoesNotTrustAsPermanent",
       "class": "transport-fault",
       "signals": [
@@ -2383,7 +2408,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 526,
+      "line": 530,
       "function": "TestClientLatestFallsBackOnNonNotFoundMirrorErrors",
       "class": "external-service",
       "signals": [
@@ -2393,6 +2418,59 @@
       ],
       "action": "decide-separately",
       "reason": "stands in for GitHub or Sigstore, not Bitbucket; the same drift risk applies but ADR-079 does not cover it"
+    },
+    {
+      "file": "internal/transport/githubrelease/download_test.go",
+      "line": 41,
+      "function": "TestASlowMirrorIsNotHeldToTheRequestTimeout",
+      "class": "external-service",
+      "signals": [
+        "closes-on-cleanup",
+        "simulates-a-stalled-connection",
+        "inspects-the-request-path"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror trickling an archive out;",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/githubrelease/download_test.go",
+      "line": 85,
+      "function": "TestAMirrorThatDropsAnAssetMidwayIsAskedForTheRest",
+      "class": "external-service",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror, behind the standard",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/githubrelease/download_test.go",
+      "line": 127,
+      "function": "TestAReleaseFileOverItsCapIsRefused",
+      "class": "external-service",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror serving a checksum file",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/githubrelease/download_test.go",
+      "line": 157,
+      "function": "TestAManifestOverItsCapIsRefused",
+      "class": "external-service",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror answering with an",
+      "reviewed": true
     },
     {
       "file": "internal/transport/httpclient/client_test.go",

@@ -14,6 +14,10 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
+// anyLimit is a cap no file served here comes near, for the tests whose
+// subject is something else.
+const anyLimit = 1 << 20
+
 func TestClientLatest(t *testing.T) {
 	t.Setenv("BB_BLOCK_EXTERNAL_NETWORK", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -46,7 +50,7 @@ func TestClientDownloadMapsNotFound(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, server.Client(), "bb/test")
-	_, err := client.Download(context.Background(), server.URL+"/missing")
+	_, err := client.Download(context.Background(), server.URL+"/missing", anyLimit)
 	if err == nil {
 		t.Fatal("expected download error")
 	}
@@ -127,7 +131,7 @@ func TestClientDownloadValidationAndBodyErrors(t *testing.T) {
 
 	t.Run("nil client", func(t *testing.T) {
 		var client *Client
-		_, err := client.Download(context.Background(), "http://example.test")
+		_, err := client.Download(context.Background(), "http://example.test", anyLimit)
 		if !apperrors.IsKind(err, apperrors.KindInternal) {
 			t.Fatalf("expected internal error, got %v", err)
 		}
@@ -135,7 +139,7 @@ func TestClientDownloadValidationAndBodyErrors(t *testing.T) {
 
 	t.Run("empty url", func(t *testing.T) {
 		client := NewClient("http://example.test", &http.Client{}, "bb/test")
-		_, err := client.Download(context.Background(), "")
+		_, err := client.Download(context.Background(), "", anyLimit)
 		if !apperrors.IsKind(err, apperrors.KindValidation) {
 			t.Fatalf("expected validation error, got %v", err)
 		}
@@ -145,7 +149,7 @@ func TestClientDownloadValidationAndBodyErrors(t *testing.T) {
 		client := NewClient("http://example.test", &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
 			return nil, errors.New("boom")
 		})}, "bb/test")
-		_, err := client.Download(context.Background(), "http://example.test/file")
+		_, err := client.Download(context.Background(), "http://example.test/file", anyLimit)
 		if !apperrors.IsKind(err, apperrors.KindTransient) {
 			t.Fatalf("expected transient error, got %v", err)
 		}
@@ -155,7 +159,7 @@ func TestClientDownloadValidationAndBodyErrors(t *testing.T) {
 		client := NewClient("http://example.test", &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
 			return &http.Response{StatusCode: http.StatusOK, Body: errReadCloser{}}, nil
 		})}, "bb/test")
-		_, err := client.Download(context.Background(), "http://example.test/file")
+		_, err := client.Download(context.Background(), "http://example.test/file", anyLimit)
 		if !apperrors.IsKind(err, apperrors.KindTransient) {
 			t.Fatalf("expected transient body read error, got %v", err)
 		}
@@ -253,7 +257,7 @@ func TestClientDownloadRelativeAndMirrorFallback(t *testing.T) {
 	client := NewClient(server.URL, server.Client(), "test-agent")
 
 	// 1. Relative URL resolves against mirror baseURL
-	data, err := client.Download(context.Background(), "/assets/bb_linux_amd64.tar.gz")
+	data, err := client.Download(context.Background(), "/assets/bb_linux_amd64.tar.gz", anyLimit)
 	if err != nil {
 		t.Fatalf("download relative: %v", err)
 	}
@@ -262,7 +266,7 @@ func TestClientDownloadRelativeAndMirrorFallback(t *testing.T) {
 	}
 
 	// 2. Firewalled / failed external github.com URL falls back to mirror baseURL/{assetName}
-	data2, err := client.Download(context.Background(), "https://unreachable-github.test/releases/download/v1.0.0/bb_linux_amd64.tar.gz")
+	data2, err := client.Download(context.Background(), "https://unreachable-github.test/releases/download/v1.0.0/bb_linux_amd64.tar.gz", anyLimit)
 	if err != nil {
 		t.Fatalf("download fallback: %v", err)
 	}
@@ -292,7 +296,7 @@ func TestClientDownloadPrefersMirrorOverManifestURL(t *testing.T) {
 
 	client := NewClient(mirror.URL, mirror.Client(), "test-agent")
 
-	body, err := client.Download(context.Background(), external.URL+"/releases/download/v1.0.0/bb_linux_amd64.tar.gz")
+	body, err := client.Download(context.Background(), external.URL+"/releases/download/v1.0.0/bb_linux_amd64.tar.gz", anyLimit)
 	if err != nil {
 		t.Fatalf("expected the mirror to serve the asset, got: %v", err)
 	}
@@ -325,7 +329,7 @@ func TestClientDownloadNeverFetchesAnAssetOffTheMirror(t *testing.T) {
 	client := NewClient(mirror.URL, mirror.Client(), "test-agent")
 
 	manifestAddress := external.URL + "/releases/download/v1.0.0/bb_linux_amd64.tar.gz"
-	_, err := client.Download(context.Background(), manifestAddress)
+	_, err := client.Download(context.Background(), manifestAddress, anyLimit)
 	if !apperrors.IsKind(err, apperrors.KindNotFound) || !strings.Contains(err.Error(), mirror.URL+"/bb_linux_amd64.tar.gz") {
 		t.Fatalf("expected the mirror's 404 for the asset, naming the mirror address, got: %v", err)
 	}
@@ -377,7 +381,7 @@ func TestClientDownloadResolvesRelativeAssetsUnderAPathPrefixedMirror(t *testing
 		requested = nil
 		mu.Unlock()
 
-		body, err := client.Download(context.Background(), relative)
+		body, err := client.Download(context.Background(), relative, anyLimit)
 		if err != nil || string(body) != want {
 			t.Fatalf("%s: got %q, %v; want %q", relative, body, err, want)
 		}
@@ -469,7 +473,7 @@ func TestClientSaysAMirrorThatWantsCredentialsIsNotSupported(t *testing.T) {
 
 		client := NewClient(server.URL+"/bb-releases", server.Client(), "test-agent")
 		_, latestErr := client.Latest(context.Background(), "owner", "repo")
-		_, downloadErr := client.Download(context.Background(), "sha256sums.txt")
+		_, downloadErr := client.Download(context.Background(), "sha256sums.txt", anyLimit)
 		for name, err := range map[string]error{"metadata": latestErr, "asset": downloadErr} {
 			if !apperrors.IsKind(err, apperrors.KindPermanent) || !strings.Contains(err.Error(), "bb update sends no credentials") ||
 				!strings.Contains(err.Error(), "_noupdate build") {
@@ -512,7 +516,7 @@ func TestClientReportsAMirrorCertificateItDoesNotTrustAsPermanent(t *testing.T) 
 	client := NewClient(server.URL, &http.Client{Transport: &http.Transport{}}, "test-agent")
 
 	_, latestErr := client.Latest(context.Background(), "owner", "repo")
-	_, downloadErr := client.Download(context.Background(), server.URL+"/sha256sums.txt")
+	_, downloadErr := client.Download(context.Background(), server.URL+"/sha256sums.txt", anyLimit)
 	for name, err := range map[string]error{"metadata": latestErr, "asset": downloadErr} {
 		if !apperrors.IsKind(err, apperrors.KindPermanent) || apperrors.ExitCode(err) != 1 {
 			t.Fatalf("%s: got %v (exit %d), want permanent, exit 1", name, err, apperrors.ExitCode(err))

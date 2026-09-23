@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -17,6 +18,9 @@ import (
 	githubrelease "github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/githubrelease"
 	updateworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/update"
 )
+
+// anyLimit is a cap no file served here comes near: the subject is the scheme.
+const anyLimit = 1 << 20
 
 func fetchThrough(t *testing.T, transport http.RoundTripper, target string) (string, error) {
 	t.Helper()
@@ -96,6 +100,30 @@ func TestAnHTTPSMirrorCannotRedirectToPlainHTTP(t *testing.T) {
 	}
 }
 
+// TestTheReleaseFilesAreDownloadedBehindTheGuard: the downloader a release's
+// files come through wraps the guarded transport rather than replacing it, so a
+// mirror that redirects an archive to plain HTTP is refused there as well, and
+// not retried.
+// mock-inventory: external-service — a release mirror that redirects an asset
+// to plain HTTP; the subject is that bb update's downloads pass the guard.
+func TestTheReleaseFilesAreDownloadedBehindTheGuard(t *testing.T) {
+	t.Parallel()
+
+	plain := plainHTTPServer(t)
+	secure := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		http.Redirect(writer, request, plain.URL+request.URL.Path, http.StatusFound)
+	}))
+	t.Cleanup(secure.Close)
+
+	guarded := &http.Client{Timeout: 10 * time.Second, Transport: requireScheme(secure.Client().Transport, config.UpdateHTTPPermission{}, nil)}
+	client := githubrelease.NewClient(secure.URL, guarded, "bb/test", githubrelease.Retries(2, time.Millisecond))
+
+	_, err := client.Download(context.Background(), "bb_1.2.0_linux_amd64.tar.gz", anyLimit)
+	if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "redirected to a URL bb update may not fetch") {
+		t.Fatalf("expected the redirect to plain HTTP refused by the guard, got %v", err)
+	}
+}
+
 // TestTheReleaseClientKeepsTheRefusalsKind: the release client wraps transport
 // errors as transient, and a refusal is not something to retry.
 func TestTheReleaseClientKeepsTheRefusalsKind(t *testing.T) {
@@ -104,7 +132,7 @@ func TestTheReleaseClientKeepsTheRefusalsKind(t *testing.T) {
 	plain := plainHTTPServer(t)
 	client := githubrelease.NewClient(plain.URL, &http.Client{Transport: requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{}, nil)}, "bb/test")
 
-	_, err := client.Download(context.Background(), "sha256sums.txt")
+	_, err := client.Download(context.Background(), "sha256sums.txt", anyLimit)
 	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
 		t.Fatalf("expected a validation error, got kind %q: %v", kind, err)
 	}
@@ -126,7 +154,7 @@ func TestAnOffMirrorManifestAddressIsNotFetched(t *testing.T) {
 	t.Cleanup(missing.Close)
 	client := githubrelease.NewClient(missing.URL, &http.Client{Transport: requireScheme(http.DefaultTransport, config.UpdateHTTPPermission{Allowed: true}, nil)}, "bb/test")
 
-	_, err := client.Download(context.Background(), "ftp://files.example.invalid/sha256sums.txt")
+	_, err := client.Download(context.Background(), "ftp://files.example.invalid/sha256sums.txt", anyLimit)
 	if kind := apperrors.KindOf(err); kind != apperrors.KindNotFound {
 		t.Fatalf("expected the mirror's not_found, got kind %q: %v", kind, err)
 	}

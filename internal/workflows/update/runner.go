@@ -26,8 +26,28 @@ import (
 
 type ReleaseClient interface {
 	Latest(ctx context.Context, owner, repo string) (githubrelease.Release, error)
-	Download(ctx context.Context, assetURL string) ([]byte, error)
+	// Download fetches a release file, refusing one over limit bytes.
+	Download(ctx context.Context, assetURL string, limit int64) ([]byte, error)
 }
+
+// What bb update accepts of each file it installs a release from.
+//
+// A download has no deadline for the whole transfer, so a cap is what bounds a
+// mirror that never stops sending: without one it would be read until memory
+// ran out. Each is far above what a release carries -- a checksum file of a few
+// kilobytes, a signature bundle of about ten, an archive of about 11 MB holding
+// a 35 MB binary -- so a growing release will not reach them, and a file that
+// does is not a bb release. The files the archive is verified by get small
+// caps, the archive a large one.
+//
+// The binary's cap is checked as the archive is unpacked, which also stops an
+// archive that decompresses to far more than it holds.
+const (
+	maxChecksumFileBytes    = 1 << 20
+	maxSignatureBundleBytes = 1 << 20
+	maxArchiveBytes         = 256 << 20
+	maxBinaryBytes          = 512 << 20
+)
 
 type Options struct {
 	DryRun bool
@@ -174,7 +194,7 @@ func (runner *Runner) verifyRelease(ctx context.Context, release githubrelease.R
 		result.SignatureBundleAssetName = signatureBundleAsset.Name
 	}
 
-	checksumsRaw, err := runner.releases.Download(ctx, checksumAsset.BrowserDownloadURL)
+	checksumsRaw, err := runner.releases.Download(ctx, checksumAsset.BrowserDownloadURL, maxChecksumFileBytes)
 	if err != nil {
 		return githubrelease.Asset{}, nil, err
 	}
@@ -184,7 +204,7 @@ func (runner *Runner) verifyRelease(ctx context.Context, release githubrelease.R
 		// are still enforced, so this catches corruption but not tampering.
 		result.SignatureSkipped = true
 	} else {
-		bundleRaw, err := runner.releases.Download(ctx, signatureBundleAsset.BrowserDownloadURL)
+		bundleRaw, err := runner.releases.Download(ctx, signatureBundleAsset.BrowserDownloadURL, maxSignatureBundleBytes)
 		if err != nil {
 			return githubrelease.Asset{}, nil, err
 		}
@@ -210,7 +230,7 @@ func (runner *Runner) verifyRelease(ctx context.Context, release githubrelease.R
 	}
 	result.ChecksumAvailable = true
 
-	archiveBytes, err := runner.releases.Download(ctx, asset.BrowserDownloadURL)
+	archiveBytes, err := runner.releases.Download(ctx, asset.BrowserDownloadURL, maxArchiveBytes)
 	if err != nil {
 		return githubrelease.Asset{}, nil, err
 	}
@@ -444,18 +464,39 @@ func parseChecksums(raw []byte) (map[string]string, error) {
 }
 
 func extractBinary(assetName, binaryName string, archiveBytes []byte) ([]byte, fs.FileMode, error) {
+	return extractBinaryWithin(assetName, binaryName, archiveBytes, maxBinaryBytes)
+}
+
+// extractBinaryWithin is extractBinary with its cap as an argument, so a test
+// reaches the cap without an archive that unpacks to half a gigabyte.
+func extractBinaryWithin(assetName, binaryName string, archiveBytes []byte, limit int64) ([]byte, fs.FileMode, error) {
 	trimmedAssetName := strings.TrimSpace(assetName)
 	switch {
 	case strings.HasSuffix(trimmedAssetName, ".tar.gz"):
-		return extractBinaryFromTarGz(binaryName, archiveBytes)
+		return extractBinaryFromTarGz(binaryName, archiveBytes, limit)
 	case strings.HasSuffix(trimmedAssetName, ".zip"):
-		return extractBinaryFromZip(binaryName, archiveBytes)
+		return extractBinaryFromZip(binaryName, archiveBytes, limit)
 	default:
 		return nil, 0, apperrors.New(apperrors.KindPermanent, fmt.Sprintf("unsupported archive format for %s", assetName), nil)
 	}
 }
 
-func extractBinaryFromTarGz(binaryName string, archiveBytes []byte) ([]byte, fs.FileMode, error) {
+// readBinary reads the binary out of an archive, refusing one over limit. What
+// counts is what the entry unpacks to, not the size its header claims.
+func readBinary(entry io.Reader, binaryName string, limit int64) ([]byte, error) {
+	payload, err := io.ReadAll(io.LimitReader(entry, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(payload)) > limit {
+		return nil, apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
+			"%s in the release archive unpacks to more than %d MiB, far more than a bb binary; it was not installed", binaryName, limit>>20), nil)
+	}
+
+	return payload, nil
+}
+
+func extractBinaryFromTarGz(binaryName string, archiveBytes []byte, limit int64) ([]byte, fs.FileMode, error) {
 	gzipReader, err := gzip.NewReader(bytes.NewReader(archiveBytes))
 	if err != nil {
 		return nil, 0, apperrors.New(apperrors.KindPermanent, "failed to open tar.gz archive", err)
@@ -479,7 +520,10 @@ func extractBinaryFromTarGz(binaryName string, archiveBytes []byte) ([]byte, fs.
 			continue
 		}
 
-		payload, err := io.ReadAll(tarReader)
+		payload, err := readBinary(tarReader, binaryName, limit)
+		if apperrors.IsKind(err, apperrors.KindPermanent) {
+			return nil, 0, err
+		}
 		if err != nil {
 			return nil, 0, apperrors.New(apperrors.KindPermanent, "failed to extract binary from tar.gz archive", err)
 		}
@@ -500,7 +544,7 @@ func extractBinaryFromTarGz(binaryName string, archiveBytes []byte) ([]byte, fs.
 	return nil, 0, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("archive does not contain %s", binaryName), nil)
 }
 
-func extractBinaryFromZip(binaryName string, archiveBytes []byte) ([]byte, fs.FileMode, error) {
+func extractBinaryFromZip(binaryName string, archiveBytes []byte, limit int64) ([]byte, fs.FileMode, error) {
 	zipReader, err := zip.NewReader(bytes.NewReader(archiveBytes), int64(len(archiveBytes)))
 	if err != nil {
 		return nil, 0, apperrors.New(apperrors.KindPermanent, "failed to open zip archive", err)
@@ -516,8 +560,11 @@ func extractBinaryFromZip(binaryName string, archiveBytes []byte) ([]byte, fs.Fi
 			return nil, 0, apperrors.New(apperrors.KindPermanent, "failed to open zipped binary", err)
 		}
 
-		payload, readErr := io.ReadAll(reader)
+		payload, readErr := readBinary(reader, binaryName, limit)
 		closeErr := reader.Close()
+		if apperrors.IsKind(readErr, apperrors.KindPermanent) {
+			return nil, 0, readErr
+		}
 		if readErr != nil {
 			return nil, 0, apperrors.New(apperrors.KindPermanent, "failed to extract binary from zip archive", readErr)
 		}
