@@ -123,12 +123,14 @@ Command failures use deterministic exit codes by error kind.
 - `permanent` and `internal` (or unknown) -> exit code `1`
 
 `unknown_outcome` is the one worth wiring into a script deliberately. It means bb
-cannot say whether the server applied the request: a mutation whose connection was
-lost, timed out or was interrupted after it was sent, that a gateway answered with `502`
-or `504`, or that Bitbucket answered with an error it raised while writing the answer.
-Retrying it may repeat work that already happened, so the answer is to check the state
-and then decide. That is why it sits outside `transient`, which is the code a retry loop
-should key on.
+cannot say whether the server applied the request: a mutation bb does not send twice,
+such as a `POST`, whose connection was lost, timed out or was interrupted after it was
+sent, that a gateway answered with `502` or `504`, or that Bitbucket answered with `500`
+or with an error it raised while writing the answer. Retrying it may repeat work that
+already happened, so the answer is to check the state and then decide. That is why it
+sits outside `transient`, which is the code a retry loop should key on. A `GET`, `PUT`
+or `DELETE` in the same position is idempotent: bb sends it again itself, and reports
+`transient` when every attempt fails, or `cancelled` when it was interrupted.
 
 One command reports what it found through the exit status as well as what happened to
 it: `bb pr checks` (and `bb pr build status`), as `gh pr checks` does. Without `--json`

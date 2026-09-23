@@ -215,10 +215,28 @@ func (exchange *Exchange) Status(status int, mapped error) error {
 // while writing the answer, which may come after it applied the request.
 //
 // For a method the retry policy will not replay that is unknown_outcome, as a
-// gateway's 502 is. A request it would replay lost nothing, and gets nil.
+// gateway's 502 is. For one it replays it is transient (ADR-011): the request
+// is idempotent, so sending it again is how the caller finds out what became of
+// it. Both transports send it again themselves first, so a caller sees this
+// only when every attempt was answered the same way.
+//
+// It used to be nil for those, on the understanding that the retry policy would
+// replay them. The policy retried no 400, so an update Bitbucket had applied
+// reached the caller as the 400 it was, validation, exit 2.
 func (exchange *Exchange) AnswerFailed(mapped error) error {
 	if retrypolicy.Replayable(exchange.method) {
-		return nil
+		// Decided here rather than wrapped around mapped: that is the 400 read
+		// as validation, the kind being corrected, and as a cause it would print
+		// as validation inside this message. What Bitbucket answered stays, in
+		// the message and in the details.
+		var failed error = apperrors.New(apperrors.KindTransient, fmt.Sprintf(
+			"Bitbucket failed while answering the %s, which is safe to send again: %s",
+			exchange.method, apperrors.MessageOf(mapped)), nil)
+		for key, value := range apperrors.DetailsOf(mapped) {
+			failed = apperrors.WithDetail(failed, key, value)
+		}
+
+		return failed
 	}
 
 	return apperrors.New(apperrors.KindUnknownOutcome, fmt.Sprintf(

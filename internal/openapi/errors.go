@@ -12,6 +12,7 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/retrypolicy"
 )
 
 // ErrRouteMissing marks a 404 that came from the server not exposing an
@@ -257,6 +258,20 @@ func FailedWritingAnswer(status int, body []byte) bool {
 	}
 
 	return false
+}
+
+// RetriableAnswer reports an answer the retry policy sends its request again
+// for: a status the policy retries, or the 400 FailedWritingAnswer recognises,
+// to a method the policy replays. Sent again, such a request has the same effect
+// and gets an answer of its own, which is how ADR-011 has an idempotent request
+// find out what became of it. Both transports ask here, so they cannot disagree
+// about which answers they retry.
+func RetriableAnswer(method string, status int, body []byte) bool {
+	if retrypolicy.RetriableStatus(method, status) {
+		return true
+	}
+
+	return retrypolicy.Replayable(method) && FailedWritingAnswer(status, body)
 }
 
 // MissingPayload says what a 2xx that carried no usable payload means.

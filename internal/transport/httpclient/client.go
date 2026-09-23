@@ -276,17 +276,21 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 		}
 		// A gateway's 502 or 504 to a request that will not be replayed leaves
 		// its outcome unknown, which transient would misreport as retriable, and
-		// so does the 400 Bitbucket sends when writing its answer failed.
+		// so does the 400 Bitbucket sends when writing its answer failed. The same
+		// 400 to a request that is replayed is transient, and replayed below.
 		unknown := exchange.Status(response.StatusCode, mappedErr)
 		if unknown == nil && openapi.FailedWritingAnswer(response.StatusCode, body) {
-			unknown = exchange.AnswerFailed(mappedErr)
+			mappedErr = exchange.AnswerFailed(mappedErr)
+			if !retrypolicy.Replayable(method) {
+				unknown = mappedErr
+			}
 		}
 		if unknown != nil {
 			client.logger.Error("http request returned error status", fields)
 			return nil, unknown
 		}
 
-		if retrypolicy.RetriableStatus(method, response.StatusCode) {
+		if openapi.RetriableAnswer(method, response.StatusCode, body) {
 			lastErr = mappedErr
 			retryDelay := retrypolicy.Delay(response.Header, attempt, client.backoff)
 			fields["retry_delay"] = retryDelay.String()
