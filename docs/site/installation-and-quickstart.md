@@ -176,9 +176,15 @@ to clean up clones made by older versions of `bb`.
 ## Turn on tab completion
 
 `bb` completes pull request numbers, branches, repositories and people, as well
-as its commands and flags, once your shell loads its completion script.
-[Shell Completion](advanced/shell-completion.md) has the line to add for bash,
-zsh, fish and PowerShell.
+as its commands and flags. Homebrew and the `.deb` and `.rpm` packages set this
+up for bash, zsh and fish, and Scoop for PowerShell. Otherwise:
+
+```bash
+bb completion install
+```
+
+[Shell Completion](advanced/shell-completion.md) has what it writes, and how to
+set it up for every user of a machine.
 
 ## When something is wrong
 
