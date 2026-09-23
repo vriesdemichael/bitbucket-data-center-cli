@@ -24,7 +24,7 @@ type CompletionTarget struct {
 	Edition string `json:"edition,omitempty" jsonschema:"Which PowerShell: PowerShell 7 or Windows PowerShell 5.1. Absent for the other shells."`
 	Path    string `json:"path,omitempty" jsonschema:"The file written, changed or removed. Absent when the shell could not say where its profile is."`
 	Status  string `json:"status" jsonschema:"installed, updated, unchanged, removed, not_found, or blocked when the shell would not run it."`
-	Note    string `json:"note,omitempty" jsonschema:"What the status does not say: why a target is blocked, or what the setup replaced."`
+	Note    string `json:"note,omitempty" jsonschema:"What the status does not say: why a target is blocked, what the setup replaced, or that the script there is a package's, which is left to the package."`
 }
 
 func init() {
@@ -101,7 +101,8 @@ run.`),
 it shares with you. Nothing else in a shared file is touched.
 
 A script saved from bb completion <shell>, as the documentation once said to
-do, is bb's too and is removed with it. A file bb did not write is left alone.`),
+do, is bb's too and is removed with it. A file bb did not write is left alone,
+and so is a script a package linked where --all-users writes.`),
 	)
 }
 

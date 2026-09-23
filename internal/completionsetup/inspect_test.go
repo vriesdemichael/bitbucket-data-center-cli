@@ -55,19 +55,16 @@ func TestPackagedScriptsAreWherePackagesPutThem(t *testing.T) {
 	want := map[Shell][]string{
 		Bash: {
 			"/usr/share/bash-completion/completions/bb",
-			"/opt/homebrew/etc/bash_completion.d/bb",
-			"/usr/local/etc/bash_completion.d/bb",
+			"/home/linuxbrew/.linuxbrew/etc/bash_completion.d/bb",
 		},
 		Zsh: {
 			"/usr/share/zsh/vendor-completions/_bb",
 			"/usr/share/zsh/site-functions/_bb",
-			"/opt/homebrew/share/zsh/site-functions/_bb",
-			"/usr/local/share/zsh/site-functions/_bb",
+			"/home/linuxbrew/.linuxbrew/share/zsh/site-functions/_bb",
 		},
 		Fish: {
 			"/usr/share/fish/vendor_completions.d/bb.fish",
-			"/opt/homebrew/share/fish/vendor_completions.d/bb.fish",
-			"/usr/local/share/fish/vendor_completions.d/bb.fish",
+			"/home/linuxbrew/.linuxbrew/share/fish/vendor_completions.d/bb.fish",
 		},
 	}
 	for shell, paths := range want {
@@ -76,12 +73,24 @@ func TestPackagedScriptsAreWherePackagesPutThem(t *testing.T) {
 		}
 	}
 
-	// HOMEBREW_PREFIX, which brew shellenv sets, is where Homebrew is: on
-	// Linux, and wherever it was installed off its defaults.
-	linuxbrew := &fakeSystem{goos: "linux", env: map[string]string{"HOMEBREW_PREFIX": "/home/linuxbrew/.linuxbrew"}}
-	if got, want := PackagedScripts(linuxbrew.system(), Fish), []string{
+	// /usr/local is Homebrew's only on an Intel Mac. On Linux it is where bb
+	// completion install --all-users writes, and a script there is bb's own.
+	mac := &fakeSystem{goos: "darwin"}
+	if got, want := PackagedScripts(mac.system(), Zsh), []string{
+		"/usr/share/zsh/vendor-completions/_bb",
+		"/usr/share/zsh/site-functions/_bb",
+		"/opt/homebrew/share/zsh/site-functions/_bb",
+		"/usr/local/share/zsh/site-functions/_bb",
+	}; !reflect.DeepEqual(got, want) {
+		t.Errorf("macOS: got %q, want %q", got, want)
+	}
+
+	// HOMEBREW_PREFIX, which brew shellenv sets, is where Homebrew is,
+	// wherever it was installed.
+	elsewhere := &fakeSystem{goos: "linux", env: map[string]string{"HOMEBREW_PREFIX": "/opt/brew"}}
+	if got, want := PackagedScripts(elsewhere.system(), Fish), []string{
 		"/usr/share/fish/vendor_completions.d/bb.fish",
-		"/home/linuxbrew/.linuxbrew/share/fish/vendor_completions.d/bb.fish",
+		"/opt/brew/share/fish/vendor_completions.d/bb.fish",
 	}; !reflect.DeepEqual(got, want) {
 		t.Errorf("under HOMEBREW_PREFIX: got %q, want %q", got, want)
 	}
@@ -192,7 +201,7 @@ func TestSetUpByHandReadsAProfileInUTF16(t *testing.T) {
 	t.Parallel()
 
 	path := filepath.Join(t.TempDir(), "Microsoft.PowerShell_profile.ps1")
-	profile := textFile{bom: utf16LEBOM, order: binary.LittleEndian, text: "bb completion powershell | Out-String | Invoke-Expression\r\n", mode: 0o644}
+	profile := textFile{bom: utf16LEBOM, order: binary.LittleEndian, text: "bb completion powershell | Out-String | Invoke-Expression\r\n"}
 	if err := profile.write(path, CurrentUser); err != nil {
 		t.Fatal(err)
 	}

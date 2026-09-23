@@ -42,8 +42,13 @@ var packagedScripts = map[Shell]packaged{
 }
 
 // homebrewPrefixes are where Homebrew lives when HOMEBREW_PREFIX does not say:
-// on Apple silicon, and on an Intel Mac.
-var homebrewPrefixes = []string{"/opt/homebrew", "/usr/local"}
+// on Apple silicon and on an Intel Mac, and on Linux. Only an Intel Mac's is
+// /usr/local, which elsewhere is the administrator's, and where bb completion
+// install --all-users writes.
+var homebrewPrefixes = map[string][]string{
+	"darwin": {"/opt/homebrew", "/usr/local"},
+	"linux":  {"/home/linuxbrew/.linuxbrew"},
+}
 
 // PackagedScripts are the places a package manager puts bb's completion script
 // for shell. The package replaces the script on every upgrade and removes it
@@ -57,7 +62,7 @@ func PackagedScripts(system System, shell Shell) []string {
 
 	// Homebrew exists only where paths are written with slashes, so the prefix
 	// is read as one of those whatever runs this.
-	prefixes := homebrewPrefixes
+	prefixes := homebrewPrefixes[system.GOOS]
 	if prefix := strings.TrimSpace(system.Getenv("HOMEBREW_PREFIX")); path.IsAbs(prefix) {
 		prefixes = []string{prefix}
 	}
