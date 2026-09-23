@@ -1,15 +1,20 @@
 // Package doctorcmd implements `bb doctor`, which checks the configuration bb
-// would load without needing a host, a network, or a configuration that loads.
+// would load, and the shell completion and agent skills set up beside it,
+// without needing a host, a network, or a configuration that loads.
 package doctorcmd
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/completionsetup"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // Dependencies are what the command needs from the root.
@@ -19,6 +24,29 @@ type Dependencies struct {
 	RuntimeOverrides func() config.Overrides
 	// Diagnose is config.Diagnose outside a test.
 	Diagnose func(config.DiagnoseInput) config.Diagnosis
+	// Version is the running bb's version, which stamps the skill files bb ai
+	// skill install writes.
+	Version func() string
+	// CompletionScript is what bb completion <shell> prints, with or without
+	// descriptions, which a saved script is compared with. The root owns the
+	// generator, and the corrections bb makes to Cobra's scripts with it.
+	CompletionScript func(shell completionsetup.Shell, withDescriptions bool) (string, error)
+	// Machine is where the completion and skill sections look: this machine
+	// outside a test.
+	Machine Machine
+}
+
+// Machine is what the shell completion and agent skill sections read about the
+// machine bb runs on.
+type Machine struct {
+	// System says which shells are installed, where each reads completion
+	// from, and where the home directory is.
+	System completionsetup.System
+	// WorkingDirectory is where a project's skills are installed.
+	WorkingDirectory func() (string, error)
+	// PackagedScripts are where a package manager puts a shell's completion
+	// script.
+	PackagedScripts func(completionsetup.Shell) []string
 }
 
 func (deps Dependencies) withDefaults() Dependencies {
@@ -34,8 +62,45 @@ func (deps Dependencies) withDefaults() Dependencies {
 	if deps.Diagnose == nil {
 		deps.Diagnose = config.Diagnose
 	}
+	if deps.Version == nil {
+		deps.Version = func() string { return "" }
+	}
+	if deps.CompletionScript == nil {
+		deps.CompletionScript = func(completionsetup.Shell, bool) (string, error) {
+			return "", apperrors.New(apperrors.KindInternal, "bb doctor was built without the completion script generator", nil)
+		}
+	}
+	// Real always names the operating system, so an empty one is a machine
+	// nobody described.
+	if deps.Machine.System.GOOS == "" {
+		deps.Machine.System = completionsetup.Real()
+	}
+	if deps.Machine.WorkingDirectory == nil {
+		deps.Machine.WorkingDirectory = os.Getwd
+	}
+	if deps.Machine.PackagedScripts == nil {
+		system := deps.Machine.System
+		deps.Machine.PackagedScripts = func(shell completionsetup.Shell) []string {
+			return completionsetup.PackagedScripts(system, shell)
+		}
+	}
 
 	return deps
+}
+
+// findings are everything bb doctor looked at.
+type findings struct {
+	diagnosis  config.Diagnosis
+	completion []shellCompletion
+	skills     []skillInstall
+}
+
+// issues lists every issue the report shows, in the order it shows them.
+func (found findings) issues() []issue {
+	issues := issuesIn(found.diagnosis)
+	issues = append(issues, completionIssues(found.completion)...)
+
+	return append(issues, skillIssues(found.skills)...)
 }
 
 // New builds `bb doctor`.
@@ -59,22 +124,45 @@ variable, a .env file, a configuration file, the Windows registry or the
 built-in default -- and what it overrides. When keyring-backed storage is
 required, it checks that the OS keyring can be reached.
 
+For each shell installed, it shows where completion is set up: by bb completion
+install, for you or for every user; by a package; as a script saved from bb
+completion <shell>; or by hand, in a startup file. Like bb completion install,
+it asks each PowerShell where its profiles are. For each agent skill, it shows
+where the skill is installed -- .agents/skills, which most agents read, or
+.claude/skills, which Claude Code reads, under the working directory or your
+home directory -- and whether each copy is what bb ai skill install writes now
+or the repository's copy.
+
 It needs no configured host, never contacts Bitbucket, and never prints a
 secret: a token or password is reported as configured, with where it is held.
 
 Exit status is 0 only when there is nothing to fix. Any issue the report shows
 -- an invalid file, a key its file never reads, a setting a command would
-refuse, a required keyring that cannot be reached -- exits 1. Under --json a
-run with issues writes the failure envelope instead of the report: its message
+refuse, a required keyring that cannot be reached, completion set up where its
+shell will not run it, a saved script that has fallen behind this bb, a skill
+an earlier bb installed or somebody edited -- exits 1. Under --json a run with
+issues writes the failure envelope instead of the report: its message
 summarises the issues, and error.details names each one under its own key,
-file/<file>, violation/<file>/<key path>, ignored/<file>/<key>, setting/<name>
-or keyring, with the key path written as a JSON Pointer.`,
+file/<file>, violation/<file>/<key path>, ignored/<file>/<key>, setting/<name>,
+keyring, completion/<shell>/<scope>, completion/powershell/<edition> or
+skill/<skill>/<scope>/<location>, with the key path written as a JSON Pointer.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			diagnosis := d.Diagnose(config.DiagnoseInput{
 				Overrides:    d.RuntimeOverrides(),
 				ChangedFlags: changedFlags(cmd, "log-level", "log-format"),
 			})
-			issues := issuesIn(diagnosis)
+
+			ctx := cmd.Context()
+			if ctx == nil {
+				ctx = context.Background()
+			}
+			completion, err := inspectCompletion(ctx, d.Machine, d.CompletionScript)
+			if err != nil {
+				return err
+			}
+
+			found := findings{diagnosis: diagnosis, completion: completion, skills: inspectSkills(d.Machine, d.Version())}
+			issues := found.issues()
 			failure := failureFor(diagnosis, issues)
 
 			// One document on stdout (ADR-075): the report when there is
@@ -84,10 +172,10 @@ or keyring, with the key path written as a JSON Pointer.`,
 				if failure != nil {
 					return failure
 				}
-				return d.WriteJSON(cmd.OutOrStdout(), reportFrom(diagnosis))
+				return d.WriteJSON(cmd.OutOrStdout(), reportFrom(found))
 			}
 
-			writeReport(cmd.OutOrStdout(), diagnosis, len(issues))
+			writeReport(cmd.OutOrStdout(), found, len(issues))
 
 			return failure
 		},
@@ -105,7 +193,9 @@ func changedFlags(cmd *cobra.Command, names ...string) map[string]bool {
 	return changed
 }
 
-func writeReport(w io.Writer, diagnosis config.Diagnosis, issues int) {
+func writeReport(w io.Writer, found findings, issues int) {
+	diagnosis := found.diagnosis
+
 	fmt.Fprintln(w, "Configuration files")
 	invalid := false
 	for _, file := range diagnosis.Files {
@@ -136,6 +226,12 @@ func writeReport(w io.Writer, diagnosis config.Diagnosis, issues int) {
 	default:
 		fmt.Fprintf(w, "  required by %s; %s\n", describeSource(keyring.RequiredBy), keyring.Problem)
 	}
+
+	fmt.Fprintln(w)
+	writeCompletion(w, found.completion)
+
+	fmt.Fprintln(w)
+	writeSkills(w, found.skills)
 
 	fmt.Fprintln(w)
 	if issues == 0 {

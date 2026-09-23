@@ -6,11 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/completionsetup"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
@@ -72,7 +74,7 @@ var brokenDetails = map[string]string{
 	"keyring":                                  "keyring required by require_keyring in the system configuration " + systemPath + ": the OS keyring could not be reached: no bus",
 }
 
-const brokenSummary = "the configuration has 6 issues to fix: 3 in " + storedPath + ", 1 in " + systemPath + ", retry_count, the keyring"
+const brokenSummary = "6 issues to fix: 3 in " + storedPath + ", 1 in " + systemPath + ", retry_count, the keyring"
 
 func healthyDiagnosis() config.Diagnosis {
 	return config.Diagnosis{
@@ -92,7 +94,16 @@ func healthyDiagnosis() config.Diagnosis {
 	}
 }
 
+// runDoctor runs bb doctor over diagnosis on a machine with no shell installed
+// and nothing in its directories, so only the configuration has anything to
+// say.
 func runDoctor(t *testing.T, diagnosis config.Diagnosis, asJSON bool, args ...string) (string, config.DiagnoseInput, error) {
+	t.Helper()
+
+	return runDoctorOn(t, emptyMachine(t), diagnosis, asJSON, args...)
+}
+
+func runDoctorOn(t *testing.T, machine Machine, diagnosis config.Diagnosis, asJSON bool, args ...string) (string, config.DiagnoseInput, error) {
 	t.Helper()
 
 	var received config.DiagnoseInput
@@ -106,6 +117,9 @@ func runDoctor(t *testing.T, diagnosis config.Diagnosis, asJSON bool, args ...st
 			received = input
 			return diagnosis
 		},
+		Version:          func() string { return testVersion },
+		CompletionScript: generatedScript,
+		Machine:          machine,
 	}))
 
 	output := &bytes.Buffer{}
@@ -416,7 +430,7 @@ func TestAFileWithoutAPathIsNamedByItsTier(t *testing.T) {
 	diagnosis := config.Diagnosis{Files: []config.DiagnosedFile{{Tier: config.TierWorkspace, Read: true, Problem: "could not be read: no working directory"}}}
 	err := failureFor(diagnosis, issuesIn(diagnosis))
 
-	if want := "the configuration has 1 issue to fix: 1 in the workspace configuration"; apperrors.MessageOf(err) != want {
+	if want := "1 issue to fix: 1 in the workspace configuration"; apperrors.MessageOf(err) != want {
 		t.Errorf("message = %q, want %q", apperrors.MessageOf(err), want)
 	}
 	if want := map[string]string{"file/workspace": "the workspace configuration: could not be read: no working directory"}; !reflect.DeepEqual(apperrors.DetailsOf(err), want) {
@@ -427,7 +441,10 @@ func TestAFileWithoutAPathIsNamedByItsTier(t *testing.T) {
 func TestDoctorBuildsWithItsDefaults(t *testing.T) {
 	t.Parallel()
 
-	command := New(Dependencies{})
+	// The configuration is this machine's; the shells and skills are a
+	// described machine's, so the test reads no profile or home directory of
+	// whoever runs it.
+	command := New(Dependencies{Machine: emptyMachine(t)})
 	output := &bytes.Buffer{}
 	command.SetOut(output)
 	command.SetErr(output)
@@ -435,7 +452,28 @@ func TestDoctorBuildsWithItsDefaults(t *testing.T) {
 
 	// Whatever this machine's configuration holds, the command reports on it.
 	_ = command.Execute()
-	if !strings.Contains(output.String(), "Configuration files") {
-		t.Errorf("the default diagnosis produced no report:\n%s", output)
+	for _, section := range []string{"Configuration files", "Shell completion", "Agent skills"} {
+		if !strings.Contains(output.String(), section) {
+			t.Errorf("the default diagnosis produced no %s section:\n%s", section, output)
+		}
+	}
+}
+
+// TestTheDefaultsLookAtThisMachine checks what a root that wires nothing gets,
+// without looking: running it would read the profiles and home directory of
+// whoever runs the test.
+func TestTheDefaultsLookAtThisMachine(t *testing.T) {
+	t.Parallel()
+
+	defaults := Dependencies{}.withDefaults()
+
+	if defaults.Machine.System.GOOS != runtime.GOOS || defaults.Machine.System.LookPath == nil || defaults.Machine.System.Run == nil {
+		t.Errorf("the default machine is not this one: %+v", defaults.Machine.System)
+	}
+	if defaults.Machine.WorkingDirectory == nil || defaults.Machine.PackagedScripts == nil || defaults.Version == nil {
+		t.Errorf("a default is missing: %+v", defaults)
+	}
+	if _, err := defaults.CompletionScript(completionsetup.Bash, true); apperrors.KindOf(err) != apperrors.KindInternal {
+		t.Errorf("an unwired completion script generator gave %v, want an internal failure", err)
 	}
 }

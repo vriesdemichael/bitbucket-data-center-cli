@@ -36,6 +36,56 @@ type Skill struct {
 	content []byte
 }
 
+// Rendered is the file `bb ai skill install` writes for this skill: the
+// skill as the repository holds it, stamped with version.
+//
+// Exported for bb doctor, which tells a current skill from one an earlier bb
+// installed by comparing the file with this.
+func (skill Skill) Rendered(version string) string {
+	return buildSkill(skillInfo{name: skill.Name, content: skill.content}, version)
+}
+
+// Repository is the skill as the repository holds it, without the stamp: what
+// `npx skills add` installs.
+//
+// Exported for bb doctor, which reports such a copy as the fact it is rather
+// than as an out-of-date one.
+func (skill Skill) Repository() string {
+	return string(skill.content)
+}
+
+// SkillLocation is a directory agents read skills from, under a project or a
+// home directory.
+type SkillLocation struct {
+	// Name is what bb calls the location: agents for .agents/skills, the
+	// convention most agents follow, and claude for .claude/skills, which
+	// Claude Code reads instead.
+	Name      string
+	directory string
+}
+
+var (
+	agentsSkills = SkillLocation{Name: "agents", directory: ".agents"}
+	claudeSkills = SkillLocation{Name: "claude", directory: ".claude"}
+)
+
+// SkillLocations are the directories agents read skills from, under the
+// working directory and, for --global, the home directory.
+//
+// Exported, with Path, for bb doctor, which looks for every skill in each of
+// them: one list of places, so the command that writes a skill and the one
+// that checks it cannot disagree about where it goes.
+var SkillLocations = []SkillLocation{agentsSkills, claudeSkills}
+
+// Path is where this skill's file is in location under base.
+func (skill Skill) Path(base string, location SkillLocation) string {
+	return location.path(base, skill.Name)
+}
+
+func (location SkillLocation) path(base, name string) string {
+	return filepath.Join(base, location.directory, "skills", name, "SKILL.md")
+}
+
 // Skills are the skills bb ships, in the order `bb ai skill` documents them.
 // The first is what an omitted argument resolves to.
 var Skills = []Skill{
@@ -288,28 +338,23 @@ func newSkillRemoveCommand(deps Dependencies) *cobra.Command {
 	return cmd
 }
 
-// skillDirectories are where an installed skill goes, under the project or
-// the home directory: .agents, which most agents read, and .claude, because
-// Claude Code reads its own directory and not .agents.
-var skillDirectories = []string{".agents", ".claude"}
-
-// resolveInstallPaths returns the files a skill is installed to, the .agents
-// one first.
+// resolveInstallPaths returns the files a skill is installed to, one in each of
+// SkillLocations, the .agents one first.
 func resolveInstallPaths(skill skillInfo, global bool) ([]string, error) {
 	base, err := installBase(global)
 	if err != nil {
 		return nil, err
 	}
 
-	paths := make([]string, 0, len(skillDirectories))
-	for _, directory := range skillDirectories {
-		paths = append(paths, filepath.Join(base, directory, "skills", skill.name, "SKILL.md"))
+	paths := make([]string, 0, len(SkillLocations))
+	for _, location := range SkillLocations {
+		paths = append(paths, location.path(base, skill.name))
 	}
 
 	return paths, nil
 }
 
-// installBase is the directory the skill directories are under: the working
+// installBase is the directory the skill locations are under: the working
 // directory for a project, the home directory for every project of the user.
 func installBase(global bool) (string, error) {
 	if !global {

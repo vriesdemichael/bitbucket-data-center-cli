@@ -36,6 +36,7 @@ import (
 	webhookcmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/webhook"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/completionsetup"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -342,6 +343,10 @@ your behalf using the link above.`,
 		JSONEnabled:      func() bool { return options.JSON },
 		WriteJSON:        writeJSON,
 		RuntimeOverrides: func() config.Overrides { return options.runtime },
+		Version:          func() string { return rootCmd.Version },
+		CompletionScript: func(shell completionsetup.Shell, withDescriptions bool) (string, error) {
+			return completionScript(rootCmd, string(shell), withDescriptions)
+		},
 	}))
 	rootCmd.AddCommand(sshkeycmd.New(sshkeycmd.Dependencies{
 		JSONEnabled:         func() bool { return options.JSON },
