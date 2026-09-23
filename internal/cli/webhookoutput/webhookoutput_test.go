@@ -100,6 +100,22 @@ func TestDetailSaysWhetherASecretIsConfiguredAndNotWhatItIs(t *testing.T) {
 			t.Errorf("the detail does not carry %q:\n%s", want, rendered)
 		}
 	}
+	if strings.Contains(rendered, "Shared secret:") {
+		t.Errorf("the detail showed a secret the model does not carry:\n%s", rendered)
+	}
+}
+
+// The model carries the secret only when --reveal-secret put it there, and
+// then the text rendering has to show it: it warned that it had, and did not.
+func TestDetailShowsASecretTheModelCarries(t *testing.T) {
+	t.Parallel()
+
+	output := &bytes.Buffer{}
+	Detail(output, result.Webhook{ID: 42, SecretConfigured: true, Secret: "s3cret"})
+
+	if rendered := plain(output); !strings.Contains(rendered, "Shared secret: s3cret\n") {
+		t.Fatalf("the detail did not show the secret the model carries:\n%s", rendered)
+	}
 }
 
 func TestDetailLeavesOutWhatTheServerDidNotSay(t *testing.T) {
