@@ -16,11 +16,11 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 ## Decision
 
-Use one planning engine for dry-run behavior across both single-command mutation flows and bulk workflows. Introduce a global --dry-run flag for server-mutating commands, defaulting to stateful planning for server-mutating command handlers, with static planning previews retained only as a compatibility and safety fallback. For bulk workflows, `bulk plan` remains the reviewed preview mechanism and `bulk apply` consumes reviewed plans rather than acting as its own dry-run surface.
+Use one planning engine for dry-run behavior across both single-command mutation flows and bulk workflows. Introduce a global --dry-run flag for every command that changes state, defaulting to stateful planning for server-mutating command handlers, with static planning previews retained as a compatibility and safety fallback and for commands that change only this machine. For bulk workflows, `bulk plan` remains the reviewed preview mechanism and `bulk apply` consumes reviewed plans rather than acting as its own dry-run surface.
 
 ## Agent Instructions
 
-Implement dry-run behavior through shared planning abstractions rather than per-command ad-hoc flags. Keep dry-run scoped to server-mutating commands only. Ensure dry-run output explicitly reports planning mode and capability signaling for each operation path.
+Implement dry-run behavior through shared planning abstractions rather than per-command ad-hoc flags. Preview a command that changes this machine as well as one that changes the server; neither may make its change under --dry-run. Ensure dry-run output explicitly reports planning mode and capability signaling for each operation path.
 
 ## Rationale
 

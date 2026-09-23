@@ -3,10 +3,12 @@ title: Every command is explicitly classified for dry-run, and unknown means ref
 category: architecture
 status: accepted
 decision: >
-  internal/cli/dryrun.go classifies every command through three registries, each answering a
-  different question: dryRunProfiles describes what a mutating command would do, readOnlyCommands
-  names commands that change nothing on the server, and clientLocalCommands names commands that
-  never reach it.
+  internal/cli/dryrun.go classifies every command through five registries, each answering a
+  different question: dryRunProfiles describes what a server mutation would do, readOnlyCommands
+  names commands that change nothing on the server, clientLocalCommands names local commands that
+  change nothing or honour --dry-run themselves, clientLocalMutatingCommands names commands that
+  change this machine and are previewed instead of run, and dryRunRefusedCommands names commands
+  for which a preview means nothing, which refuse the flag.
   A command matching none of them is classificationUnknown, and --dry-run refuses it rather than
   running it. Fail-closed is the point: an unclassified command is one nobody decided about, and
   running it is the outcome --dry-run exists to prevent.
@@ -15,9 +17,10 @@ decision: >
 agent_instructions: >
   Classify every new command in the same change that adds it. The exhaustiveness test fails
   otherwise.
-  Pick the registry by what the command does to the server, not by what its name suggests. Where the
-  name and the classification genuinely disagree, add an exemption with a reason rather than
-  reclassifying to satisfy the check.
+  Pick the registry by what the command changes, on the server or on this machine, not by what its
+  name suggests. A command that writes anything locally belongs in clientLocalMutatingCommands
+  unless it honours --dry-run itself. Where the name and the classification genuinely disagree, add
+  an exemption with a reason rather than reclassifying to satisfy the check.
   Do not make unknown default to anything. A default is a decision nobody made.
 rationale: >
   The classification was once inferred from the command's verb. That fails one-directionally -- it
@@ -26,9 +29,9 @@ rationale: >
   The verb still earns its keep as a cross-check rather than as the source. The name is chosen by
   whoever adds the command and derived from nothing, so it can disagree with the classification, and
   it found a real ambiguity on its first run: resolve writes in one command and reads in another.
-  Read-only and client-local stay separate although the interceptor treats them alike, because the
-  verb check only objects to a mutating verb in readOnlyCommands. That is what lets a client-local
-  command be called install or checkout without an exemption.
+  Read-only and client-local stay separate although the interceptor runs both, because the verb
+  check only objects to a mutating verb in readOnlyCommands. That is what lets update, which honours
+  --dry-run itself, keep its name without an exemption.
 rejected_alternatives:
   - alternative: Keep inferring the classification from the verb
     reason: Fails open on every name it does not recognise, which is most of them.
