@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -377,6 +378,68 @@ func (h *liveHarness) pushCommitOnBranch(projectKey, repositorySlug, branch, fil
 // that need two sides to conflict rather than merely differ.
 func (h *liveHarness) pushFileOnBranch(projectKey, repositorySlug, branch, fileName, content string) error {
 	return h.pushCommit(projectKey, repositorySlug, branch, fileName, content, "seed branch commit")
+}
+
+// pushFilesOnBranch commits several files to a branch in one push, each with
+// exactly the bytes given, for a test that reads many files and has no reason
+// to pay a push for each. Like pushFileOnBranch it starts from master.
+func (h *liveHarness) pushFilesOnBranch(projectKey, repositorySlug, branch string, files map[string][]byte) error {
+	tempDir := h.t.TempDir()
+
+	for _, args := range [][]string{
+		{"init"},
+		{"config", "user.name", "bb-live-test"},
+		{"config", "user.email", "bb-live-test@example.local"},
+		// The bytes are the fixture: a line ending converted on the way in
+		// is a file the test did not write.
+		{"config", "core.autocrlf", "false"},
+	} {
+		if err := runGit(tempDir, args...); err != nil {
+			return fmt.Errorf("git %s failed: %w", args[0], err)
+		}
+	}
+
+	pushURL, err := repositoryPushURL(h.config, projectKey, repositorySlug)
+	if err != nil {
+		return err
+	}
+	if err := runGit(tempDir, "remote", "add", "origin", pushURL); err != nil {
+		return fmt.Errorf("git remote add failed: %w", err)
+	}
+	if err := runGit(tempDir, "fetch", "origin", "master"); err != nil {
+		return fmt.Errorf("git fetch origin master failed: %w", err)
+	}
+	if err := runGit(tempDir, "checkout", "-b", branch, "FETCH_HEAD"); err != nil {
+		return fmt.Errorf("git checkout branch failed: %w", err)
+	}
+
+	names := make([]string, 0, len(files))
+	for name := range files {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		filePath := filepath.Join(tempDir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+			return fmt.Errorf("create the directory of %s: %w", name, err)
+		}
+		if err := os.WriteFile(filePath, files[name], 0o600); err != nil {
+			return fmt.Errorf("write %s: %w", name, err)
+		}
+		if err := runGit(tempDir, "add", name); err != nil {
+			return fmt.Errorf("git add %s failed: %w", name, err)
+		}
+	}
+
+	if err := runGit(tempDir, "commit", "-m", fmt.Sprintf("seed %d files", len(names))); err != nil {
+		return fmt.Errorf("git commit failed: %w", err)
+	}
+	if err := runGit(tempDir, "push", "-u", "origin", branch); err != nil {
+		return fmt.Errorf("git push branch failed: %w", err)
+	}
+
+	return nil
 }
 
 // pushCommitWithMessage pushes a branch whose commit says what the caller
