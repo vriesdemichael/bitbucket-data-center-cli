@@ -46,6 +46,23 @@ The strongest limit is not a flag: a read-only personal access token in
 are exposed. [Enterprise Hardening](advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve)
 covers scoping, token restriction and mandating an audit trail by policy.
 
+### What a tool returns
+
+A tool answers as if the client had nothing but MCP: no file system, no shell
+and no `bb`. What a model needs comes back as text or as an image, converted on
+the server, and never as a command to run, a path to open or a link to follow
+([ADR-094](adr/094-mcp-tool-results-are-what-a-model-can-use-without-files-or-a-shell.md)).
+`get_file_content` shows what that means for a file:
+
+| The file | What comes back |
+|---|---|
+| Text | A window of numbered lines; `start_line` and `line_count` choose it, and each answer gives the `start_line` of the next |
+| Word, PowerPoint, Excel | The text extracted from it, in the same windows: paragraphs and table rows, slides in order with their notes, sheets row by row |
+| Zip, jar, tar, tar.gz | A listing of its entries, in the same windows |
+| PNG, JPEG, GIF, WebP | The image, scaled down when it is larger than clients take, with a note saying so |
+| Audio, video | The file itself beside a description when it is small, and the description alone when not |
+| PDF, anything else | A description of its type and size, with its page in Bitbucket for a person to open |
+
 ## Driving the CLI directly
 
 An agent that runs commands should pass `--json` and read the envelope rather
