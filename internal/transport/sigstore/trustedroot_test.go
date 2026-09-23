@@ -48,8 +48,18 @@ func TestTrustedRootFromFile(t *testing.T) {
 		if !errors.Is(err, ErrTrustedRootUnavailable) {
 			t.Fatalf("expected ErrTrustedRootUnavailable, got: %v", err)
 		}
-		if !apperrors.IsKind(err, apperrors.KindTransient) {
-			t.Fatalf("expected KindTransient, got: %v", err)
+		// A file on this host reads the same on a retry: the configuration is
+		// what to fix, so it is not transient.
+		if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "absent.json") {
+			t.Fatalf("expected a validation error naming the file, got: %v", err)
+		}
+	})
+
+	t.Run("reports a file that is not a trusted root as configuration to fix", func(t *testing.T) {
+		provider := TrustedRootFromFile(writeTrustedRoot(t, `{"mediaType":`))
+		_, err := provider(context.Background())
+		if !errors.Is(err, ErrTrustedRootUnavailable) || !apperrors.IsKind(err, apperrors.KindValidation) {
+			t.Fatalf("expected ErrTrustedRootUnavailable as validation, got: %v", err)
 		}
 	})
 }

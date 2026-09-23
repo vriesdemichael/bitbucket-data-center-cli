@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -302,27 +304,175 @@ func TestClientDownloadPrefersMirrorOverManifestURL(t *testing.T) {
 	}
 }
 
-func TestClientDownloadReportsBothAddressesWhenMirrorAndManifestFail(t *testing.T) {
+// TestClientDownloadNeverFetchesAnAssetOffTheMirror is ADR-059's "every
+// download goes through the mirror". A mirror that failed used to send bb after
+// the manifest's own address, github.com for a mirrored manifest (#637).
+// mock-inventory: external-service — a release mirror and the host a mirrored
+// manifest still names; the assertion is about which one bb update asks.
+func TestClientDownloadNeverFetchesAnAssetOffTheMirror(t *testing.T) {
 	t.Parallel()
 
-	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.NotFound(w, r)
-	}))
+	mirror := httptest.NewServer(http.NotFoundHandler())
 	defer mirror.Close()
 
+	var externalRequests atomic.Int32
 	external := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.NotFound(w, r)
+		externalRequests.Add(1)
+		_, _ = w.Write([]byte("github-content"))
 	}))
 	defer external.Close()
 
 	client := NewClient(mirror.URL, mirror.Client(), "test-agent")
 
-	_, err := client.Download(context.Background(), external.URL+"/releases/download/v1.0.0/bb_linux_amd64.tar.gz")
-	if err == nil {
-		t.Fatal("expected an error when neither address serves the asset")
+	manifestAddress := external.URL + "/releases/download/v1.0.0/bb_linux_amd64.tar.gz"
+	_, err := client.Download(context.Background(), manifestAddress)
+	if !apperrors.IsKind(err, apperrors.KindNotFound) || !strings.Contains(err.Error(), mirror.URL+"/bb_linux_amd64.tar.gz") {
+		t.Fatalf("expected the mirror's 404 for the asset, naming the mirror address, got: %v", err)
 	}
-	if !strings.Contains(err.Error(), mirror.URL+"/bb_linux_amd64.tar.gz") {
-		t.Fatalf("expected the mirror address in the message, got: %v", err)
+	if got := externalRequests.Load(); got != 0 {
+		t.Fatalf("the manifest's own address, off the mirror, was fetched %d times", got)
+	}
+	if !strings.Contains(err.Error(), manifestAddress+", is off the mirror and is not used") {
+		t.Fatalf("expected the message to say the manifest's address is not used, got: %v", err)
+	}
+}
+
+// TestClientDownloadResolvesRelativeAssetsUnderAPathPrefixedMirror is the
+// hardening guide's own layout. Resolved as RFC 3986 does against the base URL
+// as given, a relative name replaced its last segment and left the mirror;
+// only the retry by file name made the flat layout work, and a manifest naming
+// a subdirectory lost it (#637).
+// mock-inventory: external-service — a generic-repository release mirror under
+// a path prefix; the assertion is about the addresses bb update asks for.
+func TestClientDownloadResolvesRelativeAssetsUnderAPathPrefixedMirror(t *testing.T) {
+	t.Parallel()
+
+	var mu sync.Mutex
+	var requested []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requested = append(requested, r.URL.Path)
+		mu.Unlock()
+
+		switch r.URL.Path {
+		case "/artifactory/bb-releases/sha256sums.txt":
+			_, _ = w.Write([]byte("checksums"))
+		case "/artifactory/bb-releases/v1.2.0/bb_1.2.0_linux_amd64.tar.gz":
+			_, _ = w.Write([]byte("the v1.2.0 archive"))
+		case "/artifactory/bb-releases/bb_1.2.0_linux_amd64.tar.gz":
+			_, _ = w.Write([]byte("an archive filed flat, which the manifest did not name"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL+"/artifactory/bb-releases", server.Client(), "test-agent")
+
+	for relative, want := range map[string]string{
+		"sha256sums.txt":                     "checksums",
+		"v1.2.0/bb_1.2.0_linux_amd64.tar.gz": "the v1.2.0 archive",
+	} {
+		mu.Lock()
+		requested = nil
+		mu.Unlock()
+
+		body, err := client.Download(context.Background(), relative)
+		if err != nil || string(body) != want {
+			t.Fatalf("%s: got %q, %v; want %q", relative, body, err, want)
+		}
+
+		mu.Lock()
+		asked := strings.Join(requested, " ")
+		mu.Unlock()
+		if asked != "/artifactory/bb-releases/"+relative {
+			t.Fatalf("%s: asked for %q, want only the address under the mirror", relative, asked)
+		}
+	}
+}
+
+// TestClientLatestReportsWhatEveryMirrorAddressSaid covers the manifest
+// fallbacks. Their failures were dropped, so a mirror whose manifest was there
+// and unreadable was reported as having none (#637).
+// mock-inventory: external-service — release mirrors laid out as generic
+// repositories; the assertion is about what bb update reports of them.
+func TestClientLatestReportsWhatEveryMirrorAddressSaid(t *testing.T) {
+	t.Parallel()
+
+	mirrorAnswering := func(t *testing.T, releasesLatest http.HandlerFunc) *httptest.Server {
+		t.Helper()
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/releases/latest" {
+				releasesLatest(w, r)
+				return
+			}
+			http.NotFound(w, r)
+		}))
+		t.Cleanup(server.Close)
+
+		return server
+	}
+
+	t.Run("an unreadable manifest is not a missing one", func(t *testing.T) {
+		t.Parallel()
+
+		server := mirrorAnswering(t, func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{"tag_name":`)) })
+		_, err := NewClient(server.URL, server.Client(), "test-agent").Latest(context.Background(), "owner", "repo")
+		if !apperrors.IsKind(err, apperrors.KindPermanent) {
+			t.Fatalf("expected the broken manifest's permanent failure, got: %v", err)
+		}
+		for _, address := range []string{"/repos/owner/repo/releases/latest", "/releases/latest", "/latest"} {
+			if !strings.Contains(err.Error(), server.URL+address+": ") {
+				t.Fatalf("expected %s and what it answered in the message, got: %v", address, err)
+			}
+		}
+		if !strings.Contains(err.Error(), "failed to decode release metadata") {
+			t.Fatalf("expected the decode failure in the message, got: %v", err)
+		}
+	})
+
+	t.Run("a manifest without a tag is named as such", func(t *testing.T) {
+		t.Parallel()
+
+		server := mirrorAnswering(t, func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(`{"html_url":"x"}`)) })
+		_, err := NewClient(server.URL, server.Client(), "test-agent").Latest(context.Background(), "owner", "repo")
+		if !apperrors.IsKind(err, apperrors.KindPermanent) || !strings.Contains(err.Error(), "names no tag_name") {
+			t.Fatalf("expected the untagged manifest to be reported, got: %v", err)
+		}
+	})
+
+	t.Run("a mirror without one is not found", func(t *testing.T) {
+		t.Parallel()
+
+		server := mirrorAnswering(t, http.NotFound)
+		_, err := NewClient(server.URL, server.Client(), "test-agent").Latest(context.Background(), "owner", "repo")
+		if !apperrors.IsKind(err, apperrors.KindNotFound) {
+			t.Fatalf("expected not_found when every address answered 404, got: %v", err)
+		}
+	})
+}
+
+// TestClientReportsAMirrorCertificateItDoesNotTrustAsPermanent: a retry meets
+// the same certificate. Every failed request used to be wrapped as transient,
+// exit 10, telling an operator with a wrong mirror certificate to retry (#637).
+// mock-inventory: transport-fault — a TLS listener whose certificate this
+// client does not trust; the subject is the classification, not the server.
+func TestClientReportsAMirrorCertificateItDoesNotTrustAsPermanent(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewTLSServer(http.NotFoundHandler())
+	defer server.Close()
+
+	// A client without the test server's CA, as a host without the mirror's.
+	client := NewClient(server.URL, &http.Client{Transport: &http.Transport{}}, "test-agent")
+
+	_, latestErr := client.Latest(context.Background(), "owner", "repo")
+	_, downloadErr := client.Download(context.Background(), server.URL+"/sha256sums.txt")
+	for name, err := range map[string]error{"metadata": latestErr, "asset": downloadErr} {
+		if !apperrors.IsKind(err, apperrors.KindPermanent) || apperrors.ExitCode(err) != 1 {
+			t.Fatalf("%s: got %v (exit %d), want permanent, exit 1", name, err, apperrors.ExitCode(err))
+		}
 	}
 }
 
