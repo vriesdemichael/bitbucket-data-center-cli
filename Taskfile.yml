@@ -262,6 +262,14 @@ tasks:
     cmds:
       - go run ./tools/docs-lint
 
+  completion:shells:
+    desc: Drive bb's completion in real bash, zsh, fish and PowerShell and check what the terminal shows (needs Docker)
+    # The protocol bb prints can be right while a shell mishandles it: Cobra's
+    # PowerShell script throws at the prompt on an empty answer, and its fish
+    # script puts a space after a list element. The Go tests read the protocol;
+    # this reads the screen. It needs no Bitbucket.
+    cmd: bash scripts/completion-shells/test.sh
+
   quality:lint:
     desc: Run golangci-lint over the maintained Go tree
     # A binary if one at the pinned version is on PATH, and `go run` otherwise.
