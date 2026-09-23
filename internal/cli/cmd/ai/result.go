@@ -22,14 +22,15 @@ type Tool struct {
 
 // SkillFile is what `bb ai skill install` and `remove` report.
 //
-// The path is the value a caller cannot compute: project scope resolves against
-// the working directory and global scope against the home directory, so the
-// command chose it rather than the caller.
+// The paths are the values a caller cannot compute: project scope resolves
+// against the working directory and global scope against the home directory,
+// so the command chose them rather than the caller.
 type SkillFile struct {
-	Status string `json:"status" jsonschema:"installed, removed, or not_found when removing something already absent."`
-	Skill  string `json:"skill" jsonschema:"Which skill this concerns."`
-	Path   string `json:"path" jsonschema:"Absolute path the file was written to or removed from."`
-	Scope  string `json:"scope" jsonschema:"project or global, which is what decided the path."`
+	Status string   `json:"status" jsonschema:"installed, removed, or not_found when removing something already absent."`
+	Skill  string   `json:"skill" jsonschema:"Which skill this concerns."`
+	Path   string   `json:"path" jsonschema:"Absolute path of the copy in .agents/skills, which most agents read; when removing, the first file removed."`
+	Paths  []string `json:"paths" jsonschema:"Every file written or removed: the .agents/skills copy and the .claude/skills copy Claude Code reads. For not_found, where it looked."`
+	Scope  string   `json:"scope" jsonschema:"project or global, which is what decided the paths."`
 }
 
 func init() {

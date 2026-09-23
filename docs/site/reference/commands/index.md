@@ -412,7 +412,7 @@ Usage:
   bb ai skill [command]
 
 Available Commands:
-  install     Write an agent skill to the agent skills directory
+  install     Write an agent skill to the agent skills directories
   remove      Remove an installed agent skill file
   show        Print an agent skill to stdout
 
@@ -442,25 +442,29 @@ Use "bb ai skill [command] --help" for more information about a command.
 
 ## `bb ai skill install`
 
-Write an agent skill to the agent skills directory
+Write an agent skill to the agent skills directories
 
 ```text
-Write an agent skill file to the appropriate directory (defaults to "bb", supports "bulk" / "bb-bulk").
+Write an agent skill file (defaults to "bb", supports "bulk" / "bb-bulk") where
+coding agents read it: .agents/skills, which most agents read, and
+.claude/skills, which Claude Code reads instead.
 
 Project scope (default):
   .agents/skills/<skill>/SKILL.md
+  .claude/skills/<skill>/SKILL.md
 
-Global scope (--global):
+Global scope (--global), for every project of yours:
   ~/.agents/skills/<skill>/SKILL.md
+  ~/.claude/skills/<skill>/SKILL.md
 
 The skill is embedded in this binary, so no network connection is required.
-Re-run after upgrading bb to keep the skill file current.
+Re-run after upgrading bb to keep the skill files current.
 
 Usage:
   bb ai skill install [skill] [flags]
 
 Flags:
-      --global   Install to user-level path (~/.agents/skills/<skill>/SKILL.md)
+      --global   Install for every project of yours (~/.agents/skills and ~/.claude/skills)
 ```
 
 ??? note "Global flags"
@@ -495,7 +499,7 @@ Usage:
   bb ai skill remove [skill] [flags]
 
 Flags:
-      --global   Remove from user-level path (~/.agents/skills/<skill>/SKILL.md)
+      --global   Remove from every project of yours (~/.agents/skills and ~/.claude/skills)
   -y, --yes      Confirm without being asked
 ```
 
@@ -535,9 +539,9 @@ Redirect to the location your coding agent expects:
   bb ai skill show > .agents/skills/bb/SKILL.md
   bb ai skill show bulk > .agents/skills/bb-bulk/SKILL.md
 
-Most agents use .agents/skills/<name>/SKILL.md as the project-scoped path.
-Some use agent-specific paths (e.g. .claude/skills/, .cursor/skills/).
-Consult your agent's documentation if the above path does not work.
+Most agents read .agents/skills/<name>/SKILL.md, and Claude Code reads
+.claude/skills/<name>/SKILL.md; bb ai skill install writes both. For an agent
+that reads a path of its own, consult its documentation.
 
 Baseline skills (fixed at release time) are also distributed via the open
 agent skills ecosystem and can be installed without bb being present:

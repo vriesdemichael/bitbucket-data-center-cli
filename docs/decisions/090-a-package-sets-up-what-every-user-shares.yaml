@@ -16,6 +16,9 @@ decision: >
   bb completion install --all-users writes where a shell reads for every user, where the
   shell has such a place, and refuses with the reason where it does not. The flag is not
   --global, which on bb ai skill install means every workspace of one user.
+  bb ai skill install writes each skill twice: to .agents/skills, which most agents read, and
+  to .claude/skills, because Claude Code reads that and nothing else. A fixed pair, not the
+  per-agent --target ADR-040 turned down.
 agent_instructions: >
   Do not make a package write into a user's home or edit a file the user owns; have it run or
   name the bb command that does.

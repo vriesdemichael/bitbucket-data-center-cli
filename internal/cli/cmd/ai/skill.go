@@ -118,9 +118,9 @@ Redirect to the location your coding agent expects:
   bb ai skill show > .agents/skills/bb/SKILL.md
   bb ai skill show bulk > .agents/skills/bb-bulk/SKILL.md
 
-Most agents use .agents/skills/<name>/SKILL.md as the project-scoped path.
-Some use agent-specific paths (e.g. .claude/skills/, .cursor/skills/).
-Consult your agent's documentation if the above path does not work.
+Most agents read .agents/skills/<name>/SKILL.md, and Claude Code reads
+.claude/skills/<name>/SKILL.md; bb ai skill install writes both. For an agent
+that reads a path of its own, consult its documentation.
 
 Baseline skills (fixed at release time) are also distributed via the open
 agent skills ecosystem and can be installed without bb being present:
@@ -152,17 +152,21 @@ func newSkillInstallCommand(deps Dependencies) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "install [skill]",
-		Short: "Write an agent skill to the agent skills directory",
-		Long: `Write an agent skill file to the appropriate directory (defaults to "bb", supports "bulk" / "bb-bulk").
+		Short: "Write an agent skill to the agent skills directories",
+		Long: `Write an agent skill file (defaults to "bb", supports "bulk" / "bb-bulk") where
+coding agents read it: .agents/skills, which most agents read, and
+.claude/skills, which Claude Code reads instead.
 
 Project scope (default):
   .agents/skills/<skill>/SKILL.md
+  .claude/skills/<skill>/SKILL.md
 
-Global scope (--global):
+Global scope (--global), for every project of yours:
   ~/.agents/skills/<skill>/SKILL.md
+  ~/.claude/skills/<skill>/SKILL.md
 
 The skill is embedded in this binary, so no network connection is required.
-Re-run after upgrading bb to keep the skill file current.`,
+Re-run after upgrading bb to keep the skill files current.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			skillName := ""
@@ -174,37 +178,41 @@ Re-run after upgrading bb to keep the skill file current.`,
 				return err
 			}
 
-			dest, err := resolveInstallPath(skill, global)
+			paths, err := resolveInstallPaths(skill, global)
 			if err != nil {
 				return err
 			}
 
-			// The skill is installed into the invoking user's own agent
-			// configuration, so it needs no group or world access.
-			if err := os.MkdirAll(filepath.Dir(dest), 0o750); err != nil {
-				return apperrors.New(apperrors.KindInternal, "failed to create skill directory", err)
-			}
-
 			rendered := buildSkill(skill, deps.Version())
-			if err := os.WriteFile(dest, []byte(rendered), 0o600); err != nil {
-				return apperrors.New(apperrors.KindInternal, "failed to write skill file", err)
+			for _, dest := range paths {
+				// The skill is installed into the invoking user's own agent
+				// configuration, so it needs no group or world access.
+				if err := os.MkdirAll(filepath.Dir(dest), 0o750); err != nil {
+					return apperrors.New(apperrors.KindInternal, "failed to create skill directory", err)
+				}
+				if err := os.WriteFile(dest, []byte(rendered), 0o600); err != nil {
+					return apperrors.New(apperrors.KindInternal, "failed to write skill file", err)
+				}
 			}
 
 			if deps.jsonEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), SkillFile{
 					Status: "installed",
 					Skill:  skill.name,
-					Path:   dest,
+					Path:   paths[0],
+					Paths:  paths,
 					Scope:  installScope(global),
 				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Skill installed: %s\n", dest)
+			for _, dest := range paths {
+				fmt.Fprintf(cmd.OutOrStdout(), "Skill installed: %s\n", dest)
+			}
 			return nil
 		},
 	}
 
-	cmd.Flags().BoolVar(&global, "global", false, "Install to user-level path (~/.agents/skills/<skill>/SKILL.md)")
+	cmd.Flags().BoolVar(&global, "global", false, "Install for every project of yours (~/.agents/skills and ~/.claude/skills)")
 	return cmd
 }
 
@@ -225,12 +233,23 @@ func newSkillRemoveCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			dest, err := resolveInstallPath(skill, global)
+			paths, err := resolveInstallPaths(skill, global)
 			if err != nil {
 				return err
 			}
 
-			if _, statErr := os.Stat(dest); os.IsNotExist(statErr) {
+			removed := make([]string, 0, len(paths))
+			for _, dest := range paths {
+				if _, statErr := os.Stat(dest); os.IsNotExist(statErr) {
+					continue
+				}
+				if err := os.Remove(dest); err != nil {
+					return apperrors.New(apperrors.KindInternal, "failed to remove skill file", err)
+				}
+				removed = append(removed, dest)
+			}
+
+			if len(removed) == 0 {
 				// Not an error: removing something already absent leaves the
 				// caller in the state they asked for. The status says which
 				// of the two happened, which the English sentence also did.
@@ -238,53 +257,74 @@ func newSkillRemoveCommand(deps Dependencies) *cobra.Command {
 					return deps.WriteJSON(cmd.OutOrStdout(), SkillFile{
 						Status: "not_found",
 						Skill:  skill.name,
-						Path:   dest,
+						Path:   paths[0],
+						Paths:  paths,
 						Scope:  installScope(global),
 					})
 				}
 
-				fmt.Fprintf(cmd.OutOrStdout(), "Skill file not found: %s\n", dest)
+				fmt.Fprintf(cmd.OutOrStdout(), "Skill file not found: %s\n", strings.Join(paths, ", "))
 				return nil
-			}
-
-			if err := os.Remove(dest); err != nil {
-				return apperrors.New(apperrors.KindInternal, "failed to remove skill file", err)
 			}
 
 			if deps.jsonEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), SkillFile{
 					Status: "removed",
 					Skill:  skill.name,
-					Path:   dest,
+					Path:   removed[0],
+					Paths:  removed,
 					Scope:  installScope(global),
 				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Skill removed: %s\n", dest)
+			for _, dest := range removed {
+				fmt.Fprintf(cmd.OutOrStdout(), "Skill removed: %s\n", dest)
+			}
 			return nil
 		},
 	}
 
-	cmd.Flags().BoolVar(&global, "global", false, "Remove from user-level path (~/.agents/skills/<skill>/SKILL.md)")
+	cmd.Flags().BoolVar(&global, "global", false, "Remove from every project of yours (~/.agents/skills and ~/.claude/skills)")
 	return cmd
 }
 
-// resolveInstallPath returns the absolute target path for the skill file.
-func resolveInstallPath(skill skillInfo, global bool) (string, error) {
-	relPath := filepath.Join(".agents", "skills", skill.name, "SKILL.md")
+// skillDirectories are where an installed skill goes, under the project or
+// the home directory: .agents, which most agents read, and .claude, because
+// Claude Code reads its own directory and not .agents.
+var skillDirectories = []string{".agents", ".claude"}
+
+// resolveInstallPaths returns the files a skill is installed to, the .agents
+// one first.
+func resolveInstallPaths(skill skillInfo, global bool) ([]string, error) {
+	base, err := installBase(global)
+	if err != nil {
+		return nil, err
+	}
+
+	paths := make([]string, 0, len(skillDirectories))
+	for _, directory := range skillDirectories {
+		paths = append(paths, filepath.Join(base, directory, "skills", skill.name, "SKILL.md"))
+	}
+
+	return paths, nil
+}
+
+// installBase is the directory the skill directories are under: the working
+// directory for a project, the home directory for every project of the user.
+func installBase(global bool) (string, error) {
 	if !global {
 		cwd, err := os.Getwd()
 		if err != nil {
 			return "", apperrors.New(apperrors.KindInternal, "failed to determine working directory", err)
 		}
-		return filepath.Join(cwd, relPath), nil
+		return cwd, nil
 	}
 
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", apperrors.New(apperrors.KindInternal, "failed to determine home directory", err)
 	}
-	return filepath.Join(home, relPath), nil
+	return home, nil
 }
 
 // buildSkill returns the skill content stamped with the running binary's
