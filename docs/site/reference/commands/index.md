@@ -3458,7 +3458,8 @@ it asks each PowerShell where its profiles are. For each agent skill, it shows
 where the skill is installed -- .agents/skills, which most agents read, or
 .claude/skills, which Claude Code reads, under the working directory or your
 home directory -- and whether each copy is what bb ai skill install writes now
-or the repository's copy.
+or the repository's copy. A copy of a skill this bb no longer carries is
+reported with the directory to delete.
 
 It needs no configured host, never contacts Bitbucket, and never prints a
 secret: a token or password is reported as configured, with where it is held.
@@ -3467,7 +3468,8 @@ Exit status is 0 only when there is nothing to fix. Any issue the report shows
 -- an invalid file, a key its file never reads, a setting a command would
 refuse, a required keyring that cannot be reached, completion set up where its
 shell will not run it, a saved script that has fallen behind this bb, a skill
-an earlier bb installed or somebody edited -- exits 1. Under --json a run with
+an earlier bb installed or somebody edited, a skill this bb no longer carries --
+exits 1. Under --json a run with
 issues writes the failure envelope instead of the report: its message
 summarises the issues, and error.details names each one under its own key,
 file/<file>, violation/<file>/<key path>, ignored/<file>/<key>, setting/<name>,

@@ -91,6 +91,27 @@ var Skills = []Skill{
 	},
 }
 
+// RetiredSkill is a skill an earlier bb installed that this one does not carry.
+type RetiredSkill struct {
+	Name string
+	// Why is what a copy left behind gets wrong, which is the reason to
+	// delete it.
+	Why string
+}
+
+// RetiredSkills are the skills bb installed once and carries no longer. A copy
+// left behind goes on teaching an agent commands that are gone, and no bb
+// command reaches it any more, so bb doctor reports each one with the
+// directory to delete.
+var RetiredSkills = []RetiredSkill{
+	{Name: "bb-bulk", Why: "it teaches bb bulk, which this bb does not have"},
+}
+
+// Path is where this retired skill's file is in location under base.
+func (skill RetiredSkill) Path(base string, location SkillLocation) string {
+	return location.path(base, skill.Name)
+}
+
 func lookupSkill(name string) (skillInfo, error) {
 	wanted := strings.ToLower(strings.TrimSpace(name))
 	if wanted == "" {

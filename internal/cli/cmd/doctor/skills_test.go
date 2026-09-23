@@ -287,3 +287,52 @@ func TestProjectDirectoriesStopAtTheRepositoryRoot(t *testing.T) {
 		t.Errorf("projectDirectories = %q, want %q", got, want)
 	}
 }
+
+// TestASkillBbNoLongerCarriesIsReportedWhereItWasLeft covers a retired skill:
+// no bb command removes one any more, so every copy left behind is an issue
+// that names the directory to delete, and a place without one says nothing.
+func TestASkillBbNoLongerCarriesIsReportedWhereItWasLeft(t *testing.T) {
+	t.Parallel()
+
+	var retired ai.RetiredSkill
+	for _, candidate := range ai.RetiredSkills {
+		if candidate.Name == "bb-bulk" {
+			retired = candidate
+		}
+	}
+	if retired.Name == "" {
+		t.Fatal("bb-bulk is not among the retired skills")
+	}
+
+	work, home := t.TempDir(), t.TempDir()
+	agents, claude := locationNamed(t, "agents"), locationNamed(t, "claude")
+	put(t, retired.Path(work, claude), "# an earlier bb's skill\n")
+	put(t, retired.Path(home, agents), "# an earlier bb's skill\n")
+	machine := (&fakeMachine{home: home, work: work}).machine()
+
+	output, _, err := runDoctorOn(t, machine, config.Diagnosis{}, false)
+	if apperrors.KindOf(err) != apperrors.KindPermanent || apperrors.ExitCode(err) != 1 {
+		t.Fatalf("a retired skill left behind must exit 1 as permanent, got %v\n%s", err, output)
+	}
+	if want := "2 issues to fix: the bb-bulk skill"; apperrors.MessageOf(err) != want {
+		t.Errorf("message = %q, want %q", apperrors.MessageOf(err), want)
+	}
+
+	deletion := func(path string) string {
+		return path + ": " + retired.Why + "; delete " + filepath.Dir(path)
+	}
+	want := map[string]string{
+		"skill/bb-bulk/project/claude": deletion(retired.Path(work, claude)),
+		"skill/bb-bulk/global/agents":  deletion(retired.Path(home, agents)),
+	}
+	if details := apperrors.DetailsOf(err); !reflect.DeepEqual(details, want) {
+		t.Errorf("details:\n got %#v\nwant %#v", details, want)
+	}
+
+	if line := "  bb-bulk  installed in " + retired.Path(work, claude) + "\n"; !strings.Contains(output, line) {
+		t.Errorf("the report lacks %q:\n%s", line, output)
+	}
+	if strings.Contains(output, retired.Path(work, agents)) || strings.Contains(output, retired.Path(home, claude)) {
+		t.Errorf("a place with no copy of the retired skill was reported:\n%s", output)
+	}
+}
