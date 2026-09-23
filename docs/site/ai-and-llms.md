@@ -92,7 +92,8 @@ bb ai skill install bulk
 
 **Re-run `bb ai skill install` after upgrading `bb`.** Both subcommands print the
 copy compiled into the binary you just ran, so the skill and the command surface
-cannot disagree. The same skills are published through the open agent skills
+cannot disagree, and `bb doctor` reports an installed copy that an earlier `bb`
+wrote. The same skills are published through the open agent skills
 ecosystem for machines where `bb` is not installed yet, but that copy is a
 snapshot taken at release time and can describe a different version
 ([ADR-040](adr/040-agent-skill-distribution-static-npx-and-dynamic-cli.md)):
