@@ -249,6 +249,17 @@ func removeBlock(target Target) (Outcome, error) {
 	}
 	file.text = before + file.text[end:]
 
+	// A PowerShell profile that held nothing but bb's block is one install
+	// created, and goes with it; PowerShell runs the same without one. Not a
+	// .zshrc: zsh without one starts its new-user wizard at the next prompt.
+	if target.Shell == PowerShell && strings.TrimSpace(file.text) == "" {
+		if err := os.Remove(target.Path); err != nil {
+			return Outcome{}, apperrors.New(apperrors.KindInternal, "failed to remove "+target.Path, err)
+		}
+
+		return Outcome{Target: target, Status: Removed}, nil
+	}
+
 	if err := file.write(target.Path, target.Scope); err != nil {
 		return Outcome{}, err
 	}

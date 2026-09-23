@@ -460,6 +460,34 @@ func TestABlockGoesInAndComesOutLeavingTheFileAsItWas(t *testing.T) {
 	}
 }
 
+func TestAProfileInstallCreatedGoesWithTheBlock(t *testing.T) {
+	t.Parallel()
+
+	profile := Target{Shell: PowerShell, Scope: CurrentUser, Path: filepath.Join(t.TempDir(), "profile.ps1"), Shared: true}
+	if outcome, err := Install(profile); err != nil || outcome.Status != Installed {
+		t.Fatalf("install = %+v, %v", outcome, err)
+	}
+	if outcome, err := Remove(profile); err != nil || outcome.Status != Removed {
+		t.Fatalf("remove = %+v, %v", outcome, err)
+	}
+	if _, err := os.Stat(profile.Path); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("a profile that held only bb's block is still there: %v", err)
+	}
+
+	// zsh starts its new-user wizard where there is no .zshrc, so an empty
+	// one stays.
+	zshrc := Target{Shell: Zsh, Scope: CurrentUser, Path: filepath.Join(t.TempDir(), ".zshrc"), Shared: true}
+	if outcome, err := Install(zshrc); err != nil || outcome.Status != Installed {
+		t.Fatalf("install = %+v, %v", outcome, err)
+	}
+	if outcome, err := Remove(zshrc); err != nil || outcome.Status != Removed {
+		t.Fatalf("remove = %+v, %v", outcome, err)
+	}
+	if content, err := os.ReadFile(zshrc.Path); err != nil || strings.TrimSpace(string(content)) != "" {
+		t.Errorf("the .zshrc was not left, empty: %q, %v", content, err)
+	}
+}
+
 func TestAnOlderBlockIsReplacedWhereItStands(t *testing.T) {
 	t.Parallel()
 
