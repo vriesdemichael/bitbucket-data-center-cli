@@ -615,7 +615,7 @@ func TestCommandVerbsAgreeWithTheirDryRunClassification(t *testing.T) {
 						"%q is named for an action that changes something but is registered in readOnlyCommands.\n"+
 							"A read-only classification skips the dry-run pre-flight, so --dry-run would report no\n"+
 							"change and the real run would make one. Move it to dryRunProfiles, or to\n"+
-							"clientLocalCommands if it only writes locally, or record why in\n"+
+							"clientLocalMutatingCommands if it only writes locally, or record why in\n"+
 							"verbClassificationExemptions.",
 						path,
 					)
