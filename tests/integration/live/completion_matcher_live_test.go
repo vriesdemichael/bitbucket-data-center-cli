@@ -4,6 +4,8 @@ package live_test
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -79,6 +81,48 @@ func TestLiveCompletionMatcherFollowsTheMatcherType(t *testing.T) {
 		}
 		if !strings.Contains(description, "/") {
 			t.Errorf("expected the prefix the category matches, got %q", description)
+		}
+	})
+
+	t.Run("a category the repository switched off says so", func(t *testing.T) {
+		modelPath := fmt.Sprintf("/rest/branch-utils/latest/projects/%s/repos/%s/branchmodel", seeded.Key, repo.Slug)
+		if _, err := harness.liveJSON(ctx, http.MethodPut, modelPath+"/configuration", map[string]any{
+			"development": map[string]any{"refId": nil, "useDefault": true},
+			"production":  nil,
+			"types": []map[string]any{
+				{"id": "BUGFIX", "enabled": true, "prefix": "bugfix/"},
+				{"id": "FEATURE", "enabled": true, "prefix": "feature/"},
+				{"id": "HOTFIX", "enabled": false, "prefix": "hotfix/"},
+				{"id": "RELEASE", "enabled": true, "prefix": "release/"},
+			},
+		}); err != nil {
+			t.Fatalf("switch the hotfix category off: %v", err)
+		}
+
+		// Read back: the model leaves a switched-off category out rather than
+		// listing it as disabled, which is the case the source has to say
+		// something about.
+		model, err := harness.liveJSON(ctx, http.MethodGet, modelPath, nil)
+		if err != nil {
+			t.Fatalf("read the branching model back: %v", err)
+		}
+		types, _ := model["types"].([]any)
+		for _, entry := range types {
+			if category, _ := entry.(map[string]any); category["id"] == "HOTFIX" {
+				t.Fatalf("the model still lists the category that was switched off: %v", types)
+			}
+		}
+		if len(types) != 3 {
+			t.Fatalf("expected the three categories left enabled, got %v", types)
+		}
+
+		candidates := complete(t, "MODEL_CATEGORY")
+
+		if description := candidates["HOTFIX"]; description != "not enabled" {
+			t.Errorf("the switched-off category was described as %q, want %q", description, "not enabled")
+		}
+		if description := candidates["FEATURE"]; description != "feature/" {
+			t.Errorf("an enabled category was described as %q, want its prefix", description)
 		}
 	})
 

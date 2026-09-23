@@ -46,15 +46,18 @@ var modelBranchIDs = []string{"development", "production"}
 var modelCategoryIDs = []string{"FEATURE", "BUGFIX", "HOTFIX", "RELEASE"}
 
 func modelBranches(ctx context.Context, environment *Environment) []Candidate {
-	model := branchingModel(ctx, environment)
+	model, read := branchingModel(ctx, environment)
 
 	candidates := make([]Candidate, 0, len(modelBranchIDs))
 	for _, id := range modelBranchIDs {
 		description := ""
-		switch id {
-		case "development":
+		switch {
+		case !read:
+			// Nothing is known about either, and "not configured" would be a
+			// claim about both.
+		case id == "development":
 			description = displayOf(model.Development)
-		case "production":
+		case id == "production":
 			description = displayOf(model.Production)
 		}
 
@@ -65,35 +68,45 @@ func modelBranches(ctx context.Context, environment *Environment) []Candidate {
 }
 
 func modelCategories(ctx context.Context, environment *Environment) []Candidate {
+	model, read := branchingModel(ctx, environment)
+
 	prefixes := map[string]string{}
-	for _, category := range branchingModel(ctx, environment).Types {
+	for _, category := range model.Types {
 		prefixes[strings.ToUpper(strings.TrimSpace(category.ID))] = strings.TrimSpace(category.Prefix)
 	}
 
 	candidates := make([]Candidate, 0, len(modelCategoryIDs))
 	for _, id := range modelCategoryIDs {
-		candidates = append(candidates, Candidate{Value: id, Description: prefixes[id]})
+		prefix, enabled := prefixes[id]
+		if read && !enabled {
+			// The model leaves a category the repository has switched off out
+			// altogether rather than listing it as disabled. Said here, so it
+			// does not sit blank beside the prefixes of the others.
+			prefix = "not enabled"
+		}
+
+		candidates = append(candidates, Candidate{Value: id, Description: prefix})
 	}
 
 	return candidates
 }
 
-// branchingModel is what the repository's model names, and the zero value when
-// there is no repository in scope or it cannot be read.
+// branchingModel is what the repository's model names, and whether it could be
+// read: there may be no repository in scope, or no answer.
 //
 // Only a repository has one: the project-level endpoint is a 404, and a
 // project restriction still matches by the same ids. So this enriches the
 // descriptions where it can and is silent where it cannot -- the values it
 // describes are correct either way.
-func branchingModel(ctx context.Context, environment *Environment) branchModel {
+func branchingModel(ctx context.Context, environment *Environment) (branchModel, bool) {
 	repository, err := environment.Repository(ctx)
 	if err != nil {
-		return branchModel{}
+		return branchModel{}, false
 	}
 
 	client, err := environment.HTTPClient(ctx)
 	if err != nil {
-		return branchModel{}
+		return branchModel{}, false
 	}
 
 	var model branchModel
@@ -101,10 +114,10 @@ func branchingModel(ctx context.Context, environment *Environment) branchModel {
 	if err := client.GetJSON(ctx, path, nil, &model); err != nil {
 		debugf("branching model: %v", err)
 
-		return branchModel{}
+		return branchModel{}, false
 	}
 
-	return model
+	return model, true
 }
 
 // branchModel is the part of the branching model a matcher id names.
