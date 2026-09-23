@@ -84,6 +84,24 @@ func inspectSkills(machine Machine, version string) []skillInstall {
 		}
 	}
 
+	// A retired skill has no current copy to compare with, and is listed only
+	// where one is left behind, which is always an issue.
+	for _, retired := range ai.RetiredSkills {
+		for _, base := range bases {
+			for _, location := range ai.SkillLocations {
+				path := retired.Path(base.directory, location)
+				if _, err := os.Stat(path); err != nil {
+					continue
+				}
+
+				install := skillInstall{skill: ai.Skill{Name: retired.Name}, scope: base.scope, location: location.Name, path: path}
+				install.problem = retired.Why + "; delete " + filepath.Dir(path)
+				install.issue = skillIssue(install)
+				found = append(found, install)
+			}
+		}
+	}
+
 	return found
 }
 
