@@ -46,15 +46,6 @@ Three details are worth knowing:
   `bb` has nothing to publish. `credentialsUsername` is the only half that comes
   back.
 
-A create or an update publishes the webhook as a read returns it after the
-write, in `bb webhook`, `bb project webhook` and
-`bb repo settings workflow webhooks` alike. Bitbucket's answer to the write is
-not a reliable account of the configuration: identical creates answer sometimes
-with the shared secret and sometimes without it. If that read fails, the write
-still stands and the command still succeeds. It shows Bitbucket's answer
-instead, with `secretConfigured` taken from what the write sent, and says so on
-stderr.
-
 `bb webhook test` publishes the delivery record Bitbucket produced, and that
 record contains the request headers — including `Authorization`. `bb` replaces
 the value with `<redacted>`. Base64 is not encryption: the header carries the
