@@ -3,16 +3,16 @@ search:
   boost: 0.3
 ---
 
-# ADR 088: Shell completion is declared by the argument's name, and resolved by the command's own code
+# ADR 089: Shell completion is declared by the argument's name, and resolved by the command's own code
 
 This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
 
-- Number: `088`
+- Number: `089`
 - Title: `Shell completion is declared by the argument's name, and resolved by the command's own code`
 - Category: `architecture`
 - Status: `accepted`
 - Provenance: `guided-ai`
-- Source: `docs/decisions/088-completion-is-declared-by-the-argument-name.yaml`
+- Source: `docs/decisions/089-completion-is-declared-by-the-argument-name.yaml`
 
 ## Decision
 

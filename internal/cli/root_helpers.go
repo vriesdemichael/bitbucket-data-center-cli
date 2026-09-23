@@ -177,7 +177,7 @@ func parseRepositorySelector(selector string) (repositorySelector, error) {
 // Split out of the inference below so shell completion can offer the whole set
 // without a second reading of the same remotes: a command acts on one
 // repository and refuses when they disagree, while a completion offering the
-// fork and its upstream is answering the question that was asked (ADR-088).
+// fork and its upstream is answering the question that was asked (ADR-089).
 func gitRepositoryCandidates(cfg config.AppConfig) ([]inferredRepositoryContext, error) {
 	backend := gitBackendFactory()
 	if backend == nil {

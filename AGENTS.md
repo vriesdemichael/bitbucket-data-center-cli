@@ -408,7 +408,7 @@ print to stdout: the output is a protocol, and a stray line becomes a candidate.
 `BB_COMPLETION_DEBUG=1` and run `bb __complete <words>` by hand to see why one came back
 empty; every generated shell script discards stderr, so nothing leaks into a real shell.
 
-ADR-088 has the reasoning. A source that talks to Bitbucket is proved by a live test, like
+ADR-089 has the reasoning. A source that talks to Bitbucket is proved by a live test, like
 everything else here — `tests/integration/live/completion_live_test.go` is the pattern, and
 it asserts the values offered rather than that the call succeeded.
 

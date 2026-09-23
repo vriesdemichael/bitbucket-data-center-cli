@@ -271,7 +271,7 @@ func localSelectors(ctx context.Context, environment *Environment, bitbucketURL 
 
 	// Through the Environment rather than by reading the remotes here: the
 	// invocation already reads them to decide what repository it is in, and
-	// two readings could disagree about what this checkout is (ADR-088).
+	// two readings could disagree about what this checkout is (ADR-089).
 	repositories := onHost(environment.LocalRepositories(ctx), host)
 
 	// The repository the command resolved to leads, when the resolution was
