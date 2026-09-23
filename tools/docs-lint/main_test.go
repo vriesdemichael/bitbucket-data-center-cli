@@ -95,6 +95,29 @@ func TestLintMarkdownIgnoresNonShellBlocks(t *testing.T) {
 	}
 }
 
+// TestInlineSpansInARecordAreLeftAsWritten covers the ADR pages and a release's
+// notes: both name commands as they were when they were written, and a record
+// cannot be corrected to a command tree that came after it.
+func TestInlineSpansInARecordAreLeftAsWritten(t *testing.T) {
+	t.Parallel()
+
+	document := "Removed in this release: `bb repo inspect`.\n"
+
+	if findings, _ := lintFixture("docs/site/guide.md", document); len(findings) != 1 {
+		t.Fatalf("expected the span reported on an ordinary page, got %+v", findings)
+	}
+
+	for _, record := range []string{
+		"docs/release-notes/v1.0.0.md",
+		`docs\release-notes\v1.0.0.md`,
+		"docs/site/adr/001-a-decision.md",
+	} {
+		if findings, checked := lintFixture(record, document); len(findings) != 0 || checked != 0 {
+			t.Errorf("%s: expected the span left alone, got %d checked and %+v", record, checked, findings)
+		}
+	}
+}
+
 func TestLintMarkdownHonoursTheExpectInvalidDirective(t *testing.T) {
 	t.Parallel()
 

@@ -604,7 +604,7 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 
 	// Inline spans, which were invisible to this linter until #460. A page can
 	// be entirely tables — cheatsheet.md is — and so entirely unchecked.
-	if !isGeneratedFromRecords(file) {
+	if !isRecord(file) {
 		for _, invocation := range extractInlineBBInvocations(contents) {
 			checked++
 
@@ -622,16 +622,21 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 	return findings, checked
 }
 
-// isGeneratedFromRecords reports whether a file is rendered from a decision
-// record rather than written.
+// isRecord reports whether a file records what was true when it was written,
+// which today's command tree has no say over.
 //
-// The ADR pages quote rejected alternatives — `bb repo list --name foo`
-// (ADR-031), `bb ai skill install --target` (ADR-040) — which are invocations
-// that deliberately do not exist. Reporting them would mean editing generated
-// output to satisfy a linter, and the record is the source of truth.
-func isGeneratedFromRecords(file string) bool {
+// The ADR pages are rendered from decision records, and quote rejected
+// alternatives — `bb repo list --name foo` (ADR-031), `bb ai skill install
+// --target` (ADR-040) — which are invocations that deliberately do not exist.
+// Reporting them would mean editing generated output to satisfy a linter, and
+// the record is the source of truth.
+//
+// A release's notes name the commands of that release. A later major removes
+// some of them, and the notes that announced the removal name them too; both
+// are already published, so there is nothing to correct them to.
+func isRecord(file string) bool {
 	normalised := strings.ReplaceAll(file, "\\", "/")
-	return strings.Contains(normalised, "docs/site/adr/")
+	return strings.Contains(normalised, "docs/site/adr/") || strings.Contains(normalised, "docs/release-notes/")
 }
 
 func lintCodeBlockVersions(file string, block codeBlock, targetVer string) []finding {
