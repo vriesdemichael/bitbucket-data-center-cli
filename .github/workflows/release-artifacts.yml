@@ -191,6 +191,14 @@ jobs:
 
       # From the hardened binary: a package manager owns updates. The packages
       # therefore carry that binary's SBOM, and release.yml attests them with it.
+      #
+      # They carry completion for bash, zsh and fish as well. A completion
+      # script names bb and asks it for everything else at the moment of the
+      # tab press, so it is the same on every architecture, and the runner's
+      # own Go generates it: the binary being packaged may be one this runner
+      # cannot execute. Built with the binaries' flags, so on amd64 the build
+      # cache already holds it. The scripts go beside the binaries rather than
+      # into dist/, which is uploaded whole.
       - name: Build Linux .deb and .rpm packages
         if: matrix.goos == 'linux'
         env:
@@ -200,6 +208,12 @@ jobs:
         run: |
           set -euo pipefail
           go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.46.3
+
+          export PKG_COMPLETIONS="${RUNNER_TEMP}/bb/completions"
+          mkdir -p "$PKG_COMPLETIONS"
+          for shell in bash zsh fish; do
+            CGO_ENABLED=0 go run -trimpath ./cmd/bb completion "$shell" >"${PKG_COMPLETIONS}/bb.${shell}"
+          done
 
           export PKG_VERSION="${VERSION#v}"
           for packager in deb rpm; do
