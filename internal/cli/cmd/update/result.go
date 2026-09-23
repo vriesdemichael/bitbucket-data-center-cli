@@ -28,7 +28,7 @@ type Update struct {
 	CurrentVersionComparable bool `json:"currentVersionComparable" jsonschema:"Whether the installed version parsed as semver. False for a locally built binary, where updateAvailable is a guess rather than a comparison."`
 	LatestVersionComparable  bool `json:"latestVersionComparable" jsonschema:"Whether the published version parsed as semver."`
 
-	DryRun        bool   `json:"dryRun" jsonschema:"Whether this run only previewed the update."`
+	DryRun        bool   `json:"dryRun" jsonschema:"Whether this run verified the latest release and installed nothing. A dry run verifies that release even when it is the installed version."`
 	Applied       bool   `json:"applied" jsonschema:"Whether the new binary is now in place."`
 	Scheduled     bool   `json:"scheduled" jsonschema:"Whether the swap was deferred to a helper process, which Windows requires because a running binary cannot replace itself."`
 	Staged        bool   `json:"staged" jsonschema:"Whether the new binary was downloaded and verified but not yet swapped in."`
@@ -55,7 +55,7 @@ type ReleaseSource struct {
 // previously spread across four sibling booleans with nothing saying they were
 // related.
 type Trust struct {
-	ChecksumAvailable       bool   `json:"checksumAvailable" jsonschema:"Whether a checksum file was published."`
+	ChecksumAvailable       bool   `json:"checksumAvailable" jsonschema:"Whether the checksum file has an entry for this platform's archive."`
 	ChecksumVerified        bool   `json:"checksumVerified" jsonschema:"Whether the download matched its checksum. Detects corruption, not tampering."`
 	SignatureVerified       bool   `json:"signatureVerified" jsonschema:"Whether the Sigstore signature verified. This is the check that detects tampering."`
 	SignatureSkipped        bool   `json:"signatureSkipped" jsonschema:"Whether signature verification was deliberately not performed, because administrative policy set allow_unverified_update. True here with signatureVerified false is a policy decision rather than a failure."`

@@ -11496,7 +11496,17 @@ Usage:
 Check for and install the latest bb release
 
 ```text
-Check for and install the latest bb release
+Check for and install the latest bb release.
+
+bb installs a release only after verifying it: the signature on its checksum
+file against the configured trust material, unless administrative policy sets
+allow_unverified_update; the checksum file's entry for this platform's archive;
+and the archive itself against that entry.
+
+With --dry-run, bb update makes the same checks and installs nothing. It checks
+the latest release even when that is the version already installed, which makes
+it the way to verify a release mirror, and it fails with exit status 5
+(conflict) when the latest release is older than the installed one.
 
 Usage:
   bb update [flags]
