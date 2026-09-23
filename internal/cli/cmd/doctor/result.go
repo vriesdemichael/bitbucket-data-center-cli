@@ -82,7 +82,7 @@ type CompletionPlace struct {
 // AgentSkill is one agent skill in one place.
 type AgentSkill struct {
 	Skill    string `json:"skill" jsonschema:"The skill."`
-	Scope    string `json:"scope" jsonschema:"project for the working directory, user for the home directory, which bb ai skill install writes to with --global."`
+	Scope    string `json:"scope" jsonschema:"project for the working directory and the directories above it up to its repository's root, global for the home directory, which bb ai skill install writes to with --global."`
 	Location string `json:"location" jsonschema:"agents for .agents/skills, which most agents read; claude for .claude/skills, which Claude Code reads."`
 	Path     string `json:"path" jsonschema:"The skill's file in this place, whether or not it is there."`
 	State    string `json:"state" jsonschema:"not_installed; current for exactly what bb ai skill install writes now; repository for the repository's copy, which npx skills add installs. Any other file -- an earlier bb's, or an edited one -- is an issue, so a report never holds one."`
@@ -114,7 +114,7 @@ func init() {
 		"completion.places.scope":   {string(completionsetup.CurrentUser), string(completionsetup.AllUsers)},
 		"completion.places.edition": completionsetup.Editions(),
 		"skills.skill":              skills,
-		"skills.scope":              {scopeProject, scopeUser},
+		"skills.scope":              {scopeProject, scopeGlobal},
 		"skills.location":           locations,
 		"skills.state":              {skillNotInstalled, skillCurrent, skillRepository},
 	}))
