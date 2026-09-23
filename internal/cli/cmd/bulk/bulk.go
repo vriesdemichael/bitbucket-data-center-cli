@@ -133,7 +133,7 @@ func New(deps Dependencies) *cobra.Command {
 				return apperrors.New(apperrors.KindInternal, "failed to initialize API client", err)
 			}
 
-			statusDir, err := statusStoreDir()
+			statusDir, err := StatusStoreDir()
 			if err != nil {
 				return err
 			}
@@ -194,7 +194,7 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "Show the saved status for a prior bulk apply operation",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			statusDir, err := statusStoreDir()
+			statusDir, err := StatusStoreDir()
 			if err != nil {
 				return err
 			}
@@ -256,7 +256,10 @@ func writeJSONFile(filePath string, payload any) error {
 	return nil
 }
 
-func statusStoreDir() (string, error) {
+// StatusStoreDir is where bb bulk apply saves each run and bb bulk status
+// reads it back. Exported so shell completion lists the runs from the same
+// place, rather than from a second idea of where they are.
+func StatusStoreDir() (string, error) {
 	if custom := strings.TrimSpace(os.Getenv("BB_BULK_STATUS_DIR")); custom != "" {
 		return custom, nil
 	}

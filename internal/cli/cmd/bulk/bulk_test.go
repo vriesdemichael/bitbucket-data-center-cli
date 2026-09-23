@@ -96,7 +96,7 @@ func TestParseErrorKindCoverage(t *testing.T) {
 func TestStatusStoreDirDefault(t *testing.T) {
 	t.Setenv("BB_BULK_STATUS_DIR", "")
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.yaml"))
-	dir, err := statusStoreDir()
+	dir, err := StatusStoreDir()
 	if err != nil || !strings.Contains(dir, "bulk-status") {
 		t.Fatalf("expected bulk-status path, got %s (%v)", dir, err)
 	}
@@ -104,7 +104,7 @@ func TestStatusStoreDirDefault(t *testing.T) {
 
 func TestStatusStoreDirEnv(t *testing.T) {
 	t.Setenv("BB_BULK_STATUS_DIR", "/tmp/bulk")
-	dir, err := statusStoreDir()
+	dir, err := StatusStoreDir()
 	if err != nil || dir != "/tmp/bulk" {
 		t.Fatalf("expected /tmp/bulk, got %s (%v)", dir, err)
 	}
