@@ -76,11 +76,15 @@ not this one, comes from the server.
 | `BB_COMPLETION_DEBUG` | Prints on stderr why a completion came back empty. Shell scripts discard that stream, so set it and run `bb __complete <words>` by hand. |
 | `BB_ACTIVE_HELP` | `0` turns off the hints bash and zsh show under the prompt. |
 
-## PowerShell
+## Where the shells differ
 
-Two behaviours differ, both in the script PowerShell uses rather than in `bb`:
+A few behaviours come from the shell rather than from `bb`:
 
-- With nothing typed yet, a completion with no matches falls back to listing
-  the current directory. PowerShell accepts no value that would leave the line
-  untouched, and an error at the prompt is worse.
-- Descriptions appear in the completion menu rather than beside each value.
+- **PowerShell:** with nothing typed yet, a completion with no matches falls back
+  to listing the current directory. PowerShell accepts no value that would leave
+  the line untouched, and an error at the prompt is worse. Descriptions appear in
+  the completion menu rather than beside each value.
+- **fish:** an argument that takes a directory offers files as well, because
+  fish's completion script does not filter to directories.
+- **bash and fish:** when only some values carry a description, the columns are
+  uneven. zsh gives descriptions their own column.
