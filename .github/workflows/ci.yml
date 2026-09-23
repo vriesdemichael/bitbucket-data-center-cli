@@ -280,6 +280,47 @@ jobs:
       - name: Run Go tests
         run: task test:unit
 
+  # bb update end to end on each operating system it ships for (#637). A bb
+  # built from this tree updates itself from a mirror serving a published
+  # release's real files, verifies them against Sigstore both ways an estate
+  # can, and replaces the binary it runs from. It runs beside the other suites,
+  # so it adds no wall time.
+  update-e2e:
+    name: Update End to End (${{ matrix.os }})
+    strategy:
+      # One operating system failing says nothing about the others.
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The test writes the system policy file bb reads an offline trust root
+      # from, and removes it afterwards. A runner is discarded after the job,
+      # so the test may own that file there; it refuses to replace one.
+      - name: Let the test write the system policy
+        if: runner.os != 'Windows'
+        run: sudo mkdir -p /etc/bb && sudo chown "$(id -u):$(id -g)" /etc/bb
+
+      - name: Let the test write the system policy
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force -Path (Join-Path $env:ProgramData 'bb') | Out-Null
+
+      - name: Run the update end-to-end test
+        run: go test -tags=e2e -count=1 -timeout 20m -v ./tests/e2e/...
+
   # The build half of a release, on every pull request: each platform's
   # archives and Linux packages, and each binary's SBOM checked against the
   # archive it describes. A change that breaks packaging or an SBOM fails here
@@ -631,6 +672,7 @@ jobs:
       - adr-validation
       - unit-tests
       - unit-tests-other-os
+      - update-e2e
       - release-artifacts
       - docs-site
       - completion-shells
@@ -645,6 +687,7 @@ jobs:
           ADR_VALIDATION_RESULT: ${{ needs.adr-validation.result }}
           UNIT_TESTS_RESULT: ${{ needs.unit-tests.result }}
           UNIT_TESTS_OTHER_OS_RESULT: ${{ needs.unit-tests-other-os.result }}
+          UPDATE_E2E_RESULT: ${{ needs.update-e2e.result }}
           RELEASE_ARTIFACTS_RESULT: ${{ needs.release-artifacts.result }}
           DOCS_SITE_RESULT: ${{ needs.docs-site.result }}
           COMPLETION_SHELLS_RESULT: ${{ needs.completion-shells.result }}
@@ -658,6 +701,7 @@ jobs:
           [[ "$ADR_VALIDATION_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_OTHER_OS_RESULT" == "success" ]]
+          [[ "$UPDATE_E2E_RESULT" == "success" ]]
           [[ "$RELEASE_ARTIFACTS_RESULT" == "success" ]]
           [[ "$DOCS_SITE_RESULT" == "success" ]]
           [[ "$COMPLETION_SHELLS_RESULT" == "success" ]]
