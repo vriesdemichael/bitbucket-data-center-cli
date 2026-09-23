@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	neturl "net/url"
@@ -545,10 +546,31 @@ func TestLiveWebhookEndpointPasswordSurvivesAnUpdate(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	delivered := make(chan string, 8)
+	// Each delivery with the branch its push created, so a push reads the
+	// delivery it caused. Taking whichever came next read one push's
+	// credentials as another's whenever Bitbucket delivered an event twice.
+	type delivery struct {
+		authorization string
+		branches      []string
+	}
+	delivered := make(chan delivery, 16)
 	_, target := newContainerReachableReceiver(t, func(w http.ResponseWriter, r *http.Request) {
+		var event struct {
+			Changes []struct {
+				Ref struct {
+					DisplayID string `json:"displayId"`
+				} `json:"ref"`
+			} `json:"changes"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&event)
+
+		arrived := delivery{authorization: r.Header.Get("Authorization")}
+		for _, change := range event.Changes {
+			arrived.branches = append(arrived.branches, change.Ref.DisplayID)
+		}
+
 		select {
-		case delivered <- r.Header.Get("Authorization"):
+		case delivered <- arrived:
 		default:
 		}
 		w.WriteHeader(http.StatusOK)
@@ -562,23 +584,38 @@ func TestLiveWebhookEndpointPasswordSurvivesAnUpdate(t *testing.T) {
 		if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, file, "x\n"); err != nil {
 			t.Fatalf("push %s: %v", branch, err)
 		}
-		select {
-		case header := <-delivered:
-			return header
-		case <-time.After(30 * time.Second):
-			// A failure, not a skip. This used to skip, so an instance that
-			// could not reach the host produced a green run with the assertion
-			// never made -- which is what it did on every CI run until the
-			// extra_hosts entry in docker/compose.yml gave the container a
-			// route back. An undeliverable webhook is now the test's answer.
-			t.Fatalf(
-				"no delivery arrived at %s within 30s. The instance could not reach the receiver: check that "+
-					"docker/compose.yml still maps host.docker.internal and that the listener is bound where the "+
-					"container can reach it (webhookReceiverAddress).",
-				target,
-			)
 
-			return ""
+		deadline := time.After(30 * time.Second)
+		others := []string{}
+		for {
+			select {
+			case arrived := <-delivered:
+				if slices.Contains(arrived.branches, branch) {
+					return arrived.authorization
+				}
+				// Another push's event, delivered again or late: not this
+				// push's answer.
+				others = append(others, strings.Join(arrived.branches, ","))
+			case <-deadline:
+				if len(others) > 0 {
+					t.Fatalf("no delivery for %s arrived within 30s, though deliveries for %q did", branch, others)
+				}
+
+				// A failure, not a skip. This used to skip, so an instance that
+				// could not reach the host produced a green run with the
+				// assertion never made -- which is what it did on every CI run
+				// until the extra_hosts entry in docker/compose.yml gave the
+				// container a route back. An undeliverable webhook is now the
+				// test's answer.
+				t.Fatalf(
+					"no delivery arrived at %s within 30s. The instance could not reach the receiver: check that "+
+						"docker/compose.yml still maps host.docker.internal and that the listener is bound where the "+
+						"container can reach it (webhookReceiverAddress).",
+					target,
+				)
+
+				return ""
+			}
 		}
 	}
 
