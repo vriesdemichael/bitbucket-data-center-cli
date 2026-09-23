@@ -28,7 +28,7 @@ func TestEveryDestructiveCommandCanBeConfirmed(t *testing.T) {
 
 	var visit func(*cobra.Command)
 	visit = func(cmd *cobra.Command) {
-		if cmd.Hidden || cmd.Name() == "help" || cmd.Name() == "completion" {
+		if cmd.Hidden || cmd.Name() == "help" {
 			return
 		}
 

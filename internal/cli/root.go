@@ -351,6 +351,10 @@ your behalf using the link above.`,
 		WriteJSONList:       writeJSONList,
 	}))
 
+	// Before the walks, so the two commands it adds under Cobra's completion
+	// command get what every command that writes a file gets.
+	addCompletionSetup(rootCmd, options)
+
 	registerGlobalDryRunInterceptors(rootCmd, options)
 
 	// The same walk, for the same reason: a destructive command written

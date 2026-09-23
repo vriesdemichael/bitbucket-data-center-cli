@@ -92,7 +92,7 @@ func visitFlags(t *testing.T, visit func(cmd *cobra.Command, flag *pflag.Flag)) 
 	var walk func(*cobra.Command)
 	walk = func(cmd *cobra.Command) {
 		// Hidden commands are not skipped -- a hidden flag still takes input.
-		if cmd.Name() == "help" || cmd.Name() == "completion" {
+		if cmd.Name() == "help" {
 			return
 		}
 
