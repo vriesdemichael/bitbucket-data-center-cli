@@ -453,6 +453,50 @@ func TestClientLatestReportsWhatEveryMirrorAddressSaid(t *testing.T) {
 	})
 }
 
+// TestClientSaysAMirrorThatWantsCredentialsIsNotSupported: bb update sends no
+// credentials, and an estate whose mirror requires a login installs bb by its
+// own means. A bare "failed to download" left the operator to work that out.
+// mock-inventory: external-service — a release mirror that refuses anonymous
+// requests; the assertion is about what bb update tells the operator.
+func TestClientSaysAMirrorThatWantsCredentialsIsNotSupported(t *testing.T) {
+	t.Parallel()
+
+	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden} {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(status)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL+"/bb-releases", server.Client(), "test-agent")
+		_, latestErr := client.Latest(context.Background(), "owner", "repo")
+		_, downloadErr := client.Download(context.Background(), "sha256sums.txt")
+		for name, err := range map[string]error{"metadata": latestErr, "asset": downloadErr} {
+			if !apperrors.IsKind(err, apperrors.KindPermanent) || !strings.Contains(err.Error(), "bb update sends no credentials") ||
+				!strings.Contains(err.Error(), "_noupdate build") {
+				t.Fatalf("%d, %s: got %v, want the unsupported login explained", status, name, err)
+			}
+		}
+		// Three addresses were asked for the manifest; the advice is given once.
+		if got := strings.Count(latestErr.Error(), "sends no credentials"); got != 1 {
+			t.Fatalf("%d: the advice appears %d times in %v", status, got, latestErr)
+		}
+	}
+
+	// The public API answers 403 for a rate limit, which is not a login.
+	github := NewClient("", &http.Client{Transport: statusTransport(http.StatusForbidden)}, "test-agent")
+	if _, err := github.Latest(context.Background(), "owner", "repo"); err == nil || strings.Contains(err.Error(), "credentials") {
+		t.Fatalf("a 403 from the public API got the mirror's advice: %v", err)
+	}
+}
+
+// statusTransport answers every request with status and an empty body, without
+// a network: the subject is what the client makes of the status.
+type statusTransport int
+
+func (status statusTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	return &http.Response{StatusCode: int(status), Body: http.NoBody, Header: make(http.Header), Request: request}, nil
+}
+
 // TestClientReportsAMirrorCertificateItDoesNotTrustAsPermanent: a retry meets
 // the same certificate. Every failed request used to be wrapped as transient,
 // exit 10, telling an operator with a wrong mirror certificate to retry (#637).

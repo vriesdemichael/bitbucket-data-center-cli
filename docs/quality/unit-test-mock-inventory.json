@@ -1,11 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 185,
+    "mocked_servers": 186,
     "files": 66,
-    "functions": 176,
+    "functions": 177,
     "by_class": {
-      "external-service": 20,
+      "external-service": 21,
       "harness-constructor": 18,
       "routing-beacon": 5,
       "transport-fault": 75,
@@ -2087,7 +2087,20 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 464,
+      "line": 465,
+      "function": "TestClientSaysAMirrorThatWantsCredentialsIsNotSupported",
+      "class": "external-service",
+      "signals": [
+        "answers-any-request",
+        "returns-a-status"
+      ],
+      "action": "decide-separately",
+      "reason": "a release mirror that refuses anonymous",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/githubrelease/client_test.go",
+      "line": 508,
       "function": "TestClientReportsAMirrorCertificateItDoesNotTrustAsPermanent",
       "class": "transport-fault",
       "signals": [
@@ -2100,7 +2113,7 @@
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",
-      "line": 482,
+      "line": 526,
       "function": "TestClientLatestFallsBackOnNonNotFoundMirrorErrors",
       "class": "external-service",
       "signals": [

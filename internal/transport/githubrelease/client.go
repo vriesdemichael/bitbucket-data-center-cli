@@ -135,12 +135,24 @@ func noManifest(failures []manifestFailure) error {
 		}
 	}
 
+	// A mirror that wants a login answers every address the same way, and the
+	// advice that follows from it is said once, after them all.
+	advised := false
 	reasons := make([]string, 0, len(failures))
 	for _, failure := range failures {
-		reasons = append(reasons, fmt.Sprintf("%s: %s", failure.url, apperrors.MessageOf(failure.err)))
+		reason := apperrors.MessageOf(failure.err)
+		if short, found := strings.CutSuffix(reason, ", and "+loginAdvice); found {
+			reason, advised = short, true
+		}
+		reasons = append(reasons, fmt.Sprintf("%s: %s", failure.url, reason))
 	}
 
-	return apperrors.New(kind, "no release metadata could be read from the mirror: "+strings.Join(reasons, "; "), nil)
+	message := "no release metadata could be read from the mirror: " + strings.Join(reasons, "; ")
+	if advised {
+		message += "; " + loginAdvice
+	}
+
+	return apperrors.New(kind, message, nil)
 }
 
 // usesMirror reports whether a release mirror is configured, as opposed to the
@@ -239,7 +251,7 @@ func (client *Client) fetchAsset(ctx context.Context, resolvedURL string) ([]byt
 	exchange.Answered(response.StatusCode)
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return nil, mapHTTPError(response.StatusCode, "failed to download release asset")
+		return nil, client.statusError(response.StatusCode, "failed to download release asset")
 	}
 
 	body, err := io.ReadAll(response.Body)
@@ -275,7 +287,7 @@ func (client *Client) do(ctx context.Context, method, requestURL string, out any
 	exchange.Answered(response.StatusCode)
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return mapHTTPError(response.StatusCode, "failed to fetch release metadata")
+		return client.statusError(response.StatusCode, "failed to fetch release metadata")
 	}
 
 	body, err := io.ReadAll(response.Body)
@@ -313,6 +325,25 @@ func decodeJSON(body []byte, out any) error {
 var jsonDecoder = func(reader io.Reader) interface{ Decode(any) error } {
 	return json.NewDecoder(reader)
 }
+
+// statusError is what an answer outside 2xx means.
+//
+// A mirror that answers 401 or 403 wants credentials, and bb update sends none.
+// That is deliberate: an estate whose artifact server requires a login for every
+// download installs bb by its own means rather than through bb update (#637),
+// so the message says so instead of a bare status. The public GitHub API
+// answers 403 for a rate limit rather than for a login, so only a mirror gets
+// that advice.
+func (client *Client) statusError(statusCode int, message string) error {
+	if client.usesMirror() && (statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden) {
+		return apperrors.New(apperrors.KindPermanent, fmt.Sprintf("%s: the mirror answered %d, and %s", message, statusCode, loginAdvice), nil)
+	}
+
+	return mapHTTPError(statusCode, message)
+}
+
+// loginAdvice is what statusError tells an operator whose mirror wants a login.
+const loginAdvice = "bb update sends no credentials: the mirror has to allow anonymous downloads, or bb is installed another way, such as a package manager or the _noupdate build"
 
 func mapHTTPError(statusCode int, message string) error {
 	switch {

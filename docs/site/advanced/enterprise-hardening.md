@@ -110,7 +110,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
        ]
      }
      ```
-     Mirror `bb_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows), `sha256sums.txt`, and `sha256sums.txt.sigstore.json` at the base URL. Asset URLs may be relative, as above, or absolute mirror URLs; a manifest copied verbatim from GitHub also works, since `bb` fetches an off-mirror asset URL from `{base_url}/{asset_name}`, and never from the `github.com` address the manifest names. Verify a mirror without replacing any binary:
+     Mirror `bb_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows), `sha256sums.txt`, and `sha256sums.txt.sigstore.json` at the base URL. The mirror has to allow anonymous downloads of them: `bb update` sends no credentials, only a TLS client certificate when one is configured. Where the artifact server requires a login for every download, install `bb` through your own tooling instead, with the [`_noupdate` builds](#builds-with-self-update-compiled-out). Asset URLs may be relative, as above, or absolute mirror URLs; a manifest copied verbatim from GitHub also works, since `bb` fetches an off-mirror asset URL from `{base_url}/{asset_name}`, and never from the `github.com` address the manifest names. Verify a mirror without replacing any binary:
      ```bash
      bb update --dry-run --base-url https://artifactory.corp.internal/artifactory/bb-releases
      ```
