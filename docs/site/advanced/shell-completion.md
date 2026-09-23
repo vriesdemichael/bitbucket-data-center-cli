@@ -7,8 +7,47 @@ branches, each with its latest commit message and the default one first.
 
 ## Enabling it
 
-Add one line to the file your shell runs when it starts. The line generates the
-script each time, so completion always matches the `bb` you have installed.
+Homebrew and the `.deb` and `.rpm` packages set completion up for bash, zsh and
+fish when they install `bb`, and Scoop sets it up for PowerShell. Anywhere else,
+one command does it:
+
+```bash
+bb completion install
+```
+
+It sets up the shell you run it from; `--shell bash`, `zsh`, `fish` or
+`powershell` names another. What it writes loads the script from `bb` every
+time, so an upgrade of `bb` needs nothing done here. Running it again changes
+nothing, and `bb completion remove` takes it out.
+
+| Shell | Where it goes |
+|---|---|
+| bash | `~/.local/share/bash-completion/completions/bb`; needs the `bash-completion` package |
+| zsh | a marked block at the end of `~/.zshrc`, after `compinit` |
+| fish | `~/.config/fish/completions/bb.fish` |
+| PowerShell | a marked block in the profile of every PowerShell installed, Windows PowerShell 5.1 and PowerShell 7 alike |
+
+Windows PowerShell 5.1 runs no profile at all under its default execution
+policy, `Restricted`. `bb` says so rather than write one that would not run;
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, in Windows PowerShell,
+allows it.
+
+### For every user
+
+`--all-users` sets it up for everyone on the machine, and needs an administrator.
+Each shell has its own place for that, and on Windows only PowerShell has one:
+
+| Shell | Where it goes |
+|---|---|
+| bash | `/usr/local/share/bash-completion/completions/bb` |
+| zsh | `/usr/local/share/zsh/site-functions/_bb`, when zsh reads that directory |
+| fish | `completions/bb.fish` in fish's configuration directory, `/etc/fish` on Linux |
+| PowerShell | the all-users profile of every PowerShell installed |
+
+### By hand
+
+For a startup file you keep yourself, this is the line to add. It generates the
+script each time, like the setup above:
 
 === "Bash"
 

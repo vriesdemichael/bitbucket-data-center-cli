@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Agent skill distribution via static npx packaging and dynamic CLI generation`
 - Category: `development`
 - Status: `accepted`
+- Amended By: `090`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/040-agent-skill-distribution-static-npx-and-dynamic-cli.yaml`
 

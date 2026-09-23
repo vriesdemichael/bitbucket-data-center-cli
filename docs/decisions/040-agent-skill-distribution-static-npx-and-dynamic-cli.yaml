@@ -2,6 +2,7 @@ number: 40
 title: Agent skill distribution via static npx packaging and dynamic CLI generation
 category: development
 status: accepted
+amended_by: 90
 decision: >
   Distribute the bb agent skill through two complementary channels. First, package a baseline
   SKILL.md at skills/bb/SKILL.md in this repository so that

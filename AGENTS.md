@@ -425,6 +425,14 @@ zsh, fish and PowerShell in a container and asserts on what each terminal shows;
 the same task. Run it when a change touches how completion is installed or how a generated
 script is rewritten.
 
+`bb completion install` and `remove` (`internal/completionsetup`) set completion up in what
+a user owns: a PowerShell profile, a `.zshrc`, a file under the user's own directories. The
+packages ship scripts only into system directories, and Scoop runs the command; ADR-090 has
+the split. What the command writes is a loader, not the script, so it follows upgrades. A
+new shell or operating system asks the shell where it reads, as PowerShell is asked for its
+profile and zsh for its fpath, and the shell matrix proves each shell completes from what
+install writes, for the user and for every user.
+
 ### Mocking Stdin for CLI Prompts
 When testing CLI commands that prompt the user for confirmation (e.g., typing `y` or `n`), mock the standard input (`os.Stdin`) directly using `os.Pipe()` rather than relying solely on Cobra's `InOrStdin()`. Many standard scanner functions (like `fmt.Scanln`) read directly from `os.Stdin`, bypass Cobra's stream overrides, and will block/fail if real stdin is empty.
 
