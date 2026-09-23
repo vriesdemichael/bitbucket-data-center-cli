@@ -263,11 +263,13 @@ tasks:
       - go run ./tools/docs-lint
 
   completion:shells:
-    desc: Drive bb's completion in real bash, zsh, fish and PowerShell and check what the terminal shows (needs Docker)
+    desc: Drive bb's completion in real bash, zsh, fish and PowerShell, set up by hand and by the .deb and .rpm, and check what the terminal shows (needs Docker)
     # The protocol bb prints can be right while a shell mishandles it: Cobra's
     # PowerShell script throws at the prompt on an empty answer, and its fish
     # script puts a space after a list element. The Go tests read the protocol;
-    # this reads the screen. It needs no Bitbucket.
+    # this reads the screen. It needs no Bitbucket. It also builds the Linux
+    # packages the way the release does and installs them, because a
+    # completion file one directory off is one no shell reads.
     cmd: bash scripts/completion-shells/test.sh
 
   quality:lint:
