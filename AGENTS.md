@@ -412,6 +412,14 @@ ADR-088 has the reasoning. A source that talks to Bitbucket is proved by a live 
 everything else here — `tests/integration/live/completion_live_test.go` is the pattern, and
 it asserts the values offered rather than that the call succeeded.
 
+What bb prints can be right while a shell mishandles it. Cobra's PowerShell script throws at
+the prompt on an empty answer, and its fish script puts a space after a list element whose
+description ends in a full stop; `internal/cli/completionscripts.go` rewrites both, and
+neither shows in what `bb __complete <words>` prints. `task completion:shells` drives bash,
+zsh, fish and PowerShell in a container and asserts on what each terminal shows; CI runs
+the same task. Run it when a change touches how completion is installed or how a generated
+script is rewritten.
+
 ### Mocking Stdin for CLI Prompts
 When testing CLI commands that prompt the user for confirmation (e.g., typing `y` or `n`), mock the standard input (`os.Stdin`) directly using `os.Pipe()` rather than relying solely on Cobra's `InOrStdin()`. Many standard scanner functions (like `fmt.Scanln`) read directly from `os.Stdin`, bypass Cobra's stream overrides, and will block/fail if real stdin is empty.
 

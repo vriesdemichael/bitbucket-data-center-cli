@@ -330,6 +330,30 @@ jobs:
       - name: Build docs site
         run: task docs:validate
 
+  # The completion scripts, in the shells that run them. The Go tests assert on
+  # the protocol bb prints; this asserts on what bash, zsh, fish and PowerShell
+  # do with it, which no Go test can see.
+  completion-shells:
+    name: Shell Completion
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Setup Task
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
+
+      - name: Check completion in bash, zsh, fish and PowerShell
+        run: task completion:shells
+
   # Three jobs rather than one, because they fail for unrelated reasons and a
   # single job made every one of them read as "Live Integration Tests failed".
   # A patch-coverage breach reported under that name sends the reader looking
@@ -608,6 +632,7 @@ jobs:
       - unit-tests-other-os
       - release-artifacts
       - docs-site
+      - completion-shells
       - live-tests
       - coverage-gates
       - codecov
@@ -621,6 +646,7 @@ jobs:
           UNIT_TESTS_OTHER_OS_RESULT: ${{ needs.unit-tests-other-os.result }}
           RELEASE_ARTIFACTS_RESULT: ${{ needs.release-artifacts.result }}
           DOCS_SITE_RESULT: ${{ needs.docs-site.result }}
+          COMPLETION_SHELLS_RESULT: ${{ needs.completion-shells.result }}
           LIVE_TESTS_RESULT: ${{ needs.live-tests.result }}
           COVERAGE_GATES_RESULT: ${{ needs.coverage-gates.result }}
           CODECOV_RESULT: ${{ needs.codecov.result }}
@@ -633,6 +659,7 @@ jobs:
           [[ "$UNIT_TESTS_OTHER_OS_RESULT" == "success" ]]
           [[ "$RELEASE_ARTIFACTS_RESULT" == "success" ]]
           [[ "$DOCS_SITE_RESULT" == "success" ]]
+          [[ "$COMPLETION_SHELLS_RESULT" == "success" ]]
           # Live tests no longer skip on forks: the Bitbucket instance is
           # SDK-licensed and needs no repository secret, so "skipped" would now
           # mean the primary correctness gate silently did not run.

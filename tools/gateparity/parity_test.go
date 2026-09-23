@@ -79,6 +79,12 @@ var exemptFromParity = map[string]string{
 	// "-race requires cgo", which reads as a broken repository rather than a
 	// missing toolchain. CI is Linux and has one.
 	"test:unit:race": "the race detector needs cgo, which a default Windows Go toolchain does not have",
+	// Four shells in a container. A hook that ran it would make Docker a
+	// requirement for committing, and build an image with bash, zsh, fish and
+	// PowerShell on the first run -- a cost on every push for a check whose
+	// subject, the generated completion scripts, changes rarely. A developer
+	// runs the same task by hand; CI runs it on every pull request.
+	"completion:shells": "needs Docker and four shells; the same task runs by hand locally and on every pull request",
 }
 
 func TestEveryHookRunnableGateRunsOnBothSides(t *testing.T) {
