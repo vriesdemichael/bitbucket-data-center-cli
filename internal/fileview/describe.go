@@ -2,7 +2,6 @@ package fileview
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 )
 
@@ -15,9 +14,10 @@ type binaryType struct {
 	reason string
 }
 
-// detectBinary names a file that is not text, from its bytes.
-func detectBinary(_ string, content []byte) binaryType {
-	mimeType := http.DetectContentType(content)
+// detectBinary names a file that is not text from the type its bytes were
+// sniffed as.
+func detectBinary(_ string, sniffed string) binaryType {
+	mimeType := sniffed
 	if strings.HasPrefix(mimeType, "text/") {
 		// A signature did not match and the first 512 bytes looked like
 		// text, but the file is not: a NUL or a byte that is not UTF-8

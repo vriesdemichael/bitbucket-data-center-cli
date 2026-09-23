@@ -1,9 +1,13 @@
 package mcp
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"strings"
 	"testing"
 
@@ -111,9 +115,76 @@ func fileViews(t *testing.T) map[string]fileview.View {
 	return map[string]fileview.View{
 		"text window":              read(fileview.Request{Path: "a.txt", LineCount: 1}, []byte("one\ntwo\n")),
 		"empty text":               read(fileview.Request{Path: "empty.txt"}, nil),
+		"image":                    read(fileview.Request{Path: "small.png"}, pngOf(t, 40, 30)),
+		"scaled image":             read(fileview.Request{Path: "wide.png"}, pngOf(t, 3000, 1000)),
 		"binary":                   read(fileview.Request{Path: "blob.bin"}, []byte{0, 1, 2, 0xFF, 0xFE}),
 		"too large, size declared": fileview.TooLarge(fileview.Request{Path: "big.log"}, fileview.MaxFileBytes, 100<<20),
 		"too large, size unknown":  fileview.TooLarge(fileview.Request{Path: "big.log"}, fileview.MaxFileBytes, -1),
+	}
+}
+
+// pngOf is a PNG of width by height pixels, encoded by the standard library.
+func pngOf(t *testing.T, width, height int) []byte {
+	t.Helper()
+
+	picture := image.NewRGBA(image.Rect(0, 0, width, height))
+	for index := range picture.Pix {
+		picture.Pix[index] = byte(index / 4 % 7 * 30)
+	}
+
+	var encoded bytes.Buffer
+	if err := png.Encode(&encoded, picture); err != nil {
+		t.Fatalf("encode PNG: %v", err)
+	}
+
+	return encoded.Bytes()
+}
+
+// TestAnImageComesBackAsAnImageBesideItsDescription reads the image content
+// as a client receives it: base64 in JSON, which has to decode to the image.
+func TestAnImageComesBackAsAnImageBesideItsDescription(t *testing.T) {
+	t.Parallel()
+
+	view := fileViews(t)["scaled image"]
+	result, structured := fileContentResult(GetFileContentInput{Path: "wide.png"}, "", view)
+
+	if len(result.Content) != 2 {
+		t.Fatalf("an image came back as %d content blocks, want its description and the image", len(result.Content))
+	}
+	if text, ok := result.Content[0].(*mcp.TextContent); !ok || !strings.Contains(text.Text, "may no longer be legible") {
+		t.Errorf("the first block is not the description with its scaling warning: %#v", result.Content[0])
+	}
+
+	wire, err := json.Marshal(result.Content[1])
+	if err != nil {
+		t.Fatalf("marshal the image content: %v", err)
+	}
+	var block struct {
+		Type     string `json:"type"`
+		MIMEType string `json:"mimeType"`
+		Data     string `json:"data"`
+	}
+	if err := json.Unmarshal(wire, &block); err != nil {
+		t.Fatalf("decode the image content %s: %v", wire, err)
+	}
+	data, err := base64.StdEncoding.DecodeString(block.Data)
+	if err != nil {
+		t.Fatalf("the image's data is not base64: %v", err)
+	}
+	config, err := png.DecodeConfig(bytes.NewReader(data))
+	if err != nil || block.Type != "image" || block.MIMEType != "image/png" {
+		t.Fatalf("the image content is %q %q and decodes to %v, want an image/png", block.Type, block.MIMEType, err)
+	}
+
+	facts := structured.Image
+	if facts == nil || structured.Kind != "image" || !facts.Scaled || facts.Width != 3000 || facts.Height != 1000 ||
+		facts.ReturnedWidth != config.Width || facts.ReturnedHeight != config.Height || facts.ReturnedSize != len(data) ||
+		facts.ReturnedMIMEType != "image/png" || config.Width != fileview.ImageEdge {
+		encoded, _ := json.Marshal(structured)
+		t.Errorf("the structured answer does not describe the %dx%d image returned: %s", config.Width, config.Height, encoded)
+	}
+	if structured.Content != nil || structured.StartLine != nil {
+		t.Errorf("an image came back with lines")
 	}
 }
 

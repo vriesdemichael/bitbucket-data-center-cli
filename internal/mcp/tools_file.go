@@ -33,25 +33,41 @@ type GetFileContentInput struct {
 // a file read as lines -- an empty file has no lines, and says so -- and absent
 // for one that is not.
 type GetFileContentOutput struct {
-	Path          string  `json:"path"`
-	At            string  `json:"at,omitempty"`
-	Kind          string  `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
-	MIMEType      string  `json:"mime_type,omitempty" jsonschema:"The file's type, read from its bytes; absent when the file was not read"`
-	Size          *int64  `json:"size,omitempty" jsonschema:"The file's size in bytes; absent when it was too large to read and Bitbucket did not say how large"`
-	WebURL        string  `json:"web_url" jsonschema:"The file's page in Bitbucket, for a person to open"`
-	Content       *string `json:"content,omitempty" jsonschema:"The window's lines as they are in the file, line endings included, so a window covering the whole file is the file"`
-	StartLine     *int    `json:"start_line,omitempty" jsonschema:"The first line in the window, counting from 1"`
-	EndLine       *int    `json:"end_line,omitempty" jsonschema:"The last line in the window; one less than start_line when there are no lines"`
-	TotalLines    *int    `json:"total_lines,omitempty" jsonschema:"How many lines the whole text has"`
-	NextStartLine *int    `json:"next_start_line,omitempty" jsonschema:"Where the next window starts: pass it as start_line for the lines that follow. Absent when this window reaches the end"`
+	Path          string     `json:"path"`
+	At            string     `json:"at,omitempty"`
+	Kind          string     `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; image, the image, in the content beside this; binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
+	MIMEType      string     `json:"mime_type,omitempty" jsonschema:"The file's type, read from its bytes; absent when the file was not read"`
+	Size          *int64     `json:"size,omitempty" jsonschema:"The file's size in bytes; absent when it was too large to read and Bitbucket did not say how large"`
+	WebURL        string     `json:"web_url" jsonschema:"The file's page in Bitbucket, for a person to open"`
+	Content       *string    `json:"content,omitempty" jsonschema:"The window's lines as they are in the file, line endings included, so a window covering the whole file is the file"`
+	StartLine     *int       `json:"start_line,omitempty" jsonschema:"The first line in the window, counting from 1"`
+	EndLine       *int       `json:"end_line,omitempty" jsonschema:"The last line in the window; one less than start_line when there are no lines"`
+	TotalLines    *int       `json:"total_lines,omitempty" jsonschema:"How many lines the whole text has"`
+	NextStartLine *int       `json:"next_start_line,omitempty" jsonschema:"Where the next window starts: pass it as start_line for the lines that follow. Absent when this window reaches the end"`
+	Image         *FileImage `json:"image,omitempty" jsonschema:"What the image returned is, beside what the file holds"`
+}
+
+// FileImage says how the image get_file_content returned compares with the
+// one the file holds, which scaling makes worth knowing: small text may not
+// have survived it.
+type FileImage struct {
+	Width            int    `json:"width" jsonschema:"The image's width in pixels, as stored"`
+	Height           int    `json:"height" jsonschema:"The image's height in pixels, as stored"`
+	Scaled           bool   `json:"scaled" jsonschema:"True when the image returned is smaller than the one stored, so small text in it may no longer be legible"`
+	ReturnedWidth    int    `json:"returned_width" jsonschema:"The returned image's width in pixels"`
+	ReturnedHeight   int    `json:"returned_height" jsonschema:"The returned image's height in pixels"`
+	ReturnedMIMEType string `json:"returned_mime_type" jsonschema:"The returned image's type, which differs from mime_type when it was encoded again"`
+	ReturnedSize     int    `json:"returned_size" jsonschema:"The returned image's size in bytes"`
+	Frames           int    `json:"frames,omitempty" jsonschema:"How many frames an animated image has; only the first is returned"`
 }
 
 func specGetFileContent() Spec {
 	tool := &mcp.Tool{
 		Name: "get_file_content",
 		Description: "Read a file in a repository. Text comes back as a window of numbered lines: start_line and line_count " +
-			"choose it, and each answer says which lines it holds and where the next window starts. A file that is not text " +
-			"is described by its type and size rather than shown, and a file over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) +
+			"choose it, and each answer says which lines it holds and where the next window starts. An image (PNG, JPEG, GIF, " +
+			"WebP) comes back as an image, scaled down when it is large, with a note saying so. Any other file is described " +
+			"by its type and size rather than shown, and a file over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) +
 			" is described without being read.",
 		Annotations: readOnly(),
 		InputSchema: describedInputSchema[GetFileContentInput](map[string]string{
@@ -134,7 +150,24 @@ func fileContentResult(in GetFileContentInput, webURL string, view fileview.View
 		}
 	}
 
-	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: view.Text}}}, structured
+	// The text first, so a model reads what the image is -- and whether it
+	// was scaled -- before it sees it.
+	content := []mcp.Content{&mcp.TextContent{Text: view.Text}}
+	if image := view.Image; image != nil {
+		content = append(content, &mcp.ImageContent{Data: image.Data, MIMEType: image.MIMEType})
+		structured.Image = &FileImage{
+			Width:            image.Width,
+			Height:           image.Height,
+			Scaled:           image.Scaled,
+			ReturnedWidth:    image.ReturnedWidth,
+			ReturnedHeight:   image.ReturnedHeight,
+			ReturnedMIMEType: image.MIMEType,
+			ReturnedSize:     len(image.Data),
+			Frames:           image.Frames,
+		}
+	}
+
+	return &mcp.CallToolResult{Content: content}, structured
 }
 
 // fileWebURL is a file's page in Bitbucket's web interface, which a person can
