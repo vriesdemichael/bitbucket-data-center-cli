@@ -157,8 +157,8 @@ write_state() {
   } > "$state_file"
 }
 
-# prune removes the instances whose worktree is gone, Maven cache and all, and
-# takes down the ones that are stopped.
+# prune takes down the instances of other checkouts that have stopped: those
+# whose worktree is gone with their Maven cache, the rest keeping it.
 #
 # A stopped instance still holds its compose network, and every network holds
 # a subnet out of Docker's address pools. An instance stops itself when its
@@ -168,6 +168,17 @@ write_state() {
 # answering (#652). Taking a stopped instance down keeps its cache volume, and
 # its worktree's next `up` creates the rest again, with the new licence it
 # would have been issued anyway.
+#
+# A running instance is never touched, even when its worktree looks gone. The
+# path is the one recorded where the instance was started, and from another
+# environment a worktree that exists can look missing: WSL records
+# /mnt/c/..., which Git Bash cannot see, and Git Bash records C:/..., which
+# WSL cannot, and a worktree on a drive that is not mounted is missing to
+# both. Removing on that verdict alone could stop a live run in another
+# session and delete its cache. An instance whose worktree really is gone
+# stops itself within three hours, and the next prune removes it then. Nor
+# is one that is created or restarting: that may be another worktree's `up`
+# under way.
 prune() {
   local other path state
   docker ps -a --filter "label=${worktree_label}" \
@@ -177,12 +188,13 @@ prune() {
         if [ -z "$other" ] || [ -z "$path" ] || [ "$other" = "$project" ]; then
           continue
         fi
+        if [ "$state" != "exited" ] && [ "$state" != "dead" ]; then
+          continue
+        fi
         if [ ! -d "$path" ]; then
-          echo "Removing ${other}: its worktree ${path} no longer exists."
+          echo "Removing ${other}: it is stopped, and its worktree ${path} no longer exists."
           docker compose -p "$other" down --volumes > /dev/null 2>&1
-        elif [ "$state" = "exited" ] || [ "$state" = "dead" ]; then
-          # Only an instance that has stopped: one that is created or
-          # restarting may be another worktree's `up` under way.
+        else
           echo "Taking down ${other}: it is stopped, and its network is only in the way."
           docker compose -p "$other" down > /dev/null 2>&1
         fi
