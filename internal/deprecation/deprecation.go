@@ -35,7 +35,37 @@ type Entry struct {
 }
 
 // Entries is the registry.
-var Entries = []Entry{}
+var Entries = []Entry{
+	// The bb update fields that described a swap left for a helper to finish
+	// after bb had exited. bb update installs the new binary before it exits
+	// on every operating system (ADR-092), so they are always false or empty.
+	// An output field warns nobody at runtime (ADR-084): its schema description
+	// and the release notes say it is deprecated.
+	{
+		Name:         "bb update --json field scheduled",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "bb update replaces the binary itself before it exits, on every operating system",
+		Advice:       "Read the applied field instead.",
+	},
+	{
+		Name:         "bb update --json field staged",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "bb update replaces the binary itself before it exits, on every operating system",
+		Advice:       "Read the applied field instead.",
+	},
+	{
+		Name:         "bb update --json field paths.staged",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "bb update replaces the binary itself before it exits, on every operating system",
+		Advice:       "Read the applied field instead.",
+	},
+	{
+		Name:         "bb update --json field paths.swapResult",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "bb update replaces the binary itself before it exits, on every operating system",
+		Advice:       "Read the applied field instead.",
+	},
+}
 
 // RemoveIn is the major this entry is due to be removed in: the one after the
 // release that started warning about it.
