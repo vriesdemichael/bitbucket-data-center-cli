@@ -3312,9 +3312,9 @@ type RestBitbucketLicense struct {
 
 // RestBranch defines model for RestBranch.
 type RestBranch struct {
-	Default         *bool    `json:"default,omitempty"`
 	DisplayId       *string  `json:"displayId,omitempty"`
 	Id              *string  `json:"id,omitempty"`
+	IsDefault       *bool    `json:"isDefault,omitempty"`
 	LatestChangeset *string  `json:"latestChangeset,omitempty"`
 	LatestCommit    *string  `json:"latestCommit,omitempty"`
 	Type            *RefType `json:"type,omitempty"`

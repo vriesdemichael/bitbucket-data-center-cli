@@ -4,6 +4,8 @@ package live_test
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"slices"
 	"strings"
 	"testing"
@@ -108,6 +110,32 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 	}
 	if want := []string{branchName, "master", newestBranch}; !slices.Equal(alphabetical, want) {
 		t.Fatalf("--order-by ALPHABETICAL listed %v, want %v", alphabetical, want)
+	}
+
+	// The listing marks the default branch. bb read the mark from a field
+	// Bitbucket never sends, and so reported every branch as not the default
+	// (#658). The answer is checked against Bitbucket's own default-branch
+	// route, which is a separate request.
+	defaultBranch, err := harness.liveJSON(ctx, http.MethodGet,
+		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/branches/default", seeded.Key, repo.Slug), nil)
+	if err != nil {
+		t.Fatalf("read the default branch: %v", err)
+	}
+	defaultName := asString(defaultBranch["displayId"])
+	if defaultName == "" {
+		t.Fatalf("Bitbucket named no default branch: %v", defaultBranch)
+	}
+	marked := 0
+	for _, branch := range branchesInListing(t, mustLiveCLI(t, "branch", "list", "--all")) {
+		if branch.Default {
+			marked++
+		}
+		if branch.Default != (branch.DisplayID == defaultName) {
+			t.Errorf("branch %s is listed with default=%v, and Bitbucket's default branch is %s", branch.DisplayID, branch.Default, defaultName)
+		}
+	}
+	if marked != 1 {
+		t.Errorf("the listing marks %d branches as the default, want 1", marked)
 	}
 
 	// Get default branch
@@ -679,6 +707,7 @@ type listedBranch struct {
 	ID           string `json:"id"`
 	DisplayID    string `json:"displayId"`
 	LatestCommit string `json:"latestCommit"`
+	Default      bool   `json:"default"`
 }
 
 // branchesInListing decodes the branches out of `bb branch list --json`, in

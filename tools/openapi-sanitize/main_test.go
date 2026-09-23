@@ -658,3 +658,33 @@ func TestRequireRequestPropertiesAddsThemToRequired(t *testing.T) {
 		t.Fatalf("added = %d to a spec without the schema, want 0", added)
 	}
 }
+
+func TestFixSchemaPropertyNamesReadsTheDefaultBranchFlagAsItIsSent(t *testing.T) {
+	t.Parallel()
+
+	spec := map[string]any{
+		"components": map[string]any{
+			"schemas": map[string]any{
+				"RestBranch": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"default":   map[string]any{"type": "boolean"},
+						"displayId": map[string]any{"type": "string"},
+					},
+				},
+			},
+		},
+	}
+	fixSchemaPropertyNames(spec)
+
+	properties, _ := componentSchema(spec, "RestBranch")["properties"].(map[string]any)
+	if _, renamed := properties["isDefault"]; !renamed {
+		t.Errorf("RestBranch has no isDefault, which is the name Bitbucket sends: %v", properties)
+	}
+	if _, kept := properties["default"]; kept {
+		t.Errorf("RestBranch still declares default, which Bitbucket never sends: %v", properties)
+	}
+	if _, untouched := properties["displayId"]; !untouched {
+		t.Errorf("a property that was not renamed went missing: %v", properties)
+	}
+}

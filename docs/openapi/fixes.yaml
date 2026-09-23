@@ -1508,3 +1508,42 @@ fixes:
         - task models:verify
         - task client:verify
         - go test -tags=live ./tests/integration/live -run TestLiveRepoSettingsAutoDeclineLifecycle
+
+  - id: OPENAPI-035
+    area: spec-property-naming
+    source: server-contradicts-published-spec
+    status: active-not-reprobed
+    status_evidence: >
+      The live suite shows Bitbucket 10.4.3 marking the default branch with isDefault:
+      completion reads that key from the raw listing and offers the default branch first,
+      described as the default. The absence of a default key was not re-probed with raw HTTP.
+    description: >
+      A branch listing marks the default branch with isDefault, not the default the spec
+      declares.
+    reference:
+      type: schema
+      value: RestBranch (default)
+      upstream_issue: >
+        RestBranch declares a boolean default. GET
+        /api/latest/projects/{projectKey}/repos/{repositorySlug}/branches answers each branch with
+        isDefault instead, and never with default, so the generated field was unset for every
+        branch, the default one included. bb branch list reported default=false for all of them,
+        in its text and in its JSON.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/models/generated/bitbucket_types.gen.go
+        - internal/openapi/generated/bitbucket_client.gen.go
+        - internal/cli/cmd/branch/branch.go
+        - internal/cli/cmd/branch/result.go
+        - tests/integration/live/branch_live_test.go
+      detail: >
+        The sanitizer renames RestBranch.default to isDefault through its table of confirmed
+        property renames, so the regenerated field is IsDefault. The live test compares the branch
+        the listing marks with the one Bitbucket's own default-branch route names.
+    verification:
+      commands:
+        - go test ./tools/openapi-sanitize -run TestFixSchemaPropertyNamesReadsTheDefaultBranchFlagAsItIsSent
+        - task models:verify
+        - task client:verify
+        - go test -tags=live ./tests/integration/live -run TestLiveCLIBranchLifecycle

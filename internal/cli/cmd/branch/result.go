@@ -124,8 +124,8 @@ func branchFrom(upstream openapigenerated.RestBranch) Branch {
 		DisplayID:    safederef.String(upstream.DisplayId),
 		LatestCommit: safederef.String(upstream.LatestCommit),
 	}
-	if upstream.Default != nil {
-		converted.Default = *upstream.Default
+	if upstream.IsDefault != nil {
+		converted.Default = *upstream.IsDefault
 	}
 
 	return converted
