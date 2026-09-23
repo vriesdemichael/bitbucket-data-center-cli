@@ -2,6 +2,7 @@ number: 9
 title: Transport policy for Bitbucket API calls
 category: architecture
 status: accepted
+amended_by: 93
 decision: >
   Centralize all HTTP transport behavior in a shared client package that provides
   authentication injection, timeout defaults, retry/backoff policy, rate-limit handling,

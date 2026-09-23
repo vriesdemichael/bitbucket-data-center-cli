@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `92`
-- Accepted ADRs: `81`
+- Total ADRs: `93`
+- Accepted ADRs: `82`
 
 ## ADR List
 
@@ -101,4 +101,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 090: A package sets up what every user shares, and bb sets up what is one user's](090-a-package-sets-up-what-every-user-shares.md) (`development`, `accepted`)
 - [ADR 091: A command may report the state it read through its exit status](091-a-command-may-report-the-state-it-read-through-its-exit-status.md) (`architecture`, `accepted`)
 - [ADR 092: bb update installs the new binary itself, before it exits](092-bb-update-installs-the-new-binary-itself-before-it-exits.md) (`architecture`, `accepted`)
+- [ADR 093: Binary and large downloads go through one downloader](093-binary-and-large-downloads-go-through-one-downloader.md) (`architecture`, `accepted`)
 
