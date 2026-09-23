@@ -1,14 +1,14 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 186,
-    "files": 66,
-    "functions": 177,
+    "mocked_servers": 206,
+    "files": 68,
+    "functions": 194,
     "by_class": {
       "external-service": 21,
       "harness-constructor": 18,
       "routing-beacon": 5,
-      "transport-fault": 75,
+      "transport-fault": 95,
       "unreachable-state": 24,
       "unreached-guard": 43
     },
@@ -1923,6 +1923,276 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/transport/download/destination_test.go",
+      "line": 48,
+      "function": "TestAFailedDownloadLeavesNoFileBehind",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "keep",
+      "reason": "a server that drops its answer mid-body;",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/destination_test.go",
+      "line": 108,
+      "function": "TestAFileStartsAgainFromItsFirstByte",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "keep",
+      "reason": "a server without ranges dropping its first",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 74,
+      "function": "TestADownloadThatStopsSendingFailsAfterTheTimeout",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "keep",
+      "reason": "a server that stops sending mid-body; no",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 109,
+      "function": "TestASlowDownloadThatKeepsSendingTakesAsLongAsItNeeds",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "simulates-a-stalled-connection"
+      ],
+      "action": "keep",
+      "reason": "a server that trickles its body out; the",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 142,
+      "function": "TestAServerThatNeverAnswersFailsAfterTheTimeout",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "keep",
+      "reason": "a server that accepts the request and",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 168,
+      "function": "TestAWriterThatTakesItsTimeIsNotAStall",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "simulates-a-stalled-connection"
+      ],
+      "action": "keep",
+      "reason": "a prompt server feeding a slow writer; the",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 198,
+      "function": "TestADeclaredLengthOverTheLimitFailsBeforeAnythingIsWritten",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "keep",
+      "reason": "a server declaring a body over the cap; the",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 228,
+      "function": "TestABodyWithoutALengthFailsAsItPassesTheLimit",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "keep",
+      "reason": "a server streaming an unbounded body; the",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 299,
+      "function": "TestADroppedConnectionResumesFromWhereItBrokeOff",
+      "class": "transport-fault",
+      "signals": [
+        "closes-on-cleanup",
+        "handler-supplied-by-the-caller"
+      ],
+      "action": "keep",
+      "reason": "a connection dropped mid-body in front of",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 333,
+      "function": "TestAResumeAnsweredWithTheWholeBodyStartsOver",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request"
+      ],
+      "action": "keep",
+      "reason": "a server that advertises ranges and",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 391,
+      "function": "TestADownloadWithoutRangesStartsAgainWhereItCan",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "returns-a-status",
+        "varies-by-attempt-count"
+      ],
+      "action": "keep",
+      "reason": "a server without range support that drops",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 441,
+      "function": "TestADownloadWithoutRangesStartsAgainWhereItCan",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "returns-a-status",
+        "varies-by-attempt-count"
+      ],
+      "action": "keep",
+      "reason": "a server without range support that drops",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 485,
+      "function": "TestAResumedAnswerThatDoesNotContinueTheBodyIsNotAppended",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "returns-a-status"
+      ],
+      "action": "keep",
+      "reason": "a server whose range answers are wrong; the",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 530,
+      "function": "TestABodyShorterThanItsLengthIsTransient",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "keep",
+      "reason": "a server lying about Content-Length; no",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 573,
+      "function": "TestAFailedDownloadIsReportedAsWhatItWas",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "returns-a-status",
+        "returns-bitbucket-entity"
+      ],
+      "action": "keep",
+      "reason": "a TLS listener this client does not trust,",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 587,
+      "function": "TestAFailedDownloadIsReportedAsWhatItWas",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "returns-a-status",
+        "returns-bitbucket-entity"
+      ],
+      "action": "keep",
+      "reason": "a TLS listener this client does not trust,",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 616,
+      "function": "TestAFailedDownloadIsReportedAsWhatItWas",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "returns-a-status",
+        "returns-bitbucket-entity"
+      ],
+      "action": "keep",
+      "reason": "a TLS listener this client does not trust,",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 681,
+      "function": "TestTheCallersTransportSeesEveryRequestAndRedirect",
+      "class": "transport-fault",
+      "signals": [
+        "closes-on-cleanup",
+        "inspects-the-request-path"
+      ],
+      "action": "keep",
+      "reason": "a server that redirects, behind a",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 726,
+      "function": "TestARangeTheCallerAskedForIsTheAnswer",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "keep",
+      "reason": "the standard library's range handling; the",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/download/download_test.go",
+      "line": 750,
+      "function": "TestAnOpenerSeesTheHeaderBeforeTheBody",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup"
+      ],
+      "action": "keep",
+      "reason": "a server whose body the destination",
+      "reviewed": true
     },
     {
       "file": "internal/transport/githubrelease/client_test.go",

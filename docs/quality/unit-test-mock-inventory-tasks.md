@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `keep` | 147 | legitimate unit test under ADR-079 |
+| `keep` | 167 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 21 | outside the Bitbucket policy; needs its own decision |
 
@@ -15,6 +15,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
 | `internal/transport/httpclient/client_test.go` | 23 | 0 | 0 | 23 | 0 |
+| `internal/transport/download/download_test.go` | 18 | 0 | 0 | 18 | 0 |
 | `internal/transport/githubrelease/client_test.go` | 16 | 0 | 0 | 1 | 15 |
 | `internal/services/comment/service_test.go` | 9 | 0 | 0 | 8 | 1 |
 | `internal/services/pullrequest/service_test.go` | 7 | 0 | 0 | 6 | 1 |
@@ -53,6 +54,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/repository/admin_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/reviewer/service_coverage_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/services/reviewer/service_test.go` | 2 | 0 | 0 | 2 | 0 |
+| `internal/transport/download/destination_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/transport/outcome/outcome_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/transport/sigstore/trustedroot_test.go` | 2 | 0 | 0 | 0 | 2 |
 | `internal/cli/cmd/auth/gpg_test.go` | 1 | 0 | 0 | 1 | 0 |
