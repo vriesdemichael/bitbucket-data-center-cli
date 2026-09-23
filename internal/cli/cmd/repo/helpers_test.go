@@ -52,6 +52,10 @@ type testSetup struct {
 	// that set BB_DISABLE_STORED_CONFIG wanted.
 	ConfigPath string
 
+	// Out takes the command's standard output in place of the buffer the
+	// helper returns, for a test whose subject is a write to it that fails.
+	Out io.Writer
+
 	// Retries is how often a failing request is repeated before the command
 	// gives up. Nil means none.
 	//
@@ -117,6 +121,9 @@ func executeTestCLIWith(t *testing.T, setup testSetup, args ...string) (string, 
 	buf := new(bytes.Buffer)
 	root.SetOut(buf)
 	root.SetErr(buf)
+	if setup.Out != nil {
+		root.SetOut(setup.Out)
+	}
 	if setup.Stdin != nil {
 		root.SetIn(setup.Stdin)
 	}

@@ -1,15 +1,15 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 213,
-    "files": 71,
-    "functions": 201,
+    "mocked_servers": 215,
+    "files": 72,
+    "functions": 203,
     "by_class": {
       "external-service": 27,
       "harness-constructor": 18,
       "routing-beacon": 5,
-      "transport-fault": 96,
-      "unreachable-state": 24,
+      "transport-fault": 97,
+      "unreachable-state": 25,
       "unreached-guard": 43
     },
     "behaviour_by_package": {}
@@ -399,6 +399,33 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/cli/cmd/repo/rawfile_test.go",
+      "line": 58,
+      "function": "TestAFileThatCannotBeWrittenToStdoutIsReported",
+      "class": "unreachable-state",
+      "signals": [
+        "closes-on-cleanup",
+        "inspects-the-request-path"
+      ],
+      "action": "keep",
+      "reason": "a standard output that fails part-way",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/repo/rawfile_test.go",
+      "line": 93,
+      "function": "TestAFileOverWhatJSONHoldsSaysToDropIt",
+      "class": "transport-fault",
+      "signals": [
+        "closes-on-cleanup",
+        "returns-a-status",
+        "inspects-the-request-path"
+      ],
+      "action": "keep",
+      "reason": "a server declaring a file over the cap",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/repo/sync_test.go",

@@ -13,6 +13,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/download"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
@@ -133,6 +134,30 @@ func (service *Service) Raw(ctx context.Context, repo RepositoryRef, path string
 	}
 
 	return service.http.GetRaw(ctx, repositoryAPIPath(repo, "raw", encodedPath), query)
+}
+
+// RawTo writes a file's bytes at a ref to destination as they arrive, through
+// the downloader: a file is as large as it is, and the request timeout bounds
+// each wait rather than the whole transfer. limit caps it; zero is no cap, for
+// a destination that holds nothing in memory.
+func (service *Service) RawTo(ctx context.Context, repo RepositoryRef, path string, at string, destination download.Destination, limit int64) error {
+	if err := validateRepositoryRef(repo); err != nil {
+		return err
+	}
+
+	encodedPath, err := encodeFilePath(path)
+	if err != nil {
+		return err
+	}
+
+	query := url.Values{}
+	if strings.TrimSpace(at) != "" {
+		query.Set("at", strings.TrimSpace(at))
+	}
+
+	_, err = service.http.Download(ctx, httpclient.RequestOptions{Path: repositoryAPIPath(repo, "raw", encodedPath), Query: query}, destination, limit)
+
+	return err
 }
 
 func (service *Service) File(ctx context.Context, repo RepositoryRef, path string, options FileOptions) ([]byte, error) {
