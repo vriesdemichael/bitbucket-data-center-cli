@@ -14,6 +14,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/inherited"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outwriter"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
@@ -27,6 +28,7 @@ import (
 	forksync "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/forksync"
 	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/sshkey"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/download"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
@@ -511,6 +513,24 @@ default-task delete deletes it there, for every repository in the project.`,
 // repository's route answers 204 for it and leaves it where it is (#657). A
 // task that is not there is not found. change is the subcommand the caller
 // ran, which does the same on the project.
+// archiveRequestURL is the address of a repository's archive, built by the
+// generated client so the path and every parameter are encoded as the
+// specification has them.
+//
+// The generated builders resolve their path relative to the server URL, and
+// RFC 3986 replaces a base URL's last segment unless it ends in a slash: given
+// .../rest, they address .../api/latest/..., which Bitbucket answers with its
+// web UI's 404 page. The generated client adds that slash itself; a builder
+// called directly has to be given it.
+func archiveRequestURL(bitbucketURL, projectKey, slug string, params *openapigenerated.GetArchiveParams) (string, error) {
+	request, err := openapigenerated.NewGetArchiveRequest(strings.TrimRight(bitbucketURL, "/")+"/rest/", projectKey, slug, params)
+	if err != nil {
+		return "", err
+	}
+
+	return request.URL.String(), nil
+}
+
 func ownDefaultTask(ctx context.Context, service *reposettings.Service, repo reposettings.RepositoryRef, id, change string) error {
 	task, err := service.GetDefaultTask(ctx, repo, id)
 	if err != nil {
@@ -980,7 +1000,7 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 						"drop --json to stream the archive, or give --output a filename to get the envelope", nil)
 			}
 
-			cfg, client, err := deps.LoadConfigAndClient()
+			cfg, _, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
 			}
@@ -1013,67 +1033,57 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 				Format: formatParam,
 			}
 
-			resp, err := client.GetArchive(cmd.Context(), repoRef.ProjectKey, repoRef.Slug, params)
+			// Sent through the downloader: an archive is as large as the
+			// repository, and one that had to arrive within the request timeout
+			// could not be larger than the link carries in that time.
+			archiveURL, err := archiveRequestURL(cfg.BitbucketURL, repoRef.ProjectKey, repoRef.Slug, params)
 			if err != nil {
-				// Classified, like every service call and like the two other raw
-				// client calls in the tree. Unwrapped it fell through to internal,
-				// so an unreachable host read as a defect in bb (#478).
-				return apperrors.Transport("failed to stream the repository archive", err)
+				return apperrors.New(apperrors.KindValidation, "failed to build the repository archive request", err)
 			}
-			defer func() { _ = resp.Body.Close() }()
-
-			if resp.StatusCode >= 400 {
-				bodyBytes, _ := io.ReadAll(resp.Body)
-				return openapi.MapStatusError(resp.StatusCode, bodyBytes)
-			}
-
-			var writer io.Writer
-			// Non-nil only when writing to a file rather than stdout; the file is
-			// closed explicitly before success is reported.
-			var archiveFile io.WriteCloser
-			var targetMsg string
-
-			if output == "-" {
-				writer = cmd.OutOrStdout()
-				targetMsg = "stdout"
-			} else {
-				filename := output
-				if filename == "" {
-					filename = fmt.Sprintf("%s.%s", repoRef.Slug, format)
-				}
-				file, err := createArchiveFile(filename)
-				if err != nil {
-					return err
-				}
-				// finishArchiveFile closes it before success is reported; this
-				// only covers the paths that return early.
-				defer func() { _ = file.Close() }()
-				archiveFile = file
-				writer = file
-				absPath, _ := filepath.Abs(filename)
-				targetMsg = absPath
-			}
-
-			_, err = io.Copy(writer, resp.Body)
-			if err != nil {
-				return err
-			}
-
-			if err := finishArchiveFile(archiveFile, targetMsg); err != nil {
-				return err
-			}
+			source := httpclient.RequestOptions{Path: archiveURL}
+			client := httpclient.NewFromConfig(cfg)
 
 			// Streaming to stdout reports nothing on stdout: the archive is
-			// already there, and a success line appended to it would corrupt
-			// the file the caller is redirecting. The --json half of this can
-			// no longer arrive, being refused above; what is left is the human
-			// line, which has the same problem for the same reason.
-			if output != "-" {
-				if deps.JSONEnabled() {
-					return deps.WriteJSON(cmd.OutOrStdout(), Archive{Status: result.OK(), Repository: repositoryOf(repoRef), File: targetMsg})
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Successfully downloaded repository archive to %s\n", targetMsg)
+			// already there, and a success line appended to it would corrupt the
+			// file the caller is redirecting. The --json half of this is refused
+			// above; what is left is the human line, which has the same problem
+			// for the same reason.
+			//
+			// No cap, here or for a file: the archive is held nowhere in memory,
+			// and how large a repository may be is not bb's to judge.
+			if output == "-" {
+				_, err := client.Download(cmd.Context(), source, download.To(cmd.OutOrStdout()), 0)
+
+				return archiveFailure(streamed(err))
 			}
+
+			filename := output
+			if filename == "" {
+				filename = fmt.Sprintf("%s.%s", repoRef.Slug, format)
+			}
+
+			// A temporary file beside the target takes the archive, and is
+			// renamed over it only once the download is complete. Written into
+			// place, a failed download left a truncated archive there -- and
+			// had already destroyed whatever file was there before.
+			file, err := download.CreateFile(filename)
+			if err != nil {
+				return err
+			}
+			defer file.Discard()
+
+			if _, err := client.Download(cmd.Context(), source, file, 0); err != nil {
+				return archiveFailure(err)
+			}
+			if err := file.Commit(); err != nil {
+				return err
+			}
+
+			targetMsg, _ := filepath.Abs(filename)
+			if deps.JSONEnabled() {
+				return deps.WriteJSON(cmd.OutOrStdout(), Archive{Status: result.OK(), Repository: repositoryOf(repoRef), File: targetMsg})
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully downloaded repository archive to %s\n", targetMsg)
 
 			return nil
 		},
@@ -1323,34 +1333,28 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 	return repoSshCmd
 }
 
-// createArchiveFile is the seam the archive download writes through.
-//
-// A close failure is the thing worth testing here and it cannot be provoked
-// through os.Create: a real file closes cleanly, and one closed early fails the
-// write instead. It returns io.WriteCloser rather than *os.File so a test can
-// supply something that writes fine and fails only on Close, which is the
-// branch that used to report a truncated download as a success.
-var createArchiveFile = func(name string) (io.WriteCloser, error) { return os.Create(name) }
-
-// finishArchiveFile closes the downloaded archive and reports a close failure
-// as an error rather than as a successful download.
-//
-// io.Copy returning nil does not mean the bytes reached the disk. A Close that
-// fails — a full disk, a network filesystem — leaves a truncated archive, and
-// this command used to print "Successfully downloaded" and exit 0 over exactly
-// that. It is a function rather than three lines at the call site so the
-// failure path can be exercised: closing an already-closed *os.File returns an
-// error on every platform, which no amount of mocking around os.Create would.
-func finishArchiveFile(file io.WriteCloser, target string) error {
-	if file == nil {
+// archiveFailure says what failed when an archive download does. Bitbucket's
+// own refusal -- a repository that is not there -- goes back as it is, as every
+// command reports one; anything else is wrapped with the classification the
+// transport gave it (#478).
+func archiveFailure(err error) error {
+	if err == nil {
 		return nil
 	}
-	if err := file.Close(); err != nil {
-		return apperrors.New(
-			apperrors.KindInternal,
-			fmt.Sprintf("failed to finish writing repository archive to %s", target),
-			err,
-		)
+	if _, answered := apperrors.DetailsOf(err)["upstreamStatus"]; answered {
+		return err
 	}
-	return nil
+
+	return apperrors.Transport("failed to stream the repository archive", err)
+}
+
+// streamed is the failure of a download written to standard output. A reader
+// that stopped reading -- `bb repo archive -o - | tar t | head` -- has what it
+// wanted, and ends the command as it ends any other output (outwriter).
+func streamed(err error) error {
+	if err != nil && outwriter.ReaderGone(err) {
+		return nil
+	}
+
+	return err
 }

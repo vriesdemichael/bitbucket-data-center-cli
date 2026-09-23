@@ -159,6 +159,12 @@ func TestUsedOperationToName(t *testing.T) {
 		"SetSettingsWithBodyWithResponse":    "SetSettings",
 		"UpdatePullRequestSettings1WithBody": "UpdatePullRequestSettings1",
 		"GetPullRequestSettings1":            "GetPullRequestSettings1",
+		// A request builder names its operation between New and Request.
+		"NewGetArchiveRequest":            "GetArchive",
+		"NewCreateCommentRequestWithBody": "CreateComment",
+		// http.NewRequest names no operation, and is left for the lookup to drop.
+		"NewRequest":    "NewRequest",
+		"CreateRequest": "CreateRequest",
 	}
 	for input, want := range cases {
 		if got := usedOperationToName(input); got != want {

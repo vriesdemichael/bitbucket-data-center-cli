@@ -53,9 +53,16 @@ func (recorder *Recorder) Err() error {
 	if recorder == nil || recorder.err == nil {
 		return nil
 	}
-	if errors.Is(recorder.err, syscall.EPIPE) || errors.Is(recorder.err, io.ErrClosedPipe) {
+	if ReaderGone(recorder.err) {
 		return nil
 	}
 
 	return recorder.err
+}
+
+// ReaderGone reports a write that failed because the reader stopped reading:
+// the pipe closed under it. A command streaming a download to standard output
+// asks it of the failure that stopped the stream, and ends as Err does.
+func ReaderGone(err error) bool {
+	return errors.Is(err, syscall.EPIPE) || errors.Is(err, io.ErrClosedPipe)
 }

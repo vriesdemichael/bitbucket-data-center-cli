@@ -177,7 +177,7 @@ func TestAWriterThatTakesItsTimeIsNotAStall(t *testing.T) {
 
 		return written.Write(chunk)
 	})
-	_, err := testDownloader(server.Client(), 150*time.Millisecond, 0).Get(context.Background(), Request{URL: server.URL}, Stream(slow))
+	_, err := testDownloader(server.Client(), 150*time.Millisecond, 0).Get(context.Background(), Request{URL: server.URL}, To(slow))
 	if err != nil {
 		t.Fatalf("a slow writer was taken for a stalled server: %v", err)
 	}
@@ -300,7 +300,7 @@ func TestADroppedConnectionResumesFromWhereItBrokeOff(t *testing.T) {
 	defer server.Close()
 
 	var written bytes.Buffer
-	result, err := testDownloader(server.Client(), time.Second, 2).Get(context.Background(), Request{URL: server.URL}, Stream(&written))
+	result, err := testDownloader(server.Client(), time.Second, 2).Get(context.Background(), Request{URL: server.URL}, To(&written))
 	if err != nil {
 		t.Fatalf("the download did not resume: %v", err)
 	}
@@ -363,7 +363,7 @@ func TestAResumeAnsweredWithTheWholeBodyStartsOver(t *testing.T) {
 
 		server, _ := serve(t)
 		var written bytes.Buffer
-		_, err := testDownloader(server.Client(), time.Second, 2).Get(context.Background(), Request{URL: server.URL}, Stream(&written))
+		_, err := testDownloader(server.Client(), time.Second, 2).Get(context.Background(), Request{URL: server.URL}, To(&written))
 		if !apperrors.IsKind(err, apperrors.KindTransient) || !strings.Contains(err.Error(), "would write those bytes twice") {
 			t.Fatalf("got %v, want a transient failure saying the stream cannot start again", err)
 		}
@@ -421,7 +421,7 @@ func TestADownloadWithoutRangesStartsAgainWhereItCan(t *testing.T) {
 
 		server, hits, _ := serve(t)
 		var written bytes.Buffer
-		_, err := testDownloader(server.Client(), time.Second, 2).Get(context.Background(), Request{URL: server.URL}, Stream(&written))
+		_, err := testDownloader(server.Client(), time.Second, 2).Get(context.Background(), Request{URL: server.URL}, To(&written))
 		if !apperrors.IsKind(err, apperrors.KindTransient) || !strings.Contains(err.Error(), "offers no range to resume it from") {
 			t.Fatalf("got %v, want a transient failure saying why it cannot continue", err)
 		}
@@ -449,7 +449,7 @@ func TestADownloadWithoutRangesStartsAgainWhereItCan(t *testing.T) {
 		t.Cleanup(server.Close)
 
 		var written bytes.Buffer
-		if _, err := testDownloader(server.Client(), time.Second, 2).Get(context.Background(), Request{URL: server.URL}, Stream(&written)); err != nil {
+		if _, err := testDownloader(server.Client(), time.Second, 2).Get(context.Background(), Request{URL: server.URL}, To(&written)); err != nil {
 			t.Fatalf("got %v, want the retried request to complete", err)
 		}
 		if !bytes.Equal(written.Bytes(), body) {
@@ -599,7 +599,7 @@ func TestAFailedDownloadIsReportedAsWhatItWas(t *testing.T) {
 
 			return len(chunk), nil
 		})
-		_, err := testDownloader(server.Client(), 10*time.Second, 3).Get(ctx, Request{URL: server.URL}, Stream(interrupting))
+		_, err := testDownloader(server.Client(), 10*time.Second, 3).Get(ctx, Request{URL: server.URL}, To(interrupting))
 		if !apperrors.IsKind(err, apperrors.KindCancelled) || !strings.Contains(err.Error(), "the download was interrupted") {
 			t.Fatalf("got %v, want cancelled, saying so", err)
 		}

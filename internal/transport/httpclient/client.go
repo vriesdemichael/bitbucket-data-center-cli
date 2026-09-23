@@ -3,7 +3,9 @@ package httpclient
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,6 +16,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/download"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/outcome"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/retrypolicy"
@@ -29,6 +32,8 @@ type Client struct {
 	backoff  time.Duration
 	logger   *diagnostics.Logger
 	initErr  error
+	// downloads carries the bodies Download fetches, over the same transport.
+	downloads *download.Downloader
 }
 
 type HealthStatus struct {
@@ -49,7 +54,7 @@ func NewFromConfig(cfg config.AppConfig) *Client {
 		transport = &network.SafeTransport{}
 	}
 
-	return &Client{
+	client := &Client{
 		baseURL: strings.TrimRight(cfg.BitbucketURL, "/"),
 		http: &http.Client{
 			Timeout:   cfg.RequestTimeout,
@@ -66,6 +71,21 @@ func NewFromConfig(cfg config.AppConfig) *Client {
 		}, diagnostics.EnabledWriter(cfg.DiagnosticsEnabled, diagnostics.OutputWriter())),
 		initErr: err,
 	}
+	client.downloads = client.newDownloader()
+
+	return client
+}
+
+// newDownloader is the downloader over this client's transport and policy: the
+// request timeout bounds each wait rather than the whole transfer, and retries
+// follow retry_count and retry_backoff.
+func (client *Client) newDownloader() *download.Downloader {
+	return download.New(client.http, download.Options{
+		Timeout: client.http.Timeout,
+		Retries: client.retries,
+		Backoff: client.backoff,
+		Logger:  client.logger,
+	})
 }
 
 func (client *Client) GetJSON(ctx context.Context, path string, query map[string]string, out any) error {
@@ -165,28 +185,10 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 		method = http.MethodGet
 	}
 
-	rawPath := opts.Path
-	var requestURL *url.URL
-	var err error
-	if strings.HasPrefix(rawPath, "http://") || strings.HasPrefix(rawPath, "https://") {
-		requestURL, err = url.Parse(rawPath)
-	} else {
-		if !strings.HasPrefix(rawPath, "/") {
-			rawPath = "/" + rawPath
-		}
-		requestURL, err = url.Parse(client.baseURL + rawPath)
-	}
+	requestURL, err := client.requestURL(opts)
 	if err != nil {
-		return nil, apperrors.New(apperrors.KindValidation, "invalid request URL", err)
+		return nil, err
 	}
-
-	values := requestURL.Query()
-	for k, vs := range opts.Query {
-		for _, v := range vs {
-			values.Add(k, v)
-		}
-	}
-	requestURL.RawQuery = values.Encode()
 
 	var lastErr error
 	for attempt := 0; attempt <= client.retries; attempt++ {
@@ -314,6 +316,76 @@ func (client *Client) DoRequest(ctx context.Context, opts RequestOptions) (*RawR
 	}
 
 	return nil, apperrors.New(apperrors.KindTransient, "request failed after retries", nil)
+}
+
+// requestURL resolves opts' path against the base URL, or takes it as it is
+// when it is already absolute, and adds opts' query.
+func (client *Client) requestURL(opts RequestOptions) (*url.URL, error) {
+	rawPath := opts.Path
+	var requestURL *url.URL
+	var err error
+	if strings.HasPrefix(rawPath, "http://") || strings.HasPrefix(rawPath, "https://") {
+		requestURL, err = url.Parse(rawPath)
+	} else {
+		if !strings.HasPrefix(rawPath, "/") {
+			rawPath = "/" + rawPath
+		}
+		requestURL, err = url.Parse(client.baseURL + rawPath)
+	}
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindValidation, "invalid request URL", err)
+	}
+
+	values := requestURL.Query()
+	for k, vs := range opts.Query {
+		for _, v := range vs {
+			values.Add(k, v)
+		}
+	}
+	requestURL.RawQuery = values.Encode()
+
+	return requestURL, nil
+}
+
+// Download sends a GET for opts through the downloader and writes the body to
+// destination as it arrives. It is for a body that may be large or slow -- an
+// archive, a file's bytes -- and not for an API call: the request timeout
+// bounds each wait rather than the whole transfer, a body that breaks off is
+// resumed or started again where it can be, and limit caps it (zero is no cap,
+// for a destination that holds nothing in memory).
+//
+// An answer outside 2xx is mapped as DoRequest maps one. opts' Method and
+// Body are not used.
+func (client *Client) Download(ctx context.Context, opts RequestOptions, destination download.Destination, limit int64) (download.Result, error) {
+	if client.initErr != nil {
+		return download.Result{}, apperrors.New(apperrors.KindValidation, "failed to initialize HTTP transport", client.initErr)
+	}
+
+	requestURL, err := client.requestURL(opts)
+	if err != nil {
+		return download.Result{}, err
+	}
+
+	header := opts.Headers.Clone()
+	if header == nil {
+		header = make(http.Header)
+	}
+	if header.Get("Authorization") == "" {
+		client.authorize(header)
+	}
+
+	downloads := client.downloads
+	if downloads == nil {
+		downloads = client.newDownloader()
+	}
+
+	result, err := downloads.Get(ctx, download.Request{URL: requestURL.String(), Header: header, Limit: limit}, destination)
+	var status *download.StatusError
+	if errors.As(err, &status) {
+		return result, openapi.MapStatusError(status.StatusCode, status.Body)
+	}
+
+	return result, err
 }
 
 // do issues a request under the client's retry, logging and error-mapping
@@ -448,13 +520,19 @@ func (client *Client) Health(ctx context.Context) (HealthStatus, error) {
 }
 
 func (client *Client) applyAuth(request *http.Request) {
+	client.authorize(request.Header)
+}
+
+// authorize adds the configured credentials to header: the token when there is
+// one, and a username with its password otherwise.
+func (client *Client) authorize(header http.Header) {
 	if client.token != "" {
-		request.Header.Set("Authorization", "Bearer "+client.token)
+		header.Set("Authorization", "Bearer "+client.token)
 		return
 	}
 
 	if client.username != "" && client.password != "" {
-		request.SetBasicAuth(client.username, client.password)
+		header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(client.username+":"+client.password)))
 	}
 }
 
