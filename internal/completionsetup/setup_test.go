@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
@@ -199,6 +200,26 @@ func TestAPowerShellThatCannotAnswerBlocksOnlyItself(t *testing.T) {
 	none := &fakeSystem{goos: "linux"}
 	if _, err := Targets(context.Background(), none.system(), PowerShell, CurrentUser); apperrors.KindOf(err) != apperrors.KindValidation {
 		t.Errorf("no PowerShell at all gave %v", err)
+	}
+}
+
+// TestAShellThatDoesNotAnswerIsStopped: bb completion install and bb doctor
+// ask each shell something it answers at once, and one that never answers
+// must hold neither up. This test binary stands in for such a shell.
+func TestAShellThatDoesNotAnswerIsStopped(t *testing.T) {
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatalf("locate the test executable: %v", err)
+	}
+	t.Setenv(hangVariable, "1")
+
+	started := time.Now()
+	_, err = runner(200*time.Millisecond)(context.Background(), executable)
+	if err == nil || !strings.Contains(err.Error(), "did not answer within 200ms") {
+		t.Errorf("a shell that never answers gave %v", err)
+	}
+	if waited := time.Since(started); waited > 20*time.Second {
+		t.Errorf("waited %s for a shell that never answers", waited)
 	}
 }
 

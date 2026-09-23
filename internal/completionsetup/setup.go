@@ -32,6 +32,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
@@ -158,29 +159,46 @@ func Real() System {
 		Getenv:   os.Getenv,
 		HomeDir:  os.UserHomeDir,
 		LookPath: exec.LookPath,
-		Run:      run,
+		Run:      runner(answerTimeout),
 	}
 }
 
-func run(ctx context.Context, executable string, args ...string) (string, error) {
-	// #nosec G204 -- executable is what LookPath found for one of the literal
-	// names pwsh, powershell, zsh and fish, and the arguments are this
-	// package's own questions.
-	process := exec.CommandContext(ctx, executable, args...)
+// answerTimeout is how long a shell is given to answer. What it is asked, it
+// answers at once; one that has not answered by then will not, and neither bb
+// completion install nor bb doctor should wait on it for ever.
+const answerTimeout = 30 * time.Second
 
-	var stderr bytes.Buffer
-	process.Stderr = &stderr
+// runner runs a shell to ask it something, and stops it once it has taken
+// longer than timeout.
+func runner(timeout time.Duration) func(context.Context, string, ...string) (string, error) {
+	return func(ctx context.Context, executable string, args ...string) (string, error) {
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
 
-	output, err := process.Output()
-	if err != nil {
+		// #nosec G204 -- executable is what LookPath found for one of the
+		// literal names pwsh, powershell, zsh and fish, and the arguments are
+		// this package's own questions.
+		process := exec.CommandContext(ctx, executable, args...)
+		// A process the shell started can hold its output open after the
+		// shell is stopped, and Output waits for that; not for long.
+		process.WaitDelay = time.Second
+
+		var stderr bytes.Buffer
+		process.Stderr = &stderr
+
+		output, err := process.Output()
+		switch {
+		case err == nil:
+			return string(output), nil
+		case errors.Is(ctx.Err(), context.DeadlineExceeded):
+			return "", fmt.Errorf("it did not answer within %s", timeout)
+		}
 		if message := strings.TrimSpace(stderr.String()); message != "" {
 			return "", fmt.Errorf("%w: %s", err, message)
 		}
 
 		return "", err
 	}
-
-	return string(output), nil
 }
 
 // Targets are the places a setup of shell for scope goes.
