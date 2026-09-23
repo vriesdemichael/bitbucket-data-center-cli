@@ -315,6 +315,11 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 	}
 
 	if options.DryRun {
+		// Judged after verification, so a release that fails a check reports
+		// that failure whatever its version.
+		if result.Comparison == "current_newer" {
+			return Result{}, olderReleaseServed(latestVersion, currentVersion)
+		}
 		return result, nil
 	}
 
@@ -360,6 +365,29 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 
 	result.Applied = true
 	return result, nil
+}
+
+// olderReleaseServed is what a dry run reports when the release source serves
+// an older release than the one installed.
+//
+// An update treats that as nothing to do, and rightly: bb never downgrades. But
+// a dry run is the mirror check, and a mirror behind the hosts it serves has
+// stopped receiving releases. Nothing else notices, because every host simply
+// keeps the version it has.
+//
+// Conflict, exit 5: what the mirror serves disagrees with what this host runs,
+// and the remedy is to change that state, not the command. That is the sense
+// conflict has for a branch name that is already taken. Not permanent, which a
+// release that fails verification reports: a script watching a fleet has to
+// tell a stale mirror from a tampered one without reading the message. Not
+// transient, which invites a retry that reads the same stale mirror. Not
+// not_found, because a release was found; it is the wrong one.
+func olderReleaseServed(latestVersion, currentVersion string) error {
+	return apperrors.New(
+		apperrors.KindConflict,
+		fmt.Sprintf("latest release %s is older than the installed %s; check that the release mirror is still receiving new releases", latestVersion, currentVersion),
+		nil,
+	)
 }
 
 // signatureFailure separates "we could not obtain the trust material" from "the
