@@ -137,11 +137,45 @@ func generatorFor(shell string) func(*cobra.Command, io.Writer, bool) error {
 }
 
 func patchFor(shell string) func(string) (string, error) {
-	if shell == "powershell" {
+	switch shell {
+	case "powershell":
 		return withWorkingEmptyCompletion
+	case "fish":
+		return withWorkingFishNoSpace
+	default:
+		return nil
+	}
+}
+
+// brokenFishNoSpace is where Cobra's fish script decides whether a single
+// completion needs its trick for keeping the cursor against the value.
+//
+// Fish adds no space after a value ending in one of @=/:., and adds one after
+// anything else, so for a no-space completion the script offers the value
+// twice -- once with a dot appended -- which fish cannot pick between and so
+// leaves unfinished. It checks the last character first, and takes it from
+// $split: the value and its description. `string sub` runs on every element of
+// a list, so a description ending in a full stop -- "List tags in a
+// repository." -- made the check believe the value ended in one, skipped the
+// trick, and fish put a space after the value. `bb ai mcp serve --tools
+// list_t<tab>` then read "list_tags " and the next element broke the list.
+const brokenFishNoSpace = `            set -l lastChar (string sub -s -1 -- $split)`
+
+// workingFishNoSpace takes the last character of the value alone.
+const workingFishNoSpace = `            set -l lastChar (string sub -s -1 -- $split[1])`
+
+func withWorkingFishNoSpace(script string) (string, error) {
+	normalized := strings.ReplaceAll(script, "\r\n", "\n")
+	if !strings.Contains(normalized, brokenFishNoSpace) {
+		return "", apperrors.New(
+			apperrors.KindInternal,
+			"the fish completion script Cobra generates no longer contains the no-space check bb corrects; "+
+				"check internal/cli/completionscripts.go against the upstream script",
+			nil,
+		)
 	}
 
-	return nil
+	return strings.Replace(normalized, brokenFishNoSpace, workingFishNoSpace, 1), nil
 }
 
 func withWorkingEmptyCompletion(script string) (string, error) {
@@ -150,7 +184,7 @@ func withWorkingEmptyCompletion(script string) (string, error) {
 		return "", apperrors.New(
 			apperrors.KindInternal,
 			"the PowerShell completion script Cobra generates no longer contains the empty-completion branch bb corrects; "+
-				"check internal/cli/completionpowershell.go against the upstream script",
+				"check internal/cli/completionscripts.go against the upstream script",
 			nil,
 		)
 	}
