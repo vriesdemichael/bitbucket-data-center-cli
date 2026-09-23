@@ -6,8 +6,8 @@ search:
 # Dry-Run Planning
 
 `--dry-run` asks a command what it would do instead of doing it. It is a global
-flag, so it works the same way on every command that changes something on the
-server.
+flag, and every command that changes something, on the server or on this
+machine, answers it with a preview.
 
 ```bash
 bb --dry-run project create DEMO --name "Demo Project"
@@ -101,11 +101,32 @@ A merge that cannot proceed comes back `supported: true` with
 `predictedAction: blocked` and the reasons listed, which is a successful
 preview of a failure rather than an error.
 
-## What it does not cover
+## What it covers
 
-`--dry-run` previews **server mutations**. Commands that only change local state
-— your configuration, your git remotes, files on disk — are outside its scope,
-and the flag's own help says so.
+| Command | Under `--dry-run` |
+|---|---|
+| Changes something on the server | Previewed from Bitbucket's answers, or predicted |
+| Changes something on this machine | Previewed statically, and the change is not made |
+| Changes nothing | Runs as usual |
+| `bb ai mcp serve` | Refused |
+
+A command that changes this machine — stored credentials, host aliases, the
+default host, git configuration, the skill file, shell completion, a clone, a
+local branch — is previewed rather than performed:
+
+```bash
+bb --dry-run auth logout
+```
+
+```text
+Dry-run (static, capability=partial)
+- intent=auth.logout action=remove stored credentials predictedAction=remove stored credentials
+```
+
+Nothing is checked first, so the preview names the change and claims `partial`
+confidence, and under `--json` it counts as `unknown` in `summary`. `bb update`
+answers the flag itself: it reports the release it would install and whether
+that release verifies, and installs nothing.
 
 A command for which a preview means nothing refuses the flag rather than
 ignoring it: `bb ai mcp serve` starts a live server, and a session cannot be

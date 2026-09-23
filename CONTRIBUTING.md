@@ -309,9 +309,10 @@ Collected from actually doing this, not hypothetical:
   package if a test mutates the repository's own git config. This is not
   hypothetical — it once wrote an `http.extraHeader` credential into the
   project's `.git/config` and broke pushes to GitHub.
-- **New mutating commands must be registered** in `dryRunProfiles`
-  (`internal/cli/dryrun.go`) or `TestAllCommandsExhaustivelyClassifiedForDryRun`
-  fails.
+- **New commands must be classified for `--dry-run`** in
+  `internal/cli/dryrun.go`: a server mutation in `dryRunProfiles`, a command
+  that changes this machine in `clientLocalMutatingCommands`.
+  `TestAllCommandsExhaustivelyClassifiedForDryRun` fails otherwise.
 - **Use `-count=1`** when testing config loading or environment variables; Go's
   test cache will otherwise mask state pollution.
 
