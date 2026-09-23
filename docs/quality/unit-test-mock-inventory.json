@@ -1,14 +1,14 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 215,
-    "files": 72,
-    "functions": 203,
+    "mocked_servers": 216,
+    "files": 73,
+    "functions": 204,
     "by_class": {
       "external-service": 27,
       "harness-constructor": 18,
       "routing-beacon": 5,
-      "transport-fault": 97,
+      "transport-fault": 98,
       "unreachable-state": 25,
       "unreached-guard": 43
     },
@@ -84,6 +84,21 @@
       ],
       "action": "keep",
       "reason": "the subject is that --host does not write BITBUCKET_URL into the process environment.",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/api/download_test.go",
+      "line": 31,
+      "function": "TestAGetIsWrittenAsItArrivesWithoutADeadline",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "closes-on-cleanup",
+        "serves-bitbucket-routes",
+        "simulates-a-stalled-connection"
+      ],
+      "action": "keep",
+      "reason": "a server trickling a binary body out over",
       "reviewed": true
     },
     {

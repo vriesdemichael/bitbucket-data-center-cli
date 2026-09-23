@@ -1,12 +1,12 @@
 package api
 
 import (
+	"bytes"
 	"net/http"
 	"strings"
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 // Two decisions `bb api` makes before and after the request, taken over their
@@ -103,12 +103,12 @@ func TestHTMLResponseError(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			response := &httpclient.RawResponse{Header: http.Header{}}
+			header := http.Header{}
 			if testCase.contentType != "" {
-				response.Header.Set("Content-Type", testCase.contentType)
+				header.Set("Content-Type", testCase.contentType)
 			}
 
-			err := htmlResponseError(response, testCase.path)
+			err := htmlResponseError(header, testCase.path)
 
 			if !testCase.wantError {
 				if err != nil {
@@ -132,9 +132,78 @@ func TestHTMLResponseError(t *testing.T) {
 		})
 	}
 
-	t.Run("no response at all", func(t *testing.T) {
+	t.Run("no header at all", func(t *testing.T) {
 		if err := htmlResponseError(nil, "/rest/api/1.0/projects"); err != nil {
-			t.Fatalf("expected a nil response to produce no error, got: %v", err)
+			t.Fatalf("expected a missing header to produce no error, got: %v", err)
 		}
 	})
+}
+
+// TestABodyIsTextOnlyWhenItsHeaderAndItsBytesSaySo is the rule that decides
+// what bb api formats and what it writes byte for byte.
+func TestABodyIsTextOnlyWhenItsHeaderAndItsBytesSaySo(t *testing.T) {
+	t.Parallel()
+
+	notUTF8 := []byte{0x89, 'P', 'N', 'G', 0x00, 0xff}
+	for name, testCase := range map[string]struct {
+		contentType string
+		body        []byte
+		want        bool
+	}{
+		"json":                       {"application/json;charset=UTF-8", []byte(`{"a":1}`), true},
+		"a json vendor type":         {"application/vnd.api+json", []byte(`{}`), true},
+		"xml":                        {"application/xml", []byte("<a/>"), true},
+		"an xml vendor type":         {"application/atom+xml", []byte("<feed/>"), true},
+		"plain text":                 {"text/plain; charset=utf-8", []byte("hello\n"), true},
+		"any text type":              {"text/csv", []byte("a,b\n"), true},
+		"text that is not utf-8":     {"text/plain", notUTF8, false},
+		"an image":                   {"image/png", notUTF8, false},
+		"octet-stream that is ascii": {"application/octet-stream", []byte("  just ascii  \n"), false},
+		"a zip":                      {"application/zip", []byte("PK"), false},
+		"no type, utf-8":             {"", []byte(`{"a":1}`), true},
+		"no type, not utf-8":         {"", notUTF8, false},
+		"an unreadable type, utf-8":  {"not a type;;", []byte("text"), true},
+	} {
+		header := http.Header{}
+		if testCase.contentType != "" {
+			header.Set("Content-Type", testCase.contentType)
+		}
+		if got := textual(header, testCase.body); got != testCase.want {
+			t.Errorf("%s: textual = %v, want %v", name, got, testCase.want)
+		}
+	}
+}
+
+// TestABodyThatIsNotTextIsWrittenExactly: bb api trimmed every body and ended
+// it with a newline, so a file fetched through it came back changed. Text is
+// still formatted that way; anything else is written byte for byte.
+func TestABodyThatIsNotTextIsWrittenExactly(t *testing.T) {
+	t.Parallel()
+
+	human := Dependencies{JSONEnabled: func() bool { return false }}
+	binary := []byte{'\n', 0x89, 'P', 'N', 'G', '\r', '\n', 0x00, 0xff, ' ', '\n'}
+
+	var written bytes.Buffer
+	if err := writeResponse(&written, http.Header{"Content-Type": {"application/octet-stream"}}, binary, human); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if !bytes.Equal(written.Bytes(), binary) {
+		t.Fatalf("a binary body came out as %q, want %q exactly", written.Bytes(), binary)
+	}
+
+	written.Reset()
+	if err := writeResponse(&written, http.Header{"Content-Type": {"text/plain"}}, []byte("\n  hello  \n\n"), human); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if written.String() != "hello\n" {
+		t.Fatalf("a text body came out as %q, want it trimmed and ended with a newline", written.String())
+	}
+
+	written.Reset()
+	if err := writeResponse(&written, http.Header{"Content-Type": {"application/json"}}, []byte(`{"a":1}`), human); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if written.String() != "{\n  \"a\": 1\n}\n" {
+		t.Fatalf("a JSON body came out as %q, want it indented", written.String())
+	}
 }
