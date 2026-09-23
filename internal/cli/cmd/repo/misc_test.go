@@ -1,6 +1,9 @@
 package repocmd
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,51 +60,44 @@ func TestReadPublicKeyAndScope(t *testing.T) {
 	}
 }
 
-// TestFinishArchiveFile covers the close that `bb repo archive` reports on.
-//
-// The failure branch is the point: io.Copy succeeding does not mean the bytes
-// reached the disk, and this command used to print success over a truncated
-// archive. Closing an already-closed file is the portable way to make Close
-// fail.
-func TestFinishArchiveFile(t *testing.T) {
+// TestAnArchiveFailureSaysWhatFailed: Bitbucket's own refusal goes back as
+// every command reports one, and a failure in transit is wrapped with the
+// command's context, keeping the kind the transport gave it (#478).
+func TestAnArchiveFailureSaysWhatFailed(t *testing.T) {
 	t.Parallel()
 
-	t.Run("nil file is not an error", func(t *testing.T) {
-		if err := finishArchiveFile(nil, "unused"); err != nil {
-			t.Fatalf("expected nil, got %v", err)
-		}
-	})
+	if err := archiveFailure(nil); err != nil {
+		t.Fatalf("no failure became %v", err)
+	}
 
-	t.Run("closes an open file", func(t *testing.T) {
-		file, err := os.Create(filepath.Join(t.TempDir(), "archive.zip"))
-		if err != nil {
-			t.Fatalf("create: %v", err)
-		}
-		if err := finishArchiveFile(file, "archive.zip"); err != nil {
-			t.Fatalf("expected a clean close, got %v", err)
-		}
-	})
+	// Shaped as the status mapping shapes one: the status it answered with, as
+	// a detail beside the message.
+	refused := apperrors.WithDetail(apperrors.New(apperrors.KindNotFound, "bitbucket API returned 404: Repository PRJ/gone does not exist.", nil), "upstreamStatus", "404")
+	if got := archiveFailure(refused); !errors.Is(got, refused) || apperrors.MessageOf(got) != apperrors.MessageOf(refused) {
+		t.Fatalf("Bitbucket's refusal came back as %v", got)
+	}
 
-	t.Run("reports a failed close as an error naming the target", func(t *testing.T) {
-		file, err := os.Create(filepath.Join(t.TempDir(), "archive.zip"))
-		if err != nil {
-			t.Fatalf("create: %v", err)
-		}
-		if err := file.Close(); err != nil {
-			t.Fatalf("first close: %v", err)
-		}
+	certificate := apperrors.New(apperrors.KindPermanent, "the server's TLS certificate was rejected", nil)
+	got := archiveFailure(certificate)
+	if !apperrors.IsKind(got, apperrors.KindPermanent) || !strings.Contains(got.Error(), "failed to stream the repository archive") {
+		t.Fatalf("a failure in transit came back as %v", got)
+	}
+}
 
-		err = finishArchiveFile(file, "/tmp/archive.zip")
-		if err == nil {
-			t.Fatal("expected a failed close to be reported, got nil")
-		}
-		if !apperrors.IsKind(err, apperrors.KindInternal) {
-			t.Fatalf("expected KindInternal, got %v", err)
-		}
-		if !strings.Contains(err.Error(), "/tmp/archive.zip") {
-			t.Fatalf("message does not name the target file: %v", err)
-		}
-	})
+// TestAStreamWhoseReaderLeftIsNotAFailure: `bb repo archive -o - | head`
+// closes the pipe once it has what it wants, and the command ends as it ends
+// any other output. Any other failure to write is reported.
+func TestAStreamWhoseReaderLeftIsNotAFailure(t *testing.T) {
+	t.Parallel()
+
+	if err := streamed(fmt.Errorf("write: %w", io.ErrClosedPipe)); err != nil {
+		t.Fatalf("a reader that left was reported: %v", err)
+	}
+
+	full := apperrors.New(apperrors.KindInternal, "failed to write the download", errors.New("no space left on device"))
+	if err := streamed(full); !errors.Is(err, full) {
+		t.Fatalf("a failed write came back as %v", err)
+	}
 }
 
 // The repo misc, ssh key and label/watch/task suites are live now.

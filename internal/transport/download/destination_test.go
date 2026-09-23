@@ -222,7 +222,7 @@ func TestADestinationSaysWhetherItCanStartAgain(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	stream := Stream(&out)
+	stream := To(&out)
 	if !stream.Rewind() {
 		t.Fatal("a stream with nothing written refused to start again")
 	}

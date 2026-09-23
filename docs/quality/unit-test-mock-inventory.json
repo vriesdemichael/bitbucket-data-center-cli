@@ -1,14 +1,14 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 212,
-    "files": 70,
-    "functions": 200,
+    "mocked_servers": 213,
+    "files": 71,
+    "functions": 201,
     "by_class": {
       "external-service": 27,
       "harness-constructor": 18,
       "routing-beacon": 5,
-      "transport-fault": 95,
+      "transport-fault": 96,
       "unreachable-state": 24,
       "unreached-guard": 43
     },
@@ -361,6 +361,20 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/cli/cmd/repo/archive_test.go",
+      "line": 23,
+      "function": "TestAnArchiveThatBreaksOffLeavesNoFile",
+      "class": "transport-fault",
+      "signals": [
+        "closes-on-cleanup",
+        "serves-bitbucket-routes",
+        "inspects-the-request-path"
+      ],
+      "action": "keep",
+      "reason": "a connection dropped mid-archive, which no",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/repo/permissions_test.go",

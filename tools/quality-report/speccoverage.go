@@ -242,7 +242,22 @@ func parseGeneratedOperationPaths(generatedPath string) (map[string]methodPath, 
 
 // usedOperationToName strips the generated WithResponse / WithBody suffixes so a
 // discovered call name maps back to its base operation.
+//
+// A request builder counts too. New<Op>Request is how a caller that sends the
+// request another way -- bb repo archive streams its body through the
+// downloader -- still has the generated client build it, path and parameters
+// encoded as the specification says. It reaches the operation just as a call
+// to <Op> does, and parseGeneratedOperationPaths reads the path from the very
+// same function.
 func usedOperationToName(name string) string {
+	if strings.HasPrefix(name, "New") {
+		for _, suffix := range []string{"RequestWithBody", "Request"} {
+			if strings.HasSuffix(name, suffix) && len(name) > len("New")+len(suffix) {
+				return name[len("New") : len(name)-len(suffix)]
+			}
+		}
+	}
+
 	for _, suffix := range []string{"WithBodyWithResponse", "WithResponse", "WithBody"} {
 		if strings.HasSuffix(name, suffix) {
 			return strings.TrimSuffix(name, suffix)
