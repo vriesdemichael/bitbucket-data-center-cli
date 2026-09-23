@@ -166,6 +166,81 @@ if grep -qF "Completion ended with directive" "$work/pwsh.stderr"; then
 	report pwsh "stderr" "a completion wrote to the terminal" "$(cat "$work/pwsh.stderr")"
 fi
 
+# bb completion install, in shells with nothing else set up: each starts from
+# only what the shell reads by itself, so a completion that appears came from
+# the setup, and one that goes away went with bb completion remove. The user's
+# setup lives under a home of its own; the one for every user in the system
+# directories, which this container, running as root, may write.
+plain_home() {
+	local home=$1
+	mkdir -p "$home/.config/fish"
+	cat >"$home/.bashrc" <<'RC'
+source /usr/share/bash-completion/bash_completion
+PS1='$ '
+RC
+	cat >"$home/.zshrc" <<'RC'
+autoload -Uz compinit && compinit -u
+PROMPT='$ '
+RC
+	cat >"$home/.config/fish/config.fish" <<'RC'
+set -g fish_greeting ''
+function fish_prompt; echo -n '$ '; end
+RC
+}
+
+# completes prints what a new shell under home shows for a line whose values
+# only bb can supply.
+completes() {
+	local shell=$1 home=$2 session="setup-$1"
+	case $shell in
+	bash) tmux new-session -d -s "$session" -x 120 -y 30 -c "$work" env HOME="$home" bash --rcfile "$home/.bashrc" -i ;;
+	zsh) tmux new-session -d -s "$session" -x 120 -y 30 -c "$work" env HOME="$home" zsh -i ;;
+	fish) tmux new-session -d -s "$session" -x 120 -y 30 -c "$work" env HOME="$home" fish -i ;;
+	powershell)
+		# With the profiles, which is the point; TabExpansion2 is what the
+		# line editor calls on Tab.
+		(cd "$work" && HOME="$home" pwsh -NoLogo -Command \
+			'$line = "bb pr list --state "; (TabExpansion2 -inputScript $line -cursorColumn $line.Length).CompletionMatches.CompletionText -join " "' 2>&1)
+		return
+		;;
+	esac
+	sleep 3
+	press "$session" 'bb pr list --state '
+	tmux kill-session -t "$session"
+}
+
+setup() {
+	local shell=$1 home=$2
+	shift 2
+	if ! output="$(HOME="$home" bb completion "$@" --shell "$shell" 2>&1)"; then
+		report "$shell" "bb completion $*" "it failed" "$output"
+	fi
+}
+
+for shell in bash zsh fish powershell; do
+	home="$work/setup-$shell"
+	plain_home "$home"
+
+	screen="$(completes "$shell" "$home")"
+	expect_absent "$shell" "before any setup" "$screen" "closed"
+
+	setup "$shell" "$home" install
+	screen="$(completes "$shell" "$home")"
+	expect_in "$shell" "set up for the user" "$screen" open closed all
+
+	setup "$shell" "$home" remove --yes
+	screen="$(completes "$shell" "$home")"
+	expect_absent "$shell" "removed for the user" "$screen" "closed"
+
+	setup "$shell" "$home" install --all-users
+	screen="$(completes "$shell" "$home")"
+	expect_in "$shell" "set up for every user" "$screen" open closed all
+
+	setup "$shell" "$home" remove --all-users --yes
+	screen="$(completes "$shell" "$home")"
+	expect_absent "$shell" "removed for every user" "$screen" "closed"
+done
+
 if [ "$failures" -gt 0 ]; then
 	printf '\n%d shell completion check(s) failed.\n' "$failures"
 	exit 1
