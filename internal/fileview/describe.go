@@ -19,8 +19,17 @@ type binaryType struct {
 // detectBinary names a file that is not text from the type its bytes were
 // sniffed as, and from its name where the bytes say too little.
 func detectBinary(path, sniffed string, content []byte) binaryType {
-	if bytes.HasPrefix(content, oleSignature) {
+	switch {
+	case bytes.HasPrefix(content, oleSignature):
 		return legacyOffice(path)
+	case sniffed == "application/pdf":
+		return binaryType{mimeType: sniffed, name: "a PDF document", reason: "This tool does not extract the text of a PDF, so it is not shown."}
+	case len(content) >= 12 && string(content[4:8]) == "ftyp" && isoImageBrands[string(content[8:12])] != "":
+		// A picture in the MP4 family's container, which http does not
+		// sniff: a phone's HEIF photograph, an AVIF.
+		mimeType := isoImageBrands[string(content[8:12])]
+
+		return binaryType{mimeType: mimeType, name: nameOf(mimeType), reason: "Its format is not one this tool decodes, so it is not shown."}
 	}
 
 	mimeType := sniffed
@@ -80,12 +89,13 @@ func nameOf(mimeType string) string {
 		return "a font"
 	}
 
-	family, format, _ := strings.Cut(mimeType, "/")
+	// The type in brackets after the name says which format.
+	family, _, _ := strings.Cut(mimeType, "/")
 	switch family {
 	case "font":
 		return "a font"
 	case "image":
-		return "an image (" + strings.TrimPrefix(format, "x-") + ")"
+		return "an image"
 	case "audio":
 		return "audio"
 	case "video":

@@ -44,6 +44,12 @@ const ImageEdge = 2048
 // server that other calls share.
 const ImagePixels = 50_000_000
 
+// MediaBytes is the most audio or video that is returned. Neither can be made
+// smaller here, so a file over this is described instead. It is the same
+// budget as an image's, for the same reason: base64 makes it 5,000,000
+// characters, about the most a client takes in one piece of content.
+const MediaBytes = ImageBytes
+
 // jpegQuality is what an image re-encoded as JPEG is written at: the usual
 // point past which a photograph's artefacts stop being visible and fine print
 // in it stays sharp.
