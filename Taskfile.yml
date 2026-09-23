@@ -688,5 +688,5 @@ tasks:
     cmd: bash scripts/stack.sh logs {{.RELEASE}}
 
   stack:prune:
-    desc: Remove local Bitbucket instances whose worktree no longer exists
+    desc: Take stopped local Bitbucket instances down, and remove those whose worktree no longer exists
     cmd: bash scripts/stack.sh prune

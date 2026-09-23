@@ -44,7 +44,7 @@ task stack:status    # this instance, how long before it stops itself, every loc
 task stack:logs
 task stack:down
 task stack:reset     # tear down this instance and delete its Maven cache volume
-task stack:prune     # remove instances whose worktree no longer exists
+task stack:prune     # take stopped instances down; remove those whose worktree is gone
 ```
 
 `task test:live` runs `task stack:up` first, so starting the stack by hand is
@@ -64,6 +64,13 @@ A worktree's first start downloads about 360MB on top of what the image already
 holds. `task stack:up` removes instances whose worktree is gone before it
 starts, and refuses to start a fifth running instance (`BB_STACK_MAX`), since
 each is a Bitbucket JVM of about 6GB.
+
+It also takes down every stopped instance, keeping its Maven cache volume, so
+that only a running instance holds a Docker network. Each network holds a
+subnet from Docker's address pools, and an instance stops itself in a worktree
+nobody comes back to: left in place, enough of them exhaust the pools, and
+Docker Desktop stops answering. A checkout whose instance was taken down gets
+it back from its next `task stack:up`.
 
 ## Version
 
