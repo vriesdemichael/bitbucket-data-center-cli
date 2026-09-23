@@ -3,7 +3,7 @@
 `bb` completes commands, flags and the values they take. Pressing tab after
 `bb pr merge ` lists the open pull requests of the repository you are in, by
 number and title; after `bb branch delete ` it lists that repository's
-branches, marking the default one.
+branches, each with its latest commit message and the default one first.
 
 ## Enabling it
 
@@ -131,5 +131,3 @@ A few behaviours come from the shell rather than from `bb`:
   the completion menu rather than beside each value.
 - **fish:** an argument that takes a directory offers files as well, because
   fish's completion script does not filter to directories.
-- **bash and fish:** when only some values carry a description, the columns are
-  uneven. zsh gives descriptions their own column.

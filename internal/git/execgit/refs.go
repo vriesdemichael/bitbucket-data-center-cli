@@ -26,6 +26,9 @@ type Ref struct {
 	Object string
 	// Checked marks the reference HEAD is on.
 	Checked bool
+	// Subject is the first line of the message of what the reference names:
+	// the commit's for a branch, the tag's own for an annotated tag.
+	Subject string
 }
 
 // Commit is one commit in a checkout, as git abbreviates it.
@@ -53,12 +56,14 @@ const unitSeparator = "\x1f"
 //
 // Fields are tab-separated because a reference name cannot contain a tab --
 // git refuses control characters in one -- and records are newline-separated
-// for the same reason.
+// for the same reason. The subject can hold a tab, so it is the last field and
+// takes the rest of the line; it cannot hold a newline, because git folds the
+// first paragraph of a message onto one line to make it.
 func (backend *Backend) ListRefs(ctx context.Context, repositoryDirectory string, limit int, patterns ...string) ([]Ref, error) {
 	args := []string{
 		"for-each-ref",
 		"--sort=-creatordate",
-		"--format=%(refname)\t%(HEAD)\t%(symref)\t%(objectname:short)\t%(*objectname:short)",
+		"--format=%(refname)\t%(HEAD)\t%(symref)\t%(objectname:short)\t%(*objectname:short)\t%(contents:subject)",
 	}
 	if limit > 0 {
 		args = append(args, "--count="+strconv.Itoa(limit))
@@ -80,7 +85,8 @@ func (backend *Backend) ListRefs(ctx context.Context, repositoryDirectory string
 		name, rest, _ := strings.Cut(line, "\t")
 		head, rest := cut(rest)
 		target, rest := cut(rest)
-		object, dereferenced := cut(rest)
+		object, rest := cut(rest)
+		dereferenced, subject := cut(rest)
 
 		// The dereferenced field is empty for everything but an annotated
 		// tag, where it is the commit rather than the tag object.
@@ -93,6 +99,7 @@ func (backend *Backend) ListRefs(ctx context.Context, repositoryDirectory string
 			Target:  strings.TrimSpace(target),
 			Object:  strings.TrimSpace(object),
 			Checked: strings.TrimSpace(head) == "*",
+			Subject: strings.TrimSpace(subject),
 		})
 	}
 

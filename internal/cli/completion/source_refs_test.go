@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/gittest"
@@ -102,14 +103,15 @@ func TestRankBranchesPutsTheBranchYouAreOnFirst(t *testing.T) {
 	// The branch that is checked out comes last and the default one second,
 	// so neither lands in place by having been listed there.
 	refs := []execgit.Ref{
-		{Name: "refs/remotes/origin/release"},
+		{Name: "refs/remotes/origin/release", Subject: "Cut the release"},
 		{Name: "refs/remotes/origin/HEAD", Target: "refs/remotes/origin/main"},
-		{Name: "refs/heads/main"},
+		{Name: "refs/heads/main", Subject: "Merge the release"},
 		// The same branch twice, once local and once remote-tracking. A shell
-		// offering it twice is a shell offering a duplicate.
-		{Name: "refs/remotes/origin/main"},
-		{Name: "refs/tags/v1.0.0"},
-		{Name: "refs/heads/spike", Checked: true},
+		// offering it twice is a shell offering a duplicate, and the listing is
+		// newest first, so the first one's subject is the one to show.
+		{Name: "refs/remotes/origin/main", Subject: "An older commit"},
+		{Name: "refs/tags/v1.0.0", Subject: "release one"},
+		{Name: "refs/heads/spike", Checked: true, Subject: "Try the spike"},
 	}
 
 	candidates := rankBranches(refs, "origin")
@@ -120,11 +122,14 @@ func TestRankBranchesPutsTheBranchYouAreOnFirst(t *testing.T) {
 		t.Fatalf("rankBranches = %v, want %v", gotValues, wantValues)
 	}
 
-	if description := descriptionOf(candidates, "main"); description != "default branch" {
-		t.Errorf("the default branch was described as %q", description)
-	}
-	if description := descriptionOf(candidates, "spike"); description != "" {
-		t.Errorf("an ordinary branch carried the description %q", description)
+	for branch, want := range map[string]string{
+		"main":    "default branch: Merge the release",
+		"spike":   "Try the spike",
+		"release": "Cut the release",
+	} {
+		if description := descriptionOf(candidates, branch); description != want {
+			t.Errorf("%s was described as %q, want %q", branch, description, want)
+		}
 	}
 }
 
@@ -253,11 +258,67 @@ func TestDescriptions(t *testing.T) {
 	if got := describeTag(""); got != "tag" {
 		t.Errorf("describeTag of an unknown commit = %q", got)
 	}
-	if got := describeBranch("main", "main"); got != "default branch" {
-		t.Errorf("describeBranch of the default = %q", got)
+	for _, testCase := range []struct {
+		isDefault bool
+		subject   string
+		want      string
+	}{
+		{isDefault: true, subject: "Merge the release", want: "default branch: Merge the release"},
+		{isDefault: false, subject: " Fix the login redirect ", want: "Fix the login redirect"},
+		// The details a subject comes from may not have arrived; the mark
+		// still says which branch is the default.
+		{isDefault: true, subject: "", want: "default branch"},
+		{isDefault: false, subject: "", want: ""},
+	} {
+		if got := describeBranch(testCase.isDefault, testCase.subject); got != testCase.want {
+			t.Errorf("describeBranch(%v, %q) = %q, want %q", testCase.isDefault, testCase.subject, got, testCase.want)
+		}
 	}
-	if got := describeBranch("main", ""); got != "" {
-		t.Errorf("describeBranch with no default known = %q", got)
+}
+
+// TestAwaitBrieflyAnswersWithoutWhatIsLate holds the bound on how long a press
+// waits for branch messages once it has the branches.
+func TestAwaitBrieflyAnswersWithoutWhatIsLate(t *testing.T) {
+	t.Parallel()
+
+	arrived := make(chan []string, 1)
+	arrived <- []string{"in time"}
+	if got := awaitBriefly(context.Background(), arrived, time.Minute); len(got) != 1 || got[0] != "in time" {
+		t.Errorf("a result that was already there was not taken: %v", got)
+	}
+
+	started := time.Now()
+	if got := awaitBriefly(context.Background(), make(chan []string), 20*time.Millisecond); got != nil {
+		t.Errorf("a result that never came produced %v", got)
+	}
+	if waited := time.Since(started); waited > 10*time.Second {
+		t.Errorf("waited %s for a result given 20ms", waited)
+	}
+
+	cancelled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if got := awaitBriefly(cancelled, make(chan []string), time.Minute); got != nil {
+		t.Errorf("a press past its deadline still produced %v", got)
+	}
+}
+
+// TestLatestSubjectsTakesTheFirstLineOfEachBranchesCommit covers what the
+// branch descriptions are cut from. What Bitbucket sends is the live test's to
+// prove; this is only what is done with it.
+func TestLatestSubjectsTakesTheFirstLineOfEachBranchesCommit(t *testing.T) {
+	t.Parallel()
+
+	subjects := latestSubjects([]remoteBranch{
+		{ID: "refs/heads/master", Metadata: branchMetadata{LatestCommit: &latestCommit{Message: "Copy C.zip as D.zip\n\nWith a body."}}},
+		// A branch the listing said nothing about.
+		{ID: "refs/heads/spike"},
+	})
+
+	if got := subjects["refs/heads/master"]; got != "Copy C.zip as D.zip" {
+		t.Errorf("subject of master = %q", got)
+	}
+	if got, ok := subjects["refs/heads/spike"]; ok {
+		t.Errorf("a branch without a latest commit was given the subject %q", got)
 	}
 }
 
@@ -330,8 +391,14 @@ func TestLocalRefsAnswerFromTheCheckout(t *testing.T) {
 	if !contains(values, "alpha") {
 		t.Errorf("a pushed branch was not offered: %v", values)
 	}
-	if description := descriptionOf(branches, "main"); description != "default branch" {
-		t.Errorf("the remote's default branch was described as %q", description)
+	for branch, want := range map[string]string{
+		"main":  "default branch: first commit",
+		"zeta":  "second commit",
+		"alpha": "third commit",
+	} {
+		if description := descriptionOf(branches, branch); description != want {
+			t.Errorf("%s was described as %q, want %q", branch, description, want)
+		}
 	}
 	if contains(values, "HEAD") {
 		t.Errorf("refs/remotes/origin/HEAD was offered as a branch: %v", values)
