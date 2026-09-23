@@ -173,6 +173,8 @@ func TestSetUpByHandFindsTheLinesTheDocumentationShows(t *testing.T) {
 		{name: "PowerShell", content: "Import-Module posh-git\r\nbb completion powershell | Out-String | Invoke-Expression\r\n", want: true},
 		{name: "a path to bb", content: "source <(/usr/local/bin/bb completion bash --no-descriptions)\n", want: true},
 		{name: "bb.exe", content: `& C:\tools\bb.exe completion powershell | Out-String | Invoke-Expression` + "\n", want: true},
+		{name: "a quoted path", content: `source <("$HOME/bin/bb" completion bash)` + "\n", want: true},
+		{name: "a quoted bb.exe", content: `& "$env:LOCALAPPDATA\bb\bb.exe" completion powershell | Out-String | Invoke-Expression` + "\n", want: true},
 		{name: "commented out", content: "  # source <(bb completion bash)\n"},
 		{name: "another command", content: "source <(mybb completion bash)\n"},
 		{name: "not a script", content: "alias setup='bb completion install'\n"},

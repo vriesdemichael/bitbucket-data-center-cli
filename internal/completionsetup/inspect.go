@@ -129,9 +129,10 @@ func StartupFiles(system System, shell Shell, targets []Target) []StartupFile {
 
 // handWritten is a line that runs `bb completion <shell>`, however it is fed to
 // the shell: source <(bb completion bash), eval "$(bb completion zsh)",
-// bb completion fish | source, /usr/local/bin/bb completion bash, or
+// bb completion fish | source, /usr/local/bin/bb completion bash,
+// "$HOME/bin/bb" completion bash, or
 // bb.exe completion powershell | Out-String | Invoke-Expression.
-var handWritten = regexp.MustCompile(`(?:^|[^\w.-])bb(?:\.exe)?\s+completion\s+(?:bash|zsh|fish|powershell)\b`)
+var handWritten = regexp.MustCompile(`(?:^|[^\w.-])bb(?:\.exe)?["']?\s+completion\s+(?:bash|zsh|fish|powershell)\b`)
 
 // SetUpByHand reports whether the startup file at path runs `bb completion
 // <shell>` outside the block bb completion install adds: completion somebody
