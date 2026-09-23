@@ -7,6 +7,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/jpeg" // the scaled image may come back as a JPEG
+	"image/png"
 	"net/url"
 	"strings"
 	"testing"
@@ -28,6 +31,51 @@ type liveFileAnswer struct {
 	EndLine       *int    `json:"end_line"`
 	TotalLines    *int    `json:"total_lines"`
 	NextStartLine *int    `json:"next_start_line"`
+	Image         *struct {
+		Width            int    `json:"width"`
+		Height           int    `json:"height"`
+		Scaled           bool   `json:"scaled"`
+		ReturnedWidth    int    `json:"returned_width"`
+		ReturnedHeight   int    `json:"returned_height"`
+		ReturnedMIMEType string `json:"returned_mime_type"`
+		ReturnedSize     int    `json:"returned_size"`
+	} `json:"image"`
+}
+
+// liveLargePNG is a 3000 by 2000 PNG over the 3,750,000 bytes an image is
+// returned in: stripes, and a block of noise no encoder compresses, so it is
+// over both limits at once.
+func liveLargePNG(t *testing.T) []byte {
+	t.Helper()
+
+	picture := image.NewNRGBA(image.Rect(0, 0, 3000, 2000))
+	state := uint32(2463534242)
+	for y := range 2000 {
+		for x := range 3000 {
+			offset := picture.PixOffset(x, y)
+			if x < 1400 && y < 1000 {
+				for channel := range 3 {
+					state ^= state << 13
+					state ^= state >> 17
+					state ^= state << 5
+					picture.Pix[offset+channel] = byte(state)
+				}
+			} else {
+				picture.Pix[offset], picture.Pix[offset+1], picture.Pix[offset+2] = byte(x/16%2*220), byte(y/16%2*220), 90
+			}
+			picture.Pix[offset+3] = 255
+		}
+	}
+
+	var encoded bytes.Buffer
+	if err := png.Encode(&encoded, picture); err != nil {
+		t.Fatalf("encode the large PNG: %v", err)
+	}
+	if encoded.Len() <= 3_750_000 {
+		t.Fatalf("the large PNG is %d bytes, which does not test the byte budget", encoded.Len())
+	}
+
+	return encoded.Bytes()
 }
 
 // liveNumberedLines is count lines, each naming its own number, so a window
@@ -66,10 +114,12 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 	const at = "refs/heads/master"
 	long := liveNumberedLines(3000)
 	binary := liveBinaryFile()
+	largePNG := liveLargePNG(t)
 
 	if err := harness.pushFilesOnBranch(seeded.Key, repo.Slug, "master", map[string][]byte{
-		"docs/long.txt":   long,
-		"assets/blob.bin": binary,
+		"docs/long.txt":    long,
+		"assets/blob.bin":  binary,
+		"images/large.png": largePNG,
 	}); err != nil {
 		t.Fatalf("push the files: %v", err)
 	}
@@ -135,6 +185,49 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 			want := "docs/long.txt at " + at + ": text, 3000 lines. Lines 1200-1299 follow; for the next, pass start_line=1300.\n" + numbered.String()
 			if got := mcpResultText(result); got != want {
 				t.Errorf("the text a model reads is not the header and lines 1200-1299 numbered:\n%.400s", got)
+			}
+		})
+
+		t.Run("a large PNG comes back scaled within the budget, with a warning", func(t *testing.T) {
+			result, answer := read(t, "images/large.png", nil)
+
+			if answer.Kind != "image" || answer.MIMEType != "image/png" || answer.Size == nil || *answer.Size != int64(len(largePNG)) {
+				t.Fatalf("images/large.png came back as %q %q of %v bytes, want an image/png of %d",
+					answer.Kind, answer.MIMEType, deref64(answer.Size), len(largePNG))
+			}
+			if len(result.Content) != 2 {
+				t.Fatalf("an image came back as %d content blocks, want its description and the image", len(result.Content))
+			}
+
+			returned, ok := result.Content[1].(*mcp.ImageContent)
+			if !ok {
+				t.Fatalf("the second block is %T, want the image", result.Content[1])
+			}
+			decoded, format, err := image.Decode(bytes.NewReader(returned.Data))
+			if err != nil {
+				t.Fatalf("the image returned does not decode: %v", err)
+			}
+			width, height := decoded.Bounds().Dx(), decoded.Bounds().Dy()
+			if len(returned.Data) > 3_750_000 || max(width, height) > 2048 || returned.MIMEType != "image/"+format {
+				t.Errorf("the image returned is a %dx%d %s of %d bytes labelled %s, want one within 2048 pixels and 3,750,000 bytes",
+					width, height, format, len(returned.Data), returned.MIMEType)
+			}
+
+			facts := answer.Image
+			if facts == nil || !facts.Scaled || facts.Width != 3000 || facts.Height != 2000 || facts.ReturnedWidth != width ||
+				facts.ReturnedHeight != height || facts.ReturnedSize != len(returned.Data) || facts.ReturnedMIMEType != returned.MIMEType {
+				t.Errorf("the structured answer does not describe the %dx%d image returned: %+v", width, height, facts)
+			}
+
+			text := mcpResultText(result)
+			for _, want := range []string{
+				"images/large.png at " + at + ": a PNG image, 3000x2000 pixels",
+				fmt.Sprintf("It follows scaled down to %dx%d pixels", width, height),
+				"Small text in it may no longer be legible because of the scaling.",
+			} {
+				if !strings.Contains(text, want) {
+					t.Errorf("the description does not say %q: %q", want, text)
+				}
 			}
 		})
 

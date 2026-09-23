@@ -25,3 +25,26 @@ const MaxLineCount = 2000
 // size of a tool's answer. A line longer than this on its own is cut to fit, so
 // one enormous line -- minified code, a data blob -- cannot flood the context.
 const WindowBytes = 32 << 10
+
+// ImageBytes is the most an image is returned in. A tool result carries it as
+// base64, a third larger, so these 3,750,000 bytes are 5,000,000 characters:
+// under the 5 MB Anthropic's API takes for one image, which is the tightest
+// such limit among the clients that take images at all.
+const ImageBytes = 3_750_000
+
+// ImageEdge is the longest side, in pixels, an image is returned at. Vision
+// models look at no more than this -- OpenAI's fit an image into 2048 by 2048,
+// Anthropic's scale its long edge to 1568 -- so a larger one costs bytes and
+// shows the model nothing more, and Anthropic's refuse one past 8000 outright.
+const ImageEdge = 2048
+
+// ImagePixels is the largest image decoded to be scaled: up to 200 MB at four
+// bytes a pixel. It is more than a 45-megapixel camera produces; an image past
+// it is described rather than decoded, so one call cannot take the memory of a
+// server that other calls share.
+const ImagePixels = 50_000_000
+
+// jpegQuality is what an image re-encoded as JPEG is written at: the usual
+// point past which a photograph's artefacts stop being visible and fine print
+// in it stays sharp.
+const jpegQuality = 85

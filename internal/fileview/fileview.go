@@ -13,6 +13,7 @@
 package fileview
 
 import (
+	"net/http"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -24,6 +25,9 @@ type Kind string
 const (
 	// KindText is text, returned as a window of numbered lines.
 	KindText Kind = "text"
+	// KindImage is an image, returned as an image: scaled down when it is
+	// larger than a client takes, and an animation's first frame.
+	KindImage Kind = "image"
 	// KindBinary is a file whose bytes are not shown: only a description of
 	// its type and size comes back.
 	KindBinary Kind = "binary"
@@ -58,6 +62,27 @@ type View struct {
 	Text string
 	// Window is the window of lines, for a kind read as lines.
 	Window *Window
+	// Image is the image returned, for an image.
+	Image *Image
+}
+
+// Image is an image returned as an image.
+type Image struct {
+	// Data is the image, in MIMEType: the file itself when it fits what a
+	// client takes, and otherwise the image encoded again.
+	Data     []byte
+	MIMEType string
+	// Width and Height are the image's as stored.
+	Width  int
+	Height int
+	// ReturnedWidth and ReturnedHeight are the image's as returned.
+	ReturnedWidth  int
+	ReturnedHeight int
+	// Scaled is set when the image returned is smaller than the one stored.
+	Scaled bool
+	// Frames is how many frames an animation has, of which the first is
+	// returned; zero for a still image.
+	Frames int
 }
 
 // Window is a run of lines out of a file's text.
@@ -107,14 +132,19 @@ func Read(request Request, content []byte) (View, error) {
 		return readText(request, text, size)
 	}
 
-	// Last before giving up, because it accepts almost any byte: it is what is
-	// left of text that is not Unicode, and a binary file nearly always has a
-	// NUL or a control character it refuses.
+	sniffed := http.DetectContentType(content)
+	if _, ok := imageFormats[sniffed]; ok {
+		return readImage(request, sniffed, content, defaultImageLimits), nil
+	}
+
+	// Last before giving up, and after every signature, because it accepts
+	// almost any byte: it is what is left of text that is not Unicode, and a
+	// binary file nearly always has a NUL or a control character it refuses.
 	if text, ok := decodeWindows1252(content); ok {
 		return readText(request, text, size)
 	}
 
-	return describeBinary(subjectOf(request), request.WebURL, detectBinary(request.Path, content), size), nil
+	return describeBinary(subjectOf(request), request.WebURL, detectBinary(request.Path, sniffed), size), nil
 }
 
 // readText views decoded text as a window of its lines.
