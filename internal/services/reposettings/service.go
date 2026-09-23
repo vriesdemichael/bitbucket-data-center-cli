@@ -49,6 +49,14 @@ type DefaultTask struct {
 	Description   *string             `json:"description,omitempty"`
 	SourceMatcher *DefaultTaskMatcher `json:"sourceMatcher,omitempty"`
 	TargetMatcher *DefaultTaskMatcher `json:"targetMatcher,omitempty"`
+	// Scope tells the repository's own tasks from those it inherits from its
+	// project, which its listing holds as well.
+	Scope *DefaultTaskScope `json:"scope,omitempty"`
+}
+
+// DefaultTaskScope is where a task is defined: PROJECT or REPOSITORY.
+type DefaultTaskScope struct {
+	Type *string `json:"type,omitempty"`
 }
 
 type DefaultTaskMatcher struct {
@@ -808,7 +816,7 @@ func (service *Service) UpdateDefaultTask(ctx context.Context, repo RepositoryRe
 	// to the any-ref matcher, so a checklist meant for one branch pair started
 	// applying to every pull request, and nothing in the output said so.
 	if sourceRef == nil || targetRef == nil {
-		current, err := service.findDefaultTask(ctx, repo, trimmedID)
+		current, err := service.GetDefaultTask(ctx, repo, trimmedID)
 		if err != nil {
 			return nil, err
 		}
@@ -842,9 +850,16 @@ func (service *Service) UpdateDefaultTask(ctx context.Context, repo RepositoryRe
 	return &task, nil
 }
 
-// findDefaultTask returns one default task by id. There is no single-task
-// endpoint, so the listing is the only way to read what a task currently says.
-func (service *Service) findDefaultTask(ctx context.Context, repo RepositoryRef, taskID string) (DefaultTask, error) {
+// GetDefaultTask returns one default task by id: the repository's own, or one
+// it inherits from its project, which Scope tells apart. There is no
+// single-task endpoint, so the listing is the only way to read what a task
+// currently says.
+func (service *Service) GetDefaultTask(ctx context.Context, repo RepositoryRef, taskID string) (DefaultTask, error) {
+	taskID = strings.TrimSpace(taskID)
+	if taskID == "" {
+		return DefaultTask{}, apperrors.New(apperrors.KindValidation, "task id is required", nil)
+	}
+
 	tasks, err := service.ListDefaultTasks(ctx, repo)
 	if err != nil {
 		return DefaultTask{}, err

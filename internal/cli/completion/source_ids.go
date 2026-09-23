@@ -429,10 +429,10 @@ func restrictionSource(ctx context.Context, environment *Environment, request Re
 // defaultTask is one entry of a default-task listing, read for the three
 // fields a completion has anything to do with.
 //
-// Read from the response rather than through either service's DefaultTask,
-// which is the same object modelled twice and drops scope in both copies --
-// and scope is precisely what says whether the repository's listing is showing
-// the repository's task or the project's, inherited.
+// Read from one page of the response rather than through either service, whose
+// listing walks every page: a completion has a second to answer in, and offers
+// a page of candidates at most. scope is what says whether the repository's
+// listing is showing the repository's task or the project's, inherited.
 type defaultTask struct {
 	ID          int64  `json:"id"`
 	Description string `json:"description"`

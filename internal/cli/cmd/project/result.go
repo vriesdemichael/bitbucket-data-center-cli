@@ -198,7 +198,11 @@ func init() {
 	result.Declare("project branch-restriction update", result.For[SingleRestriction](singleRestrictionEnums))
 	result.Declare("project branch-restriction delete", result.For[RestrictionDeletion](nil))
 
-	taskMatchers := map[string][]string{"sourceMatcher.type": result.RefMatcherTypes, "targetMatcher.type": result.RefMatcherTypes}
+	taskMatchers := map[string][]string{
+		"sourceMatcher.type": result.RefMatcherTypes,
+		"targetMatcher.type": result.RefMatcherTypes,
+		"scope":              result.DefaultTaskScopes,
+	}
 	result.Declare("project default-task list", result.List[result.DefaultTask](taskMatchers))
 	result.Declare("project default-task add", result.For[result.DefaultTask](taskMatchers))
 	result.Declare("project default-task update", result.For[result.DefaultTask](taskMatchers))
@@ -283,6 +287,9 @@ func defaultTaskFrom(upstream projectservice.DefaultTask) result.DefaultTask {
 	}
 	converted.SourceMatcher = defaultTaskMatcherFrom(upstream.SourceMatcher)
 	converted.TargetMatcher = defaultTaskMatcherFrom(upstream.TargetMatcher)
+	if upstream.Scope != nil {
+		converted.Scope = safederef.String(upstream.Scope.Type)
+	}
 
 	return converted
 }

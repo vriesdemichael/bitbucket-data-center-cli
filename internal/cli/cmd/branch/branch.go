@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/inherited"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
@@ -79,6 +80,36 @@ func resolveBranchRepositoryReference(selector string, cfg config.AppConfig) (br
 		return branchservice.RepositoryRef{}, err
 	}
 	return branchservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, nil
+}
+
+// ownRestriction reads a restriction through the repository's route and
+// refuses one the repository inherits from its project. That route takes the
+// project restriction's id and acts on it for the whole project: a delete
+// removes it from every repository in it (#657). change is the subcommand the
+// caller ran, which does the same on the project.
+func ownRestriction(ctx context.Context, service *branchservice.Service, repo branchservice.RepositoryRef, id, change string) (openapigenerated.RestRefRestriction, error) {
+	restriction, err := service.GetRestriction(ctx, repo, id)
+	if err != nil {
+		return restriction, err
+	}
+
+	if inherited.FromProject(restrictionScope(restriction)) {
+		trimmed := strings.TrimSpace(id)
+		return restriction, inherited.Refusal("branch restriction", trimmed, repo.ProjectKey, change,
+			fmt.Sprintf("bb project branch-restriction %s %s %s", change, repo.ProjectKey, trimmed))
+	}
+
+	return restriction, nil
+}
+
+// restrictionScope is PROJECT or REPOSITORY, and empty when Bitbucket did not
+// say.
+func restrictionScope(restriction openapigenerated.RestRefRestriction) string {
+	if restriction.Scope == nil {
+		return ""
+	}
+
+	return string(restriction.Scope.Type)
 }
 
 func safeUsers(values *[]openapigenerated.RestApplicationUser) []openapigenerated.RestApplicationUser {
@@ -630,6 +661,9 @@ func New(deps Dependencies) *cobra.Command {
 	restrictionListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List branch restrictions",
+		Long: `List the repository's branch restrictions, and those it inherits from its
+project, which are marked as inherited. bb project branch-restriction changes
+an inherited one.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -676,6 +710,7 @@ func New(deps Dependencies) *cobra.Command {
 					matcher,
 					fmt.Sprintf("users=%d", len(safeUsers(restriction.Users))),
 					fmt.Sprintf("groups=%d", len(safederef.StringSlice(restriction.Groups))),
+					style.Secondary.Render(inherited.Label(restrictionScope(restriction), repo.ProjectKey)),
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
@@ -715,7 +750,11 @@ func New(deps Dependencies) *cobra.Command {
 				return d.WriteJSON(cmd.OutOrStdout(), SingleRestriction{Repository: repositoryOf(repo), Restriction: result.RestrictionFrom(restriction)})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", style.Secondary.Render(fmt.Sprintf("id=%d", safederef.Int32(restriction.Id))), safederef.String(restriction.Type))
+			line := fmt.Sprintf("%s\t%s", style.Secondary.Render(fmt.Sprintf("id=%d", safederef.Int32(restriction.Id))), safederef.String(restriction.Type))
+			if label := inherited.Label(restrictionScope(restriction), repo.ProjectKey); label != "" {
+				line += "\t" + style.Secondary.Render(label)
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), line)
 			return nil
 		},
 	}
@@ -833,7 +872,12 @@ func New(deps Dependencies) *cobra.Command {
 	restrictionUpdateCmd := &cobra.Command{
 		Use:   "update <restriction-id>",
 		Short: "Update branch restriction",
-		Args:  cobra.ExactArgs(1),
+		Long: `Update one of the repository's branch restrictions.
+
+A restriction the repository inherits from its project is refused; bb project
+branch-restriction update changes it there, for every repository in the
+project.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -859,7 +903,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				current, err := service.GetRestriction(cmd.Context(), repo, args[0])
+				current, err := ownRestriction(cmd.Context(), service, repo, args[0], "update")
 				if err != nil {
 					return err
 				}
@@ -881,6 +925,10 @@ func New(deps Dependencies) *cobra.Command {
 					RequiredState:   []string{"branch restriction"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
+			}
+
+			if _, err := ownRestriction(cmd.Context(), service, repo, args[0], "update"); err != nil {
+				return err
 			}
 
 			updated, err := service.UpdateRestriction(cmd.Context(), repo, args[0], branchservice.RestrictionUpsertInput{
@@ -924,7 +972,12 @@ func New(deps Dependencies) *cobra.Command {
 	restrictionDeleteCmd := &cobra.Command{
 		Use:   "delete <restriction-id>",
 		Short: "Delete branch restriction",
-		Args:  cobra.ExactArgs(1),
+		Long: `Delete one of the repository's branch restrictions.
+
+A restriction the repository inherits from its project is refused: deleted
+through the repository, it would be deleted from every repository in the
+project. bb project branch-restriction delete deletes it there.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -942,7 +995,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				_, err := service.GetRestriction(cmd.Context(), repo, args[0])
+				_, err := ownRestriction(cmd.Context(), service, repo, args[0], "delete")
 				predicted := "delete"
 				reason := "branch restriction will be deleted"
 				if err != nil {
@@ -967,6 +1020,9 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
+			if _, err := ownRestriction(cmd.Context(), service, repo, args[0], "delete"); err != nil {
+				return err
+			}
 			if err := service.DeleteRestriction(cmd.Context(), repo, args[0]); err != nil {
 				return err
 			}

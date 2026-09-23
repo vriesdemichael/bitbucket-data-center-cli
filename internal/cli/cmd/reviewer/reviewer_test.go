@@ -93,8 +93,8 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on list repo: %v", err)
 	}
-	if !strings.Contains(buf.String(), "1 conditions") {
-		t.Fatalf("expected 1 conditions in list output: %s", buf.String())
+	if !strings.Contains(buf.String(), "101") || !strings.Contains(buf.String(), "approvals=1") {
+		t.Fatalf("expected condition 101 and its approvals in list output: %s", buf.String())
 	}
 
 	// 2. list repo in JSON mode
@@ -121,8 +121,8 @@ func TestReviewerConditionCommands(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error on list project: %v", err)
 	}
-	if !strings.Contains(buf.String(), "1 conditions") {
-		t.Fatalf("expected 1 conditions in list output: %s", buf.String())
+	if !strings.Contains(buf.String(), "102") || !strings.Contains(buf.String(), "approvals=2") {
+		t.Fatalf("expected condition 102 and its approvals in list output: %s", buf.String())
 	}
 	jsonEnabled = true
 	cmd = New(deps)

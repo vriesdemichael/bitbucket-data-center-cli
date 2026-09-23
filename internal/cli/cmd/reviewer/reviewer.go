@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/inherited"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
@@ -98,6 +99,9 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List default reviewer conditions",
+		Long: `List the default reviewer conditions of a project, or with --repo of a
+repository: its own, and those it inherits from its project, which are marked
+as inherited.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -118,7 +122,7 @@ func New(deps Dependencies) *cobra.Command {
 				if d.JSONEnabled() {
 					return d.WriteJSON(cmd.OutOrStdout(), Conditions{Conditions: result.ConditionsFrom(conditions)})
 				}
-				printReviewerConditions(cmd, conditions)
+				printReviewerConditions(cmd, conditions, pk)
 				return nil
 			}
 
@@ -136,7 +140,7 @@ func New(deps Dependencies) *cobra.Command {
 			if d.JSONEnabled() {
 				return d.WriteJSON(cmd.OutOrStdout(), Conditions{Conditions: result.ConditionsFrom(conditions)})
 			}
-			printReviewerConditions(cmd, conditions)
+			printReviewerConditions(cmd, conditions, "")
 			return nil
 		},
 	}
@@ -145,7 +149,13 @@ func New(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <condition-id>",
 		Short: "Delete a default reviewer condition",
-		Args:  cobra.ExactArgs(1),
+		Long: `Delete a default reviewer condition of a project, or with --repo of a
+repository.
+
+With --repo, a condition the repository inherits from its project is refused:
+deleted through the repository, it would be deleted from every repository in
+the project. --project deletes it there.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -169,6 +179,9 @@ func New(deps Dependencies) *cobra.Command {
 					if err != nil {
 						return err
 					}
+					if err := refuseInheritedCondition(conditions, id, pk, "delete"); err != nil {
+						return err
+					}
 					predicted := "no-op"
 					reason := "reviewer condition not found in repository"
 					if reviewerConditionExists(conditions, id) {
@@ -186,6 +199,13 @@ func New(deps Dependencies) *cobra.Command {
 						RequiredState:   []string{"repository reviewer conditions"},
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
+				}
+				conditions, err := service.ListRepositoryConditions(cmd.Context(), pk, slug)
+				if err != nil {
+					return err
+				}
+				if err := refuseInheritedCondition(conditions, id, pk, "delete"); err != nil {
+					return err
 				}
 				if err := service.DeleteRepositoryCondition(cmd.Context(), pk, slug, id); err != nil {
 					return err
@@ -397,8 +417,11 @@ func New(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update <condition-id> [json-config]",
 		Short: "Update a default reviewer condition",
-		Long:  "Update a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)",
-		Args:  cobra.RangeArgs(1, 2),
+		Long: `Update a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)
+
+With --repo, a condition the repository inherits from its project is refused;
+--project changes it there, for every repository in the project.`,
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -457,6 +480,9 @@ func New(deps Dependencies) *cobra.Command {
 					if err != nil {
 						return err
 					}
+					if err := refuseInheritedCondition(conditions, id, pk, "update"); err != nil {
+						return err
+					}
 					predicted := "blocked"
 					reason := "reviewer condition not found in repository"
 					blocking := []string{"reviewer condition not found"}
@@ -481,6 +507,13 @@ func New(deps Dependencies) *cobra.Command {
 						BlockingReasons: blocking,
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
+				}
+				conditions, err := service.ListRepositoryConditions(cmd.Context(), pk, slug)
+				if err != nil {
+					return err
+				}
+				if err := refuseInheritedCondition(conditions, id, pk, "update"); err != nil {
+					return err
 				}
 				updated, err := service.UpdateRepositoryCondition(cmd.Context(), pk, slug, id, condition)
 				if err != nil {
@@ -558,12 +591,76 @@ func New(deps Dependencies) *cobra.Command {
 	return reviewerCmd
 }
 
-func printReviewerConditions(cmd *cobra.Command, conditions []openapigenerated.RestPullRequestCondition) {
+// printReviewerConditions lists conditions one to a row. repositoryProject is
+// the project of the repository being listed, whose conditions it marks as
+// inherited; empty for a project's own listing, where every condition is the
+// project's.
+func printReviewerConditions(cmd *cobra.Command, conditions []openapigenerated.RestPullRequestCondition, repositoryProject string) {
 	if len(conditions) == 0 {
 		fmt.Fprintln(cmd.OutOrStdout(), style.Empty.Render("No conditions found"))
 		return
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "Found %s conditions\n", style.Secondary.Render(fmt.Sprintf("%d", len(conditions))))
+
+	rows := make([][]string, 0, len(conditions))
+	for _, condition := range conditions {
+		source, target := "", ""
+		if condition.SourceRefMatcher != nil {
+			source = matcherText(condition.SourceRefMatcher.DisplayId, condition.SourceRefMatcher.Id)
+		}
+		if condition.TargetRefMatcher != nil {
+			target = matcherText(condition.TargetRefMatcher.DisplayId, condition.TargetRefMatcher.Id)
+		}
+
+		label := ""
+		if repositoryProject != "" && condition.Scope != nil {
+			label = inherited.Label(string(condition.Scope.Type), repositoryProject)
+		}
+
+		reviewers := 0
+		if condition.Reviewers != nil {
+			reviewers = len(*condition.Reviewers)
+		}
+
+		rows = append(rows, []string{
+			style.Secondary.Render(fmt.Sprintf("%d", safederef.Int32(condition.Id))),
+			fmt.Sprintf("approvals=%d", safederef.Int32(condition.RequiredApprovals)),
+			source + " -> " + target,
+			fmt.Sprintf("reviewers=%d", reviewers),
+			style.Secondary.Render(label),
+		})
+	}
+	style.WriteTable(cmd.OutOrStdout(), rows)
+}
+
+// matcherText is a ref matcher as a person reads it: its display id, or its
+// id when it has none, and "any" for the matcher of every ref.
+func matcherText(displayID, id *string) string {
+	matcherID := strings.TrimSpace(safederef.String(id))
+	if matcherID == "" || openapi.IsAnyRefMatcherID(matcherID) {
+		return "any"
+	}
+	if text := strings.TrimSpace(safederef.String(displayID)); text != "" {
+		return text
+	}
+
+	return matcherID
+}
+
+// refuseInheritedCondition refuses a condition the repository inherits from
+// its project. The repository's route takes that condition's id and acts on
+// it for the whole project: a delete removes it from every repository in it
+// (#657). change is the subcommand the caller ran, which does the same on the
+// project.
+func refuseInheritedCondition(conditions []openapigenerated.RestPullRequestCondition, id, projectKey, change string) error {
+	condition, found := findReviewerCondition(conditions, id)
+	if !found || condition.Scope == nil || !inherited.FromProject(string(condition.Scope.Type)) {
+		return nil
+	}
+
+	trimmed := strings.TrimSpace(id)
+
+	return inherited.Refusal("reviewer condition", trimmed, projectKey, change,
+		fmt.Sprintf("bb reviewer condition %s %s --project %s", change, trimmed, projectKey))
 }
 
 func reviewerConditionExists(conditions []openapigenerated.RestPullRequestCondition, id string) bool {

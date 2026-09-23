@@ -2169,7 +2169,11 @@ Flags:
 Delete branch restriction
 
 ```text
-Delete branch restriction
+Delete one of the repository's branch restrictions.
+
+A restriction the repository inherits from its project is refused: deleted
+through the repository, it would be deleted from every repository in the
+project. bb project branch-restriction delete deletes it there.
 
 Usage:
   bb branch restriction delete <restriction-id> [flags]
@@ -2240,7 +2244,9 @@ Usage:
 List branch restrictions
 
 ```text
-List branch restrictions
+List the repository's branch restrictions, and those it inherits from its
+project, which are marked as inherited. bb project branch-restriction changes
+an inherited one.
 
 Usage:
   bb branch restriction list [flags]
@@ -2281,7 +2287,11 @@ Flags:
 Update branch restriction
 
 ```text
-Update branch restriction
+Update one of the repository's branch restrictions.
+
+A restriction the repository inherits from its project is refused; bb project
+branch-restriction update changes it there, for every repository in the
+project.
 
 Usage:
   bb branch restriction update <restriction-id> [flags]
@@ -8468,7 +8478,10 @@ Flags:
 Delete a default checklist task
 
 ```text
-Delete a default checklist task
+Delete one of the repository's default checklist tasks.
+
+A task the repository inherits from its project is refused; bb project
+default-task delete deletes it there, for every repository in the project.
 
 Usage:
   bb repo default-task delete <task-id> [flags]
@@ -8504,7 +8517,9 @@ Flags:
 List default checklist tasks
 
 ```text
-List default checklist tasks
+List the repository's default checklist tasks, and those it inherits from its
+project, which are marked as inherited. bb project default-task changes an
+inherited one.
 
 Usage:
   bb repo default-task list [flags]
@@ -8537,7 +8552,10 @@ Usage:
 Update a default checklist task
 
 ```text
-Update a default checklist task
+Update one of the repository's default checklist tasks.
+
+A task the repository inherits from its project is refused; bb project
+default-task update changes it there, for every repository in the project.
 
 Usage:
   bb repo default-task update <task-id> [flags]
@@ -10775,7 +10793,12 @@ Usage:
 Delete a default reviewer condition
 
 ```text
-Delete a default reviewer condition
+Delete a default reviewer condition of a project, or with --repo of a
+repository.
+
+With --repo, a condition the repository inherits from its project is refused:
+deleted through the repository, it would be deleted from every repository in
+the project. --project deletes it there.
 
 Usage:
   bb reviewer condition delete <condition-id> [flags]
@@ -10813,7 +10836,9 @@ Flags:
 List default reviewer conditions
 
 ```text
-List default reviewer conditions
+List the default reviewer conditions of a project, or with --repo of a
+repository: its own, and those it inherits from its project, which are marked
+as inherited.
 
 Usage:
   bb reviewer condition list [flags]
@@ -10849,6 +10874,9 @@ Update a default reviewer condition
 
 ```text
 Update a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)
+
+With --repo, a condition the repository inherits from its project is refused;
+--project changes it there, for every repository in the project.
 
 Usage:
   bb reviewer condition update <condition-id> [json-config] [flags]

@@ -475,8 +475,17 @@ func (service *Service) upsertRestriction(ctx context.Context, repo RepositoryRe
 	//
 	// The old restriction is read first so that updating an id that is not there
 	// reports that, rather than creating a restriction nobody asked to add.
-	if _, err := service.GetRestriction(ctx, repo, trimmedUpdateID); err != nil {
+	current, err := service.GetRestriction(ctx, repo, trimmedUpdateID)
+	if err != nil {
 		return openapigenerated.RestRefRestriction{}, err
+	}
+	// The repository's route answers for a restriction the repository inherits
+	// from its project as well, and the delete below would remove that one from
+	// the project, and so from every repository in it (#657).
+	if current.Scope != nil && strings.EqualFold(string(current.Scope.Type), "PROJECT") {
+		return openapigenerated.RestRefRestriction{}, apperrors.New(apperrors.KindValidation, fmt.Sprintf(
+			"branch restriction %s is inherited from project %s, so it cannot be updated through %s/%s",
+			trimmedUpdateID, repo.ProjectKey, repo.ProjectKey, repo.Slug), nil)
 	}
 
 	created, err := service.createRestriction(ctx, repo, bodyEntry)

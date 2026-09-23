@@ -101,8 +101,13 @@ func init() {
 	result.Declare("repo default-task list", result.For[DefaultTasks](map[string][]string{
 		"tasks.sourceMatcher.type": result.RefMatcherTypes,
 		"tasks.targetMatcher.type": result.RefMatcherTypes,
+		"tasks.scope":              result.DefaultTaskScopes,
 	}))
-	singleTaskMatchers := map[string][]string{"task.sourceMatcher.type": result.RefMatcherTypes, "task.targetMatcher.type": result.RefMatcherTypes}
+	singleTaskMatchers := map[string][]string{
+		"task.sourceMatcher.type": result.RefMatcherTypes,
+		"task.targetMatcher.type": result.RefMatcherTypes,
+		"task.scope":              result.DefaultTaskScopes,
+	}
 	result.Declare("repo default-task add", result.For[SingleDefaultTask](singleTaskMatchers))
 	result.Declare("repo default-task update", result.For[SingleDefaultTask](singleTaskMatchers))
 	result.Declare("repo default-task delete", result.For[DefaultTaskDeletion](nil))
@@ -211,8 +216,19 @@ func defaultTaskFrom(upstream reposettings.DefaultTask) result.DefaultTask {
 	}
 	converted.SourceMatcher = defaultTaskMatcherFrom(upstream.SourceMatcher)
 	converted.TargetMatcher = defaultTaskMatcherFrom(upstream.TargetMatcher)
+	converted.Scope = defaultTaskScope(upstream)
 
 	return converted
+}
+
+// defaultTaskScope is PROJECT or REPOSITORY, and empty when Bitbucket did not
+// say.
+func defaultTaskScope(task reposettings.DefaultTask) string {
+	if task.Scope == nil {
+		return ""
+	}
+
+	return safederef.String(task.Scope.Type)
 }
 
 // defaultTaskMatcherFrom converts one matcher of a default task, flattening its
