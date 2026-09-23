@@ -183,8 +183,10 @@ With no terminal, or under `--json`, no command blocks on standard input: it fai
 
 ## Dry-run behavior and scope
 
-- `--dry-run` applies to server-mutating Bitbucket commands.
-- `--dry-run` does not apply to local auth/config mutators.
+- A command that changes something on the server is previewed from Bitbucket's answers, or predicted, and not run.
+- A command that changes this machine (stored credentials, host aliases, git configuration, the skill file, shell completion, a clone or a local branch) is previewed and not run.
+- A command that changes nothing runs as usual.
+- `bb ai mcp serve` refuses the flag: it starts a live server, and a session cannot be previewed.
 - Dry-run output includes explicit planning metadata such as planning mode and capability signaling.
 
 See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and contract details.
