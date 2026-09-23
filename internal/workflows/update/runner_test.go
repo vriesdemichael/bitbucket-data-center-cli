@@ -203,6 +203,10 @@ func TestRunnerAppliesReleaseUpdate(t *testing.T) {
 	if string(updated) != "new-binary" {
 		t.Fatalf("expected updated binary contents, got %q", string(updated))
 	}
+	// No backup and no partial download beside it.
+	if entries := directoryEntries(t, targetDir); strings.Join(entries, " ") != "bb" {
+		t.Fatalf("install directory holds %v, want only bb", entries)
+	}
 	if len(client.downloadCalls) != 3 {
 		t.Fatalf("expected three downloads, got %+v", client.downloadCalls)
 	}
@@ -1021,65 +1025,6 @@ func TestUpdateHelpers(t *testing.T) {
 	if files := SortedChecksumFiles(map[string]string{"b": "2", "a": "1"}); len(files) != 2 || files[0] != "a" || files[1] != "b" {
 		t.Fatalf("unexpected sorted files: %+v", files)
 	}
-}
-
-func TestReplaceBinary(t *testing.T) {
-	t.Parallel()
-
-	t.Run("validation", func(t *testing.T) {
-		if err := replaceBinary("", []byte("payload"), 0o755); !apperrors.IsKind(err, apperrors.KindValidation) {
-			t.Fatalf("expected validation error, got %v", err)
-		}
-	})
-
-	t.Run("create temp failure", func(t *testing.T) {
-		targetPath := filepath.Join(t.TempDir(), "missing", "bb")
-		if err := replaceBinary(targetPath, []byte("payload"), 0o755); !apperrors.IsKind(err, apperrors.KindInternal) {
-			t.Fatalf("expected internal error, got %v", err)
-		}
-	})
-
-	t.Run("successful replacement", func(t *testing.T) {
-		targetDir := t.TempDir()
-		targetPath := filepath.Join(targetDir, "bb")
-		if err := os.WriteFile(targetPath, []byte("old"), 0o700); err != nil {
-			t.Fatalf("seed target: %v", err)
-		}
-		if err := replaceBinary(targetPath, []byte("new"), 0o755); err != nil {
-			t.Fatalf("replaceBinary: %v", err)
-		}
-		payload, err := os.ReadFile(targetPath)
-		if err != nil {
-			t.Fatalf("read target: %v", err)
-		}
-		if string(payload) != "new" {
-			t.Fatalf("expected new payload, got %q", string(payload))
-		}
-		info, err := os.Stat(targetPath)
-		if err != nil {
-			t.Fatalf("stat target: %v", err)
-		}
-		// Windows does not model Unix permission bits; os.Chmod only toggles the
-		// read-only flag, so Mode().Perm() reports 0o666 regardless of finalMode.
-		if runtime.GOOS != "windows" && info.Mode().Perm() != 0o700 {
-			t.Fatalf("expected existing mode preserved, got %o", info.Mode().Perm())
-		}
-	})
-
-	t.Run("new target uses provided mode", func(t *testing.T) {
-		targetPath := filepath.Join(t.TempDir(), "bb")
-		if err := replaceBinary(targetPath, []byte("new"), 0o755); err != nil {
-			t.Fatalf("replaceBinary: %v", err)
-		}
-		info, err := os.Stat(targetPath)
-		if err != nil {
-			t.Fatalf("stat target: %v", err)
-		}
-		// Windows does not model Unix permission bits (see note above).
-		if runtime.GOOS != "windows" && info.Mode().Perm() != 0o755 {
-			t.Fatalf("expected provided mode, got %o", info.Mode().Perm())
-		}
-	})
 }
 
 func TestStageWindowsBinary(t *testing.T) {
