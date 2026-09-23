@@ -64,9 +64,10 @@ checkout of this repository:
 bb ai skill install
 ```
 
-That writes `.agents/skills/bb/SKILL.md`, alongside the project. `--global`
-writes `~/.agents/skills/bb/SKILL.md` instead, for every project of yours.
-`bb ai skill remove` deletes the file it wrote.
+That writes `.agents/skills/bb/SKILL.md`, which most agents read, and
+`.claude/skills/bb/SKILL.md`, which Claude Code reads instead, alongside the
+project. `--global` writes both under your home directory instead, for every
+project of yours. `bb ai skill remove` deletes the files it wrote.
 
 Scoop installs the skill with `--global` when it installs `bb`, and removes it
 with `bb`. Homebrew and the `.deb` and `.rpm` packages only remind you to run
@@ -74,11 +75,11 @@ the command. They install for every user of the machine, and no one place
 reaches every user's agents: the agents that read skills machine-wide each read
 a directory of their own.
 
-Most agents read `.agents/skills/<name>/SKILL.md`. Where yours expects something
-else, print the skill and redirect it:
+Where an agent reads a directory of its own, print the skill and redirect it
+there; Cline, for one, reads `~/.cline/skills`:
 
 ```bash
-bb ai skill show > .claude/skills/bb/SKILL.md
+bb ai skill show > ~/.cline/skills/bb/SKILL.md
 ```
 
 A second skill, `bulk`, covers `bb bulk`. That command is deprecated and warns at

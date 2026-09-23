@@ -190,13 +190,13 @@ func TestSkillInstallWritesFile(t *testing.T) {
 		{
 			name:     "default skill",
 			args:     []string{"skill", "install"},
-			relPath:  filepath.Join(".agents", "skills", "bb", "SKILL.md"),
+			relPath:  filepath.Join("skills", "bb", "SKILL.md"),
 			expected: "# bb — Bitbucket Data Center CLI",
 		},
 		{
 			name:     "bulk skill",
 			args:     []string{"skill", "install", "bulk"},
-			relPath:  filepath.Join(".agents", "skills", "bb-bulk", "SKILL.md"),
+			relPath:  filepath.Join("skills", "bb-bulk", "SKILL.md"),
 			expected: "# bb-bulk — Multi-Repository Bulk Governance Skill",
 		},
 	}
@@ -223,16 +223,20 @@ func TestSkillInstallWritesFile(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			dest := filepath.Join(dir, tt.relPath)
-			data, err := os.ReadFile(dest)
-			if err != nil {
-				t.Fatalf("skill file not written: %v", err)
-			}
-			if !strings.Contains(string(data), "3.1.0") {
-				t.Fatal("installed skill file does not contain the expected version")
-			}
-			if !strings.Contains(string(data), tt.expected) {
-				t.Fatalf("installed skill file does not contain expected snippet %q", tt.expected)
+			// Where most agents read it, and where Claude Code, which reads no
+			// other place, does.
+			for _, agents := range []string{".agents", ".claude"} {
+				dest := filepath.Join(dir, agents, tt.relPath)
+				data, err := os.ReadFile(dest)
+				if err != nil {
+					t.Fatalf("skill file not written: %v", err)
+				}
+				if !strings.Contains(string(data), "3.1.0") {
+					t.Fatal("installed skill file does not contain the expected version")
+				}
+				if !strings.Contains(string(data), tt.expected) {
+					t.Fatalf("installed skill file does not contain expected snippet %q", tt.expected)
+				}
 			}
 			if !strings.Contains(buf.String(), "Skill installed") {
 				t.Fatalf("unexpected output: %q", buf.String())
@@ -251,12 +255,12 @@ func TestSkillRemoveDeletesFile(t *testing.T) {
 		{
 			name:    "default skill",
 			args:    []string{"skill", "remove"},
-			relPath: filepath.Join(".agents", "skills", "bb", "SKILL.md"),
+			relPath: filepath.Join("skills", "bb", "SKILL.md"),
 		},
 		{
 			name:    "bulk skill",
 			args:    []string{"skill", "remove", "bulk"},
-			relPath: filepath.Join(".agents", "skills", "bb-bulk", "SKILL.md"),
+			relPath: filepath.Join("skills", "bb-bulk", "SKILL.md"),
 		},
 	}
 
@@ -272,13 +276,15 @@ func TestSkillRemoveDeletesFile(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Pre-create the file.
-			dest := filepath.Join(dir, tt.relPath)
-			if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(dest, []byte("dummy"), 0o644); err != nil {
-				t.Fatal(err)
+			// Pre-create both copies install writes.
+			copies := []string{filepath.Join(dir, ".agents", tt.relPath), filepath.Join(dir, ".claude", tt.relPath)}
+			for _, dest := range copies {
+				if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(dest, []byte("dummy"), 0o644); err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			cmd := New(testSkillDeps(""))
@@ -291,13 +297,56 @@ func TestSkillRemoveDeletesFile(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
-				t.Fatal("expected skill file to be removed, but it still exists")
-			}
-			if !strings.Contains(buf.String(), "Skill removed") {
-				t.Fatalf("unexpected output: %q", buf.String())
+			for _, dest := range copies {
+				if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
+					t.Fatalf("expected %s to be removed, but it still exists", dest)
+				}
+				if !strings.Contains(buf.String(), "Skill removed: "+dest) {
+					t.Fatalf("the output does not name %s: %q", dest, buf.String())
+				}
 			}
 		})
+	}
+}
+
+// TestSkillRemoveTakesWhicheverCopyIsThere covers a skill installed before bb
+// wrote Claude Code's copy, or one whose other copy was deleted by hand.
+func TestSkillRemoveTakesWhicheverCopyIsThere(t *testing.T) {
+	dir := t.TempDir()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	only := filepath.Join(dir, ".agents", "skills", "bb", "SKILL.md")
+	if err := os.MkdirAll(filepath.Dir(only), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(only, []byte("dummy"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	deps := testSkillDeps("")
+	var written any
+	deps.JSONEnabled = func() bool { return true }
+	deps.WriteJSON = func(_ io.Writer, payload any) error {
+		written = payload
+		return nil
+	}
+
+	cmd := New(deps)
+	cmd.SetArgs([]string{"skill", "remove"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	report, ok := written.(SkillFile)
+	if !ok || report.Status != "removed" || len(report.Paths) != 1 || report.Paths[0] != only || report.Path != only {
+		t.Fatalf("report = %+v", written)
 	}
 }
 
@@ -345,23 +394,29 @@ func TestResolveInstallPathProject(t *testing.T) {
 	}
 
 	bbSkill, _ := lookupSkill("bb")
-	got, err := resolveInstallPath(bbSkill, false)
+	got, err := resolveInstallPaths(bbSkill, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := filepath.Join(dir, ".agents", "skills", "bb", "SKILL.md")
-	if got != want {
-		t.Fatalf("project path for bb: got %q, want %q", got, want)
+	want := []string{
+		filepath.Join(dir, ".agents", "skills", "bb", "SKILL.md"),
+		filepath.Join(dir, ".claude", "skills", "bb", "SKILL.md"),
+	}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("project paths for bb: got %q, want %q", got, want)
 	}
 
 	bulkSkill, _ := lookupSkill("bulk")
-	gotBulk, err := resolveInstallPath(bulkSkill, false)
+	gotBulk, err := resolveInstallPaths(bulkSkill, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	wantBulk := filepath.Join(dir, ".agents", "skills", "bb-bulk", "SKILL.md")
-	if gotBulk != wantBulk {
-		t.Fatalf("project path for bulk: got %q, want %q", gotBulk, wantBulk)
+	wantBulk := []string{
+		filepath.Join(dir, ".agents", "skills", "bb-bulk", "SKILL.md"),
+		filepath.Join(dir, ".claude", "skills", "bb-bulk", "SKILL.md"),
+	}
+	if strings.Join(gotBulk, "|") != strings.Join(wantBulk, "|") {
+		t.Fatalf("project paths for bulk: got %q, want %q", gotBulk, wantBulk)
 	}
 }
 
@@ -370,24 +425,30 @@ func TestResolveInstallPathGlobal(t *testing.T) {
 	t.Parallel()
 
 	bbSkill, _ := lookupSkill("bb")
-	got, err := resolveInstallPath(bbSkill, true)
+	got, err := resolveInstallPaths(bbSkill, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	home, _ := os.UserHomeDir()
-	want := filepath.Join(home, ".agents", "skills", "bb", "SKILL.md")
-	if got != want {
-		t.Fatalf("global path for bb: got %q, want %q", got, want)
+	want := []string{
+		filepath.Join(home, ".agents", "skills", "bb", "SKILL.md"),
+		filepath.Join(home, ".claude", "skills", "bb", "SKILL.md"),
+	}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("global paths for bb: got %q, want %q", got, want)
 	}
 
 	bulkSkill, _ := lookupSkill("bulk")
-	gotBulk, err := resolveInstallPath(bulkSkill, true)
+	gotBulk, err := resolveInstallPaths(bulkSkill, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	wantBulk := filepath.Join(home, ".agents", "skills", "bb-bulk", "SKILL.md")
-	if gotBulk != wantBulk {
-		t.Fatalf("global path for bulk: got %q, want %q", gotBulk, wantBulk)
+	wantBulk := []string{
+		filepath.Join(home, ".agents", "skills", "bb-bulk", "SKILL.md"),
+		filepath.Join(home, ".claude", "skills", "bb-bulk", "SKILL.md"),
+	}
+	if strings.Join(gotBulk, "|") != strings.Join(wantBulk, "|") {
+		t.Fatalf("global paths for bulk: got %q, want %q", gotBulk, wantBulk)
 	}
 }
 
@@ -407,9 +468,11 @@ func TestSkillInstallGlobalWritesFile(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	dest := filepath.Join(home, ".agents", "skills", "bb-bulk", "SKILL.md")
-	if _, err := os.Stat(dest); os.IsNotExist(err) {
-		t.Fatal("expected global bulk skill file to be written")
+	for _, agents := range []string{".agents", ".claude"} {
+		dest := filepath.Join(home, agents, "skills", "bb-bulk", "SKILL.md")
+		if _, err := os.Stat(dest); os.IsNotExist(err) {
+			t.Fatalf("expected the global bulk skill to be written to %s", dest)
+		}
 	}
 }
 

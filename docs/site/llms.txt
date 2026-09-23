@@ -80,7 +80,8 @@ installing it needs no network:
 bb ai skill install
 ```
 
-That writes `.agents/skills/bb/SKILL.md` — project scope. For user scope:
+That writes `.agents/skills/bb/SKILL.md`, and `.claude/skills/bb/SKILL.md` for Claude Code,
+which reads only its own directory — project scope. For user scope:
 
 ```bash
 bb ai skill install --global
