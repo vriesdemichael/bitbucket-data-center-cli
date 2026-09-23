@@ -56,6 +56,39 @@ func TestTheCobraScriptIsCheckedBeforeItIsRewritten(t *testing.T) {
 	}
 }
 
+// TestTheFishScriptKeepsTheCursorAgainstAValue covers the other line bb
+// rewrites.
+//
+// Found by driving fish for real (scripts/completion-shells): `bb ai mcp serve
+// --tools list_t<tab>` left "list_tags " with a space, because Cobra's check
+// for when to keep the cursor against a value read the last character of the
+// description as well as the value, and "List tags in a repository." ends in a
+// full stop.
+func TestTheFishScriptKeepsTheCursorAgainstAValue(t *testing.T) {
+	t.Parallel()
+
+	command := NewRootCommand()
+	script := &bytes.Buffer{}
+	command.SetOut(script)
+	command.SetErr(script)
+	command.SetArgs([]string{"completion", "fish"})
+
+	if err := command.Execute(); err != nil {
+		t.Fatalf("generating the fish completion script failed: %v", err)
+	}
+
+	if strings.Contains(script.String(), brokenFishNoSpace) {
+		t.Error("the generated fish script still reads the description's last character")
+	}
+	if !strings.Contains(script.String(), workingFishNoSpace) {
+		t.Error("the generated fish script does not carry bb's no-space correction")
+	}
+
+	if _, err := withWorkingFishNoSpace("a script that has moved on"); err == nil {
+		t.Error("rewriting a fish script without the expected line returned no error")
+	}
+}
+
 // TestEveryShellScriptGoesToTheCallersWriter guards the reason bb replaces the
 // body of all four generators rather than only PowerShell's.
 //
