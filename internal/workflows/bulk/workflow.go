@@ -595,6 +595,77 @@ func (store *StatusStore) Load(operationID string) (ApplyStatus, error) {
 	return status, nil
 }
 
+// SavedStatus is a stored apply status and when it was written, which is when
+// the run it describes finished. The status carries no time of its own, and
+// an operation id is random, so the file's time is the only thing that says
+// which run is which.
+type SavedStatus struct {
+	ApplyStatus
+	SavedAt time.Time
+}
+
+// Recent is the stored statuses, newest first, at most limit of them.
+//
+// A file that does not load is left out rather than failing the list: it may be
+// a status written by a version of bb with another schema, or not one of ours
+// at all, and neither is a reason to hide the runs that do load. A directory
+// that does not exist yet is no runs, not an error -- it is created by the
+// first apply.
+func (store *StatusStore) Recent(limit int) ([]SavedStatus, error) {
+	if store == nil || strings.TrimSpace(store.baseDir) == "" {
+		return nil, apperrors.New(apperrors.KindInternal, "bulk status store directory is not configured", nil)
+	}
+
+	entries, err := os.ReadDir(store.baseDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+
+		return nil, apperrors.New(apperrors.KindInternal, "failed to list bulk statuses", err)
+	}
+
+	type candidate struct {
+		operationID string
+		savedAt     time.Time
+	}
+
+	candidates := make([]candidate, 0, len(entries))
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+
+		info, infoErr := entry.Info()
+		if infoErr != nil {
+			continue
+		}
+
+		candidates = append(candidates, candidate{operationID: strings.TrimSuffix(name, ".json"), savedAt: info.ModTime()})
+	}
+
+	sort.SliceStable(candidates, func(left, right int) bool {
+		return candidates[left].savedAt.After(candidates[right].savedAt)
+	})
+
+	saved := make([]SavedStatus, 0, min(limit, len(candidates)))
+	for _, each := range candidates {
+		if limit > 0 && len(saved) == limit {
+			break
+		}
+
+		status, loadErr := store.Load(each.operationID)
+		if loadErr != nil {
+			continue
+		}
+
+		saved = append(saved, SavedStatus{ApplyStatus: status, SavedAt: each.savedAt})
+	}
+
+	return saved, nil
+}
+
 // envNamePattern is what a POSIX environment variable name looks like.
 var envNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
