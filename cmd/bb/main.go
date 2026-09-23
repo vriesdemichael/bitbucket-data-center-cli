@@ -19,12 +19,20 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outwriter"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	updateworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/update"
 )
 
 // Version is set at build time via -ldflags "-X main.Version=<semver>".
 var Version = "dev"
 
 func main() {
+	// bb update on Windows sets the binary it replaced aside, because Windows
+	// will not delete a file a process is running from, and the helper of
+	// earlier releases left files of its own there. Each run deletes what it
+	// can of those, in the background and silently, so that it can neither
+	// slow a command down nor write into its output.
+	go updateworkflow.RemoveUpdateLeftovers()
+
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
 }
 

@@ -248,16 +248,17 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 		}
 	})
 
-	t.Run("scheduled human output", func(t *testing.T) {
-		buffer := &bytes.Buffer{}
-		command := &cobra.Command{}
-		command.SetOut(buffer)
-		writeUpdateHuman(command, updateworkflow.Result{CurrentVersion: "v1.1.0", LatestVersion: "v1.2.0", Scheduled: true, Staged: true, InstallPath: "C:/tools/bb.exe", StagedPath: "C:/tools/bb.exe.new", SwapResultPath: "C:/tools/bb.exe.update-result.json", PlannedAction: "schedule_background_replace_after_exit"})
-		if !bytes.Contains(buffer.Bytes(), []byte("Scheduled bb update")) {
-			t.Fatalf("unexpected human output: %s", buffer.String())
+	t.Run("an update reads the same on every operating system", func(t *testing.T) {
+		written := map[string]string{}
+		for platform, installPath := range map[string]string{"windows/amd64": `C:\tools\bb.exe`, "linux/amd64": "/usr/local/bin/bb", "darwin/arm64": "/opt/bin/bb"} {
+			buffer := &bytes.Buffer{}
+			command := &cobra.Command{}
+			command.SetOut(buffer)
+			writeUpdateHuman(command, updateworkflow.Result{CurrentVersion: "v1.1.0", LatestVersion: "v1.2.0", UpdateAvailable: true, Applied: true, PlannedAction: "replace", TargetPlatform: platform, InstallPath: installPath})
+			written[platform] = buffer.String()
 		}
-		if bytes.Contains(buffer.Bytes(), []byte("C:/tools/bb.exe.new")) {
-			t.Fatalf("human output should not contain raw metadata fields: %s", buffer.String())
+		if written["windows/amd64"] != "Updated bb v1.1.0 -> v1.2.0\n" || written["linux/amd64"] != written["windows/amd64"] || written["darwin/arm64"] != written["windows/amd64"] {
+			t.Fatalf("expected one line, the same everywhere, got %q", written)
 		}
 	})
 

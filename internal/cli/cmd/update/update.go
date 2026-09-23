@@ -311,10 +311,6 @@ func writeUpdateHuman(cmd *cobra.Command, result updateworkflow.Result) {
 	switch {
 	case result.UpToDate:
 		fmt.Fprintf(writer, "%s %s\n", style.Success.Render("bb is up to date"), style.Resource.Render(result.CurrentVersion))
-	case result.Scheduled:
-		fmt.Fprintf(writer, "%s %s %s %s\n", style.Success.Render("Scheduled bb update"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
-	case result.Staged:
-		fmt.Fprintf(writer, "%s %s %s %s\n", style.Success.Render("Staged bb update"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
 	case result.Applied:
 		fmt.Fprintf(writer, "%s %s %s %s\n", style.Success.Render("Updated bb"), style.Secondary.Render(result.CurrentVersion), style.Secondary.Render("->"), style.Resource.Render(result.LatestVersion))
 	case result.UpdateAvailable:

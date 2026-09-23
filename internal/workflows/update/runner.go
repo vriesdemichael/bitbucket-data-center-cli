@@ -43,12 +43,8 @@ type Result struct {
 	UpdateAvailable          bool   `json:"update_available"`
 	UpToDate                 bool   `json:"up_to_date"`
 	Applied                  bool   `json:"applied"`
-	Scheduled                bool   `json:"scheduled"`
-	Staged                   bool   `json:"staged"`
 	DryRun                   bool   `json:"dry_run"`
 	InstallPath              string `json:"install_path,omitempty"`
-	StagedPath               string `json:"staged_path,omitempty"`
-	SwapResultPath           string `json:"swap_result_path,omitempty"`
 	ReleaseURL               string `json:"release_url,omitempty"`
 	AssetName                string `json:"asset_name,omitempty"`
 	AssetURL                 string `json:"asset_url,omitempty"`
@@ -82,8 +78,6 @@ type Runner struct {
 	executablePath func() (string, error)
 	platform       func() (string, string)
 	writeBinary    func(string, []byte, fs.FileMode) error
-	processID      func() int
-	launchWindows  func(context.Context, windowsSwapLaunchOptions) error
 	verifier       SignatureVerifier
 	skipSignature  bool
 	trustSource    string
@@ -96,10 +90,11 @@ type Dependencies struct {
 	CurrentVersion  func() string
 	ExecutablePath  func() (string, error)
 	Platform        func() (string, string)
-	WriteBinary     func(string, []byte, fs.FileMode) error
-	ProcessID       func() int
-	LaunchWindows   func(context.Context, windowsSwapLaunchOptions) error
-	Verifier        SignatureVerifier
+	// WriteBinary puts the verified binary in place of the one at the target
+	// path. Nil installs it the way the platform's operating system lets a
+	// running binary be replaced.
+	WriteBinary func(string, []byte, fs.FileMode) error
+	Verifier    SignatureVerifier
 	// SkipSignatureVerification drops Sigstore verification. It exists for
 	// allow_unverified_update, which is administrative policy only — checksum
 	// verification stays mandatory either way.
@@ -125,21 +120,6 @@ func NewRunner(deps Dependencies) *Runner {
 		platform = func() (string, string) { return runtime.GOOS, runtime.GOARCH }
 	}
 
-	writeBinary := deps.WriteBinary
-	if writeBinary == nil {
-		writeBinary = replaceBinary
-	}
-
-	processID := deps.ProcessID
-	if processID == nil {
-		processID = os.Getpid
-	}
-
-	launchWindows := deps.LaunchWindows
-	if launchWindows == nil {
-		launchWindows = launchDetachedWindowsSwap
-	}
-
 	verifier := deps.Verifier
 	if verifier == nil {
 		verifier = updatesigstore.NewGitHubReleaseVerifier(deps.RepositoryOwner, deps.RepositoryName)
@@ -152,9 +132,7 @@ func NewRunner(deps Dependencies) *Runner {
 		currentVersion: currentVersion,
 		executablePath: executablePath,
 		platform:       platform,
-		writeBinary:    writeBinary,
-		processID:      processID,
-		launchWindows:  launchWindows,
+		writeBinary:    deps.WriteBinary,
 		verifier:       verifier,
 		skipSignature:  deps.SkipSignatureVerification,
 		trustSource:    strings.TrimSpace(deps.TrustSource),
@@ -306,7 +284,7 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 		return result, nil
 	}
 	if result.UpdateAvailable {
-		result.PlannedAction = plannedAction(goos)
+		result.PlannedAction = "replace"
 	}
 
 	asset, archiveBytes, err := runner.verifyRelease(ctx, release, latestVersion, goos, goarch, &result)
@@ -328,43 +306,22 @@ func (runner *Runner) Run(ctx context.Context, options Options) (Result, error) 
 	if err != nil {
 		return Result{}, err
 	}
-	if strings.EqualFold(strings.TrimSpace(goos), "windows") {
-		stagedPath, err := stageWindowsBinary(targetPath, binaryBytes, fileMode)
-		if err != nil {
-			return Result{}, err
-		}
-
-		swapResultPath := windowsSwapResultPath(targetPath)
-		launchOptions := windowsSwapLaunchOptions{
-			ParentPID:     runner.processID(),
-			TargetPath:    targetPath,
-			StagedPath:    stagedPath,
-			ResultPath:    swapResultPath,
-			WaitTimeout:   windowsSwapWaitTimeout,
-			RetryInterval: windowsSwapRetryInterval,
-			RetryTimeout:  windowsSwapRetryTimeout,
-		}
-		if err := runner.launchWindows(context.Background(), launchOptions); err != nil {
-			kind := apperrors.KindOf(err)
-			if kind == "" {
-				kind = apperrors.KindInternal
-			}
-			return Result{}, apperrors.New(kind, fmt.Sprintf("failed to schedule Windows background update; staged binary remains at %s", stagedPath), err)
-		}
-
-		result.Scheduled = true
-		result.Staged = true
-		result.StagedPath = stagedPath
-		result.SwapResultPath = swapResultPath
-		return result, nil
-	}
-
-	if err := runner.writeBinary(targetPath, binaryBytes, fileMode); err != nil {
+	if err := runner.install(goos, targetPath, binaryBytes, fileMode); err != nil {
 		return Result{}, err
 	}
 
 	result.Applied = true
 	return result, nil
+}
+
+// install puts the verified binary in place before Run returns, on every
+// operating system, so a run that reports it applied has applied it.
+func (runner *Runner) install(goos, targetPath string, binary []byte, mode fs.FileMode) error {
+	if runner.writeBinary != nil {
+		return runner.writeBinary(targetPath, binary, mode)
+	}
+
+	return installBinary(goos, targetPath, binary, mode)
 }
 
 // olderReleaseServed is what a dry run reports when the release source serves
@@ -468,13 +425,6 @@ func parseChecksums(raw []byte) (map[string]string, error) {
 	return checksums, nil
 }
 
-func plannedAction(goos string) string {
-	if strings.EqualFold(strings.TrimSpace(goos), "windows") {
-		return "schedule_background_replace_after_exit"
-	}
-	return "replace"
-}
-
 func extractBinary(assetName, binaryName string, archiveBytes []byte) ([]byte, fs.FileMode, error) {
 	trimmedAssetName := strings.TrimSpace(assetName)
 	switch {
@@ -565,56 +515,6 @@ func extractBinaryFromZip(binaryName string, archiveBytes []byte) ([]byte, fs.Fi
 	}
 
 	return nil, 0, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("archive does not contain %s", binaryName), nil)
-}
-
-func stageWindowsBinary(targetPath string, binary []byte, mode fs.FileMode) (string, error) {
-	resolvedTargetPath := strings.TrimSpace(targetPath)
-	if resolvedTargetPath == "" {
-		return "", apperrors.New(apperrors.KindValidation, "target executable path is required", nil)
-	}
-
-	targetDir := filepath.Dir(resolvedTargetPath)
-	stagedPath := resolvedTargetPath + ".new"
-
-	tempFile, err := os.CreateTemp(targetDir, ".bb-update-stage-*")
-	if err != nil {
-		return "", apperrors.New(apperrors.KindInternal, "failed to create staged update file", err)
-	}
-
-	tempPath := tempFile.Name()
-	cleanupTemp := true
-	defer func() {
-		if cleanupTemp {
-			_ = os.Remove(tempPath)
-		}
-	}()
-
-	if _, err := tempFile.Write(binary); err != nil {
-		_ = tempFile.Close()
-		return "", apperrors.New(apperrors.KindInternal, "failed to write staged update file", err)
-	}
-	if err := tempFile.Close(); err != nil {
-		return "", apperrors.New(apperrors.KindInternal, "failed to close staged update file", err)
-	}
-
-	finalMode := mode
-	if info, err := os.Stat(resolvedTargetPath); err == nil {
-		finalMode = info.Mode()
-	}
-	if finalMode == 0 {
-		finalMode = 0o755
-	}
-	if err := os.Chmod(tempPath, finalMode); err != nil {
-		return "", apperrors.New(apperrors.KindInternal, "failed to set permissions on staged update file", err)
-	}
-
-	_ = os.Remove(stagedPath)
-	if err := os.Rename(tempPath, stagedPath); err != nil {
-		return "", apperrors.New(apperrors.KindInternal, "failed to stage Windows update binary", err)
-	}
-
-	cleanupTemp = false
-	return stagedPath, nil
 }
 
 func sha256Hex(raw []byte) string {
