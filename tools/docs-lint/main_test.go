@@ -176,6 +176,37 @@ func TestLintMarkdownAcceptsHelpAndVersionFlags(t *testing.T) {
 	}
 }
 
+func TestLintMarkdownChecksTheCommandACompletionRequestCompletes(t *testing.T) {
+	t.Parallel()
+
+	// Cobra adds __complete only while executing, so a documented request to it
+	// read as an unknown command. The words it completes still have to exist.
+	valid := "```bash\n" +
+		"BB_COMPLETION_DEBUG=1 bb __complete pr merge \"\"\n" +
+		"bb __complete pr list --state \"\"\n" +
+		"bb __completeNoDesc repo \"\"\n" +
+		"```\n"
+
+	findings, checked := lintFixture("doc.md", valid)
+
+	if checked != 3 {
+		t.Fatalf("expected 3 invocations checked, got %d", checked)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no findings, got %+v", findings)
+	}
+
+	for _, stale := range []string{
+		"bb __complete pr mrege \"\"",
+		"bb __complete",
+	} {
+		findings, _ := lintFixture("doc.md", "```bash\n"+stale+"\n```\n")
+		if len(findings) != 1 {
+			t.Errorf("expected %q to be reported, got %+v", stale, findings)
+		}
+	}
+}
+
 func TestLintMarkdownHandlesContinuationsAndEnvironmentPrefixes(t *testing.T) {
 	t.Parallel()
 
