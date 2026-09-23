@@ -157,18 +157,34 @@ write_state() {
   } > "$state_file"
 }
 
+# prune removes the instances whose worktree is gone, Maven cache and all, and
+# takes down the ones that are stopped.
+#
+# A stopped instance still holds its compose network, and every network holds
+# a subnet out of Docker's address pools. An instance stops itself when its
+# licence ages out, so a worktree nobody runs the suite in again keeps one for
+# good, and enough of them exhaust the pools: Docker then hands out subnets
+# that collide with its own and with the LAN, and Docker Desktop stops
+# answering (#652). Taking a stopped instance down keeps its cache volume, and
+# its worktree's next `up` creates the rest again, with the new licence it
+# would have been issued anyway.
 prune() {
-  local other path
+  local other path state
   docker ps -a --filter "label=${worktree_label}" \
-    --format '{{.Label "com.docker.compose.project"}}	{{.Label "dev.bb-cli.worktree"}}' \
+    --format '{{.Label "com.docker.compose.project"}}	{{.Label "dev.bb-cli.worktree"}}	{{.State}}' \
     | sort -u \
-    | while IFS="$(printf '\t')" read -r other path; do
+    | while IFS="$(printf '\t')" read -r other path state; do
         if [ -z "$other" ] || [ -z "$path" ] || [ "$other" = "$project" ]; then
           continue
         fi
         if [ ! -d "$path" ]; then
           echo "Removing ${other}: its worktree ${path} no longer exists."
           docker compose -p "$other" down --volumes > /dev/null 2>&1
+        elif [ "$state" = "exited" ] || [ "$state" = "dead" ]; then
+          # Only an instance that has stopped: one that is created or
+          # restarting may be another worktree's `up` under way.
+          echo "Taking down ${other}: it is stopped, and its network is only in the way."
+          docker compose -p "$other" down > /dev/null 2>&1
         fi
       done
 }
