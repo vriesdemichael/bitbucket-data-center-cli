@@ -195,6 +195,37 @@ func TestEveryLocalChangeIsCreateUpdateOrDelete(t *testing.T) {
 	}
 }
 
+// TestEveryStatefulProfileDeclaresItsTier: a command that checks before it
+// answers says how far its check goes, so a new one cannot arrive without
+// saying. Left unset it reads as predicted, and its help would say predicted
+// whatever it checked; the live suite holds each declaration to the previews a
+// real Bitbucket makes the command report.
+func TestEveryStatefulProfileDeclaresItsTier(t *testing.T) {
+	t.Parallel()
+
+	declared := 0
+	for path, profile := range dryRunProfiles {
+		if !profile.Stateful {
+			continue
+		}
+
+		switch profile.Tier {
+		case dryrunpreview.TierServerValidated, dryrunpreview.TierPreconditionsChecked, dryrunpreview.TierPredicted:
+			declared++
+		default:
+			t.Errorf("%s declares tier %q; a stateful profile names the strongest tier its preview reaches", path, profile.Tier)
+		}
+
+		if tier, ok := DeclaredDryRunTier(path); !ok || tier != profile.Tier {
+			t.Errorf("DeclaredDryRunTier(%q) = %q, %t; want the profile's %q", path, tier, ok, profile.Tier)
+		}
+	}
+
+	if declared < 100 {
+		t.Fatalf("only %d stateful profiles declare a tier; the registry has stopped being read", declared)
+	}
+}
+
 func TestNewDryRunPreviewIncludesRepositoryAndArgs(t *testing.T) {
 	t.Parallel()
 
