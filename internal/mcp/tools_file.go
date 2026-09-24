@@ -52,8 +52,9 @@ type GetFileContentOutput struct {
 // one the file holds, which scaling makes worth knowing: small text may not
 // have survived it.
 type FileImage struct {
-	Width            int    `json:"width" jsonschema:"The image's width in pixels, as stored"`
-	Height           int    `json:"height" jsonschema:"The image's height in pixels, as stored"`
+	Width            int    `json:"width" jsonschema:"The image's width in pixels, upright: as stored, or once turned when turned is true"`
+	Height           int    `json:"height" jsonschema:"The image's height in pixels, upright: as stored, or once turned when turned is true"`
+	Turned           bool   `json:"turned" jsonschema:"True when the image was stored turned or mirrored, as its orientation tag records, and was turned upright before it was returned"`
 	Scaled           bool   `json:"scaled" jsonschema:"True when the image returned is smaller than the one stored, so small text in it may no longer be legible"`
 	ReturnedWidth    int    `json:"returned_width" jsonschema:"The returned image's width in pixels"`
 	ReturnedHeight   int    `json:"returned_height" jsonschema:"The returned image's height in pixels"`
@@ -68,8 +69,9 @@ func specGetFileContent() Spec {
 		Description: "Read a file in a repository. Text comes back as a window of numbered lines: start_line and line_count " +
 			"choose it, and each answer says which lines it holds and where the next window starts. A Word, PowerPoint or " +
 			"Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz) as a listing of its " +
-			"entries, both in the same windows. An image (PNG, JPEG, GIF, WebP) comes back as an image, scaled down when it " +
-			"is large, with a note saying so. Audio and video come back as themselves beside a description when they are small, " +
+			"entries, both in the same windows. An image (PNG, JPEG, GIF, WebP) comes back as an image, turned upright when its " +
+			"metadata says it was stored turned, and scaled down when it is large, with a note saying which. Audio and video " +
+			"come back as themselves beside a description when they are small, " +
 			"and as the description alone when not. A PDF or any other file is described by its type and size rather than " +
 			"shown, and a file over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) + " is described without being read.",
 		Annotations: readOnly(),
@@ -161,6 +163,7 @@ func fileContentResult(in GetFileContentInput, webURL string, view fileview.View
 		structured.Image = &FileImage{
 			Width:            image.Width,
 			Height:           image.Height,
+			Turned:           image.Turned,
 			Scaled:           image.Scaled,
 			ReturnedWidth:    image.ReturnedWidth,
 			ReturnedHeight:   image.ReturnedHeight,

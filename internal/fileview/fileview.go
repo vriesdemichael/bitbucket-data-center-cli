@@ -86,12 +86,16 @@ type Image struct {
 	// client takes, and otherwise the image encoded again.
 	Data     []byte
 	MIMEType string
-	// Width and Height are the image's as stored.
+	// Width and Height are the image's as it is seen: as stored, or once
+	// turned upright when Turned is set.
 	Width  int
 	Height int
 	// ReturnedWidth and ReturnedHeight are the image's as returned.
 	ReturnedWidth  int
 	ReturnedHeight int
+	// Turned is set when the image was stored turned or mirrored, as its
+	// orientation tag says, and comes back turned upright.
+	Turned bool
 	// Scaled is set when the image returned is smaller than the one stored.
 	Scaled bool
 	// Frames is how many frames an animation has, of which the first is

@@ -37,9 +37,10 @@ type imageLimits struct {
 var defaultImageLimits = imageLimits{bytes: ImageBytes, edge: ImageEdge, pixels: ImagePixels}
 
 // readImage views an image as an image: as it is when it fits what a client
-// takes, and otherwise decoded, scaled down and encoded again, with a sentence
-// saying so -- small text may no longer be legible. An animated image gives
-// its first frame. One that cannot be decoded is described instead.
+// takes, and otherwise decoded, turned upright, scaled down and encoded again,
+// with a sentence saying which -- after scaling, small text may no longer be
+// legible. An animated image gives its first frame. One that cannot be decoded
+// is described instead.
 func readImage(request Request, mimeType string, content []byte, limits imageLimits) View {
 	name := imageFormats[mimeType]
 	subject := subjectOf(request)
@@ -59,21 +60,19 @@ func readImage(request Request, mimeType string, content []byte, limits imageLim
 			"That is more than the %d megapixels this tool decodes to scale an image, so it is not shown.", limits.pixels/1_000_000))
 	}
 
-	frames := 1
+	frames, orientation := 1, 1
 	lossy := mimeType == "image/jpeg"
 	switch mimeType {
+	case "image/jpeg":
+		orientation = jpegOrientation(content)
 	case "image/gif":
 		frames = max(1, gifFrames(content))
 	case "image/webp":
-		var animated bool
-		if lossy, animated = webpFeatures(content); animated {
+		features := webpFeatures(content)
+		if features.animated {
 			return notShown("an animated WebP image of "+stored, "Its frames cannot be decoded here, so it is not shown.")
 		}
-	}
-
-	returned := &Image{Width: config.Width, Height: config.Height, ReturnedWidth: config.Width, ReturnedHeight: config.Height}
-	if frames > 1 {
-		returned.Frames = frames
+		lossy, orientation = features.lossy, exifOrientation(features.exif)
 	}
 
 	// Decoded even when it is returned as it is: an image a client cannot
@@ -83,52 +82,82 @@ func readImage(request Request, mimeType string, content []byte, limits imageLim
 		return notShown(fmt.Sprintf("a %s image of %s", name, stored), "It cannot be decoded, so it is not shown.")
 	}
 
+	// Turned before it is scaled, so the limits apply to the picture as it is
+	// seen, and every size given is the upright picture's.
+	upright := turn(decoded, orientation)
+	width, height := upright.Bounds().Dx(), upright.Bounds().Dy()
+
+	returned := &Image{Width: width, Height: height, ReturnedWidth: width, ReturnedHeight: height, Turned: orientation > 1}
+	if frames > 1 {
+		returned.Frames = frames
+	}
+
 	var text strings.Builder
 	text.WriteString(subject + ": ")
 	if frames > 1 {
-		fmt.Fprintf(&text, "an animated %s image of %d frames, %s, %s.", name, frames, stored, formatSize(size))
+		fmt.Fprintf(&text, "an animated %s image of %d frames, %dx%d pixels, %s.", name, frames, width, height, formatSize(size))
 	} else {
-		fmt.Fprintf(&text, "a %s image, %s, %s.", name, stored, formatSize(size))
+		fmt.Fprintf(&text, "a %s image, %dx%d pixels, %s.", name, width, height, formatSize(size))
 	}
 
-	if frames == 1 && len(content) <= limits.bytes && max(config.Width, config.Height) <= limits.edge {
+	// A turned picture is always encoded again, without the tag: returned as
+	// it is, it would be upright only to a client that reads the tag.
+	if frames == 1 && !returned.Turned && len(content) <= limits.bytes && max(width, height) <= limits.edge {
 		returned.Data, returned.MIMEType = content, mimeType
 		text.WriteString(" It follows as an image.")
 
 		return View{Kind: KindImage, MIMEType: mimeType, Size: size, Text: text.String(), Image: returned}
 	}
 
-	encoded, asJPEG, width, height, ok := fitImage(decoded, lossy, limits)
+	encoded, asJPEG, scaledWidth, scaledHeight, ok := fitImage(upright, lossy, limits)
 	if !ok {
 		return notShown(fmt.Sprintf("a %s image of %s", name, stored), fmt.Sprintf(
 			"It could not be made smaller than the %s an image is returned in, so it is not shown.", formatSize(int64(limits.bytes))))
 	}
 
-	returned.Data, returned.ReturnedWidth, returned.ReturnedHeight = encoded, width, height
+	returned.Data, returned.ReturnedWidth, returned.ReturnedHeight = encoded, scaledWidth, scaledHeight
 	returned.MIMEType = "image/png"
-	returnedName := "PNG"
 	if asJPEG {
-		returned.MIMEType, returnedName = "image/jpeg", "JPEG"
+		returned.MIMEType = "image/jpeg"
 	}
-	returned.Scaled = width != config.Width || height != config.Height
-
-	follows := " It follows"
-	if frames > 1 {
-		follows = " Its first frame follows"
-	}
-	switch {
-	case returned.Scaled:
-		fmt.Fprintf(&text, "%s scaled down to %dx%d pixels, as a %s of %s, to fit the %d pixels and %s an image is returned in. "+
-			"Small text in it may no longer be legible because of the scaling.",
-			follows, width, height, returnedName, formatSize(int64(len(encoded))), limits.edge, formatSize(int64(limits.bytes)))
-	case frames > 1:
-		fmt.Fprintf(&text, "%s, as a %s image of %s.", follows, returnedName, formatSize(int64(len(encoded))))
-	default:
-		fmt.Fprintf(&text, "%s as a %s of %s, encoded again to fit the %s an image is returned in.",
-			follows, returnedName, formatSize(int64(len(encoded))), formatSize(int64(limits.bytes)))
-	}
+	returned.Scaled = scaledWidth != width || scaledHeight != height
+	text.WriteString(returnedNote(returned, limits))
 
 	return View{Kind: KindImage, MIMEType: mimeType, Size: size, Text: text.String(), Image: returned}
+}
+
+// returnedNote says how the image returned came from the one stored: what
+// follows, turned or scaled, in what format; and why, when it was scaled or
+// merely encoded again.
+func returnedNote(returned *Image, limits imageLimits) string {
+	var note strings.Builder
+	if returned.Frames > 1 {
+		note.WriteString(" Its first frame follows")
+	} else {
+		note.WriteString(" It follows")
+	}
+
+	var changes []string
+	if returned.Turned {
+		changes = append(changes, "turned upright from its EXIF orientation")
+	}
+	if returned.Scaled {
+		changes = append(changes, fmt.Sprintf("scaled down to %dx%d pixels", returned.ReturnedWidth, returned.ReturnedHeight))
+	}
+	if len(changes) > 0 {
+		note.WriteString(" " + strings.Join(changes, " and "))
+	}
+	fmt.Fprintf(&note, ", as a %s of %s.", strings.ToUpper(strings.TrimPrefix(returned.MIMEType, "image/")), formatSize(int64(len(returned.Data))))
+
+	switch {
+	case returned.Scaled:
+		fmt.Fprintf(&note, " It was scaled to fit the %d pixels and %s an image is returned in. "+
+			"Small text in it may no longer be legible because of the scaling.", limits.edge, formatSize(int64(limits.bytes)))
+	case !returned.Turned && returned.Frames == 0:
+		fmt.Fprintf(&note, " It was encoded again to fit the %s an image is returned in.", formatSize(int64(limits.bytes)))
+	}
+
+	return note.String()
 }
 
 // fitImage encodes an image small enough to return: no longer than the edge
@@ -313,26 +342,45 @@ func skipSubBlocks(content []byte, offset int) int {
 	return offset
 }
 
-// webpFeatures reads a WebP's chunks for what the decoder does not say: whether
-// its pixels were compressed lossily, and whether it is an animation, which
-// the decoder cannot read at all.
-func webpFeatures(content []byte) (lossy, animated bool) {
+// webpInfo is what a WebP's chunks say that the decoder does not.
+type webpInfo struct {
+	// lossy is set when the pixels were compressed lossily.
+	lossy bool
+	// animated is set for an animation, which the decoder cannot read at all.
+	animated bool
+	// exif is the EXIF chunk, which follows the pixels, or nil.
+	exif []byte
+}
+
+// maxWebPChunks is the most chunks read: a still WebP has at most six.
+const maxWebPChunks = 64
+
+// webpFeatures reads a WebP's chunks.
+func webpFeatures(content []byte) webpInfo {
+	var info webpInfo
+
 	const riffHeader = 12 // "RIFF", the length, "WEBP"
-	for offset := riffHeader; offset+8 <= len(content); {
+	offset := riffHeader
+	for range maxWebPChunks {
+		if offset+8 > len(content) {
+			break
+		}
 		length := int64(binary.LittleEndian.Uint32(content[offset+4 : offset+8]))
+		end := min(int64(len(content)), int64(offset)+8+length)
+		body := content[offset+8 : int(end)]
 
 		switch string(content[offset : offset+4]) {
 		case "VP8X":
 			const animationFlag = 1 << 1
-			if offset+8 < len(content) && content[offset+8]&animationFlag != 0 {
-				return false, true
+			if len(body) > 0 && body[0]&animationFlag != 0 {
+				info.animated = true
 			}
 		case "VP8 ":
-			return true, false
-		case "VP8L":
-			return false, false
+			info.lossy = true
 		case "ANIM", "ANMF":
-			return false, true
+			info.animated = true
+		case "EXIF":
+			info.exif = body
 		}
 
 		next := int64(offset) + 8 + length + length&1
@@ -342,5 +390,5 @@ func webpFeatures(content []byte) (lossy, animated bool) {
 		offset = int(next)
 	}
 
-	return false, false
+	return info
 }

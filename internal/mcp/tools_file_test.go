@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"strings"
 	"testing"
@@ -118,6 +119,7 @@ func fileViews(t *testing.T) map[string]fileview.View {
 		"empty text":               read(fileview.Request{Path: "empty.txt"}, nil),
 		"image":                    read(fileview.Request{Path: "small.png"}, pngOf(t, 40, 30)),
 		"scaled image":             read(fileview.Request{Path: "wide.png"}, pngOf(t, 3000, 1000)),
+		"turned image":             read(fileview.Request{Path: "photo.jpg"}, sidewaysJPEG(t)),
 		"document":                 read(fileview.Request{Path: "plan.docx"}, filefixture.Word(filefixture.WordParagraph("A plan."))),
 		"empty document":           read(fileview.Request{Path: "blank.docx"}, filefixture.Word("")),
 		"archive":                  read(fileview.Request{Path: "app.zip"}, filefixture.Zip(filefixture.Entry{Name: "a.txt", Body: []byte("a")})),
@@ -211,6 +213,45 @@ func pngOf(t *testing.T, width, height int) []byte {
 	}
 
 	return encoded.Bytes()
+}
+
+// sidewaysJPEG is a 40 by 30 photograph stored a quarter turn round, with the
+// orientation that says to turn it back, as a phone stores one.
+func sidewaysJPEG(t *testing.T) []byte {
+	t.Helper()
+
+	upright := image.NewRGBA(image.Rect(0, 0, 40, 30))
+	for index := range upright.Pix {
+		upright.Pix[index] = byte(index / 4 % 11 * 20)
+	}
+
+	return filefixture.WithSegment(filefixture.JPEG(filefixture.Oriented(upright, 6), 90), filefixture.ExifBlock(6, false))
+}
+
+// TestATurnedImageSaysSoInItsStructuredAnswer: the sizes a client reads are
+// the upright picture's, as the image it receives is.
+func TestATurnedImageSaysSoInItsStructuredAnswer(t *testing.T) {
+	t.Parallel()
+
+	result, structured := fileContentResult(GetFileContentInput{Path: "photo.jpg"}, "", fileViews(t)["turned image"])
+
+	facts := structured.Image
+	if facts == nil || !facts.Turned || facts.Scaled || facts.Width != 40 || facts.Height != 30 ||
+		facts.ReturnedWidth != 40 || facts.ReturnedHeight != 30 || facts.ReturnedMIMEType != "image/jpeg" {
+		encoded, _ := json.Marshal(structured)
+		t.Fatalf("a photograph stored sideways: %s", encoded)
+	}
+	image, ok := result.Content[1].(*mcp.ImageContent)
+	if !ok {
+		t.Fatalf("the second block is %T, want the image", result.Content[1])
+	}
+	config, err := jpeg.DecodeConfig(bytes.NewReader(image.Data))
+	if err != nil || config.Width != 40 || config.Height != 30 {
+		t.Errorf("the image returned is %dx%d (%v), want it upright at 40x30", config.Width, config.Height, err)
+	}
+	if text := result.Content[0].(*mcp.TextContent).Text; !strings.Contains(text, "turned upright from its EXIF orientation") {
+		t.Errorf("the text does not say the image was turned: %q", text)
+	}
 }
 
 // TestAnImageComesBackAsAnImageBesideItsDescription reads the image content
