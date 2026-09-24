@@ -2,6 +2,7 @@ number: 75
 title: A machine-mode command emits one document, and a failed run is named by its id
 category: architecture
 status: accepted
+amended_by: 96
 decision: >
   Under --json a command writes exactly one JSON document to stdout. When a command both
   produced data and failed, the failure envelope wins: ADR-046 distinguishes the two by which

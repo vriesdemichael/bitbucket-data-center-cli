@@ -12,6 +12,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Category: `architecture`
 - Status: `accepted`
 - Supersedes: `014`
+- Amended By: `096`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/064-machine-output-carries-no-contract-version.yaml`
 

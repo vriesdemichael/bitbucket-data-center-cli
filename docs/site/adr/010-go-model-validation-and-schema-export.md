@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Go model validation and schema export`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `097`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/010-go-model-validation-and-schema-export.yaml`
 

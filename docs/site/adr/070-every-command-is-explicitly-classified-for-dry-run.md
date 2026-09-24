@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Every command is explicitly classified for dry-run, and unknown means refuse`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `096`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/070-every-command-is-explicitly-classified-for-dry-run.yaml`
 

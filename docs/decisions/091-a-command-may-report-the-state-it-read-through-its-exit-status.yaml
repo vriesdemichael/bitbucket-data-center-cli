@@ -2,6 +2,7 @@ number: 91
 title: A command may report the state it read through its exit status
 category: architecture
 status: accepted
+amended_by: 96
 amends:
   - 11
 decision: >

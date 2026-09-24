@@ -2,6 +2,7 @@ number: 46
 title: Emit a JSON error envelope on the failure path
 category: architecture
 status: accepted
+amended_by: 96
 decision: >
   When --json is set and a command fails, write the machine envelope to stdout carrying an
   error object in place of data, with kind, message and exitCode drawn from the ADR-011 taxonomy.

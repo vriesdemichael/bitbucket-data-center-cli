@@ -1,0 +1,34 @@
+---
+search:
+  boost: 0.3
+---
+
+# ADR 095: Machine output is the whole envelope, as JSON or YAML, and not gh's field lists
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `095`
+- Title: `Machine output is the whole envelope, as JSON or YAML, and not gh's field lists`
+- Category: `architecture`
+- Status: `proposed`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/095-machine-output-is-the-whole-envelope-as-json-or-yaml.yaml`
+
+## Decision
+
+Machine output is one document: meta and exactly one member, chosen by the flags (ADR-096). --json prints it as indented JSON, and --yaml prints the same document as YAML. The two differ only in the encoding: the member, the exit code and the line on stderr are the same. Passing both is a validation error. Neither form changes with the terminal, and no flag prints part of the document. bb follows gh's command structure, not gh's machine output. gh's --json takes a list of fields and prints the bare resource; bb's takes nothing and prints the envelope, because the member and meta are how a caller tells a failure, a list cut at --limit or an encoded body from data. A gh-style field list after --json gets a hint saying so, pointing at jq and --describe, instead of a generic argument error.
+
+## Agent Instructions
+
+Write machine output only through jsonoutput, which encodes the one document for either flag; a command never branches on which was asked for. Keep the YAML faithful: decoded, it equals the JSON document. Add no other encoding, no field selector and no template. A filter, if one is ever added, runs on the whole document, so .data, .error and .meta mean in it what they mean in --describe.
+
+## Rationale
+
+The envelope is the contract (ADR-046, ADR-064, ADR-075). A field list, or a filter that starts inside data, drops the parts that say what the data is. The callers who would bring gh's habit are scripts and agents, which read --help and the skill; a person reads the text output. YAML is the one second encoding with a use: easier to read than JSON, and what some pipelines take.
+
+## Rejected Alternatives
+
+- `--output json|yaml|toml, with --json as its short form`: Two flags for one choice, and bb repo archive already uses --output for its file. TOML has no null.
+- `gh's --json field lists, printing the bare resource`: A caller could no longer tell a failure, a truncated list or an encoded body from data.
+- `A built-in --jq`: A new dependency for what jq or ConvertFrom-Json already does wherever a script runs.
+- `Compact JSON when stdout is not a terminal`: Output that depends on where it goes is harder to reason about, and jq -c compacts it.

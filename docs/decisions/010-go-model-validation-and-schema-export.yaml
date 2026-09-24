@@ -2,6 +2,7 @@ number: 10
 title: Go model validation and schema export
 category: architecture
 status: accepted
+amended_by: 97
 decision: >
   Use typed Go structs with explicit runtime validation rules for inputs and configuration,
   and support JSON schema export for machine validation of JSON/YAML examples and docs.

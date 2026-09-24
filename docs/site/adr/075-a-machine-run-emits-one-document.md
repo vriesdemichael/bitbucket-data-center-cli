@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `A machine-mode command emits one document, and a failed run is named by its id`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `096`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/075-a-machine-run-emits-one-document.yaml`
 

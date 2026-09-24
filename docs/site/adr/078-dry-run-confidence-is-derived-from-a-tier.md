@@ -12,6 +12,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Category: `development`
 - Status: `accepted`
 - Supersedes: `035`
+- Amended By: `096`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/078-dry-run-confidence-is-derived-from-a-tier.yaml`
 

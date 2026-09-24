@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `A command may report the state it read through its exit status`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `096`
 - Amends: `11`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/091-a-command-may-report-the-state-it-read-through-its-exit-status.yaml`
