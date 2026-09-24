@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 )
 
 // What `bb api` does with what comes back, against a real server.
@@ -210,16 +212,24 @@ func TestLiveApiRequestConstruction(t *testing.T) {
 		}
 	})
 
-	t.Run("a dry run refuses to mutate and changes nothing", func(t *testing.T) {
+	t.Run("a dry run shows a mutation without sending it", func(t *testing.T) {
 		before := mustLiveCLI(t, "api", projectPath)
 
-		if output, err := executeLiveCLI(t, "--dry-run", "api", projectPath, "-X", "DELETE"); err == nil {
-			t.Fatalf("expected a dry run to refuse a mutating passthrough, got:\n%s", output)
+		// The request it would send, predicted: bb api forwards what it is
+		// given, and nothing can be asked first whether an arbitrary request
+		// would go through. Refusing it instead would be a verdict that the real
+		// run fails, which it would not.
+		deletion := assertLivePreview(t, mustLiveCLI(t, "--dry-run", "api", projectPath, "-X", "DELETE"),
+			jsonoutput.OutcomeWouldApply, "it would send DELETE "+projectPath)
+		if deletion.Preview.Tier != jsonoutput.TierPredicted {
+			t.Errorf("a request nothing was asked about reports tier %s, want predicted", deletion.Preview.Tier)
 		}
 
-		// A GET is safe and must still work under --dry-run.
-		if output, err := executeLiveCLI(t, "--dry-run", "api", projectPath); err != nil {
-			t.Fatalf("a dry run must still allow a read: %v\noutput: %s", err, output)
+		// A GET is safe and still runs under --dry-run: what it read is the
+		// preview's data.
+		read := decodeLivePreview(t, mustLiveCLI(t, "--dry-run", "api", projectPath))
+		if project, ok := read.Preview.Data.(map[string]any); !ok || project["key"] != seeded.Key {
+			t.Fatalf("a dry run of a read answered with data %v, want project %s", read.Preview.Data, seeded.Key)
 		}
 
 		if after := mustLiveCLI(t, "api", projectPath); after != before {
