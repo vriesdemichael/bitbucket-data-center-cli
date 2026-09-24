@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -174,6 +175,229 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 
 		liveRefuses(t, apperrors.KindConflict, "tag", "create", fmt.Sprintf("v2.0.%d", beyondAPage-1),
 			"--repo", repoRef, "--start-point", "master")
+	})
+}
+
+// TestLiveResourceRefusalsFailAsTheRealRunDoes is the resource half of
+// TestLiveDryRunRefusalsFailAsTheRealRunDoes: a create for a name or key that
+// is taken, refused by the dry run and then by the real run, with the same
+// kind from both.
+func TestLiveResourceRefusalsFailAsTheRealRunDoes(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	mustLiveCLI(t, "tag", "create", "taken", "--start-point", "master")
+	commandCoverageAssertFields(t, "the tag", decodeJSONMap(t, mustLiveCLI(t, "tag", "view", "taken")),
+		map[string]any{"displayId": "taken", "latestCommit": repo.CommitIDs[0]})
+
+	project, _ := decodeJSONMap(t, mustLiveCLI(t, "project", "get", seeded.Key))["project"].(map[string]any)
+	projectName, _ := project["name"].(string)
+	if projectName == "" {
+		t.Fatalf("project %s reads back with no name: %v", seeded.Key, project)
+	}
+
+	cases := []struct {
+		name string
+		args []string
+	}{
+		{"a branch that exists", []string{"branch", "create", "master", "--start-point", "master"}},
+		{"a tag that exists", []string{"tag", "create", "taken", "--start-point", "master"}},
+		{"a project key in use", []string{"project", "create", seeded.Key, "--name", "Refused " + seeded.Key}},
+		// A key of its own, so that only the name is taken -- and in capitals,
+		// because Bitbucket compares project names without their case.
+		{"a project name in use", []string{"project", "create", strings.ToUpper(testsupport.UniqueName("LTNAME")), "--name", strings.ToUpper(projectName)}},
+		{"a repository name in use", []string{"repo", "admin", "create", "--project", seeded.Key, "--name", repo.Name}},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			liveVerdictHolds(t, apperrors.KindConflict, testCase.args...)
+		})
+	}
+}
+
+// TestLiveDryRunPredictsWhatBitbucketAccepts covers creates an earlier preview
+// refused and Bitbucket performs.
+//
+// Each was a would-fail verdict on a run that goes through. A restriction
+// created again is an upsert of the one there, a reviewer condition or a
+// webhook equal to one there is stored beside it, and a repository's reviewer
+// group may take a name its project's group has. A gate built on those
+// verdicts stopped runs that work. Each case asks the dry run, runs the command
+// for real, and reads back what it did.
+func TestLiveDryRunPredictsWhatBitbucketAccepts(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// Somebody who may be exempted from a restriction and be a reviewer: the
+	// administrator the suite runs as holds a licence.
+	user := harness.username()
+	userID, err := harness.userID(ctx, user)
+	if err != nil {
+		t.Fatalf("look up %s's id failed: %v", user, err)
+	}
+
+	t.Run("creating a restriction the repository already has", func(t *testing.T) {
+		const matcher = "refs/heads/upserted"
+		readOnly := func(exempt ...string) storedRestriction {
+			return storedRestriction{scope: "REPOSITORY", restrictionType: "read-only", matcherType: "BRANCH", matcherID: matcher, users: exempt}
+		}
+
+		id := restrictionID(t, mustLiveCLI(t, "branch", "restriction", "create", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher))
+		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", id)), readOnly())
+
+		// With an exemption this time, which the upsert gives the one there.
+		upserted := liveGoesThroughAsPredicted(t, jsonoutput.OutcomeWouldApply, "exemptions will be replaced",
+			"branch", "restriction", "create", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher, "--user", user)
+		if again := restrictionID(t, upserted); again != id {
+			t.Fatalf("the create answered restriction %s, want the upsert of %s", again, id)
+		}
+		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", id)), readOnly(user))
+
+		// And the same create again changes nothing.
+		listing := mustLiveCLI(t, "branch", "restriction", "list")
+		same := liveGoesThroughAsPredicted(t, jsonoutput.OutcomeNoOp, "already has this type, matcher and exemptions",
+			"branch", "restriction", "create", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher, "--user", user)
+		if again := restrictionID(t, same); again != id {
+			t.Fatalf("the create answered restriction %s, want the upsert of %s", again, id)
+		}
+		if after := mustLiveCLI(t, "branch", "restriction", "list"); after != listing {
+			t.Fatalf("a create predicted to change nothing changed the restrictions\nbefore: %s\nafter:  %s", listing, after)
+		}
+	})
+
+	t.Run("creating in a repository a restriction its project has", func(t *testing.T) {
+		const matcher = "refs/heads/inherited"
+		noDeletes := func(scope string, exempt ...string) storedRestriction {
+			return storedRestriction{scope: scope, restrictionType: "no-deletes", matcherType: "BRANCH", matcherID: matcher, users: exempt}
+		}
+
+		projects := restrictionID(t, mustLiveCLI(t, "project", "branch-restriction", "create", seeded.Key,
+			"--type", "no-deletes", "--matcher-type", "BRANCH", "--matcher-id", matcher))
+		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "project", "branch-restriction", "get", seeded.Key, projects)), noDeletes("PROJECT"))
+
+		// The repository lists the project's restriction as its own, but a
+		// create through the repository is not the upsert of it: it adds the
+		// repository's restriction beside it.
+		created := liveGoesThroughAsPredicted(t, jsonoutput.OutcomeWouldApply, "will be created",
+			"branch", "restriction", "create", "--type", "no-deletes", "--matcher-type", "BRANCH", "--matcher-id", matcher, "--user", user)
+		own := restrictionID(t, created)
+		if own == projects {
+			t.Fatalf("the repository's create answered the project's restriction %s", projects)
+		}
+		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", own)), noDeletes("REPOSITORY", user))
+		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "project", "branch-restriction", "get", seeded.Key, projects)), noDeletes("PROJECT"))
+	})
+
+	t.Run("creating a restriction the project already has", func(t *testing.T) {
+		const matcher = "refs/heads/project-upserted"
+		readOnly := func(exempt ...string) storedRestriction {
+			return storedRestriction{scope: "PROJECT", restrictionType: "read-only", matcherType: "BRANCH", matcherID: matcher, users: exempt}
+		}
+
+		id := restrictionID(t, mustLiveCLI(t, "project", "branch-restriction", "create", seeded.Key,
+			"--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher))
+		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "project", "branch-restriction", "get", seeded.Key, id)), readOnly())
+
+		upserted := liveGoesThroughAsPredicted(t, jsonoutput.OutcomeWouldApply, "exemptions will be replaced",
+			"project", "branch-restriction", "create", seeded.Key, "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher, "--user", user)
+		if again := restrictionID(t, upserted); again != id {
+			t.Fatalf("the create answered restriction %s, want the upsert of %s", again, id)
+		}
+		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "project", "branch-restriction", "get", seeded.Key, id)), readOnly(user))
+	})
+
+	t.Run("a reviewer condition equal to one there", func(t *testing.T) {
+		condition := fmt.Sprintf(`{"sourceMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},`+
+			`"targetMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},"reviewers":[{"id":%d}],"requiredApprovals":1}`, userID)
+
+		for _, scope := range []struct {
+			flags []string
+			name  string
+		}{
+			{[]string{"--project", seeded.Key}, "PROJECT"},
+			{[]string{"--repo", repoRef}, "REPOSITORY"},
+		} {
+			first := conditionIDFrom(t, mustLiveCLI(t, append([]string{"reviewer", "condition", "create", condition}, scope.flags...)...))
+			second := conditionIDFrom(t, liveGoesThroughAsPredicted(t, jsonoutput.OutcomeWouldApply, "equivalent reviewer condition already exists",
+				append([]string{"reviewer", "condition", "create", condition}, scope.flags...)...))
+			if second == first {
+				t.Fatalf("the second create answered condition %s, the first", first)
+			}
+
+			listing := mustLiveCLI(t, append([]string{"reviewer", "condition", "list"}, scope.flags...)...)
+			for _, id := range []string{first, second} {
+				listed, found := maskedConditionFrom(t, listing, id)
+				if !found {
+					t.Fatalf("condition %s is not in the %s listing:\n%s", id, scope.name, listing)
+				}
+				assertMaskedConditionStored(t, listed, maskedCondition{scope: scope.name, approvals: 1, reviewerID: userID, sourceType: "ANY_REF", targetType: "ANY_REF"})
+			}
+		}
+	})
+
+	t.Run("a workflow webhook with a name and URL already there", func(t *testing.T) {
+		const name = "twice"
+		const url = "http://example.invalid/twice"
+
+		mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "create", name, url)
+		liveGoesThroughAsPredicted(t, jsonoutput.OutcomeWouldApply, "already exists",
+			"repo", "settings", "workflow", "webhooks", "create", name, url)
+
+		hooks := repoCLIWebhooksIn(t, mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list"))
+		if len(hooks) != 2 {
+			t.Fatalf("want the two webhooks created, got %d: %v", len(hooks), hooks)
+		}
+		ids := map[any]bool{}
+		for _, entry := range hooks {
+			hook, _ := entry.(map[string]any)
+			repoCLIAssertWebhook(t, hook, name, url, true, "repo:refs_changed")
+			ids[hook["id"]] = true
+		}
+		if len(ids) != 2 {
+			t.Fatalf("the two webhooks share an id: %v", hooks)
+		}
+	})
+
+	t.Run("a repository reviewer group named like its project's", func(t *testing.T) {
+		const name = "shared-name"
+
+		mustLiveCLI(t, "reviewer-group", "create", name, "--users", user, "--project", seeded.Key)
+		if groups := liveReviewerGroupsNamed(t, mustLiveCLI(t, "reviewer-group", "list", "--project", seeded.Key), name); len(groups) != 1 || groups[0]["scope"] != "PROJECT" {
+			t.Fatalf("want the project's group %q, got %v", name, groups)
+		}
+
+		liveGoesThroughAsPredicted(t, jsonoutput.OutcomeWouldApply, "will be created",
+			"reviewer-group", "create", name, "--users", user, "--repo", repoRef)
+
+		scopes := []string{}
+		for _, group := range liveReviewerGroupsNamed(t, mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef), name) {
+			scopes = append(scopes, asString(group["scope"]))
+		}
+		if slices.Sort(scopes); !slices.Equal(scopes, []string{"PROJECT", "REPOSITORY"}) {
+			t.Fatalf("the repository lists groups %q in scopes %v, want its own beside the project's", name, scopes)
+		}
 	})
 }
 
