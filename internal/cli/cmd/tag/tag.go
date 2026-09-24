@@ -179,15 +179,13 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "tag.create",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "startPoint": startPoint, "message": message},
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"tag list (filtered by name)"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
 							return []string{"tag already exists"}
@@ -286,15 +284,13 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "tag.delete",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0]},
 					Action:          "delete",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"tag get"},
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)

@@ -2,9 +2,13 @@ package dryrunpreview
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 type errWriter struct {
@@ -20,269 +24,207 @@ func (w *errWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func TestWriteText(t *testing.T) {
-	t.Parallel()
-
-	preview := Preview{
-		DryRun:       true,
-		PlanningMode: PlanningModeStateful,
-		Capability:   CapabilityFull,
-		Items: []Item{
-			{
-				Intent:          "pr.create",
-				Target:          map[string]any{"repository": "PROJ/repo", "args": []string{"--title", "Test"}},
-				Action:          "create",
-				PredictedAction: "create",
-				Supported:       true,
-				Reason:          "pr will be created",
-			},
-			{
-				Intent:    "simple.action",
-				Target:    map[string]any{},
-				Action:    "delete",
-				Supported: true,
-			},
-		},
-		Summary: Summary{Total: 2, Supported: 2, CreateCount: 1, DeleteCount: 1},
-	}
-
-	buf := &bytes.Buffer{}
-	if err := Write(buf, false, preview); err != nil {
-		t.Fatalf("Write failed: %v", err)
-	}
-
-	output := buf.String()
-	if !strings.Contains(output, "Dry-run (stateful, capability=full)") {
-		t.Fatalf("unexpected header in output: %s", output)
-	}
-	if !strings.Contains(output, "intent=pr.create") {
-		t.Fatalf("missing intent in output: %s", output)
-	}
-	if !strings.Contains(output, "repository=PROJ/repo") {
-		t.Fatalf("missing repo in output: %s", output)
-	}
-	if !strings.Contains(output, "args=--title Test") {
-		t.Fatalf("missing args in output: %s", output)
+// merge is a pull request merge as pr merge checks it, with the outcome
+// varied by each test.
+func merge(predicted string, tier Tier) Item {
+	return Item{
+		Intent:          "pr.merge",
+		Target:          map[string]any{"repository": "PROJ/app", "id": 42},
+		Action:          PredictedUpdate,
+		PredictedAction: predicted,
+		Reason:          "pull request cannot be merged",
+		Tier:            tier,
+		BlockingReasons: []string{"Requires 2 approvals; it has 1", "Build \"ci\" has not passed"},
 	}
 }
 
-func TestWriteErrors(t *testing.T) {
+// TestDocumentReportsOneEffectPerItemWithItsOutcome is the mapping from what a
+// command checked onto what the document says (ADR-096).
+func TestDocumentReportsOneEffectPerItemWithItsOutcome(t *testing.T) {
 	t.Parallel()
 
-	preview := Preview{
-		DryRun:       true,
-		PlanningMode: PlanningModeStateful,
-		Capability:   CapabilityFull,
-		Items: []Item{
-			{
-				Intent:          "pr.create",
-				Target:          map[string]any{"repository": "PROJ/repo", "args": []string{"--title", "Test"}},
-				Action:          "create",
-				PredictedAction: "create",
-				Supported:       true,
-				Reason:          "pr will be created",
-			},
-		},
-	}
+	for _, testCase := range []struct {
+		predicted string
+		want      jsonoutput.Outcome
+	}{
+		{PredictedCreate, jsonoutput.OutcomeWouldApply},
+		{PredictedUpdate, jsonoutput.OutcomeWouldApply},
+		{PredictedDelete, jsonoutput.OutcomeWouldApply},
+		{PredictedNoop, jsonoutput.OutcomeNoOp},
+		{PredictedBlocked, jsonoutput.OutcomeWouldFail},
+		{PredictedConflict, jsonoutput.OutcomeWouldFail},
+		// A prediction nobody taught this mapping is not claimed to fail.
+		{"replace", jsonoutput.OutcomeWouldApply},
+	} {
+		t.Run(testCase.predicted, func(t *testing.T) {
+			t.Parallel()
 
-	// Test failures at various write stages
-	for i := 0; i <= 200; i += 20 {
-		ew := &errWriter{errAfter: i}
-		_ = Write(ew, false, preview)
-	}
-}
-
-func TestWriteJSON(t *testing.T) {
-	t.Parallel()
-
-	preview := Preview{
-		DryRun:       true,
-		PlanningMode: PlanningModeStateful,
-		Capability:   CapabilityFull,
-		Items: []Item{
-			{
-				Intent: "pr.merge",
-				Action: "update",
-			},
-		},
-		Summary: Summary{Total: 1, Supported: 1},
-	}
-
-	buf := &bytes.Buffer{}
-	if err := Write(buf, true, preview); err != nil {
-		t.Fatalf("Write JSON failed: %v", err)
-	}
-
-	output := buf.String()
-	if !strings.Contains(output, `"intent": "pr.merge"`) {
-		t.Fatalf("missing json intent: %s", output)
-	}
-}
-
-// TestNewDerivesTheSummaryFromTheItems is the point of the builder.
-//
-// The summary was written by hand at every site and could disagree with the
-// items it summarised. An agent reads this report to decide whether to
-// proceed, so a preview claiming one supported update while carrying a blocked
-// item is worse than no preview at all.
-func TestNewDerivesTheSummaryFromTheItems(t *testing.T) {
-	t.Parallel()
-
-	preview := New(PlanningModeStateful, CapabilityFull,
-		Item{Intent: "a", PredictedAction: PredictedCreate, Supported: true},
-		Item{Intent: "b", PredictedAction: PredictedUpdate, Supported: true},
-		Item{Intent: "c", PredictedAction: PredictedUpdate, Supported: true},
-		Item{Intent: "d", PredictedAction: PredictedDelete, Supported: true},
-		Item{Intent: "e", PredictedAction: PredictedNoop, Supported: true},
-		Item{Intent: "f", PredictedAction: PredictedConflict, Supported: true},
-		Item{Intent: "g", PredictedAction: PredictedBlocked, Supported: false},
-	)
-
-	if !preview.DryRun {
-		t.Error("a preview exists because --dry-run was passed; DryRun must be true")
-	}
-	want := Summary{
-		Total: 7, Supported: 6, Unsupported: 1,
-		CreateCount: 1, UpdateCount: 2, DeleteCount: 1, NoopCount: 1,
-		// conflict and blocked both mean no mutation happens.
-		UnknownCount: 2,
-	}
-	if preview.Summary != want {
-		t.Errorf("summary = %+v, want %+v", preview.Summary, want)
-	}
-}
-
-// TestNewCountsAnUnrecognisedPredictionAsUnknown keeps a typo from reading as a
-// mutation that will not happen.
-//
-// "noop" instead of "no-op" looks the same to a person. It must not silently
-// land in NoopCount, and it must not be dropped from the tally either -- the
-// totals have to keep adding up.
-func TestNewCountsAnUnrecognisedPredictionAsUnknown(t *testing.T) {
-	t.Parallel()
-
-	preview := New(PlanningModeStateful, CapabilityPartial,
-		Item{Intent: "typo", PredictedAction: "noop", Supported: true},
-	)
-
-	if preview.Summary.NoopCount != 0 {
-		t.Errorf("a misspelled prediction counted as a no-op: %+v", preview.Summary)
-	}
-	if preview.Summary.UnknownCount != 1 {
-		t.Errorf("unknownCount = %d, want the unrecognised prediction counted", preview.Summary.UnknownCount)
-	}
-	counted := preview.Summary.CreateCount + preview.Summary.UpdateCount +
-		preview.Summary.DeleteCount + preview.Summary.NoopCount + preview.Summary.UnknownCount
-	if counted != preview.Summary.Total {
-		t.Errorf("the per-action counts sum to %d but total is %d", counted, preview.Summary.Total)
-	}
-}
-
-// TestNewOfNothingIsAnEmptyPreview covers the command that finds nothing to do.
-func TestNewOfNothingIsAnEmptyPreview(t *testing.T) {
-	t.Parallel()
-
-	preview := New(PlanningModeStatic, CapabilityFull)
-	if preview.Summary != (Summary{}) {
-		t.Errorf("summary = %+v, want zero", preview.Summary)
-	}
-	if len(preview.Items) != 0 {
-		t.Errorf("items = %+v", preview.Items)
-	}
-}
-
-// TestConfidenceIsDerivedFromTheTier is #483.
-//
-// Capability and Confidence were free-text labels written at each of a hundred
-// and three construction sites, so nothing related the claim to what the code
-// had done. #479 is what that permitted: the strongest claim the contract
-// offers, on a prediction made from one state field, on the irreversible
-// pull request operation.
-func TestConfidenceIsDerivedFromTheTier(t *testing.T) {
-	t.Parallel()
-
-	t.Run("only a checked tier earns full", func(t *testing.T) {
-		t.Parallel()
-
-		for tier, want := range map[Tier]string{
-			TierServerValidated:      CapabilityFull,
-			TierPreconditionsChecked: CapabilityFull,
-			TierPredicted:            CapabilityPartial,
-		} {
-			if got := tier.Confidence(); got != want {
-				t.Errorf("%s.Confidence() = %q, want %q", tier, got, want)
+			document := New(merge(testCase.predicted, TierPreconditionsChecked)).Document()
+			if len(document.Effects) != 1 {
+				t.Fatalf("effects = %v, want one", document.Effects)
 			}
-		}
-	})
-
-	t.Run("an unstated tier is predicted, not full", func(t *testing.T) {
-		t.Parallel()
-
-		// The default has to be the modest one. A site that cannot say what it
-		// checked did not check enough to claim full.
-		preview := New(PlanningModeStateful, CapabilityFull, Item{Intent: "x", Action: "update", PredictedAction: PredictedUpdate, Supported: true})
-		if preview.Items[0].Tier != TierPredicted {
-			t.Errorf("tier = %q, want predicted", preview.Items[0].Tier)
-		}
-		if preview.Items[0].Confidence != CapabilityPartial {
-			t.Errorf("confidence = %q, want partial", preview.Items[0].Confidence)
-		}
-	})
-
-	t.Run("a hand-written confidence cannot outrank its tier", func(t *testing.T) {
-		t.Parallel()
-
-		// The defect this closes: claiming full for a prediction the tier does
-		// not support. The label is computed, so the claim cannot be typed.
-		preview := New(PlanningModeStateful, CapabilityFull, Item{
-			Intent:          "x",
-			Action:          "update",
-			PredictedAction: PredictedUpdate,
-			Supported:       true,
-			Tier:            TierPredicted,
-			Confidence:      CapabilityFull,
+			effect := document.Effects[0]
+			if effect.Outcome != testCase.want || effect.Action != "update" || effect.Target["repository"] != "PROJ/app" {
+				t.Fatalf("effect = %+v, want outcome %s on the pull request", effect, testCase.want)
+			}
+			if failed := document.Error != nil; failed != (testCase.want == jsonoutput.OutcomeWouldFail) {
+				t.Fatalf("error = %+v; present exactly when the run would fail", document.Error)
+			}
 		})
-		if preview.Items[0].Confidence != CapabilityPartial {
-			t.Errorf("confidence = %q; a predicted item claimed full", preview.Items[0].Confidence)
-		}
-	})
+	}
+}
 
-	t.Run("an unrecognised tier is treated as predicted", func(t *testing.T) {
-		t.Parallel()
+// TestAWouldFailEffectCarriesWhatStopsIt: the reasons of a run that would fail
+// are its blockers, and the preview's error is what the real run fails with.
+func TestAWouldFailEffectCarriesWhatStopsIt(t *testing.T) {
+	t.Parallel()
 
-		if got := Tier("invented-later").Confidence(); got != CapabilityPartial {
-			t.Errorf("confidence = %q, want partial for an unknown tier", got)
-		}
-	})
+	document := New(merge(PredictedBlocked, TierPreconditionsChecked)).Document()
+
+	reasons := document.Effects[0].Reasons
+	if len(reasons) != 2 || reasons[0] != "Requires 2 approvals; it has 1" {
+		t.Fatalf("reasons = %q, want the blockers", reasons)
+	}
+	if document.Error == nil || document.Error.Kind != "conflict" || document.Error.ExitCode != 5 ||
+		document.Error.Message != "pull request cannot be merged" {
+		t.Fatalf("error = %+v, want the refusal as a conflict, exit 5", document.Error)
+	}
+
+	missing := merge(PredictedBlocked, TierPreconditionsChecked)
+	missing.Fails = apperrors.KindNotFound
+	missing.BlockingReasons = nil
+	document = New(missing).Document()
+	if document.Error == nil || document.Error.Kind != "not_found" || document.Error.ExitCode != 4 {
+		t.Fatalf("error = %+v, want the kind the item names", document.Error)
+	}
+	if reasons := document.Effects[0].Reasons; len(reasons) != 1 || reasons[0] != "pull request cannot be merged" {
+		t.Fatalf("reasons = %q, want the reason when nothing blocks by name", reasons)
+	}
+}
+
+// TestTheTierIsTheWeakestCheckBehindTheVerdict: one prediction from partial
+// state makes the whole preview a prediction, and an item that states no tier
+// claims nothing (ADR-078).
+func TestTheTierIsTheWeakestCheckBehindTheVerdict(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range []struct {
+		name  string
+		items []Item
+		want  Tier
+	}{
+		{"one server-validated", []Item{merge(PredictedUpdate, TierServerValidated)}, TierServerValidated},
+		{"weakest wins", []Item{merge(PredictedUpdate, TierServerValidated), merge(PredictedUpdate, TierPredicted)}, TierPredicted},
+		{"checked beside validated", []Item{merge(PredictedUpdate, TierPreconditionsChecked), merge(PredictedUpdate, TierServerValidated)}, TierPreconditionsChecked},
+		{"no tier stated", []Item{merge(PredictedUpdate, "")}, TierPredicted},
+		{"nothing checked", nil, TierPredicted},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := New(testCase.items...).Document().Tier; got != testCase.want {
+				t.Fatalf("tier = %s, want %s", got, testCase.want)
+			}
+		})
+	}
 }
 
 // TestNewDoesNotReachIntoTheCallersSlice pins that building a preview leaves
-// the caller's items alone.
-//
-// New derives each item's confidence from its tier. Doing that in place would
-// edit the caller's backing array when called as New(..., items...), and leave
-// preview.Items aliasing it -- so a later append would reach inside a preview
-// already built.
+// the caller's items alone, and the preview unchanged by what the caller does
+// with them afterwards.
 func TestNewDoesNotReachIntoTheCallersSlice(t *testing.T) {
 	t.Parallel()
 
-	items := []Item{{Intent: "x", Action: "update", PredictedAction: PredictedUpdate, Supported: true}}
+	items := []Item{merge(PredictedUpdate, TierServerValidated)}
+	preview := New(items...)
+	items[0].PredictedAction = PredictedBlocked
 
-	preview := New(PlanningModeStateful, CapabilityFull, items...)
+	if document := preview.Document(); document.Error != nil {
+		t.Fatalf("the preview changed with the caller's slice: %+v", document)
+	}
+}
 
-	if items[0].Tier != "" {
-		t.Errorf("the caller's item gained a tier: %q", items[0].Tier)
-	}
-	if items[0].Confidence != "" {
-		t.Errorf("the caller's item gained a confidence: %q", items[0].Confidence)
-	}
-	if preview.Items[0].Confidence != CapabilityPartial {
-		t.Errorf("the preview's own item was not completed: %+v", preview.Items[0])
+// TestWriteMachineIsThePreviewMemberAndExitsZero: under --json the verdict is
+// in the document, so even a predicted failure exits 0 (ADR-096).
+func TestWriteMachineIsThePreviewMemberAndExitsZero(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	writer := jsonoutput.Bind(&out, jsonoutput.Settings{Machine: true, Mode: jsonoutput.ModeDryRun, Command: "pr merge"})
+	if err := Write(writer, true, New(merge(PredictedBlocked, TierPreconditionsChecked))); err != nil {
+		t.Fatalf("Write returned %v, want nil: the verdict is in the document", err)
 	}
 
-	// And the preview does not share storage with the caller.
-	items[0].Intent = "mutated after the preview was built"
-	if preview.Items[0].Intent != "x" {
-		t.Errorf("preview.Items aliases the caller's slice: %q", preview.Items[0].Intent)
+	var document map[string]json.RawMessage
+	if err := json.Unmarshal(out.Bytes(), &document); err != nil {
+		t.Fatalf("not one JSON document: %v\n%s", err, out.String())
+	}
+	if _, present := document["preview"]; !present || len(document) != 2 {
+		t.Fatalf("members = %v, want preview and meta only", document)
+	}
+	if !strings.Contains(string(document["meta"]), `"command": "pr merge"`) {
+		t.Fatalf("meta = %s, want the command", document["meta"])
+	}
+}
+
+// TestWriteTextSaysWhyAndExitsWithTheRealRunsCode: a person sees the verdict
+// and every reason, and `bb pr merge 42 --dry-run && bb pr merge 42` stops.
+func TestWriteTextSaysWhyAndExitsWithTheRealRunsCode(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	writer := jsonoutput.Bind(&out, jsonoutput.Settings{Mode: jsonoutput.ModeDryRun, Command: "pr merge"})
+	err := Write(writer, false, New(merge(PredictedBlocked, TierPreconditionsChecked)))
+
+	var state *apperrors.StateExit
+	if !errors.As(err, &state) || state.Code != 5 {
+		t.Fatalf("Write returned %v, want an exit with the real run's code, 5", err)
+	}
+
+	text := out.String()
+	for _, want := range []string{
+		"Dry run: bb pr merge would fail (preconditions-checked)",
+		"update PROJ/app id=42: would fail",
+		"Requires 2 approvals; it has 1",
+		`Build "ci" has not passed`,
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("text lacks %q:\n%s", want, text)
+		}
+	}
+
+	out.Reset()
+	if err := Write(writer, false, New(merge(PredictedNoop, TierPreconditionsChecked))); err != nil {
+		t.Fatalf("a no-op returned %v, want nil", err)
+	}
+	if !strings.Contains(out.String(), "would change nothing") {
+		t.Fatalf("a no-op reads:\n%s", out.String())
+	}
+}
+
+// TestWriteTextOfAFailureFoundBeforeAnyEffect prints its message, since there
+// is no effect to hang it on.
+func TestWriteTextOfAFailureFoundBeforeAnyEffect(t *testing.T) {
+	t.Parallel()
+
+	failure := jsonoutput.EnvelopeErrorOf(apperrors.New(apperrors.KindNotFound, "pull request 42 not found", nil))
+	var out bytes.Buffer
+	if err := WriteText(&out, "pr merge", jsonoutput.Preview{Tier: TierServerValidated, Effects: []jsonoutput.Effect{}, Error: &failure}); err != nil {
+		t.Fatalf("WriteText: %v", err)
+	}
+	if !strings.Contains(out.String(), "would fail (server-validated)") || !strings.Contains(out.String(), "pull request 42 not found") {
+		t.Fatalf("text:\n%s", out.String())
+	}
+}
+
+func TestWriteTextReportsWriteErrors(t *testing.T) {
+	t.Parallel()
+
+	for after := 0; after < 3; after++ {
+		err := Write(&errWriter{errAfter: after}, false, New(merge(PredictedBlocked, TierPreconditionsChecked)))
+		var state *apperrors.StateExit
+		if err == nil || errors.As(err, &state) {
+			t.Fatalf("a failed write after %d bytes returned %v, want the write error", after, err)
+		}
 	}
 }

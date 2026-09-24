@@ -183,11 +183,11 @@ With no terminal, or under `--json`, no command blocks on standard input: it fai
 
 ## Dry-run behavior and scope
 
-- A command that changes something on the server is previewed from Bitbucket's answers, or predicted, and not run.
+- A command that changes something on the server is checked against Bitbucket, or predicted, and not run.
 - A command that changes this machine (stored credentials, host aliases, git configuration, the skill file, shell completion, a clone or a local branch) is previewed and not run.
 - A command that changes nothing runs as usual.
-- `bb ai mcp serve` refuses the flag: it starts a live server, and a session cannot be previewed.
-- Dry-run output includes explicit planning metadata such as planning mode and capability signaling.
+- `bb ai mcp serve` does not take the flag: it starts a live server, and a session cannot be previewed.
+- The answer is a verdict with the reasons for it, and a dry run that finds the run would fail exits with the code the real run would.
 
 See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and contract details.
 

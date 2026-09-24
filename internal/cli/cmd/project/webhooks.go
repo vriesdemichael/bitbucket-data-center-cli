@@ -108,12 +108,11 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 
 				target := map[string]any{"project": args[0], "name": args[1], "url": args[2], "events": createEvents, "active": createActive}
 				webhookflags.DescribeCreate(target, input, createFields.Origins())
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.webhook.create",
 					Target:          target,
 					Action:          "create",
 					PredictedAction: "create",
-					Supported:       true,
 					Reason:          "webhook will be created",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -179,12 +178,11 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 
 				target := map[string]any{"project": args[0], "webhookId": args[1], "name": updateName, "url": updateURL, "events": updateEvents, "active": active}
 				webhookflags.Describe(target, input, updateFields.Origins())
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.webhook.update",
 					Target:          target,
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "webhook will be updated",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -231,12 +229,11 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.webhook.delete",
 					Target:          map[string]any{"project": args[0], "webhookId": args[1]},
 					Action:          "delete",
 					PredictedAction: "delete",
-					Supported:       true,
 					Reason:          "webhook will be deleted",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -274,12 +271,11 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.webhook.test",
 					Target:          map[string]any{"project": args[0], "webhookId": args[1]},
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "webhook connection test will be triggered",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

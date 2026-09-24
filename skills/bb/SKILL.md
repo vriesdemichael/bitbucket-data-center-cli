@@ -587,6 +587,22 @@ arguments — reports `validation` / exit `2`. Treat that as your own mistake to
 something to retry. `permanent` / exit `1` is a failure retrying will not fix, such as a
 rejected TLS certificate. `internal` / exit `1` means bb itself failed: report it.
 
+### Checking before a write
+
+`--dry-run` answers with a verdict on the real run and changes nothing. Under `--json` it is
+the `preview` member: the `tier` (how far to trust it), one effect per change with its
+`outcome` — `would-apply`, `no-op` or `would-fail` — and its `reasons`, and the `error` the
+real run would fail with when it would.
+
+```bash
+bb pr merge --repo MYPROJ/payments 42 --dry-run --json
+```
+
+Under `--json` a verdict exits `0`, so read `preview.error` rather than the exit code. A
+top-level `error` means no verdict was reached: exit `10` is worth retrying, `1` is not.
+Without `--json` the exit code is the real run's. Each command's `--help` says under "Dry
+run" what it checks; a `predicted` verdict means nothing was checked against Bitbucket.
+
 ## Error Reporting
 
 If `bb` behaves unexpectedly, create an issue:

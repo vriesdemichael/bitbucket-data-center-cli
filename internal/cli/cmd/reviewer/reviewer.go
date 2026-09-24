@@ -188,15 +188,13 @@ the project. --project deletes it there.`,
 						predicted = "delete"
 						reason = "reviewer condition will be deleted"
 					}
-					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					preview := dryrunpreview.New(dryrunpreview.Item{
 						Intent:          "reviewer.condition.delete",
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
 						Action:          "delete",
 						PredictedAction: predicted,
 						Tier:            dryrunpreview.TierPreconditionsChecked,
-						Supported:       true,
 						Reason:          reason,
-						RequiredState:   []string{"repository reviewer conditions"},
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
@@ -239,15 +237,13 @@ the project. --project deletes it there.`,
 					predicted = "delete"
 					reason = "reviewer condition will be deleted"
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "reviewer.condition.delete",
 					Target:          map[string]any{"project": projectKey, "id": id},
 					Action:          "delete",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"project reviewer conditions"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -334,15 +330,13 @@ the project. --project deletes it there.`,
 						reason = "equivalent reviewer condition already exists"
 						blocking = []string{"reviewer condition already exists"}
 					}
-					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					preview := dryrunpreview.New(dryrunpreview.Item{
 						Intent:          "reviewer.condition.create",
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug)},
 						Action:          "create",
 						PredictedAction: predicted,
 						Tier:            dryrunpreview.TierPreconditionsChecked,
-						Supported:       true,
 						Reason:          reason,
-						RequiredState:   []string{"repository reviewer conditions"},
 						BlockingReasons: blocking,
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -388,15 +382,13 @@ the project. --project deletes it there.`,
 					reason = "equivalent reviewer condition already exists"
 					blocking = []string{"reviewer condition already exists"}
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "reviewer.condition.create",
 					Target:          map[string]any{"project": projectKey},
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"project reviewer conditions"},
 					BlockingReasons: blocking,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -495,16 +487,17 @@ With --repo, a condition the repository inherits from its project is refused;
 							reason = "reviewer condition already matches requested update"
 						}
 					}
-					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					preview := dryrunpreview.New(dryrunpreview.Item{
 						Intent:          "reviewer.condition.update",
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
 						Action:          "update",
 						PredictedAction: predicted,
 						Tier:            dryrunpreview.TierPreconditionsChecked,
-						Supported:       true,
 						Reason:          reason,
-						RequiredState:   []string{"repository reviewer conditions"},
 						BlockingReasons: blocking,
+						// The one refusal predicted here is a condition that is
+						// not there, which the real update meets as a 404.
+						Fails: apperrors.KindNotFound,
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
@@ -560,16 +553,16 @@ With --repo, a condition the repository inherits from its project is refused;
 						reason = "reviewer condition already matches requested update"
 					}
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "reviewer.condition.update",
 					Target:          map[string]any{"project": projectKey, "id": id},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"project reviewer conditions"},
 					BlockingReasons: blocking,
+					// As for a repository's condition: a missing one is a 404.
+					Fails: apperrors.KindNotFound,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}

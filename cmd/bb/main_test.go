@@ -336,7 +336,7 @@ func TestExecuteRootCommandEmitsEnvelopeWhenFlagParsingFails(t *testing.T) {
 	}
 }
 
-func TestArgsRequestMachineOutput(t *testing.T) {
+func TestArgsRequestOutputFormat(t *testing.T) {
 	t.Parallel()
 
 	const (
@@ -373,13 +373,13 @@ func TestArgsRequestMachineOutput(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			settings, machine := argsRequestMachineOutput(testCase.args)
+			settings := argsRequestOutput(testCase.args)
 			got := none
-			if machine {
+			if settings.Machine {
 				got = settings.Format
 			}
 			if got != testCase.want {
-				t.Fatalf("argsRequestMachineOutput(%v) = %q, want %q", testCase.args, got, testCase.want)
+				t.Fatalf("argsRequestOutput(%v) = %q, want %q", testCase.args, got, testCase.want)
 			}
 		})
 	}

@@ -74,15 +74,13 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 					intent = "repo.admin.create"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          intent,
 					Target:          map[string]any{"project": createProject, "name": createName, "defaultBranch": createDefaultBranch},
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"project repositories list (name filtered)"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
 							return []string{"repository already exists"}
@@ -174,15 +172,13 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 					intent = "repo.admin.fork"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          intent,
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": forkName, "project": forkProject},
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"source repository reference"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -285,14 +281,12 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 					intent = "repo.admin.delete"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          intent,
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
 					Action:          "delete",
 					PredictedAction: "delete",
-					Supported:       true,
 					Reason:          "repository delete will be attempted",
-					RequiredState:   []string{"repository reference"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -370,15 +364,13 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 					reason = "no update fields provided"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.admin.update",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": updateName, "description": updateDesc, "defaultBranch": updateDefaultBranch},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"repository reference"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}

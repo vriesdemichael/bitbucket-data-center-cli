@@ -13,8 +13,7 @@ checked by running that same suite against a real instance of it.
 except in the places below. In each, `bb` either answers the way the newest
 release would, or refuses before sending anything, with the error kind
 `unsupported` and exit code `14`, naming the release that can do it. A dry run
-refuses the same way. That kind is about the instance; the `unsupported`
-confidence a dry run reports is about `bb`, and says it cannot preview a command.
+gives the same answer as its verdict: the run would fail, as `unsupported`.
 
 | Capability | From | On an earlier release |
 |---|---|---|

@@ -43,9 +43,27 @@ const (
 	FormatYAML Format = "yaml"
 )
 
+// Mode is the question an invocation asks, and so the member of the document
+// that answers it (ADR-096). The flags decide it, and nothing that happens during
+// the run changes it: a caller knows what it holds from the key alone.
+type Mode string
+
+const (
+	// ModeRun answers with data, or with error when the run fails.
+	ModeRun Mode = ""
+	// ModeDryRun answers with preview, a verdict on the real run.
+	ModeDryRun Mode = "dry-run"
+)
+
 // Settings is what the flags decided about machine output for one invocation.
 type Settings struct {
-	Format Format
+	// Machine is whether a document was asked for at all, in either format.
+	Machine bool
+	Format  Format
+	Mode    Mode
+	// Command is the command writing the document, by its canonical path, or ""
+	// when no command resolved. It is reported as meta.command.
+	Command string
 }
 
 // boundWriter carries Settings to every document written through it.
@@ -70,14 +88,131 @@ func Bind(writer io.Writer, settings Settings) io.Writer {
 	return &boundWriter{Writer: writer, settings: settings}
 }
 
-// settingsOf returns the settings writer carries, or JSON for a writer that
-// carries none.
-func settingsOf(writer io.Writer) Settings {
+// SettingsOf returns the settings writer carries, and whether it carries any.
+//
+// A command that renders text reads the command path from here, and main reads
+// the settings the invocation ran with when it has a failure to report.
+func SettingsOf(writer io.Writer) (Settings, bool) {
 	if bound, ok := writer.(*boundWriter); ok {
-		return bound.settings
+		return bound.settings, true
 	}
 
-	return Settings{Format: FormatJSON}
+	return Settings{Format: FormatJSON}, false
+}
+
+// settingsOf returns the settings writer carries, or JSON for a run for a
+// writer that carries none.
+func settingsOf(writer io.Writer) Settings {
+	settings, _ := SettingsOf(writer)
+	return settings
+}
+
+// Tier says how a verdict was reached (ADR-078), strongest first.
+type Tier string
+
+const (
+	// TierServerValidated means Bitbucket answered the exact question, through
+	// its own dry-run endpoint or an equivalent authoritative call -- or the
+	// command only reads, and ran.
+	TierServerValidated Tier = "server-validated"
+
+	// TierPreconditionsChecked means the caller's permission and the current
+	// state were both fetched, and the preconditions for the operation were
+	// evaluated against them.
+	TierPreconditionsChecked Tier = "preconditions-checked"
+
+	// TierPredicted means the answer was derived from partial state.
+	TierPredicted Tier = "predicted"
+)
+
+// Weaker reports whether tier claims less than other. A tier nobody named
+// claims least of all.
+func (tier Tier) Weaker(other Tier) bool {
+	return tierRank(tier) < tierRank(other)
+}
+
+func tierRank(tier Tier) int {
+	switch tier {
+	case TierServerValidated:
+		return 2
+	case TierPreconditionsChecked:
+		return 1
+	default:
+		return 0
+	}
+}
+
+// Outcome is what one effect of the real run would come to.
+type Outcome string
+
+const (
+	OutcomeWouldApply Outcome = "would-apply"
+	OutcomeNoOp       Outcome = "no-op"
+	OutcomeWouldFail  Outcome = "would-fail"
+)
+
+// Preview is the answer under --dry-run: a verdict on the real run (ADR-096).
+//
+// Error is present exactly when the verdict is that the run would fail, so a
+// caller asks one question of it, the same one it asks of a run.
+type Preview struct {
+	// Tier is the weakest of the checks behind the verdict.
+	Tier Tier `json:"tier"`
+	// Effects are what the run would change, each with its outcome and why.
+	// Empty for a command that only reads.
+	Effects []Effect `json:"effects"`
+	// Data is what a command that only reads returned: reading changes
+	// nothing, so it runs for real under --dry-run.
+	Data any `json:"data,omitempty"`
+	// Error is what the real run would fail with.
+	Error *EnvelopeError `json:"error,omitempty"`
+}
+
+// Effect is one change the real run would make.
+type Effect struct {
+	// Action is create, update or delete.
+	Action string `json:"action"`
+	// Target names what the change is made to. Its keys depend on the command.
+	Target  map[string]any `json:"target"`
+	Outcome Outcome        `json:"outcome"`
+	// Reasons say why the outcome is what it is; for would-fail, what stops it.
+	Reasons []string `json:"reasons"`
+}
+
+// PreviewEnvelope is the document written under --dry-run.
+type PreviewEnvelope struct {
+	Preview Preview      `json:"preview"`
+	Meta    EnvelopeMeta `json:"meta"`
+}
+
+// IsVerdict reports whether err, met under --dry-run, is an answer about the
+// real run rather than a failure to reach one (ADR-096).
+//
+// Bitbucket not answering, an interrupt, a bug in bb and an outcome bb could not
+// tell say nothing about what the real run would do, so they are reported as
+// themselves. Everything else -- an invalid invocation, a 404, a conflict, a
+// veto -- is what the real run would meet too, and is the verdict.
+func IsVerdict(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	switch apperrors.KindOf(err) {
+	case apperrors.KindTransient, apperrors.KindCancelled, apperrors.KindInternal, apperrors.KindUnknownOutcome:
+		return false
+	default:
+		return true
+	}
+}
+
+// TierOfFailure is how a verdict found as a failure was reached: from
+// Bitbucket's own answer, or from what bb checked before asking.
+func TierOfFailure(err error) Tier {
+	if _, answered := apperrors.DetailsOf(err)["upstreamStatus"]; answered {
+		return TierServerValidated
+	}
+
+	return TierPreconditionsChecked
 }
 
 // Envelope is the bb.machine document written to stdout on success.
@@ -94,6 +229,10 @@ type Envelope struct {
 }
 
 type EnvelopeMeta struct {
+	// Command is the command that wrote the document, by its canonical path:
+	// bb pr view reports pr get. With it a document held on its own says which
+	// --describe describes it. Absent when no command resolved.
+	Command string `json:"command,omitempty"`
 	// LimitReached reports that the result set came back at --limit, so there
 	// may be more behind it. Omitted for commands that do not list, so its
 	// presence is itself the signal that a result set is bounded.
@@ -156,30 +295,69 @@ func WriteError(writer io.Writer, err error) error {
 		return nil
 	}
 
-	envelope := ErrorEnvelope{
-		Error: EnvelopeError{
-			Kind:     string(apperrors.KindOf(err)),
-			Message:  apperrors.MessageOf(err),
-			ExitCode: apperrors.ExitCode(err),
-			Details:  apperrors.DetailsOf(err),
-		},
-		Meta: EnvelopeMeta{
-			BBVersion: releaseVersion,
-		},
+	settings := settingsOf(writer)
+	failure := EnvelopeErrorOf(err)
+	meta := metaFor(settings, EnvelopeMeta{})
+
+	// Under --dry-run a failure that is an answer about the real run is the
+	// verdict, inside the preview; only a failure to reach one is a top-level
+	// error (ADR-096).
+	if settings.Mode == ModeDryRun && IsVerdict(err) {
+		preview := Preview{Tier: TierOfFailure(err), Effects: []Effect{}, Error: &failure}
+		return writeDocument(writer, PreviewEnvelope{Preview: preview, Meta: meta}, "output")
 	}
 
-	return writeDocument(writer, envelope, "error output")
+	return writeDocument(writer, ErrorEnvelope{Error: failure, Meta: meta}, "error output")
 }
 
+// EnvelopeErrorOf is err as the document reports it.
+func EnvelopeErrorOf(err error) EnvelopeError {
+	return EnvelopeError{
+		Kind:     string(apperrors.KindOf(err)),
+		Message:  apperrors.MessageOf(err),
+		ExitCode: apperrors.ExitCode(err),
+		Details:  apperrors.DetailsOf(err),
+	}
+}
+
+// Write emits what a command returned.
 func Write(writer io.Writer, payload any) error {
-	envelope := Envelope{
-		Data: payload,
-		Meta: EnvelopeMeta{
-			BBVersion: releaseVersion,
-		},
+	return writeResult(writer, payload, EnvelopeMeta{})
+}
+
+// WritePreview emits the verdict of a dry run.
+func WritePreview(writer io.Writer, preview Preview) error {
+	if preview.Effects == nil {
+		preview.Effects = []Effect{}
 	}
 
-	return writeDocument(writer, envelope, "output")
+	meta := metaFor(settingsOf(writer), EnvelopeMeta{})
+
+	return writeDocument(writer, PreviewEnvelope{Preview: preview, Meta: meta}, "output")
+}
+
+// writeResult writes what a command returned: as data for a run, and inside
+// the preview for a dry run of a command that only reads -- reading changes
+// nothing, so it ran for real, and the member is still the one --dry-run asks
+// for.
+func writeResult(writer io.Writer, payload any, meta EnvelopeMeta) error {
+	settings := settingsOf(writer)
+	meta = metaFor(settings, meta)
+
+	if settings.Mode == ModeDryRun {
+		preview := Preview{Tier: TierServerValidated, Effects: []Effect{}, Data: payload}
+		return writeDocument(writer, PreviewEnvelope{Preview: preview, Meta: meta}, "output")
+	}
+
+	return writeDocument(writer, Envelope{Data: payload, Meta: meta}, "output")
+}
+
+// metaFor completes a command's meta with what every document carries.
+func metaFor(settings Settings, meta EnvelopeMeta) EnvelopeMeta {
+	meta.Command = settings.Command
+	meta.BBVersion = releaseVersion
+
+	return meta
 }
 
 // writeDocument encodes one document in the format writer carries and writes
@@ -239,22 +417,12 @@ func marshalEnvelope(envelope any) ([]byte, error) {
 // WriteBytes emits a body that is not text: its bytes base64-encoded as the
 // payload, with meta saying how they are encoded and what they are.
 func WriteBytes(writer io.Writer, body []byte, contentType string) error {
-	envelope := Envelope{
-		Data: base64.StdEncoding.EncodeToString(body),
-		Meta: EnvelopeMeta{Encoding: "base64", ContentType: contentType, BBVersion: releaseVersion},
-	}
-
-	return writeDocument(writer, envelope, "output")
+	return writeResult(writer, base64.StdEncoding.EncodeToString(body), EnvelopeMeta{Encoding: "base64", ContentType: contentType})
 }
 
 // WriteList emits a list payload, recording whether --limit cut it short.
 func WriteList(writer io.Writer, payload any, limitReached bool) error {
-	envelope := Envelope{
-		Data: payload,
-		Meta: EnvelopeMeta{LimitReached: &limitReached, BBVersion: releaseVersion},
-	}
-
-	return writeDocument(writer, envelope, "output")
+	return writeResult(writer, payload, EnvelopeMeta{LimitReached: &limitReached})
 }
 
 // MarshalIndent renders v the way the envelope is rendered: indented, with HTML

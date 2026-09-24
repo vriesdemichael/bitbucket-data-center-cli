@@ -66,8 +66,7 @@ func newPullRequestReadyCommand(deps Dependencies, repositorySelector *string) *
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull,
-					readyPreviewItem(repo, target.PullRequestID, current, draft))
+				preview := dryrunpreview.New(readyPreviewItem(repo, target.PullRequestID, current, draft))
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -104,9 +103,7 @@ func readyPreviewItem(repo pullrequestservice.RepositoryRef, pullRequestID strin
 		Action:          "update",
 		PredictedAction: "update",
 		Tier:            dryrunpreview.TierPreconditionsChecked,
-		Supported:       true,
 		Reason:          "pull request will be marked ready for review",
-		RequiredState:   []string{"pull request"},
 	}
 	if draft {
 		item.Reason = "pull request will be turned into a draft"

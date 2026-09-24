@@ -169,14 +169,12 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.comment.create",
 					Target:          createTargetPreview(target, createText, createParentID),
 					Action:          "create",
 					PredictedAction: "create",
-					Supported:       true,
 					Reason:          "comment will be created",
-					RequiredState:   []string{"comment target context"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -243,15 +241,13 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					blocking = []string{"comment owned by another user"}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.comment.update",
 					Target:          map[string]any{"context": target.Context(), "id": updateCommentID, "text": updateText},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"comment get"},
 					BlockingReasons: blocking,
 				})
 
@@ -325,15 +321,13 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.comment.delete",
 					Target:          map[string]any{"context": target.Context(), "id": deleteCommentID},
 					Action:          "delete",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"comment get"},
 					BlockingReasons: blocking,
 				})
 

@@ -167,12 +167,11 @@ func New(deps Dependencies) *cobra.Command {
 				}
 				target := map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhookId": args[0], "name": name, "url": url, "events": events, "active": active}
 				webhookflags.Describe(target, input, updateFields.Origins())
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.webhook.update",
 					Target:          target,
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "webhook will be updated",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -229,12 +228,11 @@ func New(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.webhook.test",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhookId": args[0]},
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "webhook connection test will be triggered",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -395,12 +393,11 @@ func New(deps Dependencies) *cobra.Command {
 
 				target := map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": createEvents, "active": createActive}
 				webhookflags.DescribeCreate(target, input, createFields.Origins())
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.webhook.create",
 					Target:          target,
 					Action:          "create",
 					PredictedAction: "create",
-					Supported:       true,
 					Reason:          "webhook will be created",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -461,12 +458,11 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.webhook.delete",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhookId": args[0]},
 					Action:          "delete",
 					PredictedAction: "delete",
-					Supported:       true,
 					Reason:          "webhook will be deleted",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)

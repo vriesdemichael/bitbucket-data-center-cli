@@ -91,12 +91,11 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.label.add",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "label": args[0]},
 					Action:          "create",
 					PredictedAction: "create",
-					Supported:       true,
 					Reason:          "label will be added to the repository",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -131,12 +130,11 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoWrite); err != nil {
 					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.label.remove",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "label": args[0]},
 					Action:          "delete",
 					PredictedAction: "delete",
-					Supported:       true,
 					Reason:          "label will be removed from the repository",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -179,12 +177,11 @@ func newRepoWatchCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.watch",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "user will watch repository",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -224,12 +221,11 @@ func newRepoUnwatchCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.unwatch",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
 					Action:          "delete",
 					PredictedAction: "delete",
-					Supported:       true,
 					Reason:          "user will unwatch repository",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -342,12 +338,11 @@ inherited one.`,
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.default-task.create",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "description": args[0], "sourceRef": src, "targetRef": tgt},
 					Action:          "create",
 					PredictedAction: "create",
-					Supported:       true,
 					Reason:          "default task will be created",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -410,15 +405,13 @@ default-task update changes it there, for every repository in the project.`,
 					}
 					predicted, reason, blocking = "blocked", "default task not found in repository", []string{"default task not found"}
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.default-task.update",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0], "description": updateDesc, "sourceRef": src, "targetRef": tgt},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"repository default tasks"},
 					BlockingReasons: blocking,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -472,15 +465,13 @@ default-task delete deletes it there, for every repository in the project.`,
 					}
 					predicted, reason = "no-op", "default task was not found"
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.default-task.delete",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
 					Action:          "delete",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"repository default tasks"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -570,12 +561,11 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.sync.trigger",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug)},
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "manual synchronization will be triggered",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -667,12 +657,11 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.sync.enable",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "enabled": true},
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "automatic synchronization will be enabled",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -710,12 +699,11 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoAdmin); err != nil {
 					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.sync.disable",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "enabled": false},
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "automatic synchronization will be disabled",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -853,7 +841,7 @@ func newRepoEditCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityPartial, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent: "repo.edit",
 					Target: map[string]any{
 						"repository":     fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
@@ -865,9 +853,7 @@ func newRepoEditCommand(deps Dependencies) *cobra.Command {
 					},
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "file will be edited",
-					RequiredState:   []string{"repository write access"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}

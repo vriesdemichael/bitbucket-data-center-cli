@@ -158,15 +158,13 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.branch-restriction.create",
 					Target:          map[string]any{"project": args[0], "type": createType, "matcherType": createMatcherType, "matcherId": createMatcherID},
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"project branch restrictions list"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
 							return []string{"matching restriction exists"}
@@ -253,15 +251,13 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					reason = "branch restriction already matches requested values"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.branch-restriction.update",
 					Target:          map[string]any{"project": args[0], "restrictionId": args[1], "type": updateType, "matcherType": updateMatcherType, "matcherId": updateMatcherID},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"project branch restriction get"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -321,14 +317,12 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.branch-restriction.delete",
 					Target:          map[string]any{"project": args[0], "restrictionId": args[1]},
 					Action:          "delete",
 					PredictedAction: "delete",
-					Supported:       true,
 					Reason:          "branch restriction will be deleted",
-					RequiredState:   []string{"project branch restriction get"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}

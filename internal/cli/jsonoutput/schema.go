@@ -111,14 +111,18 @@ func metaSchema() map[string]any {
 	return map[string]any{
 		"type": "object",
 		// Open, unlike the envelope around it. meta is provenance, and it is
-		// expected to grow: #616 adds meta.command, and it can only land in a
-		// minor release if a document carrying a field this schema does not
-		// name still validates. Closed, the first published version of this
-		// schema would have turned every later meta field into a breaking
-		// change for anyone validating strictly. The set of top-level members
-		// stays closed; only what sits inside meta may widen.
+		// expected to grow: a field added to it lands in a minor release only
+		// if a document carrying a field this schema does not name still
+		// validates. Closed, the first published version of this schema would
+		// have turned every later meta field into a breaking change for anyone
+		// validating strictly. The set of top-level members stays closed; only
+		// what sits inside meta may widen.
 		"additionalProperties": true,
 		"properties": map[string]any{
+			"command": map[string]any{
+				"type":        "string",
+				"description": "The command that wrote this document, by its canonical path (bb pr view reports pr get), so a document held on its own says which --describe describes it. Absent when no command resolved.",
+			},
 			"bbVersion": map[string]any{
 				"type":        "string",
 				"minLength":   1,

@@ -10,23 +10,40 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
-const (
-	planningModeStatic   = dryrunpreview.PlanningModeStatic
-	planningModeStateful = dryrunpreview.PlanningModeStateful
-
-	capabilityFull    = dryrunpreview.CapabilityFull
-	capabilityPartial = dryrunpreview.CapabilityPartial
-)
-
 type dryRunProfile struct {
-	Intent        string
-	Action        string
-	Stateful      bool
-	CapabilityMsg string
+	Intent   string
+	Action   string
+	Stateful bool
+	// Tier is the strongest tier the command's preview reaches, on the path a
+	// run takes when every check can be made. A preview may report less -- pr
+	// merge on a Bitbucket that does not say whether a pull request can merge
+	// is predicted -- and never more; the live suite holds every preview it
+	// sees to that. A profile that checks nothing is predicted.
+	Tier dryrunpreview.Tier
+	// Change says in words what a command that changes this machine would
+	// do, for the preview's reason: its Action is only create, update or
+	// delete.
+	Change string
+}
+
+// DeclaredDryRunTier is the strongest tier a command's preview reaches, as its
+// profile declares it, for the live suite to hold previews to.
+func DeclaredDryRunTier(path string) (dryrunpreview.Tier, bool) {
+	profile, ok := dryRunProfiles[strings.TrimSpace(path)]
+	if !ok {
+		if _, local := clientLocalMutatingCommands[strings.TrimSpace(path)]; local {
+			return dryrunpreview.TierPredicted, true
+		}
+		return "", false
+	}
+	if !profile.Stateful || profile.Tier == "" {
+		return dryrunpreview.TierPredicted, true
+	}
+
+	return profile.Tier, true
 }
 
 type dryRunItem = dryrunpreview.Item
-type dryRunSummary = dryrunpreview.Summary
 type dryRunPreview = dryrunpreview.Preview
 
 // dryRunProfiles is the single source of truth for dry-run behaviour on every
@@ -206,9 +223,9 @@ const (
 	// flag (#571).
 	classificationLocalMutating
 
-	// classificationRefused is a command for which --dry-run has no sensible
-	// meaning, so it is rejected rather than accepted and ignored.
-	classificationRefused
+	// classificationWithoutDryRun is a command that does not take --dry-run at
+	// all, because there is nothing a preview of it could say (ADR-096).
+	classificationWithoutDryRun
 )
 
 var readOnlyCommands = map[string]struct{}{
@@ -338,45 +355,45 @@ var clientLocalCommands = map[string]struct{}{
 // here rather than in clientLocalCommands, and the two lists are one edit apart.
 var clientLocalMutatingCommands = map[string]dryRunProfile{
 	// config.SaveLogin / config.Logout -- the stored credential.
-	"auth login":  {Intent: "auth.login", Action: "store credentials"},
-	"auth logout": {Intent: "auth.logout", Action: "remove stored credentials"},
+	"auth login":  {Intent: "auth.login", Action: "update", Change: "store credentials"},
+	"auth logout": {Intent: "auth.logout", Action: "delete", Change: "remove stored credentials"},
 
 	// config.AddHostAliases / SetHostAliases / RemoveHostAlias / SetDefaultHost.
-	"auth alias add":      {Intent: "auth.alias.add", Action: "add host aliases"},
-	"auth alias discover": {Intent: "auth.alias.discover", Action: "replace host aliases"},
-	"auth alias remove":   {Intent: "auth.alias.remove", Action: "remove a host alias"},
-	"auth server use":     {Intent: "auth.server.use", Action: "change the default host"},
+	"auth alias add":      {Intent: "auth.alias.add", Action: "create", Change: "add host aliases"},
+	"auth alias discover": {Intent: "auth.alias.discover", Action: "update", Change: "replace host aliases"},
+	"auth alias remove":   {Intent: "auth.alias.remove", Action: "delete", Change: "remove a host alias"},
+	"auth server use":     {Intent: "auth.server.use", Action: "update", Change: "change the default host"},
 
 	// The user's git configuration. #571 reproduced this writing 302 bytes into
 	// an empty GIT_CONFIG_GLOBAL under --dry-run.
-	"auth setup-git": {Intent: "auth.setup-git", Action: "configure git to authenticate through bb"},
+	"auth setup-git": {Intent: "auth.setup-git", Action: "update", Change: "configure git to authenticate through bb"},
 
 	// os.WriteFile, and its removal.
-	"ai skill install": {Intent: "ai.skill.install", Action: "write the skill file"},
-	"ai skill remove":  {Intent: "ai.skill.remove", Action: "delete the skill file"},
+	"ai skill install": {Intent: "ai.skill.install", Action: "create", Change: "write the skill file"},
+	"ai skill remove":  {Intent: "ai.skill.remove", Action: "delete", Change: "delete the skill file"},
 
 	// A shell's completion file or a block in its startup file, and their
 	// removal.
-	"completion install": {Intent: "completion.install", Action: "set shell completion up"},
-	"completion remove":  {Intent: "completion.remove", Action: "take shell completion out"},
+	"completion install": {Intent: "completion.install", Action: "create", Change: "set shell completion up"},
+	"completion remove":  {Intent: "completion.remove", Action: "delete", Change: "take shell completion out"},
 
 	// A working copy, and a local branch.
-	"clone":       {Intent: "repo.clone", Action: "clone into a new directory"},
-	"repo clone":  {Intent: "repo.clone", Action: "clone into a new directory"},
-	"pr checkout": {Intent: "pr.checkout", Action: "create a local branch"},
+	"clone":       {Intent: "repo.clone", Action: "create", Change: "clone into a new directory"},
+	"repo clone":  {Intent: "repo.clone", Action: "create", Change: "clone into a new directory"},
+	"pr checkout": {Intent: "pr.checkout", Action: "create", Change: "create a local branch"},
 }
 
-// dryRunRefusedCommands accept no meaningful preview, so --dry-run is an error
-// rather than a flag that parses and does nothing.
-var dryRunRefusedCommands = map[string]string{
+// commandsWithoutDryRun do not take --dry-run, because there is nothing a
+// preview of them could say (ADR-096). Passing it is an invalid invocation,
+// reported as itself rather than as a verdict on a run that never happens.
+var commandsWithoutDryRun = map[string]string{
 	// It starts a live, write-capable MCP server: every mutating tool call
-	// reaches Bitbucket. It sat in clientLocalCommands -- "commands that never
-	// reach it" -- so the one command whose purpose is to hand a machine the
-	// ability to mutate Bitbucket was the one command where the preview was
-	// silently a no-op (#568). A dry-run of a long-lived server is not a
-	// preview of anything, so the flag is refused rather than reinterpreted.
-	"ai mcp serve": "ai mcp serve starts a live server whose tools reach Bitbucket; --dry-run cannot preview a session. " +
-		"Restrict what the server can do instead: it exposes read-only tools unless --yolo is passed",
+	// reaches Bitbucket. It sat among the commands --dry-run lets run, so the
+	// one command whose purpose is to hand a machine the ability to mutate
+	// Bitbucket was the one where the flag was silently a no-op (#568). A
+	// dry run of a long-lived server previews nothing.
+	"ai mcp serve": "bb ai mcp serve does not take --dry-run: it starts a live server whose tools reach Bitbucket, " +
+		"and a session cannot be previewed. Restrict what the server can do instead: it exposes read-only tools unless --yolo is passed",
 }
 
 func classifyCommand(path string) commandClassification {
@@ -393,8 +410,8 @@ func classifyCommand(path string) commandClassification {
 	if _, ok := clientLocalMutatingCommands[trimmed]; ok {
 		return classificationLocalMutating
 	}
-	if _, ok := dryRunRefusedCommands[trimmed]; ok {
-		return classificationRefused
+	if _, ok := commandsWithoutDryRun[trimmed]; ok {
+		return classificationWithoutDryRun
 	}
 	return classificationUnknown
 }
@@ -473,15 +490,21 @@ func dryRunCommandPath(command *cobra.Command) string {
 }
 
 func dryRunUnsupportedError(path string) error {
-	if reason, ok := dryRunRefusedCommands[strings.TrimSpace(path)]; ok {
+	if reason, ok := commandsWithoutDryRun[strings.TrimSpace(path)]; ok {
 		// A validation error, not not-implemented: nothing is missing here, the
 		// flag does not apply.
 		return apperrors.New(apperrors.KindValidation, reason, nil)
 	}
 
-	return apperrors.New(apperrors.KindNotImplemented, fmt.Sprintf("dry-run is not implemented for %s", path), nil)
+	// Every command is classified, and a governance test holds the registries
+	// to the tree, so reaching here is a bug in bb: internal, which under
+	// --dry-run is a failure to reach a verdict rather than a verdict that the
+	// run would fail (ADR-096).
+	return apperrors.New(apperrors.KindInternal, fmt.Sprintf("%s has no dry-run classification", path), nil)
 }
 
+// newDryRunPreview is the preview of a command whose outcome nothing is checked
+// for: the change it would make, predicted.
 func newDryRunPreview(profile dryRunProfile, command *cobra.Command, args []string) dryRunPreview {
 	target := map[string]any{}
 	repository := ""
@@ -497,37 +520,19 @@ func newDryRunPreview(profile dryRunProfile, command *cobra.Command, args []stri
 		target["args"] = append([]string(nil), args...)
 	}
 
-	item := dryRunItem{
+	reason := "nothing is checked first"
+	if change := strings.TrimSpace(profile.Change); change != "" {
+		reason = fmt.Sprintf("it would %s; nothing is checked first", change)
+	}
+
+	return dryrunpreview.New(dryRunItem{
 		Intent:          profile.Intent,
 		Target:          target,
 		Action:          profile.Action,
 		PredictedAction: profile.Action,
-		Supported:       true,
-		Reason:          strings.TrimSpace(profile.CapabilityMsg),
-		Confidence:      capabilityPartial,
-	}
-
-	summary := dryRunSummary{Total: 1, Supported: 1}
-	switch profile.Action {
-	case "no-op":
-		summary.NoopCount = 1
-	case "create":
-		summary.CreateCount = 1
-	case "update":
-		summary.UpdateCount = 1
-	case "delete":
-		summary.DeleteCount = 1
-	default:
-		summary.UnknownCount = 1
-	}
-
-	return dryRunPreview{
-		DryRun:       true,
-		PlanningMode: planningModeStatic,
-		Capability:   capabilityPartial,
-		Items:        []dryRunItem{item},
-		Summary:      summary,
-	}
+		Reason:          reason,
+		Tier:            dryrunpreview.TierPredicted,
+	})
 }
 
 func writeDryRunPreview(writer io.Writer, asJSON bool, preview dryRunPreview) error {

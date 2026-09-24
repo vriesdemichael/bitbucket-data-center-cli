@@ -189,15 +189,13 @@ func New(deps Dependencies) *cobra.Command {
 						blocking = []string{"reviewer group already exists"}
 					}
 
-					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					preview := dryrunpreview.New(dryrunpreview.Item{
 						Intent:          "reviewer-group.create",
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "name": name},
 						Action:          "create",
 						PredictedAction: predicted,
 						Tier:            dryrunpreview.TierPreconditionsChecked,
-						Supported:       true,
 						Reason:          reason,
-						RequiredState:   []string{"reviewer groups list"},
 						BlockingReasons: blocking,
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -240,15 +238,13 @@ func New(deps Dependencies) *cobra.Command {
 					blocking = []string{"reviewer group already exists"}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "reviewer-group.create",
 					Target:          map[string]any{"project": projectKey, "name": name},
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"reviewer groups list"},
 					BlockingReasons: blocking,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -317,15 +313,13 @@ func New(deps Dependencies) *cobra.Command {
 						}
 					}
 
-					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					preview := dryrunpreview.New(dryrunpreview.Item{
 						Intent:          "reviewer-group.update",
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
 						Action:          "update",
 						PredictedAction: predicted,
 						Tier:            dryrunpreview.TierPreconditionsChecked,
-						Supported:       true,
 						Reason:          reason,
-						RequiredState:   []string{"reviewer groups list"},
 						BlockingReasons: blocking,
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -387,15 +381,13 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "reviewer-group.update",
 					Target:          map[string]any{"project": projectKey, "id": id},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"reviewer groups list"},
 					BlockingReasons: blocking,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -466,15 +458,13 @@ func New(deps Dependencies) *cobra.Command {
 						reason = "reviewer group will be deleted"
 					}
 
-					preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+					preview := dryrunpreview.New(dryrunpreview.Item{
 						Intent:          "reviewer-group.delete",
 						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
 						Action:          "delete",
 						PredictedAction: predicted,
 						Tier:            dryrunpreview.TierPreconditionsChecked,
-						Supported:       true,
 						Reason:          reason,
-						RequiredState:   []string{"reviewer groups list"},
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
@@ -522,15 +512,13 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "reviewer group will be deleted"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "reviewer-group.delete",
 					Target:          map[string]any{"project": projectKey, "id": id},
 					Action:          "delete",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"reviewer groups list"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}

@@ -188,15 +188,13 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.create",
 					Target:          map[string]any{"project": args[0], "name": createName, "description": createDesc},
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"project get"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
 							return []string{"project key exists"}
@@ -262,15 +260,13 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "project already matches requested values"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.update",
 					Target:          map[string]any{"project": args[0], "name": updateName, "description": updateDesc},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"project get"},
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -324,15 +320,13 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.delete",
 					Target:          map[string]any{"project": args[0]},
 					Action:          "delete",
 					PredictedAction: predicted,
 					// Predicted, not precondition-checked: project delete does not check whether the project still holds repositories.
-					Supported:     true,
-					Reason:        reason,
-					RequiredState: []string{"project get"},
+					Reason: reason,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)

@@ -16,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outwriter"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -125,14 +126,22 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 				}
 			}
 
-			if d.DryRunEnabled() {
-				if resolvedMethod != http.MethodGet && resolvedMethod != http.MethodHead {
-					return apperrors.New(
-						apperrors.KindValidation,
-						fmt.Sprintf("--dry-run: refusing mutating %s request to %s", resolvedMethod, path),
-						nil,
-					)
-				}
+			// A GET or HEAD only reads, so under --dry-run it runs and answers
+			// in the preview. Anything else is shown as the request it would
+			// send: bb api forwards what it is given, and nothing of Bitbucket's
+			// can be asked first whether an arbitrary request would go through.
+			// Refusing it instead would read as a verdict that the real run
+			// fails, which it would not (ADR-096).
+			if d.DryRunEnabled() && resolvedMethod != http.MethodGet && resolvedMethod != http.MethodHead {
+				preview := dryrunpreview.New(dryrunpreview.Item{
+					Intent:          "api.request",
+					Target:          map[string]any{"method": resolvedMethod, "path": path},
+					Action:          requestAction(resolvedMethod),
+					PredictedAction: requestAction(resolvedMethod),
+					Reason:          fmt.Sprintf("it would send %s %s; nothing is checked first", resolvedMethod, path),
+					Tier:            dryrunpreview.TierPredicted,
+				})
+				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
 			cfg, err := loadConfigForHost(d, host)
@@ -725,3 +734,16 @@ func (response *streamedResponse) finish(deps Dependencies) error {
 // hatch for endpoints without a command, not for arbitrary verbs -- the help
 // text has always named these six, and now it holds to that.
 var httpMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"}
+
+// requestAction is the kind of change an HTTP method asks for, as a preview
+// names it.
+func requestAction(method string) string {
+	switch method {
+	case http.MethodPost:
+		return dryrunpreview.PredictedCreate
+	case http.MethodDelete:
+		return dryrunpreview.PredictedDelete
+	default:
+		return dryrunpreview.PredictedUpdate
+	}
+}

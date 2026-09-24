@@ -83,14 +83,12 @@ func newCommentStateCommand(
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          intent,
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "prId": prID, "commentId": commentID, "state": string(state)},
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"pull request comment"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}

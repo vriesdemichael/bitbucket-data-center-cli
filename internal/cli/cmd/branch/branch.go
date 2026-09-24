@@ -345,15 +345,13 @@ func New(deps Dependencies) *cobra.Command {
 					}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "branch.create",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "startPoint": createStartPoint},
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"branch list (filtered by name)"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
 							return []string{"branch already exists"}
@@ -409,22 +407,18 @@ func New(deps Dependencies) *cobra.Command {
 					if strings.TrimSpace(deleteEndPoint) != "" {
 						reason = "validated through Bitbucket branch delete dry-run endpoint with end-point precondition"
 					}
-					return d.WriteJSON(cmd.OutOrStdout(), dryrunpreview.New(
-						dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull,
-						dryrunpreview.Item{
-							Intent: "branch.delete",
-							Target: map[string]any{
-								"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
-								"branch":     args[0],
-								"endPoint":   strings.TrimSpace(deleteEndPoint),
-							},
-							Action:          "delete",
-							PredictedAction: dryrunpreview.PredictedDelete,
-							Tier:            dryrunpreview.TierServerValidated,
-							Supported:       true,
-							Reason:          reason,
-							RequiredState:   []string{"branch delete preflight validation"},
-						}))
+					return d.WriteJSON(cmd.OutOrStdout(), dryrunpreview.New(dryrunpreview.Item{
+						Intent: "branch.delete",
+						Target: map[string]any{
+							"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
+							"branch":     args[0],
+							"endPoint":   strings.TrimSpace(deleteEndPoint),
+						},
+						Action:          "delete",
+						PredictedAction: dryrunpreview.PredictedDelete,
+						Tier:            dryrunpreview.TierServerValidated,
+						Reason:          reason,
+					}))
 				}
 
 				return d.WriteJSON(cmd.OutOrStdout(), BranchDeletion{Status: result.OK(), Repository: repositoryOf(repo), Branch: args[0]})
@@ -510,15 +504,13 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "default branch already set to requested value"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "branch.default.set",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"default branch"},
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -624,15 +616,13 @@ func New(deps Dependencies) *cobra.Command {
 					reason = "branch model default already set to requested value"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "branch.model.update",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "defaultBranch": args[0]},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"default branch"},
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
@@ -811,15 +801,13 @@ an inherited one.`,
 					}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "branch.restriction.create",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "type": createRestrictionType, "matcherType": createMatcherType, "matcherId": createMatcherID},
 					Action:          "create",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"branch restrictions list"},
 					BlockingReasons: func() []string {
 						if predicted == "conflict" {
 							return []string{"matching restriction exists"}
@@ -914,15 +902,13 @@ project.`,
 					reason = "branch restriction already matches requested values"
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "branch.restriction.update",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
 					Action:          "update",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"branch restriction"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -1007,15 +993,13 @@ project. bb project branch-restriction delete deletes it there.`,
 					}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "branch.restriction.delete",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": args[0]},
 					Action:          "delete",
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Supported:       true,
 					Reason:          reason,
-					RequiredState:   []string{"branch restriction"},
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}

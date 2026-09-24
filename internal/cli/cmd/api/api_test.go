@@ -308,3 +308,35 @@ func TestApiHostFlagLeavesEnvironmentAlone(t *testing.T) {
 		t.Fatalf("BITBUCKET_URL must be untouched after the command, got %q", got)
 	}
 }
+
+// TestAMutatingRequestUnderDryRunIsPreviewedNotRefused: bb api cannot ask
+// Bitbucket whether an arbitrary request would go through, so it shows the
+// request it would send, predicted, and sends nothing. Refusing it used to be
+// the answer, and under ADR-096 a refusal reads as a verdict that the real run
+// fails -- which it would not.
+func TestAMutatingRequestUnderDryRunIsPreviewedNotRefused(t *testing.T) {
+	t.Parallel()
+
+	for method, action := range map[string]string{"POST": "create", "PUT": "update", "PATCH": "update", "DELETE": "delete"} {
+		t.Run(method, func(t *testing.T) {
+			t.Parallel()
+
+			// A configuration pointing nowhere: a request sent would fail, so a
+			// preview that succeeds sent none.
+			deps := newTestDependencies("http://127.0.0.1:1", true, true)
+			var out bytes.Buffer
+			cmd := New(deps)
+			cmd.SetOut(&out)
+			cmd.SetArgs([]string{"-X", method, "/rest/api/latest/projects/X"})
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("a %s under --dry-run failed: %v", method, err)
+			}
+
+			for _, want := range []string{`"preview": {`, `"tier": "predicted"`, `"action": "` + action + `"`, `"method": "` + method + `"`} {
+				if !strings.Contains(out.String(), want) {
+					t.Fatalf("the preview lacks %s:\n%s", want, out.String())
+				}
+			}
+		})
+	}
+}

@@ -19,7 +19,13 @@ Envelope shape:
 ```
 
 `data` holds command-specific payloads. `meta.bbVersion` reports which binary produced the
-document -- provenance for stored output, not a compatibility switch.
+document -- provenance for stored output, not a compatibility switch -- and `meta.command`
+names the command that wrote it, so a document held on its own says which `--describe`
+describes it.
+
+The flags choose the member, and nothing that happens during the run changes it: `data`, or
+`error` when the run fails; under `--dry-run`, `preview`, a verdict on the real run (see
+[Dry-Run Planning](dry-run-planning.md)).
 
 There is no contract version. Adding a field to `data` is additive; removing or renaming one,
 changing its type, or changing whether it can be null is a breaking change that cuts a new
