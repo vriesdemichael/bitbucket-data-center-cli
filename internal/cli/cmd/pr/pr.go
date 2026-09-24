@@ -857,7 +857,7 @@ func New(deps Dependencies) *cobra.Command {
 					// then refused with a 409.
 					predicted = "blocked"
 					reason = "pull request is a draft; mark it ready for review with bb pr ready before merging it"
-					blocking = []string{"pull request is a draft"}
+					blocking = []string{reason}
 				case current.Mergeability == nil:
 					// Asked and not answered. Saying "will be merged" here would
 					// be a guess wearing the same label as a checked answer, so
@@ -1673,7 +1673,10 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 				if !started {
 					predicted = dryrunpreview.PredictedBlocked
 					reason = noDraftReviewReason(target, reviewCompleteStatus, reviewCompleteComment)
-					blocking = []string{"no draft review to complete"}
+					// The whole reason, since what stops a run is what a verdict
+					// prints: it names the command for each part of what was
+					// asked (#621), which a shorter line dropped.
+					blocking = []string{reason}
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.Item{
@@ -2696,11 +2699,14 @@ state is in the output.`,
 					return err
 				}
 
+				// Every effect says why (ADR-096). This one also says what it
+				// did not look at, since that is why it is only predicted.
 				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "pr.watch",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "update",
 					PredictedAction: "update",
+					Reason:          "you will watch the pull request; whether you already do is not checked",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -2751,6 +2757,7 @@ state is in the output.`,
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "delete",
 					PredictedAction: "delete",
+					Reason:          "you will stop watching the pull request; whether you watch it now is not checked",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -2815,7 +2822,7 @@ state is in the output.`,
 				case !current.Open:
 					predicted = "blocked"
 					reason = fmt.Sprintf("pull request is %s; only an open pull request can be rebased", current.State)
-					blocking = []string{"pull request is not open"}
+					blocking = []string{reason}
 				case rebaseability != nil && rebaseability.Vetoes != nil && len(*rebaseability.Vetoes) > 0:
 					// What Bitbucket vetoes here it does not refuse up front: the
 					// rebase runs, and the update of the source branch is then
