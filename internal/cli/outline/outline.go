@@ -49,8 +49,9 @@ type Member struct {
 const (
 	// lineWidth is where descriptions wrap. It is fixed rather than read from
 	// a terminal: the outline is the same wherever it goes -- a terminal, a
-	// pipe, a file, a test -- so what a person sees is what a test pins.
-	lineWidth = 100
+	// pipe, a file, a test -- so what a person sees is what a test pins. At
+	// one sentence per field, 120 keeps nearly every row on one line.
+	lineWidth = 120
 
 	// minDescriptionWidth is the least room a description gets. A deep outline
 	// or a long enum pushes the description column far right, and wrapping to
@@ -359,12 +360,43 @@ func describe(schema *jsonschema.Schema) string {
 		return ""
 	}
 
-	description := strings.Join(strings.Fields(schema.Description), " ")
-	if len(branchesOf(schema)) == 0 && restates(description, listedValues(schema)) {
-		return ""
+	// The first sentence that says something the type column does not: a
+	// description opening with the allowed values, as "PASS or FAIL. Absent
+	// when ...", shows what follows them instead.
+	for _, sentence := range sentences(strings.Join(strings.Fields(schema.Description), " ")) {
+		if len(branchesOf(schema)) == 0 && restates(sentence, listedValues(schema)) {
+			continue
+		}
+
+		return sentence
 	}
 
-	return description
+	return ""
+}
+
+// sentenceEnd is a full stop that ends a sentence: one followed by the capital
+// that starts the next.
+var sentenceEnd = regexp.MustCompile(`\.\s+\p{Lu}`)
+
+// sentences splits a description into its sentences.
+//
+// The outline is for scanning what a document holds, and it shows one
+// sentence per field: the first says what the field is, and the rest -- when
+// it is absent, how it relates to another field -- would double the outline's
+// length. It is all in the schema, which --json and --yaml print whole.
+func sentences(description string) []string {
+	var split []string
+	for description != "" {
+		end := sentenceEnd.FindStringIndex(description)
+		if end == nil {
+			return append(split, description)
+		}
+
+		split = append(split, description[:end[0]+1])
+		description = strings.TrimLeft(description[end[0]+1:], " ")
+	}
+
+	return split
 }
 
 // listedValues returns the values a schema allows when it names them all: its
