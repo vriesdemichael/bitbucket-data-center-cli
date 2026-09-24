@@ -401,32 +401,31 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			if d.JSONEnabled() {
-				if d.DryRunEnabled() {
-					reason := "validated through Bitbucket branch delete dry-run endpoint"
-					if strings.TrimSpace(deleteEndPoint) != "" {
-						reason = "validated through Bitbucket branch delete dry-run endpoint with end-point precondition"
-					}
-					return d.WriteJSON(cmd.OutOrStdout(), dryrunpreview.New(dryrunpreview.Item{
-						Intent: "branch.delete",
-						Target: map[string]any{
-							"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
-							"branch":     args[0],
-							"endPoint":   strings.TrimSpace(deleteEndPoint),
-						},
-						Action:          "delete",
-						PredictedAction: dryrunpreview.PredictedDelete,
-						Tier:            dryrunpreview.TierServerValidated,
-						Reason:          reason,
-					}))
+			// Through the preview writer in both formats. Handed to WriteJSON,
+			// the preview was written as data -- a struct with no exported
+			// fields, so the verdict left out its one effect -- and text said
+			// nothing of what Bitbucket had answered.
+			if d.DryRunEnabled() {
+				reason := "validated through Bitbucket branch delete dry-run endpoint"
+				if strings.TrimSpace(deleteEndPoint) != "" {
+					reason = "validated through Bitbucket branch delete dry-run endpoint with end-point precondition"
 				}
-
-				return d.WriteJSON(cmd.OutOrStdout(), BranchDeletion{Status: result.OK(), Repository: repositoryOf(repo), Branch: args[0]})
+				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), dryrunpreview.New(dryrunpreview.Item{
+					Intent: "branch.delete",
+					Target: map[string]any{
+						"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
+						"branch":     args[0],
+						"endPoint":   strings.TrimSpace(deleteEndPoint),
+					},
+					Action:          "delete",
+					PredictedAction: dryrunpreview.PredictedDelete,
+					Tier:            dryrunpreview.TierServerValidated,
+					Reason:          reason,
+				}))
 			}
 
-			if d.DryRunEnabled() {
-				fmt.Fprintf(cmd.OutOrStdout(), "Dry-run delete completed for %s\n", args[0])
-				return nil
+			if d.JSONEnabled() {
+				return d.WriteJSON(cmd.OutOrStdout(), BranchDeletion{Status: result.OK(), Repository: repositoryOf(repo), Branch: args[0]})
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Deleted.Render("Deleted branch"), style.Resource.Render(args[0]))
