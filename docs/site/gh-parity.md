@@ -96,5 +96,7 @@ cross-repository, and the third reports itself unavailable rather than failing
 when you are not in a checkout.
 
 **`--json` is a flag, not a field selector.** In `gh`, `--json` takes a list of
-fields. In `bb` it takes nothing and emits the whole envelope; see
-[Machine Mode and Diagnostics](advanced/machine-mode-diagnostics.md).
+fields and prints them bare. In `bb` it takes nothing and prints the whole envelope, so
+pick fields with jq, as in `bb pr list --json | jq '.data.pullRequests[].title'`, and see
+which fields a command has with `--describe`. A field list after `--json` is answered with
+that advice; see [Machine Mode and Diagnostics](advanced/machine-mode-diagnostics.md).

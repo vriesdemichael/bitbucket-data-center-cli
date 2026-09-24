@@ -283,7 +283,7 @@ server exposes by default.`,
 				specs = filtered
 			}
 
-			if isJSON, _ := cmd.Root().PersistentFlags().GetBool("json"); isJSON {
+			if deps.jsonEnabled() {
 				entries := make([]Tool, len(specs))
 				for i, spec := range specs {
 					entries[i] = Tool{

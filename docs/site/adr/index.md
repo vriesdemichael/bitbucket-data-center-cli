@@ -5,7 +5,7 @@ Published Architecture and Development Decision Records for this project.
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
 - Total ADRs: `97`
-- Accepted ADRs: `83`
+- Accepted ADRs: `84`
 
 ## ADR List
 
@@ -103,7 +103,7 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 092: bb update installs the new binary itself, before it exits](092-bb-update-installs-the-new-binary-itself-before-it-exits.md) (`architecture`, `accepted`)
 - [ADR 093: Binary and large downloads go through one downloader](093-binary-and-large-downloads-go-through-one-downloader.md) (`architecture`, `accepted`)
 - [ADR 094: MCP tool results are what a model can use without files or a shell](094-mcp-tool-results-are-what-a-model-can-use-without-files-or-a-shell.md) (`architecture`, `accepted`)
-- [ADR 095: Machine output is the whole envelope, as JSON or YAML, and not gh's field lists](095-machine-output-is-the-whole-envelope-as-json-or-yaml.md) (`architecture`, `proposed`)
+- [ADR 095: Machine output is the whole envelope, as JSON or YAML, and not gh's field lists](095-machine-output-is-the-whole-envelope-as-json-or-yaml.md) (`architecture`, `accepted`)
 - [ADR 096: The flags choose a document's member, and --dry-run answers with a verdict](096-the-flags-choose-the-member-and-dry-run-answers-with-a-verdict.md) (`architecture`, `proposed`)
 - [ADR 097: --describe describes a command's output in every mode](097-describe-describes-a-commands-output-in-every-mode.md) (`architecture`, `proposed`)
 

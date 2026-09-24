@@ -73,7 +73,7 @@ func registerDestructiveConfirmations(root *cobra.Command, options *rootOptions)
 
 				if err := prompt.ConfirmDeleteOf(
 					cmd,
-					options.JSON,
+					options.machineOutput(),
 					confirmed,
 					targetWasNamed(options),
 					destructiveTarget(cmd, args),
@@ -143,7 +143,7 @@ func destructiveTarget(cmd *cobra.Command, args []string) string {
 // controlFlags say how a command runs rather than what it acts on, so they are
 // no part of what is about to be destroyed.
 var controlFlags = map[string]struct{}{
-	"yes": {}, "repo": {}, "json": {}, "dry-run": {}, "describe": {},
+	"yes": {}, "repo": {}, "json": {}, "yaml": {}, "dry-run": {}, "describe": {},
 	"no-input": {}, "no-color": {}, "full-error-body": {}, "host": {},
 	"log-level": {}, "log-format": {}, "request-timeout": {}, "retry-count": {},
 	"retry-backoff": {}, "ca-file": {}, "insecure-skip-verify": {},

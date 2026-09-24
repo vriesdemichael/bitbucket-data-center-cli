@@ -153,7 +153,7 @@ Both at once is redundant, not additive. Pick the one that matches how you invok
 ## 6. The machine contract
 
 Pass `--json` whenever another system parses the output. Every command that supports it
-emits a single bb.machine envelope on stdout:
+emits a single bb.machine envelope on stdout (`--yaml` emits the same document as YAML):
 
 ```json
 {"data": {}, "meta": {"bbVersion": "[[ bb_version_tag ]]"}}

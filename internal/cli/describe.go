@@ -128,9 +128,10 @@ func writeDescription(cmd *cobra.Command) error {
 		described = describeCommand(path)
 	}
 
-	jsonRequested, _ := cmd.Root().PersistentFlags().GetBool("json")
-	if jsonRequested {
-		return jsonoutput.Write(cmd.OutOrStdout(), described)
+	// A group reaches here through the help function, before PersistentPreRunE
+	// has bound the output settings, so they are read from the flags.
+	if settings, machine := OutputSettingsFromFlags(cmd.Root()); machine {
+		return jsonoutput.Write(jsonoutput.Bind(cmd.OutOrStdout(), settings), described)
 	}
 
 	// Without --json the schema is still a JSON document, so it is printed as

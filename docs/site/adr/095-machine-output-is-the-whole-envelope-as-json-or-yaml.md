@@ -10,7 +10,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `095`
 - Title: `Machine output is the whole envelope, as JSON or YAML, and not gh's field lists`
 - Category: `architecture`
-- Status: `proposed`
+- Status: `accepted`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/095-machine-output-is-the-whole-envelope-as-json-or-yaml.yaml`
 

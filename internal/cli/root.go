@@ -97,6 +97,18 @@ your behalf using the link above.`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			diagnostics.SetOutputWriter(cmd.ErrOrStderr())
 
+			// The two flags ask for the same document in two encodings, so one
+			// of them has to be dropped rather than one silently winning.
+			if options.JSON && options.YAML {
+				return apperrors.New(apperrors.KindValidation,
+					"--json and --yaml print the same document in two encodings; pass one of them", nil)
+			}
+
+			// Every document the command writes goes through its output writer,
+			// so the format travels with it (ADR-095).
+			root := cmd.Root()
+			root.SetOut(jsonoutput.Bind(root.OutOrStdout(), options.outputSettings()))
+
 			// --describe answers from schemas compiled into this binary, so it
 			// must not need configuration, a server, or a git checkout. Running
 			// the rest of this would make asking what a command returns fail in
@@ -113,7 +125,7 @@ your behalf using the link above.`,
 				return err
 			}
 			style.Init(options.NoColor)
-			return options.applyInferredRepositoryContext(cmd, options.JSON)
+			return options.applyInferredRepositoryContext(cmd, options.machineOutput())
 		},
 	}
 
@@ -126,7 +138,8 @@ your behalf using the link above.`,
 		return ClassifyUsageError(err)
 	})
 
-	rootCmd.PersistentFlags().BoolVar(&options.JSON, "json", false, "Output as JSON")
+	rootCmd.PersistentFlags().BoolVar(&options.JSON, "json", false, "Print the output as one JSON document")
+	rootCmd.PersistentFlags().BoolVar(&options.YAML, "yaml", false, "Print the output as one YAML document: the same document as --json")
 	rootCmd.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "Preview mutations without applying them")
 	rootCmd.PersistentFlags().BoolVar(&options.NoColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().BoolVar(&options.FullErrorBody, "full-error-body", false,
@@ -145,18 +158,18 @@ your behalf using the link above.`,
 
 	rootCmd.AddCommand(aicmd.New(aicmd.Dependencies{
 		Version:     func() string { return rootCmd.Version },
-		JSONEnabled: func() bool { return options.JSON },
+		JSONEnabled: options.machineOutput,
 		LoadConfig:  options.loadConfigWithOverrides,
 		WriteJSON:   writeJSON,
 	}))
 	rootCmd.AddCommand(apicmd.New(apicmd.Dependencies{
-		JSONEnabled:   func() bool { return options.JSON },
+		JSONEnabled:   options.machineOutput,
 		DryRunEnabled: func() bool { return options.DryRun },
 		LoadConfig:    options.loadConfigWithOverrides,
 		WriteJSON:     writeJSON,
 	}))
 	rootCmd.AddCommand(authcmd.New(authcmd.Dependencies{
-		JSONEnabled:             func() bool { return options.JSON },
+		JSONEnabled:             options.machineOutput,
 		LoadConfig:              options.loadConfig,
 		LoadConfigWithOverrides: options.loadConfigWithOverrides,
 		RuntimeOverrides:        func() config.Overrides { return options.runtime },
@@ -164,7 +177,7 @@ your behalf using the link above.`,
 		WriteJSONList:           writeJSONList,
 	}))
 	rootCmd.AddCommand(repocmd.New(repocmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -176,7 +189,7 @@ your behalf using the link above.`,
 		RepositoryWasInferred: func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(repocmd.NewClone(repocmd.Dependencies{
-		JSONEnabled:           func() bool { return options.JSON },
+		JSONEnabled:           options.machineOutput,
 		DryRunEnabled:         func() bool { return options.DryRun },
 		LoadConfig:            options.loadConfig,
 		LoadConfigAndClient:   options.loadConfigAndClient,
@@ -185,7 +198,7 @@ your behalf using the link above.`,
 		RepositoryWasInferred: func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(tagcmd.New(tagcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -196,7 +209,7 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(branchcmd.New(branchcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -207,13 +220,13 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(diffcmd.New(diffcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 	}))
 	rootCmd.AddCommand(buildcmd.New(buildcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -224,7 +237,7 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(deploymentcmd.New(deploymentcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -234,7 +247,7 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(insightscmd.New(insightscmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -245,7 +258,7 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(prcmd.New(prcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -257,25 +270,25 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(admincmd.New(admincmd.Dependencies{
-		JSONEnabled: func() bool { return options.JSON },
+		JSONEnabled: options.machineOutput,
 		LoadConfig:  options.loadConfig,
 		WriteJSON:   writeJSON,
 	}))
 	rootCmd.AddCommand(commitcmd.New(commitcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 	}))
 	rootCmd.AddCommand(refcmd.New(refcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 	}))
 	rootCmd.AddCommand(projectcmd.New(projectcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -286,7 +299,7 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(reviewercmd.New(reviewercmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -296,7 +309,7 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(reviewergroupcmd.New(reviewergroupcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -306,7 +319,7 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(webhookcmd.New(webhookcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		DryRunEnabled:       func() bool { return options.DryRun },
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
@@ -317,25 +330,25 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(browsecmd.New(browsecmd.Dependencies{
-		JSONEnabled: func() bool { return options.JSON },
+		JSONEnabled: options.machineOutput,
 		LoadConfig:  options.loadConfig,
 		WriteJSON:   writeJSON,
 	}))
 	rootCmd.AddCommand(searchcmd.New(searchcmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
 		WriteJSONList:       writeJSONList,
 	}))
 	rootCmd.AddCommand(updatecmd.New(updatecmd.Dependencies{
-		JSONEnabled:      func() bool { return options.JSON },
+		JSONEnabled:      options.machineOutput,
 		DryRunEnabled:    func() bool { return options.DryRun },
 		WriteJSON:        writeJSON,
 		RuntimeOverrides: func() config.Overrides { return options.runtime },
 	}))
 	rootCmd.AddCommand(doctorcmd.New(doctorcmd.Dependencies{
-		JSONEnabled:      func() bool { return options.JSON },
+		JSONEnabled:      options.machineOutput,
 		WriteJSON:        writeJSON,
 		RuntimeOverrides: func() config.Overrides { return options.runtime },
 		Version:          func() string { return rootCmd.Version },
@@ -344,7 +357,7 @@ your behalf using the link above.`,
 		},
 	}))
 	rootCmd.AddCommand(sshkeycmd.New(sshkeycmd.Dependencies{
-		JSONEnabled:         func() bool { return options.JSON },
+		JSONEnabled:         options.machineOutput,
 		LoadConfig:          options.loadConfig,
 		LoadConfigAndClient: options.loadConfigAndClient,
 		WriteJSON:           writeJSON,
@@ -383,7 +396,9 @@ your behalf using the link above.`,
 }
 
 type rootOptions struct {
-	JSON    bool
+	JSON bool
+	// YAML asks for the document --json prints, encoded as YAML (ADR-095).
+	YAML    bool
 	DryRun  bool
 	NoColor bool
 	// FullErrorBody turns off the summary of an upstream response body.
@@ -408,6 +423,36 @@ type rootOptions struct {
 	// difference; see applyInferredRepositoryContext.
 	repositoryInferred bool
 	permissionChecker  *PermissionChecker
+}
+
+// machineOutput reports whether the invocation asked for the machine document,
+// in either encoding. Everything that differs between text and machine output
+// asks this; only the encoder asks which format.
+func (options *rootOptions) machineOutput() bool {
+	return options.JSON || options.YAML
+}
+
+// OutputSettingsFromFlags reads the machine output flags from root, for a path
+// that runs before PersistentPreRunE has bound them: a group's help function,
+// or main reporting a failure.
+func OutputSettingsFromFlags(root *cobra.Command) (jsonoutput.Settings, bool) {
+	flagSet := func(name string) bool {
+		value, _ := root.PersistentFlags().GetBool(name)
+		return value
+	}
+
+	options := rootOptions{JSON: flagSet("json"), YAML: flagSet("yaml")}
+
+	return options.outputSettings(), options.machineOutput()
+}
+
+// outputSettings is what the flags decided about machine output.
+func (options *rootOptions) outputSettings() jsonoutput.Settings {
+	if options.YAML && !options.JSON {
+		return jsonoutput.Settings{Format: jsonoutput.FormatYAML}
+	}
+
+	return jsonoutput.Settings{Format: jsonoutput.FormatJSON}
 }
 
 func (options *rootOptions) permissionCheckerFor(client *openapigenerated.ClientWithResponses) *PermissionChecker {

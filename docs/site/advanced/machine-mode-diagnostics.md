@@ -2,7 +2,9 @@
 
 ## Machine mode contract
 
-Use global `--json` for machine-consumable output.
+Use global `--json` for machine-consumable output, or `--yaml` for the same document as YAML.
+The two differ only in the encoding: the members, the exit code and the line on stderr are
+the same, and passing both is a validation error.
 
 Envelope shape:
 

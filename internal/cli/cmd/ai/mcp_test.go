@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
@@ -99,10 +100,7 @@ func TestMCPToolsTextOutput(t *testing.T) {
 func TestMCPToolsJSONOutput(t *testing.T) {
 	t.Parallel()
 
-	// Wire a root command that has the --json persistent flag, just like root.go does.
-	cmd := New(testMCPDeps())
-	// Attach a mock --json flag to the root command (normally added by root.go).
-	cmd.PersistentFlags().Bool("json", true, "")
+	cmd := newAICommandWithJSONFlag()
 
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -370,8 +368,7 @@ func TestMCPToolsSafeOnlyOmitsGatedTools(t *testing.T) {
 func TestMCPToolsJSONCarriesExposure(t *testing.T) {
 	t.Parallel()
 
-	cmd := New(testMCPDeps())
-	cmd.PersistentFlags().Bool("json", true, "")
+	cmd := newAICommandWithJSONFlag()
 
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
@@ -413,4 +410,19 @@ func TestMCPToolsJSONCarriesExposure(t *testing.T) {
 			t.Errorf("tool %q: safe=false but exposure=%q", entry.Name, entry.Exposure)
 		}
 	}
+}
+
+// newAICommandWithJSONFlag wires the --json flag root.go adds, feeding
+// JSONEnabled from it the way root.go does: the command learns about machine
+// output from its dependency, never by reading a flag of the root's itself,
+// since --yaml asks for machine output too.
+func newAICommandWithJSONFlag() *cobra.Command {
+	deps := testMCPDeps()
+	var asJSON bool
+	deps.JSONEnabled = func() bool { return asJSON }
+
+	cmd := New(deps)
+	cmd.PersistentFlags().BoolVar(&asJSON, "json", false, "")
+
+	return cmd
 }

@@ -15,7 +15,7 @@ repository cloning and browser navigation ergonomics tailored to Bitbucket-hoste
 ## Why teams adopt `bb`
 
 - **Operationally safe by default**: dry-run planning for server mutations, and a confirmation before any command that deletes, removes, clears or revokes.
-- **Automation friendly**: every `--json` payload arrives in the same envelope, for CI/CD and internal tooling.
+- **Automation friendly**: every `--json` payload arrives in the same envelope, for CI/CD and internal tooling; `--yaml` prints the same document as YAML.
 - **Spec-driven API interactions**: client/server interactions are derived from Bitbucket Data Center's official OpenAPI spec.
 - **Git-native ergonomics**: repository discovery from matching remotes to reduce repetitive `--repo` usage.
 - **Enterprise-ready auth model**: token/basic auth with persisted server contexts and secure credential handling.

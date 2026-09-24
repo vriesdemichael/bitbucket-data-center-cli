@@ -424,7 +424,7 @@ func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions)
 				}
 
 				preview := newDryRunPreview(profile, cmd, args)
-				return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+				return writeDryRunPreview(cmd.OutOrStdout(), options.machineOutput(), preview)
 			}
 		} else if command.RunE != nil {
 			originalRun := command.RunE
@@ -443,7 +443,7 @@ func registerGlobalDryRunInterceptors(root *cobra.Command, options *rootOptions)
 				// changing it and reporting the change in the past tense (#571).
 				if localProfile, ok := clientLocalMutatingCommands[path]; ok {
 					preview := newDryRunPreview(localProfile, cmd, args)
-					return writeDryRunPreview(cmd.OutOrStdout(), options.JSON, preview)
+					return writeDryRunPreview(cmd.OutOrStdout(), options.machineOutput(), preview)
 				}
 
 				return dryRunUnsupportedError(path)
