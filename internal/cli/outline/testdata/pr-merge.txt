@@ -1,0 +1,71 @@
+data
+  repository            object
+    projectKey          string                          Project key the repository belongs to.
+    slug                string                          Repository slug.
+  pullRequest           object                          The pull request as it stands after the
+                                                        change.
+    id                  integer                         Pull request number, unique within the
+                                                        repository.
+    title               string                          Pull request title.
+    description?        string                          Body text, when one was written.
+    state               OPEN|MERGED|DECLINED
+    open                boolean                         Whether the pull request is still open.
+    closed              boolean                         Whether the pull request is merged or
+                                                        declined.
+    draft?              boolean                         Whether it is marked as a draft. Bitbucket
+                                                        8.0 and later.
+    repository?         object                          Repository the pull request merges into.
+      projectKey        string                          Project key the repository belongs to.
+      slug              string                          Repository slug.
+    sourceRepository?   object                          Repository the source branch lives in.
+                                                        Differs from repository exactly when the
+                                                        pull request comes from a fork, which is the
+                                                        only way to tell a fork pull request from a
+                                                        same-repository one.
+      projectKey        string                          Project key the repository belongs to.
+      slug              string                          Repository slug.
+    version             integer                         Optimistic-locking version. Pass it back
+                                                        when updating, or the update is refused.
+                                                        Always present: a never-updated pull request
+                                                        is at version 0, and omitting it there would
+                                                        drop the value at exactly the moment a
+                                                        caller needs it.
+    author?             string                          Display name of whoever opened it.
+    authorUsername?     string                          Username of whoever opened it.
+    sourceBranch?       string                          Branch being merged from.
+    targetBranch?       string                          Branch being merged into.
+    sourceCommit?       string                          Head commit of the source branch when this
+                                                        was read.
+    createdDate?        integer                         When it was opened, in milliseconds since
+                                                        the epoch.
+    updatedDate?        integer                         When it last changed, in milliseconds since
+                                                        the epoch.
+    reviewers?          list of object                  Everyone asked to review, with where they
+                                                        got to.
+      name?             string                          Username.
+      displayName?      string                          Human-readable name.
+      email?            string                          Email address, when the instance exposes it.
+      role?             AUTHOR|REVIEWER|PARTICIPANT     REVIEWER or PARTICIPANT.
+      status?           UNAPPROVED|NEEDS_WORK|APPROVED
+      approved          boolean                         Whether this reviewer has approved. A
+                                                        convenience for status == APPROVED.
+    mergeability?       object                          Whether it can merge. Absent when not
+                                                        requested or not computed.
+      mergeable         boolean                         Whether Bitbucket would accept a merge right
+                                                        now.
+      outcome?          CLEAN|CONFLICTED|UNKNOWN
+      conflicted        boolean                         Whether the merge would conflict. Distinct
+                                                        from mergeable, which is also false when a
+                                                        merge check fails without any conflict.
+      blockers?         list of object                  Merge checks currently refusing. Absent when
+                                                        nothing is blocking.
+        summary?        string                          Short reason, as Bitbucket phrases it.
+        detail?         string                          Longer explanation, when the instance gives
+                                                        one.
+    commentCount?       integer                         Comments on the pull request. Absent when
+                                                        the instance did not report it, which is not
+                                                        the same as none.
+    openTaskCount?      integer                         Unresolved tasks. Absent when the instance
+                                                        did not report it.
+    resolvedTaskCount?  integer                         Resolved tasks. Absent when the instance did
+                                                        not report it.
