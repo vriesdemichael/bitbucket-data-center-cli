@@ -413,6 +413,9 @@ default-task update changes it there, for every repository in the project.`,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
 					BlockingReasons: blocking,
+					// The one refusal predicted here is a task that is not there,
+					// which the real run meets in ownDefaultTask as not_found.
+					Fails: apperrors.KindNotFound,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}

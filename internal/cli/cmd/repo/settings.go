@@ -190,13 +190,13 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
+				// Still a create when the same webhook is there: Bitbucket does
+				// not refuse a second webhook with the name and URL of the first,
+				// it adds it beside the first.
 				predicted := "create"
 				reason := "webhook will be created"
-				blocking := []string{}
 				if webhookExistsByNameAndURL(webhooks.Payload, args[0], args[1]) {
-					predicted = "conflict"
-					reason = "webhook with the same name and URL already exists"
-					blocking = []string{"webhook already exists"}
+					reason = "a webhook with this name and URL already exists; Bitbucket adds this one beside it"
 				}
 
 				target := map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": webhookEvents, "active": webhookActive}
@@ -208,7 +208,6 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
-					BlockingReasons: blocking,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
