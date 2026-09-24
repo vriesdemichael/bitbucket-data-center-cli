@@ -205,7 +205,7 @@ func TestAnOrientationThatCannotBeReadIsUpright(t *testing.T) {
 	// And read end to end: a JPEG whose block cannot be read is returned
 	// as it is, not turned and not refused.
 	content := filefixture.WithSegment(plain, blocks["orientation 9"])
-	view, err := Read(Request{Path: "odd.jpg"}, content)
+	view, err := Read(t.Context(), Request{Path: "odd.jpg"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -236,7 +236,7 @@ func TestASidewaysPhotographComesBackUpright(t *testing.T) {
 			t.Parallel()
 
 			content := filefixture.WithSegment(filefixture.JPEG(filefixture.Oriented(upright, orientation), 95), filefixture.ExifBlock(orientation, orientation%2 == 0))
-			view, err := Read(Request{Path: "photo.jpg"}, content)
+			view, err := Read(t.Context(), Request{Path: "photo.jpg"}, content)
 			if err != nil {
 				t.Fatalf("Read: %v", err)
 			}
@@ -270,7 +270,7 @@ func TestALargeSidewaysPhotographIsTurnedThenScaled(t *testing.T) {
 	t.Parallel()
 
 	content := filefixture.WithSegment(filefixture.JPEG(filefixture.Oriented(filefixture.Quadrants(1200, 3000), 6), 90), filefixture.ExifBlock(6, true))
-	view, err := Read(Request{Path: "tall.jpg"}, content)
+	view, err := Read(t.Context(), Request{Path: "tall.jpg"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -337,7 +337,7 @@ func TestAWebPsExifChunkTurnsItUpright(t *testing.T) {
 		"with the Exif marker":    filefixture.ExifBlock(6, false),
 		"without the Exif marker": filefixture.ExifBlock(6, true)[6:],
 	} {
-		view, err := Read(Request{Path: "photo.webp"}, withExifChunk(t, simple, exif))
+		view, err := Read(t.Context(), Request{Path: "photo.webp"}, withExifChunk(t, simple, exif))
 		if err != nil {
 			t.Fatalf("%s: Read: %v", name, err)
 		}
@@ -353,7 +353,7 @@ func TestTheJPEGOfATurnedPictureCarriesNoTagToTurnItAgain(t *testing.T) {
 	t.Parallel()
 
 	content := filefixture.WithSegment(filefixture.JPEG(filefixture.Oriented(filefixture.Quadrants(60, 40), 8), 95), filefixture.ExifBlock(8, false))
-	view, err := Read(Request{Path: "photo.jpg"}, content)
+	view, err := Read(t.Context(), Request{Path: "photo.jpg"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}

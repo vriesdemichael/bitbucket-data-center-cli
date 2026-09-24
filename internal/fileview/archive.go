@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"compress/bzip2"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,18 +17,18 @@ import (
 // readArchive views a zip or tar file, when content is one: a Word, PowerPoint
 // or Excel file as its text, and any other archive as a listing of its entries.
 // It reports false for a file that is neither, for the caller to go on.
-func readArchive(request Request, sniffed string, content []byte) (View, bool, error) {
+func readArchive(ctx context.Context, request Request, sniffed string, content []byte) (View, bool, error) {
 	switch {
 	case bytes.HasPrefix(content, []byte("PK\x03\x04")), bytes.HasPrefix(content, []byte("PK\x05\x06")):
-		view, err := readZip(request, content)
+		view, err := readZip(ctx, request, content)
 
 		return view, true, err
 	case sniffed == "application/x-gzip":
-		return readTar(request, content, gzipped, archiveExpandBytes)
+		return readTar(ctx, request, content, gzipped, archiveExpandBytes)
 	case sniffed == "application/x-bzip2":
-		return readTar(request, content, bzipped, archiveExpandBytes)
+		return readTar(ctx, request, content, bzipped, archiveExpandBytes)
 	case isTar(request.Path, content):
-		return readTar(request, content, uncompressed, archiveExpandBytes)
+		return readTar(ctx, request, content, uncompressed, archiveExpandBytes)
 	}
 
 	return View{}, false, nil
@@ -56,7 +57,7 @@ func isTar(path string, content []byte) bool {
 
 // readZip views a zip archive: the text of an Office document, which is a zip
 // of XML, or a listing of anything else -- a jar, a war, a plain zip.
-func readZip(request Request, content []byte) (View, error) {
+func readZip(ctx context.Context, request Request, content []byte) (View, error) {
 	size := int64(len(content))
 
 	archive, err := zip.NewReader(bytes.NewReader(content), size)
@@ -68,8 +69,13 @@ func readZip(request Request, content []byte) (View, error) {
 		}, size), nil
 	}
 
-	if document, family, mainPart, ok := openOffice(archive); ok {
+	if document, family, mainPart, ok := openOffice(ctx, archive); ok {
 		return readOffice(request, size, document, family, mainPart)
+	}
+	// Recognising an Office file reads its relationships, which a cancelled
+	// call cuts short; what is left must not be listed as a plain zip.
+	if err := ctx.Err(); err != nil {
+		return View{}, err
 	}
 
 	var listing strings.Builder
@@ -135,7 +141,11 @@ func (stream *expansion) Read(buffer []byte) (int, error) {
 // far as expanding it to limit bytes -- archiveExpandBytes, which a test
 // makes smaller. It reports false when the content turns out not to be a tar
 // at all, as a compressed file of another kind is not.
-func readTar(request Request, content []byte, compression tarCompression, limit int64) (View, bool, error) {
+//
+// Every read the listing makes goes through ctx, so a cancelled call stops it
+// at the next one -- a bzip2 of text can otherwise take half a minute to
+// expand to the limit -- and gets ctx's error back, not a listing cut short.
+func readTar(ctx context.Context, request Request, content []byte, compression tarCompression, limit int64) (View, bool, error) {
 	var source io.Reader = bytes.NewReader(content)
 	mimeType, name := "application/x-tar", "a tar archive"
 	switch compression {
@@ -153,7 +163,7 @@ func readTar(request Request, content []byte, compression tarCompression, limit 
 		mimeType, name = "application/x-bzip2", "a bzip2-compressed tar archive"
 	}
 
-	reader := tar.NewReader(source)
+	reader := tar.NewReader(&cancellable{ctx: ctx, reader: source})
 	var listing strings.Builder
 	count := 0
 	more := ""
@@ -163,6 +173,12 @@ func readTar(request Request, content []byte, compression tarCompression, limit 
 			break
 		}
 		if err != nil {
+			// Before anything else: a cancelled first read is not a sign
+			// that the content is not a tar.
+			if cause := ctx.Err(); cause != nil {
+				return View{}, true, cause
+			}
+
 			switch {
 			case count == 0:
 				return View{}, false, nil

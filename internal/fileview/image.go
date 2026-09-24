@@ -2,6 +2,7 @@ package fileview
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"image"
@@ -54,13 +55,17 @@ var defaultImageLimits = imageLimits{bytes: ImageBytes, edge: ImageEdge, pixels:
 // with a sentence saying which -- after scaling, small text may no longer be
 // legible. An animated image gives its first frame. One that cannot be decoded
 // is described instead.
-func readImage(request Request, mimeType string, content []byte, limits imageLimits) View {
+//
+// The only error is ctx's: a picture of tens of megapixels takes a second or
+// two to decode and scale, and a cancelled call stops at the decoder's next
+// read, or between one step and the next.
+func readImage(ctx context.Context, request Request, mimeType string, content []byte, limits imageLimits) (View, error) {
 	name := imageFormats[mimeType]
 	subject := subjectOf(request)
 	size := int64(len(content))
 
-	notShown := func(what, why string) View {
-		return describeBinary(subject, request.WebURL, binaryType{mimeType: mimeType, name: what, reason: why}, size)
+	notShown := func(what, why string) (View, error) {
+		return describeBinary(subject, request.WebURL, binaryType{mimeType: mimeType, name: what, reason: why}, size), nil
 	}
 
 	config, err := decodeImageConfig(mimeType, content)
@@ -94,7 +99,10 @@ func readImage(request Request, mimeType string, content []byte, limits imageLim
 
 	// Decoded even when it is returned as it is: an image a client cannot
 	// decode can fail the whole request it is sent in, not just this answer.
-	decoded, err := decodeImage(mimeType, content, config)
+	decoded, err := decodeImage(ctx, mimeType, content, config)
+	if cause := ctx.Err(); cause != nil {
+		return View{}, cause
+	}
 	if err != nil {
 		return notShown(fmt.Sprintf("a %s image of %s", name, stored), "It cannot be decoded, so it is not shown.")
 	}
@@ -130,10 +138,13 @@ func readImage(request Request, mimeType string, content []byte, limits imageLim
 		returned.Data, returned.MIMEType = content, mimeType
 		text.WriteString(" It follows as an image.")
 
-		return View{Kind: KindImage, MIMEType: mimeType, Size: size, Text: text.String(), Image: returned}
+		return View{Kind: KindImage, MIMEType: mimeType, Size: size, Text: text.String(), Image: returned}, nil
 	}
 
-	encoded, asJPEG, scaledWidth, scaledHeight, ok := fitImage(upright, lossy, limits)
+	encoded, asJPEG, scaledWidth, scaledHeight, ok := fitImage(ctx, upright, lossy, limits)
+	if cause := ctx.Err(); cause != nil {
+		return View{}, cause
+	}
 	if !ok {
 		return notShown(fmt.Sprintf("a %s image of %s", name, stored), fmt.Sprintf(
 			"It could not be made smaller than the %s an image is returned in, so it is not shown.", formatSize(int64(limits.bytes))))
@@ -147,7 +158,7 @@ func readImage(request Request, mimeType string, content []byte, limits imageLim
 	returned.Scaled = scaledWidth != width || scaledHeight != height
 	text.WriteString(returnedNote(returned, mimeType, limits))
 
-	return View{Kind: KindImage, MIMEType: mimeType, Size: size, Text: text.String(), Image: returned}
+	return View{Kind: KindImage, MIMEType: mimeType, Size: size, Text: text.String(), Image: returned}, nil
 }
 
 // returnedNote says how the image returned came from the one stored: what
@@ -209,13 +220,17 @@ func returnedNote(returned *Image, mimeType string, limits imageLimits) string {
 // a little more, since an encoded size is not quite proportional to area.
 //
 // It gives up after a few rounds, which only an image no encoder can shrink
-// would take, and when an encoder fails.
-func fitImage(decoded image.Image, lossy bool, limits imageLimits) (encoded []byte, asJPEG bool, width, height int, ok bool) {
+// would take, when an encoder fails, and before a round once ctx is done.
+func fitImage(ctx context.Context, decoded image.Image, lossy bool, limits imageLimits) (encoded []byte, asJPEG bool, width, height int, ok bool) {
 	bounds := decoded.Bounds()
 	asJPEG = lossy && opaque(decoded)
 	width, height = fit(bounds.Dx(), bounds.Dy(), limits.edge)
 
 	for range 8 {
+		if ctx.Err() != nil {
+			return nil, false, 0, 0, false
+		}
+
 		scaled := decoded
 		if width != bounds.Dx() || height != bounds.Dy() {
 			scaled = scale(decoded, width, height)
@@ -308,9 +323,10 @@ func decodeImageConfig(mimeType string, content []byte) (image.Config, error) {
 
 // decodeImage decodes an image: a TIFF's first page, or an animated GIF's first
 // frame. A frame may cover part of the canvas, so it is drawn onto one the
-// size of the image, transparent where the frame does not reach.
-func decodeImage(mimeType string, content []byte, config image.Config) (image.Image, error) {
-	reader := bytes.NewReader(content)
+// size of the image, transparent where the frame does not reach. The decoder
+// reads through ctx, and fails at its next read once ctx is done.
+func decodeImage(ctx context.Context, mimeType string, content []byte, config image.Config) (image.Image, error) {
+	reader := &cancellable{ctx: ctx, reader: bytes.NewReader(content)}
 	switch mimeType {
 	case "image/png":
 		return png.Decode(reader)

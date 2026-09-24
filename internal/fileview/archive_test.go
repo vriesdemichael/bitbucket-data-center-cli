@@ -23,7 +23,7 @@ func TestAZipArchiveIsListedEntryByEntry(t *testing.T) {
 
 	for _, path := range []string{"dist/app.zip", "lib/app.jar"} {
 		content := filefixture.Zip(archiveEntries()...)
-		view, err := Read(Request{Path: path}, content)
+		view, err := Read(t.Context(), Request{Path: path}, content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}
@@ -64,7 +64,7 @@ func TestATarArchiveIsListedCompressedOrNot(t *testing.T) {
 		{path: "release.tgz", mimeType: "application/x-gzip", name: "a gzip-compressed tar archive", content: filefixture.Gzip(tarball)},
 	}
 	for _, testCase := range cases {
-		view, err := Read(Request{Path: testCase.path}, testCase.content)
+		view, err := Read(t.Context(), Request{Path: testCase.path}, testCase.content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}
@@ -91,7 +91,7 @@ func TestABzip2CompressedTarIsListed(t *testing.T) {
 	want := "app/\tdirectory\napp/main.go\t13 bytes\napp/VERSION\t1 byte\nREADME.md\t16 bytes\nlatest\tsymbolic link to app/main.go\n"
 
 	for _, path := range []string{"release.tar.bz2", "release.tbz2", "release.tbz"} {
-		view, err := Read(Request{Path: path}, content)
+		view, err := Read(t.Context(), Request{Path: path}, content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}
@@ -120,7 +120,7 @@ func TestACompressedTarIsListedOnlyAsFarAsItsLimit(t *testing.T) {
 	}
 
 	for compression, content := range archives {
-		view, ok, err := readTar(Request{Path: "zeros.tar"}, content, compression, 1<<20)
+		view, ok, err := readTar(t.Context(), Request{Path: "zeros.tar"}, content, compression, 1<<20)
 		if err != nil || !ok {
 			t.Fatalf("compression %d: readTar = %v, %v", compression, ok, err)
 		}
@@ -129,7 +129,7 @@ func TestACompressedTarIsListedOnlyAsFarAsItsLimit(t *testing.T) {
 			t.Errorf("compression %d: listing %q, text %q; want it stopped after the first entry", compression, windowContent(view), view.Text)
 		}
 
-		whole, err := Read(Request{Path: "zeros.tar"}, content)
+		whole, err := Read(t.Context(), Request{Path: "zeros.tar"}, content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}
@@ -178,7 +178,7 @@ func windowContent(view View) string {
 func TestAListingIsReadInWindowsLikeAnyText(t *testing.T) {
 	t.Parallel()
 
-	view, err := Read(Request{Path: "app.zip", StartLine: 2, LineCount: 2}, filefixture.Zip(archiveEntries()...))
+	view, err := Read(t.Context(), Request{Path: "app.zip", StartLine: 2, LineCount: 2}, filefixture.Zip(archiveEntries()...))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -198,7 +198,7 @@ func TestAnEntryNameCannotStartALineOfItsOwn(t *testing.T) {
 	t.Parallel()
 
 	content := filefixture.Tar(filefixture.Entry{Name: "evil\nREADME.md\t99 bytes", Body: []byte("x")})
-	view, err := Read(Request{Path: "odd.tar"}, content)
+	view, err := Read(t.Context(), Request{Path: "odd.tar"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -225,7 +225,7 @@ func TestWhatLooksLikeAnArchiveButIsNotOneIsDescribed(t *testing.T) {
 		{path: "release.tar.xz", content: append([]byte("\xFD7zXZ\x00\x00\x04"), make([]byte, 60)...), kind: KindBinary, says: "an xz-compressed file (application/x-xz)"},
 	}
 	for _, testCase := range cases {
-		view, err := Read(Request{Path: testCase.path}, testCase.content)
+		view, err := Read(t.Context(), Request{Path: testCase.path}, testCase.content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}

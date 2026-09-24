@@ -106,7 +106,7 @@ func fileViews(t *testing.T) map[string]fileview.View {
 	read := func(request fileview.Request, content []byte) fileview.View {
 		t.Helper()
 
-		view, err := fileview.Read(request, content)
+		view, err := fileview.Read(t.Context(), request, content)
 		if err != nil {
 			t.Fatalf("fileview.Read(%s): %v", request.Path, err)
 		}

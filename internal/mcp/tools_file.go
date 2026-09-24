@@ -116,7 +116,10 @@ func specGetFileContent() Spec {
 			case err != nil:
 				return nil, GetFileContentOutput{}, fmt.Errorf("get_file_content failed: %w", err)
 			default:
-				if view, err = fileview.Read(request, held.Bytes()); err != nil {
+				// The call's context: a conversion that takes seconds -- a
+				// compressed archive, a large document or picture -- stops
+				// when the client cancels, and the call ends in its error.
+				if view, err = fileview.Read(ctx, request, held.Bytes()); err != nil {
 					return nil, GetFileContentOutput{}, fmt.Errorf("get_file_content: %w", err)
 				}
 			}
