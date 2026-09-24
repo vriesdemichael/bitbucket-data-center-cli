@@ -116,6 +116,7 @@ func TestTheDescribedSchemasValidateRealOutput(t *testing.T) {
 		{"a read", []string{"auth", "server", "list"}, "run", []string{"--json", "auth", "server", "list"}},
 		{"a read under --dry-run", []string{"auth", "server", "list"}, "dryRun", []string{"--json", "--dry-run", "auth", "server", "list"}},
 		{"a change to this machine under --dry-run", []string{"auth", "logout"}, "dryRun", []string{"--json", "--dry-run", "auth", "logout"}},
+		{"a request bb api would send", []string{"api"}, "dryRun", []string{"--json", "--dry-run", "api", "-X", "POST", "/rest/api/latest/projects"}},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			schema := schemaAt(t, describeDocument(t, testCase.command...), testCase.mode, "outputSchema")
