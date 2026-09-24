@@ -53,6 +53,8 @@ const (
 	ModeRun Mode = ""
 	// ModeDryRun answers with preview, a verdict on the real run.
 	ModeDryRun Mode = "dry-run"
+	// ModeDescribe answers with description: what a command returns (ADR-097).
+	ModeDescribe Mode = "describe"
 )
 
 // Settings is what the flags decided about machine output for one invocation.
@@ -157,32 +159,45 @@ const (
 // caller asks one question of it, the same one it asks of a run.
 type Preview struct {
 	// Tier is the weakest of the checks behind the verdict.
-	Tier Tier `json:"tier"`
+	Tier Tier `json:"tier" jsonschema:"How far to trust the verdict: the weakest check behind it."`
 	// Effects are what the run would change, each with its outcome and why.
 	// Empty for a command that only reads.
-	Effects []Effect `json:"effects"`
+	Effects []Effect `json:"effects" jsonschema:"What the run would change, each with its outcome. Empty for a command that only reads."`
 	// Data is what a command that only reads returned: reading changes
 	// nothing, so it runs for real under --dry-run.
-	Data any `json:"data,omitempty"`
+	Data any `json:"data,omitempty" jsonschema:"What a command that only reads returned: it runs for real under --dry-run."`
 	// Error is what the real run would fail with.
-	Error *EnvelopeError `json:"error,omitempty"`
+	Error *EnvelopeError `json:"error,omitempty" jsonschema:"What the real run would fail with. Present exactly when it would fail."`
 }
 
 // Effect is one change the real run would make.
 type Effect struct {
 	// Action is create, update or delete.
-	Action string `json:"action"`
+	Action string `json:"action" jsonschema:"The kind of change: create, update or delete."`
 	// Target names what the change is made to. Its keys depend on the command.
-	Target  map[string]any `json:"target"`
-	Outcome Outcome        `json:"outcome"`
+	Target  map[string]any `json:"target" jsonschema:"What the change is made to. Its keys depend on the command."`
+	Outcome Outcome        `json:"outcome" jsonschema:"What the change would come to."`
 	// Reasons say why the outcome is what it is; for would-fail, what stops it.
-	Reasons []string `json:"reasons"`
+	Reasons []string `json:"reasons" jsonschema:"Why the outcome is what it is; for would-fail, what stops it."`
 }
 
 // PreviewEnvelope is the document written under --dry-run.
 type PreviewEnvelope struct {
 	Preview Preview      `json:"preview"`
 	Meta    EnvelopeMeta `json:"meta"`
+}
+
+// DescriptionEnvelope is the document written under --describe.
+type DescriptionEnvelope struct {
+	Description any          `json:"description"`
+	Meta        EnvelopeMeta `json:"meta"`
+}
+
+// WriteDescription emits what --describe answers.
+func WriteDescription(writer io.Writer, description any) error {
+	meta := metaFor(settingsOf(writer), EnvelopeMeta{})
+
+	return writeDocument(writer, DescriptionEnvelope{Description: description, Meta: meta}, "output")
 }
 
 // IsVerdict reports whether err, met under --dry-run, is an answer about the
@@ -232,7 +247,7 @@ type EnvelopeMeta struct {
 	// Command is the command that wrote the document, by its canonical path:
 	// bb pr view reports pr get. With it a document held on its own says which
 	// --describe describes it. Absent when no command resolved.
-	Command string `json:"command,omitempty"`
+	Command string `json:"command,omitempty" jsonschema:"The command that wrote it, by its canonical path."`
 	// LimitReached reports that the result set came back at --limit, so there
 	// may be more behind it. Omitted for commands that do not list, so its
 	// presence is itself the signal that a result set is bounded.
@@ -240,20 +255,20 @@ type EnvelopeMeta struct {
 	// Without it a consumer cannot tell a complete result set from the first
 	// --limit of an unknown number — the difference between finishing and
 	// needing to ask again with a higher --limit or --all.
-	LimitReached *bool `json:"limitReached,omitempty"`
+	LimitReached *bool `json:"limitReached,omitempty" jsonschema:"On a listing: true when it stopped at --limit, so there may be more."`
 	// Encoding is present when data is a body that is not text, carried as a
 	// string in this encoding: base64. A JSON string cannot hold arbitrary
 	// bytes, and a wrapper object inside data could not be told from a body
 	// that is such an object; meta is bb's own, so the encoding goes here.
-	Encoding string `json:"encoding,omitempty"`
+	Encoding string `json:"encoding,omitempty" jsonschema:"Set when data is bytes carried as a string: base64."`
 	// ContentType is the media type of the body Encoding carries.
-	ContentType string `json:"contentType,omitempty"`
+	ContentType string `json:"contentType,omitempty" jsonschema:"Set with encoding: the media type of the bytes."`
 	// BBVersion is the version of the binary that produced the document.
 	//
 	// Provenance, for an operator auditing stored output -- not a compatibility
 	// switch. Nothing in bb branches on it and nothing outside bb should: the
 	// way to pin a contract is to pin the binary (ADR-064).
-	BBVersion string `json:"bbVersion"`
+	BBVersion string `json:"bbVersion" jsonschema:"The bb version that wrote it."`
 }
 
 // ErrorEnvelope is the bb.machine document written to stdout when a command
@@ -272,9 +287,9 @@ type ErrorEnvelope struct {
 // ADR-011 taxonomy, so a script can branch on either without parsing the
 // message.
 type EnvelopeError struct {
-	Kind     string `json:"kind"`
-	Message  string `json:"message"`
-	ExitCode int    `json:"exitCode"`
+	Kind     string `json:"kind" jsonschema:"What kind of failure it is."`
+	Message  string `json:"message" jsonschema:"What went wrong, for a person."`
+	ExitCode int    `json:"exitCode" jsonschema:"The exit code the kind maps to."`
 	// Details carries handles the caller needs to act on the failure, keyed by
 	// name so nobody has to scrape them out of the message: upstreamStatus and
 	// upstreamException on a failure Bitbucket answered, one entry per issue
@@ -282,7 +297,7 @@ type EnvelopeError struct {
 	//
 	// Omitted when there is nothing to carry, so its absence means the message
 	// is all there is.
-	Details map[string]string `json:"details,omitempty"`
+	Details map[string]string `json:"details,omitempty" jsonschema:"Handles the caller needs to act on the failure, by name."`
 }
 
 // WriteError emits the failure envelope for err.
@@ -305,6 +320,13 @@ func WriteError(writer io.Writer, err error) error {
 	if settings.Mode == ModeDryRun && IsVerdict(err) {
 		preview := Preview{Tier: TierOfFailure(err), Effects: []Effect{}, Error: &failure}
 		return writeDocument(writer, PreviewEnvelope{Preview: preview, Meta: meta}, "output")
+	}
+
+	// Under --describe, a path that names no command is the answer: there is
+	// no such command to describe (ADR-097).
+	if settings.Mode == ModeDescribe && apperrors.IsKind(err, apperrors.KindValidation) {
+		description := map[string]any{"error": failure}
+		return writeDocument(writer, DescriptionEnvelope{Description: description, Meta: meta}, "output")
 	}
 
 	return writeDocument(writer, ErrorEnvelope{Error: failure, Meta: meta}, "error output")

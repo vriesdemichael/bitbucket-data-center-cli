@@ -173,10 +173,11 @@ Diagnostics go to stderr and never contaminate the document on stdout. `--log-fo
 makes them machine-readable too.
 
 Ask a command what it returns rather than looking a schema up: `bb <command> --describe`
-prints the JSON Schema of that command's `data` payload, derived from the same model the
-command fills in, so it cannot disagree with what you get. A command that returns no data
-payload -- or one whose payload bb cannot promise a shape for -- answers with `described`
-false and a `reason` saying which.
+prints an outline of its output, and `--describe --json` a `description` member holding the
+JSON Schema of the whole document a run writes (`run.outputSchema`) and of the one
+`--dry-run` writes (`dryRun.outputSchema`), derived from the same model the command fills
+in, so it cannot disagree with what you get. A command without a schema says why in
+`run.reason`. `bb --describe` lists every command with what `--dry-run` does for it.
 
 State-changing commands accept `--dry-run`, which answers with a verdict on the real run
 without applying it: under `--json`, a `preview` member with a tier, one effect per change

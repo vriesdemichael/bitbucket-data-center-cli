@@ -1,7 +1,7 @@
 number: 97
 title: --describe describes a command's output in every mode
 category: architecture
-status: proposed
+status: accepted
 amends: 10
 decision: >
   --describe answers what a command returns, offline and whatever other flags are given, in the

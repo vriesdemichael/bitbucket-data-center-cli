@@ -182,7 +182,7 @@ each problem with its line, needing no host and no network.
   shapes the generated client is built from — it is the provenance of the spec, not a statement
   about which server versions work. Behavior is established by live tests, not the spec.
 - CLI identity and machine contract: `bb`, with the envelope described in [ADR-064](docs/site/adr/064-machine-output-carries-no-contract-version.md)
-- JSON schemas: `bb <command> --describe` prints a command's output schema from the binary, and the configuration file and failure envelope schemas are published in docs and versioned with releases
+- JSON schemas: `bb <command> --describe` says what a command's output looks like, from the binary, as an outline or, under `--json`, as JSON Schema, and the configuration file and failure envelope schemas are published in docs and versioned with releases
 
 ## For contributors
 

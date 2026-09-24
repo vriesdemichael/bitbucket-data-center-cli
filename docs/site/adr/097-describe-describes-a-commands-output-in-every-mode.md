@@ -10,7 +10,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `097`
 - Title: `--describe describes a command's output in every mode`
 - Category: `architecture`
-- Status: `proposed`
+- Status: `accepted`
 - Amends: `010`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/097-describe-describes-a-commands-output-in-every-mode.yaml`

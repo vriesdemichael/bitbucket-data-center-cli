@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -48,11 +47,12 @@ func TestDeclaredResultsAreReachableThroughDescribe(t *testing.T) {
 	}
 
 	for _, path := range declared {
-		described := describeCommand(path)
-		if !described.Described {
-			t.Errorf("%q has a declared result but --describe reports it undescribed: %s", path, described.Reason)
+		schema, reason, described := DataSchema(path)
+		if !described {
+			t.Errorf("%q has a declared result but --describe reports no schema for it: %s", path, reason)
+			continue
 		}
-		if len(schemaDocument(t, described)) == 0 {
+		if len(schemaJSON(t, schema)) == 0 {
 			t.Errorf("%q described with an empty schema", path)
 		}
 	}
@@ -104,12 +104,12 @@ func TestEveryCommandIsModelled(t *testing.T) {
 func TestUnmodelledCommandsSaySoRatherThanGuessing(t *testing.T) {
 	t.Parallel()
 
-	described := describeCommand("webhook test")
-	if described.Described {
-		t.Fatalf("webhook test has no data payload but reported a schema: %+v", described)
+	_, reason, described := DataSchema("webhook test")
+	if described {
+		t.Fatal("webhook test has no data shape but reported a schema")
 	}
-	if !strings.Contains(described.Reason, "no shape bb can promise") {
-		t.Errorf("reason = %q, want it to say the payload has no shape bb can promise", described.Reason)
+	if !strings.Contains(reason, "no shape bb can promise") {
+		t.Errorf("reason = %q, want it to say the payload has no shape bb can promise", reason)
 	}
 }
 
@@ -132,15 +132,8 @@ func TestDescribeAnswersForGroupsRatherThanPrintingHelp(t *testing.T) {
 		t.Fatalf("bb pr --describe: %v", err)
 	}
 
-	var described DescribeResult
-	if err := json.Unmarshal(output.Bytes(), &described); err != nil {
-		t.Fatalf("bb pr --describe did not emit a JSON document: %v\n%s", err, output)
-	}
-	if described.Command != "pr" || described.Described {
-		t.Fatalf("described = %+v", described)
-	}
-	if !strings.Contains(described.Reason, "command group") {
-		t.Errorf("reason = %q, want it to say pr is a group", described.Reason)
+	if !strings.Contains(output.String(), "Commands in bb pr") || strings.Contains(output.String(), "Usage:") {
+		t.Fatalf("bb pr --describe printed something other than its catalogue:\n%s", output)
 	}
 }
 
@@ -152,12 +145,12 @@ func TestDescribeAnswersForHelpAndCompletion(t *testing.T) {
 	t.Parallel()
 
 	for _, path := range []string{"help", "completion bash"} {
-		described := describeCommand(path)
-		if described.Described {
-			t.Errorf("%q reported a schema for a document: %+v", path, described)
+		_, reason, described := DataSchema(path)
+		if described {
+			t.Errorf("%q reported a schema for a document it does not write", path)
 		}
-		if !strings.Contains(described.Reason, "does not return a data payload") {
-			t.Errorf("%q reason = %q", path, described.Reason)
+		if !strings.Contains(reason, "writes no document of its own") {
+			t.Errorf("%q reason = %q", path, reason)
 		}
 	}
 }
