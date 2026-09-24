@@ -86,6 +86,34 @@ func tiffOrientation(data []byte) int {
 	return 1
 }
 
+// maxTIFFPages is the most directories of a TIFF followed to count its pages.
+const maxTIFFPages = 10_000
+
+// tiffPages counts a TIFF's pages by following its chain of directories, each
+// of which ends with where the next one is. The count stops at a directory
+// the file does not hold, or one it has already been to.
+func tiffPages(data []byte) int {
+	order, directory, ok := tiffHeader(data)
+	if !ok {
+		return 0
+	}
+
+	pages := 0
+	visited := map[int64]bool{}
+	for directory != 0 && pages < maxTIFFPages && !visited[directory] && directory+2 <= int64(len(data)) {
+		visited[directory] = true
+		pages++
+
+		next := directory + 2 + 12*int64(order.Uint16(data[directory:]))
+		if next+4 > int64(len(data)) {
+			break
+		}
+		directory = int64(order.Uint32(data[next:]))
+	}
+
+	return pages
+}
+
 // exifOrientation reads the orientation from an Exif block: TIFF-structured
 // data, which a JPEG's APP1 segment -- and some WebP writers' EXIF chunk --
 // puts after an "Exif\0\0" marker.

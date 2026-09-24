@@ -235,7 +235,7 @@ func TestAnAnimatedGIFGivesItsFirstFrameAndSaysSo(t *testing.T) {
 	if got, want := color.NRGBAModel.Convert(picture.At(20, 15)), color.NRGBAModel.Convert(palette.Plan9[2]); got != want {
 		t.Errorf("the frame returned is %v at its centre, want the first frame's %v", got, want)
 	}
-	for _, want := range []string{"an animated GIF image of 3 frames, 40x30 pixels", "Its first frame follows, as a PNG of"} {
+	for _, want := range []string{"an animated GIF image of 3 frames, 40x30 pixels", "Its first frame follows as a PNG of"} {
 		if !strings.Contains(view.Text, want) {
 			t.Errorf("text does not say %q: %q", want, view.Text)
 		}

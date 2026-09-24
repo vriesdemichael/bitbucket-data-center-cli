@@ -58,9 +58,10 @@ type FileImage struct {
 	Scaled           bool   `json:"scaled" jsonschema:"True when the image returned is smaller than the one stored, so small text in it may no longer be legible"`
 	ReturnedWidth    int    `json:"returned_width" jsonschema:"The returned image's width in pixels"`
 	ReturnedHeight   int    `json:"returned_height" jsonschema:"The returned image's height in pixels"`
-	ReturnedMIMEType string `json:"returned_mime_type" jsonschema:"The returned image's type, which differs from mime_type when it was encoded again"`
+	ReturnedMIMEType string `json:"returned_mime_type" jsonschema:"The returned image's type, which differs from mime_type when it was encoded again or converted from a format clients do not take"`
 	ReturnedSize     int    `json:"returned_size" jsonschema:"The returned image's size in bytes"`
 	Frames           int    `json:"frames,omitempty" jsonschema:"How many frames an animated image has; only the first is returned"`
+	Pages            int    `json:"pages,omitempty" jsonschema:"How many pages a multi-page TIFF has; only the first is returned"`
 }
 
 func specGetFileContent() Spec {
@@ -69,9 +70,10 @@ func specGetFileContent() Spec {
 		Description: "Read a file in a repository. Text comes back as a window of numbered lines: start_line and line_count " +
 			"choose it, and each answer says which lines it holds and where the next window starts. A Word, PowerPoint or " +
 			"Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz) as a listing of its " +
-			"entries, both in the same windows. An image (PNG, JPEG, GIF, WebP) comes back as an image, turned upright when its " +
-			"metadata says it was stored turned, and scaled down when it is large, with a note saying which. Audio and video " +
-			"come back as themselves beside a description when they are small, " +
+			"entries, both in the same windows. An image (PNG, JPEG, GIF, WebP, BMP, TIFF) comes back as an image, converted " +
+			"to PNG or JPEG when clients do not take its format, turned upright when its metadata says it was stored turned, " +
+			"and scaled down when it is large, with a note saying which. Audio and video come back as themselves beside a " +
+			"description when they are small, " +
 			"and as the description alone when not. A PDF or any other file is described by its type and size rather than " +
 			"shown, and a file over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) + " is described without being read.",
 		Annotations: readOnly(),
@@ -170,6 +172,7 @@ func fileContentResult(in GetFileContentInput, webURL string, view fileview.View
 			ReturnedMIMEType: image.MIMEType,
 			ReturnedSize:     len(image.Data),
 			Frames:           image.Frames,
+			Pages:            image.Pages,
 		}
 	}
 

@@ -12,18 +12,31 @@ import (
 	"math"
 	"strings"
 
+	"golang.org/x/image/bmp"
 	xdraw "golang.org/x/image/draw"
+	"golang.org/x/image/tiff"
 	"golang.org/x/image/webp"
 )
 
-// imageFormats are the formats returned as images, named for a sentence: the
-// four that every client taking images accepts, each of which is decoded here
-// when it has to be scaled.
+// imageFormats are the formats returned as images, named for a sentence. Each
+// is decoded here, to scale it when it has to be, or to convert it.
 var imageFormats = map[string]string{
 	"image/png":  "PNG",
 	"image/jpeg": "JPEG",
 	"image/gif":  "GIF",
 	"image/webp": "WebP",
+	"image/bmp":  "BMP",
+	"image/tiff": "TIFF",
+}
+
+// clientFormats are the four every client taking images accepts, and can be
+// returned as they are. The rest -- BMP, TIFF, which model APIs refuse -- are
+// always converted, to a PNG or, for a photograph, a JPEG.
+var clientFormats = map[string]bool{
+	"image/png":  true,
+	"image/jpeg": true,
+	"image/gif":  true,
+	"image/webp": true,
 }
 
 // imageLimits bound what an image is returned as. Reading uses the package's;
@@ -60,7 +73,7 @@ func readImage(request Request, mimeType string, content []byte, limits imageLim
 			"That is more than the %d megapixels this tool decodes to scale an image, so it is not shown.", limits.pixels/1_000_000))
 	}
 
-	frames, orientation := 1, 1
+	frames, pages, orientation := 1, 1, 1
 	lossy := mimeType == "image/jpeg"
 	switch mimeType {
 	case "image/jpeg":
@@ -73,6 +86,10 @@ func readImage(request Request, mimeType string, content []byte, limits imageLim
 			return notShown("an animated WebP image of "+stored, "Its frames cannot be decoded here, so it is not shown.")
 		}
 		lossy, orientation = features.lossy, exifOrientation(features.exif)
+	case "image/tiff":
+		// A TIFF carries the orientation tag EXIF borrowed, in its own first
+		// directory, which is the first page the decoder reads.
+		pages, orientation = max(1, tiffPages(content)), tiffOrientation(content)
 	}
 
 	// Decoded even when it is returned as it is: an image a client cannot
@@ -91,18 +108,25 @@ func readImage(request Request, mimeType string, content []byte, limits imageLim
 	if frames > 1 {
 		returned.Frames = frames
 	}
+	if pages > 1 {
+		returned.Pages = pages
+	}
 
 	var text strings.Builder
 	text.WriteString(subject + ": ")
-	if frames > 1 {
+	switch {
+	case frames > 1:
 		fmt.Fprintf(&text, "an animated %s image of %d frames, %dx%d pixels, %s.", name, frames, width, height, formatSize(size))
-	} else {
+	case pages > 1:
+		fmt.Fprintf(&text, "a %s image of %d pages, %dx%d pixels, %s.", name, pages, width, height, formatSize(size))
+	default:
 		fmt.Fprintf(&text, "a %s image, %dx%d pixels, %s.", name, width, height, formatSize(size))
 	}
 
 	// A turned picture is always encoded again, without the tag: returned as
-	// it is, it would be upright only to a client that reads the tag.
-	if frames == 1 && !returned.Turned && len(content) <= limits.bytes && max(width, height) <= limits.edge {
+	// it is, it would be upright only to a client that reads the tag. So is a
+	// format clients do not take, whatever its size.
+	if frames == 1 && !returned.Turned && clientFormats[mimeType] && len(content) <= limits.bytes && max(width, height) <= limits.edge {
 		returned.Data, returned.MIMEType = content, mimeType
 		text.WriteString(" It follows as an image.")
 
@@ -121,39 +145,52 @@ func readImage(request Request, mimeType string, content []byte, limits imageLim
 		returned.MIMEType = "image/jpeg"
 	}
 	returned.Scaled = scaledWidth != width || scaledHeight != height
-	text.WriteString(returnedNote(returned, limits))
+	text.WriteString(returnedNote(returned, mimeType, limits))
 
 	return View{Kind: KindImage, MIMEType: mimeType, Size: size, Text: text.String(), Image: returned}
 }
 
 // returnedNote says how the image returned came from the one stored: what
-// follows, turned or scaled, in what format; and why, when it was scaled or
-// merely encoded again.
-func returnedNote(returned *Image, limits imageLimits) string {
+// follows, turned or scaled, in what format, converted from what; and why,
+// when it was scaled or merely encoded again.
+func returnedNote(returned *Image, mimeType string, limits imageLimits) string {
 	var note strings.Builder
-	if returned.Frames > 1 {
+	switch {
+	case returned.Frames > 1:
 		note.WriteString(" Its first frame follows")
-	} else {
+	case returned.Pages > 1:
+		note.WriteString(" Its first page follows")
+	default:
 		note.WriteString(" It follows")
 	}
 
 	var changes []string
 	if returned.Turned {
-		changes = append(changes, "turned upright from its EXIF orientation")
+		// A TIFF records the tag in its own right; everything else in Exif.
+		source := "EXIF"
+		if mimeType == "image/tiff" {
+			source = "TIFF"
+		}
+		changes = append(changes, "turned upright from its "+source+" orientation")
 	}
 	if returned.Scaled {
 		changes = append(changes, fmt.Sprintf("scaled down to %dx%d pixels", returned.ReturnedWidth, returned.ReturnedHeight))
 	}
 	if len(changes) > 0 {
-		note.WriteString(" " + strings.Join(changes, " and "))
+		note.WriteString(" " + strings.Join(changes, " and ") + ",")
 	}
-	fmt.Fprintf(&note, ", as a %s of %s.", strings.ToUpper(strings.TrimPrefix(returned.MIMEType, "image/")), formatSize(int64(len(returned.Data))))
+	fmt.Fprintf(&note, " as a %s of %s", strings.ToUpper(strings.TrimPrefix(returned.MIMEType, "image/")), formatSize(int64(len(returned.Data))))
+	converted := !clientFormats[mimeType]
+	if converted {
+		fmt.Fprintf(&note, ", converted from %s, which clients do not take", imageFormats[mimeType])
+	}
+	note.WriteString(".")
 
 	switch {
 	case returned.Scaled:
 		fmt.Fprintf(&note, " It was scaled to fit the %d pixels and %s an image is returned in. "+
 			"Small text in it may no longer be legible because of the scaling.", limits.edge, formatSize(int64(limits.bytes)))
-	case !returned.Turned && returned.Frames == 0:
+	case !returned.Turned && !converted && returned.Frames == 0:
 		fmt.Fprintf(&note, " It was encoded again to fit the %s an image is returned in.", formatSize(int64(limits.bytes)))
 	}
 
@@ -249,6 +286,8 @@ func opaque(picture image.Image) bool {
 	return false
 }
 
+// decodeImageConfig reads an image's size from its header, before anything is
+// decoded, so a picture too large to decode is found without decoding it.
 func decodeImageConfig(mimeType string, content []byte) (image.Config, error) {
 	reader := bytes.NewReader(content)
 	switch mimeType {
@@ -258,14 +297,18 @@ func decodeImageConfig(mimeType string, content []byte) (image.Config, error) {
 		return jpeg.DecodeConfig(reader)
 	case "image/gif":
 		return gif.DecodeConfig(reader)
+	case "image/bmp":
+		return bmp.DecodeConfig(reader)
+	case "image/tiff":
+		return tiff.DecodeConfig(reader)
 	default:
 		return webp.DecodeConfig(reader)
 	}
 }
 
-// decodeImage decodes an image, or an animated GIF's first frame. A frame may
-// cover part of the canvas, so it is drawn onto one the size of the image,
-// transparent where the frame does not reach.
+// decodeImage decodes an image: a TIFF's first page, or an animated GIF's first
+// frame. A frame may cover part of the canvas, so it is drawn onto one the
+// size of the image, transparent where the frame does not reach.
 func decodeImage(mimeType string, content []byte, config image.Config) (image.Image, error) {
 	reader := bytes.NewReader(content)
 	switch mimeType {
@@ -275,6 +318,10 @@ func decodeImage(mimeType string, content []byte, config image.Config) (image.Im
 		return jpeg.Decode(reader)
 	case "image/webp":
 		return webp.Decode(reader)
+	case "image/bmp":
+		return bmp.Decode(reader)
+	case "image/tiff":
+		return tiff.Decode(reader)
 	}
 
 	first, err := gif.Decode(reader)

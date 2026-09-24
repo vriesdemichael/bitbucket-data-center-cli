@@ -13,6 +13,7 @@
 package fileview
 
 import (
+	"bytes"
 	"net/http"
 	"strings"
 
@@ -101,6 +102,9 @@ type Image struct {
 	// Frames is how many frames an animation has, of which the first is
 	// returned; zero for a still image.
 	Frames int
+	// Pages is how many pages a TIFF has, of which the first is returned;
+	// zero for one of a single page.
+	Pages int
 }
 
 // Window is a run of lines out of a file's text.
@@ -150,7 +154,7 @@ func Read(request Request, content []byte) (View, error) {
 		return readText(request, text, size)
 	}
 
-	sniffed := http.DetectContentType(content)
+	sniffed := sniff(content)
 	if _, ok := imageFormats[sniffed]; ok {
 		return readImage(request, sniffed, content, defaultImageLimits), nil
 	}
@@ -169,6 +173,16 @@ func Read(request Request, content []byte) (View, error) {
 	}
 
 	return describeBinary(subjectOf(request), request.WebURL, detectBinary(request.Path, sniffed, content), size), nil
+}
+
+// sniff reads a file's type from its first bytes: http.DetectContentType's
+// answer, or for a signature it does not know, this package's.
+func sniff(content []byte) string {
+	if bytes.HasPrefix(content, []byte("II*\x00")) || bytes.HasPrefix(content, []byte("MM\x00*")) {
+		return "image/tiff"
+	}
+
+	return http.DetectContentType(content)
 }
 
 // readText views decoded text as a window of its lines.
