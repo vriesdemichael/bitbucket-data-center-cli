@@ -264,7 +264,7 @@ func TestHintGHFieldListExplainsWhatBBDoesInstead(t *testing.T) {
 
 			got := HintGHFieldList(testCase.err, testCase.args, testCase.command)
 			if testCase.wantHint == "" {
-				if got != testCase.err {
+				if apperrors.MessageOf(got) != apperrors.MessageOf(testCase.err) || apperrors.KindOf(got) != apperrors.KindOf(testCase.err) {
 					t.Fatalf("hinted where nothing should be: %v", got)
 				}
 				return
