@@ -220,7 +220,9 @@ func BuildBitbucketCloneURL(baseURL, projectKey, slug string) (string, error) {
 	}
 
 	basePath := strings.TrimSuffix(parsed.Path, "/")
-	parsed.Path = fmt.Sprintf("%s/scm/%s/%s.git", basePath, url.PathEscape(trimmedProject), url.PathEscape(trimmedSlug))
+	// Unescaped: Path holds the path as it reads, and String escapes it.
+	// Escaping it here as well escaped a key or slug twice.
+	parsed.Path = fmt.Sprintf("%s/scm/%s/%s.git", basePath, trimmedProject, trimmedSlug)
 	parsed.RawQuery = ""
 	parsed.Fragment = ""
 

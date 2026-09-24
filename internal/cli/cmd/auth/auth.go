@@ -912,7 +912,9 @@ func personalAccessTokenURL(host string, userSlug string) (string, error) {
 
 	slug := strings.TrimSpace(userSlug)
 	if slug != "" {
-		parsed.Path = path.Join(parsed.Path, "/plugins/servlet/access-tokens/users/"+url.PathEscape(slug)+"/manage")
+		// Unescaped: Path holds the path as it reads, and String escapes it.
+		// Escaping it here as well turned a slug's %40 into %2540.
+		parsed.Path = path.Join(parsed.Path, "/plugins/servlet/access-tokens/users/"+slug+"/manage")
 	} else {
 		parsed.Path = path.Join(parsed.Path, "/plugins/servlet/access-tokens/manage")
 	}

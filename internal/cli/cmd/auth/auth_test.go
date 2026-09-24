@@ -823,6 +823,17 @@ func TestPersonalAccessTokenURL(t *testing.T) {
 		}
 	})
 
+	t.Run("a slug that needs escaping is escaped once", func(t *testing.T) {
+		// Escaped into the path and again on the way out, a space became %2520.
+		got, err := personalAccessTokenURL("https://bitbucket.corp", "alice smith")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got != "https://bitbucket.corp/plugins/servlet/access-tokens/users/alice%20smith/manage" {
+			t.Fatalf("unexpected URL: %q", got)
+		}
+	})
+
 	t.Run("empty host returns validation error", func(t *testing.T) {
 		_, err := personalAccessTokenURL("", "alice")
 		if err == nil {

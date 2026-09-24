@@ -319,3 +319,28 @@ func TestBrowseDefaults(t *testing.T) {
 		}
 	}
 }
+
+// TestBrowseURLEscapesAFilePathOnce: a file whose name has a space, a # or a
+// percent sign opens its own page. The escaped segments were set as the
+// unescaped path, and escaped a second time on the way out, so "a b" became
+// a%2520b: a page Bitbucket does not have.
+func TestBrowseURLEscapesAFilePathOnce(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range []struct {
+		base, path, want string
+	}{
+		{"https://bitbucket.example.com", "docs/my file.md", "https://bitbucket.example.com/projects/PRJ/repos/repo/browse/docs/my%20file.md"},
+		{"https://bitbucket.example.com", "notes/#1 plan.txt", "https://bitbucket.example.com/projects/PRJ/repos/repo/browse/notes/%231%20plan.txt"},
+		{"https://bitbucket.example.com", "data/100%.csv", "https://bitbucket.example.com/projects/PRJ/repos/repo/browse/data/100%25.csv"},
+		{"https://example.com/bit bucket", "a b/c.go", "https://example.com/bit%20bucket/projects/PRJ/repos/repo/browse/a%20b/c.go"},
+	} {
+		got, err := buildBitbucketBrowseURL(testCase.base, "PRJ", "repo", browseTarget{kind: browseTargetPath, path: testCase.path})
+		if err != nil {
+			t.Fatalf("%s: %v", testCase.path, err)
+		}
+		if got != testCase.want {
+			t.Fatalf("%s: got %s, want %s", testCase.path, got, testCase.want)
+		}
+	}
+}
