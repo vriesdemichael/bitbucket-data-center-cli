@@ -135,15 +135,24 @@ func TestReviewerConditionCommands(t *testing.T) {
 	}
 	jsonEnabled = false
 
-	// 4. create condition on repo in dry-run mode (create vs conflict)
+	// 4. create condition on repo in dry-run mode. The body has no matchers
+	// and no reviewers, which Bitbucket refuses before it looks at anything
+	// else, so the preview refuses it without asking, and as text exits with
+	// validation's code the way the real run would (ADR-096). What the preview
+	// says of a body Bitbucket takes is a question for a real Bitbucket:
+	// TestLiveDryRunRefusalsFailAsTheRealRunDoes.
 	dryRunEnabled = true
 	cmd = New(deps)
 	buf.Reset()
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"condition", "create", `{"requiredApprovals":5}`, "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on create condition repo dry-run: %v", err)
+	var state *apperrors.StateExit
+	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 2 {
+		t.Fatalf("expected the dry run to exit 2 for a body Bitbucket refuses, got: %v", err)
+	}
+	if !strings.Contains(buf.String(), "A sourceMatcher with ID and type is required") {
+		t.Fatalf("expected the refusal Bitbucket gives in the verdict, got: %s", buf.String())
 	}
 	dryRunEnabled = false
 
@@ -177,12 +186,11 @@ func TestReviewerConditionCommands(t *testing.T) {
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"condition", "create", `{"requiredApprovals":2}`, "--project", "PRJ"})
-	// The project already holds an equivalent condition, so the preview says
-	// the create would conflict, and as text it exits with conflict's code the
-	// way the real run would (ADR-096).
-	var state *apperrors.StateExit
-	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 5 {
-		t.Fatalf("expected the dry run to exit 5 for a predicted conflict, got: %v", err)
+	// The same refusal at the project's scope. This step used to require a
+	// conflict with the equivalent condition the mock said the project held;
+	// Bitbucket stores such a duplicate instead (TestLiveDryRunPredictsWhatBitbucketAccepts).
+	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 2 {
+		t.Fatalf("expected the dry run to exit 2 for a body Bitbucket refuses, got: %v", err)
 	}
 	if !strings.Contains(buf.String(), "would fail") {
 		t.Fatalf("expected the verdict in the output, got: %s", buf.String())
@@ -222,35 +230,21 @@ func TestReviewerConditionCommands(t *testing.T) {
 		t.Fatalf("expected error for invalid json in create condition")
 	}
 
-	// 9. update condition on repo in dry-run mode (update, no-op, blocked)
+	// 9. update condition on repo in dry-run mode. An update replaces the
+	// condition whole, so a body of approvals alone is refused before the
+	// condition is looked for: the same refusal whether it exists (101) or not
+	// (999). Updates of a whole condition, found and not, are covered against a
+	// real Bitbucket in TestLiveGovernanceDryRunPredictionsReadRealState.
 	dryRunEnabled = true
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"condition", "update", "101", `{"requiredApprovals":3}`, "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on update condition repo dry-run: %v", err)
-	}
-	// No-op preview (matching requiredApprovals: 1)
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"condition", "update", "101", `{"requiredApprovals":1}`, "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on update condition repo dry-run no-op: %v", err)
-	}
-	// Blocked preview (condition not found)
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"condition", "update", "999", `{"requiredApprovals":3}`, "--repo", "PRJ/repo1"})
-	// The real update of a missing condition fails as not found, so the dry run
-	// exits with that code, 4.
-	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 4 {
-		t.Fatalf("expected the dry run to exit 4 for a missing condition, got: %v", err)
+	for _, id := range []string{"101", "999"} {
+		cmd = New(deps)
+		buf.Reset()
+		cmd.SetOut(buf)
+		cmd.SetErr(buf)
+		cmd.SetArgs([]string{"condition", "update", id, `{"requiredApprovals":3}`, "--repo", "PRJ/repo1"})
+		if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 2 {
+			t.Fatalf("condition %s: expected the dry run to exit 2 for a body Bitbucket refuses, got: %v", id, err)
+		}
 	}
 	dryRunEnabled = false
 
@@ -277,33 +271,18 @@ func TestReviewerConditionCommands(t *testing.T) {
 	}
 	jsonEnabled = false
 
-	// 11. update condition on project in dry-run mode (update, no-op, blocked)
+	// 11. update condition on project in dry-run mode: the same refusal at the
+	// project's scope.
 	dryRunEnabled = true
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"condition", "update", "102", `{"requiredApprovals":3}`, "--project", "PRJ"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on update condition project dry-run: %v", err)
-	}
-	// No-op preview (matching requiredApprovals: 2)
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"condition", "update", "102", `{"requiredApprovals":2}`, "--project", "PRJ"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on update condition project dry-run no-op: %v", err)
-	}
-	// Blocked preview
-	cmd = New(deps)
-	buf.Reset()
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"condition", "update", "999", `{"requiredApprovals":3}`, "--project", "PRJ"})
-	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 4 {
-		t.Fatalf("expected the dry run to exit 4 for a missing project condition, got: %v", err)
+	for _, id := range []string{"102", "999"} {
+		cmd = New(deps)
+		buf.Reset()
+		cmd.SetOut(buf)
+		cmd.SetErr(buf)
+		cmd.SetArgs([]string{"condition", "update", id, `{"requiredApprovals":3}`, "--project", "PRJ"})
+		if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 2 {
+			t.Fatalf("condition %s: expected the dry run to exit 2 for a body Bitbucket refuses, got: %v", id, err)
+		}
 	}
 	dryRunEnabled = false
 

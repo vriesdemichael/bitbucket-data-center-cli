@@ -322,24 +322,15 @@ the project. --project deletes it there.`,
 					if err != nil {
 						return err
 					}
-					predicted := "create"
-					reason := "reviewer condition will be created"
-					var blocking []string
-					if reviewerConditionEquivalentExists(conditions, condition) {
-						predicted = "conflict"
-						reason = "equivalent reviewer condition already exists"
-						blocking = []string{"reviewer condition already exists"}
+					item, err := conditionCreateOutcome(conditions, condition)
+					if err != nil {
+						return err
 					}
-					preview := dryrunpreview.New(dryrunpreview.Item{
-						Intent:          "reviewer.condition.create",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug)},
-						Action:          "create",
-						PredictedAction: predicted,
-						Tier:            dryrunpreview.TierPreconditionsChecked,
-						Reason:          reason,
-						BlockingReasons: blocking,
-					})
-					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
+					item.Intent = "reviewer.condition.create"
+					item.Target = map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug)}
+					item.Action = "create"
+					item.Tier = dryrunpreview.TierPreconditionsChecked
+					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), dryrunpreview.New(item))
 				}
 				created, err := service.CreateRepositoryCondition(cmd.Context(), pk, slug, condition)
 				if err != nil {
@@ -374,23 +365,15 @@ the project. --project deletes it there.`,
 				if err != nil {
 					return err
 				}
-				predicted := "create"
-				reason := "reviewer condition will be created"
-				var blocking []string
-				if reviewerConditionEquivalentExists(conditions, condition) {
-					predicted = "conflict"
-					reason = "equivalent reviewer condition already exists"
-					blocking = []string{"reviewer condition already exists"}
+				item, err := conditionCreateOutcome(conditions, condition)
+				if err != nil {
+					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.Item{
-					Intent:          "reviewer.condition.create",
-					Target:          map[string]any{"project": projectKey},
-					Action:          "create",
-					PredictedAction: predicted,
-					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Reason:          reason,
-					BlockingReasons: blocking,
-				})
+				item.Intent = "reviewer.condition.create"
+				item.Target = map[string]any{"project": projectKey}
+				item.Action = "create"
+				item.Tier = dryrunpreview.TierPreconditionsChecked
+				preview := dryrunpreview.New(item)
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 			created, err := service.CreateProjectCondition(cmd.Context(), projectKey, condition)
@@ -475,31 +458,15 @@ With --repo, a condition the repository inherits from its project is refused;
 					if err := refuseInheritedCondition(conditions, id, pk, "update"); err != nil {
 						return err
 					}
-					predicted := "blocked"
-					reason := "reviewer condition not found in repository"
-					blocking := []string{"reviewer condition not found"}
-					if existing, found := findReviewerCondition(conditions, id); found {
-						blocking = nil
-						predicted = "update"
-						reason = "reviewer condition will be updated"
-						if reviewerConditionUpdateEquivalent(existing, condition) {
-							predicted = "no-op"
-							reason = "reviewer condition already matches requested update"
-						}
+					item, err := conditionUpdateOutcome(conditions, id, condition, "repository")
+					if err != nil {
+						return err
 					}
-					preview := dryrunpreview.New(dryrunpreview.Item{
-						Intent:          "reviewer.condition.update",
-						Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id},
-						Action:          "update",
-						PredictedAction: predicted,
-						Tier:            dryrunpreview.TierPreconditionsChecked,
-						Reason:          reason,
-						BlockingReasons: blocking,
-						// The one refusal predicted here is a condition that is
-						// not there, which the real update meets as a 404.
-						Fails: apperrors.KindNotFound,
-					})
-					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
+					item.Intent = "reviewer.condition.update"
+					item.Target = map[string]any{"repository": fmt.Sprintf("%s/%s", pk, slug), "id": id}
+					item.Action = "update"
+					item.Tier = dryrunpreview.TierPreconditionsChecked
+					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), dryrunpreview.New(item))
 				}
 				conditions, err := service.ListRepositoryConditions(cmd.Context(), pk, slug)
 				if err != nil {
@@ -541,30 +508,15 @@ With --repo, a condition the repository inherits from its project is refused;
 				if err != nil {
 					return err
 				}
-				predicted := "blocked"
-				reason := "reviewer condition not found in project"
-				blocking := []string{"reviewer condition not found"}
-				if existing, found := findReviewerCondition(conditions, id); found {
-					blocking = nil
-					predicted = "update"
-					reason = "reviewer condition will be updated"
-					if reviewerConditionUpdateEquivalent(existing, condition) {
-						predicted = "no-op"
-						reason = "reviewer condition already matches requested update"
-					}
+				item, err := conditionUpdateOutcome(conditions, id, condition, "project")
+				if err != nil {
+					return err
 				}
-				preview := dryrunpreview.New(dryrunpreview.Item{
-					Intent:          "reviewer.condition.update",
-					Target:          map[string]any{"project": projectKey, "id": id},
-					Action:          "update",
-					PredictedAction: predicted,
-					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Reason:          reason,
-					BlockingReasons: blocking,
-					// As for a repository's condition: a missing one is a 404.
-					Fails: apperrors.KindNotFound,
-				})
-				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
+				item.Intent = "reviewer.condition.update"
+				item.Target = map[string]any{"project": projectKey, "id": id}
+				item.Action = "update"
+				item.Tier = dryrunpreview.TierPreconditionsChecked
+				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), dryrunpreview.New(item))
 			}
 			updated, err := service.UpdateProjectCondition(cmd.Context(), projectKey, id, condition)
 			if err != nil {
@@ -686,6 +638,129 @@ func reviewerConditionEquivalentExists(conditions []openapigenerated.RestPullReq
 	return false
 }
 
+// conditionRefusal is how Bitbucket refuses a condition body it will not
+// store, or nil when it takes it.
+//
+// Bitbucket checks the body before it looks at anything else, the condition an
+// update names included, so a preview that does not has predicted a create or
+// an update the real run is refused -- and "not found" for an update the real
+// run is refused as invalid. The rules and their wording are the ones 10.4.3
+// applies, each seen refusing a request: an id and a type on both matchers, a
+// reviewer or a reviewer group, and a count of required approvals. A reviewer
+// named without an id is looked up as user -1 and answered with a 404.
+//
+// condition is the body as the command sends it, so what is checked is what
+// would be sent rather than what was typed.
+func conditionRefusal(condition any) error {
+	encoded, err := json.Marshal(condition)
+	if err != nil {
+		return apperrors.New(apperrors.KindInternal, "failed to encode the condition", err)
+	}
+
+	type matcher struct {
+		ID   *string `json:"id"`
+		Type *struct {
+			ID string `json:"id"`
+		} `json:"type"`
+	}
+	var body struct {
+		SourceMatcher *matcher `json:"sourceMatcher"`
+		TargetMatcher *matcher `json:"targetMatcher"`
+		Reviewers     []struct {
+			ID *int64 `json:"id"`
+		} `json:"reviewers"`
+		ReviewerGroups    []json.RawMessage `json:"reviewerGroups"`
+		RequiredApprovals *int64            `json:"requiredApprovals"`
+	}
+	if err := json.Unmarshal(encoded, &body); err != nil {
+		return apperrors.New(apperrors.KindInternal, "failed to read the condition back", err)
+	}
+
+	complete := func(m *matcher) bool { return m != nil && m.ID != nil && m.Type != nil }
+	switch {
+	case !complete(body.SourceMatcher):
+		return apperrors.New(apperrors.KindValidation, "A sourceMatcher with ID and type is required when creating or updating a new condition.", nil)
+	case !complete(body.TargetMatcher):
+		return apperrors.New(apperrors.KindValidation, "A targetMatcher with an ID and type is required when creating or updating a new condition.", nil)
+	case len(body.Reviewers)+len(body.ReviewerGroups) == 0:
+		return apperrors.New(apperrors.KindValidation, "Reviewers or reviewer groups are required.", nil)
+	case body.RequiredApprovals == nil || *body.RequiredApprovals < 0:
+		return apperrors.New(apperrors.KindValidation, "Required approvals must be >= 0.", nil)
+	}
+
+	for _, reviewer := range body.Reviewers {
+		if reviewer.ID == nil {
+			return apperrors.New(apperrors.KindNotFound,
+				"a reviewer is named without an id, which Bitbucket looks up as user -1: User with ID -1 does not exist. Name reviewers by their numeric id", nil)
+		}
+	}
+
+	return nil
+}
+
+// conditionCreateOutcome is what creating condition would come to, beside the
+// conditions already there: the outcome fields of its preview item.
+//
+// An equivalent condition does not stop it. Bitbucket stores a second
+// condition identical to the first rather than refusing it, so the preview
+// predicts the create the real run makes, and says what it duplicates.
+func conditionCreateOutcome(conditions []openapigenerated.RestPullRequestCondition, condition openapigenerated.RestDefaultReviewersRequest) (dryrunpreview.Item, error) {
+	if refusal := conditionRefusal(condition); refusal != nil {
+		return refusedOutcome(refusal)
+	}
+
+	if reviewerConditionEquivalentExists(conditions, condition) {
+		return dryrunpreview.Item{
+			PredictedAction: dryrunpreview.PredictedCreate,
+			Reason:          "an equivalent reviewer condition already exists; Bitbucket adds this one beside it",
+		}, nil
+	}
+
+	return dryrunpreview.Item{PredictedAction: dryrunpreview.PredictedCreate, Reason: "reviewer condition will be created"}, nil
+}
+
+// conditionUpdateOutcome is what updating condition id to body would come to.
+// where names the scope it was looked for in, for the reason.
+func conditionUpdateOutcome(conditions []openapigenerated.RestPullRequestCondition, id string, body any, where string) (dryrunpreview.Item, error) {
+	if refusal := conditionRefusal(body); refusal != nil {
+		return refusedOutcome(refusal)
+	}
+
+	existing, found := findReviewerCondition(conditions, id)
+	if !found {
+		// Refused by the update itself, once the body has passed: a 404.
+		return dryrunpreview.Item{
+			PredictedAction: dryrunpreview.PredictedBlocked,
+			Reason:          "reviewer condition not found in " + where,
+			BlockingReasons: []string{"reviewer condition not found"},
+			Fails:           apperrors.KindNotFound,
+		}, nil
+	}
+	if reviewerConditionUpdateEquivalent(existing, body) {
+		return dryrunpreview.Item{PredictedAction: dryrunpreview.PredictedNoop, Reason: "reviewer condition already matches requested update"}, nil
+	}
+
+	return dryrunpreview.Item{PredictedAction: dryrunpreview.PredictedUpdate, Reason: "reviewer condition will be updated"}, nil
+}
+
+// refusedOutcome is the preview of a body Bitbucket refuses. A body bb could
+// not read back is no verdict on anything, so it is returned as the failure it
+// is.
+func refusedOutcome(refusal error) (dryrunpreview.Item, error) {
+	if apperrors.IsKind(refusal, apperrors.KindInternal) {
+		return dryrunpreview.Item{}, refusal
+	}
+
+	message := apperrors.MessageOf(refusal)
+
+	return dryrunpreview.Item{
+		PredictedAction: dryrunpreview.PredictedBlocked,
+		Reason:          message,
+		BlockingReasons: []string{message},
+		Fails:           apperrors.KindOf(refusal),
+	}, nil
+}
+
 // reviewerConditionEquivalent reports whether Bitbucket already holds the
 // condition being asked for.
 //
@@ -697,9 +772,9 @@ func reviewerConditionEquivalentExists(conditions []openapigenerated.RestPullReq
 // email address, avatar URL, active flag, links -- and enriches each matcher
 // with a displayId and a type name it derived itself. A deep comparison between
 // what was sent and what came back is therefore never equal, so the preview
-// predicted "create" for a condition that already existed and the create then
-// failed. The mocked test that covered this echoed the request back verbatim,
-// which is the one server shape that made the comparison work.
+// never recognised a condition that already existed. The mocked test that
+// covered this echoed the request back verbatim, which is the one server shape
+// that made the comparison work.
 func reviewerConditionEquivalent(existing openapigenerated.RestPullRequestCondition, desired openapigenerated.RestDefaultReviewersRequest) bool {
 	if safederef.Int32(existing.RequiredApprovals) != safederef.Int32(desired.RequiredApprovals) {
 		return false
