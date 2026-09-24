@@ -249,6 +249,10 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
 					BlockingReasons: blocking,
+					// Only its author may edit a comment. Bitbucket refuses
+					// anybody else, a repository admin too, with a 401
+					// AuthorisationException, which is authorization.
+					Fails: apperrors.KindAuthorization,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -306,6 +310,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				predicted := "delete"
 				reason := "comment will be deleted"
 				blocking := []string{}
+				fails := apperrors.KindConflict
 				if err != nil {
 					if apperrors.ExitCode(err) == 4 {
 						predicted = "no-op"
@@ -313,11 +318,29 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					} else {
 						return err
 					}
-				} else if currentUser != "" {
-					if !commentOwnedByUser(current, currentUser) {
+				} else {
+					// Bitbucket lets the author delete a comment, and anyone who
+					// administers the repository: a repository admin deleting
+					// somebody else's comment succeeds, so being somebody else
+					// is only a refusal without admin. It asks that first, and
+					// only then refuses a comment that still has replies.
+					if currentUser != "" && !commentOwnedByUser(current, currentUser) {
+						adminErr := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoAdmin)
+						switch {
+						case adminErr == nil:
+						case apperrors.IsKind(adminErr, apperrors.KindAuthorization):
+							predicted = "blocked"
+							reason = "comment is owned by another user, and only its author or a repository admin may delete it"
+							blocking = []string{reason}
+							fails = apperrors.KindAuthorization
+						default:
+							return adminErr
+						}
+					}
+					if predicted == "delete" && current.Comments != nil && len(*current.Comments) > 0 {
 						predicted = "blocked"
-						reason = "comment is owned by another user"
-						blocking = []string{"comment owned by another user"}
+						reason = "comment has replies, which have to be deleted first"
+						blocking = []string{reason}
 					}
 				}
 
@@ -329,6 +352,10 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
 					BlockingReasons: blocking,
+					// authorization for somebody else's comment, which Bitbucket
+					// refuses with a 401 AuthorisationException; conflict, its
+					// 409 CommentDeletionException, for one with replies.
+					Fails: fails,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
