@@ -35,7 +35,7 @@ type GetFileContentInput struct {
 type GetFileContentOutput struct {
 	Path          string     `json:"path"`
 	At            string     `json:"at,omitempty"`
-	Kind          string     `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; document, a window of the text extracted from a Word, PowerPoint or Excel file; archive, a window of the listing of a zip or tar archive's entries; image, the image, in the content beside this; audio and video, the file itself beside its description when it is small enough (see media_returned); binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
+	Kind          string     `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; document, a window of the text extracted from a Word, PowerPoint or Excel file; archive, a window of the listing of a zip or tar archive's entries, the tar compressed or not; image, the image, in the content beside this; audio and video, the file itself beside its description when it is small enough (see media_returned); binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
 	MIMEType      string     `json:"mime_type,omitempty" jsonschema:"The file's type, read from its bytes; absent when the file was not read"`
 	Size          *int64     `json:"size,omitempty" jsonschema:"The file's size in bytes; absent when it was too large to read and Bitbucket did not say how large"`
 	WebURL        string     `json:"web_url" jsonschema:"The file's page in Bitbucket, for a person to open"`
@@ -69,7 +69,7 @@ func specGetFileContent() Spec {
 		Name: "get_file_content",
 		Description: "Read a file in a repository. Text comes back as a window of numbered lines: start_line and line_count " +
 			"choose it, and each answer says which lines it holds and where the next window starts. A Word, PowerPoint or " +
-			"Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz) as a listing of its " +
+			"Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz, tar.bz2) as a listing of its " +
 			"entries, both in the same windows. An image (PNG, JPEG, GIF, WebP, BMP, TIFF) comes back as an image, converted " +
 			"to PNG or JPEG when clients do not take its format, turned upright when its metadata says it was stored turned, " +
 			"and scaled down when it is large, with a note saying which. Audio and video come back as themselves beside a " +
