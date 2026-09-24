@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"compress/bzip2"
 	"compress/gzip"
 	"errors"
 	"fmt"
@@ -22,13 +23,25 @@ func readArchive(request Request, sniffed string, content []byte) (View, bool, e
 
 		return view, true, err
 	case sniffed == "application/x-gzip":
-		return readTar(request, content, true)
+		return readTar(request, content, gzipped, archiveExpandBytes)
+	case sniffed == "application/x-bzip2":
+		return readTar(request, content, bzipped, archiveExpandBytes)
 	case isTar(request.Path, content):
-		return readTar(request, content, false)
+		return readTar(request, content, uncompressed, archiveExpandBytes)
 	}
 
 	return View{}, false, nil
 }
+
+// tarCompression is what a tar is compressed with, if anything. xz is not
+// among them: the standard library has no reader for it, and it is described.
+type tarCompression int
+
+const (
+	uncompressed tarCompression = iota
+	gzipped
+	bzipped
+)
 
 // isTar reports a tar archive: by the magic a POSIX or GNU tar header carries,
 // or, for the older kind that has none, by its name.
@@ -95,10 +108,10 @@ func zipEntry(file *zip.File) string {
 	return line
 }
 
-// errExpanded stops a read that has expanded past archiveExpandBytes.
+// errExpanded stops a read that has expanded past its limit.
 var errExpanded = errors.New("the archive expands to more than is read")
 
-// expansion reads a decompressed stream until it has given archiveExpandBytes.
+// expansion reads a decompressed stream until it has given its limit.
 type expansion struct {
 	reader io.Reader
 	left   int64
@@ -117,20 +130,27 @@ func (stream *expansion) Read(buffer []byte) (int, error) {
 	return count, err
 }
 
-// readTar views a tar archive, gzip-compressed or not, as a listing of its
-// entries. A tar has no index, so this reads all of it, and a compressed one
-// only as far as archiveExpandBytes. It reports false when the content turns
-// out not to be a tar at all, as a gzip-compressed file of another kind is not.
-func readTar(request Request, content []byte, compressed bool) (View, bool, error) {
+// readTar views a tar archive, compressed or not, as a listing of its entries.
+// A tar has no index, so this reads all of it, and a compressed one only as
+// far as expanding it to limit bytes -- archiveExpandBytes, which a test
+// makes smaller. It reports false when the content turns out not to be a tar
+// at all, as a compressed file of another kind is not.
+func readTar(request Request, content []byte, compression tarCompression, limit int64) (View, bool, error) {
 	var source io.Reader = bytes.NewReader(content)
 	mimeType, name := "application/x-tar", "a tar archive"
-	if compressed {
+	switch compression {
+	case gzipped:
 		decompressed, err := gzip.NewReader(source)
 		if err != nil {
 			return View{}, false, nil
 		}
-		source = &expansion{reader: decompressed, left: archiveExpandBytes}
+		source = &expansion{reader: decompressed, left: limit}
 		mimeType, name = "application/x-gzip", "a gzip-compressed tar archive"
+	case bzipped:
+		// A bzip2 stream is checked as it is read, so one that is not
+		// valid fails at the first entry, as a gzip one fails here.
+		source = &expansion{reader: bzip2.NewReader(source), left: limit}
+		mimeType, name = "application/x-bzip2", "a bzip2-compressed tar archive"
 	}
 
 	reader := tar.NewReader(source)
@@ -147,10 +167,10 @@ func readTar(request Request, content []byte, compressed bool) (View, bool, erro
 			case count == 0:
 				return View{}, false, nil
 			case errors.Is(err, errExpanded):
-				more = fmt.Sprintf("The listing stops after %d entries: the archive expands to more than the %s this tool reads of it.",
-					count, formatSize(archiveExpandBytes))
+				more = fmt.Sprintf("The listing stops after %s: the archive expands to more than the %s this tool reads of it.",
+					plural(count, "entry"), formatSize(limit))
 			default:
-				more = fmt.Sprintf("The listing stops after %d entries, where the archive cannot be read any further.", count)
+				more = fmt.Sprintf("The listing stops after %s, where the archive cannot be read any further.", plural(count, "entry"))
 			}
 
 			break

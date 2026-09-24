@@ -178,11 +178,27 @@ func Read(request Request, content []byte) (View, error) {
 // sniff reads a file's type from its first bytes: http.DetectContentType's
 // answer, or for a signature it does not know, this package's.
 func sniff(content []byte) string {
-	if bytes.HasPrefix(content, []byte("II*\x00")) || bytes.HasPrefix(content, []byte("MM\x00*")) {
+	switch {
+	case bytes.HasPrefix(content, []byte("II*\x00")), bytes.HasPrefix(content, []byte("MM\x00*")):
 		return "image/tiff"
+	case bzip2Stream(content):
+		return "application/x-bzip2"
+	case bytes.HasPrefix(content, []byte("\xFD7zXZ\x00")):
+		return "application/x-xz"
 	}
 
 	return http.DetectContentType(content)
+}
+
+// bzip2Stream reports a bzip2 stream: "BZh", the block size from 1 to 9, and
+// then the magic of a first block, or of the end of a stream with none.
+func bzip2Stream(content []byte) bool {
+	if len(content) < 10 || !bytes.HasPrefix(content, []byte("BZh")) || content[3] < '1' || content[3] > '9' {
+		return false
+	}
+	magic := string(content[4:10])
+
+	return magic == "1AY&SY" || magic == "\x17rE8P\x90"
 }
 
 // readText views decoded text as a window of its lines.

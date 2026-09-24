@@ -81,6 +81,10 @@ func nameOf(mimeType string) string {
 		return "a zip archive"
 	case "application/x-gzip":
 		return "a gzip-compressed file"
+	case "application/x-bzip2":
+		return "a bzip2-compressed file"
+	case "application/x-xz":
+		return "an xz-compressed file"
 	case "application/x-rar-compressed":
 		return "a RAR archive"
 	case "application/wasm":
