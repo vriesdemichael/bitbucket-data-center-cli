@@ -25,7 +25,8 @@ describes it.
 
 The flags choose the member, and nothing that happens during the run changes it: `data`, or
 `error` when the run fails; under `--dry-run`, `preview`, a verdict on the real run (see
-[Dry-Run Planning](dry-run-planning.md)).
+[Dry-Run Planning](dry-run-planning.md)); under `--describe`, `description`, what the command
+returns (see [JSON Schemas](../reference/schemas.md)).
 
 There is no contract version. Adding a field to `data` is additive; removing or renaming one,
 changing its type, or changing whether it can be null is a breaking change that cuts a new
@@ -122,7 +123,7 @@ bb --json --log-level warn --log-format jsonl auth status 2> diagnostics.jsonl
 1. Use `--json` and parse only the `data` payload needed for automation.
 2. Branch on the `error` key, or on the exit code, before reading `data`.
 3. Keep diagnostics in separate stderr capture.
-4. Validate `data` against the schema `bb <command> --describe` prints when integrating with CI.
+4. Validate the document against `description.run.outputSchema` from `bb <command> --describe --json` when integrating with CI.
 
 ```bash
 if output=$(bb --json pr get 42 2>/dev/null); then

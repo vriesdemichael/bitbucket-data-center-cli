@@ -502,32 +502,24 @@ bb tag list --repo MYPROJ/payments --json
 
 ### Asking what a command returns
 
-`--describe` prints a command's output schema instead of running it. Use it rather than
-inferring the payload shape from one sample run — a sample cannot tell you which fields are
-optional, or that a field can be null.
+`--describe` says what a command's `--json` output looks like instead of running it. Use it
+rather than inferring the shape from one sample run — a sample cannot tell you which fields
+are optional, or that a field can be null.
 
 ```bash
-bb pr get --describe          # the JSON Schema for bb pr get --json
-bb pr get --describe --json   # the same, wrapped in the standard envelope
+bb pr get --describe          # an outline of the fields: enough to write a jq filter
+bb pr get --describe --json   # the JSON Schemas, to validate against
 ```
 
 It needs no arguments, no required flags, no configuration and no server: the schemas are
 compiled into the binary, so the answer always matches the `bb` you are holding.
 
-Check `described` before reading `schema`. Four answers are possible:
-
-- `"described": true` — `schema` is the published contract for that command.
-- `"described": false` with a reason saying no schema is published **yet** — the payload shape
-  is real but not guaranteed. Parse defensively.
-- `"described": false` with a reason saying the command returns no data payload — `bb api` and
-  `bb ai skill show` produce a stream or a document. No schema is coming; do not wait for one.
-- `"described": false` with a reason saying the payload has **no shape bb can promise** — the
-  command forwards whatever Bitbucket sent without reading a field. You get an envelope, but
-  what is inside it is the server's to decide. Parse defensively.
-
-Almost every command falls in the first group: its schema is derived from the typed
-result it fills in, so it cannot describe something other than what it emits. The rest say
-which of the others they are, and why.
+Under `--json` the answer is the `description` member. `run.outputSchema` is the JSON Schema
+of the whole document a run writes — `data` and `meta`, or `error` and `meta` — and
+`dryRun.outputSchema` the one `--dry-run` writes, beside `dryRun.behaviour` and `dryRun.tier`.
+When there is no schema, `run.reason` says why: `bb api` and `bb ai skill show` write no
+document of their own, and a command that forwards what Bitbucket sent leaves `data` open.
+`bb pr --describe` lists a group's commands, and `bb --describe` all of them.
 
 Success and failure both produce the same envelope on stdout, and exactly one of
 `data` and `error` is present. That key is what tells you which happened — never

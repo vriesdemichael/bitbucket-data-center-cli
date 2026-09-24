@@ -163,10 +163,9 @@ func quoted(values []string) []string {
 // Only the success payload is checked. A failure envelope's shape is the error
 // taxonomy's, not the command's, and checkEnvelopeShape already covers it.
 func checkPayloadAgainstSchema(file string, block codeBlock, envelope map[string]any) []finding {
-	described := cli.DescribeCommand(block.outputOf)
+	schema, reason, described := cli.DataSchema(block.outputOf)
 
-	if !described.Described {
-		reason := described.Reason
+	if !described {
 		if reason == "" {
 			reason = "no schema is published for it"
 		}
@@ -183,7 +182,7 @@ func checkPayloadAgainstSchema(file string, block codeBlock, envelope map[string
 		return nil
 	}
 
-	compiled, err := compileDescribedSchema(described.Schema)
+	compiled, err := compileDescribedSchema(schema)
 	if err != nil {
 		return findingsFrom(file, block, []string{
 			fmt.Sprintf("could not compile the schema declared by %q: %v", "bb "+block.outputOf, err),

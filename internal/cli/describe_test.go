@@ -3,11 +3,12 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/spf13/cobra"
-	"reflect"
 
 	resultpkg "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
@@ -16,110 +17,177 @@ import (
 func runDescribe(t *testing.T, arguments ...string) string {
 	t.Helper()
 
+	return runIsolated(t, append(arguments, "--describe")...)
+}
+
+// runIsolated runs bb with no configuration and no server, and returns stdout.
+func runIsolated(t *testing.T, arguments ...string) string {
+	t.Helper()
+
 	directory := t.TempDir()
 	t.Chdir(directory)
 	t.Setenv("BB_CONFIG_PATH", directory+"/config.yaml")
 	t.Setenv("BB_URL", "")
 	t.Setenv("BB_TOKEN", "")
+	t.Setenv("BITBUCKET_USERNAME", "")
+	t.Setenv("BITBUCKET_PASSWORD", "")
 
 	root := NewRootCommand()
 	out := &bytes.Buffer{}
 	root.SetOut(out)
 	root.SetErr(&bytes.Buffer{})
-	root.SetArgs(append(arguments, "--describe"))
+	root.SetArgs(arguments)
 
 	if err := root.Execute(); err != nil {
-		t.Fatalf("%v --describe failed: %v\n%s", arguments, err, out.String())
+		t.Fatalf("bb %v failed: %v\n%s", arguments, err, out.String())
 	}
 
 	return out.String()
 }
 
-// TestDescribeReturnsThePublishedSchemaForACommand is the point of #485: the
-// binary answers what its own output looks like, without a network round trip
-// to a docs site whose version may not match the installed binary.
-func TestDescribeReturnsThePublishedSchemaForACommand(t *testing.T) {
-	output := runDescribe(t, "pr", "get")
+// describeDocument runs bb <command> --describe --json and returns the
+// description member.
+func describeDocument(t *testing.T, command ...string) map[string]any {
+	t.Helper()
 
-	var result DescribeResult
-	if err := json.Unmarshal([]byte(output), &result); err != nil {
-		t.Fatalf("--describe did not emit JSON: %v\n%s", err, output)
-	}
+	output := runDescribe(t, append(command, "--json")...)
 
-	if result.Command != "pr get" {
-		t.Errorf("command = %q, want %q", result.Command, "pr get")
+	var document map[string]any
+	if err := json.Unmarshal([]byte(output), &document); err != nil {
+		t.Fatalf("--describe --json did not emit JSON: %v\n%s", err, output)
 	}
-	if !result.Described {
-		t.Fatalf("pr get has a published schema but was reported undescribed: %+v", result)
+	if len(document) != 2 || document["meta"] == nil {
+		t.Fatalf("members = %v, want description and meta", document)
 	}
-	document := schemaDocument(t, result)
-	if document["type"] != "object" || document["properties"] == nil {
-		t.Errorf("the returned document is not a JSON Schema: %v", document)
+	description, ok := document["description"].(map[string]any)
+	if !ok {
+		t.Fatalf("no description member:\n%s", output)
 	}
 
-	// The document must be the schema the command declares, not a summary of
-	// it. Comparing against the declaration is what makes --describe unable to
-	// drift from the payload: both come from the same type.
+	return description
+}
+
+// TestDescribeGivesTheWholeDocumentForEachMode is ADR-097: the schema of the
+// whole document a run writes -- data and meta, or error and meta -- and of the
+// one --dry-run writes, rather than of data alone.
+func TestDescribeGivesTheWholeDocumentForEachMode(t *testing.T) {
+	description := describeDocument(t, "pr", "get")
+
+	run := schemaAt(t, description, "run", "outputSchema")
+	branches := run["oneOf"].([]any)
+	if len(branches) != 2 {
+		t.Fatalf("run: %d shapes, want data and error", len(branches))
+	}
+	data := branches[0].(map[string]any)["properties"].(map[string]any)["data"]
+	if _, hasError := branches[1].(map[string]any)["properties"].(map[string]any)["error"]; !hasError {
+		t.Fatalf("run: the second shape is not the error document")
+	}
+
+	// The data schema is the one the command declares, not a summary of it:
+	// both come from the same type, so --describe cannot drift from the payload.
 	declared, ok := resultpkg.SchemaFor("pr get")
 	if !ok {
 		t.Fatal("pr get declares no schema")
 	}
-	encoded, err := json.Marshal(declared)
-	if err != nil {
-		t.Fatalf("encode declared schema: %v", err)
+	if !reflect.DeepEqual(data, schemaJSON(t, declared)) {
+		t.Errorf("run.data is not the schema pr get declares")
 	}
-	var expected map[string]any
-	if err := json.Unmarshal(encoded, &expected); err != nil {
-		t.Fatalf("decode declared schema: %v", err)
+
+	dryRun := description["dryRun"].(map[string]any)
+	if dryRun["behaviour"] != "runs" || dryRun["tier"] != "server-validated" {
+		t.Errorf("dryRun = %v, want a read that runs", dryRun)
 	}
-	if !reflect.DeepEqual(result.Schema, expected) {
-		t.Errorf("--describe returned a different document than the command declares\ngot:  %v\nwant: %v", result.Schema, expected)
+	preview := schemaAt(t, description, "dryRun", "outputSchema")["oneOf"].([]any)[0].(map[string]any)["properties"].(map[string]any)["preview"].(map[string]any)
+	if !reflect.DeepEqual(preview["properties"].(map[string]any)["data"], schemaJSON(t, declared)) {
+		t.Errorf("a read's preview.data is not its declared data")
 	}
 }
 
-// TestDescribeSaysSoWhenACommandHasNoSchema keeps the answer truthful.
-//
-// A caller is better served by a stated reason than by an empty schema that
-// looks like a guarantee. `webhook test` is the case that stays: the service
-// hands back whatever Bitbucket sent as an untyped value and the command prints
-// it without reading a field, so there is no shape for bb to promise.
-func TestDescribeSaysSoWhenACommandHasNoSchema(t *testing.T) {
-	output := runDescribe(t, "webhook", "test")
+// TestTheDescribedSchemasValidateRealOutput is what makes the schemas worth
+// having: a document the command really writes validates against the schema
+// --describe gives for it, in each mode.
+func TestTheDescribedSchemasValidateRealOutput(t *testing.T) {
+	for _, testCase := range []struct {
+		name    string
+		command []string
+		mode    string
+		args    []string
+	}{
+		{"a read", []string{"auth", "server", "list"}, "run", []string{"--json", "auth", "server", "list"}},
+		{"a read under --dry-run", []string{"auth", "server", "list"}, "dryRun", []string{"--json", "--dry-run", "auth", "server", "list"}},
+		{"a change to this machine under --dry-run", []string{"auth", "logout"}, "dryRun", []string{"--json", "--dry-run", "auth", "logout"}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			schema := schemaAt(t, describeDocument(t, testCase.command...), testCase.mode, "outputSchema")
+			compiled := compileSchema(t, schema)
 
-	var result DescribeResult
-	if err := json.Unmarshal([]byte(output), &result); err != nil {
-		t.Fatalf("--describe did not emit JSON: %v\n%s", err, output)
-	}
-
-	if result.Described {
-		t.Errorf("webhook test has no declarable shape but reported a schema: %+v", result)
-	}
-	if result.Schema != nil {
-		t.Errorf("an undescribed command returned a schema: %v", result.Schema)
-	}
-	if strings.TrimSpace(result.Reason) == "" {
-		t.Error("an undescribed command gave no reason")
+			var document any
+			output := runIsolated(t, testCase.args...)
+			if err := json.Unmarshal([]byte(output), &document); err != nil {
+				t.Fatalf("not JSON: %v\n%s", err, output)
+			}
+			if err := compiled.Validate(document); err != nil {
+				t.Fatalf("the real document does not validate against --describe's schema: %v\n%s", err, output)
+			}
+		})
 	}
 }
 
-// TestDescribeDistinguishesNoSchemaFromNoDataPayload covers the third answer.
+// TestEveryDescriptionIsAValidSchema compiles what --describe gives for every
+// command, so no command publishes a schema a validator rejects.
+func TestEveryDescriptionIsAValidSchema(t *testing.T) {
+	t.Parallel()
+
+	root := NewRootCommand()
+	var walk func(*cobra.Command)
+	walk = func(cmd *cobra.Command) {
+		for _, child := range cmd.Commands() {
+			walk(child)
+		}
+		if !cmd.Runnable() {
+			return
+		}
+
+		path := commandPathWithoutRoot(cmd)
+		description := schemaJSON(t, DescribeCommand(path))
+		for _, mode := range []string{"run", "dryRun"} {
+			if section, ok := description[mode].(map[string]any); ok && section["outputSchema"] != nil {
+				compileSchema(t, section["outputSchema"].(map[string]any))
+			}
+		}
+	}
+	walk(root)
+}
+
+// TestDescribeSaysWhyWhenDataHasNoShape keeps the answer truthful.
 //
-// `bb api` will never have a schema, because it streams the upstream body. A
-// caller that cannot tell that from "not written yet" would wait for a contract
-// that is never coming.
-func TestDescribeDistinguishesNoSchemaFromNoDataPayload(t *testing.T) {
-	output := runDescribe(t, "api")
+// `webhook test` hands back whatever the endpoint answered, untyped, so its
+// data has no shape bb can promise: the document is described with data left
+// open, and the reason beside it.
+func TestDescribeSaysWhyWhenDataHasNoShape(t *testing.T) {
+	description := describeDocument(t, "webhook", "test")
 
-	var result DescribeResult
-	if err := json.Unmarshal([]byte(output), &result); err != nil {
-		t.Fatalf("--describe did not emit JSON: %v\n%s", err, output)
+	run := description["run"].(map[string]any)
+	if !strings.Contains(run["reason"].(string), "no shape bb can promise") {
+		t.Errorf("reason = %v", run["reason"])
 	}
+	if run["outputSchema"] == nil {
+		t.Error("the document around the open data is still described")
+	}
+}
 
-	if result.Described {
-		t.Errorf("api reported a schema: %+v", result)
+// TestDescribeSaysSoOfACommandWithNoDocument covers bb api, which streams the
+// upstream body and writes no document of its own. A caller that cannot tell
+// that from "not written yet" would wait for a contract that is never coming.
+func TestDescribeSaysSoOfACommandWithNoDocument(t *testing.T) {
+	description := describeDocument(t, "api")
+
+	run := description["run"].(map[string]any)
+	if run["outputSchema"] != nil || !strings.Contains(run["reason"].(string), "writes no document of its own") {
+		t.Errorf("run = %v", run)
 	}
-	if !strings.Contains(result.Reason, "does not return a data payload") {
-		t.Errorf("reason = %q, want it to say the command returns no data", result.Reason)
+	if description["dryRun"] == nil {
+		t.Error("bb api takes --dry-run, so its description says what that does")
 	}
 }
 
@@ -139,53 +207,64 @@ func TestDescribeNeedsNoArgumentsFlagsOrConfiguration(t *testing.T) {
 		{"project", "permissions", "list"}, // deeply nested, needs a server
 	} {
 		t.Run(strings.Join(command, " "), func(t *testing.T) {
-			output := runDescribe(t, command...)
-
-			var result DescribeResult
-			if err := json.Unmarshal([]byte(output), &result); err != nil {
-				t.Fatalf("--describe did not emit JSON: %v\n%s", err, output)
+			if description := describeDocument(t, command...); description["run"] == nil {
+				t.Errorf("no run description: %v", description)
 			}
-			if result.Command != strings.Join(command, " ") {
-				t.Errorf("command = %q, want %q", result.Command, strings.Join(command, " "))
+			if text := runDescribe(t, command...); !strings.Contains(text, "bb "+strings.Join(command, " ")+" --json") {
+				t.Errorf("the outline does not name the command:\n%s", text)
 			}
 		})
 	}
 }
 
-// TestDescribeUnderJSONIsAnEnvelope keeps it consistent with everything else the
-// CLI emits under --json: one bb.machine document, data carrying the payload.
-func TestDescribeUnderJSONIsAnEnvelope(t *testing.T) {
-	directory := t.TempDir()
-	t.Chdir(directory)
-	t.Setenv("BB_CONFIG_PATH", directory+"/config.yaml")
+// TestDescribeWithoutJSONIsAnOutline is ADR-097's text form: the document's
+// fields for a person, one sentence each, and what --dry-run does.
+func TestDescribeWithoutJSONIsAnOutline(t *testing.T) {
+	text := runDescribe(t, "pr", "merge")
 
-	root := NewRootCommand()
-	out := &bytes.Buffer{}
-	root.SetOut(out)
-	root.SetErr(&bytes.Buffer{})
-	root.SetArgs([]string{"--json", "tag", "list", "--describe"})
+	for _, want := range []string{
+		"bb pr merge --json prints data, or error when it fails:",
+		"\ndata\n",
+		"    title               string",
+		"\nmeta\n",
+		"? marks a field that can be absent.",
+		"--dry-run: ",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the outline lacks %q:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, `"type"`) {
+		t.Errorf("the outline prints JSON Schema:\n%s", text)
+	}
+}
 
-	if err := root.Execute(); err != nil {
-		t.Fatalf("execute failed: %v", err)
+// TestDescribeOfAGroupIsItsCatalogue: a group, or bb itself, lists its commands
+// with what --dry-run does for each, so one call covers the whole tool.
+func TestDescribeOfAGroupIsItsCatalogue(t *testing.T) {
+	commands := describeDocument(t, "pr")["commands"].(map[string]any)
+	merge, ok := commands["pr merge"].(map[string]any)
+	if !ok || merge["dryRun"].(map[string]any)["behaviour"] != "verifies" {
+		t.Fatalf("pr merge in the catalogue = %v", commands["pr merge"])
+	}
+	if list := commands["pr list"].(map[string]any)["dryRun"].(map[string]any); list["behaviour"] != "runs" {
+		t.Errorf("pr list = %v, want a read that runs", list)
+	}
+	if serve, ok := describeDocument(t, "ai")["commands"].(map[string]any)["ai mcp serve"].(map[string]any); !ok || serve["dryRun"] != nil {
+		t.Errorf("ai mcp serve does not take --dry-run, so its entry names no behaviour: %v", serve)
 	}
 
-	var envelope struct {
-		Data DescribeResult `json:"data"`
-		Meta struct {
-			BBVersion string `json:"bbVersion"`
-		} `json:"meta"`
+	var everything map[string]any
+	if err := json.Unmarshal([]byte(runIsolated(t, "--describe", "--json")), &everything); err != nil {
+		t.Fatalf("bb --describe --json: %v", err)
 	}
-	if err := json.Unmarshal(out.Bytes(), &envelope); err != nil {
-		t.Fatalf("not an envelope: %v\n%s", err, out.String())
+	if count := len(everything["description"].(map[string]any)["commands"].(map[string]any)); count < 200 {
+		t.Errorf("bb --describe lists %d commands; it covers the whole tool", count)
 	}
-	if envelope.Meta.BBVersion == "" {
-		t.Error("the envelope carries no meta.bbVersion")
-	}
-	if envelope.Data.Command != "tag list" {
-		t.Errorf("command = %q, want tag list", envelope.Data.Command)
-	}
-	if !envelope.Data.Described {
-		t.Errorf("tag list has a published schema but was reported undescribed")
+
+	text := runDescribe(t, "pr")
+	if !strings.Contains(text, "Commands in bb pr") || !strings.Contains(text, "pr merge") || strings.Contains(text, "Usage:") {
+		t.Errorf("the catalogue as text:\n%s", text)
 	}
 }
 
@@ -290,24 +369,54 @@ func TestEveryRunnableCommandAnswersDescribe(t *testing.T) {
 	}
 }
 
-// schemaDocument reads the schema out of a description as the JSON document a
-// caller receives.
-//
-// DescribeResult.Schema is any, because a derived schema and a decoded one are
-// different Go values that encode to the same JSON. Every assertion about it
-// belongs on the encoded form, which is the only form anything outside bb sees.
-func schemaDocument(t *testing.T, described DescribeResult) map[string]any {
+// schemaJSON is a value as the JSON a caller receives: every assertion about a
+// schema belongs on the encoded form, which is the only form anything outside
+// bb sees.
+func schemaJSON(t *testing.T, value any) map[string]any {
 	t.Helper()
 
-	encoded, err := json.Marshal(described.Schema)
+	encoded, err := json.Marshal(value)
 	if err != nil {
-		t.Fatalf("encode schema: %v", err)
+		t.Fatalf("encode: %v", err)
 	}
 
 	var document map[string]any
 	if err := json.Unmarshal(encoded, &document); err != nil {
-		t.Fatalf("decode schema: %v", err)
+		t.Fatalf("decode: %v", err)
 	}
 
 	return document
+}
+
+// schemaAt reads description[mode][key] as a schema.
+func schemaAt(t *testing.T, description map[string]any, mode, key string) map[string]any {
+	t.Helper()
+
+	section, ok := description[mode].(map[string]any)
+	if !ok {
+		t.Fatalf("no %s in %v", mode, description)
+	}
+	schema, ok := section[key].(map[string]any)
+	if !ok {
+		t.Fatalf("no %s.%s in %v", mode, key, section)
+	}
+
+	return schema
+}
+
+// compileSchema compiles a published schema, failing the test if a validator
+// would reject it.
+func compileSchema(t *testing.T, schema map[string]any) *jsonschema.Schema {
+	t.Helper()
+
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("describe.json", schema); err != nil {
+		t.Fatalf("add schema: %v", err)
+	}
+	compiled, err := compiler.Compile("describe.json")
+	if err != nil {
+		t.Fatalf("the schema does not compile: %v", err)
+	}
+
+	return compiled
 }

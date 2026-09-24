@@ -50,12 +50,12 @@ func TestAnEchoedFlagPublishesTheValuesItAccepts(t *testing.T) {
 		}
 
 		path := commandPathWithoutRoot(cmd)
-		described := describeCommand(path)
-		if !described.Described {
+		declared, _, described := DataSchema(path)
+		if !described {
 			return
 		}
 
-		encoded, err := json.Marshal(described.Schema)
+		encoded, err := json.Marshal(declared)
 		if err != nil {
 			t.Fatalf("%s: encode schema: %v", path, err)
 		}

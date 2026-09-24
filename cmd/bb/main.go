@@ -194,6 +194,17 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 			return reportVerdict(err, settings, stdout, stderr)
 		}
 
+		// Under --describe, a path that names no command is itself the answer,
+		// inside description, so the document exits 0; in text it is the
+		// usage error it looks like (ADR-097).
+		if settings.Mode == jsonoutput.ModeDescribe && settings.Machine && apperrors.IsKind(err, apperrors.KindValidation) {
+			if writeErr := jsonoutput.WriteError(jsonoutput.Bind(stdout, settings), err); writeErr != nil {
+				fmt.Fprintln(stderr, writeErr.Error())
+				return apperrors.ExitCode(err)
+			}
+			return 0
+		}
+
 		// Under --json or --yaml, stdout is a machine contract, and a failure
 		// that leaves it empty is indistinguishable from a command that
 		// produced malformed output. Emit the classified failure there; stderr
@@ -301,8 +312,8 @@ func invocationOutput(rootCmd, executed *cobra.Command, args []string) jsonoutpu
 	if !parsed.Machine && requested.Machine {
 		parsed.Machine, parsed.Format = true, requested.Format
 	}
-	if parsed.Mode == jsonoutput.ModeRun && requested.Mode == jsonoutput.ModeDryRun {
-		parsed.Mode = jsonoutput.ModeDryRun
+	if parsed.Mode == jsonoutput.ModeRun && requested.Mode != jsonoutput.ModeRun {
+		parsed.Mode = requested.Mode
 	}
 
 	return parsed
@@ -344,7 +355,10 @@ func argsRequestOutput(args []string) jsonoutput.Settings {
 	if yaml && !json {
 		settings.Format = jsonoutput.FormatYAML
 	}
-	if dryRun && !describe {
+	switch {
+	case describe:
+		settings.Mode = jsonoutput.ModeDescribe
+	case dryRun:
 		settings.Mode = jsonoutput.ModeDryRun
 	}
 

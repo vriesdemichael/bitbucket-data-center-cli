@@ -18,7 +18,7 @@ Global Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
-      --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+      --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
       --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
       --full-error-body          Print the whole upstream response body in an error instead of a summary
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -88,7 +88,7 @@ Flags:
       --ca-file string           Path to PEM CA bundle for TLS trust
       --client-cert string       Path to PEM client certificate for mTLS
       --client-key string        Path to PEM client key for mTLS
-      --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+      --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
       --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
       --full-error-body          Print the whole upstream response body in an error instead of a summary
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -131,7 +131,7 @@ Use "bb admin [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -171,7 +171,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -210,7 +210,7 @@ Use "bb ai [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -249,7 +249,7 @@ Use "bb ai mcp [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -352,7 +352,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -405,7 +405,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -445,7 +445,7 @@ Use "bb ai skill [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -497,7 +497,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -537,7 +537,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -592,7 +592,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -673,7 +673,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -721,7 +721,7 @@ Use "bb auth [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -762,7 +762,7 @@ Use "bb auth alias [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -801,7 +801,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -845,7 +845,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -884,7 +884,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -924,7 +924,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -967,7 +967,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1008,7 +1008,7 @@ Use "bb auth gpg-key [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1044,7 +1044,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1083,7 +1083,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1123,7 +1123,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1162,7 +1162,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1204,7 +1204,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1259,7 +1259,7 @@ Dry run:
     ```text
     Global Flags:
           --ca-file string           Path to PEM CA bundle for TLS trust
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1298,7 +1298,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1337,7 +1337,7 @@ Use "bb auth server [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1373,7 +1373,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1412,7 +1412,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1457,7 +1457,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1518,7 +1518,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1565,7 +1565,7 @@ Use "bb auth token [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1606,7 +1606,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1645,7 +1645,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1688,7 +1688,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1730,7 +1730,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1773,7 +1773,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1815,7 +1815,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1862,7 +1862,7 @@ Use "bb branch [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1901,7 +1901,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1942,7 +1942,7 @@ Use "bb branch default [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -1980,7 +1980,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2018,7 +2018,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2060,7 +2060,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2106,7 +2106,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2147,7 +2147,7 @@ Use "bb branch model [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2189,7 +2189,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2227,7 +2227,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2271,7 +2271,7 @@ Use "bb branch restriction [command] --help" for more information about a comman
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2318,7 +2318,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2363,7 +2363,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2401,7 +2401,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2448,7 +2448,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2499,7 +2499,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2546,7 +2546,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2591,7 +2591,7 @@ Use "bb build [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2631,7 +2631,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2671,7 +2671,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2713,7 +2713,7 @@ Use "bb build required [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2753,7 +2753,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2795,7 +2795,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2836,7 +2836,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2876,7 +2876,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2924,7 +2924,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -2968,7 +2968,7 @@ Use "bb build status [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3010,7 +3010,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --include-unique           Include unique result details when available
@@ -3059,7 +3059,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --include-unique           Include unique result details when available
@@ -3097,7 +3097,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --include-unique           Include unique result details when available
@@ -3141,7 +3141,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3186,7 +3186,7 @@ Use "bb commit [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3231,7 +3231,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3269,7 +3269,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3313,7 +3313,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3351,7 +3351,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3396,7 +3396,7 @@ Use "bb deployment [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3444,7 +3444,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3487,7 +3487,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3529,7 +3529,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3573,7 +3573,7 @@ Use "bb diff [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3612,7 +3612,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3656,7 +3656,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3699,7 +3699,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3773,7 +3773,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3863,7 +3863,7 @@ Use "bb insights [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3904,7 +3904,7 @@ Use "bb insights annotation [command] --help" for more information about a comma
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3944,7 +3944,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -3985,7 +3985,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4026,7 +4026,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4071,7 +4071,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4113,7 +4113,7 @@ Use "bb insights report [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4153,7 +4153,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4190,7 +4190,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4231,7 +4231,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4271,7 +4271,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4338,7 +4338,7 @@ Use "bb pr [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4376,7 +4376,7 @@ Use "bb pr activity [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4417,7 +4417,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4458,7 +4458,7 @@ Use "bb pr auto-merge [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4495,7 +4495,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4542,7 +4542,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4579,7 +4579,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4618,7 +4618,7 @@ Use "bb pr build [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4665,7 +4665,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4711,7 +4711,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4758,7 +4758,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4803,7 +4803,7 @@ Use "bb pr comment [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4869,7 +4869,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4912,7 +4912,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -4949,7 +4949,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5001,7 +5001,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5041,7 +5041,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5078,7 +5078,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5115,7 +5115,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5157,7 +5157,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5224,7 +5224,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5267,7 +5267,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5310,7 +5310,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5354,7 +5354,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5399,7 +5399,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5444,7 +5444,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5481,7 +5481,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5527,7 +5527,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5567,7 +5567,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5604,7 +5604,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5644,7 +5644,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5697,7 +5697,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5737,7 +5737,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5777,7 +5777,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5822,7 +5822,7 @@ Use "bb pr review [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5862,7 +5862,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5916,7 +5916,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5953,7 +5953,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -5990,7 +5990,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6030,7 +6030,7 @@ Use "bb pr review reviewer [command] --help" for more information about a comman
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6091,7 +6091,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6132,7 +6132,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6188,7 +6188,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6230,7 +6230,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6273,7 +6273,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6310,7 +6310,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6371,7 +6371,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6408,7 +6408,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6455,7 +6455,7 @@ Use "bb project [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6497,7 +6497,7 @@ Use "bb project branch-restriction [command] --help" for more information about 
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6542,7 +6542,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6581,7 +6581,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6617,7 +6617,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6658,7 +6658,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6703,7 +6703,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6743,7 +6743,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6784,7 +6784,7 @@ Use "bb project default-task [command] --help" for more information about a comm
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6824,7 +6824,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6863,7 +6863,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6899,7 +6899,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6940,7 +6940,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -6979,7 +6979,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7015,7 +7015,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7057,7 +7057,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7100,7 +7100,7 @@ Use "bb project permissions [command] --help" for more information about a comma
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7141,7 +7141,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7181,7 +7181,7 @@ Use "bb project permissions groups [command] --help" for more information about 
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7219,7 +7219,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7261,7 +7261,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7302,7 +7302,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7345,7 +7345,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7387,7 +7387,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7423,7 +7423,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7463,7 +7463,7 @@ Use "bb project permissions users [command] --help" for more information about a
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7501,7 +7501,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7543,7 +7543,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7584,7 +7584,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7624,7 +7624,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7667,7 +7667,7 @@ Use "bb project webhook [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7711,7 +7711,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7750,7 +7750,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7791,7 +7791,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7830,7 +7830,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7870,7 +7870,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7918,7 +7918,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7960,7 +7960,7 @@ Use "bb ref [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -7999,7 +7999,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8036,7 +8036,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8095,7 +8095,7 @@ Use "bb repo [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8139,7 +8139,7 @@ Use "bb repo admin [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8184,7 +8184,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8226,7 +8226,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8269,7 +8269,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8311,7 +8311,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8356,7 +8356,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8401,7 +8401,7 @@ Use "bb repo browse [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8440,7 +8440,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8480,7 +8480,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8521,7 +8521,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8566,7 +8566,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8608,7 +8608,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8654,7 +8654,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8696,7 +8696,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8742,7 +8742,7 @@ Use "bb repo comment [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8788,7 +8788,7 @@ Dry run:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --commit string            Commit ID context
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8832,7 +8832,7 @@ Dry run:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --commit string            Commit ID context
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8876,7 +8876,7 @@ Dry run:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --commit string            Commit ID context
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8920,7 +8920,7 @@ Dry run:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --commit string            Commit ID context
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -8966,7 +8966,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9011,7 +9011,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9055,7 +9055,7 @@ Use "bb repo default-task [command] --help" for more information about a command
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9095,7 +9095,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9138,7 +9138,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9177,7 +9177,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9222,7 +9222,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9270,7 +9270,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9314,7 +9314,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9357,7 +9357,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9411,7 +9411,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9454,7 +9454,7 @@ Use "bb repo label [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9490,7 +9490,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9527,7 +9527,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9567,7 +9567,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9610,7 +9610,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9654,7 +9654,7 @@ Use "bb repo permissions [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9695,7 +9695,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9739,7 +9739,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9782,7 +9782,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9819,7 +9819,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9865,7 +9865,7 @@ Use "bb repo settings [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9908,7 +9908,7 @@ Use "bb repo settings auto-decline [command] --help" for more information about 
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9947,7 +9947,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -9984,7 +9984,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10025,7 +10025,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10069,7 +10069,7 @@ Use "bb repo settings auto-merge [command] --help" for more information about a 
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10108,7 +10108,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10145,7 +10145,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10185,7 +10185,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10228,7 +10228,7 @@ Use "bb repo settings pull-requests [command] --help" for more information about
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10265,7 +10265,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10304,7 +10304,7 @@ Use "bb repo settings pull-requests merge-checks [command] --help" for more info
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10341,7 +10341,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10378,7 +10378,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10418,7 +10418,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10458,7 +10458,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10497,7 +10497,7 @@ Use "bb repo settings security [command] --help" for more information about a co
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10537,7 +10537,7 @@ Use "bb repo settings security permissions [command] --help" for more informatio
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10578,7 +10578,7 @@ Use "bb repo settings security permissions groups [command] --help" for more inf
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10617,7 +10617,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10660,7 +10660,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10702,7 +10702,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10743,7 +10743,7 @@ Use "bb repo settings security permissions users [command] --help" for more info
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10782,7 +10782,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10825,7 +10825,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10867,7 +10867,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10906,7 +10906,7 @@ Use "bb repo settings workflow [command] --help" for more information about a co
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10947,7 +10947,7 @@ Use "bb repo settings workflow webhooks [command] --help" for more information a
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -10992,7 +10992,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11032,7 +11032,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11069,7 +11069,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11114,7 +11114,7 @@ Use "bb repo ssh-key [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11156,7 +11156,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11198,7 +11198,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11239,7 +11239,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11290,7 +11290,7 @@ Use "bb repo sync [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11326,7 +11326,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11363,7 +11363,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11400,7 +11400,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11440,7 +11440,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11479,7 +11479,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11524,7 +11524,7 @@ Use "bb reviewer [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11566,7 +11566,7 @@ Use "bb reviewer condition [command] --help" for more information about a comman
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11605,7 +11605,7 @@ Dry run:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11652,7 +11652,7 @@ Dry run:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11693,7 +11693,7 @@ Dry run:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11735,7 +11735,7 @@ Dry run:
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
           --config-file string       JSON file containing condition settings
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11783,7 +11783,7 @@ Use "bb reviewer-group [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11823,7 +11823,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11864,7 +11864,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11902,7 +11902,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11945,7 +11945,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -11985,7 +11985,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12027,7 +12027,7 @@ Use "bb search [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12073,7 +12073,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12117,7 +12117,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12159,7 +12159,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12199,7 +12199,7 @@ Use "bb ssh-key [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12238,7 +12238,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12279,7 +12279,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12318,7 +12318,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12363,7 +12363,7 @@ Use "bb tag [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12403,7 +12403,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --filter string            Filter text for tag names
           --full-error-body          Print the whole upstream response body in an error instead of a summary
@@ -12444,7 +12444,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --filter string            Filter text for tag names
           --full-error-body          Print the whole upstream response body in an error instead of a summary
@@ -12488,7 +12488,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --filter string            Filter text for tag names
           --full-error-body          Print the whole upstream response body in an error instead of a summary
@@ -12526,7 +12526,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --filter string            Filter text for tag names
           --full-error-body          Print the whole upstream response body in an error instead of a summary
@@ -12584,7 +12584,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12631,7 +12631,7 @@ Use "bb webhook [command] --help" for more information about a command.
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12675,7 +12675,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12715,7 +12715,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12755,7 +12755,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12797,7 +12797,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12837,7 +12837,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12878,7 +12878,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
@@ -12927,7 +12927,7 @@ Dry run:
           --ca-file string           Path to PEM CA bundle for TLS trust
           --client-cert string       Path to PEM client certificate for mTLS
           --client-key string        Path to PEM client key for mTLS
-          --describe                 Print the JSON Schema of the command's --json data payload instead of running it
+          --describe                 Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
           --dry-run                  Say what the real run would do, without doing it; each command's help says what it checks
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)

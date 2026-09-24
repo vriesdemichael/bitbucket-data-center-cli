@@ -157,7 +157,7 @@ your behalf using the link above.`,
 	rootCmd.PersistentFlags().BoolVar(&options.FullErrorBody, "full-error-body", false,
 		"Print the whole upstream response body in an error instead of a summary")
 	rootCmd.PersistentFlags().Bool("no-input", false, "Never prompt; fail instead when a value is missing")
-	rootCmd.PersistentFlags().BoolVar(&options.Describe, describeFlag, false, "Print the JSON Schema of the command's --json data payload instead of running it")
+	rootCmd.PersistentFlags().BoolVar(&options.Describe, describeFlag, false, "Say what this command's --json output looks like, for a run and for --dry-run, instead of running it")
 	rootCmd.PersistentFlags().String("ca-file", "", "Path to PEM CA bundle for TLS trust")
 	rootCmd.PersistentFlags().Bool("insecure-skip-verify", false, "Disable TLS certificate verification (unsafe; local/dev only)")
 	rootCmd.PersistentFlags().String("client-cert", "", "Path to PEM client certificate for mTLS")
@@ -474,7 +474,10 @@ func (options *rootOptions) outputSettings(command *cobra.Command) jsonoutput.Se
 
 	// --describe asks what a command returns whatever else is passed, so it
 	// is not a dry run even beside --dry-run.
-	if options.DryRun && !options.Describe {
+	switch {
+	case options.Describe:
+		settings.Mode = jsonoutput.ModeDescribe
+	case options.DryRun:
 		settings.Mode = jsonoutput.ModeDryRun
 	}
 

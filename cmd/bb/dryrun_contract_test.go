@@ -158,3 +158,38 @@ func canonicalOf(t *testing.T, path string) string {
 
 	return cli.CanonicalPath(command)
 }
+
+// TestDescribingAPathThatNamesNoCommandAnswersInDescription: under --describe
+// the flags choose the member too, so a mistyped path is the answer, inside
+// description -- one document, exiting 0 -- and in text the usage error it looks
+// like, exiting 2 (ADR-097).
+func TestDescribingAPathThatNamesNoCommandAnswersInDescription(t *testing.T) {
+	t.Parallel()
+
+	stdout, exit := runForStdoutAndExit([]string{"pr", "mrge", "--describe", "--json"})
+	if exit != 0 {
+		t.Fatalf("exit = %d, want 0: the answer is in the document", exit)
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(stdout))
+	var document map[string]json.RawMessage
+	if err := decoder.Decode(&document); err != nil {
+		t.Fatalf("not one JSON document: %v\n%s", err, stdout)
+	}
+	if decoder.More() {
+		t.Fatalf("wrote more than one document (ADR-075)\n%s", stdout)
+	}
+
+	var description struct {
+		Error struct {
+			Kind string `json:"kind"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(document["description"], &description); err != nil || description.Error.Kind != "validation" {
+		t.Fatalf("description = %s, want the validation error", document["description"])
+	}
+
+	if _, exit := runForStdoutAndExit([]string{"pr", "mrge", "--describe"}); exit != 2 {
+		t.Fatalf("in text, exit = %d, want 2", exit)
+	}
+}
