@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -171,8 +172,15 @@ func HintGHFieldList(err error, args []string, command *cobra.Command) error {
 		return err
 	}
 
-	fields, without := fieldListAfterJSON(args)
+	fields, without, asValue := fieldListAfterJSON(args)
 	if fields == "" {
+		return err
+	}
+
+	// A word after --json is a field list only if the command took it as an
+	// argument. In `bb --json pr get`, pr names the command, and the failure
+	// is the missing pull request id, which no hint about --json helps with.
+	if !asValue && (command == nil || !slices.Contains(command.Flags().Args(), fields)) {
 		return err
 	}
 
@@ -194,27 +202,27 @@ func HintGHFieldList(err error, args []string, command *cobra.Command) error {
 }
 
 // fieldListAfterJSON returns a gh-style field list given to --json, as the next
-// argument or as its value, and the arguments without it; or "" when there is
-// none.
-func fieldListAfterJSON(args []string) (string, []string) {
+// argument or as its value, the arguments without it, and whether it was the
+// value; or "" when there is none.
+func fieldListAfterJSON(args []string) (string, []string, bool) {
 	for index, arg := range args {
 		if arg == "--" {
-			return "", nil
+			return "", nil, false
 		}
 
 		if value, ok := strings.CutPrefix(arg, "--json="); ok {
 			if _, notBool := strconv.ParseBool(value); notBool != nil && ghFieldList.MatchString(value) {
 				without := append(append(append([]string(nil), args[:index]...), "--json"), args[index+1:]...)
-				return value, without
+				return value, without, true
 			}
 			continue
 		}
 
 		if arg == "--json" && index+1 < len(args) && ghFieldList.MatchString(args[index+1]) {
 			without := append(append([]string(nil), args[:index+1]...), args[index+2:]...)
-			return args[index+1], without
+			return args[index+1], without, false
 		}
 	}
 
-	return "", nil
+	return "", nil, false
 }

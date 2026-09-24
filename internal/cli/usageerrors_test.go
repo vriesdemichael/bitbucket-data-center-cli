@@ -220,49 +220,64 @@ func TestClassifyUsageErrorIgnoresNil(t *testing.T) {
 func TestHintGHFieldListExplainsWhatBBDoesInstead(t *testing.T) {
 	t.Parallel()
 
-	list := &cobra.Command{Use: "list", RunE: func(*cobra.Command, []string) error { return nil }}
-	group := &cobra.Command{Use: "pr"}
-	group.AddCommand(list)
-	root := &cobra.Command{Use: "bb"}
-	root.AddCommand(group)
-
 	unknown := apperrors.New(apperrors.KindValidation, `unknown command "number,title" for "bb pr list"`, nil)
 	tooMany := apperrors.New(apperrors.KindValidation, "pr get takes <pr-id>; 2 arguments given", nil)
+	tooFew := apperrors.New(apperrors.KindValidation, "pr get takes <pr-id>; 0 arguments given", nil)
 
 	testCases := []struct {
-		name     string
-		err      error
-		args     []string
-		command  *cobra.Command
-		wantHint string
+		name string
+		err  error
+		args []string
+		// positional is what the command took as arguments, as Cobra leaves
+		// them on its flag set.
+		positional []string
+		group      bool
+		wantHint   string
 	}{
 		{name: "a list the command took for a subcommand", err: unknown,
-			args: []string{"pr", "list", "--json", "number,title"}, command: list,
+			args: []string{"pr", "list", "--json", "number,title"}, positional: []string{"number,title"},
 			wantHint: "bb pr list --json | jq '.data', and see them with bb pr list --describe"},
 		{name: "a list the command took for an argument too many", err: tooMany,
-			args: []string{"pr", "view", "12", "--json", "number"}, command: list,
+			args: []string{"pr", "view", "12", "--json", "number"}, positional: []string{"12", "number"},
 			wantHint: "bb pr view 12 --json | jq '.data'"},
 		{name: "a list given as the flag's value", err: apperrors.New(apperrors.KindValidation,
 			`invalid argument "number,title" for "--json" flag`, nil),
-			args: []string{"pr", "list", "--json=number,title", "--repo", "P/r"}, command: list,
+			args:     []string{"pr", "list", "--json=number,title", "--repo", "P/r"},
 			wantHint: "bb pr list --json --repo P/r | jq '.data'"},
 		{name: "a group names no command to describe", err: unknown,
-			args: []string{"pr", "--json", "number,title"}, command: group,
+			args: []string{"pr", "--json", "number,title"}, positional: []string{"number,title"}, group: true,
 			wantHint: "pick fields from .data with jq"},
-		{name: "no list", err: unknown, args: []string{"pr", "list", "--json", "PROJ/repo"}, command: list},
+		// --json before the command: the word after it names the command, and
+		// the command took nothing as an argument.
+		{name: "the command named after --json", err: tooFew, args: []string{"--json", "pr", "get"}},
+		{name: "no list", err: unknown, args: []string{"pr", "list", "--json", "PROJ/repo"}, positional: []string{"PROJ/repo"}},
 		{name: "a failure about something else", err: apperrors.New(apperrors.KindValidation, "--repo is required", nil),
-			args: []string{"pr", "list", "--json", "state"}, command: list},
+			args: []string{"pr", "list", "--json", "state"}, positional: []string{"state"}},
 		{name: "not a validation failure", err: apperrors.New(apperrors.KindNotFound, "unknown command", nil),
-			args: []string{"pr", "list", "--json", "number"}, command: list},
-		{name: "after the separator", err: unknown, args: []string{"pr", "list", "--", "--json", "number"}, command: list},
-		{name: "a boolean value is not a list", err: tooMany, args: []string{"pr", "list", "--json=true"}, command: list},
+			args: []string{"pr", "list", "--json", "number"}, positional: []string{"number"}},
+		{name: "after the separator", err: unknown, args: []string{"pr", "list", "--", "--json", "number"}, positional: []string{"--", "--json", "number"}},
+		{name: "a boolean value is not a list", err: tooMany, args: []string{"pr", "list", "--json=true"}},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := HintGHFieldList(testCase.err, testCase.args, testCase.command)
+			list := &cobra.Command{Use: "list", RunE: func(*cobra.Command, []string) error { return nil }}
+			group := &cobra.Command{Use: "pr"}
+			group.AddCommand(list)
+			root := &cobra.Command{Use: "bb"}
+			root.AddCommand(group)
+
+			command := list
+			if testCase.group {
+				command = group
+			}
+			if err := command.Flags().Parse(testCase.positional); err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+
+			got := HintGHFieldList(testCase.err, testCase.args, command)
 			if testCase.wantHint == "" {
 				if apperrors.MessageOf(got) != apperrors.MessageOf(testCase.err) || apperrors.KindOf(got) != apperrors.KindOf(testCase.err) {
 					t.Fatalf("hinted where nothing should be: %v", got)
