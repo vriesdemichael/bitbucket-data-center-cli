@@ -115,11 +115,14 @@ func fileViews(t *testing.T) map[string]fileview.View {
 	}
 
 	return map[string]fileview.View{
-		"text window":              read(fileview.Request{Path: "a.txt", LineCount: 1}, []byte("one\ntwo\n")),
-		"empty text":               read(fileview.Request{Path: "empty.txt"}, nil),
-		"image":                    read(fileview.Request{Path: "small.png"}, pngOf(t, 40, 30)),
-		"scaled image":             read(fileview.Request{Path: "wide.png"}, pngOf(t, 3000, 1000)),
-		"turned image":             read(fileview.Request{Path: "photo.jpg"}, sidewaysJPEG(t)),
+		"text window":     read(fileview.Request{Path: "a.txt", LineCount: 1}, []byte("one\ntwo\n")),
+		"empty text":      read(fileview.Request{Path: "empty.txt"}, nil),
+		"image":           read(fileview.Request{Path: "small.png"}, pngOf(t, 40, 30)),
+		"scaled image":    read(fileview.Request{Path: "wide.png"}, pngOf(t, 3000, 1000)),
+		"turned image":    read(fileview.Request{Path: "photo.jpg"}, sidewaysJPEG(t)),
+		"converted image": read(fileview.Request{Path: "diagram.bmp"}, filefixture.BMP(filefixture.Quadrants(40, 30))),
+		"paged image": read(fileview.Request{Path: "scan.tif"},
+			filefixture.TIFF(6, filefixture.Oriented(filefixture.Quadrants(40, 30), 6), filefixture.Quadrants(8, 8))),
 		"document":                 read(fileview.Request{Path: "plan.docx"}, filefixture.Word(filefixture.WordParagraph("A plan."))),
 		"empty document":           read(fileview.Request{Path: "blank.docx"}, filefixture.Word("")),
 		"archive":                  read(fileview.Request{Path: "app.zip"}, filefixture.Zip(filefixture.Entry{Name: "a.txt", Body: []byte("a")})),
@@ -251,6 +254,27 @@ func TestATurnedImageSaysSoInItsStructuredAnswer(t *testing.T) {
 	}
 	if text := result.Content[0].(*mcp.TextContent).Text; !strings.Contains(text, "turned upright from its EXIF orientation") {
 		t.Errorf("the text does not say the image was turned: %q", text)
+	}
+}
+
+// TestAConvertedImageSaysWhatItWas: a BMP or a TIFF comes back as a PNG, and
+// a TIFF's first page comes back with how many there are.
+func TestAConvertedImageSaysWhatItWas(t *testing.T) {
+	t.Parallel()
+
+	views := fileViews(t)
+
+	_, bitmap := fileContentResult(GetFileContentInput{Path: "diagram.bmp"}, "", views["converted image"])
+	if bitmap.MIMEType != "image/bmp" || bitmap.Image == nil || bitmap.Image.ReturnedMIMEType != "image/png" || bitmap.Image.Pages != 0 {
+		encoded, _ := json.Marshal(bitmap)
+		t.Errorf("a BMP: %s", encoded)
+	}
+
+	_, scan := fileContentResult(GetFileContentInput{Path: "scan.tif"}, "", views["paged image"])
+	if scan.MIMEType != "image/tiff" || scan.Image == nil || scan.Image.Pages != 2 || !scan.Image.Turned ||
+		scan.Image.Width != 40 || scan.Image.Height != 30 || scan.Image.ReturnedMIMEType != "image/png" {
+		encoded, _ := json.Marshal(scan)
+		t.Errorf("a two-page TIFF stored sideways: %s", encoded)
 	}
 }
 
