@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"strings"
 	"testing"
@@ -105,7 +106,7 @@ func fileViews(t *testing.T) map[string]fileview.View {
 	read := func(request fileview.Request, content []byte) fileview.View {
 		t.Helper()
 
-		view, err := fileview.Read(request, content)
+		view, err := fileview.Read(t.Context(), request, content)
 		if err != nil {
 			t.Fatalf("fileview.Read(%s): %v", request.Path, err)
 		}
@@ -114,10 +115,14 @@ func fileViews(t *testing.T) map[string]fileview.View {
 	}
 
 	return map[string]fileview.View{
-		"text window":              read(fileview.Request{Path: "a.txt", LineCount: 1}, []byte("one\ntwo\n")),
-		"empty text":               read(fileview.Request{Path: "empty.txt"}, nil),
-		"image":                    read(fileview.Request{Path: "small.png"}, pngOf(t, 40, 30)),
-		"scaled image":             read(fileview.Request{Path: "wide.png"}, pngOf(t, 3000, 1000)),
+		"text window":     read(fileview.Request{Path: "a.txt", LineCount: 1}, []byte("one\ntwo\n")),
+		"empty text":      read(fileview.Request{Path: "empty.txt"}, nil),
+		"image":           read(fileview.Request{Path: "small.png"}, pngOf(t, 40, 30)),
+		"scaled image":    read(fileview.Request{Path: "wide.png"}, pngOf(t, 3000, 1000)),
+		"turned image":    read(fileview.Request{Path: "photo.jpg"}, sidewaysJPEG(t)),
+		"converted image": read(fileview.Request{Path: "diagram.bmp"}, filefixture.BMP(filefixture.Quadrants(40, 30))),
+		"paged image": read(fileview.Request{Path: "scan.tif"},
+			filefixture.TIFF(6, filefixture.Oriented(filefixture.Quadrants(40, 30), 6), filefixture.Quadrants(8, 8))),
 		"document":                 read(fileview.Request{Path: "plan.docx"}, filefixture.Word(filefixture.WordParagraph("A plan."))),
 		"empty document":           read(fileview.Request{Path: "blank.docx"}, filefixture.Word("")),
 		"archive":                  read(fileview.Request{Path: "app.zip"}, filefixture.Zip(filefixture.Entry{Name: "a.txt", Body: []byte("a")})),
@@ -211,6 +216,66 @@ func pngOf(t *testing.T, width, height int) []byte {
 	}
 
 	return encoded.Bytes()
+}
+
+// sidewaysJPEG is a 40 by 30 photograph stored a quarter turn round, with the
+// orientation that says to turn it back, as a phone stores one.
+func sidewaysJPEG(t *testing.T) []byte {
+	t.Helper()
+
+	upright := image.NewRGBA(image.Rect(0, 0, 40, 30))
+	for index := range upright.Pix {
+		upright.Pix[index] = byte(index / 4 % 11 * 20)
+	}
+
+	return filefixture.WithSegment(filefixture.JPEG(filefixture.Oriented(upright, 6), 90), filefixture.ExifBlock(6, false))
+}
+
+// TestATurnedImageSaysSoInItsStructuredAnswer: the sizes a client reads are
+// the upright picture's, as the image it receives is.
+func TestATurnedImageSaysSoInItsStructuredAnswer(t *testing.T) {
+	t.Parallel()
+
+	result, structured := fileContentResult(GetFileContentInput{Path: "photo.jpg"}, "", fileViews(t)["turned image"])
+
+	facts := structured.Image
+	if facts == nil || !facts.Turned || facts.Scaled || facts.Width != 40 || facts.Height != 30 ||
+		facts.ReturnedWidth != 40 || facts.ReturnedHeight != 30 || facts.ReturnedMIMEType != "image/jpeg" {
+		encoded, _ := json.Marshal(structured)
+		t.Fatalf("a photograph stored sideways: %s", encoded)
+	}
+	image, ok := result.Content[1].(*mcp.ImageContent)
+	if !ok {
+		t.Fatalf("the second block is %T, want the image", result.Content[1])
+	}
+	config, err := jpeg.DecodeConfig(bytes.NewReader(image.Data))
+	if err != nil || config.Width != 40 || config.Height != 30 {
+		t.Errorf("the image returned is %dx%d (%v), want it upright at 40x30", config.Width, config.Height, err)
+	}
+	if text := result.Content[0].(*mcp.TextContent).Text; !strings.Contains(text, "turned upright from its EXIF orientation") {
+		t.Errorf("the text does not say the image was turned: %q", text)
+	}
+}
+
+// TestAConvertedImageSaysWhatItWas: a BMP or a TIFF comes back as a PNG, and
+// a TIFF's first page comes back with how many there are.
+func TestAConvertedImageSaysWhatItWas(t *testing.T) {
+	t.Parallel()
+
+	views := fileViews(t)
+
+	_, bitmap := fileContentResult(GetFileContentInput{Path: "diagram.bmp"}, "", views["converted image"])
+	if bitmap.MIMEType != "image/bmp" || bitmap.Image == nil || bitmap.Image.ReturnedMIMEType != "image/png" || bitmap.Image.Pages != 0 {
+		encoded, _ := json.Marshal(bitmap)
+		t.Errorf("a BMP: %s", encoded)
+	}
+
+	_, scan := fileContentResult(GetFileContentInput{Path: "scan.tif"}, "", views["paged image"])
+	if scan.MIMEType != "image/tiff" || scan.Image == nil || scan.Image.Pages != 2 || !scan.Image.Turned ||
+		scan.Image.Width != 40 || scan.Image.Height != 30 || scan.Image.ReturnedMIMEType != "image/png" {
+		encoded, _ := json.Marshal(scan)
+		t.Errorf("a two-page TIFF stored sideways: %s", encoded)
+	}
 }
 
 // TestAnImageComesBackAsAnImageBesideItsDescription reads the image content

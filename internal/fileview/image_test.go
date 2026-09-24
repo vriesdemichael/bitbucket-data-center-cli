@@ -68,6 +68,19 @@ func encodeJPEG(t *testing.T, picture image.Image) []byte {
 	return encoded.Bytes()
 }
 
+// readImageAt reads an image with limits of the test's choosing, under the
+// test's context, which is never cancelled.
+func readImageAt(t *testing.T, request Request, mimeType string, content []byte, limits imageLimits) View {
+	t.Helper()
+
+	view, err := readImage(t.Context(), request, mimeType, content, limits)
+	if err != nil {
+		t.Fatalf("readImage(%s): %v", request.Path, err)
+	}
+
+	return view
+}
+
 // returnedImage decodes what a view returned, and fails when it does not
 // decode as the type it claims to be.
 func returnedImage(t *testing.T, view View) image.Image {
@@ -95,7 +108,7 @@ func TestAnImageThatFitsIsReturnedAsItIs(t *testing.T) {
 	t.Parallel()
 
 	content := encodePNG(t, stripes(64, 48))
-	view, err := Read(Request{Path: "docs/diagram.png"}, content)
+	view, err := Read(t.Context(), Request{Path: "docs/diagram.png"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -116,7 +129,7 @@ func TestAnImageLongerThanTheEdgeIsScaledDownWithAWarning(t *testing.T) {
 	t.Parallel()
 
 	content := encodePNG(t, stripes(3000, 1000))
-	view, err := Read(Request{Path: "docs/wide.png"}, content)
+	view, err := Read(t.Context(), Request{Path: "docs/wide.png"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -144,7 +157,7 @@ func TestAPhotographScaledDownStaysAJPEG(t *testing.T) {
 	t.Parallel()
 
 	content := encodeJPEG(t, stripes(2500, 1000))
-	view, err := Read(Request{Path: "photo.jpg"}, content)
+	view, err := Read(t.Context(), Request{Path: "photo.jpg"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -166,7 +179,7 @@ func TestAnImageOverTheByteBudgetShrinksUntilItFits(t *testing.T) {
 		t.Parallel()
 
 		content := encodePNG(t, noise(200, 200, 255))
-		view := readImage(Request{Path: "noise.png"}, "image/png", content, limits)
+		view := readImageAt(t, Request{Path: "noise.png"}, "image/png", content, limits)
 
 		returnedImage(t, view)
 		if view.Image.MIMEType != "image/jpeg" || len(view.Image.Data) > limits.bytes {
@@ -181,7 +194,7 @@ func TestAnImageOverTheByteBudgetShrinksUntilItFits(t *testing.T) {
 		t.Parallel()
 
 		content := encodePNG(t, noise(200, 200, 128))
-		view := readImage(Request{Path: "noise.png"}, "image/png", content, limits)
+		view := readImageAt(t, Request{Path: "noise.png"}, "image/png", content, limits)
 
 		returnedImage(t, view)
 		if view.Image.MIMEType != "image/png" || len(view.Image.Data) > limits.bytes || !view.Image.Scaled {
@@ -194,7 +207,7 @@ func TestAnImageOverTheByteBudgetShrinksUntilItFits(t *testing.T) {
 		t.Parallel()
 
 		content := encodeJPEG(t, stripes(300, 300))
-		view := readImage(Request{Path: "flat.jpg"}, "image/jpeg", content, imageLimits{bytes: len(content) - 1, edge: ImageEdge, pixels: ImagePixels})
+		view := readImageAt(t, Request{Path: "flat.jpg"}, "image/jpeg", content, imageLimits{bytes: len(content) - 1, edge: ImageEdge, pixels: ImagePixels})
 
 		returnedImage(t, view)
 		if view.Image.Scaled || view.Image.ReturnedWidth != 300 || len(view.Image.Data) >= len(content) {
@@ -223,7 +236,7 @@ func TestAnAnimatedGIFGivesItsFirstFrameAndSaysSo(t *testing.T) {
 		t.Fatalf("encode GIF: %v", err)
 	}
 
-	view, err := Read(Request{Path: "spinner.gif"}, encoded.Bytes())
+	view, err := Read(t.Context(), Request{Path: "spinner.gif"}, encoded.Bytes())
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -235,7 +248,7 @@ func TestAnAnimatedGIFGivesItsFirstFrameAndSaysSo(t *testing.T) {
 	if got, want := color.NRGBAModel.Convert(picture.At(20, 15)), color.NRGBAModel.Convert(palette.Plan9[2]); got != want {
 		t.Errorf("the frame returned is %v at its centre, want the first frame's %v", got, want)
 	}
-	for _, want := range []string{"an animated GIF image of 3 frames, 40x30 pixels", "Its first frame follows, as a PNG image of"} {
+	for _, want := range []string{"an animated GIF image of 3 frames, 40x30 pixels", "Its first frame follows as a PNG of"} {
 		if !strings.Contains(view.Text, want) {
 			t.Errorf("text does not say %q: %q", want, view.Text)
 		}
@@ -246,7 +259,7 @@ func TestAnAnimatedGIFGivesItsFirstFrameAndSaysSo(t *testing.T) {
 	if err := gif.EncodeAll(&encoded, still); err != nil {
 		t.Fatalf("encode GIF: %v", err)
 	}
-	view, err = Read(Request{Path: "still.gif"}, encoded.Bytes())
+	view, err = Read(t.Context(), Request{Path: "still.gif"}, encoded.Bytes())
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -272,7 +285,7 @@ func TestAWebPIsReturnedAsItIsOrDecodedToScaleIt(t *testing.T) {
 			t.Fatalf("read %s: %v", testCase.file, err)
 		}
 
-		view, err := Read(Request{Path: testCase.file}, content)
+		view, err := Read(t.Context(), Request{Path: testCase.file}, content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}
@@ -281,7 +294,7 @@ func TestAWebPIsReturnedAsItIsOrDecodedToScaleIt(t *testing.T) {
 			t.Errorf("%s was not returned as it is: %s", testCase.file, view.Image.MIMEType)
 		}
 
-		scaled := readImage(Request{Path: testCase.file}, "image/webp", content, imageLimits{bytes: ImageBytes, edge: 20, pixels: ImagePixels})
+		scaled := readImageAt(t, Request{Path: testCase.file}, "image/webp", content, imageLimits{bytes: ImageBytes, edge: 20, pixels: ImagePixels})
 		returnedImage(t, scaled)
 		if !scaled.Image.Scaled || max(scaled.Image.ReturnedWidth, scaled.Image.ReturnedHeight) != 20 || scaled.Image.MIMEType != testCase.scaledType {
 			t.Errorf("%s scaled to an edge of 20 came back as a %dx%d %s, want a %s",
@@ -323,7 +336,7 @@ func TestAnImageThatCannotBeReturnedIsDescribed(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		view, err := Read(Request{Path: "broken", WebURL: fileURL}, testCase.content)
+		view, err := Read(t.Context(), Request{Path: "broken", WebURL: fileURL}, testCase.content)
 		if err != nil {
 			t.Fatalf("%s: Read: %v", testCase.name, err)
 		}
@@ -359,6 +372,6 @@ func TestTheFrameCountSurvivesAGIFThatIsCutShort(t *testing.T) {
 		if frames := gifFrames(whole[:length]); frames < 0 || frames > 2 {
 			t.Fatalf("gifFrames of the first %d bytes = %d", length, frames)
 		}
-		_, _ = webpFeatures(whole[:length])
+		_ = webpFeatures(whole[:length])
 	}
 }

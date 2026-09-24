@@ -24,7 +24,7 @@ func TestABinaryFileIsDescribedNotShown(t *testing.T) {
 	t.Parallel()
 
 	content := opaqueBinary()
-	view, err := Read(Request{Path: "assets/blob.bin", At: "refs/heads/main", WebURL: fileURL, StartLine: 3}, content)
+	view, err := Read(t.Context(), Request{Path: "assets/blob.bin", At: "refs/heads/main", WebURL: fileURL, StartLine: 3}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestADescriptionNamesTheTypeTheBytesShow(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		view, err := Read(Request{Path: "file"}, testCase.content)
+		view, err := Read(t.Context(), Request{Path: "file"}, testCase.content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}

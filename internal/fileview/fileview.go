@@ -13,6 +13,9 @@
 package fileview
 
 import (
+	"bytes"
+	"context"
+	"io"
 	"net/http"
 	"strings"
 
@@ -86,17 +89,24 @@ type Image struct {
 	// client takes, and otherwise the image encoded again.
 	Data     []byte
 	MIMEType string
-	// Width and Height are the image's as stored.
+	// Width and Height are the image's as it is seen: as stored, or once
+	// turned upright when Turned is set.
 	Width  int
 	Height int
 	// ReturnedWidth and ReturnedHeight are the image's as returned.
 	ReturnedWidth  int
 	ReturnedHeight int
+	// Turned is set when the image was stored turned or mirrored, as its
+	// orientation tag says, and comes back turned upright.
+	Turned bool
 	// Scaled is set when the image returned is smaller than the one stored.
 	Scaled bool
 	// Frames is how many frames an animation has, of which the first is
 	// returned; zero for a still image.
 	Frames int
+	// Pages is how many pages a TIFF has, of which the first is returned;
+	// zero for one of a single page.
+	Pages int
 }
 
 // Window is a run of lines out of a file's text.
@@ -130,10 +140,19 @@ func (request Request) Validate() error {
 
 // Read views a file from its bytes.
 //
-// The only error is a window that cannot be served: one Validate refuses, or
+// ctx is the call's. What can take seconds -- listing a compressed archive,
+// extracting a document's text, decoding a large picture -- reads as it
+// works, and stops at its next read once ctx is done. Read then returns ctx's
+// error rather than a view, so a cancelled call cannot pass for a short
+// archive or an empty document.
+//
+// The other error is a window that cannot be served: one Validate refuses, or
 // one that starts past the end of the text.
-func Read(request Request, content []byte) (View, error) {
+func Read(ctx context.Context, request Request, content []byte) (View, error) {
 	if err := request.Validate(); err != nil {
+		return View{}, err
+	}
+	if err := ctx.Err(); err != nil {
 		return View{}, err
 	}
 
@@ -146,11 +165,11 @@ func Read(request Request, content []byte) (View, error) {
 		return readText(request, text, size)
 	}
 
-	sniffed := http.DetectContentType(content)
+	sniffed := sniff(content)
 	if _, ok := imageFormats[sniffed]; ok {
-		return readImage(request, sniffed, content, defaultImageLimits), nil
+		return readImage(ctx, request, sniffed, content, defaultImageLimits)
 	}
-	if view, ok, err := readArchive(request, sniffed, content); ok || err != nil {
+	if view, ok, err := readArchive(ctx, request, sniffed, content); ok || err != nil {
 		return view, err
 	}
 	if view, ok := readMedia(request, sniffed, content); ok {
@@ -165,6 +184,48 @@ func Read(request Request, content []byte) (View, error) {
 	}
 
 	return describeBinary(subjectOf(request), request.WebURL, detectBinary(request.Path, sniffed, content), size), nil
+}
+
+// cancellable reads until ctx is done, and then returns ctx's error: whatever
+// reads through it -- a tar reader, a decompressor, an XML or an image
+// decoder -- stops at its next read.
+type cancellable struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (source *cancellable) Read(buffer []byte) (int, error) {
+	if err := source.ctx.Err(); err != nil {
+		return 0, err
+	}
+
+	return source.reader.Read(buffer)
+}
+
+// sniff reads a file's type from its first bytes: http.DetectContentType's
+// answer, or for a signature it does not know, this package's.
+func sniff(content []byte) string {
+	switch {
+	case bytes.HasPrefix(content, []byte("II*\x00")), bytes.HasPrefix(content, []byte("MM\x00*")):
+		return "image/tiff"
+	case bzip2Stream(content):
+		return "application/x-bzip2"
+	case bytes.HasPrefix(content, []byte("\xFD7zXZ\x00")):
+		return "application/x-xz"
+	}
+
+	return http.DetectContentType(content)
+}
+
+// bzip2Stream reports a bzip2 stream: "BZh", the block size from 1 to 9, and
+// then the magic of a first block, or of the end of a stream with none.
+func bzip2Stream(content []byte) bool {
+	if len(content) < 10 || !bytes.HasPrefix(content, []byte("BZh")) || content[3] < '1' || content[3] > '9' {
+		return false
+	}
+	magic := string(content[4:10])
+
+	return magic == "1AY&SY" || magic == "\x17rE8P\x90"
 }
 
 // readText views decoded text as a window of its lines.

@@ -35,11 +35,13 @@ type liveFileAnswer struct {
 	Image         *struct {
 		Width            int    `json:"width"`
 		Height           int    `json:"height"`
+		Turned           bool   `json:"turned"`
 		Scaled           bool   `json:"scaled"`
 		ReturnedWidth    int    `json:"returned_width"`
 		ReturnedHeight   int    `json:"returned_height"`
 		ReturnedMIMEType string `json:"returned_mime_type"`
 		ReturnedSize     int    `json:"returned_size"`
+		Pages            int    `json:"pages"`
 	} `json:"image"`
 	MediaReturned *bool `json:"media_returned"`
 }
@@ -137,20 +139,33 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 		filefixture.Entry{Name: "app/main.go", Body: []byte("package main\n")},
 		filefixture.Entry{Name: "README.md", Body: []byte("# App\n")},
 	)
+	// A photograph as a phone stores one held upright: a quarter turn round,
+	// with orientation 6 in its Exif block to turn it back. Upright it is
+	// 2000 by 3000, over the edge an image is returned at, so it is scaled
+	// too, after it is turned.
+	sideways := filefixture.WithSegment(filefixture.JPEG(filefixture.Oriented(filefixture.Quadrants(2000, 3000), 6), 90),
+		filefixture.ExifBlock(6, false))
+	// Formats model APIs refuse: a bitmap, and a two-page TIFF stored a
+	// quarter turn round, with its own orientation tag to turn it back.
+	bitmap := filefixture.BMP(filefixture.Quadrants(120, 80))
+	scan := filefixture.TIFF(8, filefixture.Oriented(filefixture.Quadrants(300, 200), 8), filefixture.Quadrants(50, 50))
 	// A WAV header and a second of 8 kHz silence: small enough to come back
 	// as audio.
 	audio := append([]byte("RIFF\x64\x1f\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x40\x1f\x00\x00\x40\x1f\x00\x00\x01\x00\x08\x00data\x40\x1f\x00\x00"),
 		bytes.Repeat([]byte{0x80}, 8000)...)
 
 	if err := harness.pushFilesOnBranch(seeded.Key, repo.Slug, "master", map[string][]byte{
-		"docs/long.txt":    long,
-		"assets/blob.bin":  binary,
-		"images/large.png": largePNG,
-		"docs/plan.docx":   word,
-		"docs/talk.pptx":   slides,
-		"docs/budget.xlsx": workbook,
-		"dist/app.zip":     archive,
-		"sounds/beep.wav":  audio,
+		"docs/long.txt":       long,
+		"assets/blob.bin":     binary,
+		"images/large.png":    largePNG,
+		"docs/plan.docx":      word,
+		"docs/talk.pptx":      slides,
+		"docs/budget.xlsx":    workbook,
+		"dist/app.zip":        archive,
+		"sounds/beep.wav":     audio,
+		"images/sideways.jpg": sideways,
+		"images/diagram.bmp":  bitmap,
+		"images/scan.tif":     scan,
 	}); err != nil {
 		t.Fatalf("push the files: %v", err)
 	}
@@ -320,6 +335,95 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 				t.Errorf("the header does not say it is a listing: %q", header)
 			}
 		})
+
+		t.Run("a sideways photograph comes back upright and scaled, and says so", func(t *testing.T) {
+			result, answer := read(t, "images/sideways.jpg", nil)
+
+			if answer.Kind != "image" || answer.MIMEType != "image/jpeg" || len(result.Content) != 2 {
+				t.Fatalf("images/sideways.jpg came back as %q %q in %d blocks, want a JPEG image beside its description",
+					answer.Kind, answer.MIMEType, len(result.Content))
+			}
+			returned, ok := result.Content[1].(*mcp.ImageContent)
+			if !ok {
+				t.Fatalf("the second block is %T, want the image", result.Content[1])
+			}
+			decoded, _, err := image.Decode(bytes.NewReader(returned.Data))
+			if err != nil {
+				t.Fatalf("the image returned does not decode: %v", err)
+			}
+
+			// Upright is portrait, and the quadrants are in their corners:
+			// left sideways, the picture would be landscape, and turned the
+			// wrong way, its colours would be in the wrong corners.
+			if bounds := decoded.Bounds(); bounds.Dx() != 1365 || bounds.Dy() != 2048 {
+				t.Errorf("the image returned is %dx%d, want it upright and scaled to 1365x2048", bounds.Dx(), bounds.Dy())
+			}
+			if err := filefixture.CheckQuadrants(decoded, 40); err != nil {
+				t.Errorf("the image returned is not upright: %v", err)
+			}
+
+			facts := answer.Image
+			if facts == nil || !facts.Turned || !facts.Scaled || facts.Width != 2000 || facts.Height != 3000 ||
+				facts.ReturnedWidth != 1365 || facts.ReturnedHeight != 2048 {
+				t.Errorf("the structured answer does not describe the upright image: %+v", facts)
+			}
+
+			text := mcpResultText(result)
+			for _, want := range []string{
+				"images/sideways.jpg at " + at + ": a JPEG image, 2000x3000 pixels, ",
+				"It follows turned upright from its EXIF orientation and scaled down to 1365x2048 pixels, as a JPEG of ",
+				"Small text in it may no longer be legible because of the scaling.",
+			} {
+				if !strings.Contains(text, want) {
+					t.Errorf("the description does not say %q: %q", want, text)
+				}
+			}
+		})
+
+		// A BMP and a TIFF come back as PNGs, since clients do not take
+		// either, and the PNG is lossless: every corner is exactly its colour.
+		for _, converted := range []struct {
+			path, from, says string
+			pages            int
+		}{
+			{path: "images/diagram.bmp", from: "BMP", says: "images/diagram.bmp at " + at + ": a BMP image, 120x80 pixels, "},
+			{path: "images/scan.tif", from: "TIFF", pages: 2, says: "images/scan.tif at " + at + ": a TIFF image of 2 pages, 300x200 pixels, "},
+		} {
+			t.Run(converted.path+" comes back as a PNG", func(t *testing.T) {
+				result, answer := read(t, converted.path, nil)
+
+				if answer.Kind != "image" || len(result.Content) != 2 {
+					t.Fatalf("%s came back as %q in %d blocks, want an image beside its description", converted.path, answer.Kind, len(result.Content))
+				}
+				returned, ok := result.Content[1].(*mcp.ImageContent)
+				if !ok || returned.MIMEType != "image/png" {
+					t.Fatalf("the second block is %T, want a PNG image", result.Content[1])
+				}
+				decoded, err := png.Decode(bytes.NewReader(returned.Data))
+				if err != nil {
+					t.Fatalf("the PNG returned does not decode: %v", err)
+				}
+				if err := filefixture.CheckQuadrants(decoded, 0); err != nil {
+					t.Errorf("the image returned is not the picture, upright: %v", err)
+				}
+
+				facts := answer.Image
+				if facts == nil || facts.ReturnedMIMEType != "image/png" || facts.Pages != converted.pages || facts.Turned != (converted.pages > 0) {
+					t.Errorf("the structured answer does not describe the converted image: %+v", facts)
+				}
+
+				text := mcpResultText(result)
+				wants := []string{converted.says, ", converted from " + converted.from + ", which clients do not take."}
+				if converted.pages > 0 {
+					wants = append(wants, " Its first page follows turned upright from its TIFF orientation, as a PNG of ")
+				}
+				for _, want := range wants {
+					if !strings.Contains(text, want) {
+						t.Errorf("the description does not say %q: %q", want, text)
+					}
+				}
+			})
+		}
 
 		t.Run("short audio comes back as audio beside its description", func(t *testing.T) {
 			result, answer := read(t, "sounds/beep.wav", nil)

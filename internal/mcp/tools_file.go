@@ -35,7 +35,7 @@ type GetFileContentInput struct {
 type GetFileContentOutput struct {
 	Path          string     `json:"path"`
 	At            string     `json:"at,omitempty"`
-	Kind          string     `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; document, a window of the text extracted from a Word, PowerPoint or Excel file; archive, a window of the listing of a zip or tar archive's entries; image, the image, in the content beside this; audio and video, the file itself beside its description when it is small enough (see media_returned); binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
+	Kind          string     `json:"kind" jsonschema:"What the file is, which decides what came back: text, a window of its lines; document, a window of the text extracted from a Word, PowerPoint or Excel file; archive, a window of the listing of a zip or tar archive's entries, the tar compressed or not; image, the image, in the content beside this; audio and video, the file itself beside its description when it is small enough (see media_returned); binary, a description of its type and size only; too_large, over the most this tool reads, so not read"`
 	MIMEType      string     `json:"mime_type,omitempty" jsonschema:"The file's type, read from its bytes; absent when the file was not read"`
 	Size          *int64     `json:"size,omitempty" jsonschema:"The file's size in bytes; absent when it was too large to read and Bitbucket did not say how large"`
 	WebURL        string     `json:"web_url" jsonschema:"The file's page in Bitbucket, for a person to open"`
@@ -52,14 +52,16 @@ type GetFileContentOutput struct {
 // one the file holds, which scaling makes worth knowing: small text may not
 // have survived it.
 type FileImage struct {
-	Width            int    `json:"width" jsonschema:"The image's width in pixels, as stored"`
-	Height           int    `json:"height" jsonschema:"The image's height in pixels, as stored"`
+	Width            int    `json:"width" jsonschema:"The image's width in pixels, upright: as stored, or once turned when turned is true"`
+	Height           int    `json:"height" jsonschema:"The image's height in pixels, upright: as stored, or once turned when turned is true"`
+	Turned           bool   `json:"turned" jsonschema:"True when the image was stored turned or mirrored, as its orientation tag records, and was turned upright before it was returned"`
 	Scaled           bool   `json:"scaled" jsonschema:"True when the image returned is smaller than the one stored, so small text in it may no longer be legible"`
 	ReturnedWidth    int    `json:"returned_width" jsonschema:"The returned image's width in pixels"`
 	ReturnedHeight   int    `json:"returned_height" jsonschema:"The returned image's height in pixels"`
-	ReturnedMIMEType string `json:"returned_mime_type" jsonschema:"The returned image's type, which differs from mime_type when it was encoded again"`
+	ReturnedMIMEType string `json:"returned_mime_type" jsonschema:"The returned image's type, which differs from mime_type when it was encoded again or converted from a format clients do not take"`
 	ReturnedSize     int    `json:"returned_size" jsonschema:"The returned image's size in bytes"`
 	Frames           int    `json:"frames,omitempty" jsonschema:"How many frames an animated image has; only the first is returned"`
+	Pages            int    `json:"pages,omitempty" jsonschema:"How many pages a multi-page TIFF has; only the first is returned"`
 }
 
 func specGetFileContent() Spec {
@@ -67,9 +69,11 @@ func specGetFileContent() Spec {
 		Name: "get_file_content",
 		Description: "Read a file in a repository. Text comes back as a window of numbered lines: start_line and line_count " +
 			"choose it, and each answer says which lines it holds and where the next window starts. A Word, PowerPoint or " +
-			"Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz) as a listing of its " +
-			"entries, both in the same windows. An image (PNG, JPEG, GIF, WebP) comes back as an image, scaled down when it " +
-			"is large, with a note saying so. Audio and video come back as themselves beside a description when they are small, " +
+			"Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz, tar.bz2) as a listing of its " +
+			"entries, both in the same windows. An image (PNG, JPEG, GIF, WebP, BMP, TIFF) comes back as an image, converted " +
+			"to PNG or JPEG when clients do not take its format, turned upright when its metadata says it was stored turned, " +
+			"and scaled down when it is large, with a note saying which. Audio and video come back as themselves beside a " +
+			"description when they are small, " +
 			"and as the description alone when not. A PDF or any other file is described by its type and size rather than " +
 			"shown, and a file over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) + " is described without being read.",
 		Annotations: readOnly(),
@@ -112,7 +116,10 @@ func specGetFileContent() Spec {
 			case err != nil:
 				return nil, GetFileContentOutput{}, fmt.Errorf("get_file_content failed: %w", err)
 			default:
-				if view, err = fileview.Read(request, held.Bytes()); err != nil {
+				// The call's context: a conversion that takes seconds -- a
+				// compressed archive, a large document or picture -- stops
+				// when the client cancels, and the call ends in its error.
+				if view, err = fileview.Read(ctx, request, held.Bytes()); err != nil {
 					return nil, GetFileContentOutput{}, fmt.Errorf("get_file_content: %w", err)
 				}
 			}
@@ -161,12 +168,14 @@ func fileContentResult(in GetFileContentInput, webURL string, view fileview.View
 		structured.Image = &FileImage{
 			Width:            image.Width,
 			Height:           image.Height,
+			Turned:           image.Turned,
 			Scaled:           image.Scaled,
 			ReturnedWidth:    image.ReturnedWidth,
 			ReturnedHeight:   image.ReturnedHeight,
 			ReturnedMIMEType: image.MIMEType,
 			ReturnedSize:     len(image.Data),
 			Frames:           image.Frames,
+			Pages:            image.Pages,
 		}
 	}
 
