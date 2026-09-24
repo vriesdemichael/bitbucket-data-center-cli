@@ -8,6 +8,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prsel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
@@ -113,6 +114,9 @@ func readyPreviewItem(repo pullrequestservice.RepositoryRef, pullRequestID strin
 		item.PredictedAction = "blocked"
 		item.Reason = refusal.Error()
 		item.BlockingReasons = []string{refusal.Error()}
+		// The refusal is the one SetDraft returns, so its kind is the real
+		// run's by construction.
+		item.Fails = apperrors.KindOf(refusal)
 
 		return item
 	}

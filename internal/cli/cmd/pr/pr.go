@@ -851,6 +851,13 @@ func New(deps Dependencies) *cobra.Command {
 					predicted = "blocked"
 					reason = "pull request is not open"
 					blocking = []string{"pull request is not open"}
+				case current.Draft:
+					// Before mergeability, which does not know about drafts: on a
+					// draft it answers canMerge with no vetoes, and the merge is
+					// then refused with a 409.
+					predicted = "blocked"
+					reason = "pull request is a draft; mark it ready for review with bb pr ready before merging it"
+					blocking = []string{"pull request is a draft"}
 				case current.Mergeability == nil:
 					// Asked and not answered. Saying "will be merged" here would
 					// be a guess wearing the same label as a checked answer, so
@@ -1677,6 +1684,9 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
 					BlockingReasons: blocking,
+					// The real run meets Bitbucket's 404 for a review that was
+					// never started, and noDraftReviewError keeps it not_found.
+					Fails: apperrors.KindNotFound,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -2783,6 +2793,15 @@ state is in the output.`,
 					return err
 				}
 
+				// The state as well as the rebase check. Bitbucket's check answers
+				// a declined pull request with canRebase false and no vetoes, and
+				// the generated model carries only the vetoes, so read alone it
+				// passed a rebase the real run is refused with a 409.
+				current, err := service.Get(cmd.Context(), repo, target.PullRequestID)
+				if err != nil {
+					return err
+				}
+
 				rebaseability, err := service.CanRebase(cmd.Context(), repo, target.PullRequestID)
 				if err != nil {
 					return err
@@ -2791,7 +2810,19 @@ state is in the output.`,
 				predicted := "update"
 				reason := "pull request will be rebased"
 				blocking := []string{}
-				if rebaseability != nil && rebaseability.Vetoes != nil && len(*rebaseability.Vetoes) > 0 {
+				fails := apperrors.KindConflict
+				switch {
+				case !current.Open:
+					predicted = "blocked"
+					reason = fmt.Sprintf("pull request is %s; only an open pull request can be rebased", current.State)
+					blocking = []string{"pull request is not open"}
+				case rebaseability != nil && rebaseability.Vetoes != nil && len(*rebaseability.Vetoes) > 0:
+					// What Bitbucket vetoes here it does not refuse up front: the
+					// rebase runs, and the update of the source branch is then
+					// vetoed with a 400 RepositoryHookVetoedException, which is
+					// validation. Seen with branch permissions on the source
+					// branch, the veto a caller meets most.
+					fails = apperrors.KindValidation
 					predicted = "blocked"
 					reason = "rebase is vetoed"
 					for _, veto := range *rebaseability.Vetoes {
@@ -2822,6 +2853,7 @@ state is in the output.`,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
 					BlockingReasons: blocking,
+					Fails:           fails,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

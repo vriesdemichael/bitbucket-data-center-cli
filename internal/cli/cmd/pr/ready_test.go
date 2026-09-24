@@ -54,6 +54,10 @@ func TestReadyPreviewPredictsWhatTheCommandDoes(t *testing.T) {
 			if blocked := testCase.want == "blocked"; blocked != (len(item.BlockingReasons) > 0) {
 				t.Errorf("blocking reasons %v do not match a %q prediction", item.BlockingReasons, testCase.want)
 			}
+			// The kind the real run fails with is SetDraft's refusal's.
+			if testCase.want == "blocked" && item.Fails != apperrors.KindConflict {
+				t.Errorf("fails = %q, want conflict, the kind DraftChangeRefusal returns", item.Fails)
+			}
 		})
 	}
 }
