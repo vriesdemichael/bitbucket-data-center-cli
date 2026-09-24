@@ -64,7 +64,7 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("shallow permissions list failed: %v\noutput: %s", err, shallowUserList)
 	}
 	assertAliasParity(t, "repo permissions list",
-		deepUserList, "repo settings security permissions users list", shallowUserList, "repo permissions list")
+		deepUserList, "repo settings security permissions users list", shallowUserList)
 
 	deepGroupList, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "groups", "list", "--limit", "100")
 	if err != nil {
@@ -76,7 +76,7 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("shallow permissions list --group failed: %v\noutput: %s", err, shallowGroupList)
 	}
 	assertAliasParity(t, "repo permissions list --group",
-		deepGroupList, "repo settings security permissions groups list", shallowGroupList, "repo permissions list")
+		deepGroupList, "repo settings security permissions groups list", shallowGroupList)
 
 	// grant and revoke are compared under --dry-run: the preview is the whole
 	// of what distinguishes the two spellings, and comparing it does not leave
@@ -90,7 +90,7 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("shallow permissions grant dry-run failed: %v\noutput: %s", err, shallowGrant)
 	}
 	assertAliasParity(t, "repo permissions grant",
-		deepGrant, "repo settings security permissions users grant", shallowGrant, "repo permissions grant")
+		deepGrant, "repo settings security permissions users grant", shallowGrant)
 
 	deepRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "repo", "settings", "security", "permissions", "groups", "revoke", "alias-parity-group", "--yes")
 	if err != nil {
@@ -101,7 +101,7 @@ func TestLiveRepoPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("shallow permissions revoke --group dry-run failed: %v\noutput: %s", err, shallowRevoke)
 	}
 	assertAliasParity(t, "repo permissions revoke --group",
-		deepRevoke, "repo settings security permissions groups revoke", shallowRevoke, "repo permissions revoke")
+		deepRevoke, "repo settings security permissions groups revoke", shallowRevoke)
 }
 
 // TestLiveProjectPermissionShallowAliasesMatchDeepPaths is the project-tree
@@ -145,7 +145,7 @@ func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("shallow project permissions list failed: %v\noutput: %s", err, shallowUserList)
 	}
 	assertAliasParity(t, "project permissions list",
-		deepUserList, "project permissions users list", shallowUserList, "project permissions list")
+		deepUserList, "project permissions users list", shallowUserList)
 
 	deepGroupList, err := executeLiveCLI(t, "--json", "project", "permissions", "groups", "list", seeded.Key, "--limit", "100")
 	if err != nil {
@@ -157,7 +157,7 @@ func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("shallow project permissions list --group failed: %v\noutput: %s", err, shallowGroupList)
 	}
 	assertAliasParity(t, "project permissions list --group",
-		deepGroupList, "project permissions groups list", shallowGroupList, "project permissions list")
+		deepGroupList, "project permissions groups list", shallowGroupList)
 
 	deepGrant, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "users", "grant", seeded.Key, "alias-parity-user", "PROJECT_WRITE")
 	if err != nil {
@@ -168,7 +168,7 @@ func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("shallow project permissions grant dry-run failed: %v\noutput: %s", err, shallowGrant)
 	}
 	assertAliasParity(t, "project permissions grant",
-		deepGrant, "project permissions users grant", shallowGrant, "project permissions grant")
+		deepGrant, "project permissions users grant", shallowGrant)
 
 	deepRevoke, err := executeLiveCLI(t, "--json", "--dry-run", "project", "permissions", "groups", "revoke", seeded.Key, "alias-parity-group", "--yes")
 	if err != nil {
@@ -179,29 +179,19 @@ func TestLiveProjectPermissionShallowAliasesMatchDeepPaths(t *testing.T) {
 		t.Fatalf("shallow project permissions revoke --group dry-run failed: %v\noutput: %s", err, shallowRevoke)
 	}
 	assertAliasParity(t, "project permissions revoke --group",
-		deepRevoke, "project permissions groups revoke", shallowRevoke, "project permissions revoke")
+		deepRevoke, "project permissions groups revoke", shallowRevoke)
 }
 
-// assertAliasParity compares what a shallow spelling wrote with what its deep
-// path wrote, byte for byte, but for meta.command: that names the spelling
-// that ran, the one --describe answers for, so each has to name its own and the
-// rest has to be the same document.
-func assertAliasParity(t *testing.T, what, deep, deepCommand, shallow, shallowCommand string) {
+// assertAliasParity holds a shallow spelling to writing the deep path's
+// document byte for byte (ADR-050). meta.command is part of it, and names the
+// deep path for both spellings (ADR-096), so it is compared like the rest.
+func assertAliasParity(t *testing.T, what, deep, deepCommand, shallow string) {
 	t.Helper()
 
-	// Each document's own name, swapped for one they share.
-	unnamed := func(output, command string) string {
-		t.Helper()
-
-		name := `"command": "` + command + `"`
-		if strings.Count(output, name) != 1 {
-			t.Fatalf("%s: expected meta.command to name bb %s:\n%s", what, command, output)
-		}
-
-		return strings.Replace(output, name, `"command": "<spelling>"`, 1)
+	if !strings.Contains(deep, `"command": "`+deepCommand+`"`) {
+		t.Fatalf("%s: meta.command does not name bb %s:\n%s", what, deepCommand, deep)
 	}
-
-	if unnamed(deep, deepCommand) != unnamed(shallow, shallowCommand) {
+	if deep != shallow {
 		t.Fatalf("%s diverged from the deep path\ndeep:    %s\nshallow: %s", what, deep, shallow)
 	}
 }

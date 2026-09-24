@@ -215,7 +215,7 @@ func TestUpdateCommandHumanOutputAndValidation(t *testing.T) {
 		}
 
 		output := buffer.String()
-		if !bytes.Contains(buffer.Bytes(), []byte("Dry-run (static, capability=full)")) || !bytes.Contains(buffer.Bytes(), []byte("Update available")) {
+		if !bytes.Contains(buffer.Bytes(), []byte("Dry run: bb update would install v1.2.0 (server-validated)")) || !bytes.Contains(buffer.Bytes(), []byte("Update available")) {
 			t.Fatalf("unexpected human output: %s", output)
 		}
 		if !strings.Contains(output, "Signature verified") || !strings.Contains(output, "Checksum verified bb_1.2.0_linux_amd64.tar.gz") {

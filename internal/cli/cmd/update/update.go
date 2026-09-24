@@ -335,8 +335,15 @@ func writeUpdateHuman(cmd *cobra.Command, result updateworkflow.Result) {
 	}
 
 	writer := cmd.OutOrStdout()
+	// The verdict line every dry run opens with (ADR-096). What bb update
+	// checks -- the release, its signature and its checksum -- is the release
+	// source's own answer, so it is server-validated.
 	if result.DryRun {
-		fmt.Fprintf(writer, "%s\n", style.DryRun.Render("Dry-run (static, capability=full)"))
+		verdict := "would change nothing"
+		if result.UpdateAvailable {
+			verdict = "would install " + result.LatestVersion
+		}
+		fmt.Fprintf(writer, "%s\n", style.DryRun.Render(fmt.Sprintf("Dry run: bb update %s (server-validated)", verdict)))
 	}
 
 	switch {

@@ -663,7 +663,7 @@ Flags:
   -f, --raw-field stringArray   Add a string parameter (key=value)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Sends a GET or HEAD as usual, since it only reads; any other request is shown as what it would send, without sending it (predicted)
 ```
 
 ??? note "Global flags"
@@ -1891,7 +1891,7 @@ Flags:
       --start-point string   Commit ID or ref to branch from
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -2008,7 +2008,7 @@ Usage:
   bb branch default set <branch> [flags]
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -2050,7 +2050,7 @@ Flags:
   -y, --yes                Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Asks Bitbucket whether this would go through, without changing anything (server-validated)
 ```
 
 ??? note "Global flags"
@@ -2217,7 +2217,7 @@ Usage:
   bb branch model update <branch> [flags]
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -2308,7 +2308,7 @@ Flags:
       --user strings             User slug allowed by restriction (repeatable)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -2353,7 +2353,7 @@ Flags:
   -y, --yes   Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -2489,7 +2489,7 @@ Flags:
       --user strings             User slug allowed by restriction (repeatable)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -2621,7 +2621,7 @@ Flags:
   -y, --yes          Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -2785,7 +2785,7 @@ Flags:
   -y, --yes         Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -2914,7 +2914,7 @@ Flags:
       --url string            Build URL
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -3434,7 +3434,7 @@ Flags:
       --url string                       Deployment URL
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -3477,7 +3477,7 @@ Flags:
   -y, --yes                                 Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -3975,7 +3975,7 @@ Flags:
   -y, --yes                  Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -4061,7 +4061,7 @@ Flags:
       --type string       Annotation type (one of: BUG, CODE_SMELL, VULNERABILITY)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -4143,7 +4143,7 @@ Flags:
   -y, --yes   Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -4261,7 +4261,7 @@ Flags:
       --body string   Raw JSON payload for Code Insights report
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -4485,7 +4485,7 @@ Usage:
   bb pr auto-merge disable <pr-id> [flags]
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -4532,7 +4532,7 @@ Flags:
       --strategy string   Merge strategy (one of: no-ff, ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only) (default "no-ff")
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -5031,7 +5031,7 @@ Flags:
       --remove   Remove the reaction instead of adding it
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -5257,7 +5257,7 @@ Flags:
       --version int   Expected pull request version; omit to act on whatever version is current
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -5557,7 +5557,7 @@ Flags:
       --version int   Expected pull request version; omit to act on whatever version is current
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -5687,7 +5687,7 @@ Flags:
       --undo   Turn the pull request back into a draft instead
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -5727,7 +5727,7 @@ Flags:
       --version int   Expected pull request version
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -5767,7 +5767,7 @@ Flags:
       --version int   Expected pull request version; omit to act on whatever version is current
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -5852,7 +5852,7 @@ Usage:
   bb pr review approve <pr-id> [flags]
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -5906,7 +5906,7 @@ Flags:
       --status string    Pull request status change (one of: APPROVED, NEEDS_WORK, UNAPPROVED)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -6122,7 +6122,7 @@ Flags:
   -y, --yes           Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -6178,7 +6178,7 @@ Examples:
   bb pr review set 42 UNAPPROVED
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -6220,7 +6220,7 @@ Usage:
   bb pr review unapprove <pr-id> [flags]
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -6361,7 +6361,7 @@ Flags:
       --version int          Expected pull request version; omit to act on whatever version is current
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -6532,7 +6532,7 @@ Flags:
       --user strings             Allowed user slugs
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -6693,7 +6693,7 @@ Flags:
       --user strings             Allowed user slugs
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -6733,7 +6733,7 @@ Flags:
       --name string          Project name (required)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -7614,7 +7614,7 @@ Flags:
       --name string          Project name
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -8174,7 +8174,7 @@ Flags:
       --project string          Project key
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -8259,7 +8259,7 @@ Flags:
       --project string   Project key of the new fork
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -8301,7 +8301,7 @@ Flags:
       --name string             Repository name
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -8821,7 +8821,7 @@ Flags:
   -y, --yes             Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -8909,7 +8909,7 @@ Flags:
       --version int32   Expected comment version
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -9001,7 +9001,7 @@ Flags:
       --project string          Project key
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -9128,7 +9128,7 @@ Flags:
   -y, --yes   Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -9212,7 +9212,7 @@ Flags:
       --target-ref string    New target ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -9347,7 +9347,7 @@ Flags:
       --repo string      Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -10368,7 +10368,7 @@ Usage:
   bb repo settings pull-requests set-strategy <strategy-id> [flags]
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -10408,7 +10408,7 @@ Flags:
       --required-all-tasks-complete   Require all pull-request tasks to be completed before merge
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -10448,7 +10448,7 @@ Flags:
       --count int   Required approvers count (0 disables check)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -10982,7 +10982,7 @@ Flags:
       --ssl-verification string       Whether Bitbucket verifies the endpoint's TLS certificate, left as the server has it when omitted (one of: true, false)
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -11022,7 +11022,7 @@ Flags:
   -y, --yes   Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -11594,7 +11594,7 @@ Usage:
   bb reviewer condition create [json-config] [flags]
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -11641,7 +11641,7 @@ Flags:
   -y, --yes   Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -11724,7 +11724,7 @@ Usage:
   bb reviewer condition update <condition-id> [json-config] [flags]
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -11813,7 +11813,7 @@ Flags:
       --users strings        Members by username (repeatable or comma-separated); required, because Bitbucket refuses a reviewer group with no members
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -11854,7 +11854,7 @@ Flags:
   -y, --yes   Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -11935,7 +11935,7 @@ Flags:
       --users strings        Replace the members with these usernames (repeatable or comma-separated); omit to keep the current members
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -12393,7 +12393,7 @@ Flags:
       --start-point string   Commit ID or ref to tag
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -12434,7 +12434,7 @@ Flags:
   -y, --yes   Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"

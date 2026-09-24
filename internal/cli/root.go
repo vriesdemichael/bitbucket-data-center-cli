@@ -479,7 +479,7 @@ func (options *rootOptions) outputSettings(command *cobra.Command) jsonoutput.Se
 	}
 
 	if command != nil && command.Runnable() {
-		settings.Command = commandPathWithoutRoot(command)
+		settings.Command = CanonicalPath(command)
 	}
 
 	return settings

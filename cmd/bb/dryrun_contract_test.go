@@ -51,8 +51,8 @@ func TestEveryLeafCommandUnderDryRunAnswersInPreview(t *testing.T) {
 				Command string `json:"command"`
 			}
 			_ = json.Unmarshal(document["meta"], &meta)
-			if meta.Command != path {
-				t.Errorf("meta.command = %q, want %q", meta.Command, path)
+			if want := canonicalOf(t, path); meta.Command != want {
+				t.Errorf("meta.command = %q, want %q", meta.Command, want)
 			}
 
 			if rawError, isError := document["error"]; isError {
@@ -144,4 +144,17 @@ func keysOf(document map[string]json.RawMessage) []string {
 	}
 
 	return keys
+}
+
+// canonicalOf is the command meta.command names for path: itself, or the
+// command a shallow alias stands for.
+func canonicalOf(t *testing.T, path string) string {
+	t.Helper()
+
+	command, _, err := cli.NewRootCommand().Find(strings.Fields(path))
+	if err != nil {
+		t.Fatalf("find %q: %v", path, err)
+	}
+
+	return cli.CanonicalPath(command)
 }
