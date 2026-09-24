@@ -29,10 +29,16 @@ const (
 	dryRunPredicts = "predicts"
 )
 
-// commandsThatHonourDryRunThemselves run under --dry-run, answering what they
-// would do rather than doing it, so they check something although they are
-// classified with the commands that change nothing.
-var commandsThatHonourDryRunThemselves = map[string]bool{"update": true}
+// dryRunBehaviourOverrides are commands whose --dry-run is not what their
+// classification alone says.
+var dryRunBehaviourOverrides = map[string]DryRunBehaviour{
+	// bb update honours --dry-run itself: it checks the release it would
+	// install -- signature, checksum -- and installs nothing.
+	"update": {Behaviour: dryRunVerifies, Tier: jsonoutput.TierServerValidated},
+	// bb api runs a GET or HEAD, which only reads, and answers in
+	// preview.data; any other request is shown as what it would send.
+	"api": {Behaviour: dryRunRuns, Tier: jsonoutput.TierServerValidated},
+}
 
 // Description is what --describe answers (ADR-097): what a command returns,
 // for a run and for a dry run, or a group's catalogue.
@@ -234,6 +240,10 @@ func dataContract(path string) (data *jsonschema.Schema, reason string, written 
 // classification and its declared tier, or false for one that does not take
 // the flag.
 func dryRunBehaviourOf(path string) (DryRunBehaviour, bool) {
+	if behaviour, ok := dryRunBehaviourOverrides[path]; ok {
+		return behaviour, true
+	}
+
 	switch classifyCommand(path) {
 	case classificationMutating:
 		tier, _ := DeclaredDryRunTier(path)
@@ -244,9 +254,6 @@ func dryRunBehaviourOf(path string) (DryRunBehaviour, bool) {
 	case classificationLocalMutating:
 		return DryRunBehaviour{Behaviour: dryRunPredicts, Tier: jsonoutput.TierPredicted}, true
 	case classificationReadOnly, classificationLocal:
-		if commandsThatHonourDryRunThemselves[path] {
-			return DryRunBehaviour{Behaviour: dryRunVerifies, Tier: jsonoutput.TierServerValidated}, true
-		}
 		return DryRunBehaviour{Behaviour: dryRunRuns, Tier: jsonoutput.TierServerValidated}, true
 	default:
 		return DryRunBehaviour{}, false
