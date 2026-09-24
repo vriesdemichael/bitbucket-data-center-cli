@@ -14,6 +14,8 @@ package fileview
 
 import (
 	"bytes"
+	"context"
+	"io"
 	"net/http"
 	"strings"
 
@@ -138,10 +140,19 @@ func (request Request) Validate() error {
 
 // Read views a file from its bytes.
 //
-// The only error is a window that cannot be served: one Validate refuses, or
+// ctx is the call's. What can take seconds -- listing a compressed archive,
+// extracting a document's text, decoding a large picture -- reads as it
+// works, and stops at its next read once ctx is done. Read then returns ctx's
+// error rather than a view, so a cancelled call cannot pass for a short
+// archive or an empty document.
+//
+// The other error is a window that cannot be served: one Validate refuses, or
 // one that starts past the end of the text.
-func Read(request Request, content []byte) (View, error) {
+func Read(ctx context.Context, request Request, content []byte) (View, error) {
 	if err := request.Validate(); err != nil {
+		return View{}, err
+	}
+	if err := ctx.Err(); err != nil {
 		return View{}, err
 	}
 
@@ -156,9 +167,9 @@ func Read(request Request, content []byte) (View, error) {
 
 	sniffed := sniff(content)
 	if _, ok := imageFormats[sniffed]; ok {
-		return readImage(request, sniffed, content, defaultImageLimits), nil
+		return readImage(ctx, request, sniffed, content, defaultImageLimits)
 	}
-	if view, ok, err := readArchive(request, sniffed, content); ok || err != nil {
+	if view, ok, err := readArchive(ctx, request, sniffed, content); ok || err != nil {
 		return view, err
 	}
 	if view, ok := readMedia(request, sniffed, content); ok {
@@ -173,6 +184,22 @@ func Read(request Request, content []byte) (View, error) {
 	}
 
 	return describeBinary(subjectOf(request), request.WebURL, detectBinary(request.Path, sniffed, content), size), nil
+}
+
+// cancellable reads until ctx is done, and then returns ctx's error: whatever
+// reads through it -- a tar reader, a decompressor, an XML or an image
+// decoder -- stops at its next read.
+type cancellable struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (source *cancellable) Read(buffer []byte) (int, error) {
+	if err := source.ctx.Err(); err != nil {
+		return 0, err
+	}
+
+	return source.reader.Read(buffer)
 }
 
 // sniff reads a file's type from its first bytes: http.DetectContentType's

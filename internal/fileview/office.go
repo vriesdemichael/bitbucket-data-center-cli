@@ -2,6 +2,7 @@ package fileview
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -50,6 +51,8 @@ var officeFamilies = []officeFamily{
 
 // officeDocument is a Word, PowerPoint or Excel file open for its text.
 type officeDocument struct {
+	// ctx is the call's: a read of the document's XML stops once it is done.
+	ctx   context.Context
 	files map[string]*zip.File
 	// budget is how much more XML may be read, decompressed.
 	budget int64
@@ -65,8 +68,8 @@ var errOutOfXML = errors.New("the document holds more XML than is read")
 // openOffice recognises an Office Open XML file among zip archives: by the
 // main part its package relationships name, or failing those, by where each
 // family keeps it.
-func openOffice(archive *zip.Reader) (*officeDocument, officeFamily, string, bool) {
-	document := &officeDocument{files: make(map[string]*zip.File, len(archive.File)), budget: documentXMLBytes}
+func openOffice(ctx context.Context, archive *zip.Reader) (*officeDocument, officeFamily, string, bool) {
+	document := &officeDocument{ctx: ctx, files: make(map[string]*zip.File, len(archive.File)), budget: documentXMLBytes}
 	for _, file := range archive.File {
 		document.files[file.Name] = file
 	}
@@ -98,6 +101,10 @@ func openOffice(archive *zip.Reader) (*officeDocument, officeFamily, string, boo
 // readOffice views the text of an Office Open XML file as a window of lines.
 func readOffice(request Request, size int64, document *officeDocument, family officeFamily, mainPart string) (View, error) {
 	err := family.extract(document, mainPart)
+	if cause := document.ctx.Err(); cause != nil {
+		// Stopped, not unreadable: the text so far is not the document's.
+		return View{}, cause
+	}
 	if err != nil && !errors.Is(err, errOutOfXML) {
 		return describeBinary(subjectOf(request), request.WebURL, binaryType{
 			mimeType: family.mimeType,
@@ -207,13 +214,17 @@ func (stream *xmlStream) Skip() error {
 	return nil
 }
 
-// budgeted reads a part until the document's XML budget runs out.
+// budgeted reads a part until the document's XML budget runs out, or the call
+// is cancelled.
 type budgeted struct {
 	reader   io.Reader
 	document *officeDocument
 }
 
 func (reader *budgeted) Read(buffer []byte) (int, error) {
+	if err := reader.document.ctx.Err(); err != nil {
+		return 0, err
+	}
 	if reader.document.budget <= 0 {
 		reader.document.cut = true
 

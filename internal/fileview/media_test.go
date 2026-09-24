@@ -65,7 +65,7 @@ func TestMediaIsRecognisedByItsBytes(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		view, err := Read(Request{Path: testCase.path}, testCase.content)
+		view, err := Read(t.Context(), Request{Path: testCase.path}, testCase.content)
 		if err != nil {
 			t.Fatalf("Read(%s): %v", testCase.path, err)
 		}
@@ -85,7 +85,7 @@ func TestMediaIsRecognisedByItsBytes(t *testing.T) {
 func TestFramesWithoutATagNeedTheName(t *testing.T) {
 	t.Parallel()
 
-	view, err := Read(Request{Path: "blob.bin"}, append([]byte{0xFF, 0xFB, 0x90, 0x00}, make([]byte, 400)...))
+	view, err := Read(t.Context(), Request{Path: "blob.bin"}, append([]byte{0xFF, 0xFB, 0x90, 0x00}, make([]byte, 400)...))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -97,7 +97,7 @@ func TestFramesWithoutATagNeedTheName(t *testing.T) {
 func TestShortMediaFollowsItsDescription(t *testing.T) {
 	t.Parallel()
 
-	audio, err := Read(Request{Path: "beep.wav", WebURL: fileURL}, wav())
+	audio, err := Read(t.Context(), Request{Path: "beep.wav", WebURL: fileURL}, wav())
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestShortMediaFollowsItsDescription(t *testing.T) {
 		t.Errorf("audio:\n got %q\nwant %q", audio.Text, want)
 	}
 
-	video, err := Read(Request{Path: "demo.mp4"}, isoMedia("isom"))
+	video, err := Read(t.Context(), Request{Path: "demo.mp4"}, isoMedia("isom"))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestMediaOverTheCapIsDescribedAlone(t *testing.T) {
 	t.Parallel()
 
 	long := append(wav(), make([]byte, MediaBytes)...)
-	audio, err := Read(Request{Path: "talk.wav", WebURL: fileURL}, long)
+	audio, err := Read(t.Context(), Request{Path: "talk.wav", WebURL: fileURL}, long)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestMediaOverTheCapIsDescribedAlone(t *testing.T) {
 		t.Errorf("audio over the cap:\n got %q\nwant %q", audio.Text, want)
 	}
 
-	video, err := Read(Request{Path: "film.mp4", WebURL: fileURL}, append(isoMedia("isom"), make([]byte, MediaBytes)...))
+	video, err := Read(t.Context(), Request{Path: "film.mp4", WebURL: fileURL}, append(isoMedia("isom"), make([]byte, MediaBytes)...))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestMediaOverTheCapIsDescribedAlone(t *testing.T) {
 func TestAPictureInTheMP4ContainerIsDescribed(t *testing.T) {
 	t.Parallel()
 
-	view, err := Read(Request{Path: "photo.heic"}, isoMedia("heic"))
+	view, err := Read(t.Context(), Request{Path: "photo.heic"}, isoMedia("heic"))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}

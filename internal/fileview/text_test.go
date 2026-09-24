@@ -21,7 +21,7 @@ func numberedText(count int) string {
 func TestAWindowFromTheMiddleHoldsThoseLinesAndSaysWhereTheNextStarts(t *testing.T) {
 	t.Parallel()
 
-	view, err := Read(Request{Path: "src/long.txt", StartLine: 1200, LineCount: 100}, []byte(numberedText(3000)))
+	view, err := Read(t.Context(), Request{Path: "src/long.txt", StartLine: 1200, LineCount: 100}, []byte(numberedText(3000)))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestAWindowFromTheMiddleHoldsThoseLinesAndSaysWhereTheNextStarts(t *testing
 func TestAWindowSaysWhenItHoldsTheWholeFileOrItsEnd(t *testing.T) {
 	t.Parallel()
 
-	whole, err := Read(Request{Path: "a.txt"}, []byte("one\ntwo\nthree\n"))
+	whole, err := Read(t.Context(), Request{Path: "a.txt"}, []byte("one\ntwo\nthree\n"))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestAWindowSaysWhenItHoldsTheWholeFileOrItsEnd(t *testing.T) {
 		t.Errorf("a window over the whole file is %q with next %d, want the file and no next", whole.Window.Content, whole.Window.NextStartLine)
 	}
 
-	end, err := Read(Request{Path: "a.txt", At: "refs/heads/main", StartLine: 2}, []byte("one\ntwo\nthree\n"))
+	end, err := Read(t.Context(), Request{Path: "a.txt", At: "refs/heads/main", StartLine: 2}, []byte("one\ntwo\nthree\n"))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -137,12 +137,12 @@ func TestAWindowDefaultsItsStartAndLengthAndHoldsNoMoreThanTheMaximum(t *testing
 func TestAWindowThatStartsPastTheEndIsRefused(t *testing.T) {
 	t.Parallel()
 
-	_, err := Read(Request{Path: "a.txt", StartLine: 4}, []byte("one\ntwo\nthree\n"))
+	_, err := Read(t.Context(), Request{Path: "a.txt", StartLine: 4}, []byte("one\ntwo\nthree\n"))
 	if err == nil || !strings.Contains(err.Error(), "start_line 4 is past the end of a.txt, which has 3 lines") {
 		t.Fatalf("a window past the end: %v, want it refused with the file's length", err)
 	}
 
-	empty, err := Read(Request{Path: "empty.txt"}, nil)
+	empty, err := Read(t.Context(), Request{Path: "empty.txt"}, nil)
 	if err != nil {
 		t.Fatalf("the first window of an empty file was refused: %v", err)
 	}
@@ -155,7 +155,7 @@ func TestAWindowThatStartsPastTheEndIsRefused(t *testing.T) {
 	}
 
 	for _, request := range []Request{{Path: "a.txt", StartLine: -1}, {Path: "a.txt", LineCount: -5}} {
-		if _, err := Read(request, []byte("one\n")); err == nil {
+		if _, err := Read(t.Context(), request, []byte("one\n")); err == nil {
 			t.Errorf("%+v was accepted", request)
 		}
 	}
@@ -170,7 +170,7 @@ func TestAWindowStopsAtTheByteCeiling(t *testing.T) {
 	line := strings.Repeat("w", 100)
 	text := strings.Repeat(line+"\n", 1000)
 
-	view, err := Read(Request{Path: "wide.txt", LineCount: 1000}, []byte(text))
+	view, err := Read(t.Context(), Request{Path: "wide.txt", LineCount: 1000}, []byte(text))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -201,7 +201,7 @@ func TestALineLongerThanAWindowIsCutToFit(t *testing.T) {
 	long := strings.Repeat("é", 60_000) // two bytes each: 120,000 bytes
 	text := "first\n" + long + "\nthird\n"
 
-	view, err := Read(Request{Path: "app.min.js", StartLine: 2}, []byte(text))
+	view, err := Read(t.Context(), Request{Path: "app.min.js", StartLine: 2}, []byte(text))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -225,7 +225,7 @@ func TestALineLongerThanAWindowIsCutToFit(t *testing.T) {
 		t.Errorf("header %q does not say line 2 was cut and where the next starts", header)
 	}
 
-	last, err := Read(Request{Path: "blob.txt"}, []byte(long))
+	last, err := Read(t.Context(), Request{Path: "blob.txt"}, []byte(long))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -254,7 +254,7 @@ func TestTextThatIsNotUTF8IsDecodedWhenItCanBe(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		view, err := Read(Request{Path: "legacy.txt"}, testCase.content)
+		view, err := Read(t.Context(), Request{Path: "legacy.txt"}, testCase.content)
 		if err != nil {
 			t.Fatalf("%s: %v", testCase.name, err)
 		}
@@ -276,7 +276,7 @@ func TestUTF8TextIsTextWhateverItsFirstBytesLookLike(t *testing.T) {
 		"a bell \a in the text, which only a NUL would make binary\n",
 		string(rune(0xFEFF)) + "a byte order mark\n",
 	} {
-		view, err := Read(Request{Path: "notes.txt"}, []byte(content))
+		view, err := Read(t.Context(), Request{Path: "notes.txt"}, []byte(content))
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}

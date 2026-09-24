@@ -14,7 +14,7 @@ import (
 func readDocument(t *testing.T, path string, content []byte, mimeType string) (View, string) {
 	t.Helper()
 
-	view, err := Read(Request{Path: path}, content)
+	view, err := Read(t.Context(), Request{Path: path}, content)
 	if err != nil {
 		t.Fatalf("Read(%s): %v", path, err)
 	}
@@ -234,7 +234,7 @@ func TestColumnIndex(t *testing.T) {
 func TestADocumentWithNoTextSaysSo(t *testing.T) {
 	t.Parallel()
 
-	view, err := Read(Request{Path: "blank.docx"}, filefixture.Word(""))
+	view, err := Read(t.Context(), Request{Path: "blank.docx"}, filefixture.Word(""))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -254,7 +254,7 @@ func TestTheTextOfALargeDocumentStopsAndSaysSo(t *testing.T) {
 	paragraph := filefixture.WordParagraph(strings.Repeat("x", 1023))
 	content := filefixture.Word(strings.Repeat(paragraph, fit+10))
 
-	view, err := Read(Request{Path: "huge.docx", StartLine: fit - 5}, content)
+	view, err := Read(t.Context(), Request{Path: "huge.docx", StartLine: fit - 5}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -269,7 +269,7 @@ func TestTheTextOfALargeDocumentStopsAndSaysSo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open the zip: %v", err)
 	}
-	document, family, mainPart, ok := openOffice(archive)
+	document, family, mainPart, ok := openOffice(t.Context(), archive)
 	if !ok {
 		t.Fatal("the document was not recognised")
 	}
@@ -297,7 +297,7 @@ func TestALegacyOfficeFileIsDescribedByItsName(t *testing.T) {
 		"thumbs":   "a Microsoft compound file (application/x-ole-storage)",
 	}
 	for path, want := range cases {
-		view, err := Read(Request{Path: path}, content)
+		view, err := Read(t.Context(), Request{Path: path}, content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}
@@ -315,7 +315,7 @@ func TestXMLNestedPastAnyDocumentIsRefused(t *testing.T) {
 
 	nested := strings.Repeat("<w:sdt><w:sdtContent>", maxXMLDepth) + filefixture.WordParagraph("deep") +
 		strings.Repeat("</w:sdtContent></w:sdt>", maxXMLDepth)
-	view, err := Read(Request{Path: "deep.docx"}, filefixture.Word(nested))
+	view, err := Read(t.Context(), Request{Path: "deep.docx"}, filefixture.Word(nested))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -337,7 +337,7 @@ func TestADocumentWhosePartsCannotBeReadIsDescribed(t *testing.T) {
 		filefixture.Entry{Name: "[Content_Types].xml", Body: []byte(`<Types/>`)},
 		filefixture.Entry{Name: "word/document.xml", Body: []byte(`<w:document xmlns:w="w"><w:body><w:p>unclosed`)},
 	)
-	view, err := Read(Request{Path: "broken.docx"}, content)
+	view, err := Read(t.Context(), Request{Path: "broken.docx"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}

@@ -41,7 +41,7 @@ func TestABMPComesBackAsAPNG(t *testing.T) {
 	t.Parallel()
 
 	content := filefixture.BMP(filefixture.Quadrants(120, 80))
-	view, err := Read(Request{Path: "diagram.bmp"}, content)
+	view, err := Read(t.Context(), Request{Path: "diagram.bmp"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestABMPComesBackAsAPNG(t *testing.T) {
 func TestALargeBMPIsConvertedAndScaled(t *testing.T) {
 	t.Parallel()
 
-	view, err := Read(Request{Path: "wide.bmp"}, filefixture.BMP(filefixture.Quadrants(3000, 1000)))
+	view, err := Read(t.Context(), Request{Path: "wide.bmp"}, filefixture.BMP(filefixture.Quadrants(3000, 1000)))
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestATIFFComesBackAsItsFirstPage(t *testing.T) {
 
 	content := filefixture.TIFF(0, filefixture.Quadrants(90, 60),
 		solid(90, 60, color.RGBA{R: 9, G: 9, B: 9, A: 255}), solid(40, 40, color.RGBA{R: 99, G: 9, B: 9, A: 255}))
-	view, err := Read(Request{Path: "scan.tif"}, content)
+	view, err := Read(t.Context(), Request{Path: "scan.tif"}, content)
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestATIFFsOwnOrientationTurnsIt(t *testing.T) {
 			t.Errorf("a TIFF tagged %d reads as %d", orientation, got)
 		}
 
-		view, err := Read(Request{Path: "scan.tif"}, content)
+		view, err := Read(t.Context(), Request{Path: "scan.tif"}, content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}
@@ -143,7 +143,7 @@ func TestATIFFFromTheStandardEncoderIsRead(t *testing.T) {
 		t.Fatalf("encode TIFF: %v", err)
 	}
 
-	view, err := Read(Request{Path: "chart.tiff"}, encoded.Bytes())
+	view, err := Read(t.Context(), Request{Path: "chart.tiff"}, encoded.Bytes())
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
@@ -194,7 +194,7 @@ func TestABMPOrATIFFThatCannotBeDecodedIsDescribed(t *testing.T) {
 		"broken.tif": {content: append([]byte("II*\x00\x08\x00\x00\x00"), make([]byte, 30)...), says: "a TIFF image (image/tiff), 38 bytes. It cannot be decoded, so it is not shown."},
 	}
 	for path, testCase := range cases {
-		view, err := Read(Request{Path: path}, testCase.content)
+		view, err := Read(t.Context(), Request{Path: path}, testCase.content)
 		if err != nil {
 			t.Fatalf("Read: %v", err)
 		}
