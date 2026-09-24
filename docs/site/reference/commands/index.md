@@ -594,7 +594,9 @@ Field arguments:
 A JSON response is printed indented and other text trimmed; anything else -- a
 file's raw bytes, an archive -- is written byte for byte as it arrives. Text is
 held to be formatted, up to 256 MiB. Under --json the response goes into the
-document as JSON or as a string, which carries text only.
+document's data as JSON or as a string. A body that is not text goes in as
+base64, up to 64 MiB, with meta.encoding set to base64 and meta.contentType to
+its type; an empty one is null.
 
 Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading slash (e.g. rest/api/1.0/...) to prevent shell path mangling.
 

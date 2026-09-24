@@ -2,6 +2,7 @@ package jsonoutput
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -510,5 +511,32 @@ func TestTheEnvelopeCarriesTheBinaryVersionAndNoContractVersion(t *testing.T) {
 	}
 	if _, present := failure["version"]; present {
 		t.Errorf("the failure envelope still carries a contract version:\n%s", errorBuffer.String())
+	}
+}
+
+// TestWriteBytesCarriesABodyAsBase64: a body that is not text goes into data as
+// base64, and meta says how it is encoded and what it is, beside bbVersion.
+func TestWriteBytesCarriesABodyAsBase64(t *testing.T) {
+	t.Parallel()
+
+	body := []byte{0x00, 0xff, 'a', '\n', 0xfe}
+	var out bytes.Buffer
+	if err := WriteBytes(&out, body, "application/octet-stream"); err != nil {
+		t.Fatalf("WriteBytes: %v", err)
+	}
+
+	var envelope struct {
+		Data string         `json:"data"`
+		Meta map[string]any `json:"meta"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &envelope); err != nil {
+		t.Fatalf("not a JSON document: %v", err)
+	}
+	decoded, err := base64.StdEncoding.DecodeString(envelope.Data)
+	if err != nil || !bytes.Equal(decoded, body) {
+		t.Fatalf("data decodes to %v (%v), want %v", decoded, err, body)
+	}
+	if envelope.Meta["encoding"] != "base64" || envelope.Meta["contentType"] != "application/octet-stream" || envelope.Meta["bbVersion"] == nil {
+		t.Fatalf("meta = %v, want encoding, contentType and bbVersion", envelope.Meta)
 	}
 }

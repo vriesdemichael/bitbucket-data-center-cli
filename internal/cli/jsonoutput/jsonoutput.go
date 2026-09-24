@@ -2,6 +2,7 @@ package jsonoutput
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"strings"
@@ -50,6 +51,13 @@ type EnvelopeMeta struct {
 	// --limit of an unknown number — the difference between finishing and
 	// needing to ask again with a higher --limit or --all.
 	LimitReached *bool `json:"limitReached,omitempty"`
+	// Encoding is present when data is a body that is not text, carried as a
+	// string in this encoding: base64. A JSON string cannot hold arbitrary
+	// bytes, and a wrapper object inside data could not be told from a body
+	// that is such an object; meta is bb's own, so the encoding goes here.
+	Encoding string `json:"encoding,omitempty"`
+	// ContentType is the media type of the body Encoding carries.
+	ContentType string `json:"contentType,omitempty"`
 	// BBVersion is the version of the binary that produced the document.
 	//
 	// Provenance, for an operator auditing stored output -- not a compatibility
@@ -164,6 +172,26 @@ func marshalEnvelope(envelope any) ([]byte, error) {
 
 	// Encode already terminates the document with a newline.
 	return buffer.Bytes(), nil
+}
+
+// WriteBytes emits a body that is not text: its bytes base64-encoded as the
+// payload, with meta saying how they are encoded and what they are.
+func WriteBytes(writer io.Writer, body []byte, contentType string) error {
+	envelope := Envelope{
+		Data: base64.StdEncoding.EncodeToString(body),
+		Meta: EnvelopeMeta{Encoding: "base64", ContentType: contentType, BBVersion: releaseVersion},
+	}
+
+	encoded, marshalErr := marshalEnvelope(envelope)
+	if marshalErr != nil {
+		return apperrors.New(apperrors.KindInternal, "failed to encode JSON output", marshalErr)
+	}
+
+	if _, writeErr := writer.Write(encoded); writeErr != nil {
+		return apperrors.New(apperrors.KindInternal, "failed to write JSON output", writeErr)
+	}
+
+	return nil
 }
 
 // WriteList emits a list payload, recording whether --limit cut it short.

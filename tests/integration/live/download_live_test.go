@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -134,6 +135,45 @@ func TestLiveAPIWritesABinaryBodyExactly(t *testing.T) {
 	}
 	if !bytes.Equal([]byte(stdout), binary) {
 		t.Fatalf("bb api wrote %d bytes that differ from the %d pushed", len(stdout), len(binary))
+	}
+
+	// Under --json the same body goes into the document as base64, with meta
+	// saying so, and decodes to exactly the bytes pushed.
+	jsonOut, jsonErrOut, err := executeLiveCLISplit(t, "", "--json", "api", rawPath)
+	if err != nil {
+		t.Fatalf("bb --json api %s failed: %v\nstderr: %s", rawPath, err, jsonErrOut)
+	}
+	var document struct {
+		Data string `json:"data"`
+		Meta struct {
+			Encoding    string `json:"encoding"`
+			ContentType string `json:"contentType"`
+		} `json:"meta"`
+	}
+	if err := json.Unmarshal([]byte(jsonOut), &document); err != nil {
+		t.Fatalf("bb --json api did not write one document: %v\n%.300s", err, jsonOut)
+	}
+	decoded, err := base64.StdEncoding.DecodeString(document.Data)
+	if err != nil || !bytes.Equal(decoded, binary) {
+		t.Fatalf("data decodes to %d bytes (%v) that differ from the %d pushed", len(decoded), err, len(binary))
+	}
+	if document.Meta.Encoding != "base64" || document.Meta.ContentType == "" {
+		t.Fatalf("meta.encoding = %q and meta.contentType = %q, want base64 and the body's type", document.Meta.Encoding, document.Meta.ContentType)
+	}
+
+	// An answer with no body is still one document: data is null.
+	labels := "/rest/api/latest/projects/" + projectKey + "/repos/" + slug + "/labels"
+	mustLiveCLI(t, "api", "-X", "POST", labels, "-f", "name=live-json-empty")
+	emptyOut, emptyErrOut, err := executeLiveCLISplit(t, "", "--json", "api", "-X", "DELETE", labels+"/live-json-empty")
+	if err != nil {
+		t.Fatalf("bb --json api -X DELETE failed: %v\nstderr: %s", err, emptyErrOut)
+	}
+	var emptyDocument map[string]any
+	if err := json.Unmarshal([]byte(emptyOut), &emptyDocument); err != nil {
+		t.Fatalf("an answer with no body wrote no document: %v\n%q", err, emptyOut)
+	}
+	if data, present := emptyDocument["data"]; !present || data != nil {
+		t.Fatalf("data = %#v (present %v), want null for an answer with no body", data, present)
 	}
 
 	// Text is still formatted: a JSON answer is indented and ends in one

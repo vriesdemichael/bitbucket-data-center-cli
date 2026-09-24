@@ -107,6 +107,16 @@ present, true or false, on every command that takes `--limit`, and absent elsewh
 Text output gives the same answer as a line on stderr, so a pipeline counting rows still
 counts rows, and the MCP list tools return it as `limit_reached`.
 
+## Responses that are not text
+
+`bb api` returns whatever the endpoint answers, and a JSON string cannot carry
+arbitrary bytes. Under `--json` a response body that is not text goes into `data`
+as base64, and `meta` says so: `meta.encoding` is `base64` and `meta.contentType`
+names the body's type. JSON and other text arrive as before, with no
+`meta.encoding`. A body larger than 64 MiB is refused under `--json`; without it,
+`bb api` writes the bytes as they arrive. An answer with no body, such as a `204`
+to a `DELETE`, is `data: null`.
+
 ## Error kinds and exit codes
 
 Command failures use deterministic exit codes by error kind.
