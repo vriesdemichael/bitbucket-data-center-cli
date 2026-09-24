@@ -181,11 +181,33 @@ func New(deps Dependencies) *cobra.Command {
 				_, err := service.Get(cmd.Context(), args[0])
 				predicted := "create"
 				reason := "project will be created"
+				var blocking []string
 				if err == nil {
 					predicted = "conflict"
 					reason = "project key already exists"
+					blocking = []string{"project key exists"}
 				} else if apperrors.ExitCode(err) != 4 {
 					return err
+				}
+
+				// The name as well as the key: Bitbucket refuses a name already
+				// in use, whatever its case, with the same 409. Its name filter
+				// is a substring match, so what it answers is compared name by
+				// name. It lists only the projects the caller can see, which
+				// for an administrator is all of them.
+				if predicted == "create" {
+					named, err := service.List(cmd.Context(), projectservice.ListOptions{MaxResults: projectservice.AllResults, Name: createName})
+					if err != nil {
+						return err
+					}
+					for _, project := range named {
+						if strings.EqualFold(strings.TrimSpace(safederef.String(project.Name)), strings.TrimSpace(createName)) {
+							predicted = "conflict"
+							reason = fmt.Sprintf("project name %q is already in use, by project %s", safederef.String(project.Name), safederef.String(project.Key))
+							blocking = []string{reason}
+							break
+						}
+					}
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.Item{
@@ -195,12 +217,7 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
-					BlockingReasons: func() []string {
-						if predicted == "conflict" {
-							return []string{"project key exists"}
-						}
-						return nil
-					}(),
+					BlockingReasons: blocking,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
