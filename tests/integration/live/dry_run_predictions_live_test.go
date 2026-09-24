@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -83,25 +85,16 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 	}
 	assertLifecyclePRStored(t, readLifecyclePR(t, mergedPR), map[string]any{"state": "MERGED", "sourceBranch": mergedBranch})
 
-	predicts := func(t *testing.T, want string, args ...string) {
-		t.Helper()
-
-		output := mustLiveCLI(t, append([]string{"--dry-run"}, args...)...)
-		if !strings.Contains(output, fmt.Sprintf(`"predictedAction": %q`, want)) {
-			t.Fatalf("expected %s to predict %q:\n%s", strings.Join(args, " "), want, output)
-		}
-	}
-
 	t.Run("opening a pull request the branch already has", func(t *testing.T) {
-		predicts(t, "conflict", "pr", "create", "--from-ref", openBranch, "--to-ref", "master", "--title", "Second")
+		liveRefuses(t, apperrors.KindConflict, "pr", "create", "--from-ref", openBranch, "--to-ref", "master", "--title", "Second")
 	})
 
 	t.Run("merging one that is already merged", func(t *testing.T) {
-		predicts(t, "no-op", "pr", "merge", mergedPR)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "merge", mergedPR)
 	})
 
 	t.Run("merging one that was declined", func(t *testing.T) {
-		predicts(t, "blocked", "pr", "merge", declinedPR)
+		liveRefuses(t, apperrors.KindConflict, "pr", "merge", declinedPR)
 	})
 
 	// The other side of the same prediction: nothing stands against this one,
@@ -109,7 +102,7 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 	// everything is as useless as one that says merge for everything, and only
 	// having both cases against a real server tells them apart.
 	t.Run("merging one nothing stands against", func(t *testing.T) {
-		predicts(t, "update", "pr", "merge", openPR)
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "pr", "merge", openPR)
 
 		// And it is still open: this merge would succeed, so a preview that
 		// performed it would leave it merged.
@@ -117,11 +110,11 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 	})
 
 	t.Run("declining one that is already declined", func(t *testing.T) {
-		predicts(t, "no-op", "pr", "decline", declinedPR)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "decline", declinedPR)
 	})
 
 	t.Run("reopening one that is open", func(t *testing.T) {
-		predicts(t, "no-op", "pr", "reopen", openPR)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "reopen", openPR)
 	})
 
 	reviewer, err := harness.createLicensedUser(ctx)
@@ -141,11 +134,11 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 			t.Fatalf("%s is on pull request %s as %v, want REVIEWER", reviewer.Username, openPR, added["role"])
 		}
 
-		predicts(t, "no-op", "pr", "review", "reviewer", "add", openPR, "--user", reviewer.Username)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "review", "reviewer", "add", openPR, "--user", reviewer.Username)
 	})
 
 	t.Run("removing a reviewer who is not one", func(t *testing.T) {
-		predicts(t, "no-op", "pr", "review", "reviewer", "remove", openPR, "--user", "no-such-reviewer")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "review", "reviewer", "remove", openPR, "--user", "no-such-reviewer")
 	})
 
 	t.Run("code insights read the report and its annotations", func(t *testing.T) {
@@ -154,10 +147,10 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 		const externalID = "prediction-annotation"
 
 		// Nothing there yet, so both are creates and both deletes are no-ops.
-		predicts(t, "create", "insights", "report", "set", commit, reportKey,
+		livePredictsSaying(t, "will be created", "insights", "report", "set", commit, reportKey,
 			"--body", `{"title":"Predicted","result":"PASS"}`)
 		assertQualityCLIReportGone(t, commit, reportKey)
-		predicts(t, "no-op", "insights", "report", "delete", commit, reportKey)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "insights", "report", "delete", commit, reportKey)
 
 		mustLiveCLI(t, "insights", "report", "set", commit, reportKey,
 			"--body", `{"title":"Predicted","result":"PASS"}`)
@@ -169,11 +162,11 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 
 		// And now the same four commands answer differently, which is the whole
 		// point: the prediction is about the server, not about the arguments.
-		predicts(t, "update", "insights", "report", "set", commit, reportKey,
+		livePredictsSaying(t, "will be updated", "insights", "report", "set", commit, reportKey,
 			"--body", `{"title":"Predicted again","result":"PASS"}`)
-		predicts(t, "delete", "insights", "annotation", "delete", commit, reportKey, "--external-id", externalID)
-		predicts(t, "no-op", "insights", "annotation", "delete", commit, reportKey, "--external-id", "never-added")
-		predicts(t, "delete", "insights", "report", "delete", commit, reportKey)
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "insights", "annotation", "delete", commit, reportKey, "--external-id", externalID)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "insights", "annotation", "delete", commit, reportKey, "--external-id", "never-added")
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "insights", "report", "delete", commit, reportKey)
 
 		// None of the three changes they predicted was made.
 		assertQualityCLIReportStored(t, commit, reportKey, "Predicted", "PASS")
@@ -199,7 +192,7 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 			t.Fatalf("%s's review of pull request %s reads back as %v after the approve", reviewer.Username, openPR, approved["status"])
 		}
 
-		predicts(t, "no-op", "pr", "review", "approve", openPR)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "review", "approve", openPR)
 	})
 }
 
@@ -225,15 +218,6 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 	repo := seeded.Repos[0]
 	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
-
-	predicts := func(t *testing.T, want string, args ...string) {
-		t.Helper()
-
-		output := mustLiveCLI(t, append([]string{"--dry-run"}, args...)...)
-		if !strings.Contains(output, fmt.Sprintf(`"predictedAction": %q`, want)) {
-			t.Fatalf("expected %s to predict %q:\n%s", strings.Join(args, " "), want, output)
-		}
-	}
 
 	t.Run("reviewer conditions", func(t *testing.T) {
 		user, err := harness.createLicensedUser(ctx)
@@ -261,9 +245,11 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 				`"reviewers":[{"id":%d}],"requiredApprovals":1}`, userID)
 		stored := maskedCondition{approvals: 1, reviewerID: userID, sourceType: "ANY_REF", targetType: "ANY_REF"}
 
-		// Nothing there yet.
-		predicts(t, "no-op", "reviewer", "condition", "delete", "999999", "--project", seeded.Key)
-		predicts(t, "blocked", "reviewer", "condition", "update", "999999", `{"requiredApprovals":2}`, "--project", seeded.Key)
+		// Nothing there yet. The update sends a whole condition: Bitbucket
+		// checks the body before it looks for the condition, so a partial one
+		// would be refused as invalid and say nothing about a missing one.
+		livePredicts(t, jsonoutput.OutcomeNoOp, "reviewer", "condition", "delete", "999999", "--project", seeded.Key)
+		liveRefuses(t, apperrors.KindNotFound, "reviewer", "condition", "update", "999999", condition, "--project", seeded.Key)
 
 		projectCondition := conditionIDFrom(t, mustLiveCLI(t, "reviewer", "condition", "create", condition, "--project", seeded.Key))
 		projectListing := mustLiveCLI(t, "reviewer", "condition", "list", "--project", seeded.Key)
@@ -276,8 +262,10 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 		}
 
 		// And now the identical condition is a duplicate, which the preview did
-		// not add.
-		predicts(t, "conflict", "reviewer", "condition", "create", condition, "--project", seeded.Key)
+		// not add. Bitbucket would: it stores a second identical condition
+		// rather than refusing it, so the verdict is a create that says what it
+		// duplicates.
+		livePredictsSaying(t, "equivalent reviewer condition already exists", "reviewer", "condition", "create", condition, "--project", seeded.Key)
 		if after := mustLiveCLI(t, "reviewer", "condition", "list", "--project", seeded.Key); after != projectListing {
 			t.Fatalf("the dry run changed the project's conditions\nbefore: %s\nafter:  %s", projectListing, after)
 		}
@@ -293,10 +281,10 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 			assertMaskedConditionStored(t, listed, stored)
 		}
 
-		predicts(t, "conflict", "reviewer", "condition", "create", condition, "--repo", repoRef)
-		predicts(t, "delete", "reviewer", "condition", "delete", conditionID, "--repo", repoRef)
-		predicts(t, "update", "reviewer", "condition", "update", conditionID,
-			`{"requiredApprovals":2}`, "--repo", repoRef)
+		livePredictsSaying(t, "equivalent reviewer condition already exists", "reviewer", "condition", "create", condition, "--repo", repoRef)
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "reviewer", "condition", "delete", conditionID, "--repo", repoRef)
+		livePredictsSaying(t, "will be updated", "reviewer", "condition", "update", conditionID,
+			strings.Replace(condition, `"requiredApprovals":1`, `"requiredApprovals":2`, 1), "--repo", repoRef)
 
 		// A duplicate, a delete and two approvals were predicted, and none made.
 		if after := mustLiveCLI(t, "reviewer", "condition", "list", "--repo", repoRef); after != repoListing {
@@ -315,14 +303,14 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 		}
 		assertMutatedRepoPermissionLevel(t, repoRef, false, user.Username, "REPO_WRITE")
 
-		predicts(t, "no-op", "repo", "settings", "security", "permissions", "users", "grant", user.Username, "repo_write")
-		predicts(t, "no-op", "repo", "settings", "security", "permissions", "users", "revoke", "nobody-has-this-name")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "settings", "security", "permissions", "users", "grant", user.Username, "repo_write")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "settings", "security", "permissions", "users", "revoke", "nobody-has-this-name")
 
 		mustLiveCLI(t, "repo", "settings", "security", "permissions", "groups", "grant", licensedGroup, "repo_read")
 		assertMutatedRepoPermissionLevel(t, repoRef, true, licensedGroup, "REPO_READ")
 
-		predicts(t, "no-op", "repo", "settings", "security", "permissions", "groups", "grant", licensedGroup, "repo_read")
-		predicts(t, "delete", "repo", "settings", "security", "permissions", "groups", "revoke", licensedGroup)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "settings", "security", "permissions", "groups", "grant", licensedGroup, "repo_read")
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "repo", "settings", "security", "permissions", "groups", "revoke", licensedGroup)
 
 		// The revoke it predicted was not made.
 		assertMutatedRepoPermissionLevel(t, repoRef, true, licensedGroup, "REPO_READ")
@@ -332,7 +320,7 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 		const name = "predicted-hook"
 		const url = "http://example.invalid/predicted"
 
-		predicts(t, "no-op", "repo", "settings", "workflow", "webhooks", "delete", "999999")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "settings", "workflow", "webhooks", "delete", "999999")
 
 		mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "create", name, url)
 		listing := mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list")
@@ -345,7 +333,10 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 		hook, _ := hooks[0].(map[string]any)
 		repoCLIAssertWebhook(t, hook, name, url, true, "repo:refs_changed")
 
-		predicts(t, "conflict", "repo", "settings", "workflow", "webhooks", "create", name, url)
+		// A second webhook with the same name and URL is one Bitbucket adds
+		// beside the first rather than refusing, so the verdict is a create
+		// that says so -- and the dry run adds nothing.
+		livePredictsSaying(t, "already exists", "repo", "settings", "workflow", "webhooks", "create", name, url)
 		if after := mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list"); after != listing {
 			t.Fatalf("the dry run changed the webhooks\nbefore: %s\nafter:  %s", listing, after)
 		}
@@ -359,25 +350,25 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 		if settings := repoCLIPullRequestSettings(t); settings["requiredAllTasksComplete"] != true {
 			t.Fatalf("requiredAllTasksComplete reads back as %v, want true", settings["requiredAllTasksComplete"])
 		}
-		predicts(t, "no-op", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=true")
 
 		mustLiveCLI(t, "repo", "settings", "pull-requests", "update-approvers", "--count", "2")
 		if got := approverCountFrom(t, repoCLIPullRequestSettings(t)); got != "2" {
 			t.Fatalf("requiredApprovers reads back as %s, want 2", got)
 		}
-		predicts(t, "no-op", "repo", "settings", "pull-requests", "update-approvers", "--count", "2")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "settings", "pull-requests", "update-approvers", "--count", "2")
 
 		mustLiveCLI(t, "repo", "settings", "pull-requests", "set-strategy", "squash")
 		if settings := repoCLIPullRequestSettings(t); settings["defaultMergeStrategy"] != "squash" || !lifecycleStrategyEnabled(settings, "squash") {
 			t.Fatalf("merge strategies read back as %v, want squash enabled and the default", settings)
 		}
-		predicts(t, "no-op", "repo", "settings", "pull-requests", "set-strategy", "squash")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "settings", "pull-requests", "set-strategy", "squash")
 
 		// The other prediction, and the thing a preview must never do. Asking
 		// for the opposite of what is set predicts an update -- and the
 		// settings afterwards still say what they said, because a dry run that
 		// writes is the defect the whole tier exists to prevent.
-		predicts(t, "update", "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=false")
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "repo", "settings", "pull-requests", "update", "--required-all-tasks-complete=false")
 
 		after := mustLiveCLI(t, "repo", "settings", "pull-requests", "get")
 		if allTasks, _ := decodeJSONMap(t, after)["requiredAllTasksComplete"].(bool); !allTasks {
@@ -401,8 +392,8 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 			t.Fatalf("comment %s reads back as %q, want %q", commentID, stored["text"], text)
 		}
 
-		predicts(t, "no-op", "repo", "comment", "update", "--commit", commit, "--id", commentID, "--text", text)
-		predicts(t, "update", "repo", "comment", "update", "--commit", commit, "--id", commentID, "--text", text+" changed")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "comment", "update", "--commit", commit, "--id", commentID, "--text", text)
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "repo", "comment", "update", "--commit", commit, "--id", commentID, "--text", text+" changed")
 
 		// The text the update would have set is not there, and neither is the
 		// version it would have moved to.
@@ -411,4 +402,30 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 				commentID, after["text"], after["version"], text, stored["version"])
 		}
 	})
+}
+
+// livePredicts runs one change under --dry-run and requires the verdict to be
+// outcome.
+func livePredicts(t *testing.T, outcome jsonoutput.Outcome, args ...string) {
+	t.Helper()
+
+	assertLivePreview(t, mustLiveCLI(t, append([]string{"--dry-run"}, args...)...), outcome)
+}
+
+// livePredictsSaying is livePredicts for a change that would go through, where
+// the test is about which change it is: create or update, or a create beside
+// something already there. The verdict calls all of them would-apply, and the
+// reason says which.
+func livePredictsSaying(t *testing.T, reason string, args ...string) {
+	t.Helper()
+
+	assertLivePreview(t, mustLiveCLI(t, append([]string{"--dry-run"}, args...)...), jsonoutput.OutcomeWouldApply, reason)
+}
+
+// liveRefuses runs one change under --dry-run and requires the verdict that it
+// would fail, with an error of kind.
+func liveRefuses(t *testing.T, kind apperrors.Kind, args ...string) {
+	t.Helper()
+
+	assertLiveRefusal(t, mustLiveCLI(t, append([]string{"--dry-run"}, args...)...), kind)
 }

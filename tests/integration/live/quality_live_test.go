@@ -7,10 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
@@ -465,9 +465,7 @@ func TestLiveCLIInsightsReportSetDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("insights report set dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "insights.report.set"`) {
-		t.Fatalf("expected insights.report.set intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "insights report set", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "insights", "report", "list", commitID, "--limit", "200")
 	if err != nil {
@@ -507,9 +505,7 @@ func TestLiveCLIBuildStatusSetDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build status set dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "build.status.set"`) {
-		t.Fatalf("expected build.status.set intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "build status set", jsonoutput.OutcomeWouldApply)
 
 	statsAfterOutput, err := executeLiveCLI(t, "--json", "build", "status", "stats", commitID)
 	if err != nil {
@@ -556,9 +552,7 @@ func TestLiveCLIInsightsReportDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("insights report delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "insights.report.delete"`) {
-		t.Fatalf("expected insights.report.delete intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "insights report delete", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "insights", "report", "list", commitID, "--limit", "200")
 	if err != nil {
@@ -633,9 +627,7 @@ func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("insights annotation add dry-run failed: %v\noutput: %s", err, addDryRunOutput)
 	}
-	if !strings.Contains(addDryRunOutput, `"intent": "insights.annotation.add"`) {
-		t.Fatalf("expected insights.annotation.add intent, got: %s", addDryRunOutput)
-	}
+	assertLivePreviewOf(t, addDryRunOutput, "insights annotation add", jsonoutput.OutcomeWouldApply)
 
 	listAfterAddOutput, err := executeLiveCLI(t, "--json", "insights", "annotation", "list", commitID, reportKey)
 	if err != nil {
@@ -671,9 +663,7 @@ func TestLiveCLIInsightsAnnotationAddDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("insights annotation delete dry-run failed: %v\noutput: %s", err, deleteDryRunOutput)
 	}
-	if !strings.Contains(deleteDryRunOutput, `"intent": "insights.annotation.delete"`) {
-		t.Fatalf("expected insights.annotation.delete intent, got: %s", deleteDryRunOutput)
-	}
+	assertLivePreviewOf(t, deleteDryRunOutput, "insights annotation delete", jsonoutput.OutcomeWouldApply)
 
 	listAfterDeleteOutput, err := executeLiveCLI(t, "--json", "insights", "annotation", "list", commitID, reportKey)
 	if err != nil {
@@ -720,9 +710,7 @@ func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) 
 	if err != nil {
 		t.Fatalf("build required create dry-run failed: %v\noutput: %s", err, createDryRunOutput)
 	}
-	if !strings.Contains(createDryRunOutput, `"intent": "build.required.create"`) {
-		t.Fatalf("expected build.required.create intent, got: %s", createDryRunOutput)
-	}
+	assertLivePreviewOf(t, createDryRunOutput, "build required create", jsonoutput.OutcomeWouldApply)
 
 	listAfterCreateOutput, err := executeLiveCLI(t, "--json", "build", "required", "list", "--limit", "200")
 	if err != nil {
@@ -748,9 +736,7 @@ func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) 
 	if err != nil {
 		t.Fatalf("build required update dry-run failed: %v\noutput: %s", err, updateDryRunOutput)
 	}
-	if !strings.Contains(updateDryRunOutput, `"intent": "build.required.update"`) {
-		t.Fatalf("expected build.required.update intent, got: %s", updateDryRunOutput)
-	}
+	assertLivePreviewOf(t, updateDryRunOutput, "build required update", jsonoutput.OutcomeWouldApply)
 
 	listAfterUpdateOutput, err := executeLiveCLI(t, "--json", "build", "required", "list", "--limit", "200")
 	if err != nil {
@@ -769,9 +755,7 @@ func TestLiveCLIBuildRequiredCreateUpdateDeleteDryRunNoSideEffect(t *testing.T) 
 	if err != nil {
 		t.Fatalf("build required delete dry-run failed: %v\noutput: %s", err, deleteDryRunOutput)
 	}
-	if !strings.Contains(deleteDryRunOutput, `"intent": "build.required.delete"`) {
-		t.Fatalf("expected build.required.delete intent, got: %s", deleteDryRunOutput)
-	}
+	assertLivePreviewOf(t, deleteDryRunOutput, "build required delete", jsonoutput.OutcomeWouldApply)
 
 	listAfterDeleteOutput, err := executeLiveCLI(t, "--json", "build", "required", "list", "--limit", "200")
 	if err != nil {

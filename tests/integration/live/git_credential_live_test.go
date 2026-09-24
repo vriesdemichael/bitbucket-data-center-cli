@@ -31,6 +31,8 @@ func executeLiveCLIWithStdin(t *testing.T, stdin string, args ...string) (string
 	command.SetArgs(withLiveRepoContext(t, command, args))
 
 	err := command.Execute()
+	holdLiveDryRunToDeclaredTier(t, output.String())
+
 	return output.String(), err
 }
 

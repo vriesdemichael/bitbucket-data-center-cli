@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
@@ -39,27 +39,18 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	predicts := func(t *testing.T, want string, args ...string) {
-		t.Helper()
-
-		output := mustLiveCLI(t, append([]string{"--dry-run"}, args...)...)
-		if !strings.Contains(output, fmt.Sprintf(`"predictedAction": %q`, want)) {
-			t.Fatalf("expected %s to predict %q:\n%s", strings.Join(args, " "), want, output)
-		}
-	}
-
 	t.Run("branches", func(t *testing.T) {
 		// master is what the seeded repository already has, so creating it is a
 		// conflict and setting it as default is a no-op.
-		predicts(t, "conflict", "branch", "create", "master", "--start-point", "master")
-		predicts(t, "no-op", "branch", "default", "set", "master")
-		predicts(t, "no-op", "branch", "model", "update", "master")
+		liveRefuses(t, apperrors.KindConflict, "branch", "create", "master", "--start-point", "master")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "branch", "default", "set", "master")
+		livePredicts(t, jsonoutput.OutcomeNoOp, "branch", "model", "update", "master")
 	})
 
 	t.Run("branch restrictions", func(t *testing.T) {
 		const matcher = "refs/heads/predicted"
 
-		predicts(t, "no-op", "branch", "restriction", "delete", "999999", "--repo", repoRef)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "branch", "restriction", "delete", "999999", "--repo", repoRef)
 
 		created := mustLiveCLI(t, "branch", "restriction", "create", "--repo", repoRef,
 			"--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher)
@@ -72,18 +63,21 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", restrictionID, "--repo", repoRef)),
 			storedRestriction{scope: "REPOSITORY", restrictionType: "read-only", matcherType: "BRANCH", matcherID: matcher})
 
-		predicts(t, "conflict", "branch", "restriction", "create", "--repo", repoRef,
+		// Creating it again is not refused. Bitbucket's create is an upsert on
+		// the type and matcher, answered with this restriction, and with the same
+		// exemptions -- none -- it changes nothing.
+		livePredicts(t, jsonoutput.OutcomeNoOp, "branch", "restriction", "create", "--repo", repoRef,
 			"--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher)
-		predicts(t, "no-op", "branch", "restriction", "update", restrictionID, "--repo", repoRef,
+		livePredicts(t, jsonoutput.OutcomeNoOp, "branch", "restriction", "update", restrictionID, "--repo", repoRef,
 			"--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher)
 	})
 
 	t.Run("build statuses and required checks", func(t *testing.T) {
 		commit := repo.CommitIDs[0]
 
-		predicts(t, "no-op", "build", "required", "delete", "999999", "--repo", repoRef)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "build", "required", "delete", "999999", "--repo", repoRef)
 		noChecks := mustLiveCLI(t, "build", "required", "list", "--repo", repoRef)
-		predicts(t, "create", "build", "required", "create", "--repo", repoRef,
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "build", "required", "create", "--repo", repoRef,
 			"--body", `{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`)
 		if after := mustLiveCLI(t, "build", "required", "list", "--repo", repoRef); after != noChecks {
 			t.Fatalf("the dry run created the required build check it predicted\nbefore: %s\nafter:  %s", noChecks, after)
@@ -95,7 +89,7 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		commandCoverageAssertFields(t, "the build status", commandCoverageEntry(t, mustLiveCLI(t, "build", "status", "get", commit), "key", "ci"), stored)
 
 		// Another state, so the update it predicts would show if it were made.
-		predicts(t, "update", "build", "status", "set", commit, "--key", "ci",
+		livePredictsSaying(t, "will be updated", "build", "status", "set", commit, "--key", "ci",
 			"--state", "FAILED", "--url", "http://example.invalid/ci")
 		commandCoverageAssertFields(t, "the build status after its dry run", commandCoverageEntry(t, mustLiveCLI(t, "build", "status", "get", commit), "key", "ci"), stored)
 
@@ -111,13 +105,13 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 
 		// A second build key, which the check would require if the update were
 		// made.
-		predicts(t, "update", "build", "required", "update", checkID, "--repo", repoRef,
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "build", "required", "update", checkID, "--repo", repoRef,
 			"--body", `{"buildParentKeys":["ci","lint"],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`)
 		commandCoverageAssertRequiredCheck(t, mustLiveCLI(t, "build", "required", "list", "--repo", repoRef), checkID, "ci", "refs/heads/master", "BRANCH")
 	})
 
 	t.Run("projects and repositories", func(t *testing.T) {
-		predicts(t, "conflict", "project", "create", seeded.Key, "--name", "Anything")
+		liveRefuses(t, apperrors.KindConflict, "project", "create", seeded.Key, "--name", "Anything")
 
 		// Deleting a project that is not there is exit 4, not a no-op preview.
 		//
@@ -139,25 +133,25 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 		current := decodeJSONMap(t, mustLiveCLI(t, "project", "get", seeded.Key))
 		project, _ := current["project"].(map[string]any)
 		name, _ := project["name"].(string)
-		predicts(t, "no-op", "project", "update", seeded.Key, "--name", name)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "project", "update", seeded.Key, "--name", name)
 
-		predicts(t, "conflict", "repo", "admin", "create", "--project", seeded.Key, "--name", repo.Name)
+		liveRefuses(t, apperrors.KindConflict, "repo", "admin", "create", "--project", seeded.Key, "--name", repo.Name)
 
 		forkName := testsupport.UniqueName("forked-in-a-preview-")
-		predicts(t, "create", "repo", "admin", "fork", "--repo", repoRef, "--name", forkName)
+		livePredicts(t, jsonoutput.OutcomeWouldApply, "repo", "admin", "fork", "--repo", repoRef, "--name", forkName)
 		assertNoLiveRepositoryNamed(t, forkName, repo.Name)
 
-		predicts(t, "no-op", "repo", "admin", "update", "--repo", repoRef)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "admin", "update", "--repo", repoRef)
 	})
 
 	t.Run("tags", func(t *testing.T) {
-		predicts(t, "no-op", "tag", "delete", "no-such-tag", "--repo", repoRef)
+		livePredicts(t, jsonoutput.OutcomeNoOp, "tag", "delete", "no-such-tag", "--repo", repoRef)
 
 		mustLiveCLI(t, "tag", "create", "v1", "--repo", repoRef, "--start-point", "master")
 		commandCoverageAssertFields(t, "the tag", decodeJSONMap(t, mustLiveCLI(t, "tag", "view", "v1", "--repo", repoRef)),
 			map[string]any{"displayId": "v1", "latestCommit": repo.CommitIDs[0]})
 
-		predicts(t, "conflict", "tag", "create", "v1", "--repo", repoRef, "--start-point", "master")
+		liveRefuses(t, apperrors.KindConflict, "tag", "create", "v1", "--repo", repoRef, "--start-point", "master")
 
 		// #470, against a repository with more tags than one page holds.
 		//
@@ -178,7 +172,7 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 			t.Fatalf("the repository holds tags %v, want %v", listed, slices.Sorted(slices.Values(wantTags)))
 		}
 
-		predicts(t, "conflict", "tag", "create", fmt.Sprintf("v2.0.%d", beyondAPage-1),
+		liveRefuses(t, apperrors.KindConflict, "tag", "create", fmt.Sprintf("v2.0.%d", beyondAPage-1),
 			"--repo", repoRef, "--start-point", "master")
 	})
 }

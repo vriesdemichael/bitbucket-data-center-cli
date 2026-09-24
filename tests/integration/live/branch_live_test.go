@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -332,12 +333,7 @@ func TestLiveCLIBranchDeleteDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("branch delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful dry-run output, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "branch.delete"`) {
-		t.Fatalf("expected branch.delete intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "branch delete", jsonoutput.OutcomeWouldApply)
 
 	listOutput, err := executeLiveCLI(t, "--json", "branch", "list")
 	if err != nil {
@@ -385,12 +381,7 @@ func TestLiveCLIBranchCreateDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("branch create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful dry-run output, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "branch.create"`) {
-		t.Fatalf("expected branch.create intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "branch create", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "branch", "list")
 	if err != nil {
@@ -436,12 +427,7 @@ func TestLiveCLIBranchDefaultSetDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("branch default set dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful dry-run output, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "branch.default.set"`) {
-		t.Fatalf("expected branch.default.set intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "branch default set", jsonoutput.OutcomeWouldApply)
 
 	defaultAfterOutput, err := executeLiveCLI(t, "--json", "branch", "default", "get")
 	if err != nil {
@@ -480,9 +466,7 @@ func TestLiveCLIBranchRestrictionCreateDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("restriction create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "branch.restriction.create"`) {
-		t.Fatalf("expected branch.restriction.create intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "branch restriction create", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "list", "--limit", "200")
 	if err != nil {
@@ -540,9 +524,7 @@ func TestLiveCLIBranchRestrictionDeleteDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("restriction delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "branch.restriction.delete"`) {
-		t.Fatalf("expected branch.restriction.delete intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "branch restriction delete", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "list", "--limit", "200")
 	if err != nil {
@@ -594,12 +576,7 @@ func TestLiveCLIBranchModelUpdateDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("branch model update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful dry-run output, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "branch.model.update"`) {
-		t.Fatalf("expected branch.model.update intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "branch model update", jsonoutput.OutcomeWouldApply)
 
 	defaultAfterOutput, err := executeLiveCLI(t, "--json", "branch", "default", "get")
 	if err != nil {
@@ -667,9 +644,7 @@ func TestLiveCLIBranchRestrictionUpdateDryRunHasNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("restriction update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "branch.restriction.update"`) {
-		t.Fatalf("expected branch.restriction.update intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "branch restriction update", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "list", "--limit", "200")
 	if err != nil {

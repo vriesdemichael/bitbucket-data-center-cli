@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
@@ -863,12 +864,7 @@ func TestLiveCLITagCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tag create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "tag.create"`) {
-		t.Fatalf("expected tag.create intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "tag create", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "tag", "list", "--limit", "200")
 	if err != nil {
@@ -916,12 +912,7 @@ func TestLiveCLITagDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tag delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "tag.delete"`) {
-		t.Fatalf("expected tag.delete intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "tag delete", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "tag", "list", "--limit", "200")
 	if err != nil {
@@ -1014,6 +1005,8 @@ func executeLiveCLI(t *testing.T, args ...string) (string, error) {
 	command.SetArgs(withLiveRepoContext(t, command, args))
 
 	err := command.Execute()
+	holdLiveDryRunToDeclaredTier(t, output.String())
+
 	return output.String(), err
 }
 
@@ -1036,6 +1029,7 @@ func executeLiveCLIUnscoped(t *testing.T, args ...string) (string, error) {
 	command.SetArgs(args)
 
 	err := command.Execute()
+	holdLiveDryRunToDeclaredTier(t, output.String())
 
 	return output.String(), err
 }

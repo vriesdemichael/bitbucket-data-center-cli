@@ -45,6 +45,7 @@ func executeLiveCLISplit(t *testing.T, stdin string, args ...string) (string, st
 	command.SetArgs(withLiveRepoContext(t, command, args))
 
 	err := command.Execute()
+	holdLiveDryRunToDeclaredTier(t, stdout.String())
 
 	return stdout.String(), stderr.String(), err
 }

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
@@ -99,10 +100,9 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 
 	t.Run("a dry run predicts the failure and names the command that sets the status", func(t *testing.T) {
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "complete", prID, "--status", "NEEDS_WORK", "--repo", repoRef)
-		assertLivePreview(t, output, "blocked")
-		if !strings.Contains(output, setCommand) {
-			t.Errorf("expected the preview to name %q:\n%s", setCommand, output)
-		}
+		// not_found, the kind the real run below fails with, and the command
+		// named among the reasons: they are what the verdict prints in text.
+		assertLiveRefusal(t, output, apperrors.KindNotFound, setCommand)
 
 		if status := held(t); status != "UNAPPROVED" {
 			t.Errorf("the dry run changed the status to %q", status)
@@ -176,7 +176,7 @@ func TestLivePullRequestReviewCompleteWithoutDraft(t *testing.T) {
 		prReviewAssertOnlyDraft(t, prID, "a draft to publish")
 
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "complete", prID, "--status", "APPROVED", "--repo", repoRef)
-		assertLivePreview(t, output, "update")
+		assertLivePreview(t, output, jsonoutput.OutcomeWouldApply)
 		if status := held(t); status != "NEEDS_WORK" {
 			t.Fatalf("the dry run changed the status to %q", status)
 		}

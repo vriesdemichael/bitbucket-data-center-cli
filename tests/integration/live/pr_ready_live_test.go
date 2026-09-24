@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -70,9 +71,7 @@ func TestLivePRReady(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr ready --dry-run failed: %v\noutput: %s", err, preview)
 	}
-	if !strings.Contains(preview, `"predictedAction": "update"`) {
-		t.Errorf("marking a draft ready was not predicted an update:\n%s", preview)
-	}
+	assertLivePreview(t, preview, jsonoutput.OutcomeWouldApply)
 	if !livePRIsDraft(t, prID) {
 		t.Fatal("pr ready --dry-run took the pull request out of draft")
 	}
@@ -122,9 +121,7 @@ func TestLivePRReady(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr ready --dry-run failed: %v\noutput: %s", err, noop)
 	}
-	if !strings.Contains(noop, `"predictedAction": "no-op"`) {
-		t.Errorf("asking for the state it already holds was not predicted a no-op:\n%s", noop)
-	}
+	assertLivePreview(t, noop, jsonoutput.OutcomeNoOp)
 	if after := currentLivePRVersion(t, prID); after != version {
 		t.Errorf("the no-op preview moved the version from %s to %s", version, after)
 	}
@@ -198,9 +195,8 @@ func TestLivePRReadyOnADeclinedPullRequestIsRefused(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr ready --dry-run failed: %v\noutput: %s", err, preview)
 	}
-	if !strings.Contains(preview, `"predictedAction": "blocked"`) {
-		t.Errorf("a draft change on a declined pull request was not predicted blocked:\n%s", preview)
-	}
+	// Refused as a conflict, the kind the real run below is refused with.
+	assertLiveRefusal(t, preview, apperrors.KindConflict)
 	if after := currentLivePRVersion(t, prID); after != version {
 		t.Errorf("pr ready --dry-run moved the version from %s to %s", version, after)
 	}
@@ -325,7 +321,11 @@ func TestLivePRReadyOnAPullRequestThatDoesNotExist(t *testing.T) {
 	if !apperrors.IsKind(err, apperrors.KindNotFound) {
 		t.Errorf("expected not found from the dry run, got %v", err)
 	}
-	if strings.Contains(preview, "predictedAction") {
+	// A 404 met during the check is the command's error, which cmd/bb writes
+	// as the preview's error; run in-process, nothing is written. A preview
+	// here would be one the command wrote itself, about a pull request it
+	// never read.
+	if _, written := parseLivePreview(preview); written {
 		t.Errorf("a preview was produced for a pull request that does not exist:\n%s", preview)
 	}
 }

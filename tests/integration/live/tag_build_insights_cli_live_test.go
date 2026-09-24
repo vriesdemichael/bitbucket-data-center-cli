@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -43,9 +44,7 @@ func TestLiveTagCLISurface(t *testing.T) {
 
 	t.Run("a dry run predicts the tag without making it", func(t *testing.T) {
 		output := mustLiveCLI(t, "--dry-run", "tag", "create", tag, "--start-point", startPoint)
-		if !strings.Contains(output, `"predictedAction": "create"`) {
-			t.Errorf("expected a create prediction:\n%s", output)
-		}
+		assertLivePreview(t, output, jsonoutput.OutcomeWouldApply)
 
 		if listing := mustLiveCLI(t, "tag", "list", "--all"); strings.Contains(listing, tag) {
 			t.Fatalf("the dry run created the tag:\n%s", listing)
