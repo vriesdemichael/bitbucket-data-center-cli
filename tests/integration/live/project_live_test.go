@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -143,9 +144,7 @@ func TestLiveCLIProjectUpdateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("project update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "project.update"`) {
-		t.Fatalf("expected project.update intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "project update", jsonoutput.OutcomeWouldApply)
 
 	getAfterOutput, err := executeLiveCLI(t, "--json", "project", "get", seeded.Key)
 	if err != nil {
@@ -183,9 +182,7 @@ func TestLiveCLIProjectDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("project delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "project.delete"`) {
-		t.Fatalf("expected project.delete intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "project delete", jsonoutput.OutcomeWouldApply)
 
 	// The project itself, rather than a byte comparison of the instance-wide
 	// listing before and after: that listing changes whenever any other test

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
@@ -101,12 +102,7 @@ func TestLiveCLIRepoAdminCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo admin create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.admin.create"`) {
-		t.Fatalf("expected repo.admin.create intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo admin create", jsonoutput.OutcomeWouldApply)
 
 	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
 		t.Fatalf("expected no repository side-effect from admin create dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)
@@ -143,9 +139,7 @@ func TestLiveCLIRepoAdminUpdateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo admin update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.admin.update"`) {
-		t.Fatalf("expected repo.admin.update intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo admin update", jsonoutput.OutcomeWouldApply)
 
 	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
 		t.Fatalf("expected no repository side-effect from admin update dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)
@@ -184,9 +178,7 @@ func TestLiveCLIRepoAdminDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo admin delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.admin.delete"`) {
-		t.Fatalf("expected repo.admin.delete intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo admin delete", jsonoutput.OutcomeWouldApply)
 
 	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
 		t.Fatalf("expected no repository side-effect from admin delete dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)
@@ -218,9 +210,7 @@ func TestLiveCLIRepoAdminForkDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo admin fork dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.admin.fork"`) {
-		t.Fatalf("expected repo.admin.fork intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo admin fork", jsonoutput.OutcomeWouldApply)
 
 	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
 		t.Fatalf("expected no repository side-effect from admin fork dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)

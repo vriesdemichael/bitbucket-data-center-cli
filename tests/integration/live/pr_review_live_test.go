@@ -264,8 +264,8 @@ func TestLivePullRequestReviewDryRuns(t *testing.T) {
 
 	t.Run("completing the review", func(t *testing.T) {
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "complete", pullRequestID, "--status", "NEEDS_WORK")
-		if !strings.Contains(output, "pr.review.complete") {
-			t.Errorf("expected the preview to name the intent:\n%s", output)
+		if command := decodeLivePreview(t, output).Meta.Command; command != "pr review complete" {
+			t.Errorf("expected the preview to name the command, got %q:\n%s", command, output)
 		}
 
 		draftIsStillPending(t)
@@ -273,8 +273,8 @@ func TestLivePullRequestReviewDryRuns(t *testing.T) {
 
 	t.Run("discarding the review", func(t *testing.T) {
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "discard", pullRequestID)
-		if !strings.Contains(output, "pr.review.discard") {
-			t.Errorf("expected the preview to name the intent:\n%s", output)
+		if command := decodeLivePreview(t, output).Meta.Command; command != "pr review discard" {
+			t.Errorf("expected the preview to name the command, got %q:\n%s", command, output)
 		}
 
 		draftIsStillPending(t)

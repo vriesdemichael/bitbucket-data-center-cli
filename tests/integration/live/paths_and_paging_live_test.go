@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -186,11 +187,7 @@ func TestLiveBranchCommandSurfaces(t *testing.T) {
 		const branch = "feature/predicted"
 
 		output := mustLiveCLI(t, "--dry-run", "branch", "create", branch, "--start-point", "master")
-		for _, want := range []string{`"planningMode": "stateful"`, `"predictedAction": "create"`} {
-			if !strings.Contains(output, want) {
-				t.Errorf("expected %s in the preview:\n%s", want, output)
-			}
-		}
+		assertLivePreview(t, output, jsonoutput.OutcomeWouldApply)
 
 		// The half a mock cannot check: that nothing happened.
 		listing := mustLiveCLI(t, "branch", "list", "--all")

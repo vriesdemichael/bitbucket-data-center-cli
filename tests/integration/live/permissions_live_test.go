@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
@@ -47,9 +48,13 @@ func assertAuthorizationError(t *testing.T, err error, output, context string) {
 }
 
 // assertDryRunAuthorizationError asserts that a --dry-run invocation fails with an
-// authorization error rather than producing a plan.  It also makes sure the output
-// does NOT contain a successful planningMode entry, because that would mean the
-// plan was produced before the permission check fired.
+// authorization error rather than producing a preview. It also makes sure the
+// output holds no preview document, because that would mean the preview was
+// written before the permission check fired.
+//
+// A refusal found during the check comes back from the command as its error,
+// with nothing written: it is cmd/bb that turns it into the preview's error, and
+// these tests run the command tree without it.
 func assertDryRunAuthorizationError(t *testing.T, err error, output, context string) {
 	t.Helper()
 	if err == nil {
@@ -59,9 +64,9 @@ func assertDryRunAuthorizationError(t *testing.T, err error, output, context str
 		t.Fatalf("%s: expected dry-run exit code 3 (KindAuthorization), got %d\nerror: %v\noutput: %s",
 			context, apperrors.ExitCode(err), err, output)
 	}
-	// The plan must NOT have been committed to output — the permission check must fire first.
-	if strings.Contains(output, `"planningMode"`) && !strings.Contains(output, `"error"`) {
-		t.Fatalf("%s: dry-run produced a plan despite lacking permission\noutput: %s", context, output)
+	// The preview must NOT have been committed to output — the permission check must fire first.
+	if _, written := parseLivePreview(output); written {
+		t.Fatalf("%s: dry-run wrote a preview despite lacking permission\noutput: %s", context, output)
 	}
 }
 
@@ -1357,19 +1362,12 @@ func TestLivePermissionAliasSubjects(t *testing.T) {
 		assertBoundaryStoredLevel(t, mustLiveCLI(t, "repo", "permissions", "list", "--group"), group, "")
 	})
 
-	t.Run("the dry-run intent follows the subject", func(t *testing.T) {
+	t.Run("the dry-run target follows the subject", func(t *testing.T) {
 		userPreview := mustLiveCLI(t, "--dry-run", "repo", "permissions", "grant", holder.Username, "repo_read")
-		if !strings.Contains(userPreview, `"repo.permission.user.grant"`) {
-			t.Errorf("expected a user grant intent, got: %s", userPreview)
-		}
+		assertPermissionPreviewSubject(t, userPreview, "user", holder.Username)
 
 		groupPreview := mustLiveCLI(t, "--dry-run", "repo", "permissions", "grant", "--group", group, "repo_admin")
-		if !strings.Contains(groupPreview, `"repo.permission.group.grant"`) {
-			t.Errorf("expected a group grant intent, got: %s", groupPreview)
-		}
-		if !strings.Contains(groupPreview, `"subject": "group"`) || !strings.Contains(groupPreview, `"name": "`+group+`"`) {
-			t.Errorf("expected the group named in the dry-run target, got: %s", groupPreview)
-		}
+		assertPermissionPreviewSubject(t, groupPreview, "group", group)
 
 		assertBoundaryStoredLevel(t, mustLiveCLI(t, "repo", "permissions", "list"), holder.Username, "REPO_WRITE")
 		assertBoundaryStoredLevel(t, mustLiveCLI(t, "repo", "permissions", "list", "--group"), group, "")
@@ -1384,21 +1382,22 @@ func TestLivePermissionAliasSubjects(t *testing.T) {
 		}
 
 		for _, testCase := range []struct {
-			name string
-			want string
-			args []string
+			name    string
+			outcome jsonoutput.Outcome
+			// reason tells a create, an update and a delete apart, which the
+			// outcome calls would-apply alike.
+			reason string
+			args   []string
 		}{
-			{name: "granting what is already held", want: "no-op", args: []string{"grant", holder.Username, "repo_write"}},
-			{name: "granting a different level", want: "update", args: []string{"grant", holder.Username, "repo_admin"}},
-			{name: "granting someone with nothing", want: "create", args: []string{"grant", stranger.Username, "repo_read"}},
-			{name: "revoking what is held", want: "delete", args: []string{"revoke", holder.Username}},
-			{name: "revoking what is not", want: "no-op", args: []string{"revoke", stranger.Username}},
+			{name: "granting what is already held", outcome: jsonoutput.OutcomeNoOp, reason: "already has", args: []string{"grant", holder.Username, "repo_write"}},
+			{name: "granting a different level", outcome: jsonoutput.OutcomeWouldApply, reason: "will be updated", args: []string{"grant", holder.Username, "repo_admin"}},
+			{name: "granting someone with nothing", outcome: jsonoutput.OutcomeWouldApply, reason: "will create", args: []string{"grant", stranger.Username, "repo_read"}},
+			{name: "revoking what is held", outcome: jsonoutput.OutcomeWouldApply, reason: "will be removed", args: []string{"revoke", holder.Username}},
+			{name: "revoking what is not", outcome: jsonoutput.OutcomeNoOp, reason: "does not currently have", args: []string{"revoke", stranger.Username}},
 		} {
 			t.Run(testCase.name, func(t *testing.T) {
 				output := mustLiveCLI(t, append([]string{"--dry-run", "repo", "permissions"}, testCase.args...)...)
-				if !strings.Contains(output, `"predictedAction": "`+testCase.want+`"`) {
-					t.Fatalf("expected %q, got:\n%s", testCase.want, output)
-				}
+				assertLivePreview(t, output, testCase.outcome, testCase.reason)
 			})
 		}
 
@@ -1489,15 +1488,24 @@ func TestLivePermissionAliasSubjectsForProjects(t *testing.T) {
 
 	// Levels the subjects do not hold, so a dry run that wrote one would show.
 	userPreview := mustLiveCLI(t, "--dry-run", "project", "permissions", "grant", seeded.Key, holder.Username, "project_read")
-	if !strings.Contains(userPreview, `"project.permission.user.grant"`) {
-		t.Errorf("expected a user grant intent, got: %s", userPreview)
-	}
+	assertPermissionPreviewSubject(t, userPreview, "user", holder.Username)
 	groupPreview := mustLiveCLI(t, "--dry-run", "project", "permissions", "grant", "--group", seeded.Key, group, "project_admin")
-	if !strings.Contains(groupPreview, `"project.permission.group.grant"`) {
-		t.Errorf("expected a group grant intent, got: %s", groupPreview)
-	}
+	assertPermissionPreviewSubject(t, groupPreview, "group", group)
 	assertBoundaryStoredLevel(t, mustLiveCLI(t, "project", "permissions", "list", seeded.Key), holder.Username, "PROJECT_WRITE")
 	assertBoundaryStoredLevel(t, mustLiveCLI(t, "project", "permissions", "list", "--group", seeded.Key), group, "")
+}
+
+// assertPermissionPreviewSubject checks a permission dry run is about the
+// subject the invocation named. The effect's target is where the preview says
+// so: a --group that did not reach the command would leave a user grant of the
+// same name, previewed as confidently.
+func assertPermissionPreviewSubject(t *testing.T, output, subject, name string) {
+	t.Helper()
+
+	target := decodeLivePreview(t, output).effect(t, output).Target
+	if target["subject"] != subject || target["name"] != name {
+		t.Errorf("expected the %s %s in the dry-run target, got %v:\n%s", subject, name, target, output)
+	}
 }
 
 // jsonFieldNames returns every field name in a document, sorted, so two

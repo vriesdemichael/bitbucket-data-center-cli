@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
@@ -667,15 +668,8 @@ func TestLiveCLIRepoPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("permissions users grant dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.permission.user.grant"`) {
-		t.Fatalf("expected intent in dry-run output, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
-		t.Fatalf("expected the grant to be predicted as a create, got %q: %s", predicted, dryRunOutput)
-	}
+	// A new entry rather than a changed one, which the reason tells apart.
+	assertLivePreviewOf(t, dryRunOutput, "repo settings security permissions users grant", jsonoutput.OutcomeWouldApply, "will create")
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "users", "list", "--limit", "200")
 	if err != nil {
@@ -720,12 +714,8 @@ func TestLiveCLIRepoPermissionsGroupGrantDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("permissions groups grant dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.permission.group.grant"`) {
-		t.Fatalf("expected repo.permission.group.grant intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
-		t.Fatalf("expected the grant to be predicted as a create, got %q: %s", predicted, dryRunOutput)
-	}
+	// A new entry rather than a changed one, which the reason tells apart.
+	assertLivePreviewOf(t, dryRunOutput, "repo settings security permissions groups grant", jsonoutput.OutcomeWouldApply, "will create")
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "groups", "list", "--limit", "200")
 	if err != nil {
@@ -774,12 +764,7 @@ func TestLiveCLIRepoPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("permissions users revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.permission.user.revoke"`) {
-		t.Fatalf("expected repo.permission.user.revoke intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
-		t.Fatalf("expected the revoke to be predicted as a delete, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo settings security permissions users revoke", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "users", "list", "--limit", "200")
 	if err != nil {
@@ -828,12 +813,7 @@ func TestLiveCLIRepoPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("permissions groups revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.permission.group.revoke"`) {
-		t.Fatalf("expected repo.permission.group.revoke intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
-		t.Fatalf("expected the revoke to be predicted as a delete, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo settings security permissions groups revoke", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "security", "permissions", "groups", "list", "--limit", "200")
 	if err != nil {
@@ -877,15 +857,9 @@ func TestLiveCLIRepoWebhookCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("webhook create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.webhook.create"`) {
-		t.Fatalf("expected repo.webhook.create intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
-		t.Fatalf("expected the webhook to be predicted as a create, got %q: %s", predicted, dryRunOutput)
-	}
+	// A webhook of its own rather than one beside a duplicate, which Bitbucket
+	// would add as well: the reason says which.
+	assertLivePreviewOf(t, dryRunOutput, "repo settings workflow webhooks create", jsonoutput.OutcomeWouldApply, "webhook will be created")
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "list")
 	if err != nil {
@@ -929,15 +903,7 @@ func TestLiveCLIRepoPullRequestSettingsUpdateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pull-request settings update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.pull-request-settings.update"`) {
-		t.Fatalf("expected repo.pull-request-settings.update intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected the settings change to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo settings pull-requests update", jsonoutput.OutcomeWouldApply)
 
 	settingsAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "get")
 	if err != nil {
@@ -981,15 +947,7 @@ func TestLiveCLIRepoPullRequestSettingsUpdateApproversDryRunNoSideEffect(t *test
 	if err != nil {
 		t.Fatalf("pull-request settings update-approvers dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.pull-request-settings.update-approvers"`) {
-		t.Fatalf("expected update-approvers intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected the approver count to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo settings pull-requests update-approvers", jsonoutput.OutcomeWouldApply)
 
 	settingsAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "get")
 	if err != nil {
@@ -1035,12 +993,7 @@ func TestLiveCLIRepoPullRequestSettingsSetStrategyDryRunNoSideEffect(t *testing.
 	if err != nil {
 		t.Fatalf("pull-request settings set-strategy dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.pull-request-settings.set-strategy"`) {
-		t.Fatalf("expected set-strategy intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected the strategy change to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo settings pull-requests set-strategy", jsonoutput.OutcomeWouldApply)
 
 	settingsAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "pull-requests", "get")
 	if err != nil {
@@ -1094,12 +1047,7 @@ func TestLiveCLIRepoWebhookDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("webhook delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.webhook.delete"`) {
-		t.Fatalf("expected repo.webhook.delete intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
-		t.Fatalf("expected the webhook to be predicted as a delete, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo settings workflow webhooks delete", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "settings", "workflow", "webhooks", "list")
 	if err != nil {
@@ -1151,15 +1099,7 @@ func TestLiveCLIPRCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "pr.create"`) {
-		t.Fatalf("expected pr.create intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
-		t.Fatalf("expected the pull request to be predicted as a create, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "pr create", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "pr", "list", "--state", "all", "--source-branch", branch, "--target-branch", "master")
 	if err != nil {
@@ -1193,12 +1133,7 @@ func TestLiveCLIPRUpdateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "pr.update"`) {
-		t.Fatalf("expected pr.update intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected the title change to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "pr update", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1269,12 +1204,7 @@ func TestLiveCLIPRMergeDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr merge dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "pr.merge"`) {
-		t.Fatalf("expected pr.merge intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected the merge to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "pr merge", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1311,12 +1241,7 @@ func TestLiveCLIPRReviewerAddDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr reviewer add dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "pr.review.reviewer.add"`) {
-		t.Fatalf("expected pr.review.reviewer.add intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected adding %s to be predicted as an update, got %q: %s", username, predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "pr review reviewer add", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1355,12 +1280,7 @@ func TestLiveCLIPRReviewerRemoveDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr reviewer remove dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "pr.review.reviewer.remove"`) {
-		t.Fatalf("expected pr.review.reviewer.remove intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
-		t.Fatalf("expected removing %s to be predicted as a delete, got %q: %s", username, predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "pr review reviewer remove", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1395,12 +1315,7 @@ func TestLiveCLIPRDeclineDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr decline dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "pr.decline"`) {
-		t.Fatalf("expected pr.decline intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected the decline to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "pr decline", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1445,12 +1360,7 @@ func TestLiveCLIPRReopenDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr reopen dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "pr.reopen"`) {
-		t.Fatalf("expected pr.reopen intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected the reopen to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "pr reopen", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1488,12 +1398,7 @@ func TestLiveCLIPRApproveDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr approve dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "pr.review.approve"`) {
-		t.Fatalf("expected pr.review.approve intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected the approval to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "pr review approve", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1531,12 +1436,7 @@ func TestLiveCLIPRUnapproveDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr unapprove dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "pr.review.unapprove"`) {
-		t.Fatalf("expected pr.review.unapprove intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected clearing the approval to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "pr review unapprove", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "pr", "get", pullRequestID)
 	if err != nil {
@@ -1566,9 +1466,7 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr unwatch dry-run failed: %v\noutput: %s", err, unwatchDryRun)
 	}
-	if !strings.Contains(unwatchDryRun, `"intent": "pr.unwatch"`) {
-		t.Fatalf("expected pr.unwatch intent, got: %s", unwatchDryRun)
-	}
+	assertLivePreviewOf(t, unwatchDryRun, "pr unwatch", jsonoutput.OutcomeWouldApply)
 	if !repoCLIWatching(t, seeded.Key, repo.Slug, pullRequestID) {
 		t.Fatalf("the unwatch dry run stopped the watch on pull request %s", pullRequestID)
 	}
@@ -1587,9 +1485,7 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr watch dry-run failed: %v\noutput: %s", err, watchDryRun)
 	}
-	if !strings.Contains(watchDryRun, `"intent": "pr.watch"`) {
-		t.Fatalf("expected pr.watch intent, got: %s", watchDryRun)
-	}
+	assertLivePreviewOf(t, watchDryRun, "pr watch", jsonoutput.OutcomeWouldApply)
 	if repoCLIWatching(t, seeded.Key, repo.Slug, pullRequestID) {
 		t.Fatalf("the watch dry run watched pull request %s", pullRequestID)
 	}
@@ -1620,12 +1516,7 @@ func TestLiveCLIPRWatchUnwatchRebase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pr rebase dry-run failed: %v\noutput: %s", err, rebaseDryRun)
 	}
-	if !strings.Contains(rebaseDryRun, `"intent": "pr.rebase"`) {
-		t.Fatalf("expected pr.rebase intent, got: %s", rebaseDryRun)
-	}
-	if predicted := repoCLIPredictedAction(t, rebaseDryRun); predicted != "update" {
-		t.Fatalf("expected the rebase to be predicted as an update, got %q: %s", predicted, rebaseDryRun)
-	}
+	assertLivePreviewOf(t, rebaseDryRun, "pr rebase", jsonoutput.OutcomeWouldApply)
 
 	// Off the ref rather than the pull request, whose view of its source lags
 	// the ref a rebase rewrites.
@@ -1763,12 +1654,7 @@ func TestLiveCLIRepoCommentCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo comment create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.comment.create"`) {
-		t.Fatalf("expected repo.comment.create intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "create" {
-		t.Fatalf("expected the comment to be predicted as a create, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo comment create", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "dryrun-comment-fixture.txt", "--limit", "200")
 	if err != nil {
@@ -1835,12 +1721,7 @@ func TestLiveCLIRepoCommentUpdateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo comment update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.comment.update"`) {
-		t.Fatalf("expected repo.comment.update intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "update" {
-		t.Fatalf("expected the comment change to be predicted as an update, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo comment update", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "dryrun-comment-update-fixture.txt", "--limit", "200")
 	if err != nil {
@@ -1912,12 +1793,7 @@ func TestLiveCLIRepoCommentDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo comment delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "repo.comment.delete"`) {
-		t.Fatalf("expected repo.comment.delete intent, got: %s", dryRunOutput)
-	}
-	if predicted := repoCLIPredictedAction(t, dryRunOutput); predicted != "delete" {
-		t.Fatalf("expected the comment to be predicted as a delete, got %q: %s", predicted, dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "repo comment delete", jsonoutput.OutcomeWouldApply)
 
 	afterOutput, err := executeLiveCLI(t, "--json", "repo", "comment", "list", "--pr", pullRequestID, "--path", "dryrun-comment-delete-fixture.txt", "--limit", "200")
 	if err != nil {
@@ -2332,23 +2208,19 @@ func repoCLIHumanLine(output, text string) string {
 	return ""
 }
 
-// repoCLIPredictedAction reads what a dry run says the command would do, from
-// the preview's first item.
+// assertLivePreviewOf checks a dry run is a preview of command, and that it
+// predicts outcome for its one effect with reasons that say each of reasons.
 //
-// A dry run is read back by showing nothing changed, which only means
-// something where a real run would have changed it. The prediction is the
-// preview agreeing that it would have.
-func repoCLIPredictedAction(t *testing.T, output string) string {
+// command is the document's meta.command, the canonical path, which names the
+// operation a preview is about. A dry run is read back by showing nothing
+// changed, which only means something where a real run would have changed it.
+// The outcome is the preview agreeing that it would have.
+func assertLivePreviewOf(t *testing.T, output, command string, outcome jsonoutput.Outcome, reasons ...string) {
 	t.Helper()
 
-	items, _ := decodeJSONMap(t, output)["items"].([]any)
-	if len(items) == 0 {
-		t.Fatalf("no items in the preview: %s", output)
+	if document := assertLivePreview(t, output, outcome, reasons...); document.Meta.Command != command {
+		t.Fatalf("expected a preview of bb %s, got one of %q:\n%s", command, document.Meta.Command, output)
 	}
-	item, _ := items[0].(map[string]any)
-	predicted, _ := item["predictedAction"].(string)
-
-	return predicted
 }
 
 // repoCLIAssertOutOfDate checks a write was refused as a conflict, the refusal

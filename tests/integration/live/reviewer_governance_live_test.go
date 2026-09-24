@@ -104,7 +104,8 @@ func TestLiveReviewerConditionsLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reviewer condition delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(strings.ToLower(dryRunOutput), "dry-run") && !strings.Contains(strings.ToLower(dryRunOutput), "delete") {
+	// In text the preview is its verdict line, naming the command it is about.
+	if command, _, found := liveDryRunTier(dryRunOutput); !found || command != "reviewer condition delete" {
 		t.Fatalf("expected dry-run preview in output: %s", dryRunOutput)
 	}
 

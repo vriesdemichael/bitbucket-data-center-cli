@@ -11,6 +11,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 // TestLivePullRequestMergeability covers how a pull request reports whether it
@@ -127,11 +130,12 @@ func TestLivePullRequestMergeability(t *testing.T) {
 		preview := mustLiveCLI(t, "--dry-run", "pr", "merge", id)
 		// A preview sends nothing: still open, at the version it was judged at.
 		assertLifecyclePRStored(t, readLifecyclePR(t, id), map[string]any{"state": "OPEN", "version": before["version"]})
-		if !strings.Contains(preview, `"predictedAction": "blocked"`) {
-			t.Fatalf("a pull request the server will not merge was not predicted blocked:\n%s", preview)
-		}
-		if !strings.Contains(preview, "blockingReasons") || strings.Contains(preview, `"blockingReasons": []`) {
-			t.Fatalf("the preview named no reason for the block:\n%s", preview)
+		// A conflict, as Bitbucket refuses a vetoed merge with a 409. The
+		// reasons are what blocks it; an effect given none falls back on its
+		// verdict, "cannot be merged", which names nothing to fix.
+		refusal := assertLiveRefusal(t, preview, apperrors.KindConflict)
+		if reasons := refusal.effect(t, preview).Reasons; slices.Equal(reasons, []string{"pull request cannot be merged"}) {
+			t.Fatalf("the preview named no reason for the veto:\n%s", preview)
 		}
 	})
 
@@ -217,14 +221,10 @@ func TestLivePullRequestDraftState(t *testing.T) {
 	version := currentLivePRVersion(t, id)
 
 	toDraft := mustLiveCLI(t, "--dry-run", "pr", "update", id, "--version", version, "--draft")
-	if !strings.Contains(toDraft, `"predictedAction": "update"`) {
-		t.Errorf("making a ready pull request a draft again was not predicted an update:\n%s", toDraft)
-	}
+	assertLivePreview(t, toDraft, jsonoutput.OutcomeWouldApply)
 
 	alreadyReady := mustLiveCLI(t, "--dry-run", "pr", "update", id, "--version", version, "--draft=false")
-	if !strings.Contains(alreadyReady, `"predictedAction": "no-op"`) {
-		t.Errorf("asking for the draft state it already holds was not predicted a no-op:\n%s", alreadyReady)
-	}
+	assertLivePreview(t, alreadyReady, jsonoutput.OutcomeNoOp)
 
 	// Neither preview sent anything, the one asking for a draft included.
 	if livePRIsDraft(t, id) {

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
@@ -247,12 +248,7 @@ func TestLiveCLIProjectPermissionsUserGrantDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("project permissions users grant dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "project.permission.user.grant"`) {
-		t.Fatalf("expected intent in dry-run output, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "project permissions users grant", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "project", "permissions", "users", "list", seeded.Key, "--limit", "200")
 	if err != nil {
@@ -294,9 +290,7 @@ func TestLiveCLIProjectPermissionsGroupGrantDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("project permissions groups grant dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "project.permission.group.grant"`) {
-		t.Fatalf("expected project.permission.group.grant intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "project permissions groups grant", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "project", "permissions", "groups", "list", seeded.Key, "--limit", "200")
 	if err != nil {
@@ -344,9 +338,7 @@ func TestLiveCLIProjectPermissionsUserRevokeDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("project permissions users revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "project.permission.user.revoke"`) {
-		t.Fatalf("expected project.permission.user.revoke intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "project permissions users revoke", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "project", "permissions", "users", "list", seeded.Key, "--limit", "200")
 	if err != nil {
@@ -392,9 +384,7 @@ func TestLiveCLIProjectPermissionsGroupRevokeDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("project permissions groups revoke dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "project.permission.group.revoke"`) {
-		t.Fatalf("expected project.permission.group.revoke intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "project permissions groups revoke", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "project", "permissions", "groups", "list", seeded.Key, "--limit", "200")
 	if err != nil {
@@ -444,12 +434,7 @@ func TestLiveCLIReviewerConditionCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reviewer condition create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "reviewer.condition.create"`) {
-		t.Fatalf("expected reviewer.condition.create intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "reviewer condition create", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "reviewer", "condition", "list", "--repo", seeded.Key+"/"+seeded.Repos[0].Slug)
 	if err != nil {
@@ -500,9 +485,7 @@ func TestLiveCLIReviewerConditionUpdateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reviewer condition update dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "reviewer.condition.update"`) {
-		t.Fatalf("expected reviewer.condition.update intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "reviewer condition update", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "reviewer", "condition", "list", "--repo", seeded.Key+"/"+seeded.Repos[0].Slug)
 	if err != nil {
@@ -542,9 +525,7 @@ func TestLiveCLIReviewerConditionDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reviewer condition delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"intent": "reviewer.condition.delete"`) {
-		t.Fatalf("expected reviewer.condition.delete intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "reviewer condition delete", jsonoutput.OutcomeWouldApply)
 
 	listAfterOutput, err := executeLiveCLI(t, "--json", "reviewer", "condition", "list", "--repo", seeded.Key+"/"+seeded.Repos[0].Slug)
 	if err != nil {
@@ -581,16 +562,14 @@ func TestLiveCLIProjectCreateDryRunNoSideEffect(t *testing.T) {
 	// with the dry run.
 	// Upper-cased, as Bitbucket stores a project key (ADR-085).
 	newKey := strings.ToUpper("DRY" + uniqueSuffix())
-	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "create", newKey, "--name", "Dry Run Project")
+	// The name as unique as the key. Bitbucket refuses a name already in use as
+	// well, and the preview says so, which would make its verdict a question
+	// about the instance too.
+	dryRunOutput, err := executeLiveCLI(t, "--json", "--dry-run", "project", "create", newKey, "--name", "Dry Run Project "+newKey)
 	if err != nil {
 		t.Fatalf("project create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	if !strings.Contains(dryRunOutput, `"planningMode": "stateful"`) {
-		t.Fatalf("expected stateful planning mode, got: %s", dryRunOutput)
-	}
-	if !strings.Contains(dryRunOutput, `"intent": "project.create"`) {
-		t.Fatalf("expected project.create intent, got: %s", dryRunOutput)
-	}
+	assertLivePreviewOf(t, dryRunOutput, "project create", jsonoutput.OutcomeWouldApply)
 
 	if getOutput, getErr := executeLiveCLI(t, "--json", "project", "get", newKey); getErr == nil {
 		t.Fatalf("the create dry-run made project %s: %s", newKey, getOutput)
@@ -652,9 +631,7 @@ func TestLiveReviewerGroupsAndDefaultReviewersCLI(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reviewer-group create dry-run failed: %v\noutput: %s", err, dryRunOut)
 	}
-	if !strings.Contains(dryRunOut, `"intent": "reviewer-group.create"`) {
-		t.Fatalf("expected intent in dry-run create, got: %s", dryRunOut)
-	}
+	assertLivePreviewOf(t, dryRunOut, "reviewer-group create", jsonoutput.OutcomeWouldApply)
 	if listing := mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef); governanceReviewerGroupNamed(t, listing, groupName) {
 		t.Fatalf("the create dry run made group %s: %s", groupName, listing)
 	}

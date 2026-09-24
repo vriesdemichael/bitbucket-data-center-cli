@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
@@ -135,8 +136,10 @@ func TestLiveDryRunPrechecksRefuseBeforePlanning(t *testing.T) {
 				t.Fatalf("exit code = %d, want 3 (authorization): %v\noutput: %s", code, err, output)
 			}
 			// The refusal has to come before the plan, or the caller has already
-			// been told the operation is available.
-			if strings.Contains(output, `"predictedAction"`) {
+			// been told the operation is available. It is the verdict -- the
+			// binary writes it as preview.error -- and the only one: no effect
+			// was planned beside it.
+			if _, planned := parseLivePreview(output); planned {
 				t.Fatalf("the preview was written before the permission check:\n%s", output)
 			}
 		})
@@ -170,8 +173,11 @@ func TestLiveDryRunPrechecksRefuseBeforePlanning(t *testing.T) {
 
 				continue
 			}
-			if !strings.Contains(output, `"predictedAction"`) {
-				t.Errorf("%s produced no preview:\n%s", strings.Join(args, " "), output)
+			// Previewed as going through: a verdict that it would fail is
+			// the same closed door as the refusal above.
+			document, ok := parseLivePreview(output)
+			if !ok || len(document.Preview.Effects) != 1 || document.Preview.Effects[0].Outcome != jsonoutput.OutcomeWouldApply {
+				t.Errorf("%s produced no preview of a change that goes through:\n%s", strings.Join(args, " "), output)
 			}
 		}
 

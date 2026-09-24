@@ -11,6 +11,7 @@ import (
 
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -216,13 +217,11 @@ func TestLiveReviewerGroupUpdate(t *testing.T) {
 
 	// The dry run has to reach the same conclusion as the run. It resolved the
 	// argument as a numeric id only, so a group addressed by name was predicted
-	// "blocked: reviewer group not found" by the preview and renamed by the
+	// to fail as "reviewer group not found" by the preview and renamed by the
 	// command -- a preview that contradicts the run is worse than none.
 	preview := mustLiveCLI(t, "--dry-run", "reviewer-group", "update", original,
 		"--name", "after_rename", "--repo", repoRef)
-	if !strings.Contains(preview, `"predictedAction": "update"`) {
-		t.Fatalf("the dry run disagrees with the run it previews:\n%s", preview)
-	}
+	assertLivePreview(t, preview, jsonoutput.OutcomeWouldApply)
 
 	beforeRun := mustLiveCLI(t, "reviewer-group", "list", "--repo", repoRef)
 	if !strings.Contains(beforeRun, original) {

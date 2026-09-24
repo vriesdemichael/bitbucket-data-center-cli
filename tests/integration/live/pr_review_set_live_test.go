@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
@@ -85,7 +86,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		}
 
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "set", prID, "NEEDS_WORK", "--repo", repoRef)
-		assertLivePreview(t, output, "update")
+		assertLivePreview(t, output, jsonoutput.OutcomeWouldApply)
 
 		if after := held(t); after != before {
 			t.Fatalf("the dry run changed the status from %q to %q", before, after)
@@ -110,7 +111,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 
 	t.Run("a dry run over the status already held predicts a no-op", func(t *testing.T) {
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "set", prID, "NEEDS_WORK", "--repo", repoRef)
-		assertLivePreview(t, output, "no-op")
+		assertLivePreview(t, output, jsonoutput.OutcomeNoOp)
 
 		if status := held(t); status != "NEEDS_WORK" {
 			t.Fatalf("the dry run changed the status to %q", status)
@@ -121,7 +122,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		// Finding the caller among the reviewers is what separates a no-op from
 		// an update, and the configured username is the wrong place to look for
 		// them: under a token there may not be one. The prediction then quietly
-		// degrades to "update" for a status already held -- safe, and wrong.
+		// degrades to "would-apply" for a status already held -- safe, and wrong.
 		//
 		// Bitbucket names the caller on every authenticated response, so the
 		// answer costs one request and no configuration.
@@ -167,7 +168,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		}
 
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "set", prID, "NEEDS_WORK", "--repo", repoRef)
-		assertLivePreview(t, output, "no-op")
+		assertLivePreview(t, output, jsonoutput.OutcomeNoOp)
 
 		if status := held(t); status != "NEEDS_WORK" {
 			t.Fatalf("the dry run changed the status to %q", status)
@@ -180,7 +181,7 @@ func TestLivePullRequestReviewSetCommand(t *testing.T) {
 		// -- which they had not -- and called it a no-op, while the command
 		// went on to clear the request for changes.
 		output := mustLiveCLI(t, "--dry-run", "pr", "review", "unapprove", prID, "--repo", repoRef)
-		assertLivePreview(t, output, "update")
+		assertLivePreview(t, output, jsonoutput.OutcomeWouldApply)
 
 		if status := held(t); status != "NEEDS_WORK" {
 			t.Fatalf("the dry run changed the status to %q", status)
