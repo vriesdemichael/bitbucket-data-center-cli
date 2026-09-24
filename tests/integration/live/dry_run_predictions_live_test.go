@@ -404,6 +404,291 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 	})
 }
 
+// TestLiveDryRunRefusalsFailAsTheRealRunDoes holds each refusal a pull request
+// or settings preview predicts to what the real run does.
+//
+// A would-fail verdict names the error the run would fail with, and a caller
+// branches on its kind: not_found wants the target made, authorization a
+// grant, conflict a change of state, validation a different request. Each case
+// puts the target in the state the refusal is about, asks the dry run, then
+// runs the command for real and requires the same kind from both.
+func TestLiveDryRunRefusalsFailAsTheRealRunDoes(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	openPullRequest := func(t *testing.T, branch string) string {
+		t.Helper()
+
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, strings.ReplaceAll(branch, "/", "-")+".txt"); err != nil {
+			t.Fatalf("push %s failed: %v", branch, err)
+		}
+		id, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+		if err != nil {
+			t.Fatalf("open a pull request from %s failed: %v", branch, err)
+		}
+		assertLifecyclePRHarnessStored(t, id, branch, "master")
+
+		return id
+	}
+
+	const openBranch = "feature/refused-open"
+	openPR := openPullRequest(t, openBranch)
+
+	declinedPR := openPullRequest(t, "feature/refused-declined")
+	mustLiveCLI(t, "pr", "decline", declinedPR)
+	assertLifecyclePRStored(t, readLifecyclePR(t, declinedPR), map[string]any{"state": "DECLINED"})
+
+	draftPR := openPullRequest(t, "feature/refused-draft")
+	mustLiveCLI(t, "pr", "ready", draftPR, "--undo")
+	assertLifecyclePRStored(t, readLifecyclePR(t, draftPR), map[string]any{"state": "OPEN", "draft": true})
+
+	t.Run("a pull request for branches that already have one", func(t *testing.T) {
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "create", "--from-ref", openBranch, "--to-ref", "master", "--title", "Again")
+	})
+
+	t.Run("merging, rebasing or readying a declined pull request", func(t *testing.T) {
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "merge", declinedPR)
+		// Bitbucket's rebase check answers a declined pull request with no
+		// vetoes at all, so this one is read from its state.
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "rebase", declinedPR)
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "ready", declinedPR)
+
+		assertLifecyclePRStored(t, readLifecyclePR(t, declinedPR), map[string]any{"state": "DECLINED"})
+	})
+
+	t.Run("merging a draft", func(t *testing.T) {
+		// Bitbucket's merge check does not know about drafts, and the merge
+		// refuses one: the verdict has to come from the draft flag.
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "merge", draftPR)
+
+		assertLifecyclePRStored(t, readLifecyclePR(t, draftPR), map[string]any{"state": "OPEN", "draft": true})
+	})
+
+	t.Run("completing a review that was never started", func(t *testing.T) {
+		liveVerdictHolds(t, apperrors.KindNotFound, "pr", "review", "complete", openPR)
+	})
+
+	t.Run("merging past a required approval", func(t *testing.T) {
+		mustLiveCLI(t, "repo", "settings", "pull-requests", "update-approvers", "--count", "1")
+		if got := approverCountFrom(t, repoCLIPullRequestSettings(t)); got != "1" {
+			t.Fatalf("requiredApprovers reads back as %s, want 1", got)
+		}
+
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "merge", openPR)
+
+		assertLifecyclePRStored(t, readLifecyclePR(t, openPR), map[string]any{"state": "OPEN"})
+	})
+
+	t.Run("rebasing a source branch the caller may not update", func(t *testing.T) {
+		// Something to rebase onto, so the rebase would change the branch.
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, "master", "moved-on.txt"); err != nil {
+			t.Fatalf("push to master failed: %v", err)
+		}
+		readOnly := restrictionID(t, mustLiveCLI(t, "branch", "restriction", "create",
+			"--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/"+openBranch))
+		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", readOnly)),
+			storedRestriction{scope: "REPOSITORY", restrictionType: "read-only", matcherType: "BRANCH", matcherID: "refs/heads/" + openBranch})
+
+		// Bitbucket reports the branch permission as a veto, and does not
+		// refuse the rebase up front for it: the rebase runs, and updating the
+		// branch is then vetoed with a 400.
+		before := readLifecyclePR(t, openPR)
+		liveVerdictHolds(t, apperrors.KindValidation, "pr", "rebase", openPR)
+		assertLifecyclePRStored(t, readLifecyclePR(t, openPR), map[string]any{"version": before["version"]})
+	})
+
+	t.Run("updating a default task that is not there", func(t *testing.T) {
+		liveVerdictHolds(t, apperrors.KindNotFound, "repo", "default-task", "update", "999999", "--description", "refused")
+	})
+
+	reviewerID, err := harness.userID(ctx, harness.username())
+	if err != nil {
+		t.Fatalf("look up the reviewer's id failed: %v", err)
+	}
+	condition := fmt.Sprintf(`{"sourceMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},`+
+		`"targetMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},"reviewers":[{"id":%d}],"requiredApprovals":1}`, reviewerID)
+
+	t.Run("updating a reviewer condition that is not there", func(t *testing.T) {
+		liveVerdictHolds(t, apperrors.KindNotFound, "reviewer", "condition", "update", "999999", condition, "--project", seeded.Key)
+		liveVerdictHolds(t, apperrors.KindNotFound, "reviewer", "condition", "update", "999999", condition, "--repo", repoRef)
+	})
+
+	t.Run("a reviewer condition Bitbucket will not store", func(t *testing.T) {
+		before := mustLiveCLI(t, "reviewer", "condition", "list", "--project", seeded.Key)
+
+		// Checked before anything else, the condition an update names included:
+		// a body without its matchers is invalid whether or not 999999 exists.
+		liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "update", "999999", `{"requiredApprovals":2}`, "--repo", repoRef)
+		liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "create",
+			strings.Replace(condition, fmt.Sprintf(`"reviewers":[{"id":%d}],`, reviewerID), "", 1), "--project", seeded.Key)
+		liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "create",
+			strings.Replace(condition, `,"requiredApprovals":1`, "", 1), "--project", seeded.Key)
+		// A reviewer by name is looked up as user -1.
+		liveVerdictHolds(t, apperrors.KindNotFound, "reviewer", "condition", "create",
+			strings.Replace(condition, fmt.Sprintf(`{"id":%d}`, reviewerID), fmt.Sprintf(`{"name":%q}`, harness.username()), 1), "--project", seeded.Key)
+
+		if after := mustLiveCLI(t, "reviewer", "condition", "list", "--project", seeded.Key); after != before {
+			t.Fatalf("a refused condition was stored\nbefore: %s\nafter:  %s", before, after)
+		}
+	})
+
+	t.Run("reviewer groups that are missing or already there", func(t *testing.T) {
+		const name = "refused-group"
+
+		for _, scope := range []struct {
+			flags []string
+			name  string
+		}{
+			{[]string{"--project", seeded.Key}, "PROJECT"},
+			{[]string{"--repo", repoRef}, "REPOSITORY"},
+		} {
+			liveVerdictHolds(t, apperrors.KindNotFound, append([]string{"reviewer-group", "update", "999999", "--description", "refused"}, scope.flags...)...)
+			liveVerdictHolds(t, apperrors.KindNotFound, append([]string{"reviewer-group", "update", "no-such-group", "--description", "refused"}, scope.flags...)...)
+
+			// The repository's own group: its listing has the project's beside
+			// it by now, under the same name.
+			mustLiveCLI(t, append([]string{"reviewer-group", "create", name, "--users", harness.username()}, scope.flags...)...)
+			owned := 0
+			for _, group := range liveReviewerGroupsNamed(t, mustLiveCLI(t, append([]string{"reviewer-group", "list"}, scope.flags...)...), name) {
+				if group["scope"] == scope.name {
+					owned++
+				}
+			}
+			if owned != 1 {
+				t.Fatalf("want the one %s group %q just created, found %d", scope.name, name, owned)
+			}
+
+			liveVerdictHolds(t, apperrors.KindConflict, append([]string{"reviewer-group", "create", name, "--users", harness.username()}, scope.flags...)...)
+		}
+	})
+}
+
+// TestLiveDryRunCommentVerdictsFollowWhoMayChangeThem covers who Bitbucket lets
+// change a comment, which a preview has to know to say whether the run goes
+// through.
+//
+// Only its author may edit a comment. Its author or a repository admin may
+// delete one, and nobody may while it has replies. The preview refused every
+// change to somebody else's comment as a conflict, so it refused an admin a
+// delete Bitbucket performs, and it named the wrong kind for the refusals it
+// did get right.
+func TestLiveDryRunCommentVerdictsFollowWhoMayChangeThem(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	commit := repo.CommitIDs[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// May write to the repository, and so comment on it, and does not
+	// administer it.
+	writer, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create user failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, writer.Username,
+		openapigenerated.SetPermissionForUserParamsPermissionREPOWRITE); err != nil {
+		t.Fatalf("grant repository permission failed: %v", err)
+	}
+	assertMutatedRepoPermissionLevel(t, seeded.Key+"/"+repo.Slug, false, writer.Username, "REPO_WRITE")
+
+	comment := func(t *testing.T, text string, extra ...string) string {
+		t.Helper()
+
+		output := mustLiveCLI(t, append([]string{"repo", "comment", "create", "--commit", commit, "--text", text}, extra...)...)
+		created, _ := decodeJSONMap(t, output)["comment"].(map[string]any)
+		id, ok := created["id"].(float64)
+		if !ok {
+			t.Fatalf("the created comment has no id:\n%s", output)
+		}
+		commentID := strconv.Itoa(int(id))
+		if stored := commitCommentStored(t, seeded.Key, repo.Slug, commit, commentID); stored["text"] != text {
+			t.Fatalf("comment %s reads back as %q, want %q", commentID, stored["text"], text)
+		}
+
+		return commentID
+	}
+	assertText := func(t *testing.T, commentID, text string) {
+		t.Helper()
+
+		if stored := commitCommentStored(t, seeded.Key, repo.Slug, commit, commentID); stored["text"] != text {
+			t.Fatalf("comment %s reads back as %q, want %q", commentID, stored["text"], text)
+		}
+	}
+
+	const adminText = "the admin's comment"
+	adminComment := comment(t, adminText)
+
+	t.Run("somebody else editing or deleting it", func(t *testing.T) {
+		setLiveCredentials(t, writer)
+
+		liveVerdictHolds(t, apperrors.KindAuthorization, "repo", "comment", "update", "--commit", commit, "--id", adminComment, "--text", "rewritten")
+		liveVerdictHolds(t, apperrors.KindAuthorization, "repo", "comment", "delete", "--commit", commit, "--id", adminComment, "--yes")
+		assertText(t, adminComment, adminText)
+	})
+
+	var writerComment string
+	t.Run("the writer comments", func(t *testing.T) {
+		setLiveCredentials(t, writer)
+
+		writerComment = comment(t, "the writer's comment")
+	})
+
+	t.Run("a repository admin deleting somebody else's", func(t *testing.T) {
+		liveGoesThroughAsPredicted(t, jsonoutput.OutcomeWouldApply, "will be deleted",
+			"repo", "comment", "delete", "--commit", commit, "--id", writerComment, "--yes")
+		assertCommitCommentGone(t, seeded.Key, repo.Slug, commit, writerComment)
+	})
+
+	t.Run("deleting one that has replies", func(t *testing.T) {
+		parent := comment(t, "a comment with a reply")
+		reply := comment(t, "its reply", "--parent", parent)
+
+		liveVerdictHolds(t, apperrors.KindConflict, "repo", "comment", "delete", "--commit", commit, "--id", parent, "--yes")
+		assertText(t, parent, "a comment with a reply")
+		assertText(t, reply, "its reply")
+	})
+}
+
+// liveReviewerGroupsNamed is the entries of a reviewer-group listing called
+// name, with their scope: a repository's listing carries its project's groups
+// too, and a group name can be in both.
+func liveReviewerGroupsNamed(t *testing.T, listing, name string) []map[string]any {
+	t.Helper()
+
+	groups, ok := decodeJSONMap(t, listing)["reviewerGroups"].([]any)
+	if !ok {
+		t.Fatalf("expected a reviewerGroups array in: %s", listing)
+	}
+
+	var named []map[string]any
+	for _, entry := range groups {
+		if group, ok := entry.(map[string]any); ok && group["name"] == name {
+			named = append(named, group)
+		}
+	}
+
+	return named
+}
+
 // livePredicts runs one change under --dry-run and requires the verdict to be
 // outcome.
 func livePredicts(t *testing.T, outcome jsonoutput.Outcome, args ...string) {
@@ -428,4 +713,58 @@ func liveRefuses(t *testing.T, kind apperrors.Kind, args ...string) {
 	t.Helper()
 
 	assertLiveRefusal(t, mustLiveCLI(t, append([]string{"--dry-run"}, args...)...), kind)
+}
+
+// liveVerdictHolds runs one change under --dry-run and then for real, and
+// requires both to end the same way: failing with an error of kind.
+//
+// The real run is the only authority on what the real run does, which is the
+// whole claim of a verdict (ADR-096). A kind worked out from the code agrees
+// with the code by construction; half the refusals here predicted conflict, the
+// default, where the real run failed with not_found, authorization or
+// validation.
+//
+// The verdict is taken the way the binary reports it. A preview the command
+// wrote carries it in preview.error. A failure its check ran into -- a 404
+// from the lookup -- returns from Execute here, and cmd/bb writes that error
+// into preview.error, so its kind is the verdict's.
+func liveVerdictHolds(t *testing.T, kind apperrors.Kind, args ...string) {
+	t.Helper()
+
+	var predicted apperrors.Kind
+	output, err := executeLiveCLI(t, append([]string{"--json", "--dry-run"}, args...)...)
+	switch {
+	case err == nil:
+		predicted = assertLivePreview(t, output, jsonoutput.OutcomeWouldFail).Preview.Error.Kind
+	case jsonoutput.IsVerdict(err):
+		predicted = apperrors.KindOf(err)
+	default:
+		t.Fatalf("the dry run reached no verdict on %s: %v\n%s", strings.Join(args, " "), err, output)
+	}
+
+	realOutput, realErr := executeLiveCLI(t, append([]string{"--json"}, args...)...)
+	if realErr == nil {
+		t.Fatalf("the dry run said %s would fail with %s, and the real run went through:\n%s",
+			strings.Join(args, " "), predicted, realOutput)
+	}
+	if real := apperrors.KindOf(realErr); predicted != kind || real != kind {
+		t.Fatalf("%s: the dry run predicted %s and the real run failed with %s, want %s both times: %v",
+			strings.Join(args, " "), predicted, real, kind, realErr)
+	}
+}
+
+// liveGoesThroughAsPredicted runs one change under --dry-run, requires the
+// verdict outcome with a reason saying reason, and then runs it for real,
+// which has to go through. It returns what the real run wrote, for the caller
+// to read back what it did.
+//
+// For the changes an earlier preview refused and Bitbucket does not: a
+// prediction of failure is proven wrong by the real run succeeding, and that
+// is what each of these shows before it shows what the success did.
+func liveGoesThroughAsPredicted(t *testing.T, outcome jsonoutput.Outcome, reason string, args ...string) string {
+	t.Helper()
+
+	assertLivePreview(t, mustLiveCLI(t, append([]string{"--dry-run"}, args...)...), outcome, reason)
+
+	return mustLiveCLI(t, args...)
 }
