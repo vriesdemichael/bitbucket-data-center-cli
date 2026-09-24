@@ -31,6 +31,8 @@ type Dependencies struct {
 	// cannot outlive the command that asked for it.
 	LoadConfig func(config.Overrides) (config.AppConfig, error)
 	WriteJSON  func(w io.Writer, value any) error
+	// WriteJSONBytes writes a body that is not text as the --json document.
+	WriteJSONBytes func(w io.Writer, body []byte, contentType string) error
 }
 
 func (deps *Dependencies) withDefaults() Dependencies {
@@ -46,6 +48,9 @@ func (deps *Dependencies) withDefaults() Dependencies {
 	}
 	if d.WriteJSON == nil {
 		d.WriteJSON = jsonoutput.Write
+	}
+	if d.WriteJSONBytes == nil {
+		d.WriteJSONBytes = jsonoutput.WriteBytes
 	}
 	return d
 }
@@ -79,7 +84,9 @@ Field arguments:
 A JSON response is printed indented and other text trimmed; anything else -- a
 file's raw bytes, an archive -- is written byte for byte as it arrives. Text is
 held to be formatted, up to 256 MiB. Under --json the response goes into the
-document as JSON or as a string, which carries text only.
+document's data as JSON or as a string. A body that is not text goes in as
+base64, up to 64 MiB, with meta.encoding set to base64 and meta.contentType to
+its type; an empty one is null.
 
 Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading slash (e.g. rest/api/1.0/...) to prevent shell path mangling.`,
 		Example: `  # GET a pull request settings resource
@@ -514,13 +521,13 @@ func isAlpha(b byte) bool {
 // written exactly as it came, byte for byte, because trimming it or ending it
 // with a newline changes a file: bb api is also how a file's bytes are fetched.
 //
-// Under --json every body is text, as the document has always held it: a JSON
-// body as its value, anything else as a string. A body that is not valid UTF-8
-// does not survive that -- the encoder replaces each invalid byte with U+FFFD,
-// after the trim -- so --json is not a way to fetch binary content; without it
-// the bytes come back exact.
+// Under --json, writeResponseDocument writes the one document instead.
 func writeResponse(w io.Writer, header http.Header, body []byte, deps Dependencies) error {
-	if !deps.JSONEnabled() && !textual(header, body) {
+	if deps.JSONEnabled() {
+		return writeResponseDocument(w, header, body, deps)
+	}
+
+	if !textual(header, body) {
 		_, err := w.Write(body)
 		return err
 	}
@@ -530,33 +537,72 @@ func writeResponse(w io.Writer, header http.Header, body []byte, deps Dependenci
 		return nil
 	}
 
-	var parsed any
-	if err := json.Unmarshal(trimmed, &parsed); err == nil {
-		if deps.JSONEnabled() {
-			if deps.WriteJSON != nil {
-				return deps.WriteJSON(w, parsed)
-			}
-			enc := json.NewEncoder(w)
-			enc.SetIndent("", "  ")
-			return enc.Encode(parsed)
-		}
-
-		// In human mode, format indented JSON
-		var buf bytes.Buffer
-		if err := json.Indent(&buf, trimmed, "", "  "); err == nil {
-			fmt.Fprintln(w, buf.String())
-			return nil
-		}
-	}
-
-	if deps.JSONEnabled() {
-		if deps.WriteJSON != nil {
-			return deps.WriteJSON(w, string(trimmed))
-		}
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, trimmed, "", "  "); err == nil {
+		fmt.Fprintln(w, buf.String())
+		return nil
 	}
 
 	_, err := fmt.Fprintln(w, string(trimmed))
 	return err
+}
+
+// writeResponseDocument writes a response as the one document --json promises
+// (ADR-075): a JSON body as its value, other text as a string, and a body that
+// is not text as base64, with meta.encoding and meta.contentType saying so.
+//
+// A JSON string cannot carry arbitrary bytes, and the encoder replaced each one
+// that was not valid UTF-8 with U+FFFD, so a binary body used to come back as
+// text nobody could turn into the file again. The bytes go in whole or not at
+// all: held to be encoded, and a third larger once they are, they are capped as
+// bb repo cat --json caps a file.
+//
+// An empty body, such as a 204 answering a DELETE, is data: null. It used to
+// write nothing, which left a caller parsing stdout with no document at all.
+func writeResponseDocument(w io.Writer, header http.Header, body []byte, deps Dependencies) error {
+	writeJSON := deps.WriteJSON
+	if writeJSON == nil {
+		writeJSON = jsonoutput.Write
+	}
+
+	if !textual(header, body) {
+		if len(body) > maxEncodedResponseBytes {
+			return tooLargeToEncode()
+		}
+		contentType := strings.TrimSpace(header.Get("Content-Type"))
+		if contentType == "" {
+			contentType = http.DetectContentType(body)
+		}
+
+		writeBytes := deps.WriteJSONBytes
+		if writeBytes == nil {
+			writeBytes = jsonoutput.WriteBytes
+		}
+
+		return writeBytes(w, body, contentType)
+	}
+
+	trimmed := bytes.TrimSpace(body)
+	if len(trimmed) == 0 {
+		return writeJSON(w, nil)
+	}
+
+	var parsed any
+	if err := json.Unmarshal(trimmed, &parsed); err == nil {
+		return writeJSON(w, parsed)
+	}
+
+	return writeJSON(w, string(trimmed))
+}
+
+// maxEncodedResponseBytes is the largest body that is not text --json carries:
+// the same as bb repo cat --json, since the document holds it whole.
+const maxEncodedResponseBytes = 64 << 20
+
+func tooLargeToEncode() error {
+	return apperrors.New(apperrors.KindValidation, fmt.Sprintf(
+		"the response is not text and is larger than %d MiB, more than --json carries; run bb api without --json to write its bytes as they arrive",
+		maxEncodedResponseBytes>>20), nil)
 }
 
 // textual reports whether a response body is text, which writeResponse
@@ -615,6 +661,9 @@ type streamedResponse struct {
 	// goes straight to out. One that is undeclared is held, since its bytes
 	// decide.
 	through bool
+	// encoded is set for a body declared as something other than text under
+	// --json, which is held to be base64-encoded and so has the lower cap.
+	encoded bool
 	written int64
 	held    bytes.Buffer
 }
@@ -628,6 +677,7 @@ func (response *streamedResponse) Open(header http.Header) error {
 	text, declared := declaredText(header.Get("Content-Type"))
 	response.header = header
 	response.through = !response.json && declared && !text
+	response.encoded = response.json && declared && !text
 
 	return nil
 }
@@ -640,6 +690,9 @@ func (response *streamedResponse) Write(chunk []byte) (int, error) {
 		return written, err
 	}
 
+	if response.encoded && response.held.Len()+len(chunk) > maxEncodedResponseBytes {
+		return 0, tooLargeToEncode()
+	}
 	if response.held.Len()+len(chunk) > maxFormattedResponseBytes {
 		return 0, apperrors.New(apperrors.KindPermanent, fmt.Sprintf(
 			"the response is text larger than %d MiB, the most bb api holds to format it", maxFormattedResponseBytes>>20), nil)

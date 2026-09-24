@@ -128,6 +128,15 @@ func metaSchema() map[string]any {
 				"type":        "boolean",
 				"description": "Present on listing commands: true when the result set came back at --limit and there may be more behind it.",
 			},
+			"encoding": map[string]any{
+				"type":        "string",
+				"enum":        []any{"base64"},
+				"description": "Present when data is a body that is not text, carried as a string in this encoding.",
+			},
+			"contentType": map[string]any{
+				"type":        "string",
+				"description": "Present with encoding: the media type of the body data carries.",
+			},
 		},
 		"required": []any{"bbVersion"},
 	}

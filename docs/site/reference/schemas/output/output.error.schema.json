@@ -69,6 +69,17 @@
           "minLength": 1,
           "type": "string"
         },
+        "contentType": {
+          "description": "Present with encoding: the media type of the body data carries.",
+          "type": "string"
+        },
+        "encoding": {
+          "description": "Present when data is a body that is not text, carried as a string in this encoding.",
+          "enum": [
+            "base64"
+          ],
+          "type": "string"
+        },
         "limitReached": {
           "description": "Present on listing commands: true when the result set came back at --limit and there may be more behind it.",
           "type": "boolean"
