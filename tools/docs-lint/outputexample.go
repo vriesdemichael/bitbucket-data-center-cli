@@ -59,19 +59,33 @@ func lintOutputExample(file string, block codeBlock) []finding {
 	return append(findings, checkPayloadAgainstSchema(file, block, envelope)...)
 }
 
-// checkEnvelopeShape applies the rules ADR-064 and ADR-075 place on every
-// document bb writes, whichever command produced it.
+// documentMembers are the members a document can answer in (ADR-096): data or
+// error for a run, preview under --dry-run. Exactly one is present.
+var documentMembers = []string{"data", "error", "preview"}
+
+// checkEnvelopeShape applies the rules ADR-064, ADR-075 and ADR-096 place on
+// every document bb writes, whichever command produced it.
 func checkEnvelopeShape(file string, block codeBlock, envelope map[string]any) []finding {
 	var problems []string
 
-	_, hasData := envelope["data"]
-	_, hasError := envelope["error"]
+	var present []string
+	for _, member := range documentMembers {
+		if _, ok := envelope[member]; ok {
+			present = append(present, member)
+		}
+	}
 
 	switch {
-	case hasData && hasError:
-		problems = append(problems, `carries both "data" and "error"; exactly one is present in a real document`)
-	case !hasData && !hasError:
-		problems = append(problems, `carries neither "data" nor "error"`)
+	case len(present) == 2:
+		problems = append(problems, fmt.Sprintf("carries both %s; exactly one member is present in a real document", strings.Join(quoted(present), " and ")))
+	case len(present) > 2:
+		problems = append(problems, fmt.Sprintf("carries %s; exactly one member is present in a real document", strings.Join(quoted(present), ", ")))
+	case len(present) == 0:
+		problems = append(problems, fmt.Sprintf("carries none of %s", strings.Join(quoted(documentMembers), ", ")))
+	}
+
+	if preview, ok := envelope["preview"]; ok {
+		problems = append(problems, checkPreviewShape(preview)...)
 	}
 
 	meta, ok := envelope["meta"].(map[string]any)
@@ -91,6 +105,56 @@ func checkEnvelopeShape(file string, block codeBlock, envelope map[string]any) [
 	}
 
 	return findingsFrom(file, block, problems)
+}
+
+// checkPreviewShape holds a preview example to what --dry-run writes: a tier,
+// a list of effects, and at most one of data and error.
+func checkPreviewShape(value any) []string {
+	preview, ok := value.(map[string]any)
+	if !ok {
+		return []string{`"preview" is not an object`}
+	}
+
+	var problems []string
+	switch preview["tier"] {
+	case "server-validated", "preconditions-checked", "predicted":
+	default:
+		problems = append(problems, `"preview.tier" is not server-validated, preconditions-checked or predicted`)
+	}
+
+	effects, ok := preview["effects"].([]any)
+	if !ok {
+		problems = append(problems, `"preview.effects" is not a list`)
+	}
+	for _, effect := range effects {
+		fields, ok := effect.(map[string]any)
+		if !ok {
+			problems = append(problems, "an effect is not an object")
+			continue
+		}
+		switch fields["outcome"] {
+		case "would-apply", "no-op", "would-fail":
+		default:
+			problems = append(problems, fmt.Sprintf("effect outcome %v is not would-apply, no-op or would-fail", fields["outcome"]))
+		}
+	}
+
+	_, hasData := preview["data"]
+	_, hasError := preview["error"]
+	if hasData && hasError {
+		problems = append(problems, `"preview" carries both data and error; a read's data and a failure never meet`)
+	}
+
+	return problems
+}
+
+func quoted(values []string) []string {
+	out := make([]string, len(values))
+	for index, value := range values {
+		out[index] = fmt.Sprintf("%q", value)
+	}
+
+	return out
 }
 
 // checkPayloadAgainstSchema validates the example's data payload against the

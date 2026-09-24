@@ -69,6 +69,10 @@
           "minLength": 1,
           "type": "string"
         },
+        "command": {
+          "description": "The command that wrote this document, by its canonical path (bb pr view reports pr get), so a document held on its own says which --describe describes it. Absent when no command resolved.",
+          "type": "string"
+        },
         "contentType": {
           "description": "Present with encoding: the media type of the body data carries.",
           "type": "string"

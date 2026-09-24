@@ -96,12 +96,11 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.default-task.create",
 					Target:          map[string]any{"project": args[0], "description": args[1], "sourceRef": src, "targetRef": tgt},
 					Action:          "create",
 					PredictedAction: "create",
-					Supported:       true,
 					Reason:          "default task will be created",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -154,12 +153,11 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.default-task.update",
 					Target:          map[string]any{"project": args[0], "id": args[1], "description": updateDesc, "sourceRef": src, "targetRef": tgt},
 					Action:          "update",
 					PredictedAction: "update",
-					Supported:       true,
 					Reason:          "default task will be updated",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -200,12 +198,11 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "project.default-task.delete",
 					Target:          map[string]any{"project": args[0], "id": args[1]},
 					Action:          "delete",
 					PredictedAction: "delete",
-					Supported:       true,
 					Reason:          "default task will be deleted",
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

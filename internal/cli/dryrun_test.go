@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -148,27 +150,47 @@ func TestRegisterGlobalDryRunInterceptorsPassthroughPath(t *testing.T) {
 	}
 }
 
-func TestNewDryRunPreviewSummaries(t *testing.T) {
+// TestAStaticPreviewPredictsTheChangeItWouldMake: a command nothing is checked
+// for is previewed as the change it would make, at the tier that admits it,
+// with a reason that says nothing was checked.
+func TestAStaticPreviewPredictsTheChangeItWouldMake(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		action string
-		check  func(dryRunSummary) bool
-	}{
-		{action: "no-op", check: func(summary dryRunSummary) bool { return summary.NoopCount == 1 }},
-		{action: "create", check: func(summary dryRunSummary) bool { return summary.CreateCount == 1 }},
-		{action: "update", check: func(summary dryRunSummary) bool { return summary.UpdateCount == 1 }},
-		{action: "delete", check: func(summary dryRunSummary) bool { return summary.DeleteCount == 1 }},
-		{action: "something-else", check: func(summary dryRunSummary) bool { return summary.UnknownCount == 1 }},
+	for _, action := range []string{"create", "update", "delete"} {
+		document := newDryRunPreview(dryRunProfile{Intent: "x", Action: action}, nil, nil).Document()
+		if document.Tier != dryrunpreview.TierPredicted || len(document.Effects) != 1 || document.Error != nil {
+			t.Fatalf("%s: document = %+v, want one predicted effect and no error", action, document)
+		}
+		effect := document.Effects[0]
+		if effect.Action != action || effect.Outcome != jsonoutput.OutcomeWouldApply {
+			t.Fatalf("%s: effect = %+v", action, effect)
+		}
+		if len(effect.Reasons) != 1 || !strings.Contains(effect.Reasons[0], "nothing is checked first") {
+			t.Fatalf("%s: reasons = %q, want to be told nothing was checked", action, effect.Reasons)
+		}
 	}
 
-	for _, tc := range tests {
-		preview := newDryRunPreview(dryRunProfile{Intent: "x", Action: tc.action}, nil, nil)
-		if preview.Summary.Total != 1 || preview.Summary.Supported != 1 {
-			t.Fatalf("expected default totals to be set, got: %+v", preview.Summary)
+	// A change to this machine says in words what it would do, since its
+	// action is only create, update or delete.
+	logout := newDryRunPreview(clientLocalMutatingCommands["auth logout"], nil, nil).Document()
+	if effect := logout.Effects[0]; effect.Action != "delete" || !strings.Contains(effect.Reasons[0], "remove stored credentials") {
+		t.Fatalf("auth logout effect = %+v", effect)
+	}
+}
+
+// TestEveryLocalChangeIsCreateUpdateOrDelete keeps the effect's action to the
+// three the document promises.
+func TestEveryLocalChangeIsCreateUpdateOrDelete(t *testing.T) {
+	t.Parallel()
+
+	for path, profile := range clientLocalMutatingCommands {
+		switch profile.Action {
+		case "create", "update", "delete":
+		default:
+			t.Errorf("%s: action %q is not create, update or delete", path, profile.Action)
 		}
-		if !tc.check(preview.Summary) {
-			t.Fatalf("unexpected summary for action %q: %+v", tc.action, preview.Summary)
+		if strings.TrimSpace(profile.Change) == "" {
+			t.Errorf("%s: says nothing of what it would change", path)
 		}
 	}
 }
@@ -182,17 +204,17 @@ func TestNewDryRunPreviewIncludesRepositoryAndArgs(t *testing.T) {
 		t.Fatalf("set repo flag failed: %v", err)
 	}
 
-	preview := newDryRunPreview(dryRunProfile{
+	target := newDryRunPreview(dryRunProfile{
 		Intent: "project.create",
 		Action: "create",
-	}, cmd, []string{"PRJ", "--name", "Demo"})
+	}, cmd, []string{"PRJ", "--name", "Demo"}).Document().Effects[0].Target
 
-	if preview.Items[0].Target["repository"] != "PRJ/demo" {
-		t.Fatalf("expected repository target, got: %#v", preview.Items[0].Target["repository"])
+	if target["repository"] != "PRJ/demo" {
+		t.Fatalf("expected repository target, got: %#v", target["repository"])
 	}
-	args, ok := preview.Items[0].Target["args"].([]string)
+	args, ok := target["args"].([]string)
 	if !ok || len(args) != 3 {
-		t.Fatalf("expected args target, got: %#v", preview.Items[0].Target["args"])
+		t.Fatalf("expected args target, got: %#v", target["args"])
 	}
 }
 
@@ -210,82 +232,39 @@ func TestNewDryRunPreviewIncludesInheritedRepositoryFlag(t *testing.T) {
 	projectCmd.AddCommand(updateCmd)
 	root.AddCommand(projectCmd)
 
-	preview := newDryRunPreview(dryRunProfile{
+	target := newDryRunPreview(dryRunProfile{
 		Intent: "project.update",
 		Action: "update",
-	}, updateCmd, []string{"PRJ"})
+	}, updateCmd, []string{"PRJ"}).Document().Effects[0].Target
 
-	if preview.Items[0].Target["repository"] != "PRJ/inherited" {
-		t.Fatalf("expected inherited repository target, got: %#v", preview.Items[0].Target["repository"])
+	if target["repository"] != "PRJ/inherited" {
+		t.Fatalf("expected inherited repository target, got: %#v", target["repository"])
 	}
 }
 
 func TestWriteDryRunPreviewHumanOutput(t *testing.T) {
 	t.Parallel()
 
-	buffer := &bytes.Buffer{}
-	preview := dryRunPreview{
-		DryRun:       true,
-		PlanningMode: planningModeStatic,
-		Capability:   capabilityPartial,
-		Items: []dryRunItem{{
-			Intent:    "project.create",
-			Action:    "create",
-			Supported: true,
-			Reason:    "static preview only",
-			Target: map[string]any{
-				"repository": "PRJ/demo",
-				"args":       []string{"PRJ", "--name", "Project"},
-			},
-		}},
-	}
+	cmd := &cobra.Command{Use: "create"}
+	cmd.Flags().String("repo", "", "")
+	_ = cmd.Flags().Set("repo", "PRJ/demo")
+	preview := newDryRunPreview(dryRunProfile{Intent: "project.create", Action: "create"}, cmd, []string{"PRJ", "--name", "Project"})
 
-	if err := writeDryRunPreview(buffer, false, preview); err != nil {
+	buffer := &bytes.Buffer{}
+	writer := jsonoutput.Bind(buffer, jsonoutput.Settings{Mode: jsonoutput.ModeDryRun, Command: "project create"})
+	if err := writeDryRunPreview(writer, false, preview); err != nil {
 		t.Fatalf("writeDryRunPreview failed: %v", err)
 	}
 
 	output := buffer.String()
-	if !strings.Contains(output, "Dry-run (static, capability=partial)") {
-		t.Fatalf("expected heading in output, got: %s", output)
-	}
-	if !strings.Contains(output, "intent=project.create action=create") {
-		t.Fatalf("expected item row in output, got: %s", output)
-	}
-	if !strings.Contains(output, "repository=PRJ/demo") {
-		t.Fatalf("expected repository in output, got: %s", output)
-	}
-	if !strings.Contains(output, "args=PRJ --name Project") {
-		t.Fatalf("expected args in output, got: %s", output)
-	}
-	if !strings.Contains(output, "note=static preview only") {
-		t.Fatalf("expected note in output, got: %s", output)
-	}
-}
-
-func TestWriteDryRunPreviewHumanOutputWithoutOptionalFields(t *testing.T) {
-	t.Parallel()
-
-	buffer := &bytes.Buffer{}
-	preview := dryRunPreview{
-		DryRun:       true,
-		PlanningMode: planningModeStatic,
-		Capability:   capabilityPartial,
-		Items: []dryRunItem{{
-			Intent:    "repo.admin.delete",
-			Action:    "delete",
-			Supported: true,
-			Target:    map[string]any{},
-		}},
-	}
-
-	if err := writeDryRunPreview(buffer, false, preview); err != nil {
-		t.Fatalf("writeDryRunPreview failed: %v", err)
-	}
-	if strings.Contains(buffer.String(), "repository=") {
-		t.Fatalf("did not expect repository line in output, got: %s", buffer.String())
-	}
-	if strings.Contains(buffer.String(), "note=") {
-		t.Fatalf("did not expect note line in output, got: %s", buffer.String())
+	for _, want := range []string{
+		"Dry run: bb project create would go through (predicted)",
+		"create PRJ/demo PRJ --name Project: would apply",
+		"nothing is checked first",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected %q in output, got:\n%s", want, output)
+		}
 	}
 }
 
@@ -293,67 +272,28 @@ func TestWriteDryRunPreviewJSONOutput(t *testing.T) {
 	t.Parallel()
 
 	buffer := &bytes.Buffer{}
-	preview := dryRunPreview{
-		DryRun:       true,
-		PlanningMode: planningModeStatic,
-		Capability:   capabilityPartial,
-		Items: []dryRunItem{{
-			Intent:    "project.delete",
-			Action:    "delete",
-			Supported: true,
-			Target:    map[string]any{"repository": "PRJ/demo"},
-		}},
-	}
+	preview := newDryRunPreview(dryRunProfile{Intent: "project.delete", Action: "delete"}, nil, nil)
 
 	if err := writeDryRunPreview(buffer, true, preview); err != nil {
 		t.Fatalf("writeDryRunPreview JSON failed: %v", err)
 	}
-	if !strings.Contains(buffer.String(), `"planningMode": "static"`) {
-		t.Fatalf("expected planning mode in JSON output, got: %s", buffer.String())
+	for _, want := range []string{`"preview": {`, `"tier": "predicted"`, `"action": "delete"`, `"outcome": "would-apply"`} {
+		if !strings.Contains(buffer.String(), want) {
+			t.Fatalf("expected %s in JSON output, got: %s", want, buffer.String())
+		}
 	}
 }
 
 func TestWriteDryRunPreviewWriterErrors(t *testing.T) {
 	t.Parallel()
 
-	preview := dryRunPreview{
-		DryRun:       true,
-		PlanningMode: planningModeStatic,
-		Capability:   capabilityPartial,
-		Items: []dryRunItem{{
-			Intent:    "project.create",
-			Action:    "create",
-			Supported: true,
-			Reason:    "static",
-			Target: map[string]any{
-				"repository": "PRJ/demo",
-				"args":       []string{"PRJ"},
-			},
-		}},
-	}
+	preview := newDryRunPreview(dryRunProfile{Intent: "project.create", Action: "create"}, nil, []string{"PRJ"})
 
 	if err := writeDryRunPreview(failWriter{}, false, preview); err == nil {
-		t.Fatal("expected error when heading write fails")
+		t.Fatal("expected error when the heading write fails")
 	}
-
-	writer := &failAfterWriter{failAfter: 1}
-	if err := writeDryRunPreview(writer, false, preview); err == nil {
-		t.Fatal("expected error when item write fails")
-	}
-
-	writer = &failAfterWriter{failAfter: 2}
-	if err := writeDryRunPreview(writer, false, preview); err == nil {
-		t.Fatal("expected error when repository write fails")
-	}
-
-	writer = &failAfterWriter{failAfter: 3}
-	if err := writeDryRunPreview(writer, false, preview); err == nil {
-		t.Fatal("expected error when args write fails")
-	}
-
-	writer = &failAfterWriter{failAfter: 4}
-	if err := writeDryRunPreview(writer, false, preview); err == nil {
-		t.Fatal("expected error when note write fails")
+	if err := writeDryRunPreview(&failAfterWriter{failAfter: 1}, false, preview); err == nil {
+		t.Fatal("expected error when the effect write fails")
 	}
 }
 
@@ -450,7 +390,11 @@ func TestDryRunCommandPath(t *testing.T) {
 	}
 }
 
-func TestRegisterGlobalDryRunInterceptorsNotImplemented(t *testing.T) {
+// TestAnUnclassifiedCommandUnderDryRunIsABugNotAVerdict: an unclassified
+// command is one nobody decided about, so it is refused -- as internal, which
+// under --dry-run is a failure to reach a verdict rather than a prediction that
+// the real run would fail (ADR-096).
+func TestAnUnclassifiedCommandUnderDryRunIsABugNotAVerdict(t *testing.T) {
 	t.Parallel()
 
 	options := &rootOptions{DryRun: true}
@@ -477,12 +421,12 @@ func TestRegisterGlobalDryRunInterceptorsNotImplemented(t *testing.T) {
 
 	err := root.Execute()
 	if err == nil {
-		t.Fatal("expected dry-run not-implemented error")
+		t.Fatal("expected the unclassified command to be refused")
 	}
-	if apperrors.KindOf(err) != apperrors.KindNotImplemented {
-		t.Fatalf("expected not-implemented kind, got: %v", apperrors.KindOf(err))
+	if apperrors.KindOf(err) != apperrors.KindInternal || jsonoutput.IsVerdict(err) {
+		t.Fatalf("expected internal, which is no verdict, got: %v", apperrors.KindOf(err))
 	}
-	if !strings.Contains(err.Error(), "dry-run is not implemented for secret delete") {
+	if !strings.Contains(err.Error(), "secret delete has no dry-run classification") {
 		t.Fatalf("expected command path in error, got: %v", err)
 	}
 }
@@ -503,7 +447,7 @@ func TestAllCommandsExhaustivelyClassifiedForDryRun(t *testing.T) {
 			path := dryRunCommandPath(cmd)
 			category := classifyCommand(path)
 			if category == classificationUnknown {
-				t.Errorf("Command %q is unclassified in internal/cli/dryrun.go. Every runnable CLI command must be registered in dryRunProfiles (mutating), readOnlyCommands (read-only), clientLocalCommands (changes nothing, or honours --dry-run itself), clientLocalMutatingCommands (changes local state) or dryRunRefusedCommands (--dry-run has no meaning) to prevent fail-open dry-run bugs.", path)
+				t.Errorf("Command %q is unclassified in internal/cli/dryrun.go. Every runnable CLI command must be registered in dryRunProfiles (mutating), readOnlyCommands (read-only), clientLocalCommands (changes nothing, or honours --dry-run itself), clientLocalMutatingCommands (changes local state) or commandsWithoutDryRun (does not take --dry-run) to prevent fail-open dry-run bugs.", path)
 			}
 
 			// Exactly one registry, so no command can be read two ways.
@@ -520,8 +464,8 @@ func TestAllCommandsExhaustivelyClassifiedForDryRun(t *testing.T) {
 			if _, ok := clientLocalMutatingCommands[path]; ok {
 				found = append(found, "client-local-mutating")
 			}
-			if _, ok := dryRunRefusedCommands[path]; ok {
-				found = append(found, "dry-run-refused")
+			if _, ok := commandsWithoutDryRun[path]; ok {
+				found = append(found, "without-dry-run")
 			}
 
 			if len(found) > 1 {
@@ -686,11 +630,10 @@ func TestAuthGpgKeyClearDryRun(t *testing.T) {
 	}
 
 	output := buffer.String()
-	if !strings.Contains(output, "auth.gpg-key.clear") {
-		t.Fatalf("expected intent auth.gpg-key.clear in dry-run output, got: %s", output)
-	}
-	if !strings.Contains(output, `"dryRun": true`) {
-		t.Fatalf("expected dryRun: true in json output, got: %s", output)
+	for _, want := range []string{`"preview": {`, `"action": "delete"`, `"command": "auth gpg-key clear"`} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected %s in dry-run output, got: %s", want, output)
+		}
 	}
 }
 
@@ -787,13 +730,13 @@ func TestLocalMutationsArePreviewedRatherThanPerformed(t *testing.T) {
 	}
 }
 
-// TestRefusedCommandsRejectDryRunRatherThanIgnoringIt is #568: the flag parsed
-// and did nothing, so an operator who wired up an agent with --dry-run believing
-// they were rehearsing got a live, write-capable server.
-func TestRefusedCommandsRejectDryRunRatherThanIgnoringIt(t *testing.T) {
+// TestCommandsWithoutDryRunRejectTheFlag is #568: the flag parsed and did
+// nothing, so an operator who wired up an agent with --dry-run believing they
+// were rehearsing got a live, write-capable server.
+func TestCommandsWithoutDryRunRejectTheFlag(t *testing.T) {
 	t.Parallel()
 
-	for path, reason := range dryRunRefusedCommands {
+	for path, reason := range commandsWithoutDryRun {
 		t.Run(path, func(t *testing.T) {
 			t.Parallel()
 

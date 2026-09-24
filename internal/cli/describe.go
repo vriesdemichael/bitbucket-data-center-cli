@@ -130,7 +130,7 @@ func writeDescription(cmd *cobra.Command) error {
 
 	// A group reaches here through the help function, before PersistentPreRunE
 	// has bound the output settings, so they are read from the flags.
-	if settings, machine := OutputSettingsFromFlags(cmd.Root()); machine {
+	if settings := OutputSettingsFromFlags(cmd.Root(), cmd); settings.Machine {
 		return jsonoutput.Write(jsonoutput.Bind(cmd.OutOrStdout(), settings), described)
 	}
 

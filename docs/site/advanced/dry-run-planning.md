@@ -5,137 +5,109 @@ search:
 
 # Dry-Run Planning
 
-`--dry-run` asks a command what it would do instead of doing it. It is a global
-flag, and every command that changes something, on the server or on this
-machine, answers it with a preview.
+`--dry-run` asks what the real run would do, without doing it. The answer is a
+verdict: whether the run would go through, how far that can be trusted, and
+why.
 
 ```bash
-bb --dry-run project create DEMO --name "Demo Project"
+bb --dry-run pr merge 42 --repo PROJ/app
 ```
 
 ```text
-Dry-run (stateful, capability=full)
-- intent=project.create action=create predictedAction=create
-  note=project will be created
+Dry run: bb pr merge would fail (preconditions-checked)
+- update PROJ/app id=42: would fail
+    Requires 2 approvals; it has 1
 ```
 
-The value of a preview depends entirely on how it was reached, and `bb` tells
-you which. That is the part worth reading before you rely on one.
+Each command's help says under **Dry run** what it checks, and `bb help dry-run`
+explains the answer.
 
-## How much a preview is worth
+## How far a verdict can be trusted
 
-Every predicted item carries a **tier** saying how the answer was arrived at,
-and a **confidence** computed from that tier
+A verdict carries a **tier**: the weakest check behind it
 ([ADR-078](../adr/078-dry-run-confidence-is-derived-from-a-tier.md)).
 
-| Tier | What happened | Confidence |
-|---|---|---|
-| `server-validated` | Bitbucket answered this exact question, through its own dry-run endpoint or an equivalent authoritative call | full |
-| `preconditions-checked` | Your permission and the current state were both fetched, and the preconditions for the operation were evaluated against them | full |
-| `predicted` | The answer was derived from partial state | partial |
-
-An item that states no tier is treated as `predicted`. The confidence is
-computed from the tier rather than declared beside it, so the two cannot
-disagree — a prediction cannot claim to be certain.
-
-Read the tier before acting on a preview. `server-validated` means the server
-agreed; `predicted` means `bb` reasoned about it from what it could see, and the
-real attempt may still fail.
-
-## What a preview contains
-
-Under `--json` each item reports:
-
-| Field | Meaning |
+| Tier | What happened |
 |---|---|
-| `intent` | what the command set out to do |
-| `target` | what it would act on |
-| `action` | the operation |
-| `predictedAction` | what would actually happen, when that differs — `blocked`, for instance |
-| `supported` | whether this command can be previewed at all |
-| `tier`, `confidence` | how the answer was reached, and what it is worth |
-| `requiredState` | conditions the operation depends on |
-| `blockingReasons` | why it would not succeed, when it would not |
+| `server-validated` | Bitbucket answered this exact question, through its own dry-run endpoint or an equivalent authoritative call |
+| `preconditions-checked` | Your permission and the current state were fetched, and the preconditions for the operation were checked against them |
+| `predicted` | The answer was derived from partial state, or nothing was checked |
 
-Under `--json` the same preview arrives as an envelope:
+Read the tier before acting on a verdict. `server-validated` means the server
+agreed; `predicted` means the real attempt may still fail.
+
+## The verdict
+
+Each change the run would make is an **effect**, with an outcome:
+
+| Outcome | Meaning |
+|---|---|
+| `would-apply` | the change would be made |
+| `no-op` | nothing needs to change |
+| `would-fail` | the run would be refused; the reasons say why |
+
+Under `--json` or `--yaml` the answer is the document's `preview` member
+([ADR-096](../adr/096-the-flags-choose-the-member-and-dry-run-answers-with-a-verdict.md)):
 
 <!-- docs-lint: envelope-shape -->
 ```json
 {
-  "data": {
-    "dryRun": true,
-    "planningMode": "stateful",
-    "capability": "full",
-    "items": [
+  "preview": {
+    "tier": "preconditions-checked",
+    "effects": [
       {
-        "intent": "project.create",
-        "target": { "project": "DEMO", "name": "Demo Project", "description": "" },
-        "action": "create",
-        "predictedAction": "create",
-        "supported": true,
-        "reason": "project will be created",
-        "tier": "preconditions-checked",
-        "confidence": "full",
-        "requiredState": ["project get"]
+        "action": "update",
+        "target": { "repository": "PROJ/app", "id": 42 },
+        "outcome": "would-fail",
+        "reasons": ["Requires 2 approvals; it has 1"]
       }
     ],
-    "summary": {
-      "total": 1, "supported": 1, "unsupported": 0, "noOp": 0,
-      "create": 1, "update": 0, "delete": 0, "unknown": 0
-    }
+    "error": { "kind": "conflict", "message": "pull request cannot be merged", "exitCode": 5 }
   },
-  "meta": { "bbVersion": "[[ bb_version_tag ]]" }
+  "meta": { "command": "pr merge", "bbVersion": "[[ bb_version_tag ]]" }
 }
 ```
 
-`planningMode` and `capability` describe the run as a whole; `tier` and
-`confidence` are per item, because one command can predict several things with
-different certainty. `summary` counts what would happen, which is the part a
-pipeline gates on.
+`error` is present exactly when the run would fail, and is what it would fail
+with. A failure the check runs into — invalid arguments, a pull request that
+does not exist, a missing permission — is a verdict too, and arrives the same
+way with no effects.
 
-```bash
-bb --dry-run --json pr merge 42 --repo PROJ/repo
-```
+## Exit codes
 
-A merge that cannot proceed comes back `supported: true` with
-`predictedAction: blocked` and the reasons listed, which is a successful
-preview of a failure rather than an error.
+| Answer | Exit |
+|---|---|
+| Text: the run would go through | `0` |
+| Text: the run would fail | the code the real run would exit with |
+| `--json` or `--yaml`: any verdict | `0`, since the verdict is in the document |
+| No verdict: Bitbucket did not answer | `10` |
+| No verdict: interrupted | `12` |
+| No verdict: a bug in `bb` | `1` |
+
+So `bb pr merge 42 --dry-run && bb pr merge 42` stops at the check. Without a
+verdict the document carries a top-level `error` instead of `preview`, so a
+wrapper cannot mistake "I could not check" for "nothing would change".
 
 ## What it covers
 
 | Command | Under `--dry-run` |
 |---|---|
-| Changes something on the server | Previewed from Bitbucket's answers, or predicted |
-| Changes something on this machine | Previewed statically, and the change is not made |
-| Changes nothing | Runs as usual |
-| `bb ai mcp serve` | Refused |
+| Changes something on the server | Checked against Bitbucket, or predicted |
+| Changes something on this machine | Predicted, and the change is not made |
+| Only reads | Runs as usual; under `--json` its data is in `preview.data` |
+| `bb ai mcp serve` | Does not take the flag |
 
 A command that changes this machine — stored credentials, host aliases, the
 default host, git configuration, the skill file, shell completion, a clone, a
-local branch — is previewed rather than performed:
+local branch — is previewed rather than performed. Nothing is checked first, so
+its verdict is `predicted`. `bb update` answers the flag itself: it reports the
+release it would install and whether that release verifies, and installs
+nothing.
 
-```bash
-bb --dry-run auth logout
-```
-
-```text
-Dry-run (static, capability=partial)
-- intent=auth.logout action=remove stored credentials predictedAction=remove stored credentials
-```
-
-Nothing is checked first, so the preview names the change and claims `partial`
-confidence, and under `--json` it counts as `unknown` in `summary`. `bb update`
-answers the flag itself: it reports the release it would install and whether
-that release verifies, and installs nothing.
-
-A command for which a preview means nothing refuses the flag rather than
-ignoring it: `bb ai mcp serve` starts a live server, and a session cannot be
-previewed. Every command in the tree is explicitly classified, so a mutating
-command cannot quietly fall through unclassified
+`bb ai mcp serve` does not take `--dry-run`: it starts a live server, and a
+session cannot be previewed. Every command in the tree is explicitly
+classified, so a mutating command cannot quietly fall through unclassified
 ([ADR-070](../adr/070-every-command-is-explicitly-classified-for-dry-run.md)).
-
-Transient network failures during a dry run exit `10`, the same as a real run,
-so a wrapper cannot mistake "I could not check" for "nothing would change".
 
 ## Across many repositories
 
@@ -150,5 +122,6 @@ with `--dry-run` previews each repository in turn.
 
 ## See also
 
-- [Machine Mode and Diagnostics](machine-mode-diagnostics.md) — the envelope these previews arrive in
-- [ADR-078](../adr/078-dry-run-confidence-is-derived-from-a-tier.md) — why confidence is derived rather than declared
+- [Machine Mode and Diagnostics](machine-mode-diagnostics.md) — the document these verdicts arrive in
+- [ADR-096](../adr/096-the-flags-choose-the-member-and-dry-run-answers-with-a-verdict.md) — why the flags choose the member, and what a verdict exits with
+- [ADR-078](../adr/078-dry-run-confidence-is-derived-from-a-tier.md) — why the tier is derived rather than declared

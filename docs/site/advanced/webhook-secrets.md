@@ -150,20 +150,23 @@ come from and never what it is:
 $ export BB_WEBHOOK_SECRET=…
 $ bb webhook create ci https://ci.example.com/hook --dry-run --json
 {
-  "data": {
-    "items": [
+  "preview": {
+    "tier": "predicted",
+    "effects": [
       {
-        "intent": "repo.webhook.create",
+        "action": "create",
         "target": {
           "repository": "PROJ/repo",
           "name": "ci",
           "url": "https://ci.example.com/hook",
           "secret": "will be set from $BB_WEBHOOK_SECRET"
         },
-        "predictedAction": "create"
+        "outcome": "would-apply",
+        "reasons": ["webhook will be created"]
       }
     ]
-  }
+  },
+  "meta": { "command": "webhook create", "bbVersion": "…" }
 }
 ```
 

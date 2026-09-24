@@ -177,8 +177,15 @@ func TestReviewerConditionCommands(t *testing.T) {
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"condition", "create", `{"requiredApprovals":2}`, "--project", "PRJ"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on create condition project dry-run: %v", err)
+	// The project already holds an equivalent condition, so the preview says
+	// the create would conflict, and as text it exits with conflict's code the
+	// way the real run would (ADR-096).
+	var state *apperrors.StateExit
+	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 5 {
+		t.Fatalf("expected the dry run to exit 5 for a predicted conflict, got: %v", err)
+	}
+	if !strings.Contains(buf.String(), "would fail") {
+		t.Fatalf("expected the verdict in the output, got: %s", buf.String())
 	}
 	dryRunEnabled = false
 
@@ -240,8 +247,10 @@ func TestReviewerConditionCommands(t *testing.T) {
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"condition", "update", "999", `{"requiredApprovals":3}`, "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on update non-existent condition dry-run: %v", err)
+	// The real update of a missing condition fails as not found, so the dry run
+	// exits with that code, 4.
+	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 4 {
+		t.Fatalf("expected the dry run to exit 4 for a missing condition, got: %v", err)
 	}
 	dryRunEnabled = false
 
@@ -293,8 +302,8 @@ func TestReviewerConditionCommands(t *testing.T) {
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"condition", "update", "999", `{"requiredApprovals":3}`, "--project", "PRJ"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on update non-existent project condition dry-run: %v", err)
+	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 4 {
+		t.Fatalf("expected the dry run to exit 4 for a missing project condition, got: %v", err)
 	}
 	dryRunEnabled = false
 

@@ -105,9 +105,21 @@ your behalf using the link above.`,
 			}
 
 			// Every document the command writes goes through its output writer,
-			// so the format travels with it (ADR-095).
+			// so what the flags decided about it travels with it: the format
+			// (ADR-095), and the member and the command (ADR-096).
 			root := cmd.Root()
-			root.SetOut(jsonoutput.Bind(root.OutOrStdout(), options.outputSettings()))
+			settings := options.outputSettings(cmd)
+
+			// A command that does not take --dry-run is not dry-run: passing it
+			// is an invalid invocation, reported as itself rather than as a
+			// verdict on a run that would never happen.
+			if options.DryRun && !options.Describe && classifyCommand(dryRunCommandPath(cmd)) == classificationWithoutDryRun {
+				settings.Mode = jsonoutput.ModeRun
+				root.SetOut(jsonoutput.Bind(root.OutOrStdout(), settings))
+				return dryRunUnsupportedError(dryRunCommandPath(cmd))
+			}
+
+			root.SetOut(jsonoutput.Bind(root.OutOrStdout(), settings))
 
 			// --describe answers from schemas compiled into this binary, so it
 			// must not need configuration, a server, or a git checkout. Running
@@ -140,7 +152,7 @@ your behalf using the link above.`,
 
 	rootCmd.PersistentFlags().BoolVar(&options.JSON, "json", false, "Print the output as one JSON document")
 	rootCmd.PersistentFlags().BoolVar(&options.YAML, "yaml", false, "Print the output as one YAML document: the same document as --json")
-	rootCmd.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "Preview mutations without applying them")
+	rootCmd.PersistentFlags().BoolVar(&options.DryRun, "dry-run", false, "Say what the real run would do, without doing it; each command's help says what it checks")
 	rootCmd.PersistentFlags().BoolVar(&options.NoColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().BoolVar(&options.FullErrorBody, "full-error-body", false,
 		"Print the whole upstream response body in an error instead of a summary")
@@ -369,6 +381,7 @@ your behalf using the link above.`,
 	addCompletionSetup(rootCmd, options)
 
 	registerGlobalDryRunInterceptors(rootCmd, options)
+	installDryRunHelp(rootCmd)
 
 	// The same walk, for the same reason: a destructive command written
 	// tomorrow inherits its --yes and its question by being named delete,
@@ -432,27 +445,44 @@ func (options *rootOptions) machineOutput() bool {
 	return options.JSON || options.YAML
 }
 
-// OutputSettingsFromFlags reads the machine output flags from root, for a path
-// that runs before PersistentPreRunE has bound them: a group's help function,
-// or main reporting a failure.
-func OutputSettingsFromFlags(root *cobra.Command) (jsonoutput.Settings, bool) {
+// OutputSettingsFromFlags reads what the parsed flags decided about output, for
+// a path that runs before PersistentPreRunE has bound it: a group's help
+// function, or main reporting a failure. command is the command that ran, or
+// nil when none resolved.
+func OutputSettingsFromFlags(root, command *cobra.Command) jsonoutput.Settings {
 	flagSet := func(name string) bool {
 		value, _ := root.PersistentFlags().GetBool(name)
 		return value
 	}
 
-	options := rootOptions{JSON: flagSet("json"), YAML: flagSet("yaml")}
-
-	return options.outputSettings(), options.machineOutput()
-}
-
-// outputSettings is what the flags decided about machine output.
-func (options *rootOptions) outputSettings() jsonoutput.Settings {
-	if options.YAML && !options.JSON {
-		return jsonoutput.Settings{Format: jsonoutput.FormatYAML}
+	options := rootOptions{
+		JSON:     flagSet("json"),
+		YAML:     flagSet("yaml"),
+		DryRun:   flagSet("dry-run"),
+		Describe: flagSet(describeFlag),
 	}
 
-	return jsonoutput.Settings{Format: jsonoutput.FormatJSON}
+	return options.outputSettings(command)
+}
+
+// outputSettings is what the flags decided about output for command.
+func (options *rootOptions) outputSettings(command *cobra.Command) jsonoutput.Settings {
+	settings := jsonoutput.Settings{Machine: options.machineOutput(), Format: jsonoutput.FormatJSON}
+	if options.YAML && !options.JSON {
+		settings.Format = jsonoutput.FormatYAML
+	}
+
+	// --describe asks what a command returns whatever else is passed, so it
+	// is not a dry run even beside --dry-run.
+	if options.DryRun && !options.Describe {
+		settings.Mode = jsonoutput.ModeDryRun
+	}
+
+	if command != nil && command.Runnable() {
+		settings.Command = commandPathWithoutRoot(command)
+	}
+
+	return settings
 }
 
 func (options *rootOptions) permissionCheckerFor(client *openapigenerated.ClientWithResponses) *PermissionChecker {

@@ -15,6 +15,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outwriter"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
@@ -136,7 +137,7 @@ func reportInterrupt(args []string, stdout, stderr io.Writer) {
 func writeInterruptAnswer(args []string, stdout, stderr io.Writer) int {
 	err := apperrors.New(apperrors.KindCancelled, "interrupted", nil)
 
-	if settings, machine := argsRequestMachineOutput(args); machine {
+	if settings := argsRequestOutput(args); settings.Machine {
 		if writeErr := jsonoutput.WriteError(jsonoutput.Bind(stdout, settings), err); writeErr != nil {
 			fmt.Fprintln(stderr, writeErr.Error())
 		}
@@ -183,11 +184,21 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 		err = cli.HintGHFieldList(err, args, executed)
 		emitCommandFailureDiagnostic(err, stderr)
 
+		settings := invocationOutput(rootCmd, executed, args)
+
+		// Under --dry-run a failure that is an answer about the real run is
+		// the verdict (ADR-096): a document that exits 0 since the verdict is
+		// in it, or, as text, the verdict on stdout and the exit code the real
+		// run would have.
+		if settings.Mode == jsonoutput.ModeDryRun && jsonoutput.IsVerdict(err) {
+			return reportVerdict(err, settings, stdout, stderr)
+		}
+
 		// Under --json or --yaml, stdout is a machine contract, and a failure
 		// that leaves it empty is indistinguishable from a command that
 		// produced malformed output. Emit the classified failure there; stderr
 		// keeps the same human-readable line either way.
-		if settings, machine := machineOutputRequested(rootCmd, args); machine {
+		if settings.Machine {
 			if writeErr := jsonoutput.WriteError(jsonoutput.Bind(stdout, settings), err); writeErr != nil {
 				fmt.Fprintln(stderr, writeErr.Error())
 			}
@@ -208,7 +219,11 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 	}
 
 	if state != nil {
-		fmt.Fprintln(stderr, state.Reason)
+		// A dry run predicting failure says why on stdout, so it has no line
+		// of its own to add here.
+		if state.Reason != "" {
+			fmt.Fprintln(stderr, state.Reason)
+		}
 		return state.Code
 	}
 
@@ -240,28 +255,64 @@ func interrupted(rootCmd *cobra.Command, err error) error {
 	}
 }
 
-// machineOutputRequested reports whether machine output was asked for, and in
-// which format.
+// reportVerdict answers a failure under --dry-run that is a verdict on the real
+// run, and returns the exit code.
+func reportVerdict(err error, settings jsonoutput.Settings, stdout, stderr io.Writer) int {
+	if settings.Machine {
+		if writeErr := jsonoutput.WriteError(jsonoutput.Bind(stdout, settings), err); writeErr != nil {
+			fmt.Fprintln(stderr, writeErr.Error())
+			return apperrors.ExitCode(err)
+		}
+
+		return 0
+	}
+
+	failure := jsonoutput.EnvelopeErrorOf(err)
+	verdict := jsonoutput.Preview{Tier: jsonoutput.TierOfFailure(err), Effects: []jsonoutput.Effect{}, Error: &failure}
+	if writeErr := dryrunpreview.WriteText(stdout, settings.Command, verdict); writeErr != nil {
+		fmt.Fprintln(stderr, err.Error())
+	}
+
+	return apperrors.ExitCode(err)
+}
+
+// invocationOutput is what the invocation decided about its output.
 //
-// The parsed flags are authoritative when parsing reached them. It does not
-// always: `bb --bogus --json` fails before pflag sees --json, and an unknown
-// flag is exactly the case where a script most needs a parseable answer. Fall
-// back to the raw arguments there.
-func machineOutputRequested(rootCmd *cobra.Command, args []string) (jsonoutput.Settings, bool) {
+// Once PersistentPreRunE has run, it is bound to the command's output writer,
+// and that is the answer: it is also where a command that does not take
+// --dry-run is recorded as a plain run. Before that -- an unknown flag, a
+// missing argument -- it comes from the parsed flags, and from the raw
+// arguments for what parsing did not reach: `bb --bogus --json` fails before
+// pflag sees --json, and an unknown flag is exactly the case where a script
+// most needs a parseable answer.
+func invocationOutput(rootCmd, executed *cobra.Command, args []string) jsonoutput.Settings {
 	if rootCmd != nil {
-		if settings, machine := cli.OutputSettingsFromFlags(rootCmd); machine {
-			return settings, true
+		if settings, bound := jsonoutput.SettingsOf(rootCmd.OutOrStdout()); bound {
+			return settings
 		}
 	}
 
-	return argsRequestMachineOutput(args)
+	requested := argsRequestOutput(args)
+	if rootCmd == nil {
+		return requested
+	}
+
+	parsed := cli.OutputSettingsFromFlags(rootCmd, executed)
+	if !parsed.Machine && requested.Machine {
+		parsed.Machine, parsed.Format = true, requested.Format
+	}
+	if parsed.Mode == jsonoutput.ModeRun && requested.Mode == jsonoutput.ModeDryRun {
+		parsed.Mode = jsonoutput.ModeDryRun
+	}
+
+	return parsed
 }
 
-// argsRequestMachineOutput reads --json and --yaml from the raw arguments. Both
-// together answer in JSON, since that combination is itself the failure being
-// reported.
-func argsRequestMachineOutput(args []string) (jsonoutput.Settings, bool) {
-	json, yaml := false, false
+// argsRequestOutput reads --json, --yaml, --dry-run and --describe from the raw
+// arguments. --json and --yaml together answer in JSON, since that combination
+// is itself the failure being reported.
+func argsRequestOutput(args []string) jsonoutput.Settings {
+	json, yaml, dryRun, describe := false, false, false, false
 
 	for _, arg := range args {
 		// Everything after -- is a positional argument, not a flag.
@@ -278,14 +329,26 @@ func argsRequestMachineOutput(args []string) (jsonoutput.Settings, bool) {
 			yaml = true
 		case "--yaml=false":
 			yaml = false
+		case "--dry-run", "--dry-run=true":
+			dryRun = true
+		case "--dry-run=false":
+			dryRun = false
+		case "--describe", "--describe=true":
+			describe = true
+		case "--describe=false":
+			describe = false
 		}
 	}
 
+	settings := jsonoutput.Settings{Machine: json || yaml, Format: jsonoutput.FormatJSON}
 	if yaml && !json {
-		return jsonoutput.Settings{Format: jsonoutput.FormatYAML}, true
+		settings.Format = jsonoutput.FormatYAML
+	}
+	if dryRun && !describe {
+		settings.Mode = jsonoutput.ModeDryRun
 	}
 
-	return jsonoutput.Settings{Format: jsonoutput.FormatJSON}, json
+	return settings
 }
 
 func emitCommandFailureDiagnostic(err error, stderr io.Writer) {

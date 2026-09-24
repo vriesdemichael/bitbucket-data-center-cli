@@ -199,7 +199,7 @@ func newProjectPermissionGrantCommand(deps Dependencies, subjectFor projectPermi
 					break
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent: fmt.Sprintf("project.permission.%s.grant", subject.noun),
 					Target: map[string]any{
 						"project":    projectKey,
@@ -215,10 +215,8 @@ func newProjectPermissionGrantCommand(deps Dependencies, subjectFor projectPermi
 					// predicted success at full confidence and then failed with
 					// exit 4, and the listing cannot answer it: a subject with
 					// no permission is absent from it either way (ADR-078).
-					Tier:          dryrunpreview.TierPredicted,
-					Supported:     true,
-					Reason:        reason,
-					RequiredState: []string{fmt.Sprintf("project permission %ss list", subject.noun)},
+					Tier:   dryrunpreview.TierPredicted,
+					Reason: reason,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -286,7 +284,7 @@ func newProjectPermissionRevokeCommand(deps Dependencies, subjectFor projectPerm
 					}
 				}
 
-				preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent: fmt.Sprintf("project.permission.%s.revoke", subject.noun),
 					Target: map[string]any{
 						"project": projectKey,
@@ -301,10 +299,8 @@ func newProjectPermissionRevokeCommand(deps Dependencies, subjectFor projectPerm
 					// predicted success at full confidence and then failed with
 					// exit 4, and the listing cannot answer it: a subject with
 					// no permission is absent from it either way (ADR-078).
-					Tier:          dryrunpreview.TierPredicted,
-					Supported:     true,
-					Reason:        reason,
-					RequiredState: []string{fmt.Sprintf("project permission %ss list", subject.noun)},
+					Tier:   dryrunpreview.TierPredicted,
+					Reason: reason,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

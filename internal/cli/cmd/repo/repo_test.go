@@ -73,9 +73,13 @@ func TestRepoAdminDeleteDryRun(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &envelope); err != nil {
 		t.Fatalf("invalid json: %v", err)
 	}
-	data, ok := envelope["data"].(map[string]any)
-	if !ok || data["dryRun"] != true {
-		t.Fatalf("expected dryRun=true, got %v", envelope)
+	preview, ok := envelope["preview"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected the preview member, got %v", envelope)
+	}
+	effects, _ := preview["effects"].([]any)
+	if len(effects) != 1 || effects[0].(map[string]any)["action"] != "delete" {
+		t.Fatalf("expected one delete effect, got %v", preview)
 	}
 }
 

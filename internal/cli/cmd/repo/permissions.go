@@ -259,7 +259,7 @@ func runPermissionGrantDryRun(
 		break
 	}
 
-	preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+	preview := dryrunpreview.New(dryrunpreview.Item{
 		Intent: fmt.Sprintf("repo.permission.%s.grant", subject.noun),
 		Target: map[string]any{
 			"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
@@ -276,10 +276,8 @@ func runPermissionGrantDryRun(
 		// cannot answer it either: a subject with no permission is absent from
 		// it whether or not it exists. So this is a prediction from partial
 		// state, and says so (ADR-078).
-		Tier:          dryrunpreview.TierPredicted,
-		Supported:     true,
-		Reason:        reason,
-		RequiredState: []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
+		Tier:   dryrunpreview.TierPredicted,
+		Reason: reason,
 	})
 
 	return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -313,7 +311,7 @@ func runPermissionRevokeDryRun(
 		}
 	}
 
-	preview := dryrunpreview.New(dryrunpreview.PlanningModeStateful, dryrunpreview.CapabilityFull, dryrunpreview.Item{
+	preview := dryrunpreview.New(dryrunpreview.Item{
 		Intent: fmt.Sprintf("repo.permission.%s.revoke", subject.noun),
 		Target: map[string]any{
 			"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug),
@@ -329,10 +327,8 @@ func runPermissionRevokeDryRun(
 		// cannot answer it either: a subject with no permission is absent from
 		// it whether or not it exists. So this is a prediction from partial
 		// state, and says so (ADR-078).
-		Tier:          dryrunpreview.TierPredicted,
-		Supported:     true,
-		Reason:        reason,
-		RequiredState: []string{fmt.Sprintf("repository permission %ss list", subject.noun)},
+		Tier:   dryrunpreview.TierPredicted,
+		Reason: reason,
 	})
 
 	return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

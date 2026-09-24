@@ -178,8 +178,10 @@ command fills in, so it cannot disagree with what you get. A command that return
 payload -- or one whose payload bb cannot promise a shape for -- answers with `described`
 false and a `reason` saying which.
 
-State-changing commands accept `--dry-run`, which previews the mutation without applying
-it. Use it before a write when you need to show the user what will happen.
+State-changing commands accept `--dry-run`, which answers with a verdict on the real run
+without applying it: under `--json`, a `preview` member with a tier, one effect per change
+(`would-apply`, `no-op` or `would-fail`, with reasons), and the `error` the run would fail
+with. Use it before a write when you need to show the user what will happen.
 
 Prefer the published command reference over guessing flags or subcommands.
 
