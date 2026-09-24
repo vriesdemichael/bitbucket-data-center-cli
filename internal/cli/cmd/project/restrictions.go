@@ -148,14 +148,23 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
+				// An upsert, as in a repository (OPENAPI-032): a create for a
+				// type and matcher the project already restricts replaces that
+				// restriction's exemptions instead of being refused.
 				predicted := "create"
 				reason := "branch restriction will be created"
 				for _, r := range restrictions {
-					if matchesProjectRestrictionSignature(r, createType, createMatcherType, createMatcherID) {
-						predicted = "conflict"
-						reason = "matching branch restriction already exists"
-						break
+					if !matchesProjectRestrictionSignature(r, createType, createMatcherType, createMatcherID) {
+						continue
 					}
+
+					predicted = "update"
+					reason = fmt.Sprintf("branch restriction %d has this type and matcher; its exemptions will be replaced", safederef.Int32(r.Id))
+					if matchesProjectRestrictionUpdate(r, createType, createMatcherType, createMatcherID, createUsers, createGroups, accessKeyIDs) {
+						predicted = "no-op"
+						reason = fmt.Sprintf("branch restriction %d already has this type, matcher and exemptions", safederef.Int32(r.Id))
+					}
+					break
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.Item{
@@ -165,12 +174,6 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
-					BlockingReasons: func() []string {
-						if predicted == "conflict" {
-							return []string{"matching restriction exists"}
-						}
-						return nil
-					}(),
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
