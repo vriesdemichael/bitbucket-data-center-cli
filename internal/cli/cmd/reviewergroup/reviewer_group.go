@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/dryrunpreview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/inherited"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
@@ -183,7 +184,11 @@ func New(deps Dependencies) *cobra.Command {
 					predicted := "create"
 					reason := "reviewer group will be created"
 					var blocking []string
-					if reviewerGroupExistsByName(groups, name) {
+					// Against the repository's own groups only. Its listing
+					// carries the project's as well, and a name the project
+					// holds is free in the repository: Bitbucket creates the
+					// repository's group beside the project's one.
+					if reviewerGroupExistsByName(ownReviewerGroups(groups), name) {
 						predicted = "conflict"
 						reason = fmt.Sprintf("reviewer group with name %q already exists", name)
 						blocking = []string{"reviewer group already exists"}
@@ -321,6 +326,10 @@ func New(deps Dependencies) *cobra.Command {
 						Tier:            dryrunpreview.TierPreconditionsChecked,
 						Reason:          reason,
 						BlockingReasons: blocking,
+						// The one refusal predicted here is a group that is not
+						// there: not_found from resolveReviewerGroupID for a
+						// name, and Bitbucket's 404 for an id.
+						Fails: apperrors.KindNotFound,
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
@@ -389,6 +398,8 @@ func New(deps Dependencies) *cobra.Command {
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
 					BlockingReasons: blocking,
+					// As for a repository's group: a missing one is not_found.
+					Fails: apperrors.KindNotFound,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -650,6 +661,20 @@ func printUsers(cmd *cobra.Command, users []openapigenerated.RestApplicationUser
 		rows[i] = []string{style.Resource.Render(name), displayName, email, activeStr}
 	}
 	style.WriteTable(cmd.OutOrStdout(), rows)
+}
+
+// ownReviewerGroups is a repository's listing without the groups it inherits
+// from its project, which Bitbucket lists beside the repository's own.
+func ownReviewerGroups(groups []openapigenerated.RestReviewerGroup) []openapigenerated.RestReviewerGroup {
+	own := make([]openapigenerated.RestReviewerGroup, 0, len(groups))
+	for _, group := range groups {
+		if group.Scope != nil && inherited.FromProject(string(group.Scope.Type)) {
+			continue
+		}
+		own = append(own, group)
+	}
+
+	return own
 }
 
 func reviewerGroupExistsByName(groups []openapigenerated.RestReviewerGroup, name string) bool {
