@@ -1,6 +1,7 @@
 package outline_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"math"
@@ -272,9 +273,11 @@ func TestADescriptionThatOnlyListsTheValuesIsLeftOut(t *testing.T) {
 			"REVIEWER or PARTICIPANT.",
 		},
 		{
+			// The sentence listing the values says nothing the type column
+			// does not, so the one after it is shown.
 			"the values and something more",
 			&jsonschema.Schema{Enum: []any{"PASS", "FAIL"}, Description: "PASS or FAIL. Absent when the reporter did not state one."},
-			"PASS or FAIL. Absent when the reporter did not state one.",
+			"Absent when the reporter did not state one.",
 		},
 		{
 			"the values, introduced",
@@ -314,40 +317,40 @@ f  string  Body text, when one was written.
 `)
 }
 
-// TestALongDescriptionWrapsAtColumnOneHundred covers wrapping: no line runs
-// past column 100, and each continuation starts under the first line.
-func TestALongDescriptionWrapsAtColumnOneHundred(t *testing.T) {
+// TestALongDescriptionWrapsAtColumnOneHundredTwenty covers wrapping: no line
+// runs past column 120, and each continuation starts under the first line.
+func TestALongDescriptionWrapsAtColumnOneHundredTwenty(t *testing.T) {
 	t.Parallel()
 
-	// The description column is 11, so eighteen four-letter words fill a line
-	// to exactly column 100, and the nineteenth starts the next one.
+	// The description column is 11, so twenty-two four-letter words fill a
+	// line to exactly column 120, and the twenty-third starts the next one.
 	schema := &jsonschema.Schema{Type: "string", Description: strings.Repeat("word ", 30)}
-	first := "f  string  " + strings.TrimSpace(strings.Repeat("word ", 18))
-	if len(first) != 100 {
-		t.Fatalf("the expected first line is %d columns; the test needs it to end at exactly 100", len(first))
+	first := "f  string  " + strings.TrimSpace(strings.Repeat("word ", 22))
+	if len(first) != 120 {
+		t.Fatalf("the expected first line is %d columns; the test needs it to end at exactly 120", len(first))
 	}
 
 	expect(t, write(t, outline.Member{Name: "f", Schema: schema}),
 		first+"\n"+
-			strings.Repeat(" ", 11)+strings.TrimSpace(strings.Repeat("word ", 12))+"\n")
+			strings.Repeat(" ", 11)+strings.TrimSpace(strings.Repeat("word ", 8))+"\n")
 }
 
-// TestADescriptionColumnPastSixtyStillGetsFortyColumns covers a type column so
-// wide that wrapping at 100 would leave a word or two per line: the description
+// TestADescriptionColumnPastEightyStillGetsFortyColumns covers a type column so
+// wide that wrapping at 120 would leave a word or two per line: the description
 // gets 40 columns anyway, and its lines run long.
-func TestADescriptionColumnPastSixtyStillGetsFortyColumns(t *testing.T) {
+func TestADescriptionColumnPastEightyStillGetsFortyColumns(t *testing.T) {
 	t.Parallel()
 
-	// Six ten-letter values make a type 65 columns wide, which puts the
-	// description at column 70, with 30 left before 100. Forty columns hold
+	// Eight ten-letter values make a type 87 columns wide, which puts the
+	// description at column 92, with 28 left before 120. Forty columns hold
 	// eight four-letter words; a ninth would need 44.
-	values := []any{"aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc", "dddddddddd", "eeeeeeeeee", "ffffffffff"}
+	values := []any{"aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc", "dddddddddd", "eeeeeeeeee", "ffffffffff", "gggggggggg", "hhhhhhhhhh"}
 	schema := &jsonschema.Schema{Type: "string", Enum: values, Description: strings.Repeat("word ", 20)}
 	eight := strings.TrimSpace(strings.Repeat("word ", 8))
-	indent := strings.Repeat(" ", 70)
+	indent := strings.Repeat(" ", 92)
 
 	expect(t, write(t, outline.Member{Name: "f", Schema: schema}),
-		"f  aaaaaaaaaa|bbbbbbbbbb|cccccccccc|dddddddddd|eeeeeeeeee|ffffffffff  "+eight+"\n"+
+		"f  aaaaaaaaaa|bbbbbbbbbb|cccccccccc|dddddddddd|eeeeeeeeee|ffffffffff|gggggggggg|hhhhhhhhhh  "+eight+"\n"+
 			indent+eight+"\n"+
 			indent+strings.TrimSpace(strings.Repeat("word ", 4))+"\n")
 }
@@ -504,5 +507,27 @@ func TestNoMembersPrintNothing(t *testing.T) {
 
 	if got := write(t); got != "" {
 		t.Errorf("an outline of nothing printed %q", got)
+	}
+}
+
+// TestADescriptionShowsItsFirstSentence: the outline is for scanning, so each
+// field says what it is in one sentence; the rest is in the schema.
+func TestADescriptionShowsItsFirstSentence(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range []struct{ description, want string }{
+		{"Optimistic-locking version. Pass it back when updating.", "Optimistic-locking version."},
+		{"One sentence only.", "One sentence only."},
+		{"No full stop", "No full stop"},
+		// A full stop not followed by a capital does not end the sentence.
+		{"Version 8.0 and later. More.", "Version 8.0 and later."},
+	} {
+		var out bytes.Buffer
+		if err := outline.Write(&out, outline.Member{Name: "field", Schema: &jsonschema.Schema{Type: "string", Description: testCase.description}}); err != nil {
+			t.Fatalf("Write: %v", err)
+		}
+		if got := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(out.String()), "field")); !strings.HasSuffix(got, testCase.want) || strings.Contains(got, "More") || strings.Contains(got, "Pass it back") {
+			t.Errorf("%q printed %q, want it to end at %q", testCase.description, got, testCase.want)
+		}
 	}
 }
