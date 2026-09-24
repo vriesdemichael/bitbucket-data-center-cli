@@ -791,14 +791,27 @@ an inherited one.`,
 					return err
 				}
 
+				// Bitbucket's create is an upsert keyed by type and matcher
+				// (OPENAPI-032): a second create for the pair replaces that
+				// restriction's exemptions and answers with its id, rather than
+				// being refused. Only the repository's own restrictions are the
+				// pair, though. The listing carries the project's as well, and a
+				// create matching one of those adds a repository restriction.
 				predicted := "create"
 				reason := "branch restriction will be created"
 				for _, restriction := range restrictions {
-					if MatchesRestrictionSignature(restriction, createRestrictionType, createMatcherType, createMatcherID) {
-						predicted = "conflict"
-						reason = "matching branch restriction already exists"
-						break
+					if inherited.FromProject(restrictionScope(restriction)) ||
+						!MatchesRestrictionSignature(restriction, createRestrictionType, createMatcherType, createMatcherID) {
+						continue
 					}
+
+					predicted = "update"
+					reason = fmt.Sprintf("branch restriction %d has this type and matcher; its exemptions will be replaced", safederef.Int32(restriction.Id))
+					if MatchesRestrictionUpdate(restriction, createRestrictionType, createMatcherType, createMatcherID, createUsers, createGroups, accessKeyIDs) {
+						predicted = "no-op"
+						reason = fmt.Sprintf("branch restriction %d already has this type, matcher and exemptions", safederef.Int32(restriction.Id))
+					}
+					break
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.Item{
@@ -808,12 +821,6 @@ an inherited one.`,
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
-					BlockingReasons: func() []string {
-						if predicted == "conflict" {
-							return []string{"matching restriction exists"}
-						}
-						return nil
-					}(),
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
