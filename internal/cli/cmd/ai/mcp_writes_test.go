@@ -15,10 +15,7 @@ func TestMCPToolsSayWhichWriteApartFromExposure(t *testing.T) {
 
 	run := func(t *testing.T, args ...string) string {
 		t.Helper()
-		cmd := New(testMCPDeps())
-		if len(args) > 0 && args[len(args)-1] == "--json" {
-			cmd.PersistentFlags().Bool("json", true, "")
-		}
+		cmd := newAICommandWithJSONFlag()
 		buf := &bytes.Buffer{}
 		cmd.SetOut(buf)
 		cmd.SetErr(buf)

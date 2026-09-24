@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 
@@ -27,6 +28,56 @@ func SetReleaseVersion(version string) {
 	if trimmed := strings.TrimSpace(version); trimmed != "" {
 		releaseVersion = trimmed
 	}
+}
+
+// Format is the encoding a machine document is written in (ADR-095).
+//
+// The document is the same in every format: it is built once, encoded as JSON,
+// and only then re-encoded when another format was asked for. So --yaml cannot
+// carry a field --json does not, and a command never has to know which of the
+// two it is writing.
+type Format string
+
+const (
+	FormatJSON Format = "json"
+	FormatYAML Format = "yaml"
+)
+
+// Settings is what the flags decided about machine output for one invocation.
+type Settings struct {
+	Format Format
+}
+
+// boundWriter carries Settings to every document written through it.
+type boundWriter struct {
+	io.Writer
+	settings Settings
+}
+
+// Bind returns a writer that writes to writer and carries settings to every
+// document written through it.
+//
+// Settings travel with the writer rather than as an argument because roughly 250
+// sites write a document, all of them through the command's own output writer,
+// and none has reason to know which format the flags chose. They are not a
+// package variable because tests run commands side by side in one process, each
+// with its own flags.
+func Bind(writer io.Writer, settings Settings) io.Writer {
+	if bound, ok := writer.(*boundWriter); ok {
+		writer = bound.Writer
+	}
+
+	return &boundWriter{Writer: writer, settings: settings}
+}
+
+// settingsOf returns the settings writer carries, or JSON for a writer that
+// carries none.
+func settingsOf(writer io.Writer) Settings {
+	if bound, ok := writer.(*boundWriter); ok {
+		return bound.settings
+	}
+
+	return Settings{Format: FormatJSON}
 }
 
 // Envelope is the bb.machine document written to stdout on success.
@@ -117,16 +168,7 @@ func WriteError(writer io.Writer, err error) error {
 		},
 	}
 
-	encoded, marshalErr := marshalEnvelope(envelope)
-	if marshalErr != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to encode JSON error output", marshalErr)
-	}
-
-	if _, writeErr := writer.Write(encoded); writeErr != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to write JSON error output", writeErr)
-	}
-
-	return nil
+	return writeDocument(writer, envelope, "error output")
 }
 
 func Write(writer io.Writer, payload any) error {
@@ -137,16 +179,36 @@ func Write(writer io.Writer, payload any) error {
 		},
 	}
 
-	encoded, marshalErr := marshalEnvelope(envelope)
+	return writeDocument(writer, envelope, "output")
+}
+
+// writeDocument encodes one document in the format writer carries and writes
+// it. what names the document in an error: "output" or "error output".
+func writeDocument(writer io.Writer, document any, what string) error {
+	format := settingsOf(writer).Format
+
+	encoded, marshalErr := marshalEnvelope(document)
+	if marshalErr == nil && format == FormatYAML {
+		encoded, marshalErr = encodeYAML(encoded)
+	}
 	if marshalErr != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to encode JSON output", marshalErr)
+		return apperrors.New(apperrors.KindInternal, fmt.Sprintf("failed to encode %s %s", formatName(format), what), marshalErr)
 	}
 
 	if _, writeErr := writer.Write(encoded); writeErr != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to write JSON output", writeErr)
+		return apperrors.New(apperrors.KindInternal, fmt.Sprintf("failed to write %s %s", formatName(format), what), writeErr)
 	}
 
 	return nil
+}
+
+// formatName is the format as an error message names it.
+func formatName(format Format) string {
+	if format == FormatYAML {
+		return "YAML"
+	}
+
+	return "JSON"
 }
 
 // marshalEnvelope renders envelope as indented JSON with HTML escaping off.
@@ -182,16 +244,7 @@ func WriteBytes(writer io.Writer, body []byte, contentType string) error {
 		Meta: EnvelopeMeta{Encoding: "base64", ContentType: contentType, BBVersion: releaseVersion},
 	}
 
-	encoded, marshalErr := marshalEnvelope(envelope)
-	if marshalErr != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to encode JSON output", marshalErr)
-	}
-
-	if _, writeErr := writer.Write(encoded); writeErr != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to write JSON output", writeErr)
-	}
-
-	return nil
+	return writeDocument(writer, envelope, "output")
 }
 
 // WriteList emits a list payload, recording whether --limit cut it short.
@@ -201,16 +254,7 @@ func WriteList(writer io.Writer, payload any, limitReached bool) error {
 		Meta: EnvelopeMeta{LimitReached: &limitReached, BBVersion: releaseVersion},
 	}
 
-	encoded, marshalErr := marshalEnvelope(envelope)
-	if marshalErr != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to encode JSON output", marshalErr)
-	}
-
-	if _, writeErr := writer.Write(encoded); writeErr != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to write JSON output", writeErr)
-	}
-
-	return nil
+	return writeDocument(writer, envelope, "output")
 }
 
 // MarshalIndent renders v the way the envelope is rendered: indented, with HTML

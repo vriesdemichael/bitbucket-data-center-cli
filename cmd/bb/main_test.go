@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -335,31 +336,50 @@ func TestExecuteRootCommandEmitsEnvelopeWhenFlagParsingFails(t *testing.T) {
 	}
 }
 
-func TestArgsRequestJSON(t *testing.T) {
+func TestArgsRequestMachineOutput(t *testing.T) {
 	t.Parallel()
 
+	const (
+		none   jsonoutput.Format = ""
+		asJSON                   = jsonoutput.FormatJSON
+		asYAML                   = jsonoutput.FormatYAML
+	)
+
 	testCases := []struct {
-		name     string
-		args     []string
-		expected bool
+		name string
+		args []string
+		want jsonoutput.Format
 	}{
-		{name: "absent", args: []string{"auth", "status"}, expected: false},
-		{name: "bare flag", args: []string{"--json", "auth"}, expected: true},
-		{name: "explicit true", args: []string{"--json=true"}, expected: true},
-		{name: "explicit false", args: []string{"--json=false"}, expected: false},
-		{name: "last occurrence wins", args: []string{"--json", "--json=false"}, expected: false},
-		{name: "re-enabled", args: []string{"--json=false", "--json"}, expected: true},
-		{name: "after the separator is positional", args: []string{"--", "--json"}, expected: false},
+		{name: "absent", args: []string{"auth", "status"}, want: none},
+		{name: "bare flag", args: []string{"--json", "auth"}, want: asJSON},
+		{name: "explicit true", args: []string{"--json=true"}, want: asJSON},
+		{name: "explicit false", args: []string{"--json=false"}, want: none},
+		{name: "last occurrence wins", args: []string{"--json", "--json=false"}, want: none},
+		{name: "re-enabled", args: []string{"--json=false", "--json"}, want: asJSON},
+		{name: "after the separator is positional", args: []string{"--", "--json"}, want: none},
+		{name: "yaml", args: []string{"pr", "list", "--yaml"}, want: asYAML},
+		{name: "yaml turned off", args: []string{"--yaml", "--yaml=false"}, want: none},
+		{name: "yaml after the separator is positional", args: []string{"--", "--yaml"}, want: none},
+		// Both at once is the failure being reported, so it is reported in
+		// the default encoding rather than in whichever came last.
+		{name: "both answer in JSON", args: []string{"--yaml", "--json"}, want: asJSON},
 		// Known false positive: a flag value of literally --json reads as a
 		// request. It costs an unwanted envelope on stdout on the error path
 		// only, and the parsed flag wins whenever parsing succeeded.
-		{name: "flag value that looks like the flag", args: []string{"--message", "--json"}, expected: true},
+		{name: "flag value that looks like the flag", args: []string{"--message", "--json"}, want: asJSON},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			if got := argsRequestJSON(testCase.args); got != testCase.expected {
-				t.Fatalf("argsRequestJSON(%v) = %v, want %v", testCase.args, got, testCase.expected)
+			t.Parallel()
+
+			settings, machine := argsRequestMachineOutput(testCase.args)
+			got := none
+			if machine {
+				got = settings.Format
+			}
+			if got != testCase.want {
+				t.Fatalf("argsRequestMachineOutput(%v) = %q, want %q", testCase.args, got, testCase.want)
 			}
 		})
 	}

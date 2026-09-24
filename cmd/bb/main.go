@@ -136,8 +136,8 @@ func reportInterrupt(args []string, stdout, stderr io.Writer) {
 func writeInterruptAnswer(args []string, stdout, stderr io.Writer) int {
 	err := apperrors.New(apperrors.KindCancelled, "interrupted", nil)
 
-	if argsRequestJSON(args) {
-		if writeErr := jsonoutput.WriteError(stdout, err); writeErr != nil {
+	if settings, machine := argsRequestMachineOutput(args); machine {
+		if writeErr := jsonoutput.WriteError(jsonoutput.Bind(stdout, settings), err); writeErr != nil {
 			fmt.Fprintln(stderr, writeErr.Error())
 		}
 	}
@@ -165,7 +165,7 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 	// Execute answers a group given an unknown subcommand with help and no error,
 	// so the result is inspected rather than trusted. Checked here rather than
 	// inside the tree because Cobra has to have parsed the group's flags first.
-	executeErr := rootCmd.Execute()
+	executed, executeErr := rootCmd.ExecuteC()
 	if executeErr == nil {
 		executeErr = cli.UnknownSubcommandError(rootCmd, args)
 	}
@@ -180,14 +180,15 @@ func executeRootCommand(rootCmd *cobra.Command, args []string, stdout, stderr io
 	}
 
 	if err := cli.ClassifyUsageError(executeErr); err != nil {
+		err = cli.HintGHFieldList(err, args, executed)
 		emitCommandFailureDiagnostic(err, stderr)
 
-		// Under --json, stdout is a machine contract, and a failure that leaves
-		// it empty is indistinguishable from a command that produced malformed
-		// output. Emit the classified failure there; stderr keeps the same
-		// human-readable line either way.
-		if jsonRequested(rootCmd, args) {
-			if writeErr := jsonoutput.WriteError(stdout, err); writeErr != nil {
+		// Under --json or --yaml, stdout is a machine contract, and a failure
+		// that leaves it empty is indistinguishable from a command that
+		// produced malformed output. Emit the classified failure there; stderr
+		// keeps the same human-readable line either way.
+		if settings, machine := machineOutputRequested(rootCmd, args); machine {
+			if writeErr := jsonoutput.WriteError(jsonoutput.Bind(stdout, settings), err); writeErr != nil {
 				fmt.Fprintln(stderr, writeErr.Error())
 			}
 		}
@@ -239,24 +240,28 @@ func interrupted(rootCmd *cobra.Command, err error) error {
 	}
 }
 
-// jsonRequested reports whether machine output was asked for.
+// machineOutputRequested reports whether machine output was asked for, and in
+// which format.
 //
-// The parsed flag is authoritative when parsing reached it. It does not always:
-// `bb --bogus --json` fails before pflag sees --json, and an unknown flag is
-// exactly the case where a script most needs a parseable answer. Fall back to
-// the raw arguments there.
-func jsonRequested(rootCmd *cobra.Command, args []string) bool {
+// The parsed flags are authoritative when parsing reached them. It does not
+// always: `bb --bogus --json` fails before pflag sees --json, and an unknown
+// flag is exactly the case where a script most needs a parseable answer. Fall
+// back to the raw arguments there.
+func machineOutputRequested(rootCmd *cobra.Command, args []string) (jsonoutput.Settings, bool) {
 	if rootCmd != nil {
-		if flag := rootCmd.PersistentFlags().Lookup("json"); flag != nil && flag.Value.String() == "true" {
-			return true
+		if settings, machine := cli.OutputSettingsFromFlags(rootCmd); machine {
+			return settings, true
 		}
 	}
 
-	return argsRequestJSON(args)
+	return argsRequestMachineOutput(args)
 }
 
-func argsRequestJSON(args []string) bool {
-	requested := false
+// argsRequestMachineOutput reads --json and --yaml from the raw arguments. Both
+// together answer in JSON, since that combination is itself the failure being
+// reported.
+func argsRequestMachineOutput(args []string) (jsonoutput.Settings, bool) {
+	json, yaml := false, false
 
 	for _, arg := range args {
 		// Everything after -- is a positional argument, not a flag.
@@ -266,13 +271,21 @@ func argsRequestJSON(args []string) bool {
 
 		switch arg {
 		case "--json", "--json=true":
-			requested = true
+			json = true
 		case "--json=false":
-			requested = false
+			json = false
+		case "--yaml", "--yaml=true":
+			yaml = true
+		case "--yaml=false":
+			yaml = false
 		}
 	}
 
-	return requested
+	if yaml && !json {
+		return jsonoutput.Settings{Format: jsonoutput.FormatYAML}, true
+	}
+
+	return jsonoutput.Settings{Format: jsonoutput.FormatJSON}, json
 }
 
 func emitCommandFailureDiagnostic(err error, stderr io.Writer) {

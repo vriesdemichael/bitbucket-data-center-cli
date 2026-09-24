@@ -3,6 +3,8 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -147,4 +149,72 @@ func helpWasAskedFor(cmd *cobra.Command, unconsumed []string) bool {
 	}
 
 	return len(unconsumed) > 0 && unconsumed[0] == "help"
+}
+
+// ghFieldList matches what gh takes after --json: field names separated by
+// commas, such as number,title,url.
+var ghFieldList = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*(,[A-Za-z][A-Za-z0-9]*)*$`)
+
+// HintGHFieldList adds to a validation failure that a gh-style field list after
+// --json caused, saying what bb does instead.
+//
+// gh's --json takes the fields to print; bb's takes nothing and prints the
+// whole document (ADR-095). So `bb pr list --json number,title` parses the list
+// as an argument, and the command rejects it as an unknown command or an
+// argument too many: true, and no help to somebody typing what gh taught them.
+//
+// Only a failure the list caused gets the hint: one naming it, or one about
+// the number of arguments. A list that happened to be a valid argument, or a
+// failure about something else, is left alone.
+func HintGHFieldList(err error, args []string, command *cobra.Command) error {
+	if !apperrors.IsKind(err, apperrors.KindValidation) {
+		return err
+	}
+
+	fields, without := fieldListAfterJSON(args)
+	if fields == "" {
+		return err
+	}
+
+	message := apperrors.MessageOf(err)
+	if !strings.Contains(message, fields) && !strings.Contains(message, "argument") {
+		return err
+	}
+
+	// For a command, the example is the caller's own invocation with the list
+	// taken out, so it is one they can run as it stands. A group has nothing to
+	// run, so it gets the rule without an example.
+	hint := "bb's --json takes no field list: it prints the whole document, so pick fields from .data with jq, and see them with --describe"
+	if command != nil && command.Runnable() {
+		hint = fmt.Sprintf("bb's --json takes no field list: it prints the whole document, so pick fields with jq, as in bb %s | jq '.data', and see them with bb %s --describe",
+			strings.Join(without, " "), commandPathWithoutRoot(command))
+	}
+
+	return apperrors.New(apperrors.KindValidation, message+". "+hint, nil)
+}
+
+// fieldListAfterJSON returns a gh-style field list given to --json, as the next
+// argument or as its value, and the arguments without it; or "" when there is
+// none.
+func fieldListAfterJSON(args []string) (string, []string) {
+	for index, arg := range args {
+		if arg == "--" {
+			return "", nil
+		}
+
+		if value, ok := strings.CutPrefix(arg, "--json="); ok {
+			if _, notBool := strconv.ParseBool(value); notBool != nil && ghFieldList.MatchString(value) {
+				without := append(append(append([]string(nil), args[:index]...), "--json"), args[index+1:]...)
+				return value, without
+			}
+			continue
+		}
+
+		if arg == "--json" && index+1 < len(args) && ghFieldList.MatchString(args[index+1]) {
+			without := append(append([]string(nil), args[:index+1]...), args[index+2:]...)
+			return args[index+1], without
+		}
+	}
+
+	return "", nil
 }

@@ -1,7 +1,7 @@
 number: 95
 title: Machine output is the whole envelope, as JSON or YAML, and not gh's field lists
 category: architecture
-status: proposed
+status: accepted
 decision: >
   Machine output is one document: meta and exactly one member, chosen by the flags (ADR-096).
   --json prints it as indented JSON, and --yaml prints the same document as YAML. The two differ

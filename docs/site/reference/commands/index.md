@@ -22,7 +22,7 @@ Global Flags:
       --dry-run                  Preview mutations without applying them
       --full-error-body          Print the whole upstream response body in an error instead of a summary
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-      --json                     Output as JSON
+      --json                     Print the output as one JSON document
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -30,6 +30,7 @@ Global Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
+      --yaml                     Print the output as one YAML document: the same document as --json
 ```
 
 ## `bb`
@@ -91,7 +92,7 @@ Flags:
       --dry-run                  Preview mutations without applying them
       --full-error-body          Print the whole upstream response body in an error instead of a summary
       --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-      --json                     Output as JSON
+      --json                     Print the output as one JSON document
       --log-format string        Diagnostics format: text or jsonl
       --log-level string         Diagnostics verbosity: error, warn, info, debug
       --no-color                 Disable colored output
@@ -99,6 +100,7 @@ Flags:
       --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
       --retry-backoff string     Base retry backoff duration (e.g. 250ms)
       --retry-count int          HTTP retry attempts for transient errors (default -1)
+      --yaml                     Print the output as one YAML document: the same document as --json
 
 Use "bb [command] --help" for more information about a command.
 ```
@@ -130,7 +132,7 @@ Use "bb admin [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -138,6 +140,7 @@ Use "bb admin [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb admin health`
@@ -166,7 +169,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -174,6 +177,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ai`
@@ -204,7 +208,7 @@ Use "bb ai [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -212,6 +216,7 @@ Use "bb ai [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ai mcp`
@@ -242,7 +247,7 @@ Use "bb ai mcp [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -250,6 +255,7 @@ Use "bb ai mcp [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ai mcp serve`
@@ -341,7 +347,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -349,6 +355,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ai mcp tools`
@@ -390,7 +397,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -398,6 +405,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ai skill`
@@ -429,7 +437,7 @@ Use "bb ai skill [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -437,6 +445,7 @@ Use "bb ai skill [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ai skill install`
@@ -477,7 +486,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -485,6 +494,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ai skill remove`
@@ -513,7 +523,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -521,6 +531,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ai skill show`
@@ -564,7 +575,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -572,6 +583,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb api`
@@ -641,7 +653,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -649,6 +661,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth`
@@ -688,7 +701,7 @@ Use "bb auth [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -696,6 +709,7 @@ Use "bb auth [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth alias`
@@ -728,7 +742,7 @@ Use "bb auth alias [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -736,6 +750,7 @@ Use "bb auth alias [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth alias add`
@@ -763,7 +778,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -771,6 +786,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth alias discover`
@@ -803,7 +819,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -811,6 +827,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth alias list`
@@ -838,7 +855,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -846,6 +863,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth alias remove`
@@ -874,7 +892,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -882,6 +900,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth git-credential`
@@ -913,7 +932,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -921,6 +940,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth gpg-key`
@@ -953,7 +973,7 @@ Use "bb auth gpg-key [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -961,6 +981,7 @@ Use "bb auth gpg-key [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth gpg-key add`
@@ -985,7 +1006,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -993,6 +1014,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth gpg-key clear`
@@ -1020,7 +1042,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1028,6 +1050,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth gpg-key list`
@@ -1056,7 +1079,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1064,6 +1087,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth gpg-key remove`
@@ -1091,7 +1115,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1099,6 +1123,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth identity`
@@ -1129,7 +1154,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1137,6 +1162,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth login`
@@ -1180,7 +1206,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1188,6 +1214,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth logout`
@@ -1215,7 +1242,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1223,6 +1250,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth server`
@@ -1253,7 +1281,7 @@ Use "bb auth server [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1261,6 +1289,7 @@ Use "bb auth server [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth server list`
@@ -1285,7 +1314,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1293,6 +1322,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth server use`
@@ -1320,7 +1350,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1328,6 +1358,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth setup-git`
@@ -1361,7 +1392,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1369,6 +1400,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth status`
@@ -1418,7 +1450,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1426,6 +1458,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth token`
@@ -1464,7 +1497,7 @@ Use "bb auth token [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1472,6 +1505,7 @@ Use "bb auth token [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth token create`
@@ -1501,7 +1535,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1512,6 +1546,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --user string              User slug for personal access token scope
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth token get`
@@ -1536,7 +1571,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1547,6 +1582,7 @@ Usage:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --user string              User slug for personal access token scope
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth token list`
@@ -1575,7 +1611,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1586,6 +1622,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --user string              User slug for personal access token scope
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth token revoke`
@@ -1613,7 +1650,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1624,6 +1661,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --user string              User slug for personal access token scope
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth token update`
@@ -1652,7 +1690,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1663,6 +1701,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --user string              User slug for personal access token scope
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb auth token-url`
@@ -1690,7 +1729,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1698,6 +1737,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch`
@@ -1736,7 +1776,7 @@ Use "bb branch [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1744,6 +1784,7 @@ Use "bb branch [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch create`
@@ -1771,7 +1812,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1781,6 +1822,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch default`
@@ -1811,7 +1853,7 @@ Use "bb branch default [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1821,6 +1863,7 @@ Use "bb branch default [command] --help" for more information about a command.
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch default get`
@@ -1845,7 +1888,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1855,6 +1898,7 @@ Usage:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch default set`
@@ -1879,7 +1923,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1889,6 +1933,7 @@ Usage:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch delete`
@@ -1917,7 +1962,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1927,6 +1972,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch list`
@@ -1959,7 +2005,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -1969,6 +2015,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch model`
@@ -1999,7 +2046,7 @@ Use "bb branch model [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2009,6 +2056,7 @@ Use "bb branch model [command] --help" for more information about a command.
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch model inspect`
@@ -2037,7 +2085,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2047,6 +2095,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch model update`
@@ -2071,7 +2120,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2081,6 +2130,7 @@ Usage:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch restriction`
@@ -2114,7 +2164,7 @@ Use "bb branch restriction [command] --help" for more information about a comman
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2124,6 +2174,7 @@ Use "bb branch restriction [command] --help" for more information about a comman
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch restriction create`
@@ -2157,7 +2208,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2167,6 +2218,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch restriction delete`
@@ -2198,7 +2250,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2208,6 +2260,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch restriction get`
@@ -2232,7 +2285,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2242,6 +2295,7 @@ Usage:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch restriction list`
@@ -2275,7 +2329,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2285,6 +2339,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb branch restriction update`
@@ -2322,7 +2377,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2332,6 +2387,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb browse`
@@ -2365,7 +2421,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2373,6 +2429,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build`
@@ -2409,7 +2466,7 @@ Use "bb build [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2417,6 +2474,7 @@ Use "bb build [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build delete`
@@ -2445,7 +2503,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2454,6 +2512,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build get`
@@ -2481,7 +2540,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2490,6 +2549,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build required`
@@ -2522,7 +2582,7 @@ Use "bb build required [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2531,6 +2591,7 @@ Use "bb build required [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build required create`
@@ -2558,7 +2619,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2567,6 +2628,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build required delete`
@@ -2596,7 +2658,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2605,6 +2667,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build required list`
@@ -2633,7 +2696,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2642,6 +2705,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build required update`
@@ -2669,7 +2733,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2678,6 +2742,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build set`
@@ -2713,7 +2778,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2722,6 +2787,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build status`
@@ -2756,7 +2822,7 @@ Use "bb build status [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2765,6 +2831,7 @@ Use "bb build status [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build status get`
@@ -2795,7 +2862,7 @@ Flags:
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --include-unique           Include unique result details when available
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2804,6 +2871,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build status set`
@@ -2840,7 +2908,7 @@ Flags:
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --include-unique           Include unique result details when available
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2849,6 +2917,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb build status stats`
@@ -2874,7 +2943,7 @@ Usage:
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --include-unique           Include unique result details when available
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2883,6 +2952,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb clone`
@@ -2913,7 +2983,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2921,6 +2991,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb commit`
@@ -2957,7 +3028,7 @@ Use "bb commit [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -2965,6 +3036,7 @@ Use "bb commit [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb commit compare`
@@ -2998,7 +3070,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3008,6 +3080,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb commit get`
@@ -3032,7 +3105,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3042,6 +3115,7 @@ Usage:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb commit list`
@@ -3072,7 +3146,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3082,6 +3156,7 @@ Flags:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb commit prs`
@@ -3106,7 +3181,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3116,6 +3191,7 @@ Usage:
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
           --start int                Start offset for list operations
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb deployment`
@@ -3150,7 +3226,7 @@ Use "bb deployment [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3158,6 +3234,7 @@ Use "bb deployment [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb deployment create`
@@ -3194,7 +3271,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3203,6 +3280,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb deployment delete`
@@ -3233,7 +3311,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3242,6 +3320,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb deployment get`
@@ -3271,7 +3350,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3280,6 +3359,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb diff`
@@ -3314,7 +3394,7 @@ Use "bb diff [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3322,6 +3402,7 @@ Use "bb diff [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb diff commit`
@@ -3349,7 +3430,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3358,6 +3439,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb diff pr`
@@ -3389,7 +3471,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3398,6 +3480,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb diff refs`
@@ -3428,7 +3511,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3437,6 +3520,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb doctor`
@@ -3498,7 +3582,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3506,6 +3590,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights`
@@ -3539,7 +3624,7 @@ Use "bb insights [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3547,6 +3632,7 @@ Use "bb insights [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights annotation`
@@ -3579,7 +3665,7 @@ Use "bb insights annotation [command] --help" for more information about a comma
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3588,6 +3674,7 @@ Use "bb insights annotation [command] --help" for more information about a comma
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights annotation add`
@@ -3615,7 +3702,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3624,6 +3711,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights annotation delete`
@@ -3652,7 +3740,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3661,6 +3749,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights annotation list`
@@ -3689,7 +3778,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3698,6 +3787,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights annotation set`
@@ -3730,7 +3820,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3739,6 +3829,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights report`
@@ -3771,7 +3862,7 @@ Use "bb insights report [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3780,6 +3871,7 @@ Use "bb insights report [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights report delete`
@@ -3807,7 +3899,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3816,6 +3908,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights report get`
@@ -3840,7 +3933,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3849,6 +3942,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights report list`
@@ -3877,7 +3971,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3886,6 +3980,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb insights report set`
@@ -3913,7 +4008,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3922,6 +4017,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr`
@@ -3979,7 +4075,7 @@ Use "bb pr [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -3987,6 +4083,7 @@ Use "bb pr [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr activity`
@@ -4016,7 +4113,7 @@ Use "bb pr activity [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4025,6 +4122,7 @@ Use "bb pr activity [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr activity list`
@@ -4053,7 +4151,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4062,6 +4160,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr auto-merge`
@@ -4093,7 +4192,7 @@ Use "bb pr auto-merge [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4102,6 +4201,7 @@ Use "bb pr auto-merge [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr auto-merge disable`
@@ -4126,7 +4226,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4135,6 +4235,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr auto-merge enable`
@@ -4169,7 +4270,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4178,6 +4279,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr auto-merge get`
@@ -4202,7 +4304,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4211,6 +4313,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr build`
@@ -4240,7 +4343,7 @@ Use "bb pr build [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4249,6 +4352,7 @@ Use "bb pr build [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr build status`
@@ -4283,7 +4387,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4292,6 +4396,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr checkout`
@@ -4325,7 +4430,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4334,6 +4439,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr checks`
@@ -4368,7 +4474,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4377,6 +4483,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr comment`
@@ -4412,7 +4519,7 @@ Use "bb pr comment [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4421,6 +4528,7 @@ Use "bb pr comment [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr comment add`
@@ -4474,7 +4582,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4483,6 +4591,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr comment apply-suggestion`
@@ -4513,7 +4622,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4522,6 +4631,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr comment get`
@@ -4546,7 +4656,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4555,6 +4665,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr comment list`
@@ -4594,7 +4705,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4603,6 +4714,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr comment react`
@@ -4630,7 +4742,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4639,6 +4751,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr comment reopen`
@@ -4663,7 +4776,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4672,6 +4785,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr comment resolve`
@@ -4696,7 +4810,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4705,6 +4819,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr commits`
@@ -4734,7 +4849,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4743,6 +4858,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr create`
@@ -4797,7 +4913,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4806,6 +4922,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr decline`
@@ -4836,7 +4953,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4845,6 +4962,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr default-reviewers`
@@ -4875,7 +4993,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4884,6 +5002,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr diff`
@@ -4915,7 +5034,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4924,6 +5043,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr files`
@@ -4956,7 +5076,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -4965,6 +5085,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr get`
@@ -4997,7 +5118,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5006,6 +5127,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr jira`
@@ -5030,7 +5152,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5039,6 +5161,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr list`
@@ -5072,7 +5195,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5081,6 +5204,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr merge`
@@ -5108,7 +5232,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5117,6 +5241,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr merge-base`
@@ -5141,7 +5266,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5150,6 +5275,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr participants`
@@ -5177,7 +5303,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5186,6 +5312,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr ready`
@@ -5226,7 +5353,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5235,6 +5362,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr rebase`
@@ -5262,7 +5390,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5271,6 +5399,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr reopen`
@@ -5298,7 +5427,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5307,6 +5436,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review`
@@ -5342,7 +5472,7 @@ Use "bb pr review [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5351,6 +5481,7 @@ Use "bb pr review [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review approve`
@@ -5378,7 +5509,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5387,6 +5518,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review complete`
@@ -5428,7 +5560,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5437,6 +5569,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review discard`
@@ -5461,7 +5594,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5470,6 +5603,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review get`
@@ -5494,7 +5628,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5503,6 +5637,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review reviewer`
@@ -5533,7 +5668,7 @@ Use "bb pr review reviewer [command] --help" for more information about a comman
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5542,6 +5677,7 @@ Use "bb pr review reviewer [command] --help" for more information about a comman
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review reviewer add`
@@ -5590,7 +5726,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5599,6 +5735,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review reviewer remove`
@@ -5627,7 +5764,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5636,6 +5773,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review set`
@@ -5679,7 +5817,7 @@ Examples:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5688,6 +5826,7 @@ Examples:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr review unapprove`
@@ -5717,7 +5856,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5726,6 +5865,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr status`
@@ -5756,7 +5896,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5765,6 +5905,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr unwatch`
@@ -5789,7 +5930,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5798,6 +5939,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr update`
@@ -5846,7 +5988,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5855,6 +5997,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb pr watch`
@@ -5879,7 +6022,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5888,6 +6031,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project`
@@ -5925,7 +6069,7 @@ Use "bb project [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5933,6 +6077,7 @@ Use "bb project [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project branch-restriction`
@@ -5966,7 +6111,7 @@ Use "bb project branch-restriction [command] --help" for more information about 
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -5974,6 +6119,7 @@ Use "bb project branch-restriction [command] --help" for more information about 
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project branch-restriction create`
@@ -6007,7 +6153,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6015,6 +6161,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project branch-restriction delete`
@@ -6042,7 +6189,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6050,6 +6197,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project branch-restriction get`
@@ -6074,7 +6222,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6082,6 +6230,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project branch-restriction list`
@@ -6111,7 +6260,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6119,6 +6268,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project branch-restriction update`
@@ -6152,7 +6302,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6160,6 +6310,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project create`
@@ -6188,7 +6339,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6196,6 +6347,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project default-task`
@@ -6228,7 +6380,7 @@ Use "bb project default-task [command] --help" for more information about a comm
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6236,6 +6388,7 @@ Use "bb project default-task [command] --help" for more information about a comm
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project default-task add`
@@ -6264,7 +6417,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6272,6 +6425,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project default-task delete`
@@ -6299,7 +6453,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6307,6 +6461,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project default-task list`
@@ -6331,7 +6486,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6339,6 +6494,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project default-task update`
@@ -6368,7 +6524,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6376,6 +6532,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project delete`
@@ -6403,7 +6560,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6411,6 +6568,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project get`
@@ -6435,7 +6593,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6443,6 +6601,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project list`
@@ -6473,7 +6632,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6481,6 +6640,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions`
@@ -6515,7 +6675,7 @@ Use "bb project permissions [command] --help" for more information about a comma
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6523,6 +6683,7 @@ Use "bb project permissions [command] --help" for more information about a comma
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions grant`
@@ -6552,7 +6713,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6560,6 +6721,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions groups`
@@ -6591,7 +6753,7 @@ Use "bb project permissions groups [command] --help" for more information about 
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6599,6 +6761,7 @@ Use "bb project permissions groups [command] --help" for more information about 
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions groups grant`
@@ -6625,7 +6788,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6633,6 +6796,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions groups list`
@@ -6663,7 +6827,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6671,6 +6835,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions groups revoke`
@@ -6700,7 +6865,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6708,6 +6873,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions list`
@@ -6739,7 +6905,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6747,6 +6913,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions revoke`
@@ -6777,7 +6944,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6785,6 +6952,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions show`
@@ -6809,7 +6977,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6817,6 +6985,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions users`
@@ -6848,7 +7017,7 @@ Use "bb project permissions users [command] --help" for more information about a
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6856,6 +7025,7 @@ Use "bb project permissions users [command] --help" for more information about a
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions users grant`
@@ -6882,7 +7052,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6890,6 +7060,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions users list`
@@ -6920,7 +7091,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6928,6 +7099,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project permissions users revoke`
@@ -6957,7 +7129,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -6965,6 +7137,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project update`
@@ -6993,7 +7166,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7001,6 +7174,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project webhook`
@@ -7035,7 +7209,7 @@ Use "bb project webhook [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7043,6 +7217,7 @@ Use "bb project webhook [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project webhook create`
@@ -7075,7 +7250,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7083,6 +7258,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project webhook delete`
@@ -7110,7 +7286,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7118,6 +7294,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project webhook list`
@@ -7147,7 +7324,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7155,6 +7332,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project webhook stats`
@@ -7182,7 +7360,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7190,6 +7368,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project webhook test`
@@ -7218,7 +7397,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7226,6 +7405,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb project webhook update`
@@ -7262,7 +7442,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7270,6 +7450,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ref`
@@ -7303,7 +7484,7 @@ Use "bb ref [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7311,6 +7492,7 @@ Use "bb ref [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ref list`
@@ -7338,7 +7520,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7347,6 +7529,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ref resolve`
@@ -7371,7 +7554,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7380,6 +7563,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo`
@@ -7429,7 +7613,7 @@ Use "bb repo [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7437,6 +7621,7 @@ Use "bb repo [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo admin`
@@ -7472,7 +7657,7 @@ Use "bb repo admin [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7480,6 +7665,7 @@ Use "bb repo admin [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo admin create`
@@ -7513,7 +7699,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7522,6 +7708,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo admin delete`
@@ -7551,7 +7738,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7560,6 +7747,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo admin fork`
@@ -7590,7 +7778,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7599,6 +7787,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo admin update`
@@ -7628,7 +7817,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7637,6 +7826,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo archive`
@@ -7669,7 +7859,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7677,6 +7867,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo browse`
@@ -7713,7 +7904,7 @@ Use "bb repo browse [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7721,6 +7912,7 @@ Use "bb repo browse [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo browse blame`
@@ -7748,7 +7940,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7757,6 +7949,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo browse file`
@@ -7784,7 +7977,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7793,6 +7986,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo browse history`
@@ -7821,7 +8015,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7830,6 +8024,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo browse raw`
@@ -7862,7 +8057,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7871,6 +8066,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo browse tree`
@@ -7900,7 +8096,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7909,6 +8105,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo cat`
@@ -7942,7 +8139,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7950,6 +8147,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo clone`
@@ -7980,7 +8178,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -7988,6 +8186,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo comment`
@@ -8025,7 +8224,7 @@ Use "bb repo comment [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8033,6 +8232,7 @@ Use "bb repo comment [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo comment create`
@@ -8067,7 +8267,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8077,6 +8277,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo comment delete`
@@ -8107,7 +8308,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8117,6 +8318,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo comment list`
@@ -8147,7 +8349,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8157,6 +8359,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo comment update`
@@ -8187,7 +8390,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8197,6 +8400,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo compare`
@@ -8229,7 +8433,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8237,6 +8441,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo create`
@@ -8270,7 +8475,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8278,6 +8483,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo default-task`
@@ -8313,7 +8519,7 @@ Use "bb repo default-task [command] --help" for more information about a command
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8321,6 +8527,7 @@ Use "bb repo default-task [command] --help" for more information about a command
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo default-task add`
@@ -8349,7 +8556,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8358,6 +8565,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo default-task delete`
@@ -8388,7 +8596,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8397,6 +8605,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo default-task list`
@@ -8423,7 +8632,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8432,6 +8641,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo default-task update`
@@ -8464,7 +8674,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8473,6 +8683,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo delete`
@@ -8508,7 +8719,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8516,6 +8727,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo edit`
@@ -8548,7 +8760,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8556,6 +8768,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo fork`
@@ -8587,7 +8800,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8595,6 +8808,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo get`
@@ -8637,7 +8851,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8645,6 +8859,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo label`
@@ -8679,7 +8894,7 @@ Use "bb repo label [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8687,6 +8902,7 @@ Use "bb repo label [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo label add`
@@ -8711,7 +8927,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8720,6 +8936,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo label list`
@@ -8744,7 +8961,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8753,6 +8970,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo label remove`
@@ -8780,7 +8998,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8789,6 +9007,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo list`
@@ -8819,7 +9038,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8827,6 +9046,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo permissions`
@@ -8862,7 +9082,7 @@ Use "bb repo permissions [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8870,6 +9090,7 @@ Use "bb repo permissions [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo permissions grant`
@@ -8899,7 +9120,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8908,6 +9129,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo permissions list`
@@ -8939,7 +9161,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8948,6 +9170,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo permissions revoke`
@@ -8978,7 +9201,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -8987,6 +9210,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo permissions show`
@@ -9011,7 +9235,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9020,6 +9244,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings`
@@ -9056,7 +9281,7 @@ Use "bb repo settings [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9064,6 +9289,7 @@ Use "bb repo settings [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings auto-decline`
@@ -9098,7 +9324,7 @@ Use "bb repo settings auto-decline [command] --help" for more information about 
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9106,6 +9332,7 @@ Use "bb repo settings auto-decline [command] --help" for more information about 
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings auto-decline delete`
@@ -9133,7 +9360,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9142,6 +9369,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings auto-decline get`
@@ -9166,7 +9394,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9175,6 +9403,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings auto-decline set`
@@ -9203,7 +9432,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9212,6 +9441,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings auto-merge`
@@ -9246,7 +9476,7 @@ Use "bb repo settings auto-merge [command] --help" for more information about a 
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9254,6 +9484,7 @@ Use "bb repo settings auto-merge [command] --help" for more information about a 
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings auto-merge delete`
@@ -9281,7 +9512,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9290,6 +9521,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings auto-merge get`
@@ -9314,7 +9546,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9323,6 +9555,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings auto-merge set`
@@ -9350,7 +9583,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9359,6 +9592,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings pull-requests`
@@ -9392,7 +9626,7 @@ Use "bb repo settings pull-requests [command] --help" for more information about
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9401,6 +9635,7 @@ Use "bb repo settings pull-requests [command] --help" for more information about
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings pull-requests get`
@@ -9425,7 +9660,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9434,6 +9669,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings pull-requests merge-checks`
@@ -9463,7 +9699,7 @@ Use "bb repo settings pull-requests merge-checks [command] --help" for more info
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9472,6 +9708,7 @@ Use "bb repo settings pull-requests merge-checks [command] --help" for more info
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings pull-requests merge-checks list`
@@ -9496,7 +9733,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9505,6 +9742,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings pull-requests set-strategy`
@@ -9529,7 +9767,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9538,6 +9776,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings pull-requests update`
@@ -9565,7 +9804,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9574,6 +9813,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings pull-requests update-approvers`
@@ -9601,7 +9841,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9610,6 +9850,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security`
@@ -9639,7 +9880,7 @@ Use "bb repo settings security [command] --help" for more information about a co
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9648,6 +9889,7 @@ Use "bb repo settings security [command] --help" for more information about a co
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security permissions`
@@ -9678,7 +9920,7 @@ Use "bb repo settings security permissions [command] --help" for more informatio
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9687,6 +9929,7 @@ Use "bb repo settings security permissions [command] --help" for more informatio
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security permissions groups`
@@ -9718,7 +9961,7 @@ Use "bb repo settings security permissions groups [command] --help" for more inf
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9727,6 +9970,7 @@ Use "bb repo settings security permissions groups [command] --help" for more inf
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security permissions groups grant`
@@ -9753,7 +9997,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9762,6 +10006,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security permissions groups list`
@@ -9792,7 +10037,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9801,6 +10046,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security permissions groups revoke`
@@ -9830,7 +10076,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9839,6 +10085,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security permissions users`
@@ -9870,7 +10117,7 @@ Use "bb repo settings security permissions users [command] --help" for more info
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9879,6 +10126,7 @@ Use "bb repo settings security permissions users [command] --help" for more info
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security permissions users grant`
@@ -9905,7 +10153,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9914,6 +10162,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security permissions users list`
@@ -9944,7 +10193,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9953,6 +10202,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings security permissions users revoke`
@@ -9982,7 +10232,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -9991,6 +10241,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings workflow`
@@ -10020,7 +10271,7 @@ Use "bb repo settings workflow [command] --help" for more information about a co
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10029,6 +10280,7 @@ Use "bb repo settings workflow [command] --help" for more information about a co
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings workflow webhooks`
@@ -10060,7 +10312,7 @@ Use "bb repo settings workflow webhooks [command] --help" for more information a
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10069,6 +10321,7 @@ Use "bb repo settings workflow webhooks [command] --help" for more information a
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings workflow webhooks create`
@@ -10101,7 +10354,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10110,6 +10363,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings workflow webhooks delete`
@@ -10137,7 +10391,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10146,6 +10400,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo settings workflow webhooks list`
@@ -10170,7 +10425,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10179,6 +10434,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo ssh-key`
@@ -10214,7 +10470,7 @@ Use "bb repo ssh-key [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10222,6 +10478,7 @@ Use "bb repo ssh-key [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo ssh-key add`
@@ -10252,7 +10509,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10262,6 +10519,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo ssh-key list`
@@ -10290,7 +10548,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10300,6 +10558,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo ssh-key remove`
@@ -10327,7 +10586,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10337,6 +10596,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo sync`
@@ -10374,7 +10634,7 @@ Use "bb repo sync [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10382,6 +10642,7 @@ Use "bb repo sync [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo sync disable`
@@ -10406,7 +10667,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10415,6 +10676,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo sync enable`
@@ -10439,7 +10701,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10448,6 +10710,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo sync status`
@@ -10472,7 +10735,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10481,6 +10744,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo unwatch`
@@ -10508,7 +10772,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10516,6 +10780,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb repo watch`
@@ -10543,7 +10808,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10551,6 +10816,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer`
@@ -10587,7 +10853,7 @@ Use "bb reviewer [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10595,6 +10861,7 @@ Use "bb reviewer [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer condition`
@@ -10628,7 +10895,7 @@ Use "bb reviewer condition [command] --help" for more information about a comman
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10638,6 +10905,7 @@ Use "bb reviewer condition [command] --help" for more information about a comman
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer condition create`
@@ -10663,7 +10931,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10673,6 +10941,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer condition delete`
@@ -10706,7 +10975,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10716,6 +10985,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer condition list`
@@ -10743,7 +11013,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10753,6 +11023,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer condition update`
@@ -10781,7 +11052,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10791,6 +11062,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer-group`
@@ -10828,7 +11100,7 @@ Use "bb reviewer-group [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10836,6 +11108,7 @@ Use "bb reviewer-group [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer-group create`
@@ -10864,7 +11137,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10874,6 +11147,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer-group delete`
@@ -10901,7 +11175,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10911,6 +11185,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer-group list`
@@ -10935,7 +11210,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10945,6 +11220,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer-group update`
@@ -10974,7 +11250,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -10984,6 +11260,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb reviewer-group users`
@@ -11010,7 +11287,7 @@ Usage:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11020,6 +11297,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb search`
@@ -11051,7 +11329,7 @@ Use "bb search [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11059,6 +11337,7 @@ Use "bb search [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb search commits`
@@ -11093,7 +11372,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11101,6 +11380,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb search prs`
@@ -11133,7 +11413,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11141,6 +11421,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb search repos`
@@ -11171,7 +11452,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11179,6 +11460,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ssh-key`
@@ -11210,7 +11492,7 @@ Use "bb ssh-key [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11218,6 +11500,7 @@ Use "bb ssh-key [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ssh-key add`
@@ -11245,7 +11528,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11253,6 +11536,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ssh-key list`
@@ -11282,7 +11566,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11290,6 +11574,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb ssh-key remove`
@@ -11317,7 +11602,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11325,6 +11610,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb tag`
@@ -11361,7 +11647,7 @@ Use "bb tag [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11369,6 +11655,7 @@ Use "bb tag [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb tag create`
@@ -11398,7 +11685,7 @@ Flags:
           --filter string            Filter text for tag names
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11407,6 +11694,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb tag delete`
@@ -11435,7 +11723,7 @@ Flags:
           --filter string            Filter text for tag names
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11444,6 +11732,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb tag list`
@@ -11475,7 +11764,7 @@ Flags:
           --filter string            Filter text for tag names
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11484,6 +11773,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb tag view`
@@ -11509,7 +11799,7 @@ Usage:
           --filter string            Filter text for tag names
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11518,6 +11808,7 @@ Usage:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb update`
@@ -11562,7 +11853,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11570,6 +11861,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb webhook`
@@ -11608,7 +11900,7 @@ Use "bb webhook [command] --help" for more information about a command.
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11616,6 +11908,7 @@ Use "bb webhook [command] --help" for more information about a command.
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb webhook create`
@@ -11648,7 +11941,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11657,6 +11950,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb webhook delete`
@@ -11684,7 +11978,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11693,6 +11987,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb webhook get`
@@ -11720,7 +12015,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11729,6 +12024,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb webhook list`
@@ -11758,7 +12054,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11767,6 +12063,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb webhook stats`
@@ -11794,7 +12091,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11803,6 +12100,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb webhook test`
@@ -11831,7 +12129,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11840,6 +12138,7 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```
 
 ## `bb webhook update`
@@ -11876,7 +12175,7 @@ Flags:
           --dry-run                  Preview mutations without applying them
           --full-error-body          Print the whole upstream response body in an error instead of a summary
           --insecure-skip-verify     Disable TLS certificate verification (unsafe; local/dev only)
-          --json                     Output as JSON
+          --json                     Print the output as one JSON document
           --log-format string        Diagnostics format: text or jsonl
           --log-level string         Diagnostics verbosity: error, warn, info, debug
           --no-color                 Disable colored output
@@ -11885,4 +12184,5 @@ Flags:
           --request-timeout string   HTTP request timeout (Go duration, e.g. 20s)
           --retry-backoff string     Base retry backoff duration (e.g. 250ms)
           --retry-count int          HTTP retry attempts for transient errors (default -1)
+          --yaml                     Print the output as one YAML document: the same document as --json
     ```

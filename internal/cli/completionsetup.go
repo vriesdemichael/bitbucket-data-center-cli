@@ -155,7 +155,7 @@ func newCompletionSetupCommand(
 				return failure
 			}
 
-			if options.JSON {
+			if options.machineOutput() {
 				return writeJSON(cmd.OutOrStdout(), completionSetupFrom(shell, scope, outcomes))
 			}
 
