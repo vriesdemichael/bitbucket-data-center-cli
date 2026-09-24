@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `A removed flag warns for one major before it stops working`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `096`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/084-a-removed-flag-warns-for-one-major.yaml`
 

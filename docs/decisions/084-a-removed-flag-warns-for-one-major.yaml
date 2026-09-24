@@ -2,6 +2,7 @@ number: 84
 title: A removed flag warns for one major before it stops working
 category: architecture
 status: accepted
+amended_by: 96
 decision: >
   A flag, a command, a machine-output field, or an accepted value for any of them, keeps working
   until the next major release, and is removed in that major. The release that starts warning is

@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Emit a JSON error envelope on the failure path`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `096`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/046-json-error-envelope-on-the-failure-path.yaml`
 

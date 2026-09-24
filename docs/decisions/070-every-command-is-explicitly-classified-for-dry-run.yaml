@@ -2,6 +2,7 @@ number: 70
 title: Every command is explicitly classified for dry-run, and unknown means refuse
 category: architecture
 status: accepted
+amended_by: 96
 decision: >
   internal/cli/dryrun.go classifies every command through five registries, each answering a
   different question: dryRunProfiles describes what a server mutation would do, readOnlyCommands
