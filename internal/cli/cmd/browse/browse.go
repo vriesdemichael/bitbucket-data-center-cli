@@ -272,21 +272,27 @@ func buildBitbucketBrowseURL(baseURL, projectKey, slug string, target browseTarg
 		return "", apperrors.New(apperrors.KindValidation, "repository selector must include project key and slug", nil)
 	}
 
-	basePath := strings.TrimSuffix(parsed.Path, "/")
+	// The path is built escaped, one segment at a time, so a name with a space
+	// or a # in it stays one segment. url.URL keeps an escaped path in RawPath
+	// and the same path unescaped in Path; String escapes Path again when the
+	// two disagree, which turned a file's %20 into %2520 and opened a page
+	// Bitbucket does not have.
+	basePath := strings.TrimSuffix(parsed.EscapedPath(), "/")
 	repoPrefix := fmt.Sprintf("%s/projects/%s/repos/%s", basePath, url.PathEscape(trimmedProject), url.PathEscape(trimmedSlug))
 
+	var escapedPath string
 	switch target.kind {
 	case browseTargetSettings:
-		parsed.Path = repoPrefix + "/settings"
+		escapedPath = repoPrefix + "/settings"
 	case browseTargetReleases:
-		parsed.Path = repoPrefix + "/tags"
+		escapedPath = repoPrefix + "/tags"
 	case browseTargetPR:
-		parsed.Path = fmt.Sprintf("%s/pull-requests/%d", repoPrefix, target.number)
+		escapedPath = fmt.Sprintf("%s/pull-requests/%d", repoPrefix, target.number)
 	case browseTargetCommit:
-		parsed.Path = fmt.Sprintf("%s/commits/%s", repoPrefix, url.PathEscape(target.commit))
+		escapedPath = fmt.Sprintf("%s/commits/%s", repoPrefix, url.PathEscape(target.commit))
 	case browseTargetPath:
 		pathValue := strings.TrimPrefix(strings.TrimSpace(target.path), "/")
-		parsed.Path = fmt.Sprintf("%s/browse/%s", repoPrefix, encodePathSegments(pathValue))
+		escapedPath = fmt.Sprintf("%s/browse/%s", repoPrefix, encodePathSegments(pathValue))
 		query := parsed.Query()
 		query.Del("at")
 		if strings.TrimSpace(target.commit) != "" {
@@ -302,7 +308,7 @@ func buildBitbucketBrowseURL(baseURL, projectKey, slug string, target browseTarg
 		}
 		parsed.RawQuery = query.Encode()
 	default:
-		parsed.Path = repoPrefix
+		escapedPath = repoPrefix
 		query := parsed.Query()
 		query.Del("at")
 		if strings.TrimSpace(target.branch) != "" {
@@ -314,6 +320,13 @@ func buildBitbucketBrowseURL(baseURL, projectKey, slug string, target browseTarg
 	if target.kind != browseTargetPath && target.kind != browseTargetHome {
 		parsed.RawQuery = ""
 	}
+
+	unescapedPath, err := url.PathUnescape(escapedPath)
+	if err != nil {
+		return "", apperrors.New(apperrors.KindInternal, "failed to build the Bitbucket page address", err)
+	}
+	parsed.Path = unescapedPath
+	parsed.RawPath = escapedPath
 
 	parsed.Fragment = ""
 	return parsed.String(), nil

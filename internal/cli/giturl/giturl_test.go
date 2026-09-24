@@ -100,6 +100,16 @@ func TestBuildBitbucketCloneURL(t *testing.T) {
 		t.Fatalf("got %q, want %q", url, want)
 	}
 
+	// A slug that needs escaping is escaped once. Escaped into the path and
+	// again on the way out, a space became %2520.
+	escaped, err := BuildBitbucketCloneURL("https://example.com/bit bucket", "PROJ", "my repo")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := "https://example.com/bit%20bucket/scm/PROJ/my%20repo.git"; escaped != want {
+		t.Fatalf("got %q, want %q", escaped, want)
+	}
+
 	// Invalid baseURL
 	if _, err := BuildBitbucketCloneURL("invalid-url", "PROJ", "my-repo"); err == nil {
 		t.Fatal("expected error for invalid base URL")
