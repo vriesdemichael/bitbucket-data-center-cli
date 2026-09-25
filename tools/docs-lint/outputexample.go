@@ -59,9 +59,10 @@ func lintOutputExample(file string, block codeBlock) []finding {
 	return append(findings, checkPayloadAgainstSchema(file, block, envelope)...)
 }
 
-// documentMembers are the members a document can answer in (ADR-096): data or
-// error for a run, preview under --dry-run. Exactly one is present.
-var documentMembers = []string{"data", "error", "preview"}
+// documentMembers are the members a document can answer in (ADR-096,
+// ADR-097): data or error for a run, preview under --dry-run, description
+// under --describe. Exactly one is present.
+var documentMembers = []string{"data", "error", "preview", "description"}
 
 // checkEnvelopeShape applies the rules ADR-064, ADR-075 and ADR-096 place on
 // every document bb writes, whichever command produced it.

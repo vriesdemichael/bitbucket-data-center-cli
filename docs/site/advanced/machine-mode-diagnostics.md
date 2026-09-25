@@ -105,6 +105,40 @@ A verdict exits `0`, whatever it says. A top-level `error` under `--dry-run` mea
 was reached: `10` when Bitbucket did not answer, `12` when interrupted, `1` for a bug in bb.
 [Dry-Run Planning](dry-run-planning.md) says what each command checks.
 
+### Describe envelope
+
+Under `--describe`, stdout carries a `description` of what the command returns, and nothing
+runs. `bb --json pr merge --describe`, with its two schemas elided:
+
+<!-- docs-lint: envelope-shape -->
+```json
+{
+  "description": {
+    "run": { "outputSchema": "…" },
+    "dryRun": {
+      "behaviour": "verifies",
+      "tier": "preconditions-checked",
+      "outputSchema": "…"
+    }
+  },
+  "meta": {
+    "command": "pr merge",
+    "bbVersion": "[[ bb_version_tag ]]"
+  }
+}
+```
+
+- `run.outputSchema` is the JSON Schema of the whole document a run writes, `data` and `meta`
+  or `error` and `meta`, so a document validates against it as it comes.
+- `dryRun` is what `--dry-run` does for the command, at which tier, and the schema of the
+  document it writes.
+- A group, or `bb` itself, answers with `commands`: each command beneath it, with what
+  `--dry-run` does for it.
+- A path that names no command answers with `description.error`, and exits `0`.
+
+Without `--json` or `--yaml`, `--describe` prints the same for a person: an outline of the
+fields. [JSON Schemas](../reference/schemas.md) has the members in full.
+
 ## Diagnostics behavior
 
 - Diagnostics are emitted to `stderr` to preserve `stdout` contracts.

@@ -138,6 +138,28 @@ func TestOutputExampleRejectsBothDataAndError(t *testing.T) {
 	}
 }
 
+func TestADescriptionIsTheDocumentsOneMember(t *testing.T) {
+	t.Parallel()
+
+	// ADR-097: --describe answers in its own member, which is the one member
+	// of its document as data, error and preview are of theirs.
+	valid := "<!-- docs-lint: envelope-shape -->\n" +
+		"```json\n" +
+		"{ \"description\": { \"run\": {} }, \"meta\": " + bbVersionMeta + " }\n" +
+		"```\n"
+	if findings, _ := lintFixture("doc.md", valid); len(findings) != 0 {
+		t.Fatalf("expected a description to be accepted, got %+v", findings)
+	}
+
+	both := "<!-- docs-lint: envelope-shape -->\n" +
+		"```json\n" +
+		"{ \"description\": {}, \"data\": {}, \"meta\": " + bbVersionMeta + " }\n" +
+		"```\n"
+	if findings, _ := lintFixture("doc.md", both); len(findings) != 1 || !strings.Contains(findings[0].Problem, "both") {
+		t.Fatalf("expected a description beside data to be reported, got %+v", findings)
+	}
+}
+
 func TestEnvelopeShapeDirectiveSkipsTheSchemaButNotTheEnvelope(t *testing.T) {
 	t.Parallel()
 
