@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
@@ -38,7 +37,6 @@ func TestWorkingTreeStateReportsTrackedChangesOnly(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 20 * time.Second
 
 	repositoryDirectory := newCommittedRepository(t, backend)
 
@@ -95,7 +93,6 @@ func TestWorkingTreeStateRejectsBadInput(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 10 * time.Second
 
 	if _, err := backend.WorkingTreeState(context.Background(), "  "); err == nil {
 		t.Fatal("expected an empty repository directory to be rejected")
@@ -109,7 +106,6 @@ func TestBranchExists(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 20 * time.Second
 
 	repositoryDirectory := newCommittedRepository(t, backend)
 
@@ -142,7 +138,6 @@ func TestCheckoutCreatesBranchesAndDetaches(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 30 * time.Second
 
 	repositoryDirectory := newCommittedRepository(t, backend)
 
@@ -224,7 +219,6 @@ func TestFastForwardRefusesToDiverge(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 30 * time.Second
 
 	repositoryDirectory := newCommittedRepository(t, backend)
 
@@ -268,7 +262,6 @@ func TestFetchPassesRefspecs(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 45 * time.Second
 
 	source := newCommittedRepository(t, backend)
 	if _, err := backend.run(context.Background(), runOptions{cwd: source, args: []string{"checkout", "-b", "feature/shared"}}); err != nil {

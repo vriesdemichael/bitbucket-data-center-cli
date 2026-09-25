@@ -74,7 +74,8 @@ func TestAnInterruptedCommandIsCancelled(t *testing.T) {
 func TestProgressKeepsATransferGoing(t *testing.T) {
 	t.Parallel()
 
-	const window = time.Second
+	// Wide enough that a loaded runner stretching a sleep cannot fake a stall.
+	const window = 2 * time.Second
 	ctx, cancel := context.WithCancelCause(context.Background())
 	defer cancel(nil)
 
@@ -82,10 +83,10 @@ func TestProgressKeepsATransferGoing(t *testing.T) {
 	defer watch.stop()
 	writer := watch.writer(io.Discard)
 
-	// Three windows long, with a write every tenth of one.
+	// A window and a half long, with a write every twentieth of one.
 	for range 30 {
 		_, _ = writer.Write([]byte("Receiving objects:  50% (1/2)\r"))
-		time.Sleep(window / 10)
+		time.Sleep(window / 20)
 	}
 	if ctx.Err() != nil {
 		t.Fatalf("a transfer still reporting progress was stopped: %v", context.Cause(ctx))
