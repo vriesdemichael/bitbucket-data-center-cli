@@ -76,7 +76,9 @@ func writeCatalogueText(out io.Writer, group *cobra.Command, description Descrip
 		answer := "does not take --dry-run"
 		if dryRun := description.Commands[path].DryRun; dryRun != nil {
 			answer = dryRun.Behaviour
-			if dryRun.Behaviour != dryRunRuns {
+			// Only a preview that verifies has a tier worth naming: a read's
+			// answer is Bitbucket's own, and a prediction is predicted.
+			if dryRun.Behaviour == dryRunVerifies {
 				answer += fmt.Sprintf(" (%s)", dryRun.Tier)
 			}
 		}
