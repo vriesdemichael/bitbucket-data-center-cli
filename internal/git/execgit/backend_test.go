@@ -34,8 +34,10 @@ func TestCloneValidation(t *testing.T) {
 func TestVersion(t *testing.T) {
 	t.Parallel()
 
+	// New's own timeout bounds a hang. The tests that need git to succeed keep
+	// it: a shorter one killed git on a slow Windows runner, which reports the
+	// kill as exit status 1.
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
 	version, err := backend.Version(context.Background())
 	if err != nil {
@@ -176,7 +178,6 @@ func TestCloneAndCheckoutAgainstLocalRepo(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
 	temporary := t.TempDir()
 	remoteDir := filepath.Join(temporary, "remote.git")
@@ -277,7 +278,6 @@ func TestListRemotesOrderAndDeduplication(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
 	temporary := t.TempDir()
 	repositoryDirectory := filepath.Join(temporary, "repo")
@@ -333,7 +333,6 @@ func TestListRemotesMultiURLOriginOrdering(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
 	repositoryDirectory := filepath.Join(t.TempDir(), "repo")
 	if _, err := backend.run(context.Background(), runOptions{args: []string{"init", repositoryDirectory}}); err != nil {
@@ -411,7 +410,6 @@ func TestCloneDoesNotPersistTokenIntoRepositoryConfig(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
 	temporary := t.TempDir()
 	remoteDir := filepath.Join(temporary, "remote.git")
@@ -447,7 +445,6 @@ func TestCloneDoesNotPersistBasicCredentialsIntoRepositoryConfig(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
 	temporary := t.TempDir()
 	remoteDir := filepath.Join(temporary, "remote.git")
