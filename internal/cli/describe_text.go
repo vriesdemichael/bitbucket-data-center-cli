@@ -43,7 +43,7 @@ func writeDescriptionText(out io.Writer, cmd *cobra.Command, description Descrip
 		switch {
 		case !takes:
 			line = "--dry-run: " + line
-		case behaviour.Behaviour == dryRunRuns:
+		case dryRunCarriesData(path, behaviour):
 			line = "--dry-run: " + line + ". Under --json its data is in preview.data: see bb help dry-run."
 		default:
 			line = "--dry-run: " + line + ". It prints preview instead of data: see bb help dry-run."
