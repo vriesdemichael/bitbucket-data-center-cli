@@ -34,6 +34,10 @@ func redact(s string) string {
 const defaultTimeout = 60 * time.Second
 
 type Backend struct {
+	// Timeout bounds a git command. One that works locally is stopped once it
+	// has run this long. A transfer -- a clone, a fetch -- takes as long as the
+	// repository does, so it is stopped only once it has reported no progress
+	// for this long.
 	Timeout time.Duration
 }
 
@@ -91,9 +95,12 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 	if len(options.ExtraArgs) > 0 {
 		args = append(args, options.ExtraArgs...)
 	}
-	args = append(args, repositoryURL, options.Directory)
+	// Last among the options, so a --no-progress or --quiet passed through
+	// cannot turn off the progress that keeps the clone from being stopped as
+	// stalled. Git's output is not shown either way.
+	args = append(args, "--progress", repositoryURL, options.Directory)
 
-	if _, err := backend.run(ctx, runOptions{args: args, env: env}); err != nil {
+	if _, err := backend.run(ctx, runOptions{args: args, env: env, transfer: true, changes: true}); err != nil {
 		return err
 	}
 
@@ -242,7 +249,7 @@ func (backend *Backend) Fetch(ctx context.Context, repositoryDirectory string, o
 	// credential, so a fetch that brought none would stop and prompt for a
 	// username — a hang in any non-interactive context.
 	args := credentialArgs(options.Credentials)
-	args = append(args, "fetch")
+	args = append(args, "fetch", "--progress")
 	if strings.TrimSpace(options.Remote) != "" {
 		args = append(args, options.Remote)
 	}
@@ -252,7 +259,7 @@ func (backend *Backend) Fetch(ctx context.Context, repositoryDirectory string, o
 		}
 	}
 
-	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: args})
+	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: args, transfer: true, changes: true})
 	return err
 }
 
@@ -271,7 +278,7 @@ func (backend *Backend) AddRemote(ctx context.Context, repositoryDirectory strin
 		return apperrors.New(apperrors.KindValidation, "remote URL cannot be empty", nil)
 	}
 
-	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: []string{"remote", "add", name, remoteURL}})
+	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: []string{"remote", "add", name, remoteURL}, changes: true})
 	return err
 }
 
@@ -301,7 +308,7 @@ func (backend *Backend) Checkout(ctx context.Context, repositoryDirectory string
 	}
 	args = append(args, options.Ref)
 
-	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: args})
+	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: args, changes: true})
 	return err
 }
 
@@ -344,7 +351,7 @@ func (backend *Backend) FastForward(ctx context.Context, repositoryDirectory str
 		return apperrors.New(apperrors.KindValidation, "fast-forward ref cannot be empty", nil)
 	}
 
-	_, err := backend.run(ctx, runOptions{cwd: trimmedDir, args: []string{"merge", "--ff-only", trimmedRef}})
+	_, err := backend.run(ctx, runOptions{cwd: trimmedDir, args: []string{"merge", "--ff-only", trimmedRef}, changes: true})
 	return err
 }
 
@@ -473,6 +480,13 @@ type runOptions struct {
 	// env carries configuration the child needs but the command line must not
 	// hold, such as a credential (see cloneCredentialConfig).
 	env []string
+	// transfer is a clone or a fetch, run with --progress: it is stopped once
+	// it has reported no progress for Timeout, rather than once it has run
+	// that long.
+	transfer bool
+	// changes is a command that changes a repository or its configuration,
+	// so one stopped part of the way has an unknown outcome.
+	changes bool
 }
 
 type runResult struct {
@@ -543,7 +557,7 @@ func (backend *Backend) SetConfig(ctx context.Context, options git.ConfigOptions
 		mode = "--add"
 	}
 
-	_, err = backend.run(ctx, runOptions{args: append(args, mode, options.Key, options.Value)})
+	_, err = backend.run(ctx, runOptions{args: append(args, mode, options.Key, options.Value), changes: true})
 	return err
 }
 
@@ -553,7 +567,7 @@ func (backend *Backend) UnsetConfig(ctx context.Context, options git.ConfigOptio
 		return err
 	}
 
-	result, err := backend.run(ctx, runOptions{args: append(args, "--unset-all", options.Key)})
+	result, err := backend.run(ctx, runOptions{args: append(args, "--unset-all", options.Key), changes: true})
 	if err != nil {
 		// Exit code 5 means the key was not set. Remediation runs
 		// unconditionally, so "already clean" must not be an error.
@@ -572,10 +586,19 @@ func (backend *Backend) run(ctx context.Context, options runOptions) (runResult,
 		return runResult{}, apperrors.New(apperrors.KindValidation, "git command cannot be empty", nil)
 	}
 
-	if backend.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, backend.Timeout)
-		defer cancel()
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+
+	var watch *progressWatch
+	switch {
+	case backend.Timeout <= 0:
+	case options.transfer:
+		watch = watchProgress(cancel, backend.Timeout)
+		defer watch.stop()
+	default:
+		var cancelTimeout context.CancelFunc
+		ctx, cancelTimeout = context.WithTimeoutCause(ctx, backend.Timeout, errTimedOut)
+		defer cancelTimeout()
 	}
 
 	// #nosec G204 -- the binary is the literal "git" and the arguments are
@@ -583,6 +606,7 @@ func (backend *Backend) run(ctx context.Context, options runOptions) (runResult,
 	// second command. Running git with caller-supplied arguments is what this
 	// backend is for (ADR-020); the trust boundary is the user's own shell.
 	command := exec.CommandContext(ctx, "git", options.args...)
+	command.WaitDelay = waitDelay
 	if options.cwd != "" {
 		command.Dir = options.cwd
 	}
@@ -598,20 +622,28 @@ func (backend *Backend) run(ctx context.Context, options runOptions) (runResult,
 	var stderr bytes.Buffer
 	command.Stdout = &stdout
 	command.Stderr = &stderr
+	if watch != nil {
+		command.Stdout = watch.writer(&stdout)
+		command.Stderr = watch.writer(&stderr)
+	}
 
 	err := command.Run()
+	if errors.Is(err, exec.ErrWaitDelay) && ctx.Err() == nil {
+		// Git succeeded; a helper it started held its output open after it.
+		err = nil
+	}
 	result := runResult{stdout: redact(stdout.String()), stderr: redact(stderr.String())}
 	if err != nil {
-		message := strings.TrimSpace(result.stderr)
+		if ctx.Err() != nil {
+			return result, backend.stopped(options, context.Cause(ctx), err)
+		}
+
+		message := strings.TrimSpace(withoutProgress(result.stderr))
 		if message == "" {
 			message = strings.TrimSpace(err.Error())
 		}
-		redactedArgs := make([]string, len(options.args))
-		for i, arg := range options.args {
-			redactedArgs[i] = redact(arg)
-		}
 		redactedMsg := redact(message)
-		return result, apperrors.New(apperrors.KindPermanent, fmt.Sprintf("git %s failed: %s", strings.Join(redactedArgs, " "), redactedMsg), err)
+		return result, apperrors.New(apperrors.KindPermanent, fmt.Sprintf("git %s failed: %s", strings.Join(redactAll(options.args), " "), redactedMsg), err)
 	}
 
 	return result, nil
