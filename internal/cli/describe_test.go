@@ -134,6 +134,98 @@ func TestTheDescribedSchemasValidateRealOutput(t *testing.T) {
 	}
 }
 
+// TestTheDescribedSchemasRejectWhatIsNotTheDocument is the other half: a schema
+// that accepted anything would pass the test above. Each variant starts from a
+// real document and changes one thing, so the change is what the schema judges.
+func TestTheDescribedSchemasRejectWhatIsNotTheDocument(t *testing.T) {
+	run := compileSchema(t, schemaAt(t, describeDocument(t, "auth", "server", "list"), "run", "outputSchema"))
+	runDocument := decodeDocument(t, runIsolated(t, "--json", "auth", "server", "list"))
+	dryRun := compileSchema(t, schemaAt(t, describeDocument(t, "auth", "logout"), "dryRun", "outputSchema"))
+	dryRunDocument := decodeDocument(t, runIsolated(t, "--json", "--dry-run", "auth", "logout"))
+
+	failure := func(kind string, exitCode int) map[string]any {
+		return map[string]any{"kind": kind, "message": "it failed", "exitCode": exitCode}
+	}
+
+	for _, testCase := range []struct {
+		name   string
+		schema *jsonschema.Schema
+		base   map[string]any
+		change func(document map[string]any)
+		valid  bool
+	}{
+		{"a member the document does not have", run, runDocument, func(document map[string]any) {
+			document["warnings"] = []any{}
+		}, false},
+		{"no meta", run, runDocument, func(document map[string]any) {
+			delete(document, "meta")
+		}, false},
+		{"data and error together", run, runDocument, func(document map[string]any) {
+			document["error"] = failure("internal", 1)
+		}, false},
+		{"data of another shape", run, runDocument, func(document map[string]any) {
+			document["data"] = "servers"
+		}, false},
+		{"an error of a kind bb does not have", run, runDocument, func(document map[string]any) {
+			delete(document, "data")
+			document["error"] = failure("mystery", 1)
+		}, false},
+		{"an error", run, runDocument, func(document map[string]any) {
+			delete(document, "data")
+			document["error"] = failure("not_found", 4)
+		}, true},
+		// meta may gain fields in a minor release, so a consumer validating
+		// with this schema keeps working when it does.
+		{"a meta field a later release adds", run, runDocument, func(document map[string]any) {
+			document["meta"].(map[string]any)["elapsed"] = 12
+		}, true},
+		// Under --dry-run a failure the check finds is a verdict, in the
+		// preview; a top-level error means no verdict was reached (ADR-096).
+		{"a verdict as a top-level error", dryRun, dryRunDocument, func(document map[string]any) {
+			delete(document, "preview")
+			document["error"] = failure("conflict", 5)
+		}, false},
+		{"no verdict reached", dryRun, dryRunDocument, func(document map[string]any) {
+			delete(document, "preview")
+			document["error"] = failure("transient", 10)
+		}, true},
+		{"an outcome a dry run does not have", dryRun, dryRunDocument, func(document map[string]any) {
+			effects := document["preview"].(map[string]any)["effects"].([]any)
+			effects[0].(map[string]any)["outcome"] = "maybe"
+		}, false},
+		// A command that changes something does not run under --dry-run, so
+		// there is no data to carry.
+		{"data in the preview of a change", dryRun, dryRunDocument, func(document map[string]any) {
+			document["preview"].(map[string]any)["data"] = map[string]any{}
+		}, false},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			document := schemaJSON(t, testCase.base)
+			testCase.change(document)
+
+			err := testCase.schema.Validate(any(document))
+			if testCase.valid && err != nil {
+				t.Errorf("the schema rejects it: %v\n%v", err, document)
+			}
+			if !testCase.valid && err == nil {
+				t.Errorf("the schema accepts it:\n%v", document)
+			}
+		})
+	}
+}
+
+// decodeDocument decodes a document bb wrote.
+func decodeDocument(t *testing.T, output string) map[string]any {
+	t.Helper()
+
+	var document map[string]any
+	if err := json.Unmarshal([]byte(output), &document); err != nil {
+		t.Fatalf("not JSON: %v\n%s", err, output)
+	}
+
+	return document
+}
+
 // TestEveryDescriptionIsAValidSchema compiles what --describe gives for every
 // command, so no command publishes a schema a validator rejects.
 func TestEveryDescriptionIsAValidSchema(t *testing.T) {

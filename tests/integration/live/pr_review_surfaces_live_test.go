@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
 )
 
 // The review surfaces a person and an agent actually read, against a pull
@@ -434,24 +434,24 @@ func TestLivePullRequestOutputMatchesDeclaredSchema(t *testing.T) {
 	})
 }
 
-// validateAgainstDeclaredSchema compiles the schema a command declares -- the
-// same one --describe publishes -- and validates a real invocation's payload
-// against it.
+// validateAgainstDeclaredSchema compiles the JSON Schema --describe publishes
+// for a run of the command -- the whole document, data and meta or error and
+// meta (ADR-097) -- and validates a real invocation's document against it.
 func validateAgainstDeclaredSchema(t *testing.T, commandPath, output string) {
 	t.Helper()
 
-	declared, ok := result.SchemaFor(commandPath)
-	if !ok {
-		t.Fatalf("no schema is declared for %q", commandPath)
+	description := cli.DescribeCommand(commandPath)
+	if description.Run == nil || description.Run.OutputSchema == nil {
+		t.Fatalf("--describe publishes no schema for a run of %q", commandPath)
 	}
 
-	encoded, err := json.Marshal(declared)
+	encoded, err := json.Marshal(description.Run.OutputSchema)
 	if err != nil {
-		t.Fatalf("encode declared schema: %v", err)
+		t.Fatalf("encode the described schema: %v", err)
 	}
 	var schemaMap map[string]any
 	if err := json.Unmarshal(encoded, &schemaMap); err != nil {
-		t.Fatalf("decode declared schema: %v", err)
+		t.Fatalf("decode the described schema: %v", err)
 	}
 
 	compiler := jsonschema.NewCompiler()
@@ -463,15 +463,13 @@ func validateAgainstDeclaredSchema(t *testing.T, commandPath, output string) {
 		t.Fatalf("compile schema: %v", err)
 	}
 
-	var envelope struct {
-		Data any `json:"data"`
-	}
-	if err := json.Unmarshal([]byte(output), &envelope); err != nil {
+	var document any
+	if err := json.Unmarshal([]byte(output), &document); err != nil {
 		t.Fatalf("decode command output: %v\noutput: %s", err, output)
 	}
 
-	if err := schema.Validate(envelope.Data); err != nil {
-		t.Fatalf("%s output does not match its declared schema: %v\noutput: %s", commandPath, err, output)
+	if err := schema.Validate(document); err != nil {
+		t.Fatalf("%s output does not match the schema --describe publishes: %v\noutput: %s", commandPath, err, output)
 	}
 }
 
