@@ -21,7 +21,7 @@ Under `--json` or `--yaml` the answer is the document's `description` member:
 |---|---|
 | `run.outputSchema` | the JSON Schema of the whole document a run writes: `data` and `meta`, or `error` and `meta` |
 | `run.reason` | why a command has no schema, or why its `data` promises no shape |
-| `dryRun.behaviour` | what `--dry-run` does for it: `runs` (it only reads), `verifies` or `predicts` |
+| `dryRun.behaviour` | what `--dry-run` does for it: `runs` (it only reads), `verifies` (it checks what the change depends on first) or `predicts` (it does not) |
 | `dryRun.tier` | how far that verdict can be trusted |
 | `dryRun.outputSchema` | the JSON Schema of the document `--dry-run` writes |
 

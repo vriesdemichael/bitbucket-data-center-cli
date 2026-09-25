@@ -351,8 +351,27 @@ func TestDescribeOfAGroupIsItsCatalogue(t *testing.T) {
 	if err := json.Unmarshal([]byte(runIsolated(t, "--describe", "--json")), &everything); err != nil {
 		t.Fatalf("bb --describe --json: %v", err)
 	}
-	if count := len(everything["description"].(map[string]any)["commands"].(map[string]any)); count < 200 {
+	catalogue := everything["description"].(map[string]any)["commands"].(map[string]any)
+	if count := len(catalogue); count < 200 {
 		t.Errorf("bb --describe lists %d commands; it covers the whole tool", count)
+	}
+
+	// The behaviour and the tier say the same thing twice, so they must
+	// agree: a read runs and is Bitbucket's answer, a preview that checks
+	// what the change depends on verifies, and one that does not predicts.
+	for path, entry := range catalogue {
+		dryRun, takes := entry.(map[string]any)["dryRun"].(map[string]any)
+		if !takes {
+			continue
+		}
+		behaviour, tier := dryRun["behaviour"], dryRun["tier"]
+		switch {
+		case behaviour == "runs" && tier == "server-validated":
+		case behaviour == "verifies" && (tier == "server-validated" || tier == "preconditions-checked"):
+		case behaviour == "predicts" && tier == "predicted":
+		default:
+			t.Errorf("%s: --dry-run %v at tier %v", path, behaviour, tier)
+		}
 	}
 
 	text := runDescribe(t, "pr")

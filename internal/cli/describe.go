@@ -22,10 +22,11 @@ const (
 	// dryRunRuns is a command that only reads: it runs, and its data is in the
 	// preview.
 	dryRunRuns = "runs"
-	// dryRunVerifies is a command whose preview checks something: Bitbucket's
-	// answer, or the permission and state the change depends on.
+	// dryRunVerifies is a command whose preview checks what the change
+	// depends on first: Bitbucket's answer, or the permission and the state.
 	dryRunVerifies = "verifies"
-	// dryRunPredicts is a command whose preview checks nothing first.
+	// dryRunPredicts is a command whose preview does not, so its verdict is
+	// predicted.
 	dryRunPredicts = "predicts"
 )
 
@@ -245,14 +246,15 @@ func dryRunBehaviourOf(path string) (DryRunBehaviour, bool) {
 	}
 
 	switch classifyCommand(path) {
-	case classificationMutating:
+	case classificationMutating, classificationLocalMutating:
+		// The behaviour follows the declared tier, so the two cannot
+		// disagree: a preview whose verdict is predicted predicts, whatever
+		// else it reads on the way.
 		tier, _ := DeclaredDryRunTier(path)
-		if dryRunProfiles[path].Stateful {
-			return DryRunBehaviour{Behaviour: dryRunVerifies, Tier: tier}, true
+		if tier == jsonoutput.TierPredicted {
+			return DryRunBehaviour{Behaviour: dryRunPredicts, Tier: tier}, true
 		}
-		return DryRunBehaviour{Behaviour: dryRunPredicts, Tier: tier}, true
-	case classificationLocalMutating:
-		return DryRunBehaviour{Behaviour: dryRunPredicts, Tier: jsonoutput.TierPredicted}, true
+		return DryRunBehaviour{Behaviour: dryRunVerifies, Tier: tier}, true
 	case classificationReadOnly, classificationLocal:
 		return DryRunBehaviour{Behaviour: dryRunRuns, Tier: jsonoutput.TierServerValidated}, true
 	default:
