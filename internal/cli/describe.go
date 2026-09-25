@@ -41,6 +41,17 @@ var dryRunBehaviourOverrides = map[string]DryRunBehaviour{
 	"api": {Behaviour: dryRunRuns, Tier: jsonoutput.TierServerValidated},
 }
 
+// dryRunReports are commands that change something, yet under --dry-run carry
+// a report in preview.data, as a read carries its data: bb update's report of
+// the release it checked.
+var dryRunReports = map[string]bool{"update": true}
+
+// dryRunCarriesData reports whether a command's preview holds data: a read's,
+// or the report of a command in dryRunReports.
+func dryRunCarriesData(path string, behaviour DryRunBehaviour) bool {
+	return behaviour.Behaviour == dryRunRuns || dryRunReports[path]
+}
+
 // Description is what --describe answers (ADR-097): what a command returns,
 // for a run and for a dry run, or a group's catalogue.
 type Description struct {
@@ -188,7 +199,7 @@ func DescribeCommand(path string) Description {
 	if behaviour, ok := dryRunBehaviourOf(path); ok {
 		description.DryRun = &DryRunOutput{
 			DryRunBehaviour: behaviour,
-			OutputSchema:    dryRunDocumentSchema(behaviour.Behaviour, data),
+			OutputSchema:    dryRunDocumentSchema(dryRunCarriesData(path, behaviour), data),
 		}
 	}
 

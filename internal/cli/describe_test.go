@@ -11,6 +11,8 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/spf13/cobra"
 
+	updatecmd "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/cmd/update"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	resultpkg "github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 )
 
@@ -212,6 +214,38 @@ func TestTheDescribedSchemasRejectWhatIsNotTheDocument(t *testing.T) {
 				t.Errorf("the schema accepts it:\n%v", document)
 			}
 		})
+	}
+}
+
+// TestUpdatesDryRunSchemaHoldsItsReport: bb update changes something, yet its
+// dry run carries the report of the release it checked in preview.data. The
+// dry run needs a release source, so the document is built as bb update builds
+// it rather than run: the schema accepts its report, and no other data.
+func TestUpdatesDryRunSchemaHoldsItsReport(t *testing.T) {
+	schema := compileSchema(t, schemaAt(t, describeDocument(t, "update"), "dryRun", "outputSchema"))
+
+	document := func(data any) any {
+		return schemaJSON(t, jsonoutput.PreviewEnvelope{
+			Preview: jsonoutput.Preview{
+				Tier: jsonoutput.TierServerValidated,
+				Effects: []jsonoutput.Effect{{
+					Action:  "update",
+					Target:  map[string]any{"binary": "/usr/local/bin/bb", "version": "v5.0.0"},
+					Outcome: jsonoutput.OutcomeWouldApply,
+					Reasons: []string{"v5.0.0 would replace v4.1.0"},
+				}},
+				Data: data,
+			},
+			Meta: jsonoutput.EnvelopeMeta{Command: "update", BBVersion: "4.1.0"},
+		})
+	}
+
+	report := updatecmd.Update{CurrentVersion: "v4.1.0", LatestVersion: "v5.0.0", UpdateAvailable: true, DryRun: true}
+	if err := schema.Validate(document(report)); err != nil {
+		t.Errorf("the schema rejects bb update's report: %v", err)
+	}
+	if err := schema.Validate(document("not a report")); err == nil {
+		t.Error("the schema accepts any data in bb update's preview")
 	}
 }
 

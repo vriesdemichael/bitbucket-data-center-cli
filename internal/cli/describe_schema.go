@@ -53,11 +53,11 @@ func runDocumentSchema(data *jsonschema.Schema) *jsonschema.Schema {
 
 // dryRunDocumentSchema is the JSON Schema of the whole document --dry-run
 // writes: preview and meta, or, when no verdict was reached, error and meta.
-// A command that only reads runs, and its data is in the preview; one that
-// changes something has no data there.
-func dryRunDocumentSchema(behaviour string, data *jsonschema.Schema) *jsonschema.Schema {
+// A command that only reads runs, and its data is in the preview, as is the
+// report of a command in dryRunReports; any other has no data there.
+func dryRunDocumentSchema(carriesData bool, data *jsonschema.Schema) *jsonschema.Schema {
 	preview := previewDeclaration.Schema().CloneSchemas()
-	if behaviour == dryRunRuns {
+	if carriesData {
 		preview.Properties["data"] = data
 	} else {
 		delete(preview.Properties, "data")
