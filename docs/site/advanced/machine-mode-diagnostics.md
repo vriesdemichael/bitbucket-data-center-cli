@@ -66,6 +66,44 @@ bb --json repo list --nonexistent-flag
 The failure envelope has the same shape for every command, so there is one schema for it rather
 than one per command.
 
+### Dry-run envelope
+
+Under `--dry-run`, stdout carries a `preview`, a verdict on the real run, where `data` would
+be. `bb --json pr merge 42 --dry-run`, for a pull request that is already merged:
+
+<!-- docs-lint: envelope-shape -->
+```json
+{
+  "preview": {
+    "tier": "preconditions-checked",
+    "effects": [
+      {
+        "action": "update",
+        "target": { "id": "42", "repository": "PROJ/app" },
+        "outcome": "would-fail",
+        "reasons": ["pull request is already merged"]
+      }
+    ],
+    "error": { "kind": "conflict", "message": "pull request is already merged", "exitCode": 5 }
+  },
+  "meta": {
+    "command": "pr merge",
+    "bbVersion": "[[ bb_version_tag ]]"
+  }
+}
+```
+
+- `tier` is the weakest check behind the verdict: `server-validated`, `preconditions-checked`
+  or `predicted`.
+- Each effect is one change, with an `outcome` of `would-apply`, `no-op` or `would-fail` and
+  the `reasons` for it.
+- `error` is present exactly when the real run would fail, and is what it would fail with.
+- A command that only reads runs as usual, and its data is in `preview.data`.
+
+A verdict exits `0`, whatever it says. A top-level `error` under `--dry-run` means no verdict
+was reached: `10` when Bitbucket did not answer, `12` when interrupted, `1` for a bug in bb.
+[Dry-Run Planning](dry-run-planning.md) says what each command checks.
+
 ## Diagnostics behavior
 
 - Diagnostics are emitted to `stderr` to preserve `stdout` contracts.
