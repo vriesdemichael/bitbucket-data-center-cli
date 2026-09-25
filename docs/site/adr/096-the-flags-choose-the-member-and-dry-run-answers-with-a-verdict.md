@@ -10,7 +10,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Number: `096`
 - Title: `The flags choose a document's member, and --dry-run answers with a verdict`
 - Category: `architecture`
-- Status: `proposed`
+- Status: `accepted`
 - Amends: `46, 64, 70, 75, 78, 84, 91`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/096-the-flags-choose-the-member-and-dry-run-answers-with-a-verdict.yaml`
