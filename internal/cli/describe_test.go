@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/spf13/cobra"
@@ -329,6 +330,16 @@ func TestDescribeWithoutJSONIsAnOutline(t *testing.T) {
 	}
 	if strings.Contains(text, `"type"`) {
 		t.Errorf("the outline prints JSON Schema:\n%s", text)
+	}
+
+	// The prose around the fields wraps at the outline's width: pr merge's
+	// fields all fit in 120 columns, and bb api's answer is prose alone.
+	for _, command := range [][]string{{"pr", "merge"}, {"api"}} {
+		for line := range strings.SplitSeq(runDescribe(t, command...), "\n") {
+			if width := utf8.RuneCountInString(line); width > 120 {
+				t.Errorf("bb %s --describe: a line of %d columns:\n%s", strings.Join(command, " "), width, line)
+			}
+		}
 	}
 }
 

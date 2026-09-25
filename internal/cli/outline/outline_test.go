@@ -531,3 +531,19 @@ func TestADescriptionShowsItsFirstSentence(t *testing.T) {
 		}
 	}
 }
+
+// TestAParagraphWrapsAtTheOutlinesWidth: the prose around an outline keeps the
+// margin its fields keep, and a word longer than a line gets a line to itself.
+func TestAParagraphWrapsAtTheOutlinesWidth(t *testing.T) {
+	t.Parallel()
+
+	// Twenty-four four-letter words fill a line to column 119, which leaves no
+	// room for the twenty-fifth.
+	first := strings.TrimSpace(strings.Repeat("word ", 24))
+	long := strings.Repeat("x", 130)
+	got := outline.Paragraph(strings.Repeat("word ", 30) + long)
+
+	if want := first + "\n" + strings.TrimSpace(strings.Repeat("word ", 6)) + "\n" + long + "\n"; got != want {
+		t.Errorf("Paragraph =\n%s\nwant\n%s", got, want)
+	}
+}
