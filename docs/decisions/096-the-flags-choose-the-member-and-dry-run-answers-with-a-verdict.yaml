@@ -1,7 +1,7 @@
 number: 96
 title: The flags choose a document's member, and --dry-run answers with a verdict
 category: architecture
-status: proposed
+status: accepted
 amends:
   - 46
   - 64

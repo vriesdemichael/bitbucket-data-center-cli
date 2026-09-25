@@ -5031,7 +5031,7 @@ Flags:
       --remove   Remove the reaction instead of adding it
 
 Dry run:
-  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
+  Predicts the outcome from what it can read, without changing anything (predicted)
 ```
 
 ??? note "Global flags"
@@ -7740,7 +7740,7 @@ Flags:
   -y, --yes   Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
@@ -8259,7 +8259,7 @@ Flags:
       --project string   Project key of the new fork
 
 Dry run:
-  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
+  Predicts the outcome from what it can read, without changing anything (predicted)
 ```
 
 ??? note "Global flags"
@@ -8301,7 +8301,7 @@ Flags:
       --name string             Repository name
 
 Dry run:
-  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
+  Predicts the outcome from what it can read, without changing anything (predicted)
 ```
 
 ??? note "Global flags"
@@ -9347,7 +9347,7 @@ Flags:
       --repo string      Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)
 
 Dry run:
-  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
+  Predicts the outcome from what it can read, without changing anything (predicted)
 ```
 
 ??? note "Global flags"
@@ -12705,7 +12705,7 @@ Flags:
   -y, --yes   Confirm without being asked
 
 Dry run:
-  Predicts the outcome from what it can read, without changing anything (predicted)
+  Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 ```
 
 ??? note "Global flags"
