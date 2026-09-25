@@ -37,7 +37,15 @@ func TestEveryLeafCommandUnderYAMLWritesTheJSONDocument(t *testing.T) {
 		}
 
 		t.Run(path, func(t *testing.T) {
-			t.Parallel()
+			// The two runs are compared, so they must see one environment. A
+			// command that writes to it changes what the others read: ai
+			// skill install writes the skill doctor reports, and landing
+			// between doctor's two runs made them disagree. Those run here,
+			// one at a time; the rest run side by side once they are done,
+			// since a parallel subtest waits for its parent to return.
+			if !cli.ChangesThisMachine(path) {
+				t.Parallel()
+			}
 
 			asJSON := runForStdout(append([]string{"--json", "--no-input"}, strings.Fields(path)...))
 			asYAML := runForStdout(append([]string{"--yaml", "--no-input"}, strings.Fields(path)...))
