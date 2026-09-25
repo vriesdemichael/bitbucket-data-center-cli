@@ -101,7 +101,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo permissions revoke": {Intent: "repo.permission.user.revoke", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	// repo
 	"repo create":              {Intent: "repo.create", Action: "create", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
-	"repo fork":                {Intent: "repo.fork", Action: "create", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
+	"repo fork":                {Intent: "repo.fork", Action: "create", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"repo delete":              {Intent: "repo.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"repo edit":                {Intent: "repo.edit", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"repo label add":           {Intent: "repo.label.add", Action: "create", Stateful: true, Tier: dryrunpreview.TierPredicted},
@@ -114,12 +114,12 @@ var dryRunProfiles = map[string]dryRunProfile{
 	// webhook
 	"webhook create": {Intent: "repo.webhook.create", Action: "create", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"webhook update": {Intent: "repo.webhook.update", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
-	"webhook delete": {Intent: "repo.webhook.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPredicted},
+	"webhook delete": {Intent: "repo.webhook.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"webhook test":   {Intent: "repo.webhook.test", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	// repo admin
 	"repo admin create": {Intent: "repo.admin.create", Action: "create", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
-	"repo admin fork":   {Intent: "repo.admin.fork", Action: "create", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
-	"repo admin update": {Intent: "repo.admin.update", Action: "update", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
+	"repo admin fork":   {Intent: "repo.admin.fork", Action: "create", Stateful: true, Tier: dryrunpreview.TierPredicted},
+	"repo admin update": {Intent: "repo.admin.update", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"repo admin delete": {Intent: "repo.admin.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	// insights
 	"insights report set":        {Intent: "insights.report.set", Action: "update", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
@@ -141,7 +141,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"pr review complete":          {Intent: "pr.review.complete", Action: "update", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"pr review discard":           {Intent: "pr.review.discard", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"pr comment add":              {Intent: "pr.comment.add", Action: "create", Stateful: true, Tier: dryrunpreview.TierPredicted},
-	"pr comment react":            {Intent: "pr.comment.react", Action: "update", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
+	"pr comment react":            {Intent: "pr.comment.react", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"pr comment resolve":          {Intent: "pr.comment.resolve", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"pr comment reopen":           {Intent: "pr.comment.reopen", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"pr comment apply-suggestion": {Intent: "pr.comment.apply-suggestion", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
@@ -172,7 +172,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"project permissions revoke":        {Intent: "project.permission.user.revoke", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"project webhook create":            {Intent: "project.webhook.create", Action: "create", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"project webhook update":            {Intent: "project.webhook.update", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
-	"project webhook delete":            {Intent: "project.webhook.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPredicted},
+	"project webhook delete":            {Intent: "project.webhook.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"project webhook test":              {Intent: "project.webhook.test", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"project branch-restriction create": {Intent: "project.branch-restriction.create", Action: "create", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"project branch-restriction update": {Intent: "project.branch-restriction.update", Action: "update", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},

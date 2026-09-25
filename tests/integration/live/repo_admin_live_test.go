@@ -102,7 +102,7 @@ func TestLiveCLIRepoAdminCreateDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo admin create dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	assertLivePreviewOf(t, dryRunOutput, "repo admin create", jsonoutput.OutcomeWouldApply)
+	assertLivePreviewOf(t, dryRunOutput, "repo create", jsonoutput.OutcomeWouldApply)
 
 	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
 		t.Fatalf("expected no repository side-effect from admin create dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)
@@ -178,7 +178,7 @@ func TestLiveCLIRepoAdminDeleteDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo admin delete dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	assertLivePreviewOf(t, dryRunOutput, "repo admin delete", jsonoutput.OutcomeWouldApply)
+	assertLivePreviewOf(t, dryRunOutput, "repo delete", jsonoutput.OutcomeWouldApply)
 
 	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
 		t.Fatalf("expected no repository side-effect from admin delete dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)
@@ -210,7 +210,7 @@ func TestLiveCLIRepoAdminForkDryRunNoSideEffect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("repo admin fork dry-run failed: %v\noutput: %s", err, dryRunOutput)
 	}
-	assertLivePreviewOf(t, dryRunOutput, "repo admin fork", jsonoutput.OutcomeWouldApply)
+	assertLivePreviewOf(t, dryRunOutput, "repo fork", jsonoutput.OutcomeWouldApply)
 
 	if listAfter := projectRepositoryListing(t, seeded.Key); listAfter != listBefore {
 		t.Fatalf("expected no repository side-effect from admin fork dry-run\nbefore: %s\nafter: %s", listBefore, listAfter)

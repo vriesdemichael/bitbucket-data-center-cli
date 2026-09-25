@@ -258,7 +258,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				predicted := "no-op"
+				predicted := "blocked"
 				reason := "webhook id was not found in repository"
 				if webhookExistsByID(webhooks.Payload, args[0]) {
 					predicted = "delete"
@@ -272,6 +272,8 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
+					// Deleting what is not there is refused with a 404.
+					Fails: apperrors.KindNotFound,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

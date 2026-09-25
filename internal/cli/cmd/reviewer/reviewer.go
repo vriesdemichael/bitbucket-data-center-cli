@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"reflect"
 	"strings"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
@@ -182,7 +181,7 @@ the project. --project deletes it there.`,
 					if err := refuseInheritedCondition(conditions, id, pk, "delete"); err != nil {
 						return err
 					}
-					predicted := "no-op"
+					predicted := "blocked"
 					reason := "reviewer condition not found in repository"
 					if reviewerConditionExists(conditions, id) {
 						predicted = "delete"
@@ -195,6 +194,8 @@ the project. --project deletes it there.`,
 						PredictedAction: predicted,
 						Tier:            dryrunpreview.TierPreconditionsChecked,
 						Reason:          reason,
+						// Deleting what is not there is refused with a 404.
+						Fails: apperrors.KindNotFound,
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
@@ -231,7 +232,7 @@ the project. --project deletes it there.`,
 				if err != nil {
 					return err
 				}
-				predicted := "no-op"
+				predicted := "blocked"
 				reason := "reviewer condition not found in project"
 				if reviewerConditionExists(conditions, id) {
 					predicted = "delete"
@@ -244,6 +245,8 @@ the project. --project deletes it there.`,
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
+					// Deleting what is not there is refused with a 404.
+					Fails: apperrors.KindNotFound,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
@@ -726,7 +729,12 @@ func conditionUpdateOutcome(conditions []openapigenerated.RestPullRequestConditi
 		return refusedOutcome(refusal)
 	}
 
-	existing, found := findReviewerCondition(conditions, id)
+	// There is no no-op here. A condition Bitbucket holds and the body sent to
+	// change it are different shapes -- matchers named differently, reviewers
+	// as users rather than ids -- so comparing them never matched, and an
+	// update to the same values goes through anyway: would-apply is the
+	// verdict either way.
+	_, found := findReviewerCondition(conditions, id)
 	if !found {
 		// Refused by the update itself, once the body has passed: a 404.
 		return dryrunpreview.Item{
@@ -736,10 +744,6 @@ func conditionUpdateOutcome(conditions []openapigenerated.RestPullRequestConditi
 			Fails:           apperrors.KindNotFound,
 		}, nil
 	}
-	if reviewerConditionUpdateEquivalent(existing, body) {
-		return dryrunpreview.Item{PredictedAction: dryrunpreview.PredictedNoop, Reason: "reviewer condition already matches requested update"}, nil
-	}
-
 	return dryrunpreview.Item{PredictedAction: dryrunpreview.PredictedUpdate, Reason: "reviewer condition will be updated"}, nil
 }
 
@@ -883,22 +887,4 @@ func sameReviewerSet(existing *[]openapigenerated.RestReviewerGroup, desired *[]
 	}
 
 	return true
-}
-
-func reviewerConditionUpdateEquivalent(existing openapigenerated.RestPullRequestCondition, desired any) bool {
-	return reflect.DeepEqual(normalizeJSONShape(existing), normalizeJSONShape(desired))
-}
-
-func normalizeJSONShape(value any) any {
-	raw, err := json.Marshal(value)
-	if err != nil {
-		return value
-	}
-
-	var normalized any
-	if err := json.Unmarshal(raw, &normalized); err != nil {
-		return value
-	}
-
-	return normalized
 }

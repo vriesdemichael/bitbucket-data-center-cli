@@ -992,7 +992,7 @@ project. bb project branch-restriction delete deletes it there.`,
 				reason := "branch restriction will be deleted"
 				if err != nil {
 					if apperrors.ExitCode(err) == 4 {
-						predicted = "no-op"
+						predicted = "blocked"
 						reason = "branch restriction was not found"
 					} else {
 						return err
@@ -1006,6 +1006,8 @@ project. bb project branch-restriction delete deletes it there.`,
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
+					// Deleting what is not there is refused with a 404.
+					Fails: apperrors.KindNotFound,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}

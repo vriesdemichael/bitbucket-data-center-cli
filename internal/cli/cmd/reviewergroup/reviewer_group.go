@@ -462,9 +462,12 @@ func New(deps Dependencies) *cobra.Command {
 						return err
 					}
 
-					predicted := "no-op"
+					// A number no group answers to by name is passed through
+					// as an id, so it is looked for among the groups too: an
+					// unknown one is a 404 like an unknown name.
+					predicted := "blocked"
 					reason := "reviewer group not found"
-					if _, err := resolveReviewerGroupID(groups, id); err == nil {
+					if resolved, err := resolveReviewerGroupID(groups, id); err == nil && reviewerGroupExistsByID(groups, resolved) {
 						predicted = "delete"
 						reason = "reviewer group will be deleted"
 					}
@@ -476,6 +479,8 @@ func New(deps Dependencies) *cobra.Command {
 						PredictedAction: predicted,
 						Tier:            dryrunpreview.TierPreconditionsChecked,
 						Reason:          reason,
+						// Deleting what is not there is refused with a 404.
+						Fails: apperrors.KindNotFound,
 					})
 					return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 				}
@@ -516,7 +521,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				predicted := "no-op"
+				predicted := "blocked"
 				reason := "reviewer group not found"
 				if reviewerGroupExistsByID(groups, id) {
 					predicted = "delete"
@@ -530,6 +535,8 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
+					// Deleting what is not there is refused with a 404.
+					Fails: apperrors.KindNotFound,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}

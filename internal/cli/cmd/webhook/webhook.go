@@ -20,6 +20,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookflags"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/webhookoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	reposettings "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reposettings"
@@ -458,12 +459,24 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
+				// One GET says whether the webhook is there, and deleting one
+				// that is not is refused with a 404.
+				predicted, reason := "delete", "webhook will be deleted"
+				if _, err := service.GetWebhook(cmd.Context(), repo, args[0]); err != nil {
+					if !apperrors.IsKind(err, apperrors.KindNotFound) {
+						return err
+					}
+					predicted, reason = "blocked", "webhook was not found"
+				}
+
 				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.webhook.delete",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "webhookId": args[0]},
 					Action:          "delete",
-					PredictedAction: "delete",
-					Reason:          "webhook will be deleted",
+					PredictedAction: predicted,
+					Tier:            dryrunpreview.TierPreconditionsChecked,
+					Reason:          reason,
+					Fails:           apperrors.KindNotFound,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}

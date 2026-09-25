@@ -69,6 +69,18 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 					}
 				}
 
+				// A different name can still give a slug that is taken --
+				// "my-repo" beside "My Repo" -- and Bitbucket refuses that with
+				// a 409 too: "This repository URL is already taken".
+				if predicted == "create" {
+					if _, err := service.Get(cmd.Context(), reposervice.RepositoryRef{ProjectKey: createProject, Slug: repositorySlugFor(createName)}); err == nil {
+						predicted = "conflict"
+						reason = "a repository with the same URL already exists in project"
+					} else if !apperrors.IsKind(err, apperrors.KindNotFound) {
+						return err
+					}
+				}
+
 				intent := "repo.create"
 				if isAlias {
 					intent = "repo.admin.create"
@@ -177,8 +189,10 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": forkName, "project": forkProject},
 					Action:          "create",
 					PredictedAction: predicted,
-					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Reason:          reason,
+					// The permissions are checked; whether the target project
+					// already holds a repository by that name is not (ADR-078).
+					Tier:   dryrunpreview.TierPredicted,
+					Reason: reason,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -369,8 +383,10 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": updateName, "description": updateDesc, "defaultBranch": updateDefaultBranch},
 					Action:          "update",
 					PredictedAction: predicted,
-					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Reason:          reason,
+					// The permission is checked; whether the new name is free, or
+					// the default branch there, is not (ADR-078).
+					Tier:   dryrunpreview.TierPredicted,
+					Reason: reason,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -400,4 +416,12 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 	repoAdminCmd.AddCommand(newRepoDeleteCommand(deps, &repositorySelector, true))
 
 	return repoAdminCmd
+}
+
+// repositorySlugFor is the slug Bitbucket gives a repository name: lowercased,
+// with each run of spaces made one hyphen, and hyphens, underscores and periods
+// kept as they are. A name Bitbucket would refuse outright gives a slug no
+// repository has, and the create's own validation answers for it.
+func repositorySlugFor(name string) string {
+	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(name))), "-")
 }
