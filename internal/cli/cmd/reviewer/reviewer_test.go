@@ -324,8 +324,10 @@ func TestReviewerConditionCommands(t *testing.T) {
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"condition", "delete", "999", "--repo", "PRJ/repo1"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on delete repo dry-run not found: %v", err)
+	// Deleting a condition that is not there is a 404 in the real run, so
+	// the dry run exits with not_found's code, 4 (ADR-096).
+	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 4 {
+		t.Fatalf("expected the repo dry run to exit 4 for a missing condition, got: %v", err)
 	}
 	dryRunEnabled = false
 
@@ -367,8 +369,10 @@ func TestReviewerConditionCommands(t *testing.T) {
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
 	cmd.SetArgs([]string{"condition", "delete", "999", "--project", "PRJ"})
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error on delete project dry-run not found: %v", err)
+	// Deleting a condition that is not there is a 404 in the real run, so
+	// the dry run exits with not_found's code, 4 (ADR-096).
+	if err := cmd.Execute(); !errors.As(err, &state) || state.Code != 4 {
+		t.Fatalf("expected the project dry run to exit 4 for a missing condition, got: %v", err)
 	}
 	dryRunEnabled = false
 

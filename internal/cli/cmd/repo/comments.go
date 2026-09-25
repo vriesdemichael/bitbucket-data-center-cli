@@ -313,8 +313,10 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				fails := apperrors.KindConflict
 				if err != nil {
 					if apperrors.ExitCode(err) == 4 {
-						predicted = "no-op"
+						// Deleting a comment that is not there is a 404.
+						predicted = "blocked"
 						reason = "comment was not found"
+						fails = apperrors.KindNotFound
 					} else {
 						return err
 					}

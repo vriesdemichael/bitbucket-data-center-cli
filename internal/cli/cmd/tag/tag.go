@@ -277,7 +277,7 @@ func New(deps Dependencies) *cobra.Command {
 				reason := "tag will be deleted"
 				if err != nil {
 					if apperrors.ExitCode(err) == 4 {
-						predicted = "no-op"
+						predicted = "blocked"
 						reason = "tag was not found"
 					} else {
 						return err
@@ -291,6 +291,8 @@ func New(deps Dependencies) *cobra.Command {
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
+					// Deleting what is not there is refused with a 404.
+					Fails: apperrors.KindNotFound,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)

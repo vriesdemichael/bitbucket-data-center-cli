@@ -466,7 +466,7 @@ default-task delete deletes it there, for every repository in the project.`,
 					if !apperrors.IsKind(err, apperrors.KindNotFound) {
 						return err
 					}
-					predicted, reason = "no-op", "default task was not found"
+					predicted, reason = "blocked", "default task was not found"
 				}
 				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.default-task.delete",
@@ -475,6 +475,8 @@ default-task delete deletes it there, for every repository in the project.`,
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
+					// Deleting what is not there is refused with a 404.
+					Fails: apperrors.KindNotFound,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}

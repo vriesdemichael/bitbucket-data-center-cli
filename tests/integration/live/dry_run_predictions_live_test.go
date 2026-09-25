@@ -19,9 +19,9 @@ import (
 // a property of the command but of what the server currently holds.
 //
 // A preview that always says "create" needs no server. These are the other
-// kind: merging a merged pull request is a no-op, merging a declined one is
-// blocked, approving one you have already approved changes nothing, and opening
-// a pull request for a branch that already has one conflicts. The prediction is
+// kind: merging a merged pull request or a declined one fails as the real
+// merge does, approving one you have already approved changes nothing, and
+// opening a pull request for a branch that already has one conflicts. The prediction is
 // read from Bitbucket, and the mocked versions read it from a fixture the same
 // author wrote -- so they agreed about a state no Bitbucket had ever been in.
 //
@@ -89,8 +89,11 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 		liveRefuses(t, apperrors.KindConflict, "pr", "create", "--from-ref", openBranch, "--to-ref", "master", "--title", "Second")
 	})
 
+	// Bitbucket refuses a merge, decline or reopen of a pull request already
+	// in that state rather than accepting it as nothing to do, so the verdict
+	// is that it would fail, as the real run does.
 	t.Run("merging one that is already merged", func(t *testing.T) {
-		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "merge", mergedPR)
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "merge", mergedPR)
 	})
 
 	t.Run("merging one that was declined", func(t *testing.T) {
@@ -110,11 +113,12 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 	})
 
 	t.Run("declining one that is already declined", func(t *testing.T) {
-		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "decline", declinedPR)
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "decline", declinedPR)
 	})
 
 	t.Run("reopening one that is open", func(t *testing.T) {
-		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "reopen", openPR)
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "reopen", openPR)
+		assertLifecyclePRStored(t, readLifecyclePR(t, openPR), map[string]any{"state": "OPEN"})
 	})
 
 	reviewer, err := harness.createLicensedUser(ctx)
@@ -125,6 +129,12 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 		openapigenerated.SetPermissionForUserParamsPermissionREPOWRITE); err != nil {
 		t.Fatalf("grant repository permission failed: %v", err)
 	}
+
+	// Removing a user who is not a reviewer goes through and changes nothing.
+	t.Run("removing a user who is not a reviewer", func(t *testing.T) {
+		liveGoesThroughAsPredicted(t, jsonoutput.OutcomeNoOp, "reviewer is not present",
+			"pr", "review", "reviewer", "remove", openPR, "--user", reviewer.Username, "--yes")
+	})
 
 	t.Run("adding a reviewer who is already one", func(t *testing.T) {
 		if _, err := executeLiveCLI(t, "--json", "pr", "review", "reviewer", "add", openPR, "--user", reviewer.Username); err != nil {
@@ -137,8 +147,11 @@ func TestLiveDryRunPredictionsReadRealState(t *testing.T) {
 		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "review", "reviewer", "add", openPR, "--user", reviewer.Username)
 	})
 
-	t.Run("removing a reviewer who is not one", func(t *testing.T) {
-		livePredicts(t, jsonoutput.OutcomeNoOp, "pr", "review", "reviewer", "remove", openPR, "--user", "no-such-reviewer")
+	// Two removals Bitbucket refuses: the author, with a 409, and a user who
+	// does not exist, with a 404. admin opened the pull request.
+	t.Run("removing the author, or somebody who does not exist", func(t *testing.T) {
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "review", "reviewer", "remove", openPR, "--user", "admin", "--yes")
+		liveVerdictHolds(t, apperrors.KindNotFound, "pr", "review", "reviewer", "remove", openPR, "--user", "no-such-reviewer", "--yes")
 	})
 
 	t.Run("code insights read the report and its annotations", func(t *testing.T) {
@@ -248,7 +261,7 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 		// Nothing there yet. The update sends a whole condition: Bitbucket
 		// checks the body before it looks for the condition, so a partial one
 		// would be refused as invalid and say nothing about a missing one.
-		livePredicts(t, jsonoutput.OutcomeNoOp, "reviewer", "condition", "delete", "999999", "--project", seeded.Key)
+		liveVerdictHolds(t, apperrors.KindNotFound, "reviewer", "condition", "delete", "999999", "--project", seeded.Key, "--yes")
 		liveRefuses(t, apperrors.KindNotFound, "reviewer", "condition", "update", "999999", condition, "--project", seeded.Key)
 
 		projectCondition := conditionIDFrom(t, mustLiveCLI(t, "reviewer", "condition", "create", condition, "--project", seeded.Key))
@@ -320,7 +333,7 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 		const name = "predicted-hook"
 		const url = "http://example.invalid/predicted"
 
-		livePredicts(t, jsonoutput.OutcomeNoOp, "repo", "settings", "workflow", "webhooks", "delete", "999999")
+		liveVerdictHolds(t, apperrors.KindNotFound, "repo", "settings", "workflow", "webhooks", "delete", "999999", "--yes")
 
 		mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "create", name, url)
 		listing := mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list")
@@ -452,6 +465,22 @@ func TestLiveDryRunRefusalsFailAsTheRealRunDoes(t *testing.T) {
 	draftPR := openPullRequest(t, "feature/refused-draft")
 	mustLiveCLI(t, "pr", "ready", draftPR, "--undo")
 	assertLifecyclePRStored(t, readLifecyclePR(t, draftPR), map[string]any{"state": "OPEN", "draft": true})
+
+	// Deleting what is not there is refused with a 404, not accepted as
+	// nothing to do, so each of these is a verdict that the delete would fail.
+	t.Run("deleting what is not there", func(t *testing.T) {
+		for _, args := range [][]string{
+			{"webhook", "delete", "999999"},
+			{"project", "webhook", "delete", seeded.Key, "999999"},
+			{"reviewer", "condition", "delete", "999999", "--repo", repoRef},
+			{"reviewer-group", "delete", "999999", "--repo", repoRef},
+			{"reviewer-group", "delete", "999999", "--project", seeded.Key},
+			{"repo", "default-task", "delete", "999999"},
+			{"repo", "comment", "delete", "--commit", repo.CommitIDs[0], "--id", "999999"},
+		} {
+			liveVerdictHolds(t, apperrors.KindNotFound, append(args, "--yes")...)
+		}
+	})
 
 	t.Run("a pull request for branches that already have one", func(t *testing.T) {
 		liveVerdictHolds(t, apperrors.KindConflict, "pr", "create", "--from-ref", openBranch, "--to-ref", "master", "--title", "Again")

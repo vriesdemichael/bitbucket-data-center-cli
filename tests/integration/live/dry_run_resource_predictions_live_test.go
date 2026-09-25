@@ -51,7 +51,7 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 	t.Run("branch restrictions", func(t *testing.T) {
 		const matcher = "refs/heads/predicted"
 
-		livePredicts(t, jsonoutput.OutcomeNoOp, "branch", "restriction", "delete", "999999", "--repo", repoRef)
+		liveVerdictHolds(t, apperrors.KindNotFound, "branch", "restriction", "delete", "999999", "--repo", repoRef, "--yes")
 
 		created := mustLiveCLI(t, "branch", "restriction", "create", "--repo", repoRef,
 			"--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", matcher)
@@ -146,7 +146,7 @@ func TestLiveResourceDryRunPredictionsReadRealState(t *testing.T) {
 	})
 
 	t.Run("tags", func(t *testing.T) {
-		livePredicts(t, jsonoutput.OutcomeNoOp, "tag", "delete", "no-such-tag", "--repo", repoRef)
+		liveVerdictHolds(t, apperrors.KindNotFound, "tag", "delete", "no-such-tag", "--repo", repoRef, "--yes")
 
 		mustLiveCLI(t, "tag", "create", "v1", "--repo", repoRef, "--start-point", "master")
 		commandCoverageAssertFields(t, "the tag", decodeJSONMap(t, mustLiveCLI(t, "tag", "view", "v1", "--repo", repoRef)),
@@ -206,6 +206,13 @@ func TestLiveResourceRefusalsFailAsTheRealRunDoes(t *testing.T) {
 		t.Fatalf("project %s reads back with no name: %v", seeded.Key, project)
 	}
 
+	// A repository whose name holds a space, so that another name -- the space
+	// as a hyphen -- gives the slug it already has.
+	mustLiveCLI(t, "repo", "admin", "create", "--project", seeded.Key, "--name", "Slug Probe")
+	if probe := mustLiveCLI(t, "repo", "get", "--repo", seeded.Key+"/slug-probe"); !strings.Contains(probe, `"Slug Probe"`) {
+		t.Fatalf("the repository named Slug Probe does not read back at slug-probe:\n%s", probe)
+	}
+
 	cases := []struct {
 		name string
 		args []string
@@ -217,6 +224,7 @@ func TestLiveResourceRefusalsFailAsTheRealRunDoes(t *testing.T) {
 		// because Bitbucket compares project names without their case.
 		{"a project name in use", []string{"project", "create", strings.ToUpper(testsupport.UniqueName("LTNAME")), "--name", strings.ToUpper(projectName)}},
 		{"a repository name in use", []string{"repo", "admin", "create", "--project", seeded.Key, "--name", repo.Name}},
+		{"a repository URL in use, under another name", []string{"repo", "admin", "create", "--project", seeded.Key, "--name", "slug-probe"}},
 	}
 
 	for _, testCase := range cases {

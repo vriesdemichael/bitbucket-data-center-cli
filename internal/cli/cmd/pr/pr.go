@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -845,8 +846,10 @@ func New(deps Dependencies) *cobra.Command {
 
 				switch {
 				case strings.EqualFold(strings.TrimSpace(current.State), "MERGED"):
-					predicted = "no-op"
+					// Bitbucket does not merge it again: it refuses, with a 409.
+					predicted = "blocked"
 					reason = "pull request is already merged"
+					blocking = []string{reason}
 				case !strings.EqualFold(strings.TrimSpace(current.State), "OPEN"):
 					predicted = "blocked"
 					reason = "pull request is not open"
@@ -934,8 +937,10 @@ func New(deps Dependencies) *cobra.Command {
 
 				predicted := "update"
 				reason := "pull request will be declined"
+				// Declining a declined pull request is refused with a 409, not
+				// accepted as nothing to do.
 				if strings.EqualFold(strings.TrimSpace(current.State), "DECLINED") {
-					predicted = "no-op"
+					predicted = "blocked"
 					reason = "pull request is already declined"
 				}
 
@@ -1001,8 +1006,9 @@ func New(deps Dependencies) *cobra.Command {
 
 				predicted := "update"
 				reason := "pull request will be reopened"
+				// Reopening an open pull request is refused with a 409.
 				if strings.EqualFold(strings.TrimSpace(current.State), "OPEN") {
-					predicted = "no-op"
+					predicted = "blocked"
 					reason = "pull request is already open"
 				}
 
@@ -1532,9 +1538,28 @@ changes as readily as an approval, which its name does not suggest.`,
 				}
 				predicted := "delete"
 				reason := "reviewer will be removed"
+				fails := apperrors.KindConflict
 				if !hasReviewer(current.Reviewers, removeReviewerUsername) {
+					// Removing a user who is not a reviewer goes through and
+					// changes nothing -- except for the author, refused with a
+					// 409, and a user who does not exist, refused with a 404,
+					// which one lookup tells apart.
 					predicted = "no-op"
 					reason = "reviewer is not present"
+					if isAuthor(current.Author, current.AuthorUsername, removeReviewerUsername) {
+						predicted = "blocked"
+						reason = "the author of a pull request may not be unassigned from their role"
+					} else {
+						exists, err := userExists(cmd.Context(), apiClient, removeReviewerUsername)
+						if err != nil {
+							return err
+						}
+						if !exists {
+							predicted = "blocked"
+							reason = fmt.Sprintf("there is no user named %s", removeReviewerUsername)
+							fails = apperrors.KindNotFound
+						}
+					}
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.Item{
@@ -1544,6 +1569,7 @@ changes as readily as an approval, which its name does not suggest.`,
 					PredictedAction: predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
 					Reason:          reason,
+					Fails:           fails,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -2242,8 +2268,10 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "prId": prID, "commentId": commentID, "emoticon": emoticon},
 					Action:          action,
 					PredictedAction: predicted,
-					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Reason:          reason,
+					// Only the permission is checked: whether the comment is there,
+					// and whether the reaction already is, is not (ADR-078).
+					Tier:   dryrunpreview.TierPredicted,
+					Reason: reason,
 				})
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
 			}
@@ -2852,12 +2880,21 @@ state is in the output.`,
 					}
 				}
 
+				// Bitbucket's rebase check reports vetoes, not the file
+				// conflicts that refuse a rebase too. A refusal it reports is
+				// checked; a rebase it does not refuse is only predicted to go
+				// through (ADR-078).
+				tier := dryrunpreview.TierPredicted
+				if predicted == "blocked" {
+					tier = dryrunpreview.TierPreconditionsChecked
+				}
+
 				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "pr.rebase",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
 					Action:          "update",
 					PredictedAction: predicted,
-					Tier:            dryrunpreview.TierPreconditionsChecked,
+					Tier:            tier,
 					Reason:          reason,
 					BlockingReasons: blocking,
 					Fails:           fails,
@@ -3412,4 +3449,20 @@ func codeOwnersSourceRepository(source *pullrequestservice.RepositoryRef) *codeo
 	}
 
 	return &codeowners.RepositoryRef{ProjectKey: source.ProjectKey, Slug: source.Slug}
+}
+
+// userExists reports whether Bitbucket has a user by that name.
+func userExists(ctx context.Context, client *openapigenerated.ClientWithResponses, username string) (bool, error) {
+	response, err := client.GetUserWithResponse(ctx, strings.TrimSpace(username))
+	if err != nil {
+		return false, apperrors.Transport(fmt.Sprintf("failed to look up user %q", username), err)
+	}
+	if response.StatusCode() == http.StatusNotFound {
+		return false, nil
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
