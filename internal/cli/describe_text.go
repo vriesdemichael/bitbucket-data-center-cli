@@ -23,9 +23,9 @@ func writeDescriptionText(out io.Writer, cmd *cobra.Command, description Descrip
 
 	data, reason, written := dataContract(path)
 	if !written {
-		fmt.Fprintf(&text, "bb %s --json %s.\n", path, strings.TrimPrefix(reason, "this command "))
+		text.WriteString(outline.Paragraph(fmt.Sprintf("bb %s --json %s.", path, strings.TrimPrefix(reason, "this command "))))
 	} else {
-		fmt.Fprintf(&text, "bb %s --json prints data, or error when it fails:\n\n", path)
+		text.WriteString(outline.Paragraph(fmt.Sprintf("bb %s --json prints data, or error when it fails:", path)) + "\n")
 		if err := outline.Write(&text,
 			outline.Member{Name: "data", Schema: data},
 			outline.Member{Name: "meta", Schema: openMetaSchema()},
@@ -33,21 +33,22 @@ func writeDescriptionText(out io.Writer, cmd *cobra.Command, description Descrip
 			return err
 		}
 		if reason != "" {
-			fmt.Fprintf(&text, "\ndata is left open: %s.\n", reason)
+			text.WriteString("\n" + outline.Paragraph(fmt.Sprintf("data is left open: %s.", reason)))
 		}
-		text.WriteString("\n? marks a field that can be absent. --json or --yaml prints the JSON Schema, with each field's full description.\n")
+		text.WriteString("\n" + outline.Paragraph("? marks a field that can be absent. --json or --yaml prints the JSON Schema, with each field's full description."))
 	}
 
 	if line := dryRunHelpLine(cmd); line != "" {
 		behaviour, takes := dryRunBehaviourOf(path)
 		switch {
 		case !takes:
-			fmt.Fprintf(&text, "\n--dry-run: %s\n", line)
+			line = "--dry-run: " + line
 		case behaviour.Behaviour == dryRunRuns:
-			fmt.Fprintf(&text, "\n--dry-run: %s. Under --json its data is in preview.data: see bb help dry-run.\n", line)
+			line = "--dry-run: " + line + ". Under --json its data is in preview.data: see bb help dry-run."
 		default:
-			fmt.Fprintf(&text, "\n--dry-run: %s. It prints preview instead of data: see bb help dry-run.\n", line)
+			line = "--dry-run: " + line + ". It prints preview instead of data: see bb help dry-run."
 		}
+		text.WriteString("\n" + outline.Paragraph(line))
 	}
 
 	_, err := io.WriteString(out, text.String())

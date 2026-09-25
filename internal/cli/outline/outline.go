@@ -107,6 +107,12 @@ func Write(w io.Writer, members ...Member) error {
 	return err
 }
 
+// Paragraph wraps prose that goes with an outline at the outline's width, so
+// the lines around the fields keep the same margin as the fields.
+func Paragraph(text string) string {
+	return strings.Join(wrap(text, lineWidth), "\n") + "\n"
+}
+
 // appendField adds the row for one field, then the rows for the fields beneath
 // it, one level deeper.
 func appendField(rows []row, depth int, name string, schema *jsonschema.Schema) []row {
