@@ -102,7 +102,8 @@ default host, git configuration, the skill file, shell completion, a clone, a
 local branch — is previewed rather than performed. Nothing is checked first, so
 its verdict is `predicted`. `bb update` answers the flag itself: it reports the
 release it would install and whether that release verifies, and installs
-nothing.
+nothing. Under `--json` its one effect is replacing the binary, and
+`preview.data` is that report.
 
 `bb ai mcp serve` does not take `--dry-run`: it starts a live server, and a
 session cannot be previewed. Every command in the tree is explicitly

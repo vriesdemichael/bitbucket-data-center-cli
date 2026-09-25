@@ -1,6 +1,9 @@
 package updatecmd
 
 import (
+	"fmt"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	updateworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/update"
 )
@@ -114,5 +117,29 @@ func updateFrom(workflow updateworkflow.Result) Update {
 		Paths: Paths{
 			Install: workflow.InstallPath,
 		},
+	}
+}
+
+// updatePreview is the verdict of a dry run (ADR-096): the one change bb update
+// makes, replacing the binary, and the report of what it checked as data. The
+// release, its signature and its checksum are checked against what the release
+// source serves, so the verdict is server-validated; a check that fails is the
+// error the dry run answers with instead.
+func updatePreview(workflow updateworkflow.Result) jsonoutput.Preview {
+	effect := jsonoutput.Effect{
+		Action:  "update",
+		Target:  map[string]any{"binary": workflow.InstallPath, "version": workflow.LatestVersion},
+		Outcome: jsonoutput.OutcomeNoOp,
+		Reasons: []string{fmt.Sprintf("%s is installed, and %s is the latest release", workflow.CurrentVersion, workflow.LatestVersion)},
+	}
+	if workflow.UpdateAvailable {
+		effect.Outcome = jsonoutput.OutcomeWouldApply
+		effect.Reasons = []string{fmt.Sprintf("%s would replace %s", workflow.LatestVersion, workflow.CurrentVersion)}
+	}
+
+	return jsonoutput.Preview{
+		Tier:    jsonoutput.TierServerValidated,
+		Effects: []jsonoutput.Effect{effect},
+		Data:    updateFrom(workflow),
 	}
 }

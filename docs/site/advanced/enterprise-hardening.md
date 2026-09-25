@@ -115,7 +115,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
      ```bash
      bb update --dry-run --base-url https://artifactory.corp.internal/artifactory/bb-releases
      ```
-     The dry run verifies whatever release the mirror serves, the installed version included: the signature on `sha256sums.txt` against the configured trust material, that file's entry for this platform's archive, and the archive against that entry. It reports the trust material used and each check that passed (`trust` in `--json` output), and fails with exit `5` (`conflict`) when the mirror serves a release older than the installed one, the sign of a mirror that has stopped receiving releases.
+     The dry run verifies whatever release the mirror serves, the installed version included: the signature on `sha256sums.txt` against the configured trust material, that file's entry for this platform's archive, and the archive against that entry. It reports the trust material used and each check that passed (`preview.data.trust` under `--json`), and fails with exit `5` (`conflict`) when the mirror serves a release older than the installed one, the sign of a mirror that has stopped receiving releases.
 
 3. **Mandate Keyring Storage (Advisory / User Tier)**:
    ```bash

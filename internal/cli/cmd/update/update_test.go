@@ -119,26 +119,14 @@ func TestUpdateCommandJSONDryRun(t *testing.T) {
 		t.Fatalf("Execute returned error: %v", err)
 	}
 
-	var envelope jsonoutput.Envelope
-	if err := json.Unmarshal(buffer.Bytes(), &envelope); err != nil {
-		t.Fatalf("failed to decode json output: %v", err)
-	}
-	if envelope.Meta.BBVersion == "" {
-		t.Fatalf("envelope carries no meta.bbVersion: %+v", envelope)
-	}
-
-	encodedData, err := json.Marshal(envelope.Data)
-	if err != nil {
-		t.Fatalf("failed to re-encode json data: %v", err)
-	}
-
 	// Decoded into the published shape, not the workflow's own Result. The two
 	// are deliberately different now: the workflow carries 28 flat fields, and
 	// what a caller reads groups the release, trust and path fields so that
 	// "may this binary be trusted" has one place to look.
-	var reported Update
-	if err := json.Unmarshal(encodedData, &reported); err != nil {
-		t.Fatalf("failed to decode update result: %v", err)
+	effect, reported := decodeUpdatePreview(t, buffer.Bytes())
+	if effect.Action != "update" || effect.Outcome != jsonoutput.OutcomeWouldApply ||
+		effect.Target["binary"] != "/tmp/bb" || effect.Target["version"] != "v1.2.0" || len(effect.Reasons) != 1 {
+		t.Fatalf("want the binary replaced by v1.2.0, got %+v", effect)
 	}
 	if !reported.DryRun || !reported.UpdateAvailable || reported.Applied {
 		t.Fatalf("unexpected update result: %+v", reported)
@@ -848,17 +836,9 @@ func TestUpdateCommandDryRunReportsTheInstalledReleaseVerified(t *testing.T) {
 	}
 
 	t.Run("json", func(t *testing.T) {
-		var envelope jsonoutput.Envelope
-		if err := json.Unmarshal(run(t, true), &envelope); err != nil {
-			t.Fatalf("failed to decode json output: %v", err)
-		}
-		encodedData, err := json.Marshal(envelope.Data)
-		if err != nil {
-			t.Fatalf("failed to re-encode json data: %v", err)
-		}
-		var reported Update
-		if err := json.Unmarshal(encodedData, &reported); err != nil {
-			t.Fatalf("failed to decode update result: %v", err)
+		effect, reported := decodeUpdatePreview(t, run(t, true))
+		if effect.Outcome != jsonoutput.OutcomeNoOp || effect.Target["version"] != "v1.2.0" {
+			t.Fatalf("want nothing to install, got %+v", effect)
 		}
 
 		if !reported.DryRun || !reported.UpToDate || reported.UpdateAvailable || reported.PlannedAction != "" {
@@ -950,4 +930,31 @@ func TestUpdateBlamesTheFlagItWasGiven(t *testing.T) {
 			t.Errorf("a retry backoff of %q gave %v, want a validation error naming --retry-backoff", backoff, err)
 		}
 	}
+}
+
+// decodeUpdatePreview decodes what bb update --dry-run --json writes (ADR-096):
+// a server-validated preview whose one effect is replacing the binary, with
+// the report of what was checked as its data.
+func decodeUpdatePreview(t *testing.T, raw []byte) (jsonoutput.Effect, Update) {
+	t.Helper()
+
+	var document struct {
+		Preview struct {
+			Tier    jsonoutput.Tier     `json:"tier"`
+			Effects []jsonoutput.Effect `json:"effects"`
+			Data    Update              `json:"data"`
+		} `json:"preview"`
+		Meta jsonoutput.EnvelopeMeta `json:"meta"`
+	}
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatalf("failed to decode json output: %v\n%s", err, raw)
+	}
+	if document.Meta.BBVersion == "" {
+		t.Fatalf("the document carries no meta.bbVersion:\n%s", raw)
+	}
+	if document.Preview.Tier != jsonoutput.TierServerValidated || len(document.Preview.Effects) != 1 {
+		t.Fatalf("want one server-validated effect in the preview, got:\n%s", raw)
+	}
+
+	return document.Preview.Effects[0], document.Preview.Data
 }
