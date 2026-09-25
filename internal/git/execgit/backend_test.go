@@ -34,9 +34,10 @@ func TestCloneValidation(t *testing.T) {
 func TestVersion(t *testing.T) {
 	t.Parallel()
 
-	// New's own timeout bounds a hang. The tests that need git to succeed keep
-	// it: a shorter one killed git on a slow Windows runner, which reports the
-	// kill as exit status 1.
+	// New's own timeout bounds a hang. Every test that relies on git's own
+	// answer, success or failure, keeps it: a shorter one stopped git on a slow
+	// Windows runner before git answered, so the test saw bb's timeout instead.
+	// Only the tests that fail before git runs set a short one.
 	backend := New()
 
 	version, err := backend.Version(context.Background())
@@ -148,7 +149,6 @@ func TestRunValidationAndFailure(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = time.Second
 
 	_, err := backend.run(context.Background(), runOptions{})
 	if err == nil {
@@ -312,7 +312,6 @@ func TestRepositoryRootNonRepositoryError(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = time.Second
 
 	if _, err := backend.RepositoryRoot(context.Background(), t.TempDir()); err == nil {
 		t.Fatal("expected repository root resolution to fail for non-repository directory")
@@ -323,7 +322,6 @@ func TestListRemotesNonRepositoryError(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = time.Second
 
 	if _, err := backend.ListRemotes(context.Background(), t.TempDir()); err == nil {
 		t.Fatal("expected list remotes to fail for non-repository directory")
@@ -504,7 +502,6 @@ func TestCloneFailureRedactsCredentials(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
 	err := backend.Clone(context.Background(), "https://bitbucket.example.com/scm/PRJ/does-not-exist.git", git.CloneOptions{
 		Directory: t.TempDir(),
@@ -540,7 +537,6 @@ func TestCloneFailureRedactsURLCredentials(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
 	err := backend.Clone(context.Background(), "https://x-token-auth:super-secret-password-54321@bitbucket.example.com/scm/PRJ/does-not-exist.git", git.CloneOptions{
 		Directory: t.TempDir(),
@@ -573,7 +569,6 @@ func TestCurrentBranchNonRepositoryError(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
 	if _, err := backend.CurrentBranch(context.Background(), t.TempDir()); err == nil {
 		t.Fatal("expected current branch resolution to fail for a non-repository directory")
@@ -587,7 +582,6 @@ func TestCurrentBranchReportsCheckedOutBranch(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 10 * time.Second
 
 	repositoryDirectory := filepath.Join(t.TempDir(), "repo")
 	if _, err := backend.run(context.Background(), runOptions{args: []string{"init", "--initial-branch", "main", repositoryDirectory}}); err != nil {
@@ -622,7 +616,6 @@ func TestCurrentBranchReportsDetachedHeadAsNoBranch(t *testing.T) {
 	t.Parallel()
 
 	backend := New()
-	backend.Timeout = 15 * time.Second
 
 	repositoryDirectory := filepath.Join(t.TempDir(), "repo")
 	if _, err := backend.run(context.Background(), runOptions{args: []string{"init", "--initial-branch", "main", repositoryDirectory}}); err != nil {
