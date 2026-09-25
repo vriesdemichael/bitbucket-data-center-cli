@@ -93,6 +93,7 @@ func TestClonePlacesOptionsBeforeRepositoryAndDirectory(t *testing.T) {
 		"--filter=blob:none",
 		"--origin",
 		"upstream",
+		"--progress",
 		"https://example.local/scm/PRJ/repo.git",
 		cloneDir,
 	}
