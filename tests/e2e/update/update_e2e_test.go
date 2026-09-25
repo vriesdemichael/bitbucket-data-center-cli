@@ -94,7 +94,7 @@ func updateAndCheck(t *testing.T, built string, mirror *releaseMirror, trustSour
 	installed := installCopy(t, built)
 	env := isolatedEnvironment(t, mirror.caFile, extraEnv)
 
-	dry := runUpdate(t, installed, env, "update", "--dry-run", "--base-url", mirror.baseURL)
+	dry := previewUpdate(t, installed, env, "update", "--dry-run", "--base-url", mirror.baseURL)
 	expectVerified(t, "the dry run", dry, trustSource)
 	if !dry.DryRun || !dry.UpdateAvailable || dry.Applied {
 		t.Fatalf("the dry run reported %+v, want an update available and nothing applied", dry)
@@ -212,6 +212,36 @@ func runUpdate(t *testing.T, installed string, env []string, args ...string) upd
 	}
 
 	return envelope.Data
+}
+
+// previewUpdate runs a dry run of bb update, checks its verdict is that the
+// binary would be replaced, and returns the report of what it checked, which a
+// dry run carries in its preview (ADR-096).
+func previewUpdate(t *testing.T, installed string, env []string, args ...string) updateResult {
+	t.Helper()
+
+	stdout, stderr, err := run(installed, env, append([]string{"--json"}, args...)...)
+	if err != nil {
+		t.Fatalf("bb %s: %v\nstdout: %s\nstderr: %s", strings.Join(args, " "), err, stdout, stderr)
+	}
+
+	var document struct {
+		Preview struct {
+			Tier    string `json:"tier"`
+			Effects []struct {
+				Outcome string `json:"outcome"`
+			} `json:"effects"`
+			Data updateResult `json:"data"`
+		} `json:"preview"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &document); err != nil {
+		t.Fatalf("bb %s printed %q, not a preview: %v", strings.Join(args, " "), stdout, err)
+	}
+	if document.Preview.Tier != "server-validated" || len(document.Preview.Effects) != 1 || document.Preview.Effects[0].Outcome != "would-apply" {
+		t.Fatalf("bb %s did not say the binary would be replaced:\n%s", strings.Join(args, " "), stdout)
+	}
+
+	return document.Preview.Data
 }
 
 func versionOf(t *testing.T, installed string, env []string) string {

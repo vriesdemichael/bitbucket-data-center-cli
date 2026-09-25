@@ -299,6 +299,9 @@ it the way to verify a release mirror, and it fails with exit status 5
 			}
 
 			if d.JSONEnabled() {
+				if result.DryRun {
+					return jsonoutput.WritePreview(cmd.OutOrStdout(), updatePreview(result))
+				}
 				return d.WriteJSON(cmd.OutOrStdout(), updateFrom(result))
 			}
 
