@@ -1129,7 +1129,7 @@ func normalizePullRequestID(pullRequestID string) (string, error) {
 }
 
 func pullRequestPath(repository RepositoryRef) string {
-	return fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests", repository.ProjectKey, repository.Slug)
+	return fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests", url.PathEscape(repository.ProjectKey), url.PathEscape(repository.Slug))
 }
 
 func buildCreatePayload(input CreateInput) (map[string]any, error) {

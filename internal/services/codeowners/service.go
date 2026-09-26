@@ -16,6 +16,7 @@ package codeowners
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -85,7 +86,7 @@ func (service *Service) Owners(
 	}
 
 	var payload ownersResponse
-	path := fmt.Sprintf("/rest/ui/latest/projects/%s/repos/%s/code-owners", repository.ProjectKey, repository.Slug)
+	path := fmt.Sprintf("/rest/ui/latest/projects/%s/repos/%s/code-owners", url.PathEscape(repository.ProjectKey), url.PathEscape(repository.Slug))
 	if err := service.client.GetJSON(ctx, path, query, &payload); err != nil {
 		return nil, err
 	}

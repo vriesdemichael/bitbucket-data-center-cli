@@ -3,6 +3,7 @@ package jira
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
@@ -31,7 +32,7 @@ func NewService(client *httpclient.Client) *Service {
 // GetPRIssues retrieves Jira issues associated with a pull request.
 // Endpoint: GET /rest/jira/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/issues
 func (s *Service) GetPRIssues(ctx context.Context, repo RepositoryRef, prID string) ([]JiraIssue, error) {
-	path := fmt.Sprintf("/rest/jira/latest/projects/%s/repos/%s/pull-requests/%s/issues", repo.ProjectKey, repo.Slug, prID)
+	path := fmt.Sprintf("/rest/jira/latest/projects/%s/repos/%s/pull-requests/%s/issues", url.PathEscape(repo.ProjectKey), url.PathEscape(repo.Slug), url.PathEscape(prID))
 	var issues []JiraIssue
 	err := s.client.GetJSON(ctx, path, nil, &issues)
 	if err != nil {
@@ -57,7 +58,7 @@ func (s *Service) GetIssueCommits(ctx context.Context, issueKey string, maxResul
 	if maxResults <= 0 {
 		maxResults = 25
 	}
-	path := fmt.Sprintf("/rest/jira/latest/issues/%s/commits", issueKey)
+	path := fmt.Sprintf("/rest/jira/latest/issues/%s/commits", url.PathEscape(issueKey))
 
 	return openapi.PageThrough(ctx, 0, maxResults,
 		func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestCommit], error) {
