@@ -16,7 +16,7 @@ type Tool struct {
 	Name        string `json:"name" jsonschema:"Tool name, as an MCP client sees it."`
 	Description string `json:"description,omitempty" jsonschema:"What the tool does."`
 	Writes      bool   `json:"writes" jsonschema:"Whether the tool changes anything in Bitbucket."`
-	Asks        string `json:"asks" jsonschema:"Whether a call asks the person to confirm it in the MCP client before it runs: always, never, or when-draft-changes for a call that changes the pull request's draft flag."`
+	Asks        string `json:"asks" jsonschema:"Whether a call asks the person to confirm it in the MCP client before it runs: always, never, or when-setting-draft for a call that sets the pull request's draft flag."`
 	Safe        bool   `json:"safe" jsonschema:"Deprecated: always true, since every tool is exposed without --yolo. Read asks and writes instead."`
 	Exposure    string `json:"exposure" jsonschema:"Deprecated: always SAFE, since every tool is exposed without --yolo. Read asks and writes instead."`
 }

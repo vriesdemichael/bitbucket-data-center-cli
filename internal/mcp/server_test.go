@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -290,18 +291,19 @@ func TestServerAdvertisesToolsAndNothingElse(t *testing.T) {
 	if result == nil || result.Capabilities == nil {
 		t.Fatal("the server answered without capabilities")
 	}
-	capabilities := result.Capabilities
-	switch {
-	case capabilities.Tools == nil:
-		t.Error("the tools capability is missing")
-	case capabilities.Tools.ListChanged:
-		t.Error("the server advertises a tool list that changes, and it never does")
+
+	// As the client receives them, which is also the only place logging can be
+	// asked about without the deprecated field.
+	encoded, err := json.Marshal(result.Capabilities)
+	if err != nil {
+		t.Fatalf("encode capabilities: %v", err)
 	}
-	if capabilities.Logging != nil {
-		t.Error("the server advertises logging, which it never sends")
+	var advertised map[string]json.RawMessage
+	if err := json.Unmarshal(encoded, &advertised); err != nil {
+		t.Fatalf("decode capabilities %s: %v", encoded, err)
 	}
-	if capabilities.Resources != nil || capabilities.Prompts != nil || capabilities.Completions != nil {
-		t.Errorf("the server advertises features it does not have: %+v", capabilities)
+	if len(advertised) != 1 || string(advertised["tools"]) != "{}" {
+		t.Errorf("capabilities = %s, want tools and nothing else, with no listChanged", encoded)
 	}
 	if strings.TrimSpace(result.Instructions) == "" {
 		t.Error("the server sends no instructions")

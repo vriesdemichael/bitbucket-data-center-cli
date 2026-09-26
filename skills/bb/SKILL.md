@@ -472,7 +472,7 @@ The `ASKS` column is the part that matters when planning:
   before it runs. These are the tools that change whether or when a pull
   request merges (merging, auto-merge, reviews, build statuses) and creating a
   tag.
-- `when-draft-changes` — only a call that changes a pull request's draft flag
+- `when-setting-draft` — only a call that sets a pull request's draft flag
   asks. A draft cannot merge, and making one a draft cancels its auto-merge.
 - `never` — the tool runs when called.
 

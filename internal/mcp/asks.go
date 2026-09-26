@@ -35,9 +35,8 @@ func askMergePullRequest() ask[MergePullRequestInput] {
 			if err != nil {
 				return confirmation{}, err
 			}
-			if in.Version != nil && *in.Version != pr.Version {
-				return confirmation{}, fmt.Errorf("pull request #%d is at version %d, not %d: it changed since version %d was read",
-					pr.ID, pr.Version, *in.Version, *in.Version)
+			if err := versionMatches(pr, in.Version); err != nil {
+				return confirmation{}, err
 			}
 
 			return confirmation{
@@ -51,17 +50,7 @@ func askMergePullRequest() ask[MergePullRequestInput] {
 				Pin: strconv.Itoa(pr.Version),
 			}, nil
 		},
-		hold: func(in *MergePullRequestInput, pin string) error {
-			if in.Version != nil {
-				return nil
-			}
-			version, err := strconv.Atoi(pin)
-			if err != nil {
-				return fmt.Errorf("the confirmed pull request version %q is not a number", pin)
-			}
-			in.Version = &version
-			return nil
-		},
+		hold: func(in *MergePullRequestInput, pin string) error { return holdVersion(&in.Version, pin) },
 	}
 }
 
@@ -70,6 +59,9 @@ func askEnableAutoMerge() ask[EnableAutoMergeInput] {
 		confirm: func(ctx context.Context, c Clients, in EnableAutoMergeInput) (confirmation, error) {
 			pr, err := pullRequestToConfirm(ctx, c, in.Project, in.Repo, in.PRID, "set auto-merge on")
 			if err != nil {
+				return confirmation{}, err
+			}
+			if err := versionMatches(pr, in.Version); err != nil {
 				return confirmation{}, err
 			}
 			strategy := in.Strategy
@@ -81,9 +73,40 @@ func askEnableAutoMerge() ask[EnableAutoMergeInput] {
 				Message: fmt.Sprintf("Turn on auto-merge for pull request #%d %q in %s, merging %s into %s with the %s strategy once its required checks and approvals pass? If they pass already, it merges at once.",
 					pr.ID, pr.Title, repoName(in.Project, in.Repo), pr.SourceBranch, pr.TargetBranch, strategy),
 				Label: fmt.Sprintf("Auto-merge #%d into %s", pr.ID, pr.TargetBranch),
+				// Arming may merge at once, so it is held to the version the
+				// person was shown, as a merge is.
+				Pin: strconv.Itoa(pr.Version),
 			}, nil
 		},
+		hold: func(in *EnableAutoMergeInput, pin string) error { return holdVersion(&in.Version, pin) },
 	}
+}
+
+// versionMatches refuses a version the model gave that the pull request has
+// moved past, since the call would be refused anyway, and nobody should be
+// asked to confirm it.
+func versionMatches(pr pullrequestservice.PullRequest, version *int) error {
+	if version != nil && *version != pr.Version {
+		return fmt.Errorf("pull request #%d is at version %d, not %d: it changed since version %d was read",
+			pr.ID, pr.Version, *version, *version)
+	}
+
+	return nil
+}
+
+// holdVersion holds a call to the pull request version the person was shown,
+// unless the model named one, which versionMatches has already compared.
+func holdVersion(version **int, pin string) error {
+	if *version != nil {
+		return nil
+	}
+	pinned, err := strconv.Atoi(pin)
+	if err != nil {
+		return fmt.Errorf("the confirmed pull request version %q is not a number", pin)
+	}
+	*version = &pinned
+
+	return nil
 }
 
 func askDisableAutoMerge() ask[DisableAutoMergeInput] {
@@ -191,9 +214,10 @@ func askUpdatePullRequest() ask[UpdatePullRequestInput] {
 }
 
 // pullRequestToConfirm reads the pull request a merge or auto-merge acts on,
-// and refuses one that cannot be merged, so nobody is asked to confirm a call
-// that will fail. Bitbucket refuses to merge a draft, or to set auto-merge on
-// one, and its merge-status endpoint does not say so, so the flag is read here.
+// and refuses one that is not open or is a draft, so nobody is asked to confirm
+// a call that will fail. Bitbucket refuses to merge a draft, or to set
+// auto-merge on one, and its merge-status endpoint does not say so, so the flag
+// is read here.
 func pullRequestToConfirm(ctx context.Context, c Clients, project, repo, id, doing string) (pullrequestservice.PullRequest, error) {
 	pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: project, Slug: repo}, id)
 	if err != nil {

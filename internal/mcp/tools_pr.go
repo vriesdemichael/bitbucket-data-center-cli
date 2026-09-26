@@ -419,7 +419,7 @@ type MergePullRequestInput struct {
 	Project string `json:"project" jsonschema:"Bitbucket project key"`
 	Repo    string `json:"repo" jsonschema:"Repository slug"`
 	PRID    string `json:"pr_id" jsonschema:"Pull request ID"`
-	Version *int   `json:"version,omitempty" jsonschema:"PR version for optimistic locking (omit to skip check)"`
+	Version *int   `json:"version,omitempty" jsonschema:"PR version for optimistic locking (omit to use the version the confirmation shows)"`
 }
 
 func specMergePullRequest() Spec {
@@ -453,6 +453,7 @@ type EnableAutoMergeInput struct {
 	Repo     string `json:"repo" jsonschema:"Repository slug"`
 	PRID     string `json:"pr_id" jsonschema:"Pull request ID"`
 	Strategy string `json:"strategy,omitempty" jsonschema:"Merge strategy: no-ff (default), ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only"`
+	Version  *int   `json:"version,omitempty" jsonschema:"PR version for optimistic locking (omit to use the version the confirmation shows)"`
 }
 
 // AutoMergeOutput names the auto-merge state it holds.
@@ -481,6 +482,7 @@ func specEnableAutoMerge() Spec {
 				pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				in.PRID,
 				strategy,
+				in.Version,
 			)
 			if err != nil {
 				return nil, AutoMergeOutput{}, fmt.Errorf("enable_auto_merge failed: %w", err)
@@ -604,12 +606,12 @@ func specUpdatePullRequest() Spec {
 		Name: "update_pull_request",
 		Description: "Update a pull request's title, description, or draft state. Use draft=false to mark a " +
 			"draft pull request ready for review. Requires the current version from get_pull_request for optimistic " +
-			"locking; a stale version is rejected rather than overwriting someone else's edit. Changing draft asks " +
+			"locking; a stale version is rejected rather than overwriting someone else's edit. Setting draft asks " +
 			"the person to confirm in the client first.",
 		// Destructive: it overwrites the title and description.
 		Annotations: writes("Update pull request", true, true),
 	}
-	return askingSpec(tool, AsksWhenDraftChanges, askUpdatePullRequest(), func(c Clients) mcp.ToolHandlerFor[UpdatePullRequestInput, PullRequestOutput] {
+	return askingSpec(tool, AsksWhenSettingDraft, askUpdatePullRequest(), func(c Clients) mcp.ToolHandlerFor[UpdatePullRequestInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in UpdatePullRequestInput) (*mcp.CallToolResult, PullRequestOutput, error) {
 			pr, err := svc.Update(ctx,

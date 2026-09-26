@@ -240,15 +240,19 @@ func TestMCPToolsCountMatchesAllSpecs(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	lines := 0
-	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if fields := strings.Fields(lines[0]); len(fields) != 4 || fields[0] != "NAME" || fields[1] != "ACCESS" || fields[2] != "ASKS" || fields[3] != "DESCRIPTION" {
+		t.Errorf("the listing should start with its column names, got %q", lines[0])
+	}
+	tools := 0
+	for _, line := range lines[1:] {
 		if strings.TrimSpace(line) != "" {
-			lines++
+			tools++
 		}
 	}
 	want := len(bbmcp.AllSpecs())
-	if lines != want {
-		t.Errorf("expected %d tool lines, got %d", want, lines)
+	if tools != want {
+		t.Errorf("expected %d tool lines under the header, got %d", want, tools)
 	}
 }
 
@@ -263,7 +267,7 @@ var askingTools = map[string]string{
 	"submit_pr_review":    "always",
 	"set_build_status":    "always",
 	"create_tag":          "always",
-	"update_pull_request": "when-draft-changes",
+	"update_pull_request": "when-setting-draft",
 }
 
 func wantAsks(name string) string {
@@ -337,7 +341,7 @@ func TestMCPToolsSaysWhichToolsAsk(t *testing.T) {
 	stdout, _ := runAI(t, "mcp", "tools")
 	for _, line := range strings.Split(stdout, "\n") {
 		fields := strings.Fields(line)
-		if len(fields) < 3 {
+		if len(fields) < 3 || fields[0] == "NAME" {
 			continue
 		}
 		if fields[2] != wantAsks(fields[0]) {

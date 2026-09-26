@@ -103,6 +103,20 @@ func connectClient(t *testing.T, opts ServerOptions, clientOptions *mcp.ClientOp
 	return session
 }
 
+// connectSelfAnswering connects a 2026-07-28 client that declares it can show
+// a confirmation and hands the question back rather than answering it, so the
+// test can answer it as it likes.
+func connectSelfAnswering(t *testing.T, opts ServerOptions) *mcp.ClientSession {
+	t.Helper()
+
+	return connectClient(t, opts, &mcp.ClientOptions{
+		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+			return nil, errors.New("the test answers confirmations itself")
+		},
+		MultiRoundTrip: &mcp.MultiRoundTripOptions{Disabled: true},
+	}, "")
+}
+
 // protocolError returns err as a JSON-RPC error, failing the test when it is
 // not one.
 func protocolError(t *testing.T, err error) *jsonrpc.Error {
@@ -173,7 +187,7 @@ func TestAToolThatAsksDoesNotRunWithoutAnAcceptance(t *testing.T) {
 }
 
 // A client that cannot show a confirmation is refused with the 2026-07-28
-// revision's MissingRequiredClientCapability, naming the capability as a
+// revision's MissingRequiredClientCapability, naming form elicitation as a
 // ClientCapabilities object. Clients on handshake-era revisions get it too.
 func TestAClientThatCannotAskGetsMissingRequiredClientCapability(t *testing.T) {
 	t.Parallel()
@@ -198,16 +212,16 @@ func TestAClientThatCannotAskGetsMissingRequiredClientCapability(t *testing.T) {
 			if err := json.Unmarshal(wire.Data, &data); err != nil {
 				t.Fatalf("data %s: %v", wire.Data, err)
 			}
-			if len(data.RequiredCapabilities) != 1 || string(data.RequiredCapabilities["elicitation"]) != "{}" {
-				t.Errorf("requiredCapabilities = %s, want exactly {\"elicitation\":{}}", wire.Data)
+			if len(data.RequiredCapabilities) != 1 || string(data.RequiredCapabilities["elicitation"]) != `{"form":{}}` {
+				t.Errorf(`requiredCapabilities = %s, want exactly {"elicitation":{"form":{}}}`, wire.Data)
 			}
 		})
 	}
 }
 
 // Only the draft flag decides whether and when a pull request merges, so only
-// a call that changes it asks.
-func TestUpdatePullRequestAsksOnlyToChangeTheDraftFlag(t *testing.T) {
+// a call that sets it asks.
+func TestUpdatePullRequestAsksOnlyWhenItSetsTheDraftFlag(t *testing.T) {
 	t.Parallel()
 
 	arguments := map[string]any{"project": "PROJ", "repo": "payments", "pr_id": "7", "version": 3, "title": "A new title"}
@@ -230,11 +244,11 @@ func TestUpdatePullRequestAsksOnlyToChangeTheDraftFlag(t *testing.T) {
 		t.Fatalf("update_pull_request with draft: %v", err)
 	}
 	if text := resultText(result); !strings.Contains(text, "update_pull_request failed") {
-		t.Errorf("an accepted draft change should have run; got %q", text)
+		t.Errorf("an accepted call setting draft should have run; got %q", text)
 	}
 	asked := answers.questions()
 	if len(asked) != 1 {
-		t.Fatalf("a draft change asked %d times, want once", len(asked))
+		t.Fatalf("a call setting draft asked %d times, want once", len(asked))
 	}
 	if !strings.Contains(asked[0].Message, "ready for review") || !strings.Contains(asked[0].Message, "also changes its title") {
 		t.Errorf("the question does not say what the call does: %q", asked[0].Message)
@@ -294,14 +308,7 @@ func TestTheConfirmationIsOneRequiredCheckbox(t *testing.T) {
 func TestAConfirmationAcceptsOnlyTheCallItWasAskedAbout(t *testing.T) {
 	t.Parallel()
 
-	// It declares that it can show a confirmation, and hands the question back
-	// rather than answering it, so the test can answer it as it likes.
-	session := connectClient(t, testServer(t), &mcp.ClientOptions{
-		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
-			return nil, errors.New("the test answers confirmations itself")
-		},
-		MultiRoundTrip: &mcp.MultiRoundTripOptions{Disabled: true},
-	}, "")
+	session := connectSelfAnswering(t, testServer(t))
 	ctx := context.Background()
 
 	ask := func(t *testing.T) string {
@@ -336,10 +343,21 @@ func TestAConfirmationAcceptsOnlyTheCallItWasAskedAbout(t *testing.T) {
 		refused(t, err, "without the request state")
 	})
 	t.Run("a state that was altered", func(t *testing.T) {
-		last := state[len(state)-1]
-		altered := state[:len(state)-1] + map[bool]string{true: "A", false: "B"}[last != 'A']
+		payload, mac, _ := strings.Cut(state, ".")
+		middle := len(payload) / 2
+		replacement := map[bool]string{true: "A", false: "B"}[payload[middle] != 'A']
+		altered := payload[:middle] + replacement + payload[middle+1:] + "." + mac
 		_, err := answer(tagArguments, altered, accepted)
 		refused(t, err, "not issued by this server")
+	})
+	t.Run("the state spelled another way", func(t *testing.T) {
+		// The MAC's 32 bytes end in a character with two unused bits, which
+		// the encoder leaves clear. Setting one spells the same bytes again.
+		const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+		last := strings.IndexByte(alphabet, state[len(state)-1])
+		respelled := state[:len(state)-1] + string(alphabet[last|1])
+		_, err := answer(tagArguments, respelled, accepted)
+		refused(t, err, "malformed")
 	})
 	t.Run("an answer for other arguments", func(t *testing.T) {
 		other := map[string]any{"project": "PROJ", "repo": "payments", "name": "v9.9.9", "start_point": "main"}
@@ -368,30 +386,84 @@ func TestAConfirmationAcceptsOnlyTheCallItWasAskedAbout(t *testing.T) {
 	})
 }
 
-// An expired confirmation is a tool error, not a protocol error: nothing was
-// forged, and the model can ask again.
-func TestAnExpiredConfirmationCannotBeAnswered(t *testing.T) {
+// A person may answer after the confirmation expired. A refusal still stands,
+// and the model is told to leave the call. Only an acceptance has to be on
+// time, since what the person was shown may have changed since; the model can
+// ask again. Nothing was forged, so each is a tool error.
+func TestALateAnswerStandsUnlessItAccepts(t *testing.T) {
+	t.Parallel()
+
+	session := connectSelfAnswering(t, testServer(t))
+	digest, err := inputDigest(CreateTagInput{Project: "PROJ", Repo: "payments", Name: "v1.2.3", StartPoint: "main"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// This process's key with a clock a minute more than the lifetime behind
+	// issues states that expired a minute ago.
+	late := &confirmationSeal{key: confirmations.key, answered: map[string]int64{}, now: func() time.Time {
+		return time.Now().Add(-confirmationTTL - time.Minute)
+	}}
+
+	for _, tc := range []struct {
+		name   string
+		answer *mcp.ElicitResult
+		want   string
+	}{
+		{"declined", &mcp.ElicitResult{Action: "decline"}, "the person declined. Do not call it again"},
+		{"cancelled", &mcp.ElicitResult{Action: "cancel"}, "without answering. Do not call it again"},
+		{"accepted", &mcp.ElicitResult{Action: "accept", Content: map[string]any{confirmKey: true}}, "accepted after its confirmation expired. Call it again to ask again"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			state, err := late.seal("create_tag", digest, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+				Name: "create_tag", Arguments: tagArguments,
+				InputResponses: mcp.InputResponseMap{confirmKey: tc.answer}, RequestState: state,
+			})
+			if err != nil {
+				t.Fatalf("want a tool error, got %v", err)
+			}
+			if text := resultText(result); !result.IsError || !strings.Contains(text, tc.want) || strings.Contains(text, createTagRan) {
+				t.Errorf("want a refusal saying %q, with nothing sent to Bitbucket; got %q", tc.want, text)
+			}
+		})
+	}
+}
+
+// An answered state is remembered for as long as it can be accepted, to the
+// second, so it cannot be answered again in the last second of its life.
+func TestAnAnsweredStateStaysAnsweredUntilItExpires(t *testing.T) {
 	t.Parallel()
 
 	seal := newConfirmationSeal()
-	now := time.Now()
+	issued := time.Unix(1_800_000_000, 0)
+	now := issued
 	seal.now = func() time.Time { return now }
 
 	state, err := seal.seal("create_tag", "digest", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	now = now.Add(confirmationTTL + time.Second)
+	if err := seal.consume(state); err != nil {
+		t.Fatalf("consume: %v", err)
+	}
 
-	_, err = seal.open(state, "create_tag", "digest")
-	var wire *jsonrpc.Error
-	switch {
-	case err == nil:
-		t.Fatal("an expired confirmation opened")
-	case errors.As(err, &wire):
-		t.Errorf("an expired confirmation is a protocol error: %v", err)
-	case !strings.Contains(err.Error(), "expired"):
-		t.Errorf("the error does not say it expired: %v", err)
+	// Half a second into the last second the state is valid. Answering another
+	// state is what forgets the nonces of expired ones.
+	now = issued.Add(confirmationTTL + 500*time.Millisecond)
+	other, err := seal.seal("create_tag", "digest", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := seal.consume(other); err != nil {
+		t.Fatalf("consume: %v", err)
+	}
+
+	_, expired, err := seal.open(state, "create_tag", "digest")
+	if wire := protocolError(t, err); !strings.Contains(wire.Message, "answered already") {
+		t.Errorf("the answered state opened again (expired %v): %q", expired, wire.Message)
 	}
 }
 
@@ -404,7 +476,7 @@ func TestAStateFromAnotherProcessDoesNotVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = newConfirmationSeal().open(state, "create_tag", "digest")
+	_, _, err = newConfirmationSeal().open(state, "create_tag", "digest")
 	if wire := protocolError(t, err); !strings.Contains(wire.Message, "not issued by this server") {
 		t.Errorf("got %q", wire.Message)
 	}
@@ -427,6 +499,7 @@ func TestTheAuditRecordSaysHowTheConfirmationWent(t *testing.T) {
 		{"accepted", "", accept, auditStatusError, confirmationAccepted},
 		{"accepted on a handshake-era client", "2025-11-25", accept, auditStatusError, confirmationAccepted},
 		{"declined", "", decline, auditStatusDenied, confirmationDeclined},
+		{"cancelled", "", func(*mcp.ElicitParams) *mcp.ElicitResult { return &mcp.ElicitResult{Action: "cancel"} }, auditStatusDenied, confirmationCancelled},
 		{"unavailable", "", nil, auditStatusDenied, confirmationUnavailable},
 	}
 
@@ -460,5 +533,37 @@ func TestTheAuditRecordSaysHowTheConfirmationWent(t *testing.T) {
 					records[0].Status, records[0].Confirmation, tc.wantStatus, tc.wantConfirmation)
 			}
 		})
+	}
+}
+
+// An answer that cannot be used is refused before anything reaches Bitbucket,
+// so the call is audited as denied. Nobody answered it, so the record names no
+// outcome.
+func TestARefusedAnswerIsAuditedAsDenied(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "audit.jsonl")
+	audit, err := NewAuditLogger(path)
+	if err != nil {
+		t.Fatalf("NewAuditLogger: %v", err)
+	}
+	opts := testServer(t)
+	opts.Audit = audit
+
+	session := connectSelfAnswering(t, opts)
+	_, err = session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name: "create_tag", Arguments: tagArguments,
+		InputResponses: mcp.InputResponseMap{confirmKey: &mcp.ElicitResult{Action: "accept", Content: map[string]any{confirmKey: true}}},
+	})
+	protocolError(t, err)
+	_ = audit.Close()
+
+	records := readAuditRecords(t, path)
+	if len(records) != 1 {
+		t.Fatalf("want one record, got %d: %+v", len(records), records)
+	}
+	if records[0].Status != auditStatusDenied || records[0].Confirmation != "" || !strings.Contains(records[0].ErrorMessage, "without the request state") {
+		t.Errorf("record status %q confirmation %q error %q, want denied, no outcome, and the reason",
+			records[0].Status, records[0].Confirmation, records[0].ErrorMessage)
 	}
 }
