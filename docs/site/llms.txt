@@ -122,11 +122,13 @@ Things worth knowing before you wire it up:
 
 - `--host` is required when more than one Bitbucket instance is configured; the server
   exits immediately if it is missing (ADR-039).
-- Tools whose effects are irreversible, such as merge, are withheld by default. `--yolo`
-  exposes them. `bb ai mcp tools` lists every tool with its exposure, and `--safe-only`
-  lists just the default set.
-- `--tools` is an allowlist and `--exclude` a denylist, for narrowing the surface further.
-  `--tools` overrides the safety filter, so naming a withheld tool there exposes it.
+- Every tool is exposed. The ones that change whether or when a pull request merges, and
+  creating a tag, ask the person to confirm each call in the MCP client; a client that
+  cannot show that confirmation gets error -32021 for them (ADR-098). `bb ai mcp tools`
+  lists every tool with whether it writes and whether it asks.
+- `--read-only` exposes only the tools that read, for a client you do not trust to make
+  changes. `--tools` is an allowlist and `--exclude` a denylist, for narrowing the surface
+  further; neither brings back a tool `--read-only` withholds.
 - `--project` and `--repo` confine the server to one workspace; a call aimed elsewhere is
   refused, and tools that address something Bitbucket does not scope to a project are
   withheld entirely (ADR-062).
