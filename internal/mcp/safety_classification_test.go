@@ -24,7 +24,7 @@ func TestToolsThatAskAreTheOnesThatDecideAMerge(t *testing.T) {
 		"submit_pr_review":    {AsksAlways, "APPROVED is consumed by required-reviewer checks, NEEDS_WORK holds a merge back"},
 		"set_build_status":    {AsksAlways, "a successful required build can unblock a merge"},
 		"create_tag":          {AsksAlways, "release pipelines commonly act on a new tag, and no tool here deletes one"},
-		"update_pull_request": {AsksWhenDraftChanges, "a draft cannot merge, and making one a draft cancels its auto-merge"},
+		"update_pull_request": {AsksWhenSettingDraft, "a draft cannot merge, and making one a draft cancels its auto-merge"},
 	}
 
 	implemented := map[string]bool{}

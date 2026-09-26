@@ -386,7 +386,7 @@ ACCESS says whether a tool changes anything in Bitbucket. ASKS says whether a
 call asks the person to confirm it in the MCP client before it runs:
 
   always               every call asks
-  when-draft-changes   a call that changes the pull request's draft flag asks
+  when-setting-draft   a call that sets the pull request's draft flag asks
   never                the tool runs when called
 
 A client that cannot show a confirmation gets error -32021 for a call that asks.

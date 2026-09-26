@@ -95,9 +95,7 @@ func governanceMiddleware(scope Scope, audit *AuditLogger, onFailure AuditFailur
 			record.DurationMS = time.Since(started).Milliseconds()
 			record.Confirmation = recorder.get()
 			switch {
-			case record.Confirmation == confirmationDeclined,
-				record.Confirmation == confirmationCancelled,
-				record.Confirmation == confirmationUnavailable:
+			case recorder.denied():
 				// Refused before anything reached Bitbucket, as a scope denial is.
 				record.Status = auditStatusDenied
 				if err != nil {

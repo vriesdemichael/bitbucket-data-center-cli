@@ -34,11 +34,11 @@ This page is generated from the server's tool registry by `task docs:export-mcp-
 | `search_repositories` | read-only | never | Search for repositories by name, optionally filtered by project. Returns project key, slug, and display name. |
 | `set_build_status` | writes | always | Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views. Asks the person to confirm in the client before it runs. |
 | `submit_pr_review` | writes | always | Set review status on a pull request: approve, unapprove, or request changes (needs_work). Asks the person to confirm in the client before it runs. |
-| `update_pull_request` | writes | when-draft-changes | Update a pull request's title, description, or draft state. Use draft=false to mark a draft pull request ready for review. Requires the current version from get_pull_request for optimistic locking; a stale version is rejected rather than overwriting someone else's edit. Changing draft asks the person to confirm in the client first. |
+| `update_pull_request` | writes | when-setting-draft | Update a pull request's title, description, or draft state. Use draft=false to mark a draft pull request ready for review. Requires the current version from get_pull_request for optimistic locking; a stale version is rejected rather than overwriting someone else's edit. Setting draft asks the person to confirm in the client first. |
 
 ## Tools that ask
 
-A tool asks when it merges, changes whether or when a pull request merges, or feeds a check that decides whether one may. `create_tag` asks too, since release pipelines commonly act on a new tag. `update_pull_request` asks only for a call that changes the draft flag: a draft cannot be merged, and making a pull request a draft cancels its auto-merge.
+A tool asks when it merges, changes whether or when a pull request merges, or feeds a check that decides whether one may. `create_tag` asks too, since release pipelines commonly act on a new tag. `update_pull_request` asks only for a call that sets the draft flag: a draft cannot be merged, and making a pull request a draft cancels its auto-merge.
 
 The confirmation is an MCP elicitation. The client shows what the call will do, with one box to tick, and the tool acts only once the person accepts. A client that cannot show a confirmation gets error -32021 (missing required client capability) for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself is the client's to decide.
 

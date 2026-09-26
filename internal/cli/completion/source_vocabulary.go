@@ -235,10 +235,8 @@ func skillSource(_ context.Context, _ *Environment, _ Request) (Result, error) {
 // mcpToolSource offers the tools `bb ai mcp serve` can expose, for the
 // allowlist and the denylist alike.
 //
-// Both flags take every tool. --tools overrides the safety filter rather than
-// intersecting with it, so a tool withheld without --yolo is a legitimate
-// thing to name there, and --exclude has nothing to gain from a narrower set.
-// The description says which are which.
+// Both flags take every tool, since the server exposes every tool unless it
+// runs read-only. The description says which tools ask.
 //
 // The commas are handled here rather than by the caller. --tools and --exclude
 // are plain strings that the command splits itself, so pflag reports their
@@ -286,8 +284,8 @@ func describeTool(spec bbmcp.Spec) string {
 	switch spec.Asks {
 	case bbmcp.AsksAlways:
 		return strings.TrimSpace("asks first. " + description)
-	case bbmcp.AsksWhenDraftChanges:
-		return strings.TrimSpace("asks to change draft. " + description)
+	case bbmcp.AsksWhenSettingDraft:
+		return strings.TrimSpace("asks to set draft. " + description)
 	default:
 		return description
 	}

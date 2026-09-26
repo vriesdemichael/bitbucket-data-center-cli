@@ -215,8 +215,8 @@ func AllSpecs() []Spec {
 		specGetPullRequest(),
 		specListPullRequests(),
 		specCreatePullRequest(),
-		// Asks only to change the draft flag, which decides whether the pull
-		// request can merge and cancels its auto-merge.
+		// Asks only when a call sets the draft flag: a draft cannot merge, and
+		// making one a draft cancels its auto-merge.
 		specUpdatePullRequest(),
 		specListPRComments(),
 		specGetPRDiff(),

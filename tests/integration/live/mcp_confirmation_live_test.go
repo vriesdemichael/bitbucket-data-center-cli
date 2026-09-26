@@ -261,8 +261,9 @@ func TestLiveMCPToolsThatAskChangeNothingUnlessAccepted(t *testing.T) {
 	}
 }
 
-// TestLiveMCPMergeAsksAboutWhatItMerges holds the merge confirmation to the
-// Bitbucket facts a person needs and the call does not carry.
+// TestLiveMCPMergeAsksAboutWhatItMerges holds the merge and auto-merge
+// confirmations to the Bitbucket facts a person needs and the call does not
+// carry.
 func TestLiveMCPMergeAsksAboutWhatItMerges(t *testing.T) {
 	t.Parallel()
 
@@ -290,20 +291,52 @@ func TestLiveMCPMergeAsksAboutWhatItMerges(t *testing.T) {
 		}
 		return id
 	}
-	merge := func(t *testing.T, person *mcp.ClientOptions, pullRequestID string) *mcp.CallToolResult {
+	call := func(t *testing.T, person *mcp.ClientOptions, tool, pullRequestID string) *mcp.CallToolResult {
 		t.Helper()
 		var result *mcp.CallToolResult
 		executeLiveMCPServerAs(t, person, func(session *mcp.ClientSession) {
 			var callErr error
 			result, callErr = session.CallTool(context.Background(), &mcp.CallToolParams{
-				Name:      "merge_pull_request",
+				Name:      tool,
 				Arguments: map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
 			})
 			if callErr != nil {
-				t.Fatalf("merge_pull_request: %v", callErr)
+				t.Fatalf("%s: %v", tool, callErr)
 			}
 		}, "ai", "mcp", "serve")
 		return result
+	}
+	merge := func(t *testing.T, person *mcp.ClientOptions, pullRequestID string) *mcp.CallToolResult {
+		t.Helper()
+		return call(t, person, "merge_pull_request", pullRequestID)
+	}
+	// staleVersion is how Bitbucket refuses a change made at a version the
+	// pull request has moved past, which is what holding a call to the
+	// version the person was shown relies on.
+	const staleVersion = "based on out-of-date information"
+	// pushingPerson accepts only after pushing a commit to the branch and
+	// waiting until Bitbucket has moved the pull request past version, as a
+	// colleague pushing while the person reads the question would. pushed
+	// reports how the push went.
+	pushingPerson := func(branch, pullRequestID string, version int) (person *mcp.ClientOptions, pushed func() error) {
+		// Written on the client's goroutine, read on the test's.
+		var mu sync.Mutex
+		var pushErr error
+		person, _ = answeringClient(func(*mcp.ElicitParams) *mcp.ElicitResult {
+			err := pushCommitOnTop(harness, seeded.Key, repo.Slug, branch, "pushed-while-asking.txt")
+			if err == nil {
+				err = waitForVersionChange(ctx, harness, seeded.Key, repo.Slug, pullRequestID, version)
+			}
+			mu.Lock()
+			pushErr = err
+			mu.Unlock()
+			return acceptConfirmation(nil)
+		})
+		return person, func() error {
+			mu.Lock()
+			defer mu.Unlock()
+			return pushErr
+		}
 	}
 
 	t.Run("it names the pull request and the branch it merges into, and merges on an accept", func(t *testing.T) {
@@ -353,9 +386,7 @@ func TestLiveMCPMergeAsksAboutWhatItMerges(t *testing.T) {
 	})
 
 	// The merge is held to the version the person was shown, so a pull request
-	// that changes while the question is open is not merged. The client pushes
-	// a commit before it accepts, and waits until Bitbucket has registered it,
-	// as a colleague pushing while the person reads the question would.
+	// that changes while the question is open is not merged.
 	t.Run("a pull request that changed after the question is not merged", func(t *testing.T) {
 		const branch = "feature/mcp-merge-moved"
 		pullRequestID := openPullRequest(t, branch)
@@ -364,34 +395,111 @@ func TestLiveMCPMergeAsksAboutWhatItMerges(t *testing.T) {
 			t.Fatalf("the pull request's version is not a number: %v", err)
 		}
 
-		// Written on the client's goroutine, read on the test's.
-		var pushed sync.Mutex
-		var pushErr error
-		person, _ := answeringClient(func(*mcp.ElicitParams) *mcp.ElicitResult {
-			err := pushCommitOnTop(harness, seeded.Key, repo.Slug, branch, "pushed-while-asking.txt")
-			if err == nil {
-				err = waitForVersionChange(ctx, harness, seeded.Key, repo.Slug, pullRequestID, asked)
-			}
-			pushed.Lock()
-			pushErr = err
-			pushed.Unlock()
-			return acceptConfirmation(nil)
-		})
-
+		person, pushed := pushingPerson(branch, pullRequestID, asked)
 		result := merge(t, person, pullRequestID)
-		pushed.Lock()
-		err = pushErr
-		pushed.Unlock()
-		if err != nil {
+		if err := pushed(); err != nil {
 			t.Fatalf("pushing to the pull request while it was asked about failed: %v", err)
 		}
-		if !result.IsError {
-			t.Errorf("a pull request that changed after the question was merged: %s", mcpResultText(result))
+		if text := mcpResultText(result); !result.IsError || !strings.Contains(text, staleVersion) {
+			t.Errorf("want the merge refused for its stale version, got %q", text)
 		}
 		if state := mcpLivePullRequest(t, repoRef, pullRequestID)["state"]; state != "OPEN" {
 			t.Errorf("pull request %s is %v, want it left OPEN", pullRequestID, state)
 		}
 	})
+
+	// Setting auto-merge may merge at once, so it is held to the version the
+	// person was shown as well.
+	t.Run("auto-merge is not set on a pull request that changed after the question", func(t *testing.T) {
+		mustLiveCLI(t, "repo", "settings", "auto-merge", "set", "--enabled", "--repo", repoRef)
+		if settings := decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "auto-merge", "get", "--repo", repoRef)); settings["enabled"] != true {
+			t.Fatalf("auto-merge on %s reads back as %v, want enabled", repoRef, settings)
+		}
+		const branch = "feature/mcp-arm-moved"
+		pullRequestID := openPullRequest(t, branch)
+		asked, err := strconv.Atoi(currentLivePRVersion(t, pullRequestID))
+		if err != nil {
+			t.Fatalf("the pull request's version is not a number: %v", err)
+		}
+
+		person, pushed := pushingPerson(branch, pullRequestID, asked)
+		result := call(t, person, "enable_auto_merge", pullRequestID)
+		if err := pushed(); err != nil {
+			t.Fatalf("pushing to the pull request while it was asked about failed: %v", err)
+		}
+		if text := mcpResultText(result); !result.IsError || !strings.Contains(text, staleVersion) {
+			t.Errorf("want auto-merge refused for its stale version, got %q", text)
+		}
+		if state := mcpLivePullRequest(t, repoRef, pullRequestID)["state"]; state != "OPEN" {
+			t.Errorf("pull request %s is %v, want it left OPEN", pullRequestID, state)
+		}
+		if autoMerge := mcpLiveAutoMerge(t, repoRef, pullRequestID); autoMerge["enabled"] == true {
+			t.Errorf("auto-merge on pull request %s reads back as %v after the refusal", pullRequestID, autoMerge)
+		}
+	})
+}
+
+// TestLiveMCPTitleChangeOnADraftDoesNotAsk holds update_pull_request to asking
+// only for a call that sets the draft flag. A title change leaves the flag out,
+// and Bitbucket keeps a draft a draft when an update leaves it out, so the
+// change runs with nobody asked and the pull request still cannot merge. The
+// person declines everything, so a call that asked would be refused.
+func TestLiveMCPTitleChangeOnADraftDoesNotAsk(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const branch = "feature/mcp-draft-title"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "mcp-draft-title.txt"); err != nil {
+		t.Fatalf("push commit on %s failed: %v", branch, err)
+	}
+	pullRequestID := createLifecyclePR(t, branch, "A draft to rename", "--draft", "--no-default-reviewers", "--no-codeowners")
+	if !livePRIsDraft(t, pullRequestID) {
+		t.Fatal("expected the pull request to be created as a draft")
+	}
+	version, err := strconv.Atoi(currentLivePRVersion(t, pullRequestID))
+	if err != nil {
+		t.Fatalf("the pull request's version is not a number: %v", err)
+	}
+
+	const title = "A draft renamed with nobody asked"
+	person, answers := answeringClient(declineConfirmation)
+	executeLiveMCPServerAs(t, person, func(session *mcp.ClientSession) {
+		result, callErr := session.CallTool(context.Background(), &mcp.CallToolParams{
+			Name: "update_pull_request",
+			Arguments: map[string]any{
+				"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "version": version, "title": title,
+			},
+		})
+		if callErr != nil {
+			t.Fatalf("update_pull_request: %v", callErr)
+		}
+		if result.IsError {
+			t.Fatalf("the title change failed: %s", mcpResultText(result))
+		}
+	}, "ai", "mcp", "serve")
+
+	if asked := answers.questions(); len(asked) != 0 {
+		t.Errorf("a title change asked the person: %q", asked[0].Message)
+	}
+	after := mcpLivePullRequest(t, repoRef, pullRequestID)
+	if after["title"] != title {
+		t.Errorf("the title reads back as %q, want %q", after["title"], title)
+	}
+	if after["draft"] != true {
+		t.Errorf("a title change promoted the draft: draft reads back as %v", after["draft"])
+	}
 }
 
 // pushCommitOnTop adds a commit to a branch that already exists, as someone

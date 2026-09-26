@@ -31,11 +31,11 @@ const (
 	AsksNever Asking = "never"
 	// AsksAlways: every call asks.
 	AsksAlways Asking = "always"
-	// AsksWhenDraftChanges: update_pull_request asks only for a call that
-	// changes the draft flag. A draft cannot be merged, and marking a pull
-	// request a draft cancels its auto-merge, so the flag decides whether and
-	// when it merges. A title or description does not.
-	AsksWhenDraftChanges Asking = "when-draft-changes"
+	// AsksWhenSettingDraft: update_pull_request asks only for a call that
+	// sets the draft flag, either way. A draft cannot be merged, and marking a
+	// pull request a draft cancels its auto-merge, so the flag decides whether
+	// and when it merges. A title or description does not.
+	AsksWhenSettingDraft Asking = "when-setting-draft"
 )
 
 // confirmKey names the one field of the confirmation form, and the answer's
@@ -92,8 +92,8 @@ type confirmation struct {
 // where go-sdk bridges clients on the handshake-era revisions: its bridge sits
 // between the middleware and the handler, so an input request the middleware
 // returned would never reach a client that must be sent elicitation/create
-// itself. Every tool is registered through toolSpec, so this is still one
-// place, and it runs after the SDK has validated the arguments.
+// itself. Every tool that asks is registered through askingSpec, so this is
+// still one place, and it runs after the SDK has validated the arguments.
 //
 // A 2026-07-28 client sees two calls: the first answers input_required with
 // the form and a sealed request state, and the retry carries the answer and
@@ -124,40 +124,51 @@ func confirmed[In, Out any](tool string, policy ask[In], clients Clients, handle
 		case state == "" && answered:
 			// An answer with no question behind it. Accepting it would let a
 			// client hold a call to a confirmation bb never issued.
+			refuseConfirmation(ctx)
 			return nil, none, invalidConfirmation("the answer came without the request state its confirmation carried")
 		case state == "":
-			return askFor[In, Out](ctx, tool, digest, policy, clients, in)
+			result, err := askFor(ctx, tool, digest, policy, clients, in)
+			return result, none, err
 		}
 
-		pin, err := confirmations.open(state, tool, digest)
+		pin, expired, err := confirmations.open(state, tool, digest)
 		if err != nil {
+			refuseConfirmation(ctx)
 			return nil, none, err
 		}
 		if !answered {
 			// The client retried without the answer. The spec asks the server
 			// to ask again rather than fail.
-			return askFor[In, Out](ctx, tool, digest, policy, clients, in)
+			result, err := askFor(ctx, tool, digest, policy, clients, in)
+			return result, none, err
 		}
 
 		result, ok := answer.(*mcp.ElicitResult)
 		if !ok {
+			refuseConfirmation(ctx)
 			return nil, none, invalidConfirmation("the answer is not an elicitation result")
 		}
 		if err := confirmations.consume(state); err != nil {
+			refuseConfirmation(ctx)
 			return nil, none, err
 		}
 
+		// A refusal stands however late it comes: telling the model to ask
+		// again would put the question back to someone who said no.
 		switch {
-		case result.Action == "accept" && result.Content[confirmKey] == true:
-			recordConfirmation(ctx, confirmationAccepted)
 		case result.Action == "cancel":
 			recordConfirmation(ctx, confirmationCancelled)
 			return nil, none, fmt.Errorf("%s did not run: the person closed the confirmation without answering. Do not call it again unless they ask", tool)
-		default:
+		case result.Action != "accept" || result.Content[confirmKey] != true:
 			// Declined, or accepted with the box left unticked.
 			recordConfirmation(ctx, confirmationDeclined)
 			return nil, none, fmt.Errorf("%s did not run: the person declined. Do not call it again unless they ask", tool)
+		case expired:
+			// Accepted, but late enough that what the person was shown may
+			// have changed since.
+			return nil, none, fmt.Errorf("%s did not run: the person accepted after its confirmation expired. Call it again to ask again", tool)
 		}
+		recordConfirmation(ctx, confirmationAccepted)
 
 		if policy.hold != nil {
 			if err := policy.hold(&in, pin); err != nil {
@@ -170,23 +181,21 @@ func confirmed[In, Out any](tool string, policy ask[In], clients Clients, handle
 }
 
 // askFor builds the confirmation and returns it as an input request.
-func askFor[In, Out any](ctx context.Context, tool, digest string, policy ask[In], clients Clients, in In) (*mcp.CallToolResult, Out, error) {
-	var none Out
-
+func askFor[In any](ctx context.Context, tool, digest string, policy ask[In], clients Clients, in In) (*mcp.CallToolResult, error) {
 	c, err := policy.confirm(ctx, clients, in)
 	if err != nil {
-		return nil, none, fmt.Errorf("%s: %w", tool, err)
+		return nil, fmt.Errorf("%s: %w", tool, err)
 	}
 
 	state, err := confirmations.seal(tool, digest, c.Pin)
 	if err != nil {
-		return nil, none, fmt.Errorf("%s: %w", tool, err)
+		return nil, fmt.Errorf("%s: %w", tool, err)
 	}
 
 	return &mcp.CallToolResult{
 		InputRequests: mcp.InputRequestMap{confirmKey: confirmationForm(c)},
 		RequestState:  state,
-	}, none, nil
+	}, nil
 }
 
 // confirmationForm is the elicitation a confirmation is shown as: the message,
@@ -223,7 +232,9 @@ func canConfirm(req *mcp.CallToolRequest) bool {
 
 // missingElicitation is the error a client that cannot show a confirmation
 // gets: MissingRequiredClientCapability, naming the capability as a
-// ClientCapabilities object, as the 2026-07-28 schema defines it.
+// ClientCapabilities object, as the 2026-07-28 schema defines it. It names form
+// mode outright: a client that declared URL mode alone has an elicitation
+// object already, and an empty one would not tell it what it lacks.
 //
 // Every client gets it, including those on handshake-era revisions, which
 // have no such code: a person who cannot be asked uses a client that can, or
@@ -233,7 +244,7 @@ func missingElicitation(tool string) error {
 	return &jsonrpc.Error{
 		Code:    mcp.CodeMissingRequiredClientCapabilities,
 		Message: fmt.Sprintf("%s asks the person to confirm it, and this client cannot show a confirmation", tool),
-		Data:    json.RawMessage(`{"requiredCapabilities":{"elicitation":{}}}`),
+		Data:    json.RawMessage(`{"requiredCapabilities":{"elicitation":{"form":{}}}}`),
 	}
 }
 
@@ -282,8 +293,10 @@ type sealedConfirmation struct {
 type confirmationSeal struct {
 	key []byte
 
-	mu       sync.Mutex
-	answered map[string]time.Time
+	mu sync.Mutex
+	// answered holds the nonces of answered states, each until its state
+	// expires, in Unix seconds.
+	answered map[string]int64
 	now      func() time.Time
 }
 
@@ -296,7 +309,7 @@ func newConfirmationSeal() *confirmationSeal {
 		panic(fmt.Sprintf("drawing the confirmation key: %v", err))
 	}
 
-	return &confirmationSeal{key: key, answered: map[string]time.Time{}, now: time.Now}
+	return &confirmationSeal{key: key, answered: map[string]int64{}, now: time.Now}
 }
 
 // seal issues the request state for a confirmation of tool with this input.
@@ -320,34 +333,39 @@ func (s *confirmationSeal) seal(tool, digest, pin string) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(payload) + "." + base64.RawURLEncoding.EncodeToString(s.mac(payload)), nil
 }
 
-// open verifies a request state against the call it came back with and
-// returns its pin.
+// open verifies a request state against the call it came back with, and
+// returns its pin and whether it expired.
 //
 // A state that does not verify, names another tool or another input, or was
-// answered already is refused as a protocol error. One that merely expired is
-// a tool error instead, since the model can do something about it: ask again.
-func (s *confirmationSeal) open(state, tool, digest string) (string, error) {
+// answered already is refused as a protocol error. Expiry is not: a person who
+// answered late still answered, and only an acceptance has to be on time.
+func (s *confirmationSeal) open(state, tool, digest string) (pin string, expired bool, err error) {
 	sealed, err := s.verify(state)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	switch {
 	case sealed.Tool != tool:
-		return "", invalidConfirmation("it was issued for another tool")
+		return "", false, invalidConfirmation("it was issued for another tool")
 	case sealed.Digest != digest:
-		return "", invalidConfirmation("the call changed since the person was asked")
-	case s.now().Unix() > sealed.Expires:
-		return "", fmt.Errorf("%s did not run: its confirmation expired before it was answered. Call it again to ask again", tool)
+		return "", false, invalidConfirmation("the call changed since the person was asked")
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, used := s.answered[sealed.Nonce]; used {
-		return "", invalidConfirmation("it was answered already")
+		return "", false, invalidConfirmation("it was answered already")
 	}
 
-	return sealed.Pin, nil
+	return sealed.Pin, s.expired(sealed.Expires), nil
+}
+
+// expired reports whether a state that expires at the given Unix time has.
+// Opening a state and forgetting its nonce both ask this, so a nonce is never
+// forgotten while its state can still be accepted.
+func (s *confirmationSeal) expired(expires int64) bool {
+	return s.now().Unix() > expires
 }
 
 // consume marks a request state answered, so its answer cannot be sent again.
@@ -360,17 +378,17 @@ func (s *confirmationSeal) consume(state string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	now := s.now()
 	for nonce, expires := range s.answered {
-		if now.After(expires) {
+		if s.expired(expires) {
 			delete(s.answered, nonce)
 		}
 	}
 	if _, used := s.answered[sealed.Nonce]; used {
 		return invalidConfirmation("it was answered already")
 	}
-	// Kept until it would have expired anyway, when it can no longer verify.
-	s.answered[sealed.Nonce] = time.Unix(sealed.Expires, 0)
+	// Kept until its state expires. After that the state can be answered
+	// again, but an acceptance of an expired state never runs.
+	s.answered[sealed.Nonce] = sealed.Expires
 
 	return nil
 }
@@ -382,11 +400,14 @@ func (s *confirmationSeal) verify(state string) (sealedConfirmation, error) {
 		return sealedConfirmation{}, invalidConfirmation("its request state is malformed")
 	}
 
-	payload, err := base64.RawURLEncoding.DecodeString(encodedPayload)
+	// Strict, so a state has one spelling: a lax decoder ignores the unused
+	// bits of the last character, and two different states would open alike.
+	encoding := base64.RawURLEncoding.Strict()
+	payload, err := encoding.DecodeString(encodedPayload)
 	if err != nil {
 		return sealedConfirmation{}, invalidConfirmation("its request state is malformed")
 	}
-	mac, err := base64.RawURLEncoding.DecodeString(encodedMAC)
+	mac, err := encoding.DecodeString(encodedMAC)
 	if err != nil {
 		return sealedConfirmation{}, invalidConfirmation("its request state is malformed")
 	}
@@ -418,6 +439,7 @@ func (s *confirmationSeal) mac(payload []byte) []byte {
 type confirmationRecorder struct {
 	mu      sync.Mutex
 	outcome string
+	refused bool
 }
 
 type confirmationRecorderKey struct{}
@@ -442,10 +464,39 @@ func recordConfirmation(ctx context.Context, outcome string) {
 	recorder.outcome = outcome
 }
 
+// refuseConfirmation notes that a call was refused because the answer it
+// carried cannot be used: forged, altered, for another call, or sent twice.
+// Nobody answered it, so it records no outcome, only that the call was denied.
+func refuseConfirmation(ctx context.Context) {
+	recorder, ok := ctx.Value(confirmationRecorderKey{}).(*confirmationRecorder)
+	if !ok {
+		return
+	}
+
+	recorder.mu.Lock()
+	defer recorder.mu.Unlock()
+	recorder.refused = true
+}
+
 // get returns the confirmation outcome recorded, or "" when there was none.
 func (r *confirmationRecorder) get() string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	return r.outcome
+}
+
+// denied reports whether the confirmation stopped the call before it reached
+// Bitbucket: the person declined or closed it, the client could not show it,
+// or the answer could not be used.
+func (r *confirmationRecorder) denied() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	switch r.outcome {
+	case confirmationDeclined, confirmationCancelled, confirmationUnavailable:
+		return true
+	}
+
+	return r.refused
 }

@@ -282,7 +282,7 @@ ACCESS says whether a tool changes anything in Bitbucket. ASKS says whether a
 call asks the person to confirm it in the MCP client before it runs:
 
   always               every call asks
-  when-draft-changes   a call that changes the pull request's draft flag asks
+  when-setting-draft   a call that sets the pull request's draft flag asks
   never                the tool runs when called
 
 A client that cannot show a confirmation gets error -32021 for a call that asks.
@@ -320,8 +320,10 @@ Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.`,
 				return deps.WriteJSON(cmd.OutOrStdout(), entries)
 			}
 
+			const row = "%-40s %-9s %-18s %s\n"
+			fmt.Fprintf(cmd.OutOrStdout(), row, "NAME", "ACCESS", "ASKS", "DESCRIPTION")
 			for _, spec := range specs {
-				fmt.Fprintf(cmd.OutOrStdout(), "%-40s %-9s %-18s %s\n", spec.Tool.Name, toolAccess(spec), spec.Asks, toolDescription(spec))
+				fmt.Fprintf(cmd.OutOrStdout(), row, spec.Tool.Name, toolAccess(spec), spec.Asks, toolDescription(spec))
 			}
 			return nil
 		},
@@ -371,7 +373,7 @@ const (
 // vocabulary so the listing cannot publish one the server does not use.
 var askingValues = []string{
 	string(bbmcp.AsksAlways),
-	string(bbmcp.AsksWhenDraftChanges),
+	string(bbmcp.AsksWhenSettingDraft),
 	string(bbmcp.AsksNever),
 }
 

@@ -852,8 +852,11 @@ func (service *Service) GetAutoMerge(ctx context.Context, repository RepositoryR
 //
 // The merge endpoint enforces optimistic locking, so a version is required. It
 // is resolved here rather than pushed onto callers: every caller would
-// otherwise have to fetch the pull request first to do the same thing.
-func (service *Service) EnableAutoMerge(ctx context.Context, repository RepositoryRef, pullRequestID string, strategyID string) (AutoMerge, error) {
+// otherwise have to fetch the pull request first to do the same thing. A
+// caller that names one is held to it, as the MCP server holds a person's
+// confirmation to the pull request they were shown: arming may merge at once,
+// and a pull request that changed since then is refused rather than merged.
+func (service *Service) EnableAutoMerge(ctx context.Context, repository RepositoryRef, pullRequestID string, strategyID string, version *int) (AutoMerge, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return AutoMerge{}, err
 	}
@@ -868,15 +871,18 @@ func (service *Service) EnableAutoMerge(ctx context.Context, repository Reposito
 		strategy = "no-ff"
 	}
 
-	current, err := service.Get(ctx, repository, resolvedID)
-	if err != nil {
-		return AutoMerge{}, err
+	if version == nil {
+		current, err := service.Get(ctx, repository, resolvedID)
+		if err != nil {
+			return AutoMerge{}, err
+		}
+		version = &current.Version
 	}
 
 	payload := map[string]any{
 		"autoMerge":  true,
 		"strategyId": strategy,
-		"version":    current.Version,
+		"version":    *version,
 	}
 
 	var response pullRequestValue

@@ -76,7 +76,7 @@ func exportToolReference(outputPath string) error {
 	}
 
 	out.WriteString("\n## Tools that ask\n\n")
-	out.WriteString("A tool asks when it merges, changes whether or when a pull request merges, or feeds a check that decides whether one may. `create_tag` asks too, since release pipelines commonly act on a new tag. `update_pull_request` asks only for a call that changes the draft flag: a draft cannot be merged, and making a pull request a draft cancels its auto-merge.\n\n")
+	out.WriteString("A tool asks when it merges, changes whether or when a pull request merges, or feeds a check that decides whether one may. `create_tag` asks too, since release pipelines commonly act on a new tag. `update_pull_request` asks only for a call that sets the draft flag: a draft cannot be merged, and making a pull request a draft cancels its auto-merge.\n\n")
 	out.WriteString("The confirmation is an MCP elicitation. The client shows what the call will do, with one box to tick, and the tool acts only once the person accepts. A client that cannot show a confirmation gets error -32021 (missing required client capability) for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself is the client's to decide.\n\n")
 	out.WriteString("## Read-only\n\n")
 	out.WriteString("`bb ai mcp serve --read-only` exposes only the read-only tools. It is for a client you do not trust with the tool annotations and the confirmations: a client that cannot be trusted with them should not make changes in Bitbucket, so make them yourself.\n\n")

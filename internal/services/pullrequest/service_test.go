@@ -335,7 +335,7 @@ func TestAutoMergeValidation(t *testing.T) {
 		t.Fatalf("expected validation error for missing repo ref, got: %v", err)
 	}
 
-	_, err = service.EnableAutoMerge(context.Background(), RepositoryRef{}, "1", "no-ff")
+	_, err = service.EnableAutoMerge(context.Background(), RepositoryRef{}, "1", "no-ff", nil)
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected validation error for missing repo ref in enable, got: %v", err)
 	}
