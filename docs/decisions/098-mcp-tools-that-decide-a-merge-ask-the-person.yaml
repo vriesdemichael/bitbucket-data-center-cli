@@ -35,8 +35,8 @@ agent_instructions: >
   Never skip a confirmation for a client, and never make tools/list depend on what a client can do.
   If bb serves Bitbucket Cloud, set openWorldHint true on the tools that read or publish content there.
 rationale: >
-  Withholding a tool made the safe default a missing tool, and --yolo then ran it with nobody asked.
-  MCP now carries the person's decision itself. If you cannot trust a harness with the annotations
+  A withheld tool fails without saying why, and a flag that exposes it runs it with nobody asked.
+  MCP carries the person's decision itself. If you cannot trust a harness with the annotations
   and the confirmations, do not make changes in Bitbucket through it: run it read-only and make them
   yourself.
   The confirmation is in the handler, one wrapper applied to every tool that asks, because go-sdk's

@@ -29,8 +29,8 @@ decision: >
   in the direction that matters -- Safe is what the server enforces, DestructiveHint is advice a
   client may ignore. A test fails when a tool annotated read-only is withheld without --yolo.
 agent_instructions: >
-  DestructiveHint is no longer derived from a Safe classification: ADR-098. Declare every hint by
-  its definition, with readOnly or writes.
+  Declare every hint as the specification defines it, with readOnly or writes, whether or not the
+  tool asks the person: ADR-098.
   Add a tool with mcp.AddTool through the toolSpec helper in internal/mcp/server.go. Define an input
   struct and an output struct; do not hand-write a schema. Fields without omitempty become required,
   fields with it become optional, and the jsonschema struct tag carries the description.

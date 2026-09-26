@@ -38,9 +38,8 @@ agent_instructions: >
   the catalogue from mcp.AllSpecs(), or run bb ai mcp tools.
   TestADRDoesNotNameToolsThatDoNotExist fails the build if a name appears here that the server
   does not implement, so the only names that may appear are real ones.
-  The safe/unsafe classification and --yolo this record describes were replaced in v5: ADR-098.
-  Every tool is exposed, the tools that decide a merge ask the person through the client, and
-  --read-only exposes only the tools that read.
+  Every tool is exposed. The tools that decide a merge ask the person through the client before
+  they run, and --read-only exposes only the tools that read: ADR-098.
 rationale: >
   Stdio transport is the canonical IDE-native MCP transport; HTTP would require port
   management and is not supported out of the box by most IDE MCP clients. Explicit --host

@@ -29,7 +29,7 @@ Declare a tool that decides a merge with askingSpec, and every other tool with t
 
 ## Rationale
 
-Withholding a tool made the safe default a missing tool, and --yolo then ran it with nobody asked. MCP now carries the person's decision itself. If you cannot trust a harness with the annotations and the confirmations, do not make changes in Bitbucket through it: run it read-only and make them yourself. The confirmation is in the handler, one wrapper applied to every tool that asks, because go-sdk's bridge for handshake-era clients sits below the middleware and never sees an input request the middleware returns. The specification treats a request state as written by an attacker, hence the signature. A form with no field is accepted by clients that approve on their own, hence the checkbox.
+A withheld tool fails without saying why, and a flag that exposes it runs it with nobody asked. MCP carries the person's decision itself. If you cannot trust a harness with the annotations and the confirmations, do not make changes in Bitbucket through it: run it read-only and make them yourself. The confirmation is in the handler, one wrapper applied to every tool that asks, because go-sdk's bridge for handshake-era clients sits below the middleware and never sees an input request the middleware returns. The specification treats a request state as written by an attacker, hence the signature. A form with no field is accepted by clients that approve on their own, hence the checkbox.
 
 ## Rejected Alternatives
 
