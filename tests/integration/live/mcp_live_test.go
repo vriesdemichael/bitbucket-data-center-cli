@@ -580,12 +580,22 @@ func TestLiveMCPToolsCommandListsCatalogue(t *testing.T) {
 		}
 	}
 
+	readOnlyOutput, err := executeLiveCLI(t, "ai", "mcp", "tools", "--read-only")
+	if err != nil {
+		t.Fatalf("ai mcp tools --read-only failed: %v\noutput: %s", err, readOnlyOutput)
+	}
+	if strings.Contains(readOnlyOutput, "merge_pull_request") || !strings.Contains(readOnlyOutput, "list_branches") {
+		t.Errorf("ai mcp tools --read-only should list the tools that read and nothing that writes:\n%s", readOnlyOutput)
+	}
+
+	// Deprecated, and still accepted until the next major (ADR-084): every tool
+	// is exposed without --yolo, which is the set it lists.
 	safeOutput, err := executeLiveCLI(t, "ai", "mcp", "tools", "--safe-only")
 	if err != nil {
 		t.Fatalf("ai mcp tools --safe-only failed: %v\noutput: %s", err, safeOutput)
 	}
-	if strings.Contains(safeOutput, "merge_pull_request") {
-		t.Error("ai mcp tools --safe-only lists merge_pull_request, which is withheld by default")
+	if !strings.Contains(safeOutput, "merge_pull_request") {
+		t.Errorf("ai mcp tools --safe-only no longer lists every tool:\n%s", safeOutput)
 	}
 }
 
