@@ -77,7 +77,7 @@ func TestADRDoesNotNameFlagsThatDoNotExist(t *testing.T) {
 			Status            string `yaml:"status"`
 			SupersededBy      *int   `yaml:"superseded_by"`
 			Supersedes        any    `yaml:"supersedes"`
-			AmendedBy         *int   `yaml:"amended_by"`
+			AmendedBy         any    `yaml:"amended_by"`
 			Amends            any    `yaml:"amends"`
 			Decision          string `yaml:"decision"`
 			AgentInstructions string `yaml:"agent_instructions"`

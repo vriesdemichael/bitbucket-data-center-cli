@@ -24,7 +24,7 @@ type decisionRecord struct {
 	Status               string                `yaml:"status,omitempty"`
 	SupersededBy         *int                  `yaml:"superseded_by,omitempty"`
 	Supersedes           any                   `yaml:"supersedes,omitempty"`
-	AmendedBy            *int                  `yaml:"amended_by,omitempty"`
+	AmendedBy            any                   `yaml:"amended_by,omitempty"`
 	Amends               any                   `yaml:"amends,omitempty"`
 	Decision             string                `yaml:"decision"`
 	AgentInstructions    string                `yaml:"agent_instructions"`
@@ -155,8 +155,8 @@ func renderRecordMarkdown(record decisionRecord) string {
 	// is which record replaced the paragraph they are about to act on. The
 	// validator has always required the link from both ends in the source; it
 	// reached neither end of the site.
-	if record.AmendedBy != nil {
-		fmt.Fprintf(&out, "- Amended By: `%03d`\n", *record.AmendedBy)
+	if amendedBy := formatSupersedes(record.AmendedBy); amendedBy != "" {
+		fmt.Fprintf(&out, "- Amended By: `%s`\n", amendedBy)
 	}
 	if amends := formatSupersedes(record.Amends); amends != "" {
 		fmt.Fprintf(&out, "- Amends: `%s`\n", amends)
