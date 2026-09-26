@@ -36,9 +36,9 @@ func specGetPullRequest() Spec {
 			"The review_summary field reports unresolved comment threads, open tasks and reviewers who requested changes; " +
 			"action_required is true when the pull request is waiting on the author, and is absent when the counts it " +
 			"rests on were not all measured -- read counts_source to see which were.",
-		Annotations: readOnly(),
+		Annotations: readOnly("Get pull request"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetPullRequestInput, GetPullRequestOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[GetPullRequestInput, GetPullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		activitySvc := pullrequestactivityservice.NewService(c.OpenAPI)
 		commentSvc := commentservice.NewService(c.OpenAPI)
@@ -103,12 +103,12 @@ func specListPullRequests() Spec {
 		// upper-case spellings would reject "author", which works today. The
 		// permitted values are in the field descriptions instead, and state's is
 		// built from the list the service validates against.
-		Annotations: readOnly(),
+		Annotations: readOnly("List pull requests"),
 		InputSchema: describedInputSchema[ListPullRequestsInput](map[string]string{
 			"state": "Filter by state, in any case: " + strings.Join(openapi.PullRequestStateFilters, ", ") + ". Defaults to open.",
 		}),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListPullRequestsInput, ListPullRequestsOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[ListPullRequestsInput, ListPullRequestsOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListPullRequestsInput) (*mcp.CallToolResult, ListPullRequestsOutput, error) {
 			state := in.State
@@ -185,9 +185,11 @@ func specCreatePullRequest() Spec {
 	tool := &mcp.Tool{
 		Name:        "create_pull_request",
 		Description: "Create a new pull request.",
-		Annotations: mutating(),
+		// Not idempotent: once the first pull request closes, the same call
+		// opens another.
+		Annotations: writes("Create pull request", false, false),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[CreatePullRequestInput, PullRequestOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[CreatePullRequestInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in CreatePullRequestInput) (*mcp.CallToolResult, PullRequestOutput, error) {
 			pr, err := svc.Create(ctx,
@@ -239,9 +241,9 @@ func specListPRComments() Spec {
 		// No enum on state: NormalizeThreadState accepts more spellings than a
 		// fixed list would, and rejecting them at the schema is a new
 		// constraint this migration has no reason to add.
-		Annotations: readOnly(),
+		Annotations: readOnly("List pull request comments"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListPRCommentsInput, ListPRCommentsOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[ListPRCommentsInput, ListPRCommentsOutput] {
 		commentSvc := commentservice.NewService(c.OpenAPI)
 		activitySvc := pullrequestactivityservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListPRCommentsInput) (*mcp.CallToolResult, ListPRCommentsOutput, error) {
@@ -323,9 +325,11 @@ func specAddPRComment() Spec {
 		Description: "Add a comment to a pull request. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment.",
 		// No enum on line_type: commentanchor.Validate owns that vocabulary and
 		// reports a better message than a schema violation would.
-		Annotations: mutating(),
+		//
+		// Not idempotent: the same call posts the comment again.
+		Annotations: writes("Comment on pull request", false, false),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[AddPRCommentInput, AddPRCommentOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[AddPRCommentInput, AddPRCommentOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in AddPRCommentInput) (*mcp.CallToolResult, AddPRCommentOutput, error) {
 			filePath := strings.TrimSpace(in.Path)
@@ -374,14 +378,16 @@ type SubmitPRReviewInput struct {
 
 func specSubmitPRReview() Spec {
 	tool := &mcp.Tool{
-		Name:        "submit_pr_review",
-		Description: "Set review status on a pull request: approve, unapprove, or request changes (needs_work).",
-		Annotations: mutating(),
+		Name: "submit_pr_review",
+		Description: "Set review status on a pull request: approve, unapprove, or request changes (needs_work). " +
+			"Asks the person to confirm in the client before it runs.",
+		// Destructive: a review replaces the reviewer's previous status.
+		Annotations: writes("Review pull request", true, true),
 		InputSchema: enumInputSchema[SubmitPRReviewInput](map[string][]string{
 			"action": {"approve", "unapprove", "needs_work"},
 		}),
 	}
-	return toolSpec(tool, false, func(c Clients) mcp.ToolHandlerFor[SubmitPRReviewInput, PullRequestOutput] {
+	return askingSpec(tool, AsksAlways, askSubmitPRReview(), func(c Clients) mcp.ToolHandlerFor[SubmitPRReviewInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in SubmitPRReviewInput) (*mcp.CallToolResult, PullRequestOutput, error) {
 			ref := pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}
@@ -418,11 +424,14 @@ type MergePullRequestInput struct {
 
 func specMergePullRequest() Spec {
 	tool := &mcp.Tool{
-		Name:        "merge_pull_request",
-		Description: "Merge a pull request. All required build checks must pass and all reviewers must have approved.",
-		Annotations: mutating(),
+		Name: "merge_pull_request",
+		Description: "Merge a pull request. All required build checks must pass and all reviewers must have approved. " +
+			"Asks the person to confirm in the client before it runs.",
+		// Idempotent: a second call finds the pull request merged and changes
+		// nothing.
+		Annotations: writes("Merge pull request", true, true),
 	}
-	return toolSpec(tool, false, func(c Clients) mcp.ToolHandlerFor[MergePullRequestInput, PullRequestOutput] {
+	return askingSpec(tool, AsksAlways, askMergePullRequest(), func(c Clients) mcp.ToolHandlerFor[MergePullRequestInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in MergePullRequestInput) (*mcp.CallToolResult, PullRequestOutput, error) {
 			pr, err := svc.Merge(ctx,
@@ -453,14 +462,15 @@ type AutoMergeOutput struct {
 
 func specEnableAutoMerge() Spec {
 	tool := &mcp.Tool{
-		Name:        "enable_auto_merge",
-		Description: "Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. Requires Bitbucket DC 8.0+.",
-		Annotations: mutating(),
+		Name: "enable_auto_merge",
+		Description: "Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. Requires Bitbucket DC 8.0+. " +
+			"Asks the person to confirm in the client before it runs.",
+		Annotations: writes("Enable auto-merge", true, true),
 		InputSchema: enumInputSchema[EnableAutoMergeInput](map[string][]string{
 			"strategy": openapi.MergeStrategies,
 		}),
 	}
-	return toolSpec(tool, false, func(c Clients) mcp.ToolHandlerFor[EnableAutoMergeInput, AutoMergeOutput] {
+	return askingSpec(tool, AsksAlways, askEnableAutoMerge(), func(c Clients) mcp.ToolHandlerFor[EnableAutoMergeInput, AutoMergeOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in EnableAutoMergeInput) (*mcp.CallToolResult, AutoMergeOutput, error) {
 			strategy := in.Strategy
@@ -489,11 +499,13 @@ type DisableAutoMergeInput struct {
 
 func specDisableAutoMerge() Spec {
 	tool := &mcp.Tool{
-		Name:        "disable_auto_merge",
-		Description: "Disable auto-merge on a pull request. The PR will no longer be merged automatically.",
-		Annotations: mutating(),
+		Name: "disable_auto_merge",
+		Description: "Disable auto-merge on a pull request. The PR will no longer be merged automatically. " +
+			"Asks the person to confirm in the client before it runs.",
+		// Destructive: it removes the auto-merge request.
+		Annotations: writes("Disable auto-merge", true, true),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[DisableAutoMergeInput, AutoMergeOutput] {
+	return askingSpec(tool, AsksAlways, askDisableAutoMerge(), func(c Clients) mcp.ToolHandlerFor[DisableAutoMergeInput, AutoMergeOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in DisableAutoMergeInput) (*mcp.CallToolResult, AutoMergeOutput, error) {
 			if err := svc.DisableAutoMerge(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID); err != nil {
@@ -541,9 +553,9 @@ func specGetPRDiff() Spec {
 	tool := &mcp.Tool{
 		Name:        "get_pr_diff",
 		Description: "Get the diff of a pull request as unified diff text.",
-		Annotations: readOnly(),
+		Annotations: readOnly("Get pull request diff"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetPRDiffInput, GetPRDiffOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[GetPRDiffInput, GetPRDiffOutput] {
 		svc := diffservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetPRDiffInput) (*mcp.CallToolResult, GetPRDiffOutput, error) {
 			result, err := svc.DiffPR(ctx, diffservice.DiffPRInput{
@@ -592,10 +604,12 @@ func specUpdatePullRequest() Spec {
 		Name: "update_pull_request",
 		Description: "Update a pull request's title, description, or draft state. Use draft=false to mark a " +
 			"draft pull request ready for review. Requires the current version from get_pull_request for optimistic " +
-			"locking; a stale version is rejected rather than overwriting someone else's edit.",
-		Annotations: mutating(),
+			"locking; a stale version is rejected rather than overwriting someone else's edit. Changing draft asks " +
+			"the person to confirm in the client first.",
+		// Destructive: it overwrites the title and description.
+		Annotations: writes("Update pull request", true, true),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[UpdatePullRequestInput, PullRequestOutput] {
+	return askingSpec(tool, AsksWhenDraftChanges, askUpdatePullRequest(), func(c Clients) mcp.ToolHandlerFor[UpdatePullRequestInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in UpdatePullRequestInput) (*mcp.CallToolResult, PullRequestOutput, error) {
 			pr, err := svc.Update(ctx,

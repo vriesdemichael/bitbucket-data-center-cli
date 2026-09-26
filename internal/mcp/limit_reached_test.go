@@ -22,7 +22,7 @@ import (
 func TestEveryLimitedToolSaysWhenItStopped(t *testing.T) {
 	t.Parallel()
 
-	session := connect(t, testClients(t), nil, nil, true)
+	session := connect(t, testClients(t), nil, nil)
 	listed, err := session.ListTools(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("tools/list: %v", err)

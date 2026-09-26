@@ -39,8 +39,8 @@ agent_instructions: >
     verbatim by npx, so anything unrendered reaches the reader raw. Append at render time
     instead, as buildSkill does with the version stamp.
   - Do not restate the MCP tool catalogue in the skill. It drifted from the server and gave no
-    hint which tools are withheld without --yolo; point at bb ai mcp tools, which derives the
-    list and its exposure from mcp.AllSpecs().
+    hint how its tools behave; point at bb ai mcp tools, which derives the list, and which tools
+    ask the person before they run, from mcp.AllSpecs().
   - Recommend npx skills add vriesdemichael/bitbucket-data-center-cli for zero-friction first-time
     setup or when bb is not yet installed.
   - The standard project-scoped path is .agents/skills/bb/SKILL.md, which is picked up by

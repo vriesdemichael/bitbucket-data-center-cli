@@ -27,9 +27,9 @@ func specSearchRepositories() Spec {
 	tool := &mcp.Tool{
 		Name:        "search_repositories",
 		Description: "Search for repositories by name, optionally filtered by project. Returns project key, slug, and display name.",
-		Annotations: readOnly(),
+		Annotations: readOnly("Search repositories"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[SearchRepositoriesInput, SearchRepositoriesOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[SearchRepositoriesInput, SearchRepositoriesOutput] {
 		svc := repositoryservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in SearchRepositoriesInput) (*mcp.CallToolResult, SearchRepositoriesOutput, error) {
 			limit := limitOrDefault(in.Limit)
@@ -78,9 +78,9 @@ func specGetRepositoryCloneInfo() Spec {
 	tool := &mcp.Tool{
 		Name:        "get_repository_clone_info",
 		Description: "Get HTTPS and SSH clone URLs for a repository. Use these URLs with git clone to check out the repository locally.",
-		Annotations: readOnly(),
+		Annotations: readOnly("Get clone URLs"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetRepositoryCloneInfoInput, GetRepositoryCloneInfoOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[GetRepositoryCloneInfoInput, GetRepositoryCloneInfoOutput] {
 		svc := repositoryservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetRepositoryCloneInfoInput) (*mcp.CallToolResult, GetRepositoryCloneInfoOutput, error) {
 			httpsURL, sshURL, err := buildCloneURLs(c.BaseURL, in.Project, in.Repo)

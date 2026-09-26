@@ -603,24 +603,24 @@ func TestCommittedSkillDoesNotClaimToBeGenerated(t *testing.T) {
 
 // TestSkillDoesNotListMCPToolsInline guards the drift that produced #325: a
 // hand-maintained copy of the tool catalogue that fell out of step with the
-// server and gave no hint which tools are withheld by default.
+// server and gave no hint how its tools behave.
 func TestSkillDoesNotListMCPToolsInline(t *testing.T) {
 	t.Parallel()
 
 	committed := string(bbskill.Content)
 
-	// Naming a gated tool is the specific failure: an agent plans around it and
-	// discovers at call time that the default server does not expose it.
-	for _, gated := range gatedToolNames {
-		if strings.Contains(committed, "`"+gated+"`") {
-			t.Errorf("SKILL.md names the gated tool %q; point at `bb ai mcp tools` instead", gated)
+	// Naming a tool that asks is the specific failure: which tools ask is the
+	// server's to say, and a copy here is the one that goes stale.
+	for name := range askingTools {
+		if strings.Contains(committed, "`"+name+"`") {
+			t.Errorf("SKILL.md names %q, which asks before it runs; point at `bb ai mcp tools` instead", name)
 		}
 	}
 
 	if !strings.Contains(committed, "bb ai mcp tools") {
 		t.Error("SKILL.md should direct the reader to `bb ai mcp tools` for the catalogue")
 	}
-	if !strings.Contains(committed, "YOLO") {
-		t.Error("SKILL.md should explain the YOLO exposure class so an agent can plan around it")
+	if !strings.Contains(committed, "ASKS") {
+		t.Error("SKILL.md should explain the ASKS column, so an agent knows a call may wait on the person")
 	}
 }

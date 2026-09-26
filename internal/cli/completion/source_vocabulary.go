@@ -278,16 +278,19 @@ func mcpToolSource(_ context.Context, _ *Environment, request Request) (Result, 
 	return Result{Candidates: candidates, NoSpace: true, KeepOrder: true}, nil
 }
 
-// describeTool says when a tool is available before saying what it does. The
-// exposure is the question somebody building an allowlist has, and a
-// description is cut at the end rather than the start.
+// describeTool says whether a tool asks before saying what it does. Whether a
+// call waits on the person is the question somebody building an allowlist has,
+// and a description is cut at the end rather than the start.
 func describeTool(spec bbmcp.Spec) string {
 	description := firstSentence(spec.Tool.Description)
-	if spec.Safe {
+	switch spec.Asks {
+	case bbmcp.AsksAlways:
+		return strings.TrimSpace("asks first. " + description)
+	case bbmcp.AsksWhenDraftChanges:
+		return strings.TrimSpace("asks to change draft. " + description)
+	default:
 		return description
 	}
-
-	return strings.TrimSpace("needs --yolo. " + description)
 }
 
 func firstSentence(description string) string {

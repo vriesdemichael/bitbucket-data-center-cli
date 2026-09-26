@@ -87,7 +87,7 @@ func TestScopeRefusesCallsOutsideTheBoundary(t *testing.T) {
 
 	scope := Scope{ProjectKey: "PROJ", RepoSlug: "payments"}
 	session := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true, Scope: scope,
+		Name: "bb", Version: "test", Clients: testClients(t), Scope: scope,
 	})
 
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
@@ -111,7 +111,7 @@ func TestScopeRefusesCallsToAnotherRepositoryInTheSameProject(t *testing.T) {
 	t.Parallel()
 
 	session := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
+		Name: "bb", Version: "test", Clients: testClients(t),
 		Scope: Scope{ProjectKey: "PROJ", RepoSlug: "payments"},
 	})
 
@@ -140,7 +140,7 @@ func TestScopeInjectsOmittedArguments(t *testing.T) {
 	scope := Scope{ProjectKey: "PROJ", RepoSlug: "payments"}
 
 	session := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true, Scope: scope,
+		Name: "bb", Version: "test", Clients: testClients(t), Scope: scope,
 		Audit: recordingAudit(&seen),
 	})
 
@@ -165,7 +165,7 @@ func TestScopeWithholdsUnboundableTools(t *testing.T) {
 	t.Parallel()
 
 	session := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
+		Name: "bb", Version: "test", Clients: testClients(t),
 		Scope: Scope{ProjectKey: "PROJ"},
 	})
 
@@ -191,7 +191,7 @@ func TestScopeWithholdsRepositorySearchUnderARepositoryScope(t *testing.T) {
 	t.Parallel()
 
 	repoScoped := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
+		Name: "bb", Version: "test", Clients: testClients(t),
 		Scope: Scope{ProjectKey: "PROJ", RepoSlug: "payments"},
 	})
 	for _, name := range listToolNames(t, repoScoped) {
@@ -202,7 +202,7 @@ func TestScopeWithholdsRepositorySearchUnderARepositoryScope(t *testing.T) {
 
 	// Under a project scope it is available, with the filter pinned.
 	projectScoped := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
+		Name: "bb", Version: "test", Clients: testClients(t),
 		Scope: Scope{ProjectKey: "PROJ"},
 	})
 	found := false
@@ -222,7 +222,7 @@ func TestUnscopedServerIsUnchanged(t *testing.T) {
 	t.Parallel()
 
 	session := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: Clients{}, Yolo: true,
+		Name: "bb", Version: "test", Clients: Clients{},
 	})
 	if got, want := len(listToolNames(t, session)), len(AllSpecs()); got != want {
 		t.Errorf("unscoped tools/list returned %d tools, want %d", got, want)
@@ -245,7 +245,7 @@ func TestAuditRecordsSuccessAndDenial(t *testing.T) {
 	audit.Scope = "PROJ/payments"
 
 	session := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
+		Name: "bb", Version: "test", Clients: testClients(t),
 		Scope: Scope{ProjectKey: "PROJ", RepoSlug: "payments"},
 		Audit: audit,
 	})
@@ -336,7 +336,7 @@ func TestAuditFailureDeniesTheCall(t *testing.T) {
 	failing := &AuditLogger{writer: failingWriter{}}
 
 	session := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
+		Name: "bb", Version: "test", Clients: testClients(t),
 		Audit: failing, AuditFailure: AuditFailureDeny,
 	})
 
@@ -357,7 +357,7 @@ func TestAuditFailureWarnLetsTheCallProceed(t *testing.T) {
 	failing := &AuditLogger{writer: failingWriter{}}
 
 	session := connectWith(t, ServerOptions{
-		Name: "bb", Version: "test", Clients: testClients(t), Yolo: true,
+		Name: "bb", Version: "test", Clients: testClients(t),
 		Audit: failing, AuditFailure: AuditFailureWarn,
 		Warn: func(message string) { warnings = append(warnings, message) },
 	})

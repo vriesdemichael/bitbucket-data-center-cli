@@ -28,9 +28,9 @@ func specListCommits() Spec {
 	tool := &mcp.Tool{
 		Name:        "list_commits",
 		Description: "List commits in a repository branch. Use to walk history to find a good base or diagnose what changed.",
-		Annotations: readOnly(),
+		Annotations: readOnly("List commits"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListCommitsInput, ListCommitsOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[ListCommitsInput, ListCommitsOutput] {
 		svc := commitservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListCommitsInput) (*mcp.CallToolResult, ListCommitsOutput, error) {
 			limit := limitOrDefault(in.Limit)
@@ -67,9 +67,9 @@ func specGetCommit() Spec {
 	tool := &mcp.Tool{
 		Name:        "get_commit",
 		Description: "Get details of a specific commit including author, message, and timestamp.",
-		Annotations: readOnly(),
+		Annotations: readOnly("Get commit"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetCommitInput, GetCommitOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[GetCommitInput, GetCommitOutput] {
 		svc := commitservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetCommitInput) (*mcp.CallToolResult, GetCommitOutput, error) {
 			commit, err := svc.Get(ctx,
@@ -103,9 +103,9 @@ func specCompareRefs() Spec {
 	tool := &mcp.Tool{
 		Name:        "compare_refs",
 		Description: "List the commits reachable from 'from' but not from 'to': what one ref has that the other lacks. For the commits a feature branch adds, pass from=feature and to=main.",
-		Annotations: readOnly(),
+		Annotations: readOnly("Compare refs"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[CompareRefsInput, CompareRefsOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[CompareRefsInput, CompareRefsOutput] {
 		svc := commitservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in CompareRefsInput) (*mcp.CallToolResult, CompareRefsOutput, error) {
 			limit := limitOrDefault(in.Limit)

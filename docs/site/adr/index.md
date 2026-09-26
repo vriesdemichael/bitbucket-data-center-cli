@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `97`
-- Accepted ADRs: `86`
+- Total ADRs: `98`
+- Accepted ADRs: `87`
 
 ## ADR List
 
@@ -106,4 +106,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 095: Machine output is the whole envelope, as JSON or YAML, and not gh's field lists](095-machine-output-is-the-whole-envelope-as-json-or-yaml.md) (`architecture`, `accepted`)
 - [ADR 096: The flags choose a document's member, and --dry-run answers with a verdict](096-the-flags-choose-the-member-and-dry-run-answers-with-a-verdict.md) (`architecture`, `accepted`)
 - [ADR 097: --describe describes a command's output in every mode](097-describe-describes-a-commands-output-in-every-mode.md) (`architecture`, `accepted`)
+- [ADR 098: MCP tools that decide a merge ask the person through the client](098-mcp-tools-that-decide-a-merge-ask-the-person.md) (`architecture`, `accepted`)
 

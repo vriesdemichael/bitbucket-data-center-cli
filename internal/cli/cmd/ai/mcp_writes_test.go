@@ -1,60 +1,39 @@
 package ai
 
 import (
-	"bytes"
-	"encoding/json"
 	"strings"
 	"testing"
 )
 
-// Exposure is drawn by consequence, so a tool exposed by default can write.
-// The listing says which do, rather than leaving SAFE to be read as read-only
-// (#576).
-func TestMCPToolsSayWhichWriteApartFromExposure(t *testing.T) {
+// Writing and asking are separate facts, and the listing says both. Several
+// tools write without asking, and create_tag asks though it only adds, so
+// neither can be read off the other (#576 found SAFE read as read-only).
+func TestMCPToolsSayWhichWriteApartFromWhichAsk(t *testing.T) {
 	t.Parallel()
 
-	run := func(t *testing.T, args ...string) string {
-		t.Helper()
-		cmd := newAICommandWithJSONFlag()
-		buf := &bytes.Buffer{}
-		cmd.SetOut(buf)
-		cmd.SetErr(buf)
-		cmd.SetArgs(args)
-		if err := cmd.Execute(); err != nil {
-			t.Fatalf("bb ai %s: %v", strings.Join(args, " "), err)
-		}
-		return buf.String()
+	byName := map[string]listedTool{}
+	for _, tool := range listToolsJSON(t) {
+		byName[tool.Name] = tool
 	}
 
-	var envelope struct {
-		Data []struct {
-			Name   string `json:"name"`
-			Safe   bool   `json:"safe"`
-			Writes bool   `json:"writes"`
-		} `json:"data"`
-	}
-	if err := json.Unmarshal([]byte(run(t, "mcp", "tools", "--json")), &envelope); err != nil {
-		t.Fatalf("output is not a parseable envelope: %v", err)
-	}
-	byName := map[string]struct{ Safe, Writes bool }{}
-	for _, tool := range envelope.Data {
-		byName[tool.Name] = struct{ Safe, Writes bool }{tool.Safe, tool.Writes}
-	}
-
-	for _, name := range []string{"create_pull_request", "update_pull_request", "add_pr_comment", "create_tag", "disable_auto_merge"} {
-		if tool, ok := byName[name]; !ok || !tool.Safe || !tool.Writes {
-			t.Errorf("%s: %+v, want exposed by default and writing", name, tool)
+	for _, name := range []string{"create_pull_request", "add_pr_comment"} {
+		if tool, ok := byName[name]; !ok || !tool.Writes || tool.Asks != "never" {
+			t.Errorf("%s: %+v, want it to write without asking", name, tool)
 		}
+	}
+	if tool, ok := byName["create_tag"]; !ok || !tool.Writes || tool.Asks != "always" {
+		t.Errorf("create_tag: %+v, want it to write and ask", tool)
 	}
 	for _, name := range []string{"list_pull_requests", "get_file_content"} {
-		if tool, ok := byName[name]; !ok || !tool.Safe || tool.Writes {
-			t.Errorf("%s: %+v, want exposed by default and read-only", name, tool)
+		if tool, ok := byName[name]; !ok || tool.Writes || tool.Asks != "never" {
+			t.Errorf("%s: %+v, want it read-only", name, tool)
 		}
 	}
 
-	for _, line := range strings.Split(run(t, "mcp", "tools"), "\n") {
+	stdout, _ := runAI(t, "mcp", "tools")
+	for _, line := range strings.Split(stdout, "\n") {
 		fields := strings.Fields(line)
-		if len(fields) >= 3 && fields[0] == "create_tag" && fields[2] != "writes" {
+		if len(fields) >= 2 && fields[0] == "create_tag" && fields[1] != "writes" {
 			t.Errorf("the text listing does not say create_tag writes: %q", line)
 		}
 	}

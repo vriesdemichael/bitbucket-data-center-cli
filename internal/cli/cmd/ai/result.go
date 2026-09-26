@@ -6,18 +6,19 @@ import (
 
 // Tool is one MCP tool the server exposes.
 //
-// safe and exposure are the same fact twice on purpose: safe is the boolean the
-// server gates on, exposure is that classification as a stable string, so a
-// consumer can render it without re-deriving the vocabulary.
+// writes and asks are separate facts. Several tools write without asking,
+// opening a pull request or commenting, and create_tag asks though it only
+// adds.
 //
-// writes is a different fact, and the one safe was taken for: the gate is drawn
-// by consequence, so some of the tools exposed by default write (#576).
+// safe and exposure described exposure without --yolo. Every tool has it now,
+// so they are constant, and deprecated until the next major (ADR-084).
 type Tool struct {
 	Name        string `json:"name" jsonschema:"Tool name, as an MCP client sees it."`
 	Description string `json:"description,omitempty" jsonschema:"What the tool does."`
-	Safe        bool   `json:"safe" jsonschema:"Whether the server exposes the tool without --yolo. Not whether it writes: see writes."`
-	Exposure    string `json:"exposure" jsonschema:"The same classification as a stable string."`
-	Writes      bool   `json:"writes" jsonschema:"Whether the tool changes anything in Bitbucket. Some tools exposed by default do: opening a pull request, commenting, tagging."`
+	Writes      bool   `json:"writes" jsonschema:"Whether the tool changes anything in Bitbucket."`
+	Asks        string `json:"asks" jsonschema:"Whether a call asks the person to confirm it in the MCP client before it runs: always, never, or when-draft-changes for a call that changes the pull request's draft flag."`
+	Safe        bool   `json:"safe" jsonschema:"Deprecated: always true, since every tool is exposed without --yolo. Read asks and writes instead."`
+	Exposure    string `json:"exposure" jsonschema:"Deprecated: always SAFE, since every tool is exposed without --yolo. Read asks and writes instead."`
 }
 
 // SkillFile is what `bb ai skill install` and `remove` report.
@@ -35,6 +36,7 @@ type SkillFile struct {
 
 func init() {
 	result.Declare("ai mcp tools", result.List[Tool](map[string][]string{
+		"asks":     askingValues,
 		"exposure": {exposureSafe, exposureYolo},
 	}))
 	result.Declare("ai skill install", result.For[SkillFile](map[string][]string{

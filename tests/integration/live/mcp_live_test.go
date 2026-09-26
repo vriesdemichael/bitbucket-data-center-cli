@@ -36,6 +36,14 @@ import (
 func executeLiveMCPServer(t *testing.T, drive func(*mcp.ClientSession), args ...string) {
 	t.Helper()
 
+	executeLiveMCPServerAs(t, nil, drive, args...)
+}
+
+// executeLiveMCPServerAs is executeLiveMCPServer with a client of its own, such
+// as one that can show a confirmation and answers it (see answeringClient).
+func executeLiveMCPServerAs(t *testing.T, clientOptions *mcp.ClientOptions, drive func(*mcp.ClientSession), args ...string) {
+	t.Helper()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
@@ -61,7 +69,7 @@ func executeLiveMCPServer(t *testing.T, drive func(*mcp.ClientSession), args ...
 		served <- err
 	}()
 
-	client := mcp.NewClient(&mcp.Implementation{Name: "bb-live-test", Version: "test"}, nil)
+	client := mcp.NewClient(&mcp.Implementation{Name: "bb-live-test", Version: "test"}, clientOptions)
 	session, err := client.Connect(ctx, &mcp.IOTransport{
 		Reader: stdoutReader,
 		Writer: stdinWriter,
@@ -147,142 +155,13 @@ func TestLiveMCPServerExposesEverySpec(t *testing.T) {
 		got := listedToolNames(t, session)
 		sort.Strings(got)
 		if strings.Join(got, ",") != strings.Join(want, ",") {
-			t.Errorf("tools/list with --yolo = %v\nwant %v", got, want)
-		}
-	}, "ai", "mcp", "serve", "--yolo")
-}
-
-// TestLiveMCPSafetyGateWithholdsUnsafeTools proves the gate gates.
-//
-// This is the property a unit test with a stub cannot establish, and the one
-// that matters most: --yolo and the Safe classification are what stand between
-// a prompt-injected agent and an irreversible merge. A gate that does not gate
-// is worse than no gate, because the threat model claims it holds.
-func TestLiveMCPSafetyGateWithholdsUnsafeTools(t *testing.T) {
-	t.Parallel()
-
-	harness := newLiveHarness(t)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-
-	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
-	if err != nil {
-		t.Fatalf("seed project with repositories failed: %v", err)
-	}
-	repo := seeded.Repos[0]
-	repoRef := seeded.Key + "/" + repo.Slug
-	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
-
-	withheld := make([]string, 0)
-	for _, spec := range bbmcp.AllSpecs() {
-		if !spec.Safe {
-			withheld = append(withheld, spec.Tool.Name)
-		}
-	}
-	if len(withheld) == 0 {
-		t.Fatal("no tools are withheld by default; the safety gate has nothing to prove")
-	}
-
-	// Something each withheld tool would really change. The calls used to name
-	// pull request 1, which the seeded repository does not have, so Bitbucket
-	// refused them as readily as the gate: a server that let every call through
-	// passed as well.
-	//
-	// The pull request is somebody else's with the caller reviewing it, because
-	// Bitbucket refuses an author's own review, and auto-merge is on for the
-	// repository, because arming it is refused otherwise.
-	author, err := harness.createLicensedUser(ctx)
-	if err != nil {
-		t.Fatalf("create the pull request author failed: %v", err)
-	}
-	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, author.Username, "REPO_WRITE"); err != nil {
-		t.Fatalf("grant the author write access failed: %v", err)
-	}
-	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, "feature/mcp-gate", "mcp-gate.txt"); err != nil {
-		t.Fatalf("push commit on branch failed: %v", err)
-	}
-	authored, err := harness.liveJSONAs(ctx, author, http.MethodPost,
-		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests", seeded.Key, repo.Slug),
-		map[string]any{
-			"title":     "Held back by the safety gate",
-			"fromRef":   map[string]any{"id": "refs/heads/feature/mcp-gate"},
-			"toRef":     map[string]any{"id": "refs/heads/master"},
-			"reviewers": []map[string]any{{"user": map[string]any{"name": harness.username()}}},
-		})
-	if err != nil {
-		t.Fatalf("create the authored pull request failed: %v", err)
-	}
-	pullRequestID := fmt.Sprintf("%d", int64(authored["id"].(float64)))
-
-	mustLiveCLI(t, "repo", "settings", "auto-merge", "set", "--enabled", "--repo", repoRef)
-	if settings := decodeJSONMap(t, mustLiveCLI(t, "repo", "settings", "auto-merge", "get", "--repo", repoRef)); settings["enabled"] != true {
-		t.Fatalf("auto-merge is not enabled on %s after enabling it: %v", repoRef, settings)
-	}
-
-	before := mcpLivePullRequest(t, repoRef, pullRequestID)
-	if reviewer := mcpLiveReviewer(t, before, harness.username()); reviewer["role"] != "REVIEWER" || reviewer["status"] != "UNAPPROVED" {
-		t.Fatalf("the caller is %v/%v on pull request %s, want an UNAPPROVED REVIEWER", reviewer["role"], reviewer["status"], pullRequestID)
-	}
-	commitID := asString(before["sourceCommit"])
-	buildKey := testsupport.UniqueName("mcp-gate-")
-
-	arguments := map[string]map[string]any{
-		"submit_pr_review":   {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "action": "approve"},
-		"merge_pull_request": {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
-		"enable_auto_merge":  {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
-		"set_build_status":   {"commit_id": commitID, "key": buildKey, "state": "FAILED", "url": "https://ci.example.com/gate"},
-	}
-	for _, name := range withheld {
-		if _, ok := arguments[name]; !ok {
-			t.Errorf("withheld tool %q has no arguments; give it ones it would act on, and read back below that it did not", name)
-		}
-	}
-	if t.Failed() {
-		return
-	}
-
-	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
-		exposed := make(map[string]bool)
-		for _, name := range listedToolNames(t, session) {
-			exposed[name] = true
-		}
-
-		for _, name := range withheld {
-			if exposed[name] {
-				t.Errorf("tool %q is withheld without --yolo but appears in tools/list", name)
-			}
-
-			// Not listed is not the same as not callable. An agent that knows
-			// the name can still ask for it, so the call itself must fail.
-			result, callErr := session.CallTool(context.Background(), &mcp.CallToolParams{
-				Name:      name,
-				Arguments: arguments[name],
-			})
-			if callErr == nil && (result == nil || !result.IsError) {
-				t.Errorf("calling withheld tool %q succeeded; the safety gate does not gate", name)
-			}
+			t.Errorf("tools/list = %v\nwant %v", got, want)
 		}
 	}, "ai", "mcp", "serve")
-
-	// A refusal is only the gate's if nothing changed.
-	after := mcpLivePullRequest(t, repoRef, pullRequestID)
-	if after["state"] != "OPEN" {
-		t.Errorf("pull request %s is %v after withheld merge_pull_request and enable_auto_merge calls", pullRequestID, after["state"])
-	}
-	if reviewer := mcpLiveReviewer(t, after, harness.username()); reviewer["status"] != "UNAPPROVED" {
-		t.Errorf("the caller's review of pull request %s is %v after a withheld submit_pr_review", pullRequestID, reviewer["status"])
-	}
-	if autoMerge := mcpLiveAutoMerge(t, repoRef, pullRequestID); autoMerge["enabled"] != false {
-		t.Errorf("auto-merge on pull request %s is %v after a withheld enable_auto_merge", pullRequestID, autoMerge)
-	}
-	if status, found := mcpLiveBuildStatuses(t, commitID)[buildKey]; found {
-		t.Errorf("a withheld set_build_status reported build %s on %s: %v", buildKey, commitID, status)
-	}
 }
 
 // TestLiveMCPToolFilteringAdmitsAndExcludes covers --tools and --exclude,
-// including the precedence between them and the safety filter.
+// including their precedence, and --read-only, which neither overrides.
 func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
 	t.Parallel()
 
@@ -307,7 +186,7 @@ func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
 		}, "ai", "mcp", "serve", "--tools", "list_branches,list_tags")
 	})
 
-	t.Run("tools overrides the safety filter", func(t *testing.T) {
+	t.Run("tools admits a tool that asks", func(t *testing.T) {
 		executeLiveMCPServer(t, func(session *mcp.ClientSession) {
 			got := listedToolNames(t, session)
 			if len(got) != 1 || got[0] != "merge_pull_request" {
@@ -316,7 +195,34 @@ func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
 		}, "ai", "mcp", "serve", "--tools", "merge_pull_request")
 	})
 
-	t.Run("exclude suppresses a tool that is otherwise safe", func(t *testing.T) {
+	t.Run("read-only exposes only the tools that read", func(t *testing.T) {
+		want := make([]string, 0)
+		for _, spec := range bbmcp.AllSpecs() {
+			if spec.ReadOnly() {
+				want = append(want, spec.Tool.Name)
+			}
+		}
+		sort.Strings(want)
+
+		executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+			got := listedToolNames(t, session)
+			sort.Strings(got)
+			if strings.Join(got, ",") != strings.Join(want, ",") {
+				t.Errorf("tools/list = %v\nwant the read-only tools %v", got, want)
+			}
+		}, "ai", "mcp", "serve", "--read-only")
+	})
+
+	t.Run("read-only is not overridden by tools", func(t *testing.T) {
+		executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+			got := listedToolNames(t, session)
+			if len(got) != 1 || got[0] != "list_branches" {
+				t.Errorf("tools/list = %v, want [list_branches]", got)
+			}
+		}, "ai", "mcp", "serve", "--read-only", "--tools", "merge_pull_request,list_branches")
+	})
+
+	t.Run("exclude suppresses a tool", func(t *testing.T) {
 		executeLiveMCPServer(t, func(session *mcp.ClientSession) {
 			for _, name := range listedToolNames(t, session) {
 				if name == "list_branches" {
@@ -1107,10 +1013,13 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 		t.Fatalf("%s was added as %v/%v, want an UNAPPROVED REVIEWER", reviewer.Username, added["role"], added["status"])
 	}
 
-	// The server runs as the reviewer, because the review does.
+	// The server runs as the reviewer, because the review does. submit_pr_review
+	// asks, so the client is one that shows the confirmation and accepts it, as
+	// the person would.
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
+	person, answers := answeringClient(acceptConfirmation)
 
-	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+	executeLiveMCPServerAs(t, person, func(session *mcp.ClientSession) {
 		callCtx := context.Background()
 
 		// The two tools spell the same argument differently: submit_pr_review
@@ -1216,7 +1125,12 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 				t.Errorf("after unapprove: status=%q, want UNAPPROVED", status)
 			}
 		})
-	}, "ai", "mcp", "serve", "--yolo")
+	}, "ai", "mcp", "serve")
+
+	// One confirmation per review: approve, needs_work and unapprove each asked.
+	if asked := answers.questions(); len(asked) != 3 {
+		t.Errorf("the person was asked %d times, want once for each of the three reviews", len(asked))
+	}
 }
 
 // TestLiveMCPAddPRCommentRoutesInlineAndReply covers the two shapes
@@ -1357,5 +1271,5 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 		if !sawReply {
 			t.Errorf("the reply is not inside the thread it answered:\n%s", raw)
 		}
-	}, "ai", "mcp", "serve", "--yolo")
+	}, "ai", "mcp", "serve")
 }

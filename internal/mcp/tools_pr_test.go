@@ -73,7 +73,7 @@ func newUnreachedClients(t *testing.T) Clients {
 func callTool(t *testing.T, spec Spec, clients Clients, args map[string]any) *mcp.CallToolResult {
 	t.Helper()
 
-	session := connect(t, clients, []string{spec.Tool.Name}, nil, true)
+	session := connect(t, clients, []string{spec.Tool.Name}, nil)
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
 		Name:      spec.Tool.Name,
 		Arguments: args,

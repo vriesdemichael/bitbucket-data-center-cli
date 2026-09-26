@@ -25,8 +25,9 @@ A governance test asserts an invariant about the codebase rather than a behaviou
    - TestEveryMappedCLICommandExists: no mapping names a command that was removed.
    - TestEveryToolHasAScopeRule: no MCP tool escapes workspace scoping.
    - TestADRDoesNotNameToolsThatDoNotExist: a record does not name a removed tool.
-   - TestGatedToolsAreTheOnesThatMergeOrGate: the --yolo set is exactly the tools that merge or gate.
-   - TestReadOnlyToolsAreNotGated: a tool that writes nothing is not withheld.
+   - TestToolsThatAskAreTheOnesThatDecideAMerge: the tools that ask the person are exactly the ones that decide a merge, and create_tag.
+   - TestReadOnlyToolsDoNotAsk: a tool that writes nothing asks nothing.
+   - TestEveryToolDeclaresItsHintsAndTitle: every MCP tool states all four hints and a title.
    - TestLiveMCPEveryToolReturnsAClientCompatibleResult: every MCP tool is called, and its result is a JSON object with a text fallback.
    - TestEveryHookRunnableGateRunsOnBothSides: every gate a git hook can run runs locally and in CI.
    - TestNoGateIsDefinedAndNeverRun: a task named like a check is reachable from something that runs it.

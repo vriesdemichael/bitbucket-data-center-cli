@@ -237,7 +237,7 @@ Usage:
 
 Available Commands:
   serve       Start the MCP server (stdio transport)
-  tools       List available MCP tools with name, exposure and description
+  tools       List MCP tools with what they change and whether they ask
 
 Use "bb ai mcp [command] --help" for more information about a command.
 ```
@@ -300,13 +300,20 @@ config file. Scoping the server this way replaces the old --token flag, which
 put the credential in the process argument list for as long as the server ran
 -- world-readable on Linux, unlike the process environment.
 
-By default the server runs in safe mode: only tools whose side-effects are
-low-blast-radius and easily reversed are exposed (e.g. create_pull_request,
-add_pr_comment). Tools that perform irreversible operations such as
-merge_pull_request are withheld unless --yolo is set.
+Tools that change whether or when a pull request merges ask the person to
+confirm each call in the MCP client before they run: merging, enabling or
+disabling auto-merge, submitting a review, reporting a build status, creating a
+tag, and changing a pull request's draft flag. The confirmation is an MCP
+elicitation, and the tool acts only when it is accepted. A client that cannot
+show one gets error -32021 for those tools, and nothing reaches Bitbucket.
+bb ai mcp tools lists which tools ask.
 
-Use --tools to expose a specific subset regardless of the safety classification.
-Use --exclude to suppress individual tools in any mode.
+Use --read-only to expose only the tools that read. It is for a client you do
+not trust with the tool annotations and those confirmations: a client you cannot
+trust with them should not make changes in Bitbucket, so make them yourself.
+
+Use --tools to expose only the tools you name, and --exclude to suppress
+individual tools. Neither exposes a tool that --read-only or a scope withholds.
 
 When more than one Bitbucket instance is configured the --host flag is required.
 
@@ -331,15 +338,14 @@ Usage:
   bb ai mcp serve [flags]
 
 Flags:
-      --allow-writes           Alias for --yolo
       --audit-failure string   What to do when an audit record cannot be written (one of: deny, warn) (default "deny")
       --audit-file string      Append a JSON Lines audit record per tool call to this path, or to 'stderr'
       --exclude string         Comma-separated denylist of tool names to suppress
       --host string            Target Bitbucket instance URL; required when multiple instances are configured
       --project string         Confine the server to this project key; calls aimed elsewhere are refused
+      --read-only              Expose only the tools that read, for a client you do not trust to make changes
       --repo string            Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)
-      --tools string           Comma-separated allowlist of tool names to expose (overrides safety filter)
-      --yolo                   Expose all tools including unsafe operations like merge_pull_request
+      --tools string           Comma-separated allowlist of tool names to expose
 
 Dry run:
   Not accepted: it starts a live server whose tools reach Bitbucket, and a session cannot be previewed.
@@ -369,30 +375,28 @@ Dry run:
 
 ## `bb ai mcp tools`
 
-List available MCP tools with name, exposure and description
+List MCP tools with what they change and whether they ask
 
 ```text
-Print all MCP tools the serve command can expose.
+Print every MCP tool the serve command exposes.
 
-Use this output to build --tools and --exclude allowlists/denylists.
+Use this output to build --tools and --exclude allowlists and denylists.
 
-EXPOSURE says when a tool is available, and ACCESS whether it changes anything:
+ACCESS says whether a tool changes anything in Bitbucket. ASKS says whether a
+call asks the person to confirm it in the MCP client before it runs:
 
-  SAFE   exposed by default. Some of these write -- opening a pull request,
-         commenting, tagging -- but none changes a branch or causes a merge
-  YOLO   withheld unless 'bb ai mcp serve --yolo' (or --allow-writes) is set,
-         because it cannot be undone, causes a merge, or feeds a check that
-         decides whether one is allowed
+  always               every call asks
+  when-draft-changes   a call that changes the pull request's draft flag asks
+  never                the tool runs when called
 
---tools takes precedence over the safety filter, so naming a YOLO tool in an
-allowlist exposes it without --yolo. Pass --safe-only to list just the set the
-server exposes by default.
+A client that cannot show a confirmation gets error -32021 for a call that asks.
+Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.
 
 Usage:
   bb ai mcp tools [flags]
 
 Flags:
-      --safe-only   List only the tools the server exposes without --yolo
+      --read-only   List only the tools 'bb ai mcp serve --read-only' exposes
 
 Dry run:
   Runs as usual: this command changes nothing, so there is nothing to hold back

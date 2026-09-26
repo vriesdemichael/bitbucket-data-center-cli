@@ -331,13 +331,13 @@ Where the sabotage can be expressed as a test, write it as one — see
 `TestParityComparisonDetectsDrift`. That turns "verified once" into something CI
 re-verifies.
 
-Where two classifications describe the same thing, check both directions. The
-MCP tool safety flag and the tool annotations answer the same question — is this
-dangerous — and were cross-checked one way only: a gated tool claiming to be
-harmless failed, a tool exposed without `--yolo` while annotating itself
-destructive did not. The unguarded direction was the worse one, because the
-annotation is advice a client may ignore while the flag is what the server
-enforces.
+Where two declarations answer the same question, derive one from the other;
+where they answer different questions, keep them apart and check both. Whether
+an MCP tool asks the person is the server's policy, and it enforces it; the
+annotations describe the tool as the MCP specification defines each hint, and a
+client may ignore them. Deriving the hints from the policy once made
+`destructiveHint` say whatever the gate said. Declared apart, the one relation
+worth asserting is that a tool annotated read-only asks nothing.
 
 The governance guards, so the set is knowable:
 
@@ -350,8 +350,9 @@ The governance guards, so the set is knowable:
 | `TestEveryMCPToolIsAccountedFor`, `TestEveryMappedCLICommandExists` | the MCP and CLI surfaces stay in step |
 | `TestEveryToolHasAScopeRule` | no MCP tool escapes workspace scoping |
 | `TestADRDoesNotNameToolsThatDoNotExist` | decision records do not name tools that were removed |
-| `TestGatedToolsAreTheOnesThatMergeOrGate` | the `--yolo` set is exactly the tools that merge or gate |
-| `TestReadOnlyToolsAreNotGated` | a tool annotated read-only is not withheld behind `--yolo` — either it writes after all, or it needs no gating |
+| `TestToolsThatAskAreTheOnesThatDecideAMerge` | the tools that ask the person before they run are exactly the ones that decide a merge, and `create_tag` |
+| `TestReadOnlyToolsDoNotAsk` | a tool annotated read-only asks nothing — either it writes after all, or there is nothing to confirm |
+| `TestEveryToolDeclaresItsHintsAndTitle` | every MCP tool states all four hints and a title, rather than leaving a hint to its default |
 | `TestLiveMCPEveryToolReturnsAClientCompatibleResult` | every MCP tool is actually called, and its result is a JSON object with a text fallback |
 | `TestTheStatusMappingIsOnlyTestedWhereItLives` | no package outside `internal/openapi` tests the status-to-kind mapping |
 | `TestNoServiceOptionIsCalledLimit` | no service option names a limit the call site cannot act on |

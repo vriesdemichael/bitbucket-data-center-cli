@@ -2,6 +2,7 @@ number: 61
 title: The MCP surface runs on the official SDK and every tool names its payload
 category: architecture
 status: accepted
+amended_by: 98
 decision: >
   The MCP server is built on github.com/modelcontextprotocol/go-sdk, registering every tool through
   the generic mcp.AddTool[In, Out]. The input schema is derived from In and the output schema from
@@ -28,6 +29,8 @@ decision: >
   in the direction that matters -- Safe is what the server enforces, DestructiveHint is advice a
   client may ignore. A test fails when a tool annotated read-only is withheld without --yolo.
 agent_instructions: >
+  DestructiveHint is no longer derived from a Safe classification: ADR-098. Declare every hint by
+  its definition, with readOnly or writes.
   Add a tool with mcp.AddTool through the toolSpec helper in internal/mcp/server.go. Define an input
   struct and an output struct; do not hand-write a schema. Fields without omitempty become required,
   fields with it become optional, and the jsonschema struct tag carries the description.
