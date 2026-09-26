@@ -5,14 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
 )
 
@@ -248,167 +252,212 @@ func TestMCPToolsCountMatchesAllSpecs(t *testing.T) {
 	}
 }
 
-// gatedToolNames are the tools the server withholds without --yolo.
+// askingTools are the tools that ask the person before they run, and when.
 //
-// Listed literally rather than derived from AllSpecs, so that reclassifying a
-// tool has to be a deliberate edit here as well. Silently promoting
-// merge_pull_request to safe is exactly the change that should not pass review
-// unnoticed.
-var gatedToolNames = []string{
-	"merge_pull_request",
-	"submit_pr_review",
-	"enable_auto_merge",
-	"set_build_status",
+// Listed literally rather than derived from AllSpecs, so that changing which
+// tools ask has to be a deliberate edit here as well as in the server.
+var askingTools = map[string]string{
+	"merge_pull_request":  "always",
+	"enable_auto_merge":   "always",
+	"disable_auto_merge":  "always",
+	"submit_pr_review":    "always",
+	"set_build_status":    "always",
+	"create_tag":          "always",
+	"update_pull_request": "when-draft-changes",
 }
 
-func TestToolExposureMatchesTheServerClassification(t *testing.T) {
-	t.Parallel()
-
-	gated := map[string]bool{}
-	for _, name := range gatedToolNames {
-		gated[name] = true
+func wantAsks(name string) string {
+	if asks, ok := askingTools[name]; ok {
+		return asks
 	}
 
-	seen := map[string]bool{}
-	for _, spec := range bbmcp.AllSpecs() {
-		seen[spec.Tool.Name] = true
-
-		want := exposureSafe
-		if gated[spec.Tool.Name] {
-			want = exposureYolo
-		}
-
-		if got := toolExposure(spec); got != want {
-			t.Errorf("tool %q: exposure %q, want %q", spec.Tool.Name, got, want)
-		}
-		if spec.Safe == gated[spec.Tool.Name] {
-			t.Errorf("tool %q: Safe=%v contradicts the expected gating", spec.Tool.Name, spec.Safe)
-		}
-	}
-
-	for _, name := range gatedToolNames {
-		if !seen[name] {
-			t.Errorf("expected gated tool %q to exist; was it renamed or removed?", name)
-		}
-	}
+	return "never"
 }
 
-// TestMCPToolsMarksGatedTools is the defect from #324: the listing is
-// documented as the source for building allowlists, so a tool that is withheld
-// by default has to say so.
-func TestMCPToolsMarksGatedTools(t *testing.T) {
-	t.Parallel()
-
-	cmd := New(testMCPDeps())
-	buf := &bytes.Buffer{}
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"mcp", "tools"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	for _, line := range strings.Split(buf.String(), "\n") {
-		fields := strings.Fields(line)
-		if len(fields) < 2 {
-			continue
-		}
-
-		name, exposure := fields[0], fields[1]
-		if exposure != exposureSafe && exposure != exposureYolo {
-			continue
-		}
-
-		wantYolo := false
-		for _, gatedName := range gatedToolNames {
-			if name == gatedName {
-				wantYolo = true
-			}
-		}
-
-		if wantYolo && exposure != exposureYolo {
-			t.Errorf("gated tool %q is listed as %s", name, exposure)
-		}
-		if !wantYolo && exposure != exposureSafe {
-			t.Errorf("safe tool %q is listed as %s", name, exposure)
-		}
-	}
-}
-
-func TestMCPToolsSafeOnlyOmitsGatedTools(t *testing.T) {
-	t.Parallel()
-
-	cmd := New(testMCPDeps())
-	buf := &bytes.Buffer{}
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"mcp", "tools", "--safe-only"})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	out := buf.String()
-	for _, name := range gatedToolNames {
-		if strings.Contains(out, name) {
-			t.Errorf("--safe-only listed gated tool %q", name)
-		}
-	}
-
-	// The safe tools must still all be present: a filter that drops too much is
-	// as wrong as one that drops nothing.
-	for _, spec := range bbmcp.AllSpecs() {
-		if spec.Safe && !strings.Contains(out, spec.Tool.Name) {
-			t.Errorf("--safe-only omitted safe tool %q", spec.Tool.Name)
-		}
-	}
-}
-
-func TestMCPToolsJSONCarriesExposure(t *testing.T) {
-	t.Parallel()
+// runAI runs `bb ai` with args and returns what it printed to stdout and stderr.
+func runAI(t *testing.T, args ...string) (stdout, stderr string) {
+	t.Helper()
 
 	cmd := newAICommandWithJSONFlag()
-
-	buf := &bytes.Buffer{}
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"mcp", "tools", "--json"})
-
+	out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
+	cmd.SetOut(out)
+	cmd.SetErr(errOut)
+	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+		t.Fatalf("bb ai %s: %v", strings.Join(args, " "), err)
 	}
 
+	return out.String(), errOut.String()
+}
+
+type listedTool struct {
+	Name     string `json:"name"`
+	Writes   bool   `json:"writes"`
+	Asks     string `json:"asks"`
+	Safe     bool   `json:"safe"`
+	Exposure string `json:"exposure"`
+}
+
+func listToolsJSON(t *testing.T, args ...string) []listedTool {
+	t.Helper()
+
+	stdout, _ := runAI(t, append([]string{"mcp", "tools", "--json"}, args...)...)
 	var envelope struct {
-		Data []struct {
-			Name     string `json:"name"`
-			Safe     bool   `json:"safe"`
-			Exposure string `json:"exposure"`
-		} `json:"data"`
+		Data []listedTool `json:"data"`
 	}
-	if err := json.Unmarshal(buf.Bytes(), &envelope); err != nil {
+	if err := json.Unmarshal([]byte(stdout), &envelope); err != nil {
 		t.Fatalf("output is not a parseable envelope: %v", err)
 	}
-	if len(envelope.Data) != len(bbmcp.AllSpecs()) {
-		t.Fatalf("expected %d entries, got %d", len(bbmcp.AllSpecs()), len(envelope.Data))
+
+	return envelope.Data
+}
+
+// TestMCPToolsSaysWhichToolsAsk is the listing the documentation points at for
+// building allowlists, so it has to say which tools ask, in JSON and in text.
+func TestMCPToolsSaysWhichToolsAsk(t *testing.T) {
+	t.Parallel()
+
+	tools := listToolsJSON(t)
+	if len(tools) != len(bbmcp.AllSpecs()) {
+		t.Fatalf("listed %d tools, want %d", len(tools), len(bbmcp.AllSpecs()))
+	}
+	seen := map[string]bool{}
+	for _, tool := range tools {
+		seen[tool.Name] = true
+		if tool.Asks != wantAsks(tool.Name) {
+			t.Errorf("%s: asks %q, want %q", tool.Name, tool.Asks, wantAsks(tool.Name))
+		}
+	}
+	for name := range askingTools {
+		if !seen[name] {
+			t.Errorf("expected %q to be listed; was it renamed or removed?", name)
+		}
 	}
 
-	gated := map[string]bool{}
-	for _, name := range gatedToolNames {
-		gated[name] = true
+	stdout, _ := runAI(t, "mcp", "tools")
+	for _, line := range strings.Split(stdout, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
+			continue
+		}
+		if fields[2] != wantAsks(fields[0]) {
+			t.Errorf("the text listing says %s asks %q, want %q", fields[0], fields[2], wantAsks(fields[0]))
+		}
+	}
+}
+
+// TestMCPToolsReadOnlyListsWhatAReadOnlyServerExposes: --read-only replaces
+// --safe-only as the filter for building a narrow allowlist.
+func TestMCPToolsReadOnlyListsWhatAReadOnlyServerExposes(t *testing.T) {
+	t.Parallel()
+
+	want := map[string]bool{}
+	for _, spec := range bbmcp.AllSpecs() {
+		if spec.ReadOnly() {
+			want[spec.Tool.Name] = true
+		}
 	}
 
-	for _, entry := range envelope.Data {
-		if entry.Safe == gated[entry.Name] {
-			t.Errorf("tool %q: safe=%v contradicts expected gating", entry.Name, entry.Safe)
+	tools := listToolsJSON(t, "--read-only")
+	if len(tools) != len(want) {
+		t.Errorf("--read-only listed %d tools, want the %d read-only ones", len(tools), len(want))
+	}
+	for _, tool := range tools {
+		if !want[tool.Name] || tool.Writes || tool.Asks != "never" {
+			t.Errorf("--read-only listed %+v", tool)
 		}
-		// The two fields describe the same fact and must not disagree.
-		if entry.Safe && entry.Exposure != exposureSafe {
-			t.Errorf("tool %q: safe=true but exposure=%q", entry.Name, entry.Exposure)
+	}
+}
+
+// TestMCPToolsDeprecatedFormsKeepWorkingAndWarn: --safe-only, safe and
+// exposure keep working until the next major (ADR-084). They describe exposure
+// without --yolo, which every tool has now.
+func TestMCPToolsDeprecatedFormsKeepWorkingAndWarn(t *testing.T) {
+	t.Parallel()
+
+	stdout, stderr := runAI(t, "mcp", "tools", "--safe-only")
+	for _, spec := range bbmcp.AllSpecs() {
+		if !strings.Contains(stdout, spec.Tool.Name) {
+			t.Errorf("--safe-only no longer lists %q, and every tool is exposed without --yolo", spec.Tool.Name)
 		}
-		if !entry.Safe && entry.Exposure != exposureYolo {
-			t.Errorf("tool %q: safe=false but exposure=%q", entry.Name, entry.Exposure)
+	}
+	entry, ok := deprecation.Named("bb ai mcp tools --safe-only")
+	if !ok || !strings.Contains(stderr, entry.Warning()) {
+		t.Errorf("--safe-only did not print its registered warning; stderr: %q", stderr)
+	}
+
+	for _, tool := range listToolsJSON(t) {
+		if !tool.Safe || tool.Exposure != exposureSafe {
+			t.Errorf("%s: safe=%v exposure=%q, want true and %s", tool.Name, tool.Safe, tool.Exposure, exposureSafe)
 		}
+	}
+}
+
+// TestMCPServeDeprecatedFlagsAreAcceptedAndWarn: an existing client
+// configuration passing --yolo keeps starting, and says why it should stop.
+func TestMCPServeDeprecatedFlagsAreAcceptedAndWarn(t *testing.T) {
+	t.Parallel()
+
+	for _, flag := range []string{"yolo", "allow-writes"} {
+		t.Run(flag, func(t *testing.T) {
+			t.Parallel()
+
+			stopped := errors.New("stop at the configuration")
+			deps := testMCPDeps()
+			deps.LoadConfig = func(config.Overrides) (config.AppConfig, error) { return config.AppConfig{}, stopped }
+
+			cmd := New(deps)
+			stderr := &bytes.Buffer{}
+			cmd.SetOut(&bytes.Buffer{})
+			cmd.SetErr(stderr)
+			cmd.SetArgs([]string{"mcp", "serve", "--host", "http://bb.example.com", "--" + flag})
+
+			if err := cmd.Execute(); !errors.Is(err, stopped) {
+				t.Fatalf("serve --%s: %v, want it to get as far as loading the configuration", flag, err)
+			}
+			entry, ok := deprecation.Named("bb ai mcp serve --" + flag)
+			if !ok || !strings.Contains(stderr.String(), entry.Warning()) {
+				t.Errorf("serve --%s did not print its registered warning; stderr: %q", flag, stderr)
+			}
+		})
+	}
+}
+
+// An output field warns nobody at runtime, so its schema is where a consumer
+// learns it is going (ADR-084). The fields the registry deprecates are the
+// ones the schema calls deprecated, and each says what to read instead.
+func TestDeprecatedMCPToolsFieldsAreTheOnesTheSchemaCallsDeprecated(t *testing.T) {
+	t.Parallel()
+
+	const namePrefix = "bb ai mcp tools --json field "
+	registered := map[string]bool{}
+	for _, entry := range deprecation.Entries {
+		if field, ok := strings.CutPrefix(entry.Name, namePrefix); ok {
+			registered[field] = true
+		}
+	}
+
+	schema, ok := result.SchemaFor("ai mcp tools")
+	if !ok {
+		t.Fatal("bb ai mcp tools declares no result schema")
+	}
+	item := schema.Items
+	if item == nil {
+		t.Fatalf("the schema is not a list: %+v", schema)
+	}
+	described := map[string]bool{}
+	for name, property := range item.Properties {
+		if strings.HasPrefix(property.Description, "Deprecated") {
+			described[name] = true
+			if !strings.Contains(property.Description, "Read asks and writes instead.") {
+				t.Errorf("%s does not say what to read instead: %q", name, property.Description)
+			}
+		}
+	}
+
+	if !maps.Equal(registered, described) {
+		t.Fatalf("the registry deprecates %v, and the schema calls %v deprecated",
+			slices.Sorted(maps.Keys(registered)), slices.Sorted(maps.Keys(described)))
 	}
 }
 

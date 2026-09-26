@@ -334,7 +334,7 @@ func TestAnImageComesBackAsAnImageBesideItsDescription(t *testing.T) {
 func TestEveryFileViewFitsTheOutputSchema(t *testing.T) {
 	t.Parallel()
 
-	session := connect(t, Clients{}, []string{"get_file_content"}, nil, true)
+	session := connect(t, Clients{}, []string{"get_file_content"}, nil)
 	listed, err := session.ListTools(context.Background(), nil)
 	if err != nil || len(listed.Tools) != 1 {
 		t.Fatalf("tools/list: %v (%d tools)", err, len(listed.Tools))

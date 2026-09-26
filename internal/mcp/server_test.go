@@ -43,7 +43,7 @@ func clientsForURL(t *testing.T, baseURL string) Clients {
 // connected client session. This is a real client-to-server round trip through
 // the SDK's own encoding, validation and dispatch — the only way to observe
 // what a tool actually puts on the wire.
-func connect(t *testing.T, clients Clients, allow, exclude []string, yolo bool) *mcp.ClientSession {
+func connect(t *testing.T, clients Clients, allow, exclude []string) *mcp.ClientSession {
 	t.Helper()
 	return connectWith(t, ServerOptions{
 		Name:    "bb",
@@ -51,7 +51,6 @@ func connect(t *testing.T, clients Clients, allow, exclude []string, yolo bool) 
 		Clients: clients,
 		Allow:   allow,
 		Exclude: exclude,
-		Yolo:    yolo,
 	})
 }
 
@@ -137,45 +136,57 @@ func TestAllSpecsHaveRegistrars(t *testing.T) {
 	}
 }
 
-// TestAllSpecsHaveAnnotations ensures every tool tells a client whether calling
-// it is safe to do without asking. An MCP client uses these hints to decide how
-// much ceremony a call deserves, so a missing annotation degrades to the
-// pessimistic default and makes read-only tools look dangerous.
-func TestAllSpecsHaveAnnotations(t *testing.T) {
-	t.Parallel()
-
-	for _, spec := range AllSpecs() {
-		if spec.Tool.Annotations == nil {
-			t.Errorf("tool %q has no annotations", spec.Tool.Name)
-		}
-	}
-}
-
-// TestReadOnlyToolsAreNotGated is what remains of the safety cross-checking.
+// TestEveryToolDeclaresItsHintsAndTitle holds every tool to saying all four
+// hints and a title outright.
 //
-// DestructiveHint used to be declared alongside Safe and the two were checked
-// against each other. It is now derived from Safe in toolSpec, so they cannot
-// disagree and the checks that compared them tested nothing.
-//
-// ReadOnlyHint is still declared independently, and it answers a different
-// question: does the tool write at all. A tool that writes nothing has no
-// reason to be withheld, so a read-only tool behind --yolo is either mislabelled
-// or wrongly gated. That comparison is between two facts nobody derived from
-// each other, which is what makes it worth asserting.
-func TestReadOnlyToolsAreNotGated(t *testing.T) {
+// Clients act on the hints: some skip their own prompt for a read-only tool,
+// and some prompt unless a write says it is neither destructive nor open-world.
+// A hint left out falls back to its pessimistic default, which says something
+// about the tool that nobody decided. readOnly and writes declare every hint;
+// this catches a tool whose annotations are built by hand. The SDK writes
+// readOnlyHint and idempotentHint whatever they hold, so only the two pointers
+// can go missing.
+func TestEveryToolDeclaresItsHintsAndTitle(t *testing.T) {
 	t.Parallel()
 
 	for _, spec := range AllSpecs() {
 		annotations := spec.Tool.Annotations
-		if annotations == nil || !annotations.ReadOnlyHint {
-			continue
+		switch {
+		case annotations == nil:
+			t.Errorf("tool %q has no annotations", spec.Tool.Name)
+		case annotations.DestructiveHint == nil:
+			t.Errorf("tool %q leaves destructiveHint to its default", spec.Tool.Name)
+		case annotations.OpenWorldHint == nil:
+			t.Errorf("tool %q leaves openWorldHint to its default", spec.Tool.Name)
+		case strings.TrimSpace(annotations.Title) == "" || spec.Tool.Title != annotations.Title:
+			t.Errorf("tool %q: title %q and annotation title %q must both be set, and agree",
+				spec.Tool.Name, spec.Tool.Title, annotations.Title)
 		}
-		if !spec.Safe {
-			t.Errorf(
-				"tool %q is annotated read-only but withheld without --yolo; "+
-					"either it writes after all and the annotation is wrong, or it needs no gating",
-				spec.Tool.Name,
-			)
+	}
+}
+
+// TestNoToolIsOpenWorld: bb talks to one Bitbucket Data Center instance, which
+// is a closed domain. readOnly says when that would change.
+func TestNoToolIsOpenWorld(t *testing.T) {
+	t.Parallel()
+
+	for _, spec := range AllSpecs() {
+		if hint := spec.Tool.Annotations.OpenWorldHint; hint != nil && *hint {
+			t.Errorf("tool %q is annotated open-world", spec.Tool.Name)
+		}
+	}
+}
+
+// TestReadOnlyToolsDoNotAsk: a tool that changes nothing has nothing for the
+// person to confirm. The two facts are declared apart, the hint on the tool
+// and the asking on its spec, which is what makes comparing them worth doing.
+func TestReadOnlyToolsDoNotAsk(t *testing.T) {
+	t.Parallel()
+
+	for _, spec := range AllSpecs() {
+		if spec.ReadOnly() && spec.Asks != AsksNever {
+			t.Errorf("tool %q is annotated read-only but asks (%s): either it writes after all, or there is nothing to confirm",
+				spec.Tool.Name, spec.Asks)
 		}
 	}
 }
@@ -194,44 +205,25 @@ func TestAllSpecsHaveUniqueNames(t *testing.T) {
 	}
 }
 
-// TestNewServerExposesSafeToolsByDefault verifies the default filter through a
-// real tools/list rather than by trusting NewServer not to panic.
-func TestNewServerExposesSafeToolsByDefault(t *testing.T) {
+// TestNewServerExposesEveryToolByDefault checks through a real tools/list that
+// nothing is withheld unless a filter says so. The tools that ask are listed to
+// every client, whether it can show a confirmation or not: the list must not
+// vary per connection.
+func TestNewServerExposesEveryToolByDefault(t *testing.T) {
 	t.Parallel()
 
-	session := connect(t, Clients{}, nil, nil, false)
-	got := listToolNames(t, session)
-
-	want := make(map[string]bool)
-	for _, spec := range SafeSpecs() {
-		want[spec.Tool.Name] = true
-	}
-	if len(got) != len(want) {
-		t.Errorf("tools/list returned %d tools, want %d safe tools", len(got), len(want))
-	}
-	for _, name := range got {
-		if !want[name] {
-			t.Errorf("tools/list exposed %q, which is not safe by default", name)
-		}
-	}
-}
-
-// TestNewServerYoloExposesEveryTool verifies --yolo lifts the safety filter.
-func TestNewServerYoloExposesEveryTool(t *testing.T) {
-	t.Parallel()
-
-	session := connect(t, Clients{}, nil, nil, true)
+	session := connect(t, Clients{}, nil, nil)
 	if got, want := len(listToolNames(t, session)), len(AllSpecs()); got != want {
-		t.Errorf("tools/list with yolo returned %d tools, want %d", got, want)
+		t.Errorf("tools/list returned %d tools, want all %d", got, want)
 	}
 }
 
-// TestNewServerAllowListOverridesSafetyFilter verifies an explicit allowlist can
-// name an unsafe tool without --yolo, and suppresses everything else.
-func TestNewServerAllowListOverridesSafetyFilter(t *testing.T) {
+// TestNewServerAllowListKeepsOnlyTheNamedTools verifies --tools narrows the
+// listing to what it names.
+func TestNewServerAllowListKeepsOnlyTheNamedTools(t *testing.T) {
 	t.Parallel()
 
-	session := connect(t, Clients{}, []string{"merge_pull_request"}, nil, false)
+	session := connect(t, Clients{}, []string{"merge_pull_request"}, nil)
 	got := listToolNames(t, session)
 	if len(got) != 1 || got[0] != "merge_pull_request" {
 		t.Errorf("tools/list = %v, want exactly [merge_pull_request]", got)
@@ -242,57 +234,94 @@ func TestNewServerAllowListOverridesSafetyFilter(t *testing.T) {
 func TestNewServerExcludeAppliesAfterAllowList(t *testing.T) {
 	t.Parallel()
 
-	session := connect(t, Clients{}, []string{"merge_pull_request"}, []string{"merge_pull_request"}, false)
+	session := connect(t, Clients{}, []string{"merge_pull_request"}, []string{"merge_pull_request"})
 	if got := listToolNames(t, session); len(got) != 0 {
 		t.Errorf("tools/list = %v, want no tools", got)
 	}
 }
 
-// TestSafeSpecsSubsetOfAllSpecs verifies SafeSpecs is a strict subset of AllSpecs.
-func TestSafeSpecsSubsetOfAllSpecs(t *testing.T) {
+// TestReadOnlyServerExposesOnlyTheReadOnlyTools verifies --read-only through a
+// real tools/list.
+func TestReadOnlyServerExposesOnlyTheReadOnlyTools(t *testing.T) {
 	t.Parallel()
 
-	all := AllSpecs()
-	safe := SafeSpecs()
-	if len(safe) >= len(all) {
-		t.Fatalf("expected SafeSpecs (%d) to be a strict subset of AllSpecs (%d)", len(safe), len(all))
-	}
-	allByName := make(map[string]bool, len(all))
-	for _, s := range all {
-		allByName[s.Tool.Name] = true
-	}
-	for _, s := range safe {
-		if !s.Safe {
-			t.Errorf("SafeSpecs contains tool %q with Safe=false", s.Tool.Name)
+	session := connectWith(t, ServerOptions{Name: "bb", Version: "test", ReadOnly: true})
+	got := listToolNames(t, session)
+
+	want := map[string]bool{}
+	for _, spec := range AllSpecs() {
+		if spec.ReadOnly() {
+			want[spec.Tool.Name] = true
 		}
-		if !allByName[s.Tool.Name] {
-			t.Errorf("SafeSpecs contains tool %q not present in AllSpecs", s.Tool.Name)
+	}
+	if len(got) != len(want) {
+		t.Errorf("a read-only server listed %d tools, want the %d read-only ones: %v", len(got), len(want), got)
+	}
+	for _, name := range got {
+		if !want[name] {
+			t.Errorf("a read-only server listed %q, which writes", name)
 		}
 	}
 }
 
-// TestGatedToolsAreWithheld verifies the tools that influence merge gating are
-// not exposed without --yolo.
-func TestGatedToolsAreWithheld(t *testing.T) {
+// TestReadOnlyIsNotOverriddenByTheAllowList: naming a writing tool in --tools
+// does not bring it back to a read-only server, as naming one cannot bring
+// back a tool a scope withholds.
+func TestReadOnlyIsNotOverriddenByTheAllowList(t *testing.T) {
 	t.Parallel()
 
-	gated := []string{"merge_pull_request", "set_build_status", "submit_pr_review", "enable_auto_merge"}
-	safeByName := make(map[string]bool)
-	for _, s := range SafeSpecs() {
-		safeByName[s.Tool.Name] = true
+	session := connectWith(t, ServerOptions{
+		Name: "bb", Version: "test", ReadOnly: true,
+		Allow: []string{"merge_pull_request", "get_pull_request"},
+	})
+	got := listToolNames(t, session)
+	if len(got) != 1 || got[0] != "get_pull_request" {
+		t.Errorf("tools/list = %v, want exactly [get_pull_request]", got)
 	}
-	allByName := make(map[string]bool)
-	for _, s := range AllSpecs() {
-		allByName[s.Tool.Name] = true
+}
+
+// TestServerAdvertisesToolsAndNothingElse: left to itself the SDK advertises
+// logging, which the 2026-07-28 revision deprecates and this server never
+// sends, and a tool list that changes, which this one never does.
+func TestServerAdvertisesToolsAndNothingElse(t *testing.T) {
+	t.Parallel()
+
+	result := connect(t, Clients{}, nil, nil).InitializeResult()
+	if result == nil || result.Capabilities == nil {
+		t.Fatal("the server answered without capabilities")
 	}
-	for _, name := range gated {
-		if !allByName[name] {
-			t.Errorf("%q not found in AllSpecs", name)
-			continue
-		}
-		if safeByName[name] {
-			t.Errorf("%q must not appear in SafeSpecs", name)
-		}
+	capabilities := result.Capabilities
+	switch {
+	case capabilities.Tools == nil:
+		t.Error("the tools capability is missing")
+	case capabilities.Tools.ListChanged:
+		t.Error("the server advertises a tool list that changes, and it never does")
+	}
+	if capabilities.Logging != nil {
+		t.Error("the server advertises logging, which it never sends")
+	}
+	if capabilities.Resources != nil || capabilities.Prompts != nil || capabilities.Completions != nil {
+		t.Errorf("the server advertises features it does not have: %+v", capabilities)
+	}
+	if strings.TrimSpace(result.Instructions) == "" {
+		t.Error("the server sends no instructions")
+	}
+}
+
+// TestInstructionsFollowTheConfiguration: a read-only server does not tell the
+// model about confirmations it has no tools to ask for, and a confined one says
+// where it is confined to.
+func TestInstructionsFollowTheConfiguration(t *testing.T) {
+	t.Parallel()
+
+	if text := instructions(ServerOptions{}); !strings.Contains(text, "confirm") || strings.Contains(text, "read-only") {
+		t.Errorf("default instructions: %q", text)
+	}
+	if text := instructions(ServerOptions{ReadOnly: true}); !strings.Contains(text, "read-only") || strings.Contains(text, "confirm") {
+		t.Errorf("read-only instructions: %q", text)
+	}
+	if text := instructions(ServerOptions{Scope: Scope{ProjectKey: "PROJ", RepoSlug: "payments"}}); !strings.Contains(text, "PROJ/payments") {
+		t.Errorf("scoped instructions do not name the scope: %q", text)
 	}
 }
 
@@ -385,7 +414,7 @@ func TestToolNamesMatchExpected(t *testing.T) {
 func TestMissingRequiredArgumentIsRejected(t *testing.T) {
 	t.Parallel()
 
-	session := connect(t, testClients(t), nil, nil, false)
+	session := connect(t, testClients(t), nil, nil)
 
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
 		Name:      "get_pull_request",
@@ -478,46 +507,31 @@ func TestBuildCloneURLs(t *testing.T) {
 	}
 }
 
-// TestToolSpecFillsInMissingAnnotations covers the guard in toolSpec.
-//
-// Every real tool declares annotations and TestAllSpecsHaveAnnotations keeps it
-// that way, so the nil branch never runs in production. It is still worth
-// having: without it, a tool defined without annotations would panic while the
-// package initialises, which is a worse failure than a filled-in default and
-// happens before any test can report it usefully.
-func TestToolSpecFillsInMissingAnnotations(t *testing.T) {
+// TestTitledCopiesTheAnnotationTitle: clients on 2025-06-18 and later read a
+// tool's own title and 2025-03-26 clients only the annotation's, so toolSpec
+// gives the tool the title its annotations carry. A tool with no annotations
+// is left alone rather than panicking while the package initialises;
+// TestEveryToolDeclaresItsHintsAndTitle is what refuses one.
+func TestTitledCopiesTheAnnotationTitle(t *testing.T) {
 	t.Parallel()
 
 	type in struct{}
 	type out struct {
 		Value string `json:"value"`
 	}
-
 	handler := func(Clients) mcp.ToolHandlerFor[in, out] {
 		return func(context.Context, *mcp.CallToolRequest, in) (*mcp.CallToolResult, out, error) {
 			return nil, out{}, nil
 		}
 	}
 
-	t.Run("nil annotations are created and the hint derived", func(t *testing.T) {
-		spec := toolSpec(&mcp.Tool{Name: "no_annotations"}, false, handler)
-
-		if spec.Tool.Annotations == nil {
-			t.Fatal("expected annotations to be filled in rather than left nil")
-		}
-		if spec.Tool.Annotations.DestructiveHint == nil || !*spec.Tool.Annotations.DestructiveHint {
-			t.Error("a tool that is not safe must be annotated destructive")
-		}
-	})
-
-	t.Run("safe tools are annotated non-destructive", func(t *testing.T) {
-		spec := toolSpec(&mcp.Tool{Name: "safe_tool", Annotations: readOnly()}, true, handler)
-
-		if spec.Tool.Annotations.DestructiveHint == nil || *spec.Tool.Annotations.DestructiveHint {
-			t.Error("a safe tool must be annotated non-destructive")
-		}
-		if !spec.Tool.Annotations.ReadOnlyHint {
-			t.Error("deriving the destructive hint must not clear the read-only hint")
-		}
-	})
+	if spec := toolSpec(&mcp.Tool{Name: "titled", Annotations: readOnly("Titled tool")}, handler); spec.Tool.Title != "Titled tool" {
+		t.Errorf("title = %q, want the annotation's", spec.Tool.Title)
+	}
+	if spec := toolSpec(&mcp.Tool{Name: "own_title", Title: "Own", Annotations: readOnly("Annotation")}, handler); spec.Tool.Title != "Own" {
+		t.Errorf("title = %q, want the tool's own", spec.Tool.Title)
+	}
+	if spec := toolSpec(&mcp.Tool{Name: "bare"}, handler); spec.Tool.Title != "" || spec.Asks != AsksNever {
+		t.Errorf("a tool with no annotations came back as %+v", spec)
+	}
 }

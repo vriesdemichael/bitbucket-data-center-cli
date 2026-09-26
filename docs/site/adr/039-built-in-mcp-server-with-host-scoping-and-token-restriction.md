@@ -11,7 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `Built-in MCP server with explicit host scoping and token capability restriction`
 - Category: `architecture`
 - Status: `accepted`
-- Amended By: `083`
+- Amended By: `83, 98`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/039-built-in-mcp-server-with-host-scoping-and-token-restriction.yaml`
 
@@ -21,7 +21,7 @@ Expose a curated set of high-value Bitbucket operations as MCP tools via bb ai m
 
 ## Agent Instructions
 
-The --token flag this record describes was removed in v4: ADR-083. Scope the server by giving it its own read-only PAT as BITBUCKET_TOKEN in the MCP client's env block, never as a flag. When generating MCP server configuration for an IDE (e.g. VS Code, Cursor), always emit bb ai mcp serve as the server command. If the user has multiple Bitbucket instances configured (detectable via bb auth server list), prompt for --host before generating the config snippet. Give the server its own read-only PAT through the client's env block, and say so when generating configuration; the flag that once did this is gone. Never silently pick one host when multiple are configured; always surface the ambiguity. Do not list tool names here or anywhere else that has to be maintained by hand. This record previously carried three tiers of them and drifted: it named a tool that has never existed, omitted five that do, and described two withheld-by-default tools as enabled by default. Read the catalogue from mcp.AllSpecs(), or run bb ai mcp tools. TestADRDoesNotNameToolsThatDoNotExist fails the build if a name appears here that the server does not implement, so the only names that may appear are real ones. When a new tool is added, set Safe false when its effect cannot be undone, causes a merge, or feeds a merge check; TestGatedToolsAreTheOnesThatMergeOrGate holds the gated set to that rule. Safe is not read-only, and bb ai mcp tools reports whether a tool writes separately. Safe is what the server filters on, so it is the whole of the safe-by-default behaviour.
+The --token flag this record describes was removed in v4: ADR-083. Scope the server by giving it its own read-only PAT as BITBUCKET_TOKEN in the MCP client's env block, never as a flag. When generating MCP server configuration for an IDE (e.g. VS Code, Cursor), always emit bb ai mcp serve as the server command. If the user has multiple Bitbucket instances configured (detectable via bb auth server list), prompt for --host before generating the config snippet. Give the server its own read-only PAT through the client's env block, and say so when generating configuration; the flag that once did this is gone. Never silently pick one host when multiple are configured; always surface the ambiguity. Do not list tool names here or anywhere else that has to be maintained by hand. This record previously carried three tiers of them and drifted: it named a tool that has never existed, omitted five that do, and described two withheld-by-default tools as enabled by default. Read the catalogue from mcp.AllSpecs(), or run bb ai mcp tools. TestADRDoesNotNameToolsThatDoNotExist fails the build if a name appears here that the server does not implement, so the only names that may appear are real ones. The safe/unsafe classification and --yolo this record describes were replaced in v5: ADR-098. Every tool is exposed, the tools that decide a merge ask the person through the client, and --read-only exposes only the tools that read.
 
 ## Rationale
 

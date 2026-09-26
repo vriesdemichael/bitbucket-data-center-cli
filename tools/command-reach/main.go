@@ -275,12 +275,14 @@ func discoverLiveInvocations(dir string, valueFlags map[string]bool) (invocation
 }
 
 // baseInvokers are the helpers that actually run the CLI. The stdin and MCP
-// variants take an extra argument before the command words: the input, and the
-// callback that drives the protocol.
+// variants take extra arguments before the command words: the input, the
+// callback that drives the protocol, and for executeLiveMCPServerAs the
+// options of the client that drives it.
 var baseInvokers = map[string]int{
 	"executeLiveCLI":          1,
 	"executeLiveCLIWithStdin": 2,
 	"executeLiveMCPServer":    2,
+	"executeLiveMCPServerAs":  3,
 }
 
 // resolveInvokers returns every function that runs the CLI, keyed by name, with

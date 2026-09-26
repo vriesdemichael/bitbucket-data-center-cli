@@ -29,9 +29,9 @@ func specListBranches() Spec {
 	tool := &mcp.Tool{
 		Name:        "list_branches",
 		Description: "List branches in a repository. Use to discover existing branches before creating a new one or a pull request.",
-		Annotations: readOnly(),
+		Annotations: readOnly("List branches"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListBranchesInput, ListBranchesOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[ListBranchesInput, ListBranchesOutput] {
 		svc := branchservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListBranchesInput) (*mcp.CallToolResult, ListBranchesOutput, error) {
 			limit := limitOrDefault(in.Limit)
@@ -67,9 +67,9 @@ func specResolveRef() Spec {
 	tool := &mcp.Tool{
 		Name:        "resolve_ref",
 		Description: "Resolve a branch or tag name to its tip commit SHA. Use as a cheap existence check before cloning or creating a pull request.",
-		Annotations: readOnly(),
+		Annotations: readOnly("Resolve ref"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ResolveRefInput, ResolveRefOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[ResolveRefInput, ResolveRefOutput] {
 		svc := commitservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ResolveRefInput) (*mcp.CallToolResult, ResolveRefOutput, error) {
 			refs, err := svc.ListTagsAndBranches(ctx,

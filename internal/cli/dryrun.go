@@ -393,7 +393,7 @@ var commandsWithoutDryRun = map[string]string{
 	// Bitbucket was the one where the flag was silently a no-op (#568). A
 	// dry run of a long-lived server previews nothing.
 	"ai mcp serve": "bb ai mcp serve does not take --dry-run: it starts a live server whose tools reach Bitbucket, " +
-		"and a session cannot be previewed. Restrict what the server can do instead: it exposes read-only tools unless --yolo is passed",
+		"and a session cannot be previewed. To keep it from changing anything, run it with --read-only",
 }
 
 func classifyCommand(path string) commandClassification {

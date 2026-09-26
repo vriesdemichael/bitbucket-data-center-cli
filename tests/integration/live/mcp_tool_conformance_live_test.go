@@ -86,11 +86,13 @@ func TestLiveMCPEveryToolReturnsAClientCompatibleResult(t *testing.T) {
 
 	// What each tool answered, for reading back what the writes stored once
 	// the server is gone.
-	answers := make(map[string]map[string]any, len(names))
+	results := make(map[string]map[string]any, len(names))
 
-	// --yolo, because half the catalogue is withheld without it, and a tool
-	// that is never called is a tool whose result shape is never checked.
-	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+	// A client that shows the confirmations the tools that ask for them put,
+	// and accepts each, as a person would. Without one those tools refuse the
+	// call, and a tool that never runs is a tool whose result is never checked.
+	person, answers := answeringClient(acceptConfirmation)
+	executeLiveMCPServerAs(t, person, func(session *mcp.ClientSession) {
 		callCtx := context.Background()
 
 		for _, name := range names {
@@ -129,13 +131,25 @@ func TestLiveMCPEveryToolReturnsAClientCompatibleResult(t *testing.T) {
 					t.Error("result carries no text content fallback")
 				}
 
-				answers[name] = answer
+				results[name] = answer
 				assertMCPToolAnswer(t, fixture, name, answer)
 			})
 		}
-	}, "ai", "mcp", "serve", "--yolo")
+	}, "ai", "mcp", "serve")
 
-	assertMCPToolWritesStored(t, fixture, answers)
+	// Every tool that always asks asked, once: the sweep calls each tool once.
+	// Its update_pull_request renames a pull request, which does not ask.
+	asking := 0
+	for _, spec := range specs {
+		if spec.Asks == bbmcp.AsksAlways {
+			asking++
+		}
+	}
+	if asked := answers.questions(); len(asked) != asking {
+		t.Errorf("the person was asked %d times, want once for each of the %d tools that always ask", len(asked), asking)
+	}
+
+	assertMCPToolWritesStored(t, fixture, results)
 }
 
 // mcpToolFixture is what the conformance sweep calls the tools against: the

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
 )
@@ -30,6 +31,7 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	var host string
 	var toolsFlag string
 	var excludeFlag string
+	var readOnly bool
 	var yolo bool
 	var projectScope string
 	var repoScope string
@@ -77,13 +79,20 @@ config file. Scoping the server this way replaces the old --token flag, which
 put the credential in the process argument list for as long as the server ran
 -- world-readable on Linux, unlike the process environment.
 
-By default the server runs in safe mode: only tools whose side-effects are
-low-blast-radius and easily reversed are exposed (e.g. create_pull_request,
-add_pr_comment). Tools that perform irreversible operations such as
-merge_pull_request are withheld unless --yolo is set.
+Tools that change whether or when a pull request merges ask the person to
+confirm each call in the MCP client before they run: merging, enabling or
+disabling auto-merge, submitting a review, reporting a build status, creating a
+tag, and changing a pull request's draft flag. The confirmation is an MCP
+elicitation, and the tool acts only when it is accepted. A client that cannot
+show one gets error -32021 for those tools, and nothing reaches Bitbucket.
+bb ai mcp tools lists which tools ask.
 
-Use --tools to expose a specific subset regardless of the safety classification.
-Use --exclude to suppress individual tools in any mode.
+Use --read-only to expose only the tools that read. It is for a client you do
+not trust with the tool annotations and those confirmations: a client you cannot
+trust with them should not make changes in Bitbucket, so make them yourself.
+
+Use --tools to expose only the tools you name, and --exclude to suppress
+individual tools. Neither exposes a tool that --read-only or a scope withholds.
 
 When more than one Bitbucket instance is configured the --host flag is required.
 
@@ -104,6 +113,9 @@ can invoke bb directly and bypass it, along with every other control here; the
 control that survives that is the token itself, which binds at the Bitbucket
 server -- give this server a narrower PAT than your own through env.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Accepted, and inert: nothing is withheld for them to expose.
+			warnDeprecatedFlags(cmd, "bb ai mcp serve", "yolo", "allow-writes")
+
 			// Multi-instance host enforcement.
 			if strings.TrimSpace(host) == "" {
 				contexts, err := config.ListServerContexts()
@@ -172,7 +184,7 @@ server -- give this server a narrower PAT than your own through env.`,
 				Clients:      clients,
 				Allow:        splitCSV(toolsFlag),
 				Exclude:      splitCSV(excludeFlag),
-				Yolo:         yolo,
+				ReadOnly:     readOnly,
 				Scope:        scope,
 				Audit:        audit,
 				AuditFailure: failureMode,
@@ -196,10 +208,15 @@ server -- give this server a narrower PAT than your own through env.`,
 	}
 
 	cmd.Flags().StringVar(&host, "host", "", "Target Bitbucket instance URL; required when multiple instances are configured")
-	cmd.Flags().StringVar(&toolsFlag, "tools", "", "Comma-separated allowlist of tool names to expose (overrides safety filter)")
+	cmd.Flags().StringVar(&toolsFlag, "tools", "", "Comma-separated allowlist of tool names to expose")
 	cmd.Flags().StringVar(&excludeFlag, "exclude", "", "Comma-separated denylist of tool names to suppress")
-	cmd.Flags().BoolVar(&yolo, "yolo", false, "Expose all tools including unsafe operations like merge_pull_request")
-	cmd.Flags().BoolVar(&yolo, "allow-writes", false, "Alias for --yolo")
+	cmd.Flags().BoolVar(&readOnly, "read-only", false, "Expose only the tools that read, for a client you do not trust to make changes")
+	// Deprecated (ADR-084): still accepted, so an existing client configuration
+	// keeps starting, and hidden, since there is nothing left for them to do.
+	cmd.Flags().BoolVar(&yolo, "yolo", false, "Deprecated: has no effect")
+	cmd.Flags().BoolVar(&yolo, "allow-writes", false, "Deprecated: has no effect")
+	_ = cmd.Flags().MarkHidden("yolo")
+	_ = cmd.Flags().MarkHidden("allow-writes")
 	cmd.Flags().StringVar(&projectScope, "project", "", "Confine the server to this project key; calls aimed elsewhere are refused")
 	cmd.Flags().StringVar(&repoScope, "repo", "", "Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)")
 	cmd.Flags().StringVar(&auditFile, "audit-file", "", "Append a JSON Lines audit record per tool call to this path, or to 'stderr'")
@@ -251,32 +268,35 @@ func parseAuditFailure(value string) (bbmcp.AuditFailureMode, error) {
 }
 
 func newMCPToolsCommand(deps Dependencies) *cobra.Command {
+	var readOnly bool
 	var safeOnly bool
 
 	cmd := &cobra.Command{
 		Use:   "tools",
-		Short: "List available MCP tools with name, exposure and description",
-		Long: `Print all MCP tools the serve command can expose.
+		Short: "List MCP tools with what they change and whether they ask",
+		Long: `Print every MCP tool the serve command exposes.
 
-Use this output to build --tools and --exclude allowlists/denylists.
+Use this output to build --tools and --exclude allowlists and denylists.
 
-EXPOSURE says when a tool is available, and ACCESS whether it changes anything:
+ACCESS says whether a tool changes anything in Bitbucket. ASKS says whether a
+call asks the person to confirm it in the MCP client before it runs:
 
-  SAFE   exposed by default. Some of these write -- opening a pull request,
-         commenting, tagging -- but none changes a branch or causes a merge
-  YOLO   withheld unless 'bb ai mcp serve --yolo' (or --allow-writes) is set,
-         because it cannot be undone, causes a merge, or feeds a check that
-         decides whether one is allowed
+  always               every call asks
+  when-draft-changes   a call that changes the pull request's draft flag asks
+  never                the tool runs when called
 
---tools takes precedence over the safety filter, so naming a YOLO tool in an
-allowlist exposes it without --yolo. Pass --safe-only to list just the set the
-server exposes by default.`,
+A client that cannot show a confirmation gets error -32021 for a call that asks.
+Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Accepted, and inert: every tool is exposed without --yolo, which
+			// is the set it used to narrow the listing to.
+			warnDeprecatedFlags(cmd, "bb ai mcp tools", "safe-only")
+
 			specs := bbmcp.AllSpecs()
-			if safeOnly {
+			if readOnly {
 				filtered := make([]bbmcp.Spec, 0, len(specs))
 				for _, spec := range specs {
-					if spec.Safe {
+					if spec.ReadOnly() {
 						filtered = append(filtered, spec)
 					}
 				}
@@ -289,24 +309,45 @@ server exposes by default.`,
 					entries[i] = Tool{
 						Name:        spec.Tool.Name,
 						Description: toolDescription(spec),
-						Safe:        spec.Safe,
-						Exposure:    toolExposure(spec),
 						Writes:      toolWrites(spec),
+						Asks:        string(spec.Asks),
+						// Deprecated: both describe exposure without --yolo,
+						// and every tool has it now.
+						Safe:     true,
+						Exposure: exposureSafe,
 					}
 				}
 				return deps.WriteJSON(cmd.OutOrStdout(), entries)
 			}
 
 			for _, spec := range specs {
-				fmt.Fprintf(cmd.OutOrStdout(), "%-40s %-6s %-9s %s\n", spec.Tool.Name, toolExposure(spec), toolAccess(spec), toolDescription(spec))
+				fmt.Fprintf(cmd.OutOrStdout(), "%-40s %-9s %-18s %s\n", spec.Tool.Name, toolAccess(spec), spec.Asks, toolDescription(spec))
 			}
 			return nil
 		},
 	}
 
-	cmd.Flags().BoolVar(&safeOnly, "safe-only", false, "List only the tools the server exposes without --yolo")
+	cmd.Flags().BoolVar(&readOnly, "read-only", false, "List only the tools 'bb ai mcp serve --read-only' exposes")
+	// Deprecated (ADR-084): still accepted, and hidden.
+	cmd.Flags().BoolVar(&safeOnly, "safe-only", false, "Deprecated: lists every tool")
+	_ = cmd.Flags().MarkHidden("safe-only")
 
 	return cmd
+}
+
+// warnDeprecatedFlags prints the registered warning for each deprecated flag
+// the invocation passed, once, on stderr so a --json document is unchanged
+// (ADR-084). The warning comes from the registry, so it says what the reports
+// listing outstanding deprecations say.
+func warnDeprecatedFlags(cmd *cobra.Command, command string, flags ...string) {
+	for _, flag := range flags {
+		if !cmd.Flags().Changed(flag) {
+			continue
+		}
+		if entry, ok := deprecation.Named(command + " --" + flag); ok {
+			fmt.Fprintln(cmd.ErrOrStderr(), entry.Warning())
+		}
+	}
 }
 
 // nopWriteCloser adapts the command's output stream to the io.WriteCloser the
@@ -318,22 +359,20 @@ type nopWriteCloser struct {
 
 func (nopWriteCloser) Close() error { return nil }
 
-// Exposure labels for the tool listing. These are part of the --json contract,
-// so they are constants rather than inline literals.
+// Exposure labels, part of the --json contract, deprecated with the field that
+// carries them. Every tool reports SAFE now; YOLO stays in the published
+// vocabulary until the field is removed.
 const (
 	exposureSafe = "SAFE"
 	exposureYolo = "YOLO"
 )
 
-// toolExposure reports when a tool is available, rather than whether it is
-// "safe" in the abstract — the question a reader building an allowlist has is
-// which tools they get without --yolo.
-func toolExposure(spec bbmcp.Spec) string {
-	if spec.Safe {
-		return exposureSafe
-	}
-
-	return exposureYolo
+// askingValues are the values of the asks field, taken from the server's own
+// vocabulary so the listing cannot publish one the server does not use.
+var askingValues = []string{
+	string(bbmcp.AsksAlways),
+	string(bbmcp.AsksWhenDraftChanges),
+	string(bbmcp.AsksNever),
 }
 
 // toolWrites reports whether a tool changes anything in Bitbucket, read from

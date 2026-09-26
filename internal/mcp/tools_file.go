@@ -76,7 +76,7 @@ func specGetFileContent() Spec {
 			"description when they are small, " +
 			"and as the description alone when not. A PDF or any other file is described by its type and size rather than " +
 			"shown, and a file over " + fmt.Sprintf("%d MiB", fileview.MaxFileBytes>>20) + " is described without being read.",
-		Annotations: readOnly(),
+		Annotations: readOnly("Read file"),
 		InputSchema: describedInputSchema[GetFileContentInput](map[string]string{
 			"start_line": "First line of the window, counting from 1 (default 1). An answer that stops short of the end gives " +
 				"next_start_line, the value to pass here for the lines that follow",
@@ -85,7 +85,7 @@ func specGetFileContent() Spec {
 				fileview.DefaultLineCount, fileview.MaxLineCount, fileview.WindowBytes>>10),
 		}),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetFileContentInput, GetFileContentOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[GetFileContentInput, GetFileContentOutput] {
 		svc := browseservice.NewService(c.OpenAPI, c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetFileContentInput) (*mcp.CallToolResult, GetFileContentOutput, error) {
 			request := fileview.Request{

@@ -466,30 +466,28 @@ ask it rather than this document. To see the catalogue from the CLI:
 bb ai mcp tools
 ```
 
-The `EXPOSURE` column is the part that matters when planning:
+The `ASKS` column is the part that matters when planning:
 
-- `SAFE` — exposed by default. Low consequence: reading anything, opening or
-  updating a pull request, adding a comment, creating a tag.
-- `YOLO` — **withheld** unless the server was started with
-  `bb ai mcp serve --yolo` (or `--allow-writes`). Two kinds of operation are
-  withheld: those that are irreversible (merging, enabling auto-merge), and
-  those that influence merge gating (reporting a build status, submitting a
-  review). Approving a pull request is gated for that second reason — it is the
-  input a required-reviewer check consumes.
+- `always` — the tool asks the person to confirm each call in the MCP client
+  before it runs. These are the tools that change whether or when a pull
+  request merges (merging, auto-merge, reviews, build statuses) and creating a
+  tag.
+- `when-draft-changes` — only a call that changes a pull request's draft flag
+  asks. A draft cannot merge, and making one a draft cancels its auto-merge.
+- `never` — the tool runs when called.
 
-Do not plan around a `YOLO` tool without checking it is available first. If it
-is not exposed, calling it fails with an unknown-tool error *after* you have
-committed to that course of action.
+A call that asks waits on the person. If they decline or close the
+confirmation, the call fails and says so: do not call it again unless they ask.
+A client that cannot show a confirmation gets error -32021 for those tools.
+
+A server started with `--read-only` exposes only the tools that read, and
+`--tools` or `--exclude` can narrow it further, so the connected server's
+advertised list is the reliable answer.
 
 ```bash
-# Just the tools a default server exposes
-bb ai mcp tools --safe-only
+# Just the tools a read-only server exposes
+bb ai mcp tools --read-only
 ```
-
-`--tools` overrides the safety filter, so an operator can expose a specific
-`YOLO` tool without enabling all of them — meaning the default and allowlisted
-tool sets differ. Checking the connected server's advertised list is the only
-reliable answer.
 
 ## Output Modes
 

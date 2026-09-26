@@ -27,9 +27,9 @@ func specListTags() Spec {
 	tool := &mcp.Tool{
 		Name:        "list_tags",
 		Description: "List tags in a repository. Use to find the latest release baseline or versioning information.",
-		Annotations: readOnly(),
+		Annotations: readOnly("List tags"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListTagsInput, ListTagsOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[ListTagsInput, ListTagsOutput] {
 		svc := tagservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListTagsInput) (*mcp.CallToolResult, ListTagsOutput, error) {
 			limit := limitOrDefault(in.Limit)
@@ -65,11 +65,14 @@ type CreateTagOutput struct {
 
 func specCreateTag() Spec {
 	tool := &mcp.Tool{
-		Name:        "create_tag",
-		Description: "Create a tag on a specific commit or ref. Use for release tagging after a PR is merged.",
-		Annotations: mutating(),
+		Name: "create_tag",
+		Description: "Create a tag on a specific commit or ref. Use for release tagging after a PR is merged. " +
+			"Asks the person to confirm in the client before it runs.",
+		// Not destructive, since it only adds, though it asks. Idempotent: a
+		// second call finds the tag there and changes nothing.
+		Annotations: writes("Create tag", false, true),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[CreateTagInput, CreateTagOutput] {
+	return askingSpec(tool, AsksAlways, askCreateTag(), func(c Clients) mcp.ToolHandlerFor[CreateTagInput, CreateTagOutput] {
 		svc := tagservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in CreateTagInput) (*mcp.CallToolResult, CreateTagOutput, error) {
 			tag, err := svc.Create(ctx,

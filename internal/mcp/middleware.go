@@ -81,10 +81,30 @@ func governanceMiddleware(scope Scope, audit *AuditLogger, onFailure AuditFailur
 			record.Project, record.Repo = scopedTarget(scoped)
 			record.Arguments = auditArguments(scoped)
 
+			ctx, recorder := withConfirmationRecorder(ctx)
 			result, err := next(ctx, method, req)
 
+			// A call answered with a confirmation to show has not happened
+			// yet. A 2026-07-28 client sends the answer as a second call, and
+			// that one is audited, so there is one record per decision rather
+			// than one per round trip.
+			if asksForInput(result) {
+				return result, err
+			}
+
 			record.DurationMS = time.Since(started).Milliseconds()
+			record.Confirmation = recorder.get()
 			switch {
+			case record.Confirmation == confirmationDeclined,
+				record.Confirmation == confirmationCancelled,
+				record.Confirmation == confirmationUnavailable:
+				// Refused before anything reached Bitbucket, as a scope denial is.
+				record.Status = auditStatusDenied
+				if err != nil {
+					record.ErrorMessage = err.Error()
+				} else {
+					record.ErrorMessage = resultErrorText(result)
+				}
 			case err != nil:
 				record.Status = auditStatusError
 				record.ErrorMessage = err.Error()
@@ -160,16 +180,27 @@ func toolError(err error) *mcp.CallToolResult {
 	}
 }
 
+// asksForInput reports whether a call was answered with input requests, such as
+// the confirmation a tool that asks shows the person.
+//
+// It reads the input requests themselves rather than NeedsInput: that reports
+// the label the SDK attaches, and where the SDK attaches it is moving to after
+// all middleware has run.
+func asksForInput(result mcp.Result) bool {
+	callResult, ok := result.(*mcp.CallToolResult)
+	return ok && callResult != nil && callResult.InputRequests != nil
+}
+
 // isErrorResult reports whether a dispatched call ended as a tool error.
 func isErrorResult(result mcp.Result) bool {
 	callResult, ok := result.(*mcp.CallToolResult)
-	return ok && callResult.IsError
+	return ok && callResult != nil && callResult.IsError
 }
 
 // resultErrorText extracts an error result's message for the audit record.
 func resultErrorText(result mcp.Result) string {
 	callResult, ok := result.(*mcp.CallToolResult)
-	if !ok {
+	if !ok || callResult == nil {
 		return ""
 	}
 	for _, item := range callResult.Content {

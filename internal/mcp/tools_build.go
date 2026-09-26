@@ -25,9 +25,9 @@ func specGetBuildStatus() Spec {
 	tool := &mcp.Tool{
 		Name:        "get_build_status",
 		Description: "Get build/CI statuses for a specific commit. Use this to check whether CI passed before declaring a PR ready to merge.",
-		Annotations: readOnly(),
+		Annotations: readOnly("Get build status"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[GetBuildStatusInput, GetBuildStatusOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[GetBuildStatusInput, GetBuildStatusOutput] {
 		svc := qualityservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetBuildStatusInput) (*mcp.CallToolResult, GetBuildStatusOutput, error) {
 			limit := limitOrDefault(in.Limit)
@@ -63,14 +63,17 @@ type SetBuildStatusOutput struct {
 
 func specSetBuildStatus() Spec {
 	tool := &mcp.Tool{
-		Name:        "set_build_status",
-		Description: "Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views.",
-		Annotations: mutating(),
+		Name: "set_build_status",
+		Description: "Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views. " +
+			"Asks the person to confirm in the client before it runs.",
+		// Destructive: a status replaces the one reported earlier under the
+		// same key.
+		Annotations: writes("Set build status", true, true),
 		InputSchema: enumInputSchema[SetBuildStatusInput](map[string][]string{
 			"state": {"SUCCESSFUL", "FAILED", "INPROGRESS"},
 		}),
 	}
-	return toolSpec(tool, false, func(c Clients) mcp.ToolHandlerFor[SetBuildStatusInput, SetBuildStatusOutput] {
+	return askingSpec(tool, AsksAlways, askSetBuildStatus(), func(c Clients) mcp.ToolHandlerFor[SetBuildStatusInput, SetBuildStatusOutput] {
 		svc := qualityservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in SetBuildStatusInput) (*mcp.CallToolResult, SetBuildStatusOutput, error) {
 			err := svc.SetBuildStatus(ctx, in.CommitID, qualityservice.BuildStatusSetInput{
@@ -105,9 +108,9 @@ func specListRequiredBuilds() Spec {
 	tool := &mcp.Tool{
 		Name:        "list_required_builds",
 		Description: "List required build checks that must pass before a pull request can be merged. Check this before attempting a merge to understand what CI must succeed.",
-		Annotations: readOnly(),
+		Annotations: readOnly("List required builds"),
 	}
-	return toolSpec(tool, true, func(c Clients) mcp.ToolHandlerFor[ListRequiredBuildsInput, ListRequiredBuildsOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[ListRequiredBuildsInput, ListRequiredBuildsOutput] {
 		svc := qualityservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListRequiredBuildsInput) (*mcp.CallToolResult, ListRequiredBuildsOutput, error) {
 			limit := limitOrDefault(in.Limit)

@@ -29,6 +29,11 @@ const (
 // was acting, what they asked for, what they were aimed at, and whether it was
 // allowed. Arguments are included because "read a file" and "read
 // .env.production" are different events, and they are redacted on the way in.
+//
+// Confirmation says how the person answered a tool that asks: accepted,
+// declined, cancelled, or unavailable when the client could not show the
+// confirmation. It is absent for a call that did not ask. A refused
+// confirmation is also status denied, so a rule keyed on status still sees it.
 type AuditRecord struct {
 	Timestamp    string         `json:"timestamp"`
 	Event        string         `json:"event"`
@@ -36,6 +41,7 @@ type AuditRecord struct {
 	Project      string         `json:"project,omitempty"`
 	Repo         string         `json:"repo,omitempty"`
 	Status       string         `json:"status"`
+	Confirmation string         `json:"confirmation,omitempty"`
 	DurationMS   int64          `json:"duration_ms"`
 	UserIdentity string         `json:"user_identity,omitempty"`
 	Host         string         `json:"host,omitempty"`

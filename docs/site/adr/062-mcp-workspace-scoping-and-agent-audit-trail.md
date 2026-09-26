@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `The MCP server can be confined to a workspace, and records what agents attempt there`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `098`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/062-mcp-workspace-scoping-and-agent-audit-trail.yaml`
 
@@ -20,7 +21,7 @@ bb ai mcp serve accepts --project and --repo, confining every tool call to that 
 
 ## Agent Instructions
 
-Add a scope rule for every new tool in the same change. TestEveryToolHasAScopeRule fails without one, in both directions. Choose it by what the tool's arguments can actually bound: a tool keyed by commit SHA cannot be bounded and must be withheld. Keep project and repository required unless leaving them out asks Bitbucket something of its own, as list_pull_requests without a repository asks for the pull requests of the caller. Never write a scope check that skips when it finds no argument to check. That permits every call it does not understand while reading like enforcement. Do not add per-handler enforcement, and do not enable auditing by default. Do not describe either control as preventing what it does not: the trail is not tamper-evident, and an agent with shell access bypasses this layer entirely.
+Add a scope rule for every new tool in the same change. TestEveryToolHasAScopeRule fails without one, in both directions. Choose it by what the tool's arguments can actually bound: a tool keyed by commit SHA cannot be bounded and must be withheld. Keep project and repository required unless leaving them out asks Bitbucket something of its own, as list_pull_requests without a repository asks for the pull requests of the caller. Never write a scope check that skips when it finds no argument to check. That permits every call it does not understand while reading like enforcement. Do not add per-handler enforcement, and do not enable auditing by default. The confirmation a tool asks for is the one exception, applied by one wrapper rather than by each handler, and its outcome is in the audit record: ADR-098. Do not describe either control as preventing what it does not: the trail is not tamper-evident, and an agent with shell access bypasses this layer entirely.
 
 ## Rationale
 

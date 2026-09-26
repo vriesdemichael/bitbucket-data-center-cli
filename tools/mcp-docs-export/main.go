@@ -2,10 +2,11 @@
 // server actually registers.
 //
 // A hand-written table of these goes stale the first time a tool is added, and
-// the column that matters most is the one nobody would think to update: whether
-// a tool is exposed by default or held behind --yolo. Reading mcp.AllSpecs()
-// makes the page a projection of the registry rather than a second copy of it,
-// and docs:verify-generated fails when the two disagree.
+// the columns that matter most are the ones nobody would think to update:
+// whether a tool writes, and whether it asks the person before it runs.
+// Reading mcp.AllSpecs() makes the page a projection of the registry rather
+// than a second copy of it, and docs:verify-generated fails when the two
+// disagree.
 package main
 
 import (
@@ -33,50 +34,52 @@ type toolRow struct {
 	Name        string
 	Description string
 	ReadOnly    bool
+	Asks        mcp.Asking
 }
 
 func exportToolReference(outputPath string) error {
-	var defaults, gated []toolRow
+	var rows []toolRow
+	asking := 0
 
 	for _, spec := range mcp.AllSpecs() {
 		if spec.Tool == nil {
 			continue
 		}
-		row := toolRow{
+		rows = append(rows, toolRow{
 			Name:        spec.Tool.Name,
 			Description: collapse(spec.Tool.Description),
+			ReadOnly:    spec.ReadOnly(),
+			Asks:        spec.Asks,
+		})
+		if spec.Asks != mcp.AsksNever {
+			asking++
 		}
-		if spec.Tool.Annotations != nil {
-			row.ReadOnly = spec.Tool.Annotations.ReadOnlyHint
-		}
-		if spec.Safe {
-			defaults = append(defaults, row)
-			continue
-		}
-		gated = append(gated, row)
 	}
 
-	sortRows(defaults)
-	sortRows(gated)
+	sort.Slice(rows, func(i, j int) bool { return rows[i].Name < rows[j].Name })
 
 	var out strings.Builder
 	out.WriteString("---\nsearch:\n  boost: 1.2\n---\n\n")
 	out.WriteString("# MCP Tools\n\n")
 	out.WriteString("This page is generated from the server's tool registry by `task docs:export-mcp-tools`. Do not edit manually.\n\n")
 
-	fmt.Fprintf(&out, "`bb ai mcp serve` registers %d tools. %d are available to any connected client; %d are withheld unless the server is started with `--yolo`.\n\n",
-		len(defaults)+len(gated), len(defaults), len(gated))
+	fmt.Fprintf(&out, "`bb ai mcp serve` registers %d tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. %d ask the person to confirm a call in the MCP client before they run.\n\n",
+		len(rows), asking)
 
-	out.WriteString("## Available by default\n\n")
-	out.WriteString("Exposed to every client `bb ai mcp serve` accepts. **Not all of them are read-only** — the column says which write.\n\n")
-	writeTable(&out, defaults, true)
+	out.WriteString("| Tool | Access | Asks | What it does |\n|---|---|---|---|\n")
+	for _, row := range rows {
+		access := "writes"
+		if row.ReadOnly {
+			access = "read-only"
+		}
+		fmt.Fprintf(&out, "| `%s` | %s | %s | %s |\n", row.Name, access, row.Asks, row.Description)
+	}
 
-	out.WriteString("\n## Requires `--yolo`\n\n")
-	out.WriteString("Withheld unless the server is started with `--yolo`, because each either cannot be undone or influences whether a pull request may merge — and an agent that can do those takes part in a control it is meant to be subject to.\n\n")
-	writeTable(&out, gated, false)
-
-	out.WriteString("\n## What the split means\n\n")
-	out.WriteString("The line is drawn by consequence, not by whether a tool writes. Opening a pull request or tagging a commit changes no branch and gates nothing, so both are available by default even though they write. Merging, enabling auto-merge, submitting a review and reporting a build status are held back: the first two are irreversible or cause a later merge, and the last two feed the checks that decide whether a merge is allowed. Disabling auto-merge stays available by default: it can hold a merge back but never cause one.\n\n")
+	out.WriteString("\n## Tools that ask\n\n")
+	out.WriteString("A tool asks when it merges, changes whether or when a pull request merges, or feeds a check that decides whether one may. `create_tag` asks too, since release pipelines commonly act on a new tag. `update_pull_request` asks only for a call that changes the draft flag: a draft cannot be merged, and making a pull request a draft cancels its auto-merge.\n\n")
+	out.WriteString("The confirmation is an MCP elicitation. The client shows what the call will do, with one box to tick, and the tool acts only once the person accepts. A client that cannot show a confirmation gets error -32021 (missing required client capability) for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself is the client's to decide.\n\n")
+	out.WriteString("## Read-only\n\n")
+	out.WriteString("`bb ai mcp serve --read-only` exposes only the read-only tools. It is for a client you do not trust with the tool annotations and the confirmations: a client that cannot be trusted with them should not make changes in Bitbucket, so make them yourself.\n\n")
 	out.WriteString("See [Enterprise Hardening](../advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve) for scoping a server to a project or repository, restricting it with a read-only token, and mandating an audit trail by policy.\n")
 
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
@@ -86,38 +89,14 @@ func exportToolReference(outputPath string) error {
 		return fmt.Errorf("write %s: %w", outputPath, err)
 	}
 
-	fmt.Printf("wrote %s (%d tools: %d default, %d gated)\n", outputPath, len(defaults)+len(gated), len(defaults), len(gated))
+	fmt.Printf("wrote %s (%d tools, %d that ask)\n", outputPath, len(rows), asking)
 
 	return nil
-}
-
-func writeTable(out *strings.Builder, rows []toolRow, showAccess bool) {
-	if showAccess {
-		out.WriteString("| Tool | Access | What it does |\n|---|---|---|\n")
-	} else {
-		out.WriteString("| Tool | What it does |\n|---|---|\n")
-	}
-
-	for _, row := range rows {
-		if showAccess {
-			access := "writes"
-			if row.ReadOnly {
-				access = "read-only"
-			}
-			fmt.Fprintf(out, "| `%s` | %s | %s |\n", row.Name, access, row.Description)
-			continue
-		}
-		fmt.Fprintf(out, "| `%s` | %s |\n", row.Name, row.Description)
-	}
 }
 
 // collapse folds a description onto one line. Several are written as multi-line
 // Go string concatenations, and a newline inside a Markdown table cell ends the
 // row early.
 func collapse(text string) string {
-	return strings.Join(strings.Fields(strings.ReplaceAll(text, "|", "\\|")), " ")
-}
-
-func sortRows(rows []toolRow) {
-	sort.Slice(rows, func(i, j int) bool { return rows[i].Name < rows[j].Name })
+	return strings.Join(strings.Fields(strings.ReplaceAll(text, "|", `\|`)), " ")
 }

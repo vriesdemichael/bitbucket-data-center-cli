@@ -41,33 +41,23 @@ func ClientsFromConfig(cfg config.AppConfig) (Clients, error) {
 // function: only a closure that already knows the concrete In and Out types
 // can call it. See toolSpec.
 //
-// Safe decides whether a tool is exposed without --yolo / --allow-writes. Set
-// it false when either of two things is true:
-//
-//  1. The effect is irreversible or hard to undo — merging, or enabling
-//     auto-merge, which causes a merge later.
-//  2. The effect influences merge gating — reporting a build status, or
-//     submitting a review. Both are reversible, and both can unblock a merge
-//     the gate exists to hold, so an agent doing them takes part in a control
-//     it is meant to be subject to.
-//
-// The second reason is easy to miss. Reversibility alone once let review
-// submission through as "like commenting", when APPROVED is precisely the input
-// a required-reviewer check consumes.
-//
-// Creating things is generally safe even where this package offers no way to
-// undo it: opening a pull request or tagging a commit changes no branch and
-// gates nothing. Judge by consequence, not by whether a delete tool exists.
-//
-// Disabling auto-merge is exposed for the same reason: it can hold a merge back
-// but never cause one, so it is not the control enable_auto_merge is.
+// Asks says whether a call asks the person to confirm it through the client
+// before it runs (see Asking). The server enforces it; the annotations only
+// describe the tool, and a client may ignore them.
 type Spec struct {
 	Tool     *mcp.Tool
 	Register func(*mcp.Server, Clients)
-	Safe     bool
+	Asks     Asking
 }
 
-// toolSpec binds a tool definition to a typed handler factory.
+// ReadOnly reports whether the tool changes nothing, as its annotation says.
+// It is what --read-only exposes.
+func (s Spec) ReadOnly() bool {
+	return s.Tool.Annotations != nil && s.Tool.Annotations.ReadOnlyHint
+}
+
+// toolSpec binds a tool definition to a typed handler factory, for a tool that
+// runs when called.
 //
 // In and Out are the whole output contract. The SDK derives the input schema
 // from In and the output schema from Out, validates arguments against the
@@ -83,22 +73,38 @@ type Spec struct {
 // array with "expected record, received array"; naming the payload avoids that
 // by construction rather than by wrapping non-objects at the choke point, which
 // is what this package did before (issue #416, ADR-061).
-func toolSpec[In, Out any](tool *mcp.Tool, safe bool, handler func(Clients) mcp.ToolHandlerFor[In, Out]) Spec {
-	// DestructiveHint is derived, never declared. It and Safe answer the same
-	// question, so declaring both invites them to disagree; deriving makes the
-	// contradiction unrepresentable rather than merely tested for.
-	if tool.Annotations == nil {
-		tool.Annotations = &mcp.ToolAnnotations{}
-	}
-	destructive := !safe
-	tool.Annotations.DestructiveHint = &destructive
+func toolSpec[In, Out any](tool *mcp.Tool, handler func(Clients) mcp.ToolHandlerFor[In, Out]) Spec {
+	titled(tool)
 
 	return Spec{
 		Tool: tool,
-		Safe: safe,
+		Asks: AsksNever,
 		Register: func(server *mcp.Server, clients Clients) {
 			mcp.AddTool(server, tool, handler(clients))
 		},
+	}
+}
+
+// askingSpec is toolSpec for a tool that asks the person to confirm a call
+// before it runs, through the client (see confirmed).
+func askingSpec[In, Out any](tool *mcp.Tool, asking Asking, policy ask[In], handler func(Clients) mcp.ToolHandlerFor[In, Out]) Spec {
+	titled(tool)
+
+	return Spec{
+		Tool: tool,
+		Asks: asking,
+		Register: func(server *mcp.Server, clients Clients) {
+			mcp.AddTool(server, tool, confirmed(tool.Name, policy, clients, handler(clients)))
+		},
+	}
+}
+
+// titled gives the tool the display title its annotations carry. Clients on
+// 2025-06-18 and later read the tool's own title, and 2025-03-26 clients only
+// the annotation's, so both say the same.
+func titled(tool *mcp.Tool) {
+	if tool.Annotations != nil && tool.Title == "" {
+		tool.Title = tool.Annotations.Title
 	}
 }
 
@@ -155,63 +161,75 @@ func describedInputSchema[In any](descriptions map[string]string) *jsonschema.Sc
 	return schema
 }
 
-// readOnly and mutating say whether a tool writes at all. That is the one thing
-// they say: DestructiveHint is not set here, because it answers the same
-// question as Safe and is derived from it in toolSpec.
+// readOnly and writes declare a tool's annotations: all four hints, and the
+// title a client shows. Each hint says what the spec defines it to say, and
+// none of them says whether the tool asks, which is the server's own policy
+// (Spec.Asks) and is enforced rather than advised.
 //
-// Two hand-written answers to "is this dangerous" can disagree, and the
-// disagreement points the wrong way. Safe is what the server enforces;
-// DestructiveHint is advice a client may ignore. A tool exposed without --yolo
-// while annotating itself destructive would hand an agent something it was
-// never gated on, and only one of the two directions was ever checked.
+//   - readOnlyHint: the tool changes nothing.
+//   - destructiveHint: a write may overwrite or remove something, rather than
+//     only add. create_tag only adds, though it asks; update_pull_request
+//     overwrites a title, though it asks only about the draft flag.
+//   - idempotentHint: calling again with the same arguments changes nothing
+//     more. Most writes here are, because Bitbucket refuses the repeat or
+//     finds it already done; add_pr_comment is not.
+//   - openWorldHint: false on every tool. bb talks to the one Bitbucket Data
+//     Center instance it is configured for, which is a closed domain, and the
+//     people who write its content are that instance's users.
 //
-// Writing is not the same question as destroying, so this distinction stays:
-// create_pull_request writes and destroys nothing.
-func readOnly() *mcp.ToolAnnotations {
-	return &mcp.ToolAnnotations{ReadOnlyHint: true}
+// If bb ever serves Bitbucket Cloud, set openWorldHint true on the tools that
+// read or publish content there. Cloud is an open world: its public
+// repositories take code and comments from anyone, and a client is meant to
+// treat what such a tool returns as having crossed a trust boundary.
+func readOnly(title string) *mcp.ToolAnnotations {
+	return &mcp.ToolAnnotations{
+		Title:           title,
+		ReadOnlyHint:    true,
+		DestructiveHint: boolRef(false),
+		IdempotentHint:  true,
+		OpenWorldHint:   boolRef(false),
+	}
 }
 
-func mutating() *mcp.ToolAnnotations {
-	return &mcp.ToolAnnotations{}
+func writes(title string, destructive, idempotent bool) *mcp.ToolAnnotations {
+	return &mcp.ToolAnnotations{
+		Title:           title,
+		DestructiveHint: boolRef(destructive),
+		IdempotentHint:  idempotent,
+		OpenWorldHint:   boolRef(false),
+	}
+}
+
+func boolRef(value bool) *bool {
+	return &value
 }
 
 // AllSpecs returns the full catalog of MCP tool specifications in stable order.
 //
-// The order is part of the contract: the 2026-07-28 revision asks servers to
-// return tools/list in a deterministic order so clients can cache the listing
-// and keep prompt-cache hit rates up.
+// This is the order bb ai mcp tools prints. tools/list is ordered by the SDK,
+// which sorts by name; either way the listing is deterministic, as the
+// 2026-07-28 revision asks, so clients can cache it.
 func AllSpecs() []Spec {
 	return []Spec{
 		// Pull request group
-		// Reading PR state is always safe.
 		specGetPullRequest(),
 		specListPullRequests(),
-		// Opening a PR has low consequence: it changes no branch and blocks
-		// nothing. Not "easily reversed" — pr decline has no tool here — but it
-		// does not need to be.
 		specCreatePullRequest(),
-		// Editing title, description or draft state affects only the request.
+		// Asks only to change the draft flag, which decides whether the pull
+		// request can merge and cancels its auto-merge.
 		specUpdatePullRequest(),
 		specListPRComments(),
 		specGetPRDiff(),
 		specGetFileContent(),
-		// Adding a comment is trivially reversed — safe by default.
 		specAddPRComment(),
-		// Submitting a review influences merge gating: APPROVED is the input a
-		// merge check consumes, so an agent that can approve takes part in the
-		// review it is subject to. Gated for the same reason as set_build_status,
-		// not because it is irreversible.
-		//
-		// Gating the whole tool rather than only its APPROVED path: the server
-		// filters by tool, not by argument, so splitting would mean threading the
-		// yolo setting into every handler. NEEDS_WORK is the conservative outcome
-		// and loses least by being withheld.
+		// Asks: APPROVED is the input a required-reviewer check consumes, and
+		// NEEDS_WORK holds a merge back.
 		specSubmitPRReview(),
-		// Merging is irreversible and affects the target branch — requires --yolo.
+		// Asks: merges now, and cannot be undone.
 		specMergePullRequest(),
-		// Enabling auto-merge can trigger an irreversible merge — requires --yolo.
+		// Asks: merges later, or at once when the checks already pass.
 		specEnableAutoMerge(),
-		// Disabling auto-merge stops automation — safe (easily re-enabled).
+		// Asks: changes when a pull request merges.
 		specDisableAutoMerge(),
 		// Repository group
 		specSearchRepositories(),
@@ -221,12 +239,12 @@ func AllSpecs() []Spec {
 		specResolveRef(),
 		// Tag group
 		specListTags(),
-		// Creating a tag marks a commit and gates nothing. Note tag delete has no
-		// tool here, so this is low-consequence rather than easily reversed.
+		// Asks: release pipelines commonly act on a new tag, and no tool here
+		// deletes one.
 		specCreateTag(),
 		// Build / quality group
 		specGetBuildStatus(),
-		// Setting a build status is a write operation that affects CI signal — requires --yolo.
+		// Asks: a successful required build can let a pull request merge.
 		specSetBuildStatus(),
 		specListRequiredBuilds(),
 		// Commit group
@@ -234,18 +252,6 @@ func AllSpecs() []Spec {
 		specGetCommit(),
 		specCompareRefs(),
 	}
-}
-
-// SafeSpecs returns only the tools marked as safe for use without --yolo.
-func SafeSpecs() []Spec {
-	all := AllSpecs()
-	out := make([]Spec, 0, len(all))
-	for _, s := range all {
-		if s.Safe {
-			out = append(out, s)
-		}
-	}
-	return out
 }
 
 // ServerOptions configures a server.
@@ -258,14 +264,17 @@ type ServerOptions struct {
 	Version string
 	Clients Clients
 
-	// Allow exposes exactly these tools, taking full precedence over the
-	// safety filter. Exclude suppresses tools afterwards, in every mode.
+	// Allow exposes only these tools. Exclude suppresses tools afterwards.
 	Allow   []string
 	Exclude []string
 
-	// Yolo lifts the safety filter, exposing tools whose effects are
-	// irreversible or which influence merge gating. See Spec.Safe.
-	Yolo bool
+	// ReadOnly exposes only the tools that change nothing (readOnlyHint).
+	//
+	// It is for a client the operator does not trust with the annotations and
+	// the confirmations tools ask for through elicitation. A client that cannot
+	// be trusted with those should not act in Bitbucket through this server at
+	// all; the person makes those changes themselves. Allow cannot override it.
+	ReadOnly bool
 
 	// Scope confines the server to one project or repository. The zero value
 	// is unscoped.
@@ -285,33 +294,41 @@ type ServerOptions struct {
 
 // NewServer creates a configured MCP server.
 //
-// Tool exposure is decided by three filters in order: an explicit Allow list
-// wins over the safety filter, Exclude is applied afterwards in every mode, and
-// a Scope withholds the tools it cannot bound.
+// Every tool is exposed unless a filter withholds it: Allow keeps only the
+// tools it names, Exclude removes tools, ReadOnly keeps only the tools that
+// change nothing, and a Scope withholds the tools it cannot bound. The filters
+// are server configuration, the same for every connection, so tools/list does
+// not vary per connection as the 2026-07-28 revision requires. In particular
+// it does not depend on whether a client can confirm a call: a tool that asks
+// is listed to every client and refuses the call where it cannot ask.
 func NewServer(opts ServerOptions) *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: opts.Name, Version: opts.Version}, nil)
+	server := mcp.NewServer(&mcp.Implementation{Name: opts.Name, Version: opts.Version}, &mcp.ServerOptions{
+		Instructions: instructions(opts),
+		// Tools, and nothing else. Left to itself the SDK also advertises
+		// logging, which the 2026-07-28 revision deprecates and this server
+		// never sends, and a tool list that changes, which this one never does.
+		Capabilities: &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{}},
+	})
 
 	allowSet := toSet(opts.Allow)
 	excludeSet := toSet(opts.Exclude)
 
 	for _, spec := range AllSpecs() {
 		toolName := spec.Tool.Name
-		if len(allowSet) > 0 {
-			// Explicit allowlist takes full precedence over the safety filter.
-			if !allowSet[toolName] {
-				continue
-			}
-		} else if !opts.Yolo && !spec.Safe {
-			// Safe mode: skip tools not marked as safe.
+		if len(allowSet) > 0 && !allowSet[toolName] {
 			continue
 		}
 		if excludeSet[toolName] {
 			continue
 		}
-		// The scope filter is deliberately last and not overridable by Allow.
-		// The other two express what an operator wants exposed; this one
-		// expresses what the server is able to bound, and naming a tool in
-		// --tools cannot make a commit SHA belong to a project.
+		// The read-only and scope filters come last, and naming a tool in
+		// --tools overrides neither. The first two express what an operator
+		// wants exposed; these express what the server may do for this client,
+		// and what it is able to bound. Naming a tool cannot make a commit SHA
+		// belong to a project.
+		if opts.ReadOnly && !spec.ReadOnly() {
+			continue
+		}
 		if withheldUnderScope(toolName, opts.Scope) {
 			continue
 		}
@@ -327,6 +344,32 @@ func NewServer(opts ServerOptions) *mcp.Server {
 	}
 
 	return server
+}
+
+// instructions is what the server tells a model about using its tools
+// together, in the few lines a client loads beside the tool names.
+//
+// It repeats no tool description, and it is guidance rather than a control:
+// what it says the server does, the server enforces. It follows the server's
+// configuration, which is the same for every connection.
+func instructions(opts ServerOptions) string {
+	var paragraphs []string
+
+	if opts.ReadOnly {
+		paragraphs = append(paragraphs, "This server is read-only: it offers only the tools that read.")
+	} else {
+		paragraphs = append(paragraphs, "Some tools ask the person to confirm a call in the client before they run, and their descriptions say so. "+
+			"If the person declines or closes the confirmation, do not call the tool again unless they ask.")
+	}
+
+	paragraphs = append(paragraphs, "A list tool stops at its limit. When limit_reached is true there may be more: call it again with a higher limit.")
+
+	if opts.Scope.IsSet() {
+		paragraphs = append(paragraphs, fmt.Sprintf("This server is confined to %s. Tools fill in project and repo when you leave them out, "+
+			"and refuse calls aimed anywhere else.", opts.Scope))
+	}
+
+	return strings.Join(paragraphs, "\n\n")
 }
 
 // defaultLimit is the page size every list tool falls back to.
