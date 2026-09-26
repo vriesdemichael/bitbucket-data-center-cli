@@ -33,7 +33,7 @@ type decisionRecord struct {
 	// older one that stays in force for the rest. Without it, narrowing a
 	// decision forces a choice between marking a live record superseded and
 	// recording no relationship at all -- and both had happened.
-	AmendedBy            *int                  `yaml:"amended_by,omitempty"`
+	AmendedBy            any                   `yaml:"amended_by,omitempty"`
 	Amends               any                   `yaml:"amends,omitempty"`
 	Decision             string                `yaml:"decision"`
 	AgentInstructions    string                `yaml:"agent_instructions"`
@@ -133,16 +133,18 @@ func validateSupersessionLinks(records []decisionRecord) error {
 			}
 		}
 
-		if record.AmendedBy != nil {
-			amender, ok := byNumber[*record.AmendedBy]
+		// A record can be amended more than once in its life, so amended_by
+		// takes a list as amends does.
+		for _, amenderNumber := range supersededNumbers(record.AmendedBy) {
+			amender, ok := byNumber[amenderNumber]
 			switch {
 			case !ok:
 				problems = append(problems, fmt.Sprintf(
-					"ADR-%d is amended by ADR-%d, which does not exist", record.Number, *record.AmendedBy))
+					"ADR-%d is amended by ADR-%d, which does not exist", record.Number, amenderNumber))
 			case !supersedesNumber(amender.Amends, record.Number):
 				problems = append(problems, fmt.Sprintf(
 					"ADR-%d is amended by ADR-%d, but ADR-%d does not declare amends: %d",
-					record.Number, *record.AmendedBy, *record.AmendedBy, record.Number))
+					record.Number, amenderNumber, amenderNumber, record.Number))
 			}
 		}
 
@@ -152,7 +154,7 @@ func validateSupersessionLinks(records []decisionRecord) error {
 			case !ok:
 				problems = append(problems, fmt.Sprintf(
 					"ADR-%d amends ADR-%d, which does not exist", record.Number, amended))
-			case older.AmendedBy == nil || *older.AmendedBy != record.Number:
+			case !supersedesNumber(older.AmendedBy, record.Number):
 				problems = append(problems, fmt.Sprintf(
 					"ADR-%d amends ADR-%d, but ADR-%d does not declare amended_by: %d",
 					record.Number, amended, amended, record.Number))
