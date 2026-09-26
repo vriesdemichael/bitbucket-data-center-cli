@@ -6,13 +6,13 @@ server the CLI ships.
 ## The MCP server
 
 `bb ai mcp serve` speaks the Model Context Protocol over stdio, so an IDE or
-agent framework calls typed tools instead of parsing command output. It
-exposes most of its tools to any client that connects. The ones that merge a
-pull request, or feed the checks deciding whether a merge is allowed, are
-withheld unless the server is started with `--yolo`.
+agent framework calls typed tools instead of parsing command output. Every
+tool is exposed. The ones that change whether or when a pull request merges,
+and creating a tag, ask you to confirm each call in the client before they run.
+A client that cannot show that confirmation cannot use them.
 
 [**MCP Tools**](reference/mcp-tools.md) is the reference: every tool, which of
-them write, and which need `--yolo`.
+them write, and which ask.
 
 ```bash
 bb ai mcp serve
@@ -37,7 +37,7 @@ Three flags decide what the server can reach:
 
 | Flag | Effect |
 |---|---|
-| `--yolo` (alias `--allow-writes`) | Also expose the withheld tools |
+| `--read-only` | Expose only the tools that read, for a client you do not trust to make changes |
 | `--project`, `--repo` | Confine the server to one project or repository; calls aimed elsewhere are refused |
 | `--audit-file` | Append a JSON Lines record per tool call, to a path or to `stderr` |
 

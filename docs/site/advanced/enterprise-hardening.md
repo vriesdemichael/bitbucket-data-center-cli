@@ -413,14 +413,17 @@ export NO_PROXY=.corp.internal,localhost,127.0.0.1
 
 `bb` includes a built-in Model Context Protocol (MCP) server for integration with AI developer tools (VS Code Agent, Cursor, Claude Desktop).
 
-### Principle 1: Default and Gated Tools
-`bb` withholds the tools that decide whether code merges ([ADR-039](../adr/039-built-in-mcp-server-with-host-scoping-and-token-restriction.md)), and draws that line by consequence rather than by whether a tool writes:
-- **Exposed by default**: every read tool, and the writes that change no branch and cause no merge: `create_pull_request`, `update_pull_request`, `add_pr_comment`, `create_tag` and `disable_auto_merge`.
-- **Withheld unless `--yolo`** (or `--allow-writes`): `merge_pull_request` and `enable_auto_merge`, which merge now or later, and `submit_pr_review` and `set_build_status`, which feed the checks that decide whether a merge is allowed. Gating `submit_pr_review` ensures an agent cannot approve its own pull requests.
+### Principle 1: Tools That Ask, and a Read-Only Server
+Every tool is exposed, and the ones that decide whether code merges ask the person before they run ([ADR-098](../adr/098-mcp-tools-that-decide-a-merge-ask-the-person.md)):
 
-The [MCP tool reference](../reference/mcp-tools.md) lists every tool with what it can change and when it is exposed.
+- **Ask before every call**: `merge_pull_request` and `enable_auto_merge`, which merge now or later; `disable_auto_merge`, which changes when a pull request merges; `submit_pr_review` and `set_build_status`, which feed the checks that decide whether a merge is allowed; and `create_tag`, which release pipelines act on. `update_pull_request` asks when it changes the draft flag. An agent cannot approve a pull request without the person confirming it.
+- **Run when called**: every read tool, and the writes that decide nothing about a merge: `create_pull_request`, `add_pr_comment`, and `update_pull_request` for a title or a description.
 
-Inspect exposed tools and their gating status:
+The confirmation is an MCP elicitation: the client shows what the call will do, and the tool acts only when the person accepts. A client that cannot show one gets error -32021 for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself, through a hook or an automatic approval, is the client's decision, so this control is as strong as the client you choose.
+
+For a client you do not trust with the tool annotations and those confirmations, start the server with `--read-only`, which exposes only the tools that read. A client that cannot be trusted with them should not make changes in Bitbucket; make them yourself.
+
+The [MCP tool reference](../reference/mcp-tools.md) lists every tool with what it can change and whether it asks:
 ```bash
 bb ai mcp tools
 ```
@@ -466,14 +469,20 @@ bb ai mcp serve --host https://bitbucket.example.com --project PAYMENTS --audit-
 {"timestamp":"2026-08-29T09:30:00Z","event":"mcp_tool_invocation","tool":"get_pull_request","project":"PAYMENTS","repo":"ledger","status":"success","duration_ms":45,"user_identity":"alice","host":"https://bitbucket.example.com","scope":"PAYMENTS"}
 ```
 
-`status` is `success`, `error`, or `denied`. Argument values and error messages are recorded, with tokens, passwords and URL credentials redacted. When the client sends W3C trace context, `trace_id` carries it so a record correlates with the agent's own trace.
+`status` is `success`, `error`, or `denied`. A tool that asks adds `confirmation`: `accepted`, `declined`, `cancelled`, or `unavailable` when the client could not show the confirmation. A refused confirmation is also `denied`, and one decision is one record, however many round trips the client needed:
+
+```json
+{"timestamp":"2026-08-29T09:31:12Z","event":"mcp_tool_invocation","tool":"merge_pull_request","project":"PAYMENTS","repo":"ledger","status":"denied","confirmation":"declined","duration_ms":8240,"user_identity":"alice","host":"https://bitbucket.example.com","scope":"PAYMENTS","arguments":{"pr_id":"42","project":"PAYMENTS","repo":"ledger"},"error_message":"merge_pull_request did not run: the person declined. Do not call it again unless they ask"}
+```
+
+Argument values and error messages are recorded, with tokens, passwords and URL credentials redacted. When the client sends W3C trace context, `trace_id` carries it so a record correlates with the agent's own trace.
 
 Auditing is **off by default** — a developer who never turns it on should not accumulate a log file they will not find. Turn it on by fleet policy, not by asking developers to.
 
 **Why audit here when Bitbucket already has an audit log.** The two answer different questions, and the CLI one is not a duplicate:
 
 - **Attribution.** Every MCP call arrives at Bitbucket as the same user with the same PAT. Bitbucket cannot distinguish a developer reviewing a PR in a browser from an agent acting autonomously in their IDE. That distinction exists only here.
-- **Denied attempts.** A call refused by the scope boundary or the safety gate **never reaches Bitbucket**, so its audit log has no record of it. Attempted-and-blocked is precisely the prompt-injection signal worth alerting on: one successful read is noise, forty denied cross-project reads in ten seconds is an incident.
+- **Denied attempts.** A call refused by the scope boundary, or by a person declining it, **never reaches Bitbucket**, so its audit log has no record of it. Attempted-and-blocked is precisely the prompt-injection signal worth alerting on: one successful read is noise, forty denied cross-project reads in ten seconds is an incident.
 - **Reads in practice.** Bitbucket's repository read events sit at *Full* coverage, which most operators do not run in production because of volume. "Bitbucket already logs everything" holds far better for writes than for reads — and an exfiltrating agent is doing reads.
 
 Bitbucket's audit log remains authoritative for what actually changed. Correlate the two on `(timestamp, user_identity)`.
