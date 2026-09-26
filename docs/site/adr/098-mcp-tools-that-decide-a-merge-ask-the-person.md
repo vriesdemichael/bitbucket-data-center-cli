@@ -17,11 +17,11 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 
 ## Decision
 
-Every MCP tool is exposed. A tool that merges, changes whether or when a pull request merges, or feeds a check that decides whether one may asks the person to confirm each call in the MCP client before it runs, and so does create_tag. update_pull_request asks only for a call that changes the draft flag. The confirmation is an elicitation with one required, unticked checkbox naming the target, and the tool acts only on an accept. A client that cannot show one gets -32021 MissingRequiredClientCapability, whatever revision it speaks.
-An answer accepts only the call it was asked about: the request state is signed, and holds the tool, the scoped arguments, what the person was shown, an expiry, and a nonce used once.
+Every MCP tool is exposed. A tool that merges, changes whether or when a pull request merges, or feeds a check that decides whether one may asks the person to confirm each call in the MCP client before it runs, and so does create_tag. update_pull_request asks only for a call that sets the draft flag. The confirmation is an elicitation with one required, unticked checkbox naming the target, and the tool acts only on an accept. A client that cannot show one gets -32021 MissingRequiredClientCapability, whatever revision it speaks.
+An answer accepts only the call it was asked about: the request state is signed, and holds the tool, a digest of the scoped arguments, an expiry, and a nonce used once. A merge and an auto-merge are held to the pull request version the person was shown.
 --read-only exposes only the tools annotated read-only. --yolo and --allow-writes do nothing.
 Annotations say what the specification defines them to say, whether or not a tool asks. Every tool declares all four hints and a title, and openWorldHint is false: one configured Data Center instance is a closed domain.
-The audit record adds confirmation: accepted, declined, cancelled or unavailable. A refused confirmation is status denied, and one decision is one record.
+The audit record adds confirmation: accepted, declined, cancelled or unavailable. A call the confirmation stops is status denied, and one decision is one record.
 
 ## Agent Instructions
 
