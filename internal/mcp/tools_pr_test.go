@@ -252,3 +252,30 @@ func TestAddPRCommentRejectsLineTypeWithoutAnchor(t *testing.T) {
 // reads the participant status back after each. The unit version asserted the
 // PUT reached a participant path this file had written the reply for, which
 // says nothing about whether Bitbucket keeps a NEEDS_WORK sent that way.
+
+// A tool that never asks cannot be steered to an endpoint that would: a slug
+// carrying a path and a query once turned add_pr_comment into a merge, with
+// nobody asked (confirmed against a running Data Center). The call is refused
+// before any request, so the error is the validation's rather than the closed
+// port's.
+func TestAToolThatNeverAsksCannotBeSteeredToAnotherEndpoint(t *testing.T) {
+	t.Parallel()
+
+	session, answers := connectAsking(t, testServer(t), "", accept)
+	for name, arguments := range map[string]map[string]any{
+		"add_pr_comment":      {"project": "PROJ", "repo": "payments/pull-requests/7/merge?version=3#", "pr_id": "7", "text": "hi"},
+		"create_pull_request": {"project": "PROJ", "repo": "payments/pull-requests/7/approve?x=", "from_ref": "feature", "title": "t"},
+		"get_pull_request":    {"project": "PROJ/repos/other", "repo": "payments", "id": "7"},
+	} {
+		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: arguments})
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if text := resultText(result); !result.IsError || !strings.Contains(text, "is not a project key or repository slug") {
+			t.Errorf("%s: want the injected value refused before any request, got %q", name, text)
+		}
+	}
+	if asked := answers.questions(); len(asked) != 0 {
+		t.Errorf("a refused call asked the person: %q", asked[0].Message)
+	}
+}

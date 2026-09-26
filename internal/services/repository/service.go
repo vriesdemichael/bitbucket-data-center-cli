@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
@@ -51,7 +52,7 @@ func (service *Service) ListByProject(ctx context.Context, projectKey string, op
 		return nil, fmt.Errorf("project key is required")
 	}
 
-	return service.listPaged(ctx, "/rest/api/1.0/projects/"+projectKey+"/repos", opts)
+	return service.listPaged(ctx, "/rest/api/1.0/projects/"+url.PathEscape(projectKey)+"/repos", opts)
 }
 
 const defaultPageSize = 25
