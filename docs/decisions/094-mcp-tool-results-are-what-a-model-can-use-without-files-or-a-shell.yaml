@@ -2,7 +2,9 @@ number: 94
 title: MCP tool results are what a model can use without files or a shell
 category: architecture
 status: accepted
-amended_by: 99
+amended_by:
+  - 99
+  - 101
 decision: >
   An MCP tool answers a client that may be a chat app speaking MCP and nothing else: no file
   system, no shell, no bb. What the model needs arrives as text or as an image, the two kinds of

@@ -5,6 +5,7 @@ status: accepted
 amended_by:
   - 98
   - 99
+  - 101
 decision: >
   bb ai mcp serve accepts --project and --repo, confining every tool call to that project or
   repository, and --audit-file, recording every invocation as JSON Lines. Both are off by default.
