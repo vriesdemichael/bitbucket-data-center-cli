@@ -48,6 +48,9 @@ a different name and a registry type. The names are not the YAML spellings:
 | `UpdateSignatureIdentity` | `REG_SZ` | `update_signature_identity` |
 | `UpdateSignatureIssuer` | `REG_SZ` | `update_signature_issuer` |
 | `AllowUnverifiedUpdate` | boolean | `allow_unverified_update` |
+| `DisableBB` | boolean | `disable_bb` |
+| `DisableMCPServer` | boolean | `disable_mcp_server` |
+| `ReadOnly` | boolean | `read_only` |
 
 A **boolean** is a `REG_DWORD` of `0` or `1`, or a `REG_SZ`. A `REG_DWORD` other
 than `0` reads as true. The string form takes the spellings an administrator is
@@ -57,7 +60,8 @@ likely to write, in any case: `true`/`false`, `1`/`0`, `yes`/`no`, `on`/`off`,
 A value `bb` cannot read is not treated as unset. The restrictive side of that
 control applies until it is corrected — keyring storage mandated, insecure TLS
 refused, updates disabled, plain-HTTP updates refused, unverified updates
-refused — and `bb doctor` reports the value and what is in force meanwhile.
+refused, `bb` or its MCP server switched off, `bb` read-only — and `bb doctor`
+reports the value and what is in force meanwhile.
 
 An empty string value is treated as unset, so a `REG_SZ` left blank does not
 mandate an empty path or an empty host list.
@@ -98,6 +102,9 @@ writes its audit trail on Windows needs `%ProgramData%\bb\config.yaml`.
 | `update_signature_identity` | string | Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. |
 | `update_signature_issuer` | string | Expected OIDC issuer of the release signer. |
 | `allow_unverified_update` | boolean | Permit `bb update` without Sigstore signature verification. A last resort; SHA256 checksum verification still applies. |
+| `disable_bb` | boolean | Switch `bb` off: every command is refused except the few that only explain it. See [below](#switching-bb-off-or-part-of-it). |
+| `disable_mcp_server` | boolean | Refuse `bb ai mcp serve`, so no MCP client can use `bb`; the rest of `bb` keeps working. |
+| `read_only` | boolean | Refuse every command that changes something in Bitbucket, and start `bb ai mcp serve` read-only. |
 
 !!! warning "`allowed_hosts` constrains the host, not the port or the path"
 
@@ -109,6 +116,46 @@ writes its audit trail on Windows needs `%ProgramData%\bb\config.yaml`.
     That is usually what an administrator wants, since one Bitbucket instance
     can be reached several ways. It is worth knowing before treating the list as
     a defence against a rogue service on the same host.
+
+## Switching bb off, or part of it
+
+Three keys decide what `bb` may be used for on a machine. No flag, environment
+variable or user configuration lifts them.
+
+- `disable_mcp_server: true` refuses `bb ai mcp serve`, so no MCP client can
+  start `bb` as its server. Everything else keeps working, `bb ai mcp tools`
+  included.
+- `read_only: true` refuses every command that changes something in Bitbucket,
+  before it sends a request. Reads run, and so does `--dry-run`, which changes
+  nothing. `bb api` is decided by its method: `GET` and `HEAD` run, and any
+  other method is refused. `bb ai mcp serve` starts read-only, offering only the
+  tools that read, whatever its flags say. Commands that change only this
+  machine, such as `bb auth login` or `bb completion install`, still run.
+- `disable_bb: true` refuses every command. What contacts nothing and changes
+  nothing still answers, so a person can find out why: help, `--describe`,
+  `--version`, `bb doctor`, and printing a completion script, which package
+  managers do while they install `bb`. Shell completion offers nothing, and says
+  why.
+
+A system configuration file `bb` cannot parse refuses every command in the same
+way, since the key it cannot read might be one of these. `bb doctor` still runs
+and names the file.
+
+```yaml
+policy:
+  read_only: true
+```
+
+!!! warning "These keys govern `bb`, not Bitbucket"
+
+    They decide what the `bb` binary does. They do not change what the user's
+    account or token may do, and they do not stop another program using that
+    token: a script, `curl`, or `git push` with the credential that
+    `bb auth setup-git` hands to git. Where the requirement is that a person or
+    an agent cannot change Bitbucket, give them a token with read permissions
+    only. Where it is that `bb` never runs, block it with the operating system's
+    application control. Every released build of `bb` honours these keys, a copy
+    a user downloads themselves included; a build from modified source need not.
 
 ## What a user meets when policy refuses them
 
@@ -123,6 +170,10 @@ Policy does not fail silently, and the message names policy as the reason:
   the system package manager.
 - `--allow-http` or `BB_ALLOW_HTTP_UPDATE` under `allow_http_update: false`
   exits `3`, and so does an `http://` update URL.
+- A command under `disable_bb`, `bb ai mcp serve` under `disable_mcp_server`,
+  and a command that changes Bitbucket under `read_only` exit `3`, naming the
+  key and the file or registry key that set it. When the refused command is
+  `bb ai mcp serve`, the MCP client reports that the server did not start.
 
 ## `update_base_url` is a default, not a mandate
 

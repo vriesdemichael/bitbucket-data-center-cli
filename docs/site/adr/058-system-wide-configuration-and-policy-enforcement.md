@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `System-wide configuration and administrative policy enforcement`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `100`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/058-system-wide-configuration-and-policy-enforcement.yaml`
 

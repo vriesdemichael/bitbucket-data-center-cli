@@ -83,7 +83,20 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    - `allow_insecure_skip_verify: false`: Hard-refuses `--insecure-skip-verify` and `BB_INSECURE_SKIP_VERIFY=true`.
    - `allow_http_update: false`: Hard-refuses plain-HTTP update URLs, `bb update --allow-http` and `BB_ALLOW_HTTP_UPDATE=1`.
 
-2. **Enterprise Update Controls and Release Mirrors ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md))**:
+2. **Restricting What `bb` May Be Used For ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md))**:
+   Three policy keys decide whether `bb`, or part of it, may be used on a managed machine. No user setting lifts them:
+   ```yaml
+   policy:
+     disable_mcp_server: true   # no MCP client can start bb ai mcp serve
+     read_only: true            # bb reads and previews, and never changes Bitbucket
+   ```
+   - `disable_mcp_server: true`: For an organisation that has not approved AI agents working through `bb`. `bb ai mcp serve` is refused, and people keep using `bb` in the terminal.
+   - `read_only: true`: For machines, or agents, that may read Bitbucket but never change it. Every command that changes Bitbucket is refused before a request is sent, `bb api` sends only `GET` and `HEAD`, and `bb ai mcp serve` offers only the tools that read.
+   - `disable_bb: true`: For a machine where `bb` has no business running, a copy a user downloaded themselves included. Every command is refused except help, `--describe`, `--version`, `bb doctor` and printing a completion script.
+
+   These govern the `bb` binary, not the account. Against a person or an agent with a shell, the control that holds is still a token with read permissions only; see [Switching bb off, or part of it](../reference/system-policy.md#switching-bb-off-or-part-of-it).
+
+3. **Enterprise Update Controls and Release Mirrors ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md))**:
    - **Disabling In-Place Self-Updates**: On managed corporate machines where software must be installed exclusively through IT package managers (e.g. Jamf, Ansible, Intune, SCCM), disable `bb update` by setting `disable_update: true` in system configuration or `export BB_DISABLE_UPDATE=1`. Alternatively, deploy the `_noupdate` builds described below, which cannot self-update whatever the configuration says.
    - **Internal Release Mirrors**: In firewalled or air-gapped enterprise enclaves, configure `bb update` to query internal mirrors (e.g. JFrog Artifactory, Sonatype Nexus) instead of `api.github.com` via `--base-url <url>`, `BB_UPDATE_BASE_URL`, or `update_base_url` in system/user config. A mirror alone is not sufficient on a host with no internet access: pair it with an offline trust root, below. Mirror URLs must be `https`: a plain-HTTP mirror needs `bb update --allow-http` or `BB_ALLOW_HTTP_UPDATE=1`, and `allow_http_update: false` in system configuration refuses it for every user (`true` permits it fleet-wide).
    - **Offline Signature Verification ([ADR-063](../adr/063-offline-release-signature-verification.md))**: By default, `bb update` fetches Sigstore trust material from `https://tuf-repo-cdn.sigstore.dev` on every run. Deploy a `trusted_root.json` alongside the corporate CA bundle and point at it to verify releases with no internet access at all:
@@ -117,13 +130,13 @@ Distinguish between **enforceable technical controls** (which systems engineers 
      ```
      The dry run verifies whatever release the mirror serves, the installed version included: the signature on `sha256sums.txt` against the configured trust material, that file's entry for this platform's archive, and the archive against that entry. It reports the trust material used and each check that passed (`preview.data.trust` under `--json`), and fails with exit `5` (`conflict`) when the mirror serves a release older than the installed one, the sign of a mirror that has stopped receiving releases.
 
-3. **Mandate Keyring Storage (Advisory / User Tier)**:
+4. **Mandate Keyring Storage (Advisory / User Tier)**:
    ```bash
    export BB_REQUIRE_KEYRING=1
    ```
    When set in user environments where system policy is not yet deployed, `bb` refuses to read credentials from or write credentials to the plaintext configuration fallback (`~/.config/bb/config.yaml` on Linux, `~/Library/Application Support/bb/config.yaml` on macOS, or `%AppData%\bb\config.yaml` on Windows). Any command that would otherwise rely on plaintext fallback aborts with an error ([ADR-047](../adr/047-credential-input-and-keyring-enforcement.md)).
 
-4. **Configure Host-Scoped Git Credential Helper**:
+5. **Configure Host-Scoped Git Credential Helper**:
    ```bash
    bb auth setup-git
    ```
@@ -134,7 +147,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    ```
    *Note: `bb` writes the absolute executable path into the git configuration.* Git queries `bb` dynamically on demand for that specific host, ensuring zero credentials are ever written into local repository `.git/config` files and credentials are never offered to external remotes ([ADR-044](../adr/044-git-credential-helper-instead-of-persisted-credentials.md)).
 
-5. **Disable Stored Config for Headless CI**:
+6. **Disable Stored Config for Headless CI**:
    ```bash
    export BB_DISABLE_STORED_CONFIG=1
    ```
@@ -329,6 +342,9 @@ Set-ItemProperty -Path $RegPath -Name "AllowedHosts" -Value "https://bitbucket.c
 Set-ItemProperty -Path $RegPath -Name "AllowInsecureSkipVerify" -Value 0 -Type DWord
 Set-ItemProperty -Path $RegPath -Name "AllowHTTPUpdate" -Value 0 -Type DWord
 Set-ItemProperty -Path $RegPath -Name "DisableUpdate" -Value 1 -Type DWord
+# Optional: no MCP server, or a read-only bb (ADR-100)
+# Set-ItemProperty -Path $RegPath -Name "DisableMCPServer" -Value 1 -Type DWord
+# Set-ItemProperty -Path $RegPath -Name "ReadOnly" -Value 1 -Type DWord
 ```
 
 ---
@@ -422,6 +438,8 @@ Every tool is exposed, and the ones that decide whether code merges ask the pers
 The confirmation is an MCP elicitation: the client shows what the call will do, and the tool acts only when the person accepts. A client that cannot show one gets error -32021 for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself, through a hook or an automatic approval, is the client's decision, so this control is as strong as the client you choose.
 
 For a client you do not trust with the tool annotations and those confirmations, start the server with `--read-only`, which exposes only the tools that read. A client that cannot be trusted with them should not make changes in Bitbucket; make them yourself.
+
+An administrator can decide this for every client on a machine. `read_only: true` in system policy starts every server read-only whatever its client configuration says, and `disable_mcp_server: true` refuses to start one at all ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)).
 
 The [MCP tool reference](../reference/mcp-tools.md) lists every tool with what it can change and whether it asks:
 ```bash
@@ -592,6 +610,9 @@ Confirm:
 | `insecure TLS verification is disabled by administrative policy` | Attempted `--insecure-skip-verify` when prohibited by `allow_insecure_skip_verify: false` in system policy. | Configure the corporate CA certificate rather than disabling TLS verification. |
 | `overriding CA bundle is disabled by administrative policy` | Attempted to override mandated corporate CA bundle with a conflicting custom certificate. | Remove user-level `BB_CA_FILE` override and use the mandated corporate CA. |
 | `self-update is disabled by administrative policy` | Self-update is disabled machine-wide (`disable_update: true` or `BB_DISABLE_UPDATE=1`). | Update `bb` through your IT system package manager (`apt`, `dnf`, `brew`, `winget`). |
+| `bb is disabled on this machine by administrative policy` | Policy sets `disable_bb`. | Ask the administrator named by the message's file or registry key. `bb doctor` still runs and shows the setting. |
+| `bb's MCP server is disabled on this machine by administrative policy` | Policy sets `disable_mcp_server`. | Use `bb` in the terminal; no MCP client may start it on this machine. |
+| `changes Bitbucket, and bb is read-only on this machine by administrative policy` | Policy sets `read_only`, and the command would change something in Bitbucket. | Reads and `--dry-run` still work. Make the change in Bitbucket itself, or ask the administrator. |
 | `could not load the Sigstore trust material needed to verify the release manifest` | The host cannot reach `https://tuf-repo-cdn.sigstore.dev`, and no offline trust root is configured. The release itself is not implicated. | Deploy a `trusted_root.json` and set `update_trusted_root` in system configuration (or `update_tuf_url` for a mirrored TUF repository). |
 | `update_trusted_root is invalid` | The configured trusted root path does not exist on this host — typically an imaging race, the same one that bites `ca_file`. | Ensure the provisioning script writes `trusted_root.json` before the configuration file that references it. |
 | `update_trusted_root and update_tuf_url are mutually exclusive` | Both Sigstore trust sources are configured. | Keep the trusted root file for air-gapped hosts, or the TUF mirror URL — not both. |
