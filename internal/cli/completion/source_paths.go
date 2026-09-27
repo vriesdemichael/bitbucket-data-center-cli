@@ -2,13 +2,10 @@ package completion
 
 import (
 	"context"
-	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 
-	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/listing"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 )
 
@@ -18,16 +15,9 @@ func init() {
 }
 
 const (
-	// directoryPageSize is how many entries of one directory a press asks for.
-	//
-	// Large, because nothing else narrows it. Bitbucket's directory listing
-	// takes no filter -- a filterText is ignored rather than refused -- so the
-	// directory in the path is the whole of the query, and the letters typed
-	// after the last slash can only be matched against what the page already
-	// holds. 500 is Bitbucket's own default for this listing and more entries
-	// than any directory somebody completes inside; it is sent rather than
-	// inherited, because a default is the server's to change.
-	directoryPageSize = 500
+	// directoryPageSize is how many entries of one directory a press asks for:
+	// listing.DirectoryEntries, which says why it is large.
+	directoryPageSize = listing.DirectoryEntries
 
 	// changedFilePageSize is how far into a pull request's changes a press
 	// looks.
@@ -297,14 +287,8 @@ func checkoutRefs(at, remote string) []string {
 	return refs
 }
 
-// remoteEntries asks Bitbucket for one directory.
-//
-// The browse endpoint rather than the file listing, which is the difference
-// between reading a directory and walking a tree: /files answers with every
-// path beneath the one it is given, recursively, which for a repository of any
-// size is both the slowest answer available and the least useful. /browse
-// answers with the children of that path alone, and takes the page size the
-// press can use.
+// remoteEntries asks Bitbucket for one directory, through the listing both
+// the shell and the MCP server complete a path with.
 func remoteEntries(
 	ctx context.Context,
 	environment *Environment,
@@ -317,87 +301,15 @@ func remoteEntries(
 		return nil, err
 	}
 
-	encoded, err := encodeDirectory(directory)
+	children, err := listing.Directory(ctx, client, repository.ProjectKey, repository.Slug, at, directory, directoryPageSize)
 	if err != nil {
 		return nil, err
 	}
 
-	query := map[string]string{"limit": strconv.Itoa(directoryPageSize)}
-	if trimmed := strings.TrimSpace(at); trimmed != "" {
-		query["at"] = trimmed
-	}
-
-	var response browseResponse
-	if err := client.GetJSON(ctx, browsePath(repository, encoded), query, &response); err != nil {
-		return nil, err
-	}
-
-	entries := make([]entry, 0, len(response.Children.Values))
-	for _, child := range response.Children.Values {
-		// The child's path is relative to the directory being browsed, which
-		// is the half of it the candidate does not already carry.
-		entries = append(entries, entry{
-			name:      strings.TrimSpace(child.Path.ToString),
-			directory: strings.EqualFold(strings.TrimSpace(child.Type), "DIRECTORY"),
-		})
+	entries := make([]entry, 0, len(children))
+	for _, child := range children {
+		entries = append(entries, entry{name: child.Name, directory: child.Directory})
 	}
 
 	return entries, nil
-}
-
-// browseResponse is the part of the browse endpoint's answer a path slot
-// needs.
-//
-// A file path answers with its lines instead of its children, which decodes
-// here as no children at all -- correct, and the reason nothing checks first
-// whether the path is a directory.
-type browseResponse struct {
-	Children struct {
-		Values []struct {
-			Path struct {
-				ToString string `json:"toString"`
-			} `json:"path"`
-			Type string `json:"type"`
-		} `json:"values"`
-	} `json:"children"`
-}
-
-// browsePath is the endpoint for a directory, with the directory already
-// escaped.
-//
-// Kept as a single fmt.Sprintf return so tools/quality-report can resolve the
-// endpoints reached through the raw httpclient statically; internal/services
-// builds the same path the same way.
-func browsePath(repository Repository, encodedPath string) string {
-	return fmt.Sprintf(
-		"/rest/api/latest/projects/%s/repos/%s/browse/%s",
-		url.PathEscape(strings.TrimSpace(repository.ProjectKey)),
-		url.PathEscape(strings.TrimSpace(repository.Slug)),
-		encodedPath,
-	)
-}
-
-// encodeDirectory escapes a directory a segment at a time.
-//
-// Whole-path escaping turns the separators into %2F, which the browse endpoint
-// does not accept. Per-segment escaping keeps them and still stops a half-typed
-// path from carrying a query string, a fragment or a traversal into a request
-// for some other endpoint -- a word being typed into a shell is the least
-// predictable input this package has.
-func encodeDirectory(directory string) (string, error) {
-	encoded := make([]string, 0, 8)
-
-	for _, segment := range strings.Split(strings.TrimSpace(directory), "/") {
-		trimmed := strings.TrimSpace(segment)
-		if trimmed == "" || trimmed == "." {
-			continue
-		}
-		if trimmed == ".." {
-			return "", apperrors.New(apperrors.KindValidation, `path must not contain ".." segments`, nil)
-		}
-
-		encoded = append(encoded, url.PathEscape(trimmed))
-	}
-
-	return strings.Join(encoded, "/"), nil
 }
