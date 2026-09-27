@@ -451,10 +451,11 @@ bb ai mcp serve --host https://bitbucket.example.com --project PAYMENTS
 bb ai mcp serve --host https://bitbucket.example.com --repo PAYMENTS/ledger
 ```
 
-Scoping is enforced at a single choke point over every tool call, not per tool. Three behaviours are worth knowing before you configure it:
+Scoping is enforced at a single choke point over every tool call, resource read, prompt and completion, not per tool. Three behaviours are worth knowing before you configure it:
 
 - **Omitted arguments are bound, not rejected.** `list_pull_requests` with no project reaches every repository the token can see. Under a scope the arguments are filled in, so the unbounded mode becomes the bounded one and the agent never needs to know.
 - **Conflicting arguments are refused.** A call naming another project fails with an error the agent can read and correct.
+- **Resources follow the same boundary.** A resource outside the scope is refused, the resource list holds only what is inside it, and completions suggest only the scoped project and repository. `--tools` and `--exclude` decide them too: a resource is served while the tool it answers like is exposed.
 - **Tools that cannot be bounded are withheld entirely.** `get_build_status` and `set_build_status` address a commit SHA, which Bitbucket does not scope to a project. They disappear from `tools/list` while a scope is set. `search_repositories` is withheld under `--repo` for the same reason: pinning its project filter would still list sibling repositories, and a filter is not a boundary.
 
 ### Principle 4: Agent Audit Trail
@@ -470,6 +471,14 @@ bb ai mcp serve --host https://bitbucket.example.com --project PAYMENTS --audit-
 ```
 
 `status` is `success`, `error`, or `denied`. A tool that asks adds `confirmation`: `accepted`, `declined`, `cancelled`, or `unavailable` when the client could not show the confirmation. A call the confirmation stops is also `denied`, including one whose answer the server cannot use, which records no `confirmation`. One decision is one record, however many round trips the client needed:
+
+Resource reads, the resource list and prompts are recorded too, as `mcp_resource_read`, `mcp_resource_list` and `mcp_prompt_get`, with `resource` or `prompt` in place of `tool`. Completions, which a client sends as the person types, are not:
+
+```json
+{"timestamp":"2026-08-29T09:32:40Z","event":"mcp_resource_read","resource":"bitbucket://projects/PAYMENTS/repos/ledger/pull-requests/42/diff","project":"PAYMENTS","repo":"ledger","status":"success","duration_ms":61,"user_identity":"alice","host":"https://bitbucket.example.com","scope":"PAYMENTS"}
+```
+
+A declined confirmation looks like this:
 
 ```json
 {"timestamp":"2026-08-29T09:31:12Z","event":"mcp_tool_invocation","tool":"merge_pull_request","project":"PAYMENTS","repo":"ledger","status":"denied","confirmation":"declined","duration_ms":14,"user_identity":"alice","host":"https://bitbucket.example.com","scope":"PAYMENTS","arguments":{"pr_id":"42","project":"PAYMENTS","repo":"ledger"},"error_message":"merge_pull_request did not run: the person declined. Do not call it again unless they ask"}
