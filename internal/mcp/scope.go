@@ -140,6 +140,9 @@ var scopeRules = map[string]scopeRule{
 	"list_commits":              scopeProjectRepo,
 	"get_commit":                scopeProjectRepo,
 	"compare_refs":              scopeProjectRepo,
+	// A pull request and its diff take project and repo, and a list takes
+	// them as filters, as list_pull_requests does.
+	"show": scopeOptionalProjectRepo,
 }
 
 // withheldUnderScope reports whether a scope removes a tool altogether.

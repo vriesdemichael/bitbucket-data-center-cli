@@ -1,0 +1,168 @@
+// Command view-preview renders bb's MCP views from a real Bitbucket, outside
+// an MCP client.
+//
+// It runs bb's MCP server in-process with bb's own configuration, calls the
+// show tool as a client that renders views, and writes a page that mounts
+// each answer in a stand-in host (internal/mcp/viewhost), light and dark:
+//
+//	go run ./tools/view-preview -project PAY -repo ledger -id 1 -out views.html
+//
+// Open the page in a browser. Nothing on it reaches Bitbucket: every view
+// draws from the result it was handed.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/chromedp/chromedp"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/viewhost"
+)
+
+func main() {
+	project := flag.String("project", "", "project key of the pull request and the list")
+	repo := flag.String("repo", "", "repository slug")
+	id := flag.String("id", "", "pull request ID for the card and the diff")
+	state := flag.String("state", "ALL", "state of the pull requests in the list")
+	out := flag.String("out", "views.html", "where to write the page")
+	screenshots := flag.String("screenshots", "", "a directory to write a PNG of each frame into, taken with headless Chrome")
+	flag.Parse()
+
+	count, err := run(*project, *repo, *id, *state, *out)
+	if err == nil && *screenshots != "" {
+		err = capture(*out, *screenshots, count)
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "view-preview:", err)
+		os.Exit(1)
+	}
+}
+
+// capture opens the page in headless Chrome and saves each frame as it is
+// drawn, at twice the pixel density so text stays sharp.
+func capture(page, dir string, count int) error {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	absolute, err := filepath.Abs(page)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+	ctx, cancel = context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
+	if err := chromedp.Run(ctx,
+		chromedp.EmulateViewport(1400, 1000, chromedp.EmulateScale(2)),
+		chromedp.Navigate("file:///"+filepath.ToSlash(absolute)),
+		chromedp.WaitVisible("section.frame"),
+		// The views draw once the stand-in host has answered them.
+		chromedp.Sleep(2*time.Second),
+	); err != nil {
+		return err
+	}
+	for i := 1; i <= count; i++ {
+		var shot []byte
+		selector := fmt.Sprintf("#frames > section:nth-of-type(%d)", i)
+		if err := chromedp.Run(ctx, chromedp.ScrollIntoView(selector), chromedp.Sleep(300*time.Millisecond),
+			chromedp.Screenshot(selector, &shot, chromedp.NodeVisible)); err != nil {
+			return fmt.Errorf("frame %d: %w", i, err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("view-%02d.png", i)), shot, 0o600); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func run(project, repo, id, state, out string) (int, error) {
+	if project == "" || repo == "" || id == "" {
+		return 0, fmt.Errorf("-project, -repo and -id are required")
+	}
+	ctx := context.Background()
+
+	cfg, err := config.LoadWithOverrides(config.Overrides{})
+	if err != nil {
+		return 0, err
+	}
+	clients, err := bbmcp.ClientsFromConfig(cfg)
+	if err != nil {
+		return 0, err
+	}
+
+	serverTransport, clientTransport := mcp.NewInMemoryTransports()
+	server := bbmcp.NewServer(bbmcp.ServerOptions{Name: "bb", Version: "preview", Clients: clients})
+	serverSession, err := server.Connect(ctx, serverTransport, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = serverSession.Close() }()
+
+	// A client that renders views, as Claude Desktop and VS Code declare it.
+	capabilities := &mcp.ClientCapabilities{}
+	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
+	client := mcp.NewClient(&mcp.Implementation{Name: "view-preview", Version: "1"}, &mcp.ClientOptions{Capabilities: capabilities})
+	session, err := client.Connect(ctx, clientTransport, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = session.Close() }()
+
+	page, err := session.ReadResource(ctx, &mcp.ReadResourceParams{URI: "ui://bb/view"})
+	if err != nil {
+		return 0, fmt.Errorf("read the view page: %w", err)
+	}
+
+	card := map[string]any{"kind": "pull_request", "project": project, "repo": repo, "id": id}
+	list := map[string]any{"kind": "pull_requests", "project": project, "repo": repo, "state": state}
+	diff := map[string]any{"kind": "diff", "project": project, "repo": repo, "id": id}
+
+	var frames []viewhost.Frame
+	for _, want := range []struct {
+		title      string
+		theme      string
+		mode       string
+		fullscreen bool
+		arguments  map[string]any
+	}{
+		{"Pull request card, inline", "light", "inline", true, card},
+		{"Pull request card, dark", "dark", "inline", true, card},
+		{"Pull request list", "light", "inline", true, list},
+		{"Diff, inline in a host without fullscreen", "light", "inline", false, diff},
+		{"Pull request, fullscreen", "light", "fullscreen", true, card},
+		{"Diff, fullscreen", "dark", "fullscreen", true, diff},
+	} {
+		result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show", Arguments: want.arguments})
+		if err != nil {
+			return 0, fmt.Errorf("show %v: %w", want.arguments["kind"], err)
+		}
+		encoded, err := json.Marshal(result)
+		if err != nil {
+			return 0, err
+		}
+		frames = append(frames, viewhost.Frame{
+			Title:      want.title,
+			Theme:      want.theme,
+			Mode:       want.mode,
+			Fullscreen: want.fullscreen,
+			Arguments:  want.arguments,
+			Result:     encoded,
+		})
+	}
+
+	html, err := viewhost.Page(page.Contents[0].Text, frames, viewhost.Options{Heading: "bb views: " + project + "/" + repo + " #" + id})
+	if err != nil {
+		return 0, err
+	}
+	return len(frames), os.WriteFile(out, []byte(html), 0o600)
+}

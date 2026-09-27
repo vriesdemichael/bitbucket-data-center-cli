@@ -58,6 +58,8 @@ var mcpOnly = map[string]string{
 	"get_repository_clone_info": "returns clone URLs for the agent to use with git itself; " +
 		"`bb repo clone` performs the clone, which an MCP server cannot do on the agent's behalf " +
 		"because it does not share the agent's working tree",
+	"show": "puts what the other tools found in front of the person as a view in their MCP client (ADR-101); " +
+		"a terminal has no view to show, and `bb pr get`, `bb pr list` and `bb pr diff` print the same content",
 }
 
 // TestEveryMCPToolIsAccountedFor fails when a tool is added without deciding

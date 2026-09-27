@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bb views</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: #eeede7; color: #141413; }
+  header.page { padding: 20px 28px 4px; }
+  header.page h1 { margin: 0; font-size: 20px; }
+  header.page p { margin: 4px 0 0; color: #5b5a55; }
+  main { display: grid; gap: 24px; padding: 20px 28px 40px; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); align-items: start; }
+  .frame { border-radius: 14px; padding: 14px; background: #faf9f5; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  /* A frame's colour scheme matches its view's, as a host in dark mode does:
+     Chrome paints an iframe whose scheme differs from its parent's opaque. */
+  .frame.dark { background: #262624; color: #faf9f5; color-scheme: dark; }
+  .frame.wide { grid-column: 1 / -1; }
+  .frame h2 { margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: .7; }
+  .stage { border: 0.5px solid rgba(31,30,29,.3); border-radius: 12px; overflow: hidden; background: #ffffff; }
+  .frame.dark .stage { border-color: rgba(222,220,209,.3); background: #30302e; }
+  .stage.fullscreen { height: 680px; }
+  iframe { display: block; width: 100%; height: 120px; border: 0; background: transparent; }
+  .stage.fullscreen iframe { height: 100%; }
+  .log { margin: 10px 0 0; padding: 0; list-style: none; font: 12px/1.4 ui-monospace, Consolas, monospace; opacity: .8; }
+  .log li { padding: 2px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<header class="page"><h1 id="heading"></h1><p>Each frame is bb's view page in a sandboxed iframe, answered by a stand-in host. What a view asks the host to do appears under it.</p></header>
+<main id="frames"></main>
+<script>
+(() => {
+  "use strict";
+  const VIEW = /*BB_HOST_VIEW*/;
+  const FRAMES = /*BB_HOST_FRAMES*/;
+  const SANDBOX = /*BB_HOST_SANDBOX*/;
+  document.getElementById("heading").textContent = /*BB_HOST_HEADING*/ || "bb views";
+
+  // The standard MCP Apps variables, with the values a Claude host sends.
+  const THEMES = {
+    light: {
+      "--color-background-primary": "#ffffff", "--color-background-secondary": "#f5f4ed", "--color-background-tertiary": "#faf9f5",
+      "--color-background-inverse": "#141413", "--color-background-info": "#d6e4f6", "--color-background-danger": "#f7ecec",
+      "--color-background-success": "#e9f1dc", "--color-background-warning": "#f6eedf",
+      "--color-text-primary": "#141413", "--color-text-secondary": "#3d3d3a", "--color-text-tertiary": "#73726c",
+      "--color-text-inverse": "#ffffff", "--color-text-info": "#3266ad", "--color-text-danger": "#7f2c28",
+      "--color-text-success": "#265b19", "--color-text-warning": "#5a4815",
+      "--color-border-primary": "rgba(31,30,29,.4)", "--color-border-secondary": "rgba(31,30,29,.3)", "--color-border-tertiary": "rgba(31,30,29,.15)",
+      "--font-sans": "system-ui, -apple-system, \"Segoe UI\", sans-serif", "--font-mono": "ui-monospace, Consolas, monospace",
+      "--border-radius-sm": "6px", "--border-radius-md": "8px",
+    },
+    dark: {
+      "--color-background-primary": "#30302e", "--color-background-secondary": "#262624", "--color-background-tertiary": "#141413",
+      "--color-background-inverse": "#faf9f5", "--color-background-info": "#253e5f", "--color-background-danger": "#602a28",
+      "--color-background-success": "#1b4614", "--color-background-warning": "#483a0f",
+      "--color-text-primary": "#faf9f5", "--color-text-secondary": "#c2c0b6", "--color-text-tertiary": "#9c9a92",
+      "--color-text-inverse": "#141413", "--color-text-info": "#80aadd", "--color-text-danger": "#ee8884",
+      "--color-text-success": "#7ab948", "--color-text-warning": "#d1a041",
+      "--color-border-primary": "rgba(222,220,209,.4)", "--color-border-secondary": "rgba(222,220,209,.3)", "--color-border-tertiary": "rgba(222,220,209,.15)",
+      "--font-sans": "system-ui, -apple-system, \"Segoe UI\", sans-serif", "--font-mono": "ui-monospace, Consolas, monospace",
+      "--border-radius-sm": "6px", "--border-radius-md": "8px",
+    },
+  };
+
+  // What each view asked for, for a test to read.
+  window.bbHost = { frames: [] };
+
+  FRAMES.forEach((frame, index) => mount(frame, index));
+
+  function mount(frame, index) {
+    const record = { index, messages: [], mode: frame.mode, iframe: null };
+    window.bbHost.frames.push(record);
+
+    const section = document.createElement("section");
+    section.className = "frame" + (frame.theme === "dark" ? " dark" : "") + (frame.mode === "fullscreen" ? " wide" : "");
+    const title = document.createElement("h2");
+    title.textContent = frame.title || "View " + (index + 1);
+    const stage = document.createElement("div");
+    stage.className = "stage" + (frame.mode === "fullscreen" ? " fullscreen" : "");
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("sandbox", SANDBOX);
+    iframe.setAttribute("title", title.textContent);
+    iframe.srcdoc = VIEW;
+    const log = document.createElement("ul");
+    log.className = "log";
+    stage.append(iframe);
+    section.append(title, stage, log);
+    document.getElementById("frames").append(section);
+    record.iframe = iframe;
+
+    const send = (message) => iframe.contentWindow.postMessage(message, "*");
+    const reply = (id, result) => send({ jsonrpc: "2.0", id, result });
+    const note = (text) => {
+      const line = document.createElement("li");
+      line.textContent = text;
+      log.append(line);
+    };
+    const context = () => ({
+      theme: frame.theme,
+      displayMode: record.mode,
+      availableDisplayModes: frame.fullscreen ? ["inline", "fullscreen"] : ["inline"],
+      locale: "en-US",
+      platform: "desktop",
+      styles: { variables: THEMES[frame.theme] || THEMES.light },
+    });
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== iframe.contentWindow) return;
+      const message = event.data;
+      if (!message || message.jsonrpc !== "2.0") return;
+      record.messages.push(message);
+      switch (message.method) {
+        case "ui/initialize":
+          reply(message.id, {
+            protocolVersion: "2026-01-26",
+            hostInfo: { name: "bb-view-host", version: "1" },
+            hostCapabilities: { openLinks: {}, updateModelContext: {}, message: {} },
+            hostContext: context(),
+          });
+          break;
+        case "ui/notifications/initialized":
+          send({ jsonrpc: "2.0", method: "ui/notifications/tool-input", params: { arguments: frame.arguments || {} } });
+          if (frame.result) send({ jsonrpc: "2.0", method: "ui/notifications/tool-result", params: frame.result });
+          break;
+        case "ui/notifications/size-changed":
+          if (record.mode === "inline" && message.params && message.params.height > 0) {
+            iframe.style.height = Math.ceil(message.params.height) + "px";
+          }
+          break;
+        case "ui/request-display-mode": {
+          const wanted = message.params && message.params.mode;
+          record.mode = frame.fullscreen && wanted === "fullscreen" ? "fullscreen" : "inline";
+          stage.classList.toggle("fullscreen", record.mode === "fullscreen");
+          section.classList.toggle("wide", record.mode === "fullscreen");
+          if (record.mode === "fullscreen") iframe.style.height = "";
+          reply(message.id, { mode: record.mode });
+          send({ jsonrpc: "2.0", method: "ui/notifications/host-context-changed", params: { displayMode: record.mode } });
+          note("display mode: " + record.mode);
+          break;
+        }
+        case "ui/open-link":
+          reply(message.id, {});
+          note("open link: " + (message.params && message.params.url));
+          break;
+        case "ui/update-model-context":
+          reply(message.id, {});
+          note("model context: " + textOf(message.params));
+          break;
+        case "ui/message":
+          reply(message.id, {});
+          note("message from the person: " + textOf(message.params));
+          break;
+        default:
+          if (message.id !== undefined && message.method) {
+            send({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: "Method not found" } });
+          }
+      }
+    });
+  }
+
+  function textOf(params) {
+    const content = (params && params.content) || [];
+    return content.map((part) => part.text || "").join("\n");
+  }
+})();
+</script>
+</body>
+</html>
