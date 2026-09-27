@@ -11,8 +11,14 @@ tool is exposed. The ones that change whether or when a pull request merges,
 and creating a tag, ask you to confirm each call in the client before they run.
 A client that cannot show that confirmation cannot use them.
 
-[**MCP Tools**](reference/mcp-tools.md) is the reference: every tool, which of
-them write, and which ask.
+Pull requests, their diffs and open threads, files and commits are also
+resources you can attach in the client, and prompts such as "review a pull
+request" bring them along. The client completes their project, repository, pull
+request, path and ref as you type. bb reads them with its own credentials, so
+the client never contacts Bitbucket.
+
+[**MCP Reference**](reference/mcp-tools.md) lists every tool, which of them
+write and which ask, and every resource and prompt.
 
 ```bash
 bb ai mcp serve
