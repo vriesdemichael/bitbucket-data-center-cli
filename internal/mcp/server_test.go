@@ -281,10 +281,11 @@ func TestReadOnlyIsNotOverriddenByTheAllowList(t *testing.T) {
 	}
 }
 
-// TestServerAdvertisesToolsAndNothingElse: left to itself the SDK advertises
-// logging, which the 2026-07-28 revision deprecates and this server never
-// sends, and a tool list that changes, which this one never does.
-func TestServerAdvertisesToolsAndNothingElse(t *testing.T) {
+// TestServerAdvertisesWhatItServesAndNothingElse: tools, resources, prompts
+// and completions, each bare. Left to itself the SDK advertises logging, which
+// the 2026-07-28 revision deprecates and this server never sends, and lists
+// that change, which these never do.
+func TestServerAdvertisesWhatItServesAndNothingElse(t *testing.T) {
 	t.Parallel()
 
 	result := connect(t, Clients{}, nil, nil).InitializeResult()
@@ -302,8 +303,14 @@ func TestServerAdvertisesToolsAndNothingElse(t *testing.T) {
 	if err := json.Unmarshal(encoded, &advertised); err != nil {
 		t.Fatalf("decode capabilities %s: %v", encoded, err)
 	}
-	if len(advertised) != 1 || string(advertised["tools"]) != "{}" {
-		t.Errorf("capabilities = %s, want tools and nothing else, with no listChanged", encoded)
+	want := []string{"completions", "prompts", "resources", "tools"}
+	if len(advertised) != len(want) {
+		t.Errorf("capabilities = %s, want exactly %v", encoded, want)
+	}
+	for _, name := range want {
+		if string(advertised[name]) != "{}" {
+			t.Errorf("capability %s = %s, want it declared bare: no listChanged, no subscribe", name, advertised[name])
+		}
 	}
 	if strings.TrimSpace(result.Instructions) == "" {
 		t.Error("the server sends no instructions")

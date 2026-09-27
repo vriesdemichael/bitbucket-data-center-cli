@@ -86,42 +86,10 @@ func specGetFileContent() Spec {
 		}),
 	}
 	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[GetFileContentInput, GetFileContentOutput] {
-		svc := browseservice.NewService(c.OpenAPI, c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetFileContentInput) (*mcp.CallToolResult, GetFileContentOutput, error) {
-			request := fileview.Request{
-				Path:      in.Path,
-				At:        in.At,
-				WebURL:    fileWebURL(c.BaseURL, in.Project, in.Repo, in.Path, in.At),
-				StartLine: in.StartLine,
-				LineCount: in.LineCount,
-			}
-			// Refused before the file is fetched, since no file makes a
-			// negative line number mean anything.
-			if err := request.Validate(); err != nil {
+			request, view, err := readFileView(ctx, c, in)
+			if err != nil {
 				return nil, GetFileContentOutput{}, fmt.Errorf("get_file_content: %w", err)
-			}
-
-			// Held in memory, because it is converted as a whole, so capped. A
-			// file over the cap is described rather than refused: an error
-			// would leave the model with nothing, when what it needs is to know
-			// the file is there and too large.
-			var held download.Memory
-			err := svc.RawTo(ctx, browseservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.Path, in.At, &held, fileview.MaxFileBytes)
-
-			var view fileview.View
-			var limit *download.LimitError
-			switch {
-			case errors.As(err, &limit):
-				view = fileview.TooLarge(request, limit.Limit, limit.Size)
-			case err != nil:
-				return nil, GetFileContentOutput{}, fmt.Errorf("get_file_content failed: %w", err)
-			default:
-				// The call's context: a conversion that takes seconds -- a
-				// compressed archive, a large document or picture -- stops
-				// when the client cancels, and the call ends in its error.
-				if view, err = fileview.Read(ctx, request, held.Bytes()); err != nil {
-					return nil, GetFileContentOutput{}, fmt.Errorf("get_file_content: %w", err)
-				}
 			}
 
 			// Both values are named rather than returned as literals: a return
@@ -133,6 +101,45 @@ func specGetFileContent() Spec {
 			return result, structured, nil
 		}
 	})
+}
+
+// readFileView fetches a file and converts it into what a model can use, as
+// get_file_content and the file resource answer with it.
+func readFileView(ctx context.Context, c Clients, in GetFileContentInput) (fileview.Request, fileview.View, error) {
+	request := fileview.Request{
+		Path:      in.Path,
+		At:        in.At,
+		WebURL:    fileWebURL(c.BaseURL, in.Project, in.Repo, in.Path, in.At),
+		StartLine: in.StartLine,
+		LineCount: in.LineCount,
+	}
+	// Refused before the file is fetched, since no file makes a negative line
+	// number mean anything.
+	if err := request.Validate(); err != nil {
+		return request, fileview.View{}, err
+	}
+
+	// Held in memory, because it is converted as a whole, so capped. A file
+	// over the cap is described rather than refused: an error would leave the
+	// model with nothing, when what it needs is to know the file is there and
+	// too large.
+	var held download.Memory
+	err := browseservice.NewService(c.OpenAPI, c.HTTP).RawTo(ctx, browseservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.Path, in.At, &held, fileview.MaxFileBytes)
+
+	var limit *download.LimitError
+	switch {
+	case errors.As(err, &limit):
+		return request, fileview.TooLarge(request, limit.Limit, limit.Size), nil
+	case err != nil:
+		return request, fileview.View{}, fmt.Errorf("reading the file failed: %w", err)
+	}
+
+	// The call's context: a conversion that takes seconds -- a compressed
+	// archive, a large document or picture -- stops when the client cancels,
+	// and the call ends in its error.
+	view, err := fileview.Read(ctx, request, held.Bytes())
+
+	return request, view, err
 }
 
 // fileContentResult puts a view of a file into a tool result.
@@ -186,8 +193,12 @@ func fileContentResult(in GetFileContentInput, webURL string, view fileview.View
 	if media := view.Media; media != nil {
 		if view.Kind == fileview.KindVideo {
 			// MCP has no video content. An embedded resource carries any
-			// bytes with their type, addressed by the file's page.
-			content = append(content, &mcp.EmbeddedResource{Resource: &mcp.ResourceContents{URI: webURL, MIMEType: media.MIMEType, Blob: media.Data}})
+			// bytes with their type, addressed by the file resource this
+			// server reads again. Not by the file's page: a client may fetch
+			// an https:// resource itself, and would fail without the
+			// credentials.
+			uri := resourceURI(resourceRef{kind: fileKind, project: in.Project, repo: in.Repo, path: in.Path, at: in.At})
+			content = append(content, &mcp.EmbeddedResource{Resource: &mcp.ResourceContents{URI: uri, MIMEType: media.MIMEType, Blob: media.Data}})
 		} else {
 			content = append(content, &mcp.AudioContent{Data: media.Data, MIMEType: media.MIMEType})
 		}

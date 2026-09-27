@@ -39,10 +39,22 @@ const (
 // single choke point over tools/call is the only place where "every tool call
 // is checked" is a property of the code rather than a property of 24 people
 // remembering, and it is the same reason the audit record cannot be forgotten
-// by a handler that returns early.
+// by a handler that returns early. Resource reads, the resource list, prompts
+// and completions reach Bitbucket too, so they pass the same point.
 func governanceMiddleware(scope Scope, audit *AuditLogger, onFailure AuditFailureMode, warn func(string)) mcp.Middleware {
+	governor := governor{scope: scope, audit: audit, onFailure: onFailure, warn: warn}
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			switch typed := req.(type) {
+			case *mcp.ReadResourceRequest:
+				return governor.readResource(ctx, next, method, typed)
+			case *mcp.ListResourcesRequest:
+				return governor.listResources(ctx, next, method, typed)
+			case *mcp.GetPromptRequest:
+				return governor.getPrompt(ctx, next, method, typed)
+			case *mcp.CompleteRequest:
+				return governor.complete(ctx, next, method, typed)
+			}
 			if method != methodCallTool {
 				return next(ctx, method, req)
 			}
@@ -132,11 +144,25 @@ func writeAudit(audit *AuditLogger, record AuditRecord, onFailure AuditFailureMo
 	}
 	if onFailure == AuditFailureWarn {
 		if warn != nil {
-			warn(fmt.Sprintf("bb: audit record for %s could not be written: %v", record.Tool, err))
+			warn(fmt.Sprintf("bb: audit record for %s could not be written: %v", auditSubject(record), err))
 		}
 		return nil
 	}
-	return fmt.Errorf("refusing to serve a tool call that cannot be audited: %w", err)
+	return fmt.Errorf("refusing to serve a request that cannot be audited: %w", err)
+}
+
+// auditSubject names what a record is about, for a message about the record.
+func auditSubject(record AuditRecord) string {
+	switch {
+	case record.Tool != "":
+		return record.Tool
+	case record.Resource != "":
+		return record.Resource
+	case record.Prompt != "":
+		return "prompt " + record.Prompt
+	}
+
+	return record.Event
 }
 
 // rawArguments normalises the arguments field to JSON bytes.

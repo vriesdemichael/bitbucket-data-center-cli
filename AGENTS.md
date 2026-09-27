@@ -349,6 +349,7 @@ The governance guards, so the set is knowable:
 | `TestClassifyUsageErrorMatchesCobrasRealMessages` | the usage-error markers still match Cobra |
 | `TestEveryMCPToolIsAccountedFor`, `TestEveryMappedCLICommandExists` | the MCP and CLI surfaces stay in step |
 | `TestEveryToolHasAScopeRule` | no MCP tool escapes workspace scoping |
+| `TestEveryResourceTemplateNamesItsProjectAndRepository`, `TestEveryPromptTakesItsProjectAndRepository` | no MCP resource or prompt escapes workspace scoping |
 | `TestADRDoesNotNameToolsThatDoNotExist` | decision records do not name tools that were removed |
 | `TestToolsThatAskAreTheOnesThatDecideAMerge` | the tools that ask the person before they run are exactly the ones that decide a merge, and `create_tag` |
 | `TestReadOnlyToolsDoNotAsk` | a tool annotated read-only asks nothing — either it writes after all, or there is nothing to confirm |

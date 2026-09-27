@@ -192,6 +192,16 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 				t.Fatalf("get_file_content %s: error result: %s", path, mcpResultText(result))
 			}
 
+			// The result ends with a link to the file resource it came from,
+			// beside the file's own blocks. Checked here, and taken off, so
+			// each case below counts only what the file came back as.
+			resource := fmt.Sprintf("bitbucket://projects/%s/repos/%s/files/%s?at=%s", seeded.Key, repo.Slug, path, url.QueryEscape(at))
+			link, ok := result.Content[len(result.Content)-1].(*mcp.ResourceLink)
+			if !ok || link.URI != resource {
+				t.Fatalf("get_file_content %s: the last block is %+v, want a link to %s", path, result.Content[len(result.Content)-1], resource)
+			}
+			result.Content = result.Content[:len(result.Content)-1]
+
 			encoded, err := json.Marshal(result.StructuredContent)
 			if err != nil {
 				t.Fatalf("get_file_content %s: marshal structuredContent: %v", path, err)

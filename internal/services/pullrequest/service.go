@@ -173,6 +173,10 @@ type DashboardListOptions struct {
 	// MaxResults counts pull requests in the project rather than dashboard
 	// rows (#576).
 	ProjectKey string
+	// RepoSlug narrows it further, to one repository of ProjectKey, the same
+	// way: inside the walk, so MaxResults counts pull requests in the
+	// repository.
+	RepoSlug   string
 	MaxResults int
 	Start      int
 }
@@ -222,7 +226,7 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 			mapped := make([]PullRequest, 0, len(response.Values))
 			for _, value := range response.Values {
 				pullRequest := mapPullRequest(value)
-				if !inProject(pullRequest, options.ProjectKey) {
+				if !inProject(pullRequest, options.ProjectKey) || !inRepository(pullRequest, options.RepoSlug) {
 					continue
 				}
 				mapped = append(mapped, pullRequest)
@@ -241,6 +245,17 @@ func inProject(pullRequest PullRequest, projectKey string) bool {
 	}
 
 	return pullRequest.Repository != nil && strings.EqualFold(pullRequest.Repository.ProjectKey, projectKey)
+}
+
+// inRepository reports whether a pull request targets the repository, and
+// says yes to every pull request when no repository is named.
+func inRepository(pullRequest PullRequest, slug string) bool {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return true
+	}
+
+	return pullRequest.Repository != nil && strings.EqualFold(pullRequest.Repository.Slug, slug)
 }
 
 // pullRequestPage adapts a hand-decoded page for the shared walk. isLastPage is

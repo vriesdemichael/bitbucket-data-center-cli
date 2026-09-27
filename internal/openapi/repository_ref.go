@@ -24,7 +24,7 @@ func ValidateRepository(projectKey, slug string) error {
 		return apperrors.New(apperrors.KindValidation, "repository must be specified as project/repo", nil)
 	}
 	for _, value := range []string{projectKey, slug} {
-		if err := validatePathSegment(value); err != nil {
+		if err := ValidatePathSegment(value); err != nil {
 			return err
 		}
 	}
@@ -32,7 +32,7 @@ func ValidateRepository(projectKey, slug string) error {
 	return nil
 }
 
-// validatePathSegment refuses a value that would not stay one segment of a
+// ValidatePathSegment refuses a value that would not stay one segment of a
 // request path.
 //
 // A project key or slug is written into the path of the request that acts on
@@ -46,7 +46,7 @@ func ValidateRepository(projectKey, slug string) error {
 //
 // No Bitbucket project key or slug contains any of these, so refusing them
 // refuses nothing that names a real repository.
-func validatePathSegment(value string) error {
+func ValidatePathSegment(value string) error {
 	trimmed := strings.TrimSpace(value)
 	unsafe := trimmed == "." || trimmed == ".." ||
 		strings.ContainsAny(trimmed, `/\?#%`) ||

@@ -144,7 +144,8 @@ var (
 
 // TestShortMediaComesBackAsItselfBesideItsDescription reads the media content
 // as a client receives it: audio as audio content, and a video -- which MCP
-// has no content for -- as an embedded resource addressed by the file's page.
+// has no content for -- as an embedded resource addressed by the file's
+// bitbucket:// URI, which the server reads again.
 func TestShortMediaComesBackAsItselfBesideItsDescription(t *testing.T) {
 	t.Parallel()
 
@@ -177,7 +178,7 @@ func TestShortMediaComesBackAsItselfBesideItsDescription(t *testing.T) {
 		t.Errorf("the audio block is %q %q of %d bytes, want the file as audio/wav", audio.Type, audio.MIMEType, len(audio.Data))
 	}
 
-	result, structured = fileContentResult(GetFileContentInput{Path: "demo.mp4"}, page, views["video"])
+	result, structured = fileContentResult(GetFileContentInput{Project: "PROJ", Repo: "app", Path: "demo.mp4", At: "main"}, page, views["video"])
 	if len(result.Content) != 2 || structured.Kind != "video" || structured.MediaReturned == nil || !*structured.MediaReturned {
 		t.Fatalf("video came back as %d blocks, kind %s, returned %v", len(result.Content), structured.Kind, structured.MediaReturned)
 	}
@@ -190,8 +191,9 @@ func TestShortMediaComesBackAsItselfBesideItsDescription(t *testing.T) {
 		} `json:"resource"`
 	}
 	decode(t, result.Content[1], &video)
-	if video.Type != "resource" || video.Resource.URI != page || video.Resource.MIMEType != "video/mp4" || !bytes.Equal(video.Resource.Blob, shortVideo) {
-		t.Errorf("the video block is %q at %q, %q of %d bytes; want the file as a video/mp4 resource at its page",
+	const resource = "bitbucket://projects/PROJ/repos/app/files/demo.mp4?at=main"
+	if video.Type != "resource" || video.Resource.URI != resource || video.Resource.MIMEType != "video/mp4" || !bytes.Equal(video.Resource.Blob, shortVideo) {
+		t.Errorf("the video block is %q at %q, %q of %d bytes; want the file as a video/mp4 resource at its bitbucket:// URI",
 			video.Type, video.Resource.URI, video.Resource.MIMEType, len(video.Resource.Blob))
 	}
 

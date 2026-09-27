@@ -24,6 +24,8 @@ A governance test asserts an invariant about the codebase rather than a behaviou
    - TestEveryMCPToolIsAccountedFor: every MCP tool maps to a command or is recorded as MCP-only.
    - TestEveryMappedCLICommandExists: no mapping names a command that was removed.
    - TestEveryToolHasAScopeRule: no MCP tool escapes workspace scoping.
+   - TestEveryResourceTemplateNamesItsProjectAndRepository: no MCP resource escapes workspace scoping.
+   - TestEveryPromptTakesItsProjectAndRepository: no MCP prompt escapes workspace scoping.
    - TestADRDoesNotNameToolsThatDoNotExist: a record does not name a removed tool.
    - TestToolsThatAskAreTheOnesThatDecideAMerge: the tools that ask the person are exactly the ones that decide a merge, and create_tag.
    - TestReadOnlyToolsDoNotAsk: a tool that writes nothing asks nothing.

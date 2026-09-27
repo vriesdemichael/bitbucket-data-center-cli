@@ -3,9 +3,9 @@ search:
   boost: 1.2
 ---
 
-# MCP Tools
+# MCP Tools, Resources and Prompts
 
-This page is generated from the server's tool registry by `task docs:export-mcp-tools`. Do not edit manually.
+This page is generated from the server's registries by `task docs:export-mcp-tools`. Do not edit manually.
 
 `bb ai mcp serve` registers 24 tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. 7 ask the person to confirm a call in the MCP client before they run.
 
@@ -45,5 +45,32 @@ The confirmation is an MCP elicitation. The client shows what the call will do, 
 ## Read-only
 
 `bb ai mcp serve --read-only` exposes only the read-only tools. It is for a client you do not trust with the tool annotations and the confirmations: a client that cannot be trusted with them should not make changes in Bitbucket, so make them yourself.
+
+## Resources
+
+Pull requests, their diffs and open threads, files and commits are also resources. The person attaches them in the client, and a model in a client that reads resources can read them itself. A resource URI is a name bb resolves with its own credentials, not a link: the client asks bb for it, never Bitbucket, and the scope and the audit trail cover a resource read as they cover a tool call.
+
+| Resource | URI template | Served while | What it reads |
+|---|---|---|---|
+| `pull_request` | `bitbucket://projects/{project}/repos/{repo}/pull-requests/{id}` | `get_pull_request` | A pull request: title, state, branches, author, reviewers and their votes, the review summary and the description, as get_pull_request answers with them. |
+| `pull_request_diff` | `bitbucket://projects/{project}/repos/{repo}/pull-requests/{id}/diff` | `get_pr_diff` | A pull request's changes as a unified diff, up to 128 KiB; a longer diff says where it stops. |
+| `pull_request_threads` | `bitbucket://projects/{project}/repos/{repo}/pull-requests/{id}/threads` | `list_pr_comments` | A pull request's unresolved review comments and tasks, up to 100 threads, as list_pr_comments answers with state=open. |
+| `file` | `bitbucket://projects/{project}/repos/{repo}/files/{+path}{?at}` | `get_file_content` | A file at a branch, tag or commit (the default branch when at is left out), as get_file_content answers with it: text as its first window of numbered lines, a document as its extracted text, an archive as a listing, an image or small audio and video as themselves beside a description, and any other file described. |
+| `commit` | `bitbucket://projects/{project}/repos/{repo}/commits/{id}` | `get_commit` | A commit: its message, author, committer, dates and parents, as get_commit answers with them. |
+
+A template is served while the tool it answers like is exposed, so `--tools` and `--exclude` decide the resources as they decide the tools: a server that leaves `get_file_content` out reads no files.
+
+The resource list holds your open pull requests and those waiting on your review, up to 25 of each, while `list_pull_requests` and `get_pull_request` are exposed. A client can complete a template's project, repository, pull request, path and ref as the person types.
+
+The results of `get_commit`, `get_file_content`, `get_pr_diff` and `get_pull_request` link the resource they came from, beside their content, so a client can offer to attach it or read it again.
+
+## Prompts
+
+A prompt is a request the person picks in the client, often as a slash command, with the content it is about attached. Its arguments complete like a template's, and it is served while every tool whose answer it attaches is exposed.
+
+| Prompt | Arguments | Served while | What it does |
+|---|---|---|---|
+| `review_pull_request` | `project`, `repo`, `id` | `get_pull_request`, `get_pr_diff`, `list_pr_comments` | Review a pull request for defects, risky changes and missing tests, with its details, its diff and its open review threads attached. |
+| `explain_pull_request` | `project`, `repo`, `id` | `get_pull_request`, `get_pr_diff` | Explain what a pull request changes and why, for someone who has not seen it, with its details and its diff attached. |
 
 See [Enterprise Hardening](../advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve) for scoping a server to a project or repository, restricting it with a read-only token, and mandating an audit trail by policy.

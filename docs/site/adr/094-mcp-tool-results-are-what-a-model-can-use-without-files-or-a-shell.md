@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `MCP tool results are what a model can use without files or a shell`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `099`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/094-mcp-tool-results-are-what-a-model-can-use-without-files-or-a-shell.yaml`
 
@@ -20,7 +21,7 @@ An MCP tool answers a client that may be a chat app speaking MCP and nothing els
 
 ## Agent Instructions
 
-Put what a model needs into text or image content, converted in the server, and bound every answer with a window, a cap or a scale. What cannot be converted is described: what it is, how large, and its page in Bitbucket for a person to open. Never tell the model to run bb or any other command, to read a path, or to download something, and do not answer with resource links or templates. Convert with the standard library and golang.org/x/image; a new converter dependency is for the owner to agree to.
+Put what a model needs into text or image content, converted in the server, and bound every answer with a window, a cap or a scale. What cannot be converted is described: what it is, how large, and its page in Bitbucket for a person to open. Never tell the model to run bb or any other command, to read a path, or to download something, and never answer with a resource link or template in place of content: a link beside complete content names the resource the result came from (ADR-099). Convert with the standard library and golang.org/x/image; a new converter dependency is for the owner to agree to.
 
 ## Rationale
 

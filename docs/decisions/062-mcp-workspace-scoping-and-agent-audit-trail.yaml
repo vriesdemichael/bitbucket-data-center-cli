@@ -2,7 +2,9 @@ number: 62
 title: The MCP server can be confined to a workspace, and records what agents attempt there
 category: architecture
 status: accepted
-amended_by: 98
+amended_by:
+  - 98
+  - 99
 decision: >
   bb ai mcp serve accepts --project and --repo, confining every tool call to that project or
   repository, and --audit-file, recording every invocation as JSON Lines. Both are off by default.
@@ -31,7 +33,8 @@ agent_instructions: >
   does not understand while reading like enforcement.
   Do not add per-handler enforcement, and do not enable auditing by default. The confirmation a tool
   asks for is the one exception, applied by one wrapper rather than by each handler, and its outcome
-  is in the audit record: ADR-098.
+  is in the audit record: ADR-098. Resource reads, the resource list, prompts and completions pass
+  the same middleware: ADR-099.
   Do not describe either control as preventing what it does not: the trail is not tamper-evident, and
   an agent with shell access bypasses this layer entirely.
 rationale: >
