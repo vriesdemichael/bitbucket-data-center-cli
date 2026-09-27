@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `99`
-- Accepted ADRs: `88`
+- Total ADRs: `100`
+- Accepted ADRs: `89`
 
 ## ADR List
 
@@ -108,4 +108,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 097: --describe describes a command's output in every mode](097-describe-describes-a-commands-output-in-every-mode.md) (`architecture`, `accepted`)
 - [ADR 098: MCP tools that decide a merge ask the person through the client](098-mcp-tools-that-decide-a-merge-ask-the-person.md) (`architecture`, `accepted`)
 - [ADR 099: The MCP server serves Bitbucket content as resources, prompts and completions](099-mcp-resources-prompts-and-completions.md) (`architecture`, `accepted`)
+- [ADR 100: Administrative policy can switch bb off, switch its MCP server off, or make it read-only](100-administrators-can-switch-bb-off-or-make-it-read-only.md) (`architecture`, `accepted`)
 

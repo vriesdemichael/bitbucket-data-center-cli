@@ -2,6 +2,7 @@ number: 58
 title: System-wide configuration and administrative policy enforcement
 category: architecture
 status: accepted
+amended_by: 100
 decision: >
   Establish a multi-tiered configuration hierarchy and machine-level administrative policy enforcement
   for enterprise fleet management across Linux, macOS, and Windows.
