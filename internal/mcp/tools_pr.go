@@ -116,58 +116,67 @@ func specListPullRequests() Spec {
 		}),
 	}
 	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[ListPullRequestsInput, ListPullRequestsOutput] {
-		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListPullRequestsInput) (*mcp.CallToolResult, ListPullRequestsOutput, error) {
-			state := in.State
-			if state == "" {
-				state = "OPEN"
-			}
-			limit := limitOrDefault(in.Limit)
-
-			var prs []pullrequestservice.PullRequest
-			var err error
-
-			switch {
-			case in.Project != "" && in.Repo != "":
-				// Refused rather than dropped. The repository endpoint has no
-				// role parameter, so Bitbucket ignores one and answers with
-				// every open pull request -- an agent that asked for its own
-				// would act on all of them believing they were.
-				if in.Role != "" {
-					return nil, ListPullRequestsOutput{}, fmt.Errorf(
-						"list_pull_requests cannot filter a repository by role; omit repo to ask the dashboard, which can")
-				}
-				prs, err = svc.List(ctx,
-					pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-					pullrequestservice.ListOptions{
-						State:        state,
-						SourceBranch: in.SourceBranch,
-						TargetBranch: in.TargetBranch,
-						MaxResults:   limit,
-					},
-				)
-			case in.Repo != "":
-				return nil, ListPullRequestsOutput{}, fmt.Errorf("list_pull_requests needs the project a repo is in: pass project with repo, or omit repo for your own pull requests")
-			default:
-				// Your own pull requests, in every role unless one is named:
-				// sending REVIEWER for a missing role left an author who
-				// reviews nothing with an empty list (#576). A project narrows
-				// them, which is also how a project-scoped server answers a
-				// call with no arguments; see scopeOptionalProjectRepo.
-				prs, err = svc.ListDashboard(ctx, pullrequestservice.DashboardListOptions{
-					State:      state,
-					Role:       in.Role,
-					ProjectKey: in.Project,
-					MaxResults: limit,
-				})
-			}
+			out, err := listPullRequests(ctx, c, in)
 			if err != nil {
 				return nil, ListPullRequestsOutput{}, fmt.Errorf("list_pull_requests failed: %w", err)
 			}
-			prs, reached := capped(limit, prs)
-			return nil, ListPullRequestsOutput{PullRequests: prs, LimitReached: reached}, nil
+			return nil, out, nil
 		}
 	})
+}
+
+// listPullRequests lists pull requests as list_pull_requests answers, and as
+// the pull request list view shows them.
+func listPullRequests(ctx context.Context, c Clients, in ListPullRequestsInput) (ListPullRequestsOutput, error) {
+	svc := pullrequestservice.NewService(c.HTTP)
+	state := in.State
+	if state == "" {
+		state = "OPEN"
+	}
+	limit := limitOrDefault(in.Limit)
+
+	var prs []pullrequestservice.PullRequest
+	var err error
+
+	switch {
+	case in.Project != "" && in.Repo != "":
+		// Refused rather than dropped. The repository endpoint has no role
+		// parameter, so Bitbucket ignores one and answers with every open pull
+		// request -- an agent that asked for its own would act on all of them
+		// believing they were.
+		if in.Role != "" {
+			return ListPullRequestsOutput{}, fmt.Errorf("cannot filter a repository by role; omit repo to ask the dashboard, which can")
+		}
+		prs, err = svc.List(ctx,
+			pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
+			pullrequestservice.ListOptions{
+				State:        state,
+				SourceBranch: in.SourceBranch,
+				TargetBranch: in.TargetBranch,
+				MaxResults:   limit,
+			},
+		)
+	case in.Repo != "":
+		return ListPullRequestsOutput{}, fmt.Errorf("needs the project a repo is in: pass project with repo, or omit repo for your own pull requests")
+	default:
+		// Your own pull requests, in every role unless one is named: sending
+		// REVIEWER for a missing role left an author who reviews nothing with
+		// an empty list (#576). A project narrows them, which is also how a
+		// project-scoped server answers a call with no arguments; see
+		// scopeOptionalProjectRepo.
+		prs, err = svc.ListDashboard(ctx, pullrequestservice.DashboardListOptions{
+			State:      state,
+			Role:       in.Role,
+			ProjectKey: in.Project,
+			MaxResults: limit,
+		})
+	}
+	if err != nil {
+		return ListPullRequestsOutput{}, err
+	}
+	prs, reached := capped(limit, prs)
+	return ListPullRequestsOutput{PullRequests: prs, LimitReached: reached}, nil
 }
 
 // PullRequestOutput is the shared single-pull-request envelope used by every

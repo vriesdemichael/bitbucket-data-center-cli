@@ -97,7 +97,7 @@ func listToolNames(t *testing.T, session *mcp.ClientSession) []string {
 func TestAllSpecsReturnsExpectedCount(t *testing.T) {
 	t.Parallel()
 
-	const wantCount = 24
+	const wantCount = 25
 	specs := AllSpecs()
 	if len(specs) != wantCount {
 		t.Errorf("AllSpecs: got %d tools, want %d", len(specs), wantCount)
@@ -303,11 +303,18 @@ func TestServerAdvertisesWhatItServesAndNothingElse(t *testing.T) {
 	if err := json.Unmarshal(encoded, &advertised); err != nil {
 		t.Fatalf("decode capabilities %s: %v", encoded, err)
 	}
-	want := []string{"completions", "prompts", "resources", "tools"}
+	// extensions carries MCP Apps, which says the server offers views (ADR-101).
+	want := []string{"completions", "extensions", "prompts", "resources", "tools"}
 	if len(advertised) != len(want) {
 		t.Errorf("capabilities = %s, want exactly %v", encoded, want)
 	}
+	if string(advertised["extensions"]) != `{"io.modelcontextprotocol/ui":{}}` {
+		t.Errorf("extensions = %s, want MCP Apps alone, declared bare", advertised["extensions"])
+	}
 	for _, name := range want {
+		if name == "extensions" {
+			continue
+		}
 		if string(advertised[name]) != "{}" {
 			t.Errorf("capability %s = %s, want it declared bare: no listChanged, no subscribe", name, advertised[name])
 		}
@@ -404,6 +411,7 @@ func TestToolNamesMatchExpected(t *testing.T) {
 		"list_commits",
 		"get_commit",
 		"compare_refs",
+		"show",
 	}
 	specs := AllSpecs()
 	if len(specs) != len(want) {

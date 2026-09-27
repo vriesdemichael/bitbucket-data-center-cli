@@ -45,10 +45,16 @@ func ClientsFromConfig(cfg config.AppConfig) (Clients, error) {
 // Asks says whether a call asks the person to confirm it through the client
 // before it runs (see Asking). The server enforces it; the annotations only
 // describe the tool, and a client may ignore them.
+//
+// Needs names the tools whose answers this one shows: it is exposed only while
+// at least one of them is. RegisterExposed, when set, registers the tool in
+// place of Register, knowing which tools the server exposes.
 type Spec struct {
-	Tool     *mcp.Tool
-	Register func(*mcp.Server, Clients)
-	Asks     Asking
+	Tool            *mcp.Tool
+	Register        func(*mcp.Server, Clients)
+	Asks            Asking
+	Needs           []string
+	RegisterExposed func(*mcp.Server, Clients, map[string]bool)
 }
 
 // ReadOnly reports whether the tool changes nothing, as its annotation says.
@@ -252,6 +258,9 @@ func AllSpecs() []Spec {
 		specListCommits(),
 		specGetCommit(),
 		specCompareRefs(),
+		// View group: puts what the tools above found in front of the
+		// person, in clients that display MCP Apps views (ADR-101).
+		specShow(),
 	}
 }
 
@@ -321,8 +330,15 @@ func NewServer(opts ServerOptions) *mcp.Server {
 	// server never sends, and lists that change, which these never do.
 	capabilities := &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{}}
 	var complete func(context.Context, *mcp.CompleteRequest) (*mcp.CompleteResult, error)
-	if len(resources) > 0 {
+	// The views need the page they render in, which is a resource, and the
+	// MCP Apps extension, which tells a client that renders views that this
+	// server offers them (ADR-101).
+	views := exposed["show"]
+	if len(resources) > 0 || views {
 		capabilities.Resources = &mcp.ResourceCapabilities{}
+	}
+	if views {
+		capabilities.AddExtension(appsExtension, map[string]any{})
 	}
 	if len(prompts) > 0 {
 		capabilities.Prompts = &mcp.PromptCapabilities{}
@@ -340,7 +356,14 @@ func NewServer(opts ServerOptions) *mcp.Server {
 	})
 
 	for _, spec := range tools {
+		if spec.RegisterExposed != nil {
+			spec.RegisterExposed(server, opts.Clients, exposed)
+			continue
+		}
 		spec.Register(server, opts.Clients)
+	}
+	if views {
+		server.AddResource(viewResource(), readViewResource)
 	}
 	for _, spec := range resources {
 		server.AddResourceTemplate(spec.Template, resourceHandler(spec, opts.Clients))
@@ -394,7 +417,30 @@ func exposedSpecs(opts ServerOptions) []Spec {
 		exposed = append(exposed, spec)
 	}
 
-	return exposed
+	// A tool that shows what other tools answer goes with them: it is exposed
+	// while at least one of them is.
+	names := make(map[string]bool, len(exposed))
+	for _, spec := range exposed {
+		names[spec.Tool.Name] = true
+	}
+	kept := exposed[:0]
+	for _, spec := range exposed {
+		if len(spec.Needs) > 0 && !anyExposed(spec.Needs, names) {
+			continue
+		}
+		kept = append(kept, spec)
+	}
+
+	return kept
+}
+
+func anyExposed(tools []string, exposed map[string]bool) bool {
+	for _, tool := range tools {
+		if exposed[tool] {
+			return true
+		}
+	}
+	return false
 }
 
 // instructions is what the server tells a model about using its tools
@@ -418,6 +464,13 @@ func instructions(opts ServerOptions) string {
 	if opts.Scope.IsSet() {
 		paragraphs = append(paragraphs, fmt.Sprintf("This server is confined to %s. Tools fill in project and repo when you leave them out, "+
 			"and refuse calls aimed anywhere else.", opts.Scope))
+	}
+
+	for _, spec := range exposedSpecs(opts) {
+		if spec.Tool.Name == "show" {
+			paragraphs = append(paragraphs, "show puts what you found in front of the person as an interactive view, in clients that display views. "+
+				"Call it at most once or twice per answer, after you have what you need, and not for each thing you look at on the way.")
+		}
 	}
 
 	return strings.Join(paragraphs, "\n\n")

@@ -62,13 +62,17 @@ type PullRequest struct {
 	Version          int            `json:"version,omitempty"`
 	Author           string         `json:"author,omitempty"`
 	AuthorUsername   string         `json:"author_username,omitempty"`
-	SourceBranch     string         `json:"source_branch,omitempty"`
-	TargetBranch     string         `json:"target_branch,omitempty"`
-	SourceCommit     string         `json:"source_commit,omitempty"`
-	CreatedDate      int64          `json:"created_date,omitempty"`
-	UpdatedDate      int64          `json:"updated_date,omitempty"`
-	Reviewers        []Reviewer     `json:"reviewers,omitempty"`
-	Mergeability     *Mergeability  `json:"mergeability,omitempty"`
+	// AuthorSlug is the author's URL slug, which Bitbucket addresses a user's
+	// avatar by. It is not part of any output: an MCP view fetches avatars
+	// through bb with it (ADR-101).
+	AuthorSlug   string        `json:"-"`
+	SourceBranch string        `json:"source_branch,omitempty"`
+	TargetBranch string        `json:"target_branch,omitempty"`
+	SourceCommit string        `json:"source_commit,omitempty"`
+	CreatedDate  int64         `json:"created_date,omitempty"`
+	UpdatedDate  int64         `json:"updated_date,omitempty"`
+	Reviewers    []Reviewer    `json:"reviewers,omitempty"`
+	Mergeability *Mergeability `json:"mergeability,omitempty"`
 
 	// CommentCount, OpenTaskCount and ResolvedTaskCount come from the
 	// "properties" object Bitbucket returns alongside every pull request. The
@@ -99,6 +103,9 @@ type Reviewer struct {
 	Role        string `json:"role,omitempty"`
 	Status      string `json:"status,omitempty"`
 	Approved    bool   `json:"approved"`
+	// Slug is the reviewer's URL slug, for their avatar, as
+	// PullRequest.AuthorSlug is for the author's.
+	Slug string `json:"-"`
 }
 
 type CreateInput struct {
@@ -1011,8 +1018,10 @@ func normalizeBranch(branch string) string {
 func mapPullRequest(raw pullRequestValue) PullRequest {
 	author := ""
 	authorUsername := ""
+	authorSlug := ""
 	if raw.Author != nil && raw.Author.User != nil {
 		authorUsername = strings.TrimSpace(raw.Author.User.Name)
+		authorSlug = strings.TrimSpace(raw.Author.User.Slug)
 		author = strings.TrimSpace(raw.Author.User.DisplayName)
 		if author == "" {
 			author = authorUsername
@@ -1030,6 +1039,7 @@ func mapPullRequest(raw pullRequestValue) PullRequest {
 		Version:        raw.Version,
 		Author:         author,
 		AuthorUsername: authorUsername,
+		AuthorSlug:     authorSlug,
 		SourceBranch:   branchDisplayName(raw.FromRef),
 		TargetBranch:   branchDisplayName(raw.ToRef),
 		SourceCommit:   sourceCommit(raw.FromRef),
@@ -1085,6 +1095,7 @@ func mapReviewers(participants []pullRequestParticipant, reviewers []pullRequest
 			Role:        strings.TrimSpace(participant.Role),
 			Status:      strings.TrimSpace(participant.Status),
 			Approved:    participant.Approved,
+			Slug:        strings.TrimSpace(participant.User.Slug),
 		}
 		if strings.EqualFold(reviewer.Role, "author") || seen[reviewer.Name] {
 			return
@@ -1448,6 +1459,7 @@ type pullRequestUser struct {
 
 type pullRequestUserIdentity struct {
 	Name         string `json:"name"`
+	Slug         string `json:"slug"`
 	DisplayName  string `json:"displayName"`
 	EmailAddress string `json:"emailAddress"`
 }

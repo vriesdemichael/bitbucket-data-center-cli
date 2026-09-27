@@ -697,8 +697,16 @@ func linkResource(tool string, arguments json.RawMessage, result *mcp.CallToolRe
 // the list may be kept for a minute, since it is a picker's starting point
 // rather than a record.
 func cacheHints(_ context.Context, req mcp.Request, c *mcp.Cacheable) {
-	switch req.(type) {
+	switch typed := req.(type) {
 	case *mcp.ReadResourceRequest:
+		// The view page is the same for everyone and holds no Bitbucket data,
+		// so any cache may keep it; an hour lets an upgraded bb's page arrive
+		// the same day (ADR-101).
+		if typed.Params != nil && strings.HasPrefix(typed.Params.URI, "ui://") {
+			c.CacheScope = "public"
+			c.TTLMs = 3_600_000
+			return
+		}
 		c.CacheScope = "private"
 		c.TTLMs = 0
 	case *mcp.ListResourcesRequest:

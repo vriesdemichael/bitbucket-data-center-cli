@@ -434,6 +434,10 @@ tasks:
     desc: Run Go unit tests
     cmd: go test ./cmd/... ./internal/... ./tools/...
 
+  test:views:
+    desc: Draw bb's MCP views in headless Chrome and check what they do (needs Chrome)
+    cmd: go test -tags views -count=1 ./internal/mcp/
+
   test:unit:race:
     desc: Run Go unit tests under the race detector (needs cgo and a C toolchain)
     # Worth its own target now that the suite is parallel.

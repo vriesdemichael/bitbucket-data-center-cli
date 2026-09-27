@@ -280,6 +280,29 @@ jobs:
       - name: Run Go tests
         run: task test:unit
 
+  # bb's MCP views, drawn by headless Chrome through a stand-in host (ADR-101):
+  # text other people wrote stays text, images are only the embedded ones, and
+  # nothing reaches the model unasked. The runner image ships Chrome, and the
+  # tests fail rather than skip without it.
+  view-tests:
+    name: View Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Setup Task
+        run: go install github.com/go-task/task/v3/cmd/task@v3.48.0
+
+      - name: Draw the views in headless Chrome
+        run: task test:views
+
   # bb update end to end on each operating system it ships for (#637). A bb
   # built from this tree updates itself from a mirror serving a published
   # release's real files, verifies them against Sigstore both ways an estate
@@ -672,6 +695,7 @@ jobs:
       - adr-validation
       - unit-tests
       - unit-tests-other-os
+      - view-tests
       - update-e2e
       - release-artifacts
       - docs-site
@@ -687,6 +711,7 @@ jobs:
           ADR_VALIDATION_RESULT: ${{ needs.adr-validation.result }}
           UNIT_TESTS_RESULT: ${{ needs.unit-tests.result }}
           UNIT_TESTS_OTHER_OS_RESULT: ${{ needs.unit-tests-other-os.result }}
+          VIEW_TESTS_RESULT: ${{ needs.view-tests.result }}
           UPDATE_E2E_RESULT: ${{ needs.update-e2e.result }}
           RELEASE_ARTIFACTS_RESULT: ${{ needs.release-artifacts.result }}
           DOCS_SITE_RESULT: ${{ needs.docs-site.result }}
@@ -701,6 +726,7 @@ jobs:
           [[ "$ADR_VALIDATION_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_RESULT" == "success" ]]
           [[ "$UNIT_TESTS_OTHER_OS_RESULT" == "success" ]]
+          [[ "$VIEW_TESTS_RESULT" == "success" ]]
           [[ "$UPDATE_E2E_RESULT" == "success" ]]
           [[ "$RELEASE_ARTIFACTS_RESULT" == "success" ]]
           [[ "$DOCS_SITE_RESULT" == "success" ]]

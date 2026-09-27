@@ -85,6 +85,12 @@ var exemptFromParity = map[string]string{
 	// subject, the generated completion scripts, changes rarely. A developer
 	// runs the same task by hand; CI runs it on every pull request.
 	"completion:shells": "needs Docker and four shells; the same task runs by hand locally and on every pull request",
+	// The MCP views drawn in headless Chrome. A hook that ran them would make
+	// Chrome a requirement for pushing, and fail without it rather than skip,
+	// as a test that cannot reach what it tests must. The view page's own
+	// guards -- no HTML from strings, no network, the payload key -- are unit
+	// tests, and run in the hook; a developer runs these by hand.
+	"test:views": "needs Chrome; the page's static guards run in test:unit, and the task runs by hand locally and on every pull request",
 }
 
 func TestEveryHookRunnableGateRunsOnBothSides(t *testing.T) {

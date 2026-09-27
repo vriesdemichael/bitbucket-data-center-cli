@@ -645,7 +645,7 @@ func TestMapReviewersTakesReviewersNotParticipants(t *testing.T) {
 		Role:     "REVIEWER",
 		Status:   "APPROVED",
 		Approved: true,
-		User:     &pullRequestUserIdentity{Name: "alice"},
+		User:     &pullRequestUserIdentity{Name: "alice", Slug: "alice"},
 	}
 	merger := pullRequestParticipant{
 		Role:   "PARTICIPANT",
@@ -655,7 +655,7 @@ func TestMapReviewersTakesReviewersNotParticipants(t *testing.T) {
 
 	t.Run("reviewers, whoever else took part", func(t *testing.T) {
 		got := mapReviewers([]pullRequestParticipant{merger}, []pullRequestParticipant{reviewer})
-		if len(got) != 1 || got[0].Name != "alice" || !got[0].Approved {
+		if len(got) != 1 || got[0].Name != "alice" || !got[0].Approved || got[0].Slug != "alice" {
 			t.Fatalf("got %#v, want alice alone, approved", got)
 		}
 	})

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -249,9 +250,17 @@ func resourceMiddleware(clients Clients, scope Scope, listed bool) mcp.Middlewar
 			switch typed := req.(type) {
 			case *mcp.ListResourcesRequest:
 				list, ok := result.(*mcp.ListResourcesResult)
+				if !ok || list == nil {
+					return result, nil
+				}
+				// The view page is for a client to render, not for the person
+				// to attach, so it stays out of the list (ADR-101).
+				list.Resources = slices.DeleteFunc(list.Resources, func(resource *mcp.Resource) bool {
+					return strings.HasPrefix(resource.URI, "ui://")
+				})
 				// The listed pull requests come on the first page. The
 				// templates' own list has one page, so there is no second.
-				if !listed || !ok || list == nil || (typed.Params != nil && typed.Params.Cursor != "") {
+				if !listed || (typed.Params != nil && typed.Params.Cursor != "") {
 					return result, nil
 				}
 				listed, listErr := listedResources(ctx, clients, scope)
