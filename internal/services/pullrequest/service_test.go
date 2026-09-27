@@ -634,37 +634,43 @@ func TestNormalizeLineType(t *testing.T) {
 	}
 }
 
-// TestMapReviewersPrefersParticipants pins the fallback behaviour: Bitbucket
-// Data Center 9.4.16 returns an empty "participants" array and populates
-// "reviewers" instead, but servers that do populate "participants" must keep
-// working from that field.
-func TestMapReviewersPrefersParticipants(t *testing.T) {
+// TestMapReviewersTakesReviewersNotParticipants: Bitbucket lists reviewers in
+// "reviewers" and everyone else who took part in "participants". A merged pull
+// request lists whoever merged it as a PARTICIPANT, and reading that list made
+// them its only reviewer (TestLivePRReviewersAreNotTheParticipants).
+func TestMapReviewersTakesReviewersNotParticipants(t *testing.T) {
 	t.Parallel()
 
-	participant := pullRequestParticipant{
+	reviewer := pullRequestParticipant{
 		Role:     "REVIEWER",
 		Status:   "APPROVED",
 		Approved: true,
-		User:     &pullRequestUserIdentity{Name: "from-participants"},
+		User:     &pullRequestUserIdentity{Name: "alice"},
 	}
-	reviewer := pullRequestParticipant{
-		Role:     "REVIEWER",
-		Status:   "UNAPPROVED",
-		Approved: false,
-		User:     &pullRequestUserIdentity{Name: "from-reviewers"},
+	merger := pullRequestParticipant{
+		Role:   "PARTICIPANT",
+		Status: "UNAPPROVED",
+		User:   &pullRequestUserIdentity{Name: "admin"},
 	}
 
-	t.Run("participants win when present", func(t *testing.T) {
-		got := mapReviewers([]pullRequestParticipant{participant}, []pullRequestParticipant{reviewer})
-		if len(got) != 1 || got[0].Name != "from-participants" {
-			t.Fatalf("expected participants to take precedence, got %#v", got)
+	t.Run("reviewers, whoever else took part", func(t *testing.T) {
+		got := mapReviewers([]pullRequestParticipant{merger}, []pullRequestParticipant{reviewer})
+		if len(got) != 1 || got[0].Name != "alice" || !got[0].Approved {
+			t.Fatalf("got %#v, want alice alone, approved", got)
 		}
 	})
 
-	t.Run("reviewers used when participants empty", func(t *testing.T) {
-		got := mapReviewers(nil, []pullRequestParticipant{reviewer})
-		if len(got) != 1 || got[0].Name != "from-reviewers" {
-			t.Fatalf("expected the reviewers fallback, got %#v", got)
+	t.Run("a participant is not a reviewer", func(t *testing.T) {
+		if got := mapReviewers([]pullRequestParticipant{merger}, nil); got != nil {
+			t.Fatalf("got %#v, want no reviewers", got)
+		}
+	})
+
+	t.Run("a participant listed as a reviewer is kept, once", func(t *testing.T) {
+		elsewhere := pullRequestParticipant{Role: "REVIEWER", User: &pullRequestUserIdentity{Name: "bob"}}
+		got := mapReviewers([]pullRequestParticipant{elsewhere, reviewer}, []pullRequestParticipant{reviewer})
+		if len(got) != 2 || got[0].Name != "alice" || got[1].Name != "bob" {
+			t.Fatalf("got %#v, want alice then bob", got)
 		}
 	})
 

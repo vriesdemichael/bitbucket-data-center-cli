@@ -26,9 +26,16 @@ func TestAConfirmedParticipantReplacesTheReviewerItNames(t *testing.T) {
 		t.Fatalf("got %+v, want %+v", got, want)
 	}
 
-	// A participant who was not a reviewer is added.
-	if got := withParticipant(before, pullRequestParticipant{User: &pullRequestUserIdentity{Name: "carol"}, Role: "PARTICIPANT", Status: "NEEDS_WORK"}); len(got) != 3 {
-		t.Fatalf("a new participant was not added: %+v", got)
+	// Someone who was not a reviewer becomes one by reviewing: Bitbucket
+	// answers their review with role REVIEWER (verified on 10.4.3), and they
+	// are added.
+	if got := withParticipant(before, pullRequestParticipant{User: &pullRequestUserIdentity{Name: "carol"}, Role: "REVIEWER", Status: "NEEDS_WORK"}); len(got) != 3 {
+		t.Fatalf("a new reviewer was not added: %+v", got)
+	}
+
+	// A participant who is not a reviewer is not one, as mapReviewers has it.
+	if got := withParticipant(before, pullRequestParticipant{User: &pullRequestUserIdentity{Name: "dave"}, Role: "PARTICIPANT"}); !reflect.DeepEqual(got, before) {
+		t.Fatalf("a participant was added as a reviewer: %+v", got)
 	}
 
 	// A reply that names nobody changes nothing.

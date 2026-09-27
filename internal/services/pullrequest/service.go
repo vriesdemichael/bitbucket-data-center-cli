@@ -1061,25 +1061,23 @@ func mapPullRequest(raw pullRequestValue) PullRequest {
 	return pr
 }
 
-// mapReviewers maps PR participants to reviewers. On Bitbucket Data Center 9.4.16,
-// the PR response "participants" field is always empty; only "reviewers" contains
-// the assigned reviewers with their approval status. Falls back to "reviewers"
-// when "participants" is empty. Filters out role=="author" as a safety net.
+// mapReviewers maps a pull request's reviewers.
+//
+// Bitbucket lists them in "reviewers". "participants" holds everyone else who
+// took part: whoever commented without being asked to review, or merged or
+// declined the pull request. None of them is a reviewer. On 10.4.3 a pull
+// request that admin merged lists admin there with role PARTICIPANT, and bb,
+// which read "participants" whenever it was not empty, reported admin as the
+// only reviewer and the real reviewer's approval as missing. A participant
+// whose role is REVIEWER is kept, in case a server lists one there, unless the
+// same person is already among the reviewers. An author is never a reviewer.
 func mapReviewers(participants []pullRequestParticipant, reviewers []pullRequestParticipant) []Reviewer {
-	raw := participants
-	if len(raw) == 0 {
-		raw = reviewers
-	}
-	if len(raw) == 0 {
-		return nil
-	}
-
-	result := make([]Reviewer, 0, len(raw))
-	for _, participant := range raw {
+	result := make([]Reviewer, 0, len(reviewers))
+	seen := make(map[string]bool, len(reviewers))
+	add := func(participant pullRequestParticipant) {
 		if participant.User == nil {
-			continue
+			return
 		}
-
 		reviewer := Reviewer{
 			Name:        strings.TrimSpace(participant.User.Name),
 			DisplayName: strings.TrimSpace(participant.User.DisplayName),
@@ -1088,18 +1086,25 @@ func mapReviewers(participants []pullRequestParticipant, reviewers []pullRequest
 			Status:      strings.TrimSpace(participant.Status),
 			Approved:    participant.Approved,
 		}
-
-		if strings.ToLower(reviewer.Role) == "author" {
-			continue
+		if strings.EqualFold(reviewer.Role, "author") || seen[reviewer.Name] {
+			return
 		}
-
+		seen[reviewer.Name] = true
 		result = append(result, reviewer)
+	}
+
+	for _, reviewer := range reviewers {
+		add(reviewer)
+	}
+	for _, participant := range participants {
+		if strings.EqualFold(strings.TrimSpace(participant.Role), "reviewer") {
+			add(participant)
+		}
 	}
 
 	if len(result) == 0 {
 		return nil
 	}
-
 	return result
 }
 
