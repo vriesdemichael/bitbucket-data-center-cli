@@ -521,9 +521,14 @@ func TestLiveDryRunRefusalsFailAsTheRealRunDoes(t *testing.T) {
 
 	t.Run("rebasing a source branch the caller may not update", func(t *testing.T) {
 		// Something to rebase onto, so the rebase would change the branch.
+		// Bitbucket rescopes the pull request and bumps its version after the
+		// push has returned (#598). Read before that, the version below moved
+		// under the refused rebase, so wait for the bump first.
+		versionBefore := currentLivePRVersion(t, openPR)
 		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, "master", "moved-on.txt"); err != nil {
 			t.Fatalf("push to master failed: %v", err)
 		}
+		waitForLivePRVersionAbove(t, openPR, versionBefore)
 		readOnly := restrictionID(t, mustLiveCLI(t, "branch", "restriction", "create",
 			"--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/"+openBranch))
 		assertRestrictionStored(t, restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", readOnly)),
