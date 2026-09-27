@@ -1,12 +1,11 @@
-// Command mcp-docs-export writes the MCP tool reference from the specs the
-// server actually registers.
+// Command mcp-docs-export writes the MCP reference from the tools, resource
+// templates and prompts the server actually registers.
 //
 // A hand-written table of these goes stale the first time a tool is added, and
 // the columns that matter most are the ones nobody would think to update:
 // whether a tool writes, and whether it asks the person before it runs.
-// Reading mcp.AllSpecs() makes the page a projection of the registry rather
-// than a second copy of it, and docs:verify-generated fails when the two
-// disagree.
+// Reading the registries makes the page a projection of them rather than a
+// second copy, and docs:verify-generated fails when the two disagree.
 package main
 
 import (
@@ -60,8 +59,8 @@ func exportToolReference(outputPath string) error {
 
 	var out strings.Builder
 	out.WriteString("---\nsearch:\n  boost: 1.2\n---\n\n")
-	out.WriteString("# MCP Tools\n\n")
-	out.WriteString("This page is generated from the server's tool registry by `task docs:export-mcp-tools`. Do not edit manually.\n\n")
+	out.WriteString("# MCP Tools, Resources and Prompts\n\n")
+	out.WriteString("This page is generated from the server's registries by `task docs:export-mcp-tools`. Do not edit manually.\n\n")
 
 	fmt.Fprintf(&out, "`bb ai mcp serve` registers %d tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. %d ask the person to confirm a call in the MCP client before they run.\n\n",
 		len(rows), asking)
@@ -80,6 +79,8 @@ func exportToolReference(outputPath string) error {
 	out.WriteString("The confirmation is an MCP elicitation. The client shows what the call will do, with one box to tick, and the tool acts only once the person accepts. A client that cannot show a confirmation gets error -32021 (missing required client capability) for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself is the client's to decide.\n\n")
 	out.WriteString("## Read-only\n\n")
 	out.WriteString("`bb ai mcp serve --read-only` exposes only the read-only tools. It is for a client you do not trust with the tool annotations and the confirmations: a client that cannot be trusted with them should not make changes in Bitbucket, so make them yourself.\n\n")
+	writeResources(&out)
+	writePrompts(&out)
 	out.WriteString("See [Enterprise Hardening](../advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve) for scoping a server to a project or repository, restricting it with a read-only token, and mandating an audit trail by policy.\n")
 
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
@@ -89,9 +90,53 @@ func exportToolReference(outputPath string) error {
 		return fmt.Errorf("write %s: %w", outputPath, err)
 	}
 
-	fmt.Printf("wrote %s (%d tools, %d that ask)\n", outputPath, len(rows), asking)
+	fmt.Printf("wrote %s (%d tools, %d that ask, %d resource templates, %d prompts)\n",
+		outputPath, len(rows), asking, len(mcp.AllResourceSpecs()), len(mcp.AllPromptSpecs()))
 
 	return nil
+}
+
+// writeResources lists the resource templates, and says what the resource list
+// holds and which tool results link a resource.
+func writeResources(out *strings.Builder) {
+	out.WriteString("## Resources\n\n")
+	out.WriteString("Pull requests, their diffs and open threads, files and commits are also resources. The person attaches them in the client, and a model in a client that reads resources can read them itself. A resource URI is a name bb resolves with its own credentials, not a link: the client asks bb for it, never Bitbucket, and the scope and the audit trail cover a resource read as they cover a tool call.\n\n")
+	out.WriteString("| Resource | URI template | Served while | What it reads |\n|---|---|---|---|\n")
+	for _, spec := range mcp.AllResourceSpecs() {
+		fmt.Fprintf(out, "| `%s` | `%s` | `%s` | %s |\n", spec.Template.Name, spec.Template.URITemplate, spec.Tool, collapse(spec.Template.Description))
+	}
+	out.WriteString("\nA template is served while the tool it answers like is exposed, so `--tools` and `--exclude` decide the resources as they decide the tools: a server that leaves `get_file_content` out reads no files.\n\n")
+	fmt.Fprintf(out, "The resource list holds your open pull requests and those waiting on your review, up to %d of each, while `list_pull_requests` and `get_pull_request` are exposed. A client can complete a template's project, repository, pull request, path and ref as the person types.\n\n", mcp.ListedPullRequests)
+
+	linked := mcp.ResourceLinkedTools()
+	names := make([]string, len(linked))
+	for index, tool := range linked {
+		names[index] = "`" + tool + "`"
+	}
+	listed := strings.Join(names, ", ")
+	if len(names) > 1 {
+		listed = strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
+	}
+	fmt.Fprintf(out, "The results of %s link the resource they came from, beside their content, so a client can offer to attach it or read it again.\n\n", listed)
+}
+
+// writePrompts lists the prompts and their arguments.
+func writePrompts(out *strings.Builder) {
+	out.WriteString("## Prompts\n\n")
+	out.WriteString("A prompt is a request the person picks in the client, often as a slash command, with the content it is about attached. Its arguments complete like a template's, and it is served while every tool whose answer it attaches is exposed.\n\n")
+	out.WriteString("| Prompt | Arguments | Served while | What it does |\n|---|---|---|---|\n")
+	for _, spec := range mcp.AllPromptSpecs() {
+		arguments := make([]string, len(spec.Prompt.Arguments))
+		for index, argument := range spec.Prompt.Arguments {
+			arguments[index] = "`" + argument.Name + "`"
+		}
+		tools := make([]string, len(spec.Tools))
+		for index, tool := range spec.Tools {
+			tools[index] = "`" + tool + "`"
+		}
+		fmt.Fprintf(out, "| `%s` | %s | %s | %s |\n", spec.Prompt.Name, strings.Join(arguments, ", "), strings.Join(tools, ", "), collapse(spec.Prompt.Description))
+	}
+	out.WriteString("\n")
 }
 
 // collapse folds a description onto one line. Several are written as multi-line

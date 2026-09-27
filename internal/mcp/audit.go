@@ -17,6 +17,9 @@ import (
 // parser keys on, so they are constants rather than inline literals.
 const (
 	auditEventToolInvocation = "mcp_tool_invocation"
+	auditEventResourceRead   = "mcp_resource_read"
+	auditEventResourceList   = "mcp_resource_list"
+	auditEventPromptGet      = "mcp_prompt_get"
 
 	auditStatusSuccess = "success"
 	auditStatusDenied  = "denied"
@@ -30,6 +33,10 @@ const (
 // allowed. Arguments are included because "read a file" and "read
 // .env.production" are different events, and they are redacted on the way in.
 //
+// Event says what was asked for: a tool call, a resource read, the resource
+// list, or a prompt. Tool, Resource and Prompt name what the event was about,
+// and only the one that applies is present.
+//
 // Confirmation says how the person answered a tool that asks: accepted,
 // declined, cancelled, or unavailable when the client could not show the
 // confirmation. It is absent for a call that did not ask. A refused
@@ -37,7 +44,9 @@ const (
 type AuditRecord struct {
 	Timestamp    string         `json:"timestamp"`
 	Event        string         `json:"event"`
-	Tool         string         `json:"tool"`
+	Tool         string         `json:"tool,omitempty"`
+	Resource     string         `json:"resource,omitempty"`
+	Prompt       string         `json:"prompt,omitempty"`
 	Project      string         `json:"project,omitempty"`
 	Repo         string         `json:"repo,omitempty"`
 	Status       string         `json:"status"`
@@ -144,7 +153,9 @@ func (a *AuditLogger) Log(record AuditRecord) error {
 		return nil
 	}
 
-	record.Event = auditEventToolInvocation
+	if record.Event == "" {
+		record.Event = auditEventToolInvocation
+	}
 	// The arguments are redacted field by field when the record is built. The
 	// error message is free text -- a scope refusal, a handler's error, or an
 	// upstream body #574 put in one -- so it is redacted here, where every

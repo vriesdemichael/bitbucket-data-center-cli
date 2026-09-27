@@ -2,6 +2,7 @@ number: 94
 title: MCP tool results are what a model can use without files or a shell
 category: architecture
 status: accepted
+amended_by: 99
 decision: >
   An MCP tool answers a client that may be a chat app speaking MCP and nothing else: no file
   system, no shell, no bb. What the model needs arrives as text or as an image, the two kinds of
@@ -17,8 +18,9 @@ agent_instructions: >
   Put what a model needs into text or image content, converted in the server, and bound every
   answer with a window, a cap or a scale. What cannot be converted is described: what it is, how
   large, and its page in Bitbucket for a person to open. Never tell the model to run bb or any
-  other command, to read a path, or to download something, and do not answer with resource links
-  or templates. Convert with the standard library and golang.org/x/image; a new converter
+  other command, to read a path, or to download something, and never answer with a resource link or
+  template in place of content: a link beside complete content names the resource the result came
+  from (ADR-099). Convert with the standard library and golang.org/x/image; a new converter
   dependency is for the owner to agree to.
 rationale: >
   A model in a chat client can use only what the client shows it. A command it cannot run, a path

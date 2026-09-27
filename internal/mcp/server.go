@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -302,17 +303,75 @@ type ServerOptions struct {
 // it does not depend on whether a client can confirm a call: a tool that asks
 // is listed to every client and refuses the call where it cannot ask.
 func NewServer(opts ServerOptions) *mcp.Server {
+	tools := exposedSpecs(opts)
+	exposed := make(map[string]bool, len(tools))
+	for _, spec := range tools {
+		exposed[spec.Tool.Name] = true
+	}
+	// Resources, prompts and the resource list follow the tools whose answers
+	// they give: a template while its tool is exposed, a prompt while all the
+	// tools it embeds are, and the list while list_pull_requests and the pull
+	// request resource are. --tools and --exclude therefore decide them too.
+	resources := servedResourceSpecs(exposed)
+	prompts := servedPromptSpecs(exposed)
+	listed := exposed["list_pull_requests"] && exposed["get_pull_request"]
+
+	// What the server serves, each declared bare. Left to itself the SDK also
+	// advertises logging, which the 2026-07-28 revision deprecates and this
+	// server never sends, and lists that change, which these never do.
+	capabilities := &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{}}
+	var complete func(context.Context, *mcp.CompleteRequest) (*mcp.CompleteResult, error)
+	if len(resources) > 0 {
+		capabilities.Resources = &mcp.ResourceCapabilities{}
+	}
+	if len(prompts) > 0 {
+		capabilities.Prompts = &mcp.PromptCapabilities{}
+	}
+	if len(resources) > 0 || len(prompts) > 0 {
+		capabilities.Completions = &mcp.CompletionCapabilities{}
+		complete = completionHandler(opts.Clients, resources, prompts)
+	}
+
 	server := mcp.NewServer(&mcp.Implementation{Name: opts.Name, Version: opts.Version}, &mcp.ServerOptions{
-		Instructions: instructions(opts),
-		// Tools, and nothing else. Left to itself the SDK also advertises
-		// logging, which the 2026-07-28 revision deprecates and this server
-		// never sends, and a tool list that changes, which this one never does.
-		Capabilities: &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{}},
+		Instructions:      instructions(opts),
+		Capabilities:      capabilities,
+		CompletionHandler: complete,
+		SetCacheable:      cacheHints,
 	})
 
+	for _, spec := range tools {
+		spec.Register(server, opts.Clients)
+	}
+	for _, spec := range resources {
+		server.AddResourceTemplate(spec.Template, resourceHandler(spec, opts.Clients))
+	}
+	for _, spec := range prompts {
+		server.AddPrompt(spec.Prompt, promptHandler(spec, opts.Clients))
+	}
+
+	// The governance middleware goes first, so it is the outermost: it sees
+	// every request as the client sent it, and the result as it leaves.
+	middleware := []mcp.Middleware{}
+	if opts.Scope.IsSet() || opts.Audit != nil {
+		failure := opts.AuditFailure
+		if failure == "" {
+			failure = AuditFailureDeny
+		}
+		middleware = append(middleware, governanceMiddleware(opts.Scope, opts.Audit, failure, opts.Warn))
+	}
+	middleware = append(middleware, resourceMiddleware(opts.Clients, opts.Scope, listed))
+	server.AddReceivingMiddleware(middleware...)
+
+	return server
+}
+
+// exposedSpecs are the tools a server exposes, after --tools, --exclude,
+// --read-only and the scope.
+func exposedSpecs(opts ServerOptions) []Spec {
 	allowSet := toSet(opts.Allow)
 	excludeSet := toSet(opts.Exclude)
 
+	var exposed []Spec
 	for _, spec := range AllSpecs() {
 		toolName := spec.Tool.Name
 		if len(allowSet) > 0 && !allowSet[toolName] {
@@ -332,18 +391,10 @@ func NewServer(opts ServerOptions) *mcp.Server {
 		if withheldUnderScope(toolName, opts.Scope) {
 			continue
 		}
-		spec.Register(server, opts.Clients)
+		exposed = append(exposed, spec)
 	}
 
-	if opts.Scope.IsSet() || opts.Audit != nil {
-		failure := opts.AuditFailure
-		if failure == "" {
-			failure = AuditFailureDeny
-		}
-		server.AddReceivingMiddleware(governanceMiddleware(opts.Scope, opts.Audit, failure, opts.Warn))
-	}
-
-	return server
+	return exposed
 }
 
 // instructions is what the server tells a model about using its tools

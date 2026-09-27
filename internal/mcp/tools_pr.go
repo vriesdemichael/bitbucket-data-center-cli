@@ -39,40 +39,47 @@ func specGetPullRequest() Spec {
 		Annotations: readOnly("Get pull request"),
 	}
 	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[GetPullRequestInput, GetPullRequestOutput] {
-		svc := pullrequestservice.NewService(c.HTTP)
-		activitySvc := pullrequestactivityservice.NewService(c.OpenAPI)
-		commentSvc := commentservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetPullRequestInput) (*mcp.CallToolResult, GetPullRequestOutput, error) {
-			pr, err := svc.Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+			out, err := pullRequestWithReviewSummary(ctx, c, in)
 			if err != nil {
 				return nil, GetPullRequestOutput{}, fmt.Errorf("get_pull_request failed: %w", err)
 			}
-
-			counts := pullrequestservice.ReviewCounts{}
-			if !in.SkipReviewSummary {
-				threads, summaryErr := activitySvc.TrySummarize(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
-				if summaryErr != nil {
-					return nil, GetPullRequestOutput{}, fmt.Errorf("get_pull_request failed: %w", summaryErr)
-				}
-				switch {
-				case threads != nil:
-					counts.Threads = threads
-				default:
-					// Bitbucket 10.x omits the task counters on this endpoint,
-					// so fall back to the exact blocker-comment tally rather
-					// than reporting nothing.
-					if tasks, taskErr := commentSvc.CountTasks(ctx, commentservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID); taskErr == nil {
-						counts.Tasks = &pullrequestservice.TaskCounts{Open: tasks.Open, Resolved: tasks.Resolved}
-					}
-				}
-			}
-
-			return nil, GetPullRequestOutput{
-				PullRequest:   pr,
-				ReviewSummary: pullrequestservice.BuildReviewSummary(pr, counts),
-			}, nil
+			return nil, out, nil
 		}
 	})
+}
+
+// pullRequestWithReviewSummary reads a pull request and derives its review
+// state, as get_pull_request and the pull request resource answer with it.
+func pullRequestWithReviewSummary(ctx context.Context, c Clients, in GetPullRequestInput) (GetPullRequestOutput, error) {
+	pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+	if err != nil {
+		return GetPullRequestOutput{}, err
+	}
+
+	counts := pullrequestservice.ReviewCounts{}
+	if !in.SkipReviewSummary {
+		threads, err := pullrequestactivityservice.NewService(c.OpenAPI).TrySummarize(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+		if err != nil {
+			return GetPullRequestOutput{}, err
+		}
+		switch {
+		case threads != nil:
+			counts.Threads = threads
+		default:
+			// Bitbucket 10.x omits the task counters on this endpoint, so
+			// fall back to the exact blocker-comment tally rather than
+			// reporting nothing.
+			if tasks, taskErr := commentservice.NewService(c.OpenAPI).CountTasks(ctx, commentservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID); taskErr == nil {
+				counts.Tasks = &pullrequestservice.TaskCounts{Open: tasks.Open, Resolved: tasks.Resolved}
+			}
+		}
+	}
+
+	return GetPullRequestOutput{
+		PullRequest:   pr,
+		ReviewSummary: pullrequestservice.BuildReviewSummary(pr, counts),
+	}, nil
 }
 
 // ListPullRequestsInput is the argument set for list_pull_requests.
@@ -244,62 +251,70 @@ func specListPRComments() Spec {
 		Annotations: readOnly("List pull request comments"),
 	}
 	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[ListPRCommentsInput, ListPRCommentsOutput] {
-		commentSvc := commentservice.NewService(c.OpenAPI)
-		activitySvc := pullrequestactivityservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in ListPRCommentsInput) (*mcp.CallToolResult, ListPRCommentsOutput, error) {
-			limit := limitOrDefault(in.Limit)
-
-			requestedState := in.State
-			if requestedState == "" {
-				requestedState = "all"
-			}
-			state, err := pullrequestactivityservice.NormalizeThreadState(requestedState)
+			out, err := pullRequestThreads(ctx, c, in)
 			if err != nil {
 				return nil, ListPRCommentsOutput{}, fmt.Errorf("list_pr_comments failed: %w", err)
 			}
-
-			threadOptions := pullrequestactivityservice.ThreadOptions{
-				State:         state,
-				TasksOnly:     in.TasksOnly,
-				WithReplies:   in.WithReplies,
-				BaseURL:       c.BaseURL,
-				ProjectKey:    in.Project,
-				Slug:          in.Repo,
-				PullRequestID: in.PRID,
-			}
-
-			// The limit counts threads, and the grouping happens here, so the
-			// whole timeline is read and the cap applied to what comes out of
-			// it. Capping the fetch instead would cut a thread in half: a reply
-			// arrives as its own activity, so the last thread in a truncated
-			// window is missing the replies that did not fit, and the summary
-			// counts fewer open threads than the pull request has.
-			var threads []pullrequestactivityservice.Thread
-			var summary pullrequestactivityservice.Summary
-			if in.Path == "" {
-				activities, listErr := activitySvc.List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID,
-					pullrequestactivityservice.ListOptions{MaxResults: pullrequestactivityservice.AllResults})
-				if listErr != nil {
-					return nil, ListPRCommentsOutput{}, fmt.Errorf("list_pr_comments failed: %w", listErr)
-				}
-				threads, summary = pullrequestactivityservice.ExtractThreads(activities, threadOptions)
-			} else {
-				target := commentservice.Target{
-					Repository:    commentservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-					PullRequestID: in.PRID,
-				}
-				comments, listErr := commentSvc.List(ctx, target, in.Path, commentservice.AllResults)
-				if listErr != nil {
-					return nil, ListPRCommentsOutput{}, fmt.Errorf("list_pr_comments failed: %w", listErr)
-				}
-				threads, summary = pullrequestactivityservice.ThreadsFromComments(comments, threadOptions)
-			}
-
-			threads, reached := capped(limit, threads)
-
-			return nil, ListPRCommentsOutput{Summary: summary, Threads: threads, LimitReached: reached}, nil
+			return nil, out, nil
 		}
 	})
+}
+
+// pullRequestThreads reads a pull request's review threads, as
+// list_pr_comments and the open threads resource answer with them.
+func pullRequestThreads(ctx context.Context, c Clients, in ListPRCommentsInput) (ListPRCommentsOutput, error) {
+	limit := limitOrDefault(in.Limit)
+
+	requestedState := in.State
+	if requestedState == "" {
+		requestedState = "all"
+	}
+	state, err := pullrequestactivityservice.NormalizeThreadState(requestedState)
+	if err != nil {
+		return ListPRCommentsOutput{}, err
+	}
+
+	threadOptions := pullrequestactivityservice.ThreadOptions{
+		State:         state,
+		TasksOnly:     in.TasksOnly,
+		WithReplies:   in.WithReplies,
+		BaseURL:       c.BaseURL,
+		ProjectKey:    in.Project,
+		Slug:          in.Repo,
+		PullRequestID: in.PRID,
+	}
+
+	// The limit counts threads, and the grouping happens here, so the whole
+	// timeline is read and the cap applied to what comes out of it. Capping the
+	// fetch instead would cut a thread in half: a reply arrives as its own
+	// activity, so the last thread in a truncated window is missing the replies
+	// that did not fit, and the summary counts fewer open threads than the pull
+	// request has.
+	var threads []pullrequestactivityservice.Thread
+	var summary pullrequestactivityservice.Summary
+	if in.Path == "" {
+		activities, err := pullrequestactivityservice.NewService(c.OpenAPI).List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID,
+			pullrequestactivityservice.ListOptions{MaxResults: pullrequestactivityservice.AllResults})
+		if err != nil {
+			return ListPRCommentsOutput{}, err
+		}
+		threads, summary = pullrequestactivityservice.ExtractThreads(activities, threadOptions)
+	} else {
+		target := commentservice.Target{
+			Repository:    commentservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
+			PullRequestID: in.PRID,
+		}
+		comments, err := commentservice.NewService(c.OpenAPI).List(ctx, target, in.Path, commentservice.AllResults)
+		if err != nil {
+			return ListPRCommentsOutput{}, err
+		}
+		threads, summary = pullrequestactivityservice.ThreadsFromComments(comments, threadOptions)
+	}
+
+	threads, reached := capped(limit, threads)
+
+	return ListPRCommentsOutput{Summary: summary, Threads: threads, LimitReached: reached}, nil
 }
 
 // AddPRCommentInput is the argument set for add_pr_comment.
