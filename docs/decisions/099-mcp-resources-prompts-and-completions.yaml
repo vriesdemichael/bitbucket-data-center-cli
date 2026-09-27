@@ -2,6 +2,7 @@ number: 99
 title: The MCP server serves Bitbucket content as resources, prompts and completions
 category: architecture
 status: accepted
+amended_by: 101
 amends:
   - 62
   - 94

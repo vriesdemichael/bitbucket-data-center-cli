@@ -11,7 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `The MCP server can be confined to a workspace, and records what agents attempt there`
 - Category: `architecture`
 - Status: `accepted`
-- Amended By: `98, 99`
+- Amended By: `98, 99, 101`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/062-mcp-workspace-scoping-and-agent-audit-trail.yaml`
 

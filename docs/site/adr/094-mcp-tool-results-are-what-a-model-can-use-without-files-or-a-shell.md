@@ -11,7 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `MCP tool results are what a model can use without files or a shell`
 - Category: `architecture`
 - Status: `accepted`
-- Amended By: `099`
+- Amended By: `99, 101`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/094-mcp-tool-results-are-what-a-model-can-use-without-files-or-a-shell.yaml`
 

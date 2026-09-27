@@ -11,6 +11,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Title: `The MCP server serves Bitbucket content as resources, prompts and completions`
 - Category: `architecture`
 - Status: `accepted`
+- Amended By: `101`
 - Amends: `62, 94`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/099-mcp-resources-prompts-and-completions.yaml`

@@ -17,6 +17,14 @@ request" bring them along. The client completes their project, repository, pull
 request, path and ref as you type. bb reads them with its own credentials, so
 the client never contacts Bitbucket.
 
+In a client that renders MCP Apps, such as Claude Desktop, VS Code or Goose, the
+`show` tool puts a pull request, a list of pull requests or a diff in front of
+you as an interactive view: reviewers with their avatars and decisions, builds,
+open tasks and comments, and the diff file by file, in Bitbucket's own words.
+The model calls it once it has found what you asked about. A view carries what
+it draws, so it renders again from the conversation without bb running, and it
+opens what you click in Bitbucket. A terminal client shows the plain answer.
+
 [**MCP Reference**](reference/mcp-tools.md) lists every tool, which of them
 write and which ask, and every resource and prompt.
 
