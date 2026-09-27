@@ -605,7 +605,18 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 	// Inline spans, which were invisible to this linter until #460. A page can
 	// be entirely tables — cheatsheet.md is — and so entirely unchecked.
 	if !isRecord(file) {
+		// A declared message quote is what bb prints, checked above against
+		// bb's source. One that begins with "bb" is a sentence, not a command.
+		quoted := map[int]string{}
+		quotes, _ := extractMessageQuotes(file, contents)
+		for _, quote := range quotes {
+			quoted[quote.line] = quote.text
+		}
+
 		for _, invocation := range extractInlineBBInvocations(contents) {
+			if text, ok := quoted[invocation.Line+1]; ok && text == invocation.Raw {
+				continue
+			}
 			checked++
 
 			if problem := validateInlineInvocation(invocation.Args, invocation.FlagsToVerify); problem != "" {

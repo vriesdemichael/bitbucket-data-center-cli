@@ -333,3 +333,24 @@ func TestMessageQuotesAreCheckedAgainstTheirProducers(t *testing.T) {
 		})
 	}
 }
+
+// A message can begin with "bb". Its quote is checked against bb's source and
+// is not also read as a command, while the rest of the row still is.
+func TestAMessageQuoteIsNotReadAsAnInvocation(t *testing.T) {
+	t.Parallel()
+
+	document := strings.Join([]string{
+		"<!-- docs-lint: message-of bb -->",
+		"",
+		"| Symptom | Remediation |",
+		"|---|---|",
+		"| `bb is disabled on this machine by administrative policy` | Run `bb doctr`. |",
+		"",
+	}, "\n")
+
+	findings, _ := lintFixture("doc.md", document)
+
+	if len(findings) != 1 || findings[0].Command != "bb doctr" {
+		t.Fatalf("want one finding, for bb doctr, got %+v", findings)
+	}
+}
