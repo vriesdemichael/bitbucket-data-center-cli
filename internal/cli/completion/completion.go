@@ -188,6 +188,10 @@ type Dependencies struct {
 	// repository at all; bb ai mcp serve and bb auth token require the scope
 	// to be named (ADR-039).
 	AmbientInferenceAllowed func(*cobra.Command) bool
+	// Refusal reports an administrative policy that switches bb off. A
+	// completion then answers nothing, with the reason as Active Help, rather
+	// than listing from a server the policy keeps bb away from (ADR-100).
+	Refusal func() error
 }
 
 // budget is how long a tab press may take, in total.

@@ -132,3 +132,19 @@ func TestParseAuditFailure(t *testing.T) {
 		}
 	}
 }
+
+// Under the read_only policy lever the server runs read-only whatever
+// --read-only says; without it, the flag decides.
+func TestReadOnlyPolicyMakesTheServerReadOnly(t *testing.T) {
+	writeSystemPolicy(t, "policy:\n  read_only: true\n")
+	if got, err := readOnlyByPolicy(false); err != nil || !got {
+		t.Errorf("under read_only the server runs read-only = %v, %v; want true", got, err)
+	}
+
+	writeSystemPolicy(t, "default_host: https://bitbucket.example.com\n")
+	for _, flag := range []bool{false, true} {
+		if got, err := readOnlyByPolicy(flag); err != nil || got != flag {
+			t.Errorf("without the lever, --read-only=%v gives %v, %v", flag, got, err)
+		}
+	}
+}

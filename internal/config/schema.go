@@ -45,6 +45,18 @@ func ConfigJSONSchema() map[string]any {
 			"type":        "boolean",
 			"description": "Disable CLI self-update command (bb update) machine-wide.",
 		},
+		"disable_bb": map[string]any{
+			"type":        "boolean",
+			"description": "Disable bb machine-wide: every command is refused except help, --describe, --version, bb doctor and printing a completion script, so a copy a user installed themselves cannot be used. System configuration or registry policy only.",
+		},
+		"disable_mcp_server": map[string]any{
+			"type":        "boolean",
+			"description": "Refuse 'bb ai mcp serve' machine-wide; the rest of bb keeps working. System configuration or registry policy only.",
+		},
+		"read_only": map[string]any{
+			"type":        "boolean",
+			"description": "Make bb read-only machine-wide: every command that changes something in Bitbucket is refused and 'bb ai mcp serve' offers only the tools that read, while reads, --dry-run and changes to the local machine still run. System configuration or registry policy only.",
+		},
 		"update_base_url": map[string]any{
 			"type":        "string",
 			"description": "Base URL of internal release manifest and asset mirror.",
@@ -163,6 +175,9 @@ func ConfigJSONSchema() map[string]any {
 			"update_signature_identity":  policyProps["update_signature_identity"],
 			"update_signature_issuer":    policyProps["update_signature_issuer"],
 			"allow_unverified_update":    policyProps["allow_unverified_update"],
+			"disable_bb":                 policyProps["disable_bb"],
+			"disable_mcp_server":         policyProps["disable_mcp_server"],
+			"read_only":                  policyProps["read_only"],
 			"policies": map[string]any{
 				"type":                 "object",
 				"additionalProperties": false,

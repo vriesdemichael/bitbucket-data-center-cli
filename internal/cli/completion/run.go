@@ -53,6 +53,12 @@ func answer(
 	args []string,
 	toComplete string,
 ) ([]cobra.Completion, cobra.ShellCompDirective) {
+	if dependencies.Refusal != nil {
+		if err := dependencies.Refusal(); err != nil {
+			return activeHelpFor(err), cobra.ShellCompDirectiveNoFileComp
+		}
+	}
+
 	// A slot that really takes a local path asks the shell for one. The flag
 	// side arranges this when it registers; an argument reaches it here, which
 	// is why `bb repo clone PROJ/repo <tab>` offers directories and `bb
