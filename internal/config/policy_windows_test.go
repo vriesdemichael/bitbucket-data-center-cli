@@ -244,3 +244,27 @@ func TestRegistryPolicyDoesNotFailOpen(t *testing.T) {
 		}
 	})
 }
+
+// The levers that switch bb off read from the registry as DWORD or string, and
+// one that cannot be read takes the restrictive side: switched off, and said.
+func TestRegistryLeversSwitchBBOff(t *testing.T) {
+	t.Parallel()
+
+	policy, problems := parseRegistryPolicy(&mockRegistryReader{
+		integers: map[string]uint64{"DisableBB": 1},
+		strings:  map[string]string{"DisableMCPServer": "yes", "ReadOnly": "sometimes"},
+	})
+
+	for name, got := range map[string]*bool{
+		"DisableBB":        policy.DisableBB,
+		"DisableMCPServer": policy.DisableMCPServer,
+		"ReadOnly":         policy.ReadOnly,
+	} {
+		if got == nil || !*got {
+			t.Errorf("%s did not switch its part of bb off: %v", name, got)
+		}
+	}
+	if len(problems) != 1 || problems[0].Name != "ReadOnly" {
+		t.Errorf("want the unreadable ReadOnly reported, got %+v", problems)
+	}
+}

@@ -144,6 +144,20 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
+			// Under the read_only policy lever a request that can change
+			// Bitbucket is refused, and one that reads still goes (ADR-100).
+			// The method is the only thing bb api knows about a request, so it
+			// decides: GET and HEAD read, anything else may write.
+			if resolvedMethod != http.MethodGet && resolvedMethod != http.MethodHead {
+				restrictions, err := config.LoadRestrictions()
+				if err != nil {
+					return err
+				}
+				if restrictions.ReadOnly {
+					return config.ReadOnlyError("bb api --method " + resolvedMethod)
+				}
+			}
+
 			cfg, err := loadConfigForHost(d, host)
 			if err != nil {
 				return err

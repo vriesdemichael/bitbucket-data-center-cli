@@ -22,6 +22,8 @@ import (
 // will reach.
 func installCompletions(root *cobra.Command, options *rootOptions) {
 	completion.Install(root, completion.Dependencies{
+		Refusal: completionRefusal,
+
 		Overrides: func(cmd *cobra.Command) config.Overrides {
 			return runtimeOverridesFromFlags(cmd, options.runtime)
 		},

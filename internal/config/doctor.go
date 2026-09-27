@@ -689,6 +689,9 @@ func (r resolution) settings() []DiagnosedSetting {
 		r.allowHTTPUpdate(),
 		// The registry has no value for mcp_audit_file (ADR-058, point 6).
 		r.policySetting("mcp_audit_file", "", "", policyText(func(p PolicyConfig) string { return p.MCPAuditFile })),
+		r.policySetting("disable_bb", "DisableBB", "false", policyFlag(func(p PolicyConfig) *bool { return p.DisableBB })),
+		r.policySetting("disable_mcp_server", "DisableMCPServer", "false", policyFlag(func(p PolicyConfig) *bool { return p.DisableMCPServer })),
+		r.policySetting("read_only", "ReadOnly", "false", policyFlag(func(p PolicyConfig) *bool { return p.ReadOnly })),
 	)
 	settings = append(settings, r.updateTrust()...)
 

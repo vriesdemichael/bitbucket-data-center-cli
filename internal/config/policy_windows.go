@@ -112,6 +112,9 @@ func parseRegistryPolicy(k registryReader) (PolicyConfig, []PolicyProblem) {
 		{"DisableUpdate", true, &policy.DisableUpdate},
 		{"AllowHTTPUpdate", false, &policy.AllowHTTPUpdate},
 		{"AllowUnverifiedUpdate", false, &policy.AllowUnverifiedUpdate},
+		{"DisableBB", true, &policy.DisableBB},
+		{"DisableMCPServer", true, &policy.DisableMCPServer},
+		{"ReadOnly", true, &policy.ReadOnly},
 	} {
 		value, problem := registryBool(k, flag.name, flag.restrictive)
 		if value != nil {

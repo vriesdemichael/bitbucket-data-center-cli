@@ -35,6 +35,14 @@
       "description": "Default Bitbucket Server / Data Center instance URL or alias.",
       "type": "string"
     },
+    "disable_bb": {
+      "description": "Disable bb machine-wide: every command is refused except help, --describe, --version, bb doctor and printing a completion script, so a copy a user installed themselves cannot be used. System configuration or registry policy only.",
+      "type": "boolean"
+    },
+    "disable_mcp_server": {
+      "description": "Refuse 'bb ai mcp serve' machine-wide; the rest of bb keeps working. System configuration or registry policy only.",
+      "type": "boolean"
+    },
     "disable_update": {
       "description": "Disable CLI self-update command (bb update) machine-wide.",
       "type": "boolean"
@@ -132,6 +140,14 @@
           "description": "Absolute or relative path to PEM Root CA certificate bundle.",
           "type": "string"
         },
+        "disable_bb": {
+          "description": "Disable bb machine-wide: every command is refused except help, --describe, --version, bb doctor and printing a completion script, so a copy a user installed themselves cannot be used. System configuration or registry policy only.",
+          "type": "boolean"
+        },
+        "disable_mcp_server": {
+          "description": "Refuse 'bb ai mcp serve' machine-wide; the rest of bb keeps working. System configuration or registry policy only.",
+          "type": "boolean"
+        },
         "disable_update": {
           "description": "Disable CLI self-update command (bb update) machine-wide.",
           "type": "boolean"
@@ -139,6 +155,10 @@
         "mcp_audit_file": {
           "description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
           "type": "string"
+        },
+        "read_only": {
+          "description": "Make bb read-only machine-wide: every command that changes something in Bitbucket is refused and 'bb ai mcp serve' offers only the tools that read, while reads, --dry-run and changes to the local machine still run. System configuration or registry policy only.",
+          "type": "boolean"
         },
         "require_keyring": {
           "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",
@@ -194,6 +214,14 @@
           "description": "Absolute or relative path to PEM Root CA certificate bundle.",
           "type": "string"
         },
+        "disable_bb": {
+          "description": "Disable bb machine-wide: every command is refused except help, --describe, --version, bb doctor and printing a completion script, so a copy a user installed themselves cannot be used. System configuration or registry policy only.",
+          "type": "boolean"
+        },
+        "disable_mcp_server": {
+          "description": "Refuse 'bb ai mcp serve' machine-wide; the rest of bb keeps working. System configuration or registry policy only.",
+          "type": "boolean"
+        },
         "disable_update": {
           "description": "Disable CLI self-update command (bb update) machine-wide.",
           "type": "boolean"
@@ -201,6 +229,10 @@
         "mcp_audit_file": {
           "description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
           "type": "string"
+        },
+        "read_only": {
+          "description": "Make bb read-only machine-wide: every command that changes something in Bitbucket is refused and 'bb ai mcp serve' offers only the tools that read, while reads, --dry-run and changes to the local machine still run. System configuration or registry policy only.",
+          "type": "boolean"
         },
         "require_keyring": {
           "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",
@@ -232,6 +264,10 @@
     "project_key": {
       "description": "Default project key for repository operations.",
       "type": "string"
+    },
+    "read_only": {
+      "description": "Make bb read-only machine-wide: every command that changes something in Bitbucket is refused and 'bb ai mcp serve' offers only the tools that read, while reads, --dry-run and changes to the local machine still run. System configuration or registry policy only.",
+      "type": "boolean"
     },
     "require_keyring": {
       "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",

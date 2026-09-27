@@ -178,13 +178,18 @@ server -- give this server a narrower PAT than your own through env.`,
 				audit.Scope = scope.String()
 			}
 
+			serveReadOnly, err := readOnlyByPolicy(readOnly)
+			if err != nil {
+				return err
+			}
+
 			s := bbmcp.NewServer(bbmcp.ServerOptions{
 				Name:         "bb",
 				Version:      deps.Version(),
 				Clients:      clients,
 				Allow:        splitCSV(toolsFlag),
 				Exclude:      splitCSV(excludeFlag),
-				ReadOnly:     readOnly,
+				ReadOnly:     serveReadOnly,
 				Scope:        scope,
 				Audit:        audit,
 				AuditFailure: failureMode,
@@ -335,6 +340,18 @@ Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.`,
 	_ = cmd.Flags().MarkHidden("safe-only")
 
 	return cmd
+}
+
+// readOnlyByPolicy is whether the server runs read-only: when --read-only
+// asks, or when the read_only policy lever says so, whatever the client's
+// configuration passes (ADR-100).
+func readOnlyByPolicy(flag bool) (bool, error) {
+	restrictions, err := config.LoadRestrictions()
+	if err != nil {
+		return false, err
+	}
+
+	return flag || restrictions.ReadOnly, nil
 }
 
 // warnDeprecatedFlags prints the registered warning for each deprecated flag

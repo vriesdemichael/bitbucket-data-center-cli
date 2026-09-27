@@ -135,6 +135,11 @@ type PolicyConfig struct {
 	UpdateSignatureIdentity string `yaml:"update_signature_identity,omitempty"`
 	UpdateSignatureIssuer   string `yaml:"update_signature_issuer,omitempty"`
 	AllowUnverifiedUpdate   *bool  `yaml:"allow_unverified_update,omitempty"`
+	// The three levers below switch bb, or part of it, off (ADR-100). See
+	// Restrictions.
+	DisableBB        *bool `yaml:"disable_bb,omitempty"`
+	DisableMCPServer *bool `yaml:"disable_mcp_server,omitempty"`
+	ReadOnly         *bool `yaml:"read_only,omitempty"`
 }
 
 type SystemConfigFile struct {
@@ -155,6 +160,9 @@ type SystemConfigFile struct {
 	UpdateSignatureIdentity string                   `yaml:"update_signature_identity,omitempty"`
 	UpdateSignatureIssuer   string                   `yaml:"update_signature_issuer,omitempty"`
 	AllowUnverifiedUpdate   *bool                    `yaml:"allow_unverified_update,omitempty"`
+	DisableBB               *bool                    `yaml:"disable_bb,omitempty"`
+	DisableMCPServer        *bool                    `yaml:"disable_mcp_server,omitempty"`
+	ReadOnly                *bool                    `yaml:"read_only,omitempty"`
 	Policies                *PolicyConfig            `yaml:"policies,omitempty"`
 	Policy                  *PolicyConfig            `yaml:"policy,omitempty"`
 }
@@ -183,6 +191,9 @@ func (sys SystemConfigFile) PolicyConfig() PolicyConfig {
 		UpdateSignatureIdentity: sys.UpdateSignatureIdentity,
 		UpdateSignatureIssuer:   sys.UpdateSignatureIssuer,
 		AllowUnverifiedUpdate:   sys.AllowUnverifiedUpdate,
+		DisableBB:               sys.DisableBB,
+		DisableMCPServer:        sys.DisableMCPServer,
+		ReadOnly:                sys.ReadOnly,
 	}
 }
 
@@ -1317,6 +1328,84 @@ func mergePolicy(target *PolicyConfig, source PolicyConfig) {
 	if source.AllowUnverifiedUpdate != nil {
 		target.AllowUnverifiedUpdate = source.AllowUnverifiedUpdate
 	}
+	if source.DisableBB != nil {
+		target.DisableBB = source.DisableBB
+	}
+	if source.DisableMCPServer != nil {
+		target.DisableMCPServer = source.DisableMCPServer
+	}
+	if source.ReadOnly != nil {
+		target.ReadOnly = source.ReadOnly
+	}
+}
+
+// Restrictions are the policy levers that switch bb, or part of it, off
+// (ADR-100). Administrative policy alone sets them: the system configuration
+// file, and on Windows the registry. No flag or environment variable lifts
+// one, since the person the policy restricts is the one who sets those.
+type Restrictions struct {
+	// DisableBB refuses every command, so a copy of bb somebody installed
+	// themselves cannot be used. What contacts nothing and changes nothing
+	// stays, so a person can see why and a package manager can still install
+	// bb: help, --describe, --version, bb doctor and the completion scripts.
+	DisableBB bool
+	// DisableMCPServer refuses bb ai mcp serve, and leaves the rest of bb
+	// alone.
+	DisableMCPServer bool
+	// ReadOnly refuses every command that changes something in Bitbucket, and
+	// bb ai mcp serve offers only the tools that read. Reads, previews and
+	// changes to this machine still run.
+	ReadOnly bool
+}
+
+// LoadRestrictions reads the levers. A system configuration bb cannot read is
+// an error, which refuses whatever asked: the file may carry a lever, and
+// making it unreadable must not lift one.
+func LoadRestrictions() (Restrictions, error) {
+	policy, err := LoadPolicy()
+	if err != nil {
+		return Restrictions{}, err
+	}
+
+	return Restrictions{
+		DisableBB:        policy.DisableBB != nil && *policy.DisableBB,
+		DisableMCPServer: policy.DisableMCPServer != nil && *policy.DisableMCPServer,
+		ReadOnly:         policy.ReadOnly != nil && *policy.ReadOnly,
+	}, nil
+}
+
+// DisabledError is the refusal of a command under disable_bb.
+func DisabledError() error {
+	return apperrors.New(apperrors.KindAuthorization, fmt.Sprintf(
+		"bb is disabled on this machine by administrative policy (disable_bb in %s); ask your administrator",
+		restrictionOrigin(func(p PolicyConfig) *bool { return p.DisableBB })), nil)
+}
+
+// MCPServerDisabledError is the refusal of bb ai mcp serve under
+// disable_mcp_server.
+func MCPServerDisabledError() error {
+	return apperrors.New(apperrors.KindAuthorization, fmt.Sprintf(
+		"bb's MCP server is disabled on this machine by administrative policy (disable_mcp_server in %s); bb's other commands still work",
+		restrictionOrigin(func(p PolicyConfig) *bool { return p.DisableMCPServer })), nil)
+}
+
+// ReadOnlyError is the refusal of a change to Bitbucket under read_only. what
+// names the change, as a person typed it.
+func ReadOnlyError(what string) error {
+	return apperrors.New(apperrors.KindAuthorization, fmt.Sprintf(
+		"%s changes Bitbucket, and bb is read-only on this machine by administrative policy (read_only in %s); reads and --dry-run still work",
+		what, restrictionOrigin(func(p PolicyConfig) *bool { return p.ReadOnly })), nil)
+}
+
+// restrictionOrigin names the policy source that set a lever, as
+// disableUpdatePolicyOrigin does for disable_update.
+func restrictionOrigin(value func(PolicyConfig) *bool) string {
+	path, err := SystemConfigPath()
+	if err != nil {
+		path = ""
+	}
+
+	return policyOriginDescription(value(loadPlatformPolicy()), platformPolicyDescription(), path)
 }
 
 // TLSSettings is the resolved TLS material an outbound HTTP client is built

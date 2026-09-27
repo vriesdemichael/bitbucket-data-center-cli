@@ -133,6 +133,14 @@ your behalf using the link above.`,
 				return nil
 			}
 
+			// Administrative policy can switch bb, or part of it, off. After
+			// --describe, which like help only says what a command does, and
+			// after the output writer is bound, so the refusal is a document
+			// under --json.
+			if err := refuseByPolicy(cmd, options.DryRun); err != nil {
+				return err
+			}
+
 			if err := options.applyRuntimeFlagOverrides(cmd); err != nil {
 				return err
 			}
