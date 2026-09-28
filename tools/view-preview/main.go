@@ -9,6 +9,11 @@
 //
 // Open the page in a browser. Nothing on it reaches Bitbucket: every view
 // draws from the result it was handed.
+//
+// -screenshots writes a PNG of each frame; with -bare, of each view alone, as
+// the docs show them, and -theme draws every frame light or dark:
+//
+//	go run ./tools/view-preview -project PAY -repo ledger -id 1 -screenshots out -bare -theme dark
 package main
 
 import (
@@ -36,11 +41,17 @@ func main() {
 	state := flag.String("state", "ALL", "state of the pull requests in the list")
 	out := flag.String("out", "views.html", "where to write the page")
 	screenshots := flag.String("screenshots", "", "a directory to write a PNG of each frame into, taken with headless Chrome")
+	bare := flag.Bool("bare", false, "capture each view alone, without its frame's title and the host's log")
+	theme := flag.String("theme", "", "light or dark for every frame; empty draws each in its own")
 	flag.Parse()
 
-	count, err := run(*project, *repo, *id, *state, *out)
+	if *theme != "" && *theme != "light" && *theme != "dark" {
+		fmt.Fprintln(os.Stderr, "view-preview: -theme is light or dark")
+		os.Exit(2)
+	}
+	count, err := run(*project, *repo, *id, *state, *theme, *out)
 	if err == nil && *screenshots != "" {
-		err = capture(*out, *screenshots, count)
+		err = capture(*out, *screenshots, count, *bare)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "view-preview:", err)
@@ -55,7 +66,7 @@ func main() {
 // cut from what is on screen. Scrolling to a frame, or capturing past the
 // viewport, makes Chrome lay the page out again mid-capture, and a view in a
 // sandboxed frame redraws late: the capture caught views half laid out.
-func capture(page, dir string, count int) error {
+func capture(page, dir string, count int, bare bool) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
@@ -78,11 +89,15 @@ func capture(page, dir string, count int) error {
 	); err != nil {
 		return err
 	}
+	selector := "#frames > section"
+	if bare {
+		selector = "#frames > section > .stage"
+	}
 	var boxes []struct{ X, Y, Width, Height float64 }
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`[...document.querySelectorAll("#frames > section")].map((section) => {
-		const box = section.getBoundingClientRect();
+	if err := chromedp.Run(ctx, chromedp.Evaluate(fmt.Sprintf(`[...document.querySelectorAll(%q)].map((frame) => {
+		const box = frame.getBoundingClientRect();
 		return { X: box.left, Y: box.top, Width: box.width, Height: box.height };
-	})`, &boxes)); err != nil {
+	})`, selector), &boxes)); err != nil {
 		return err
 	}
 	if len(boxes) != count {
@@ -109,7 +124,7 @@ func capture(page, dir string, count int) error {
 	return nil
 }
 
-func run(project, repo, id, state, out string) (int, error) {
+func run(project, repo, id, state, theme, out string) (int, error) {
 	if project == "" || repo == "" || id == "" {
 		return 0, fmt.Errorf("-project, -repo and -id are required")
 	}
@@ -173,6 +188,9 @@ func run(project, repo, id, state, out string) (int, error) {
 		encoded, err := json.Marshal(result)
 		if err != nil {
 			return 0, err
+		}
+		if theme != "" {
+			want.theme = theme
 		}
 		frames = append(frames, viewhost.Frame{
 			Title:      want.title,
