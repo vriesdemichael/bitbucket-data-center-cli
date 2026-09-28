@@ -109,5 +109,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 098: MCP tools that decide a merge ask the person through the client](098-mcp-tools-that-decide-a-merge-ask-the-person.md) (`architecture`, `accepted`)
 - [ADR 099: The MCP server serves Bitbucket content as resources, prompts and completions](099-mcp-resources-prompts-and-completions.md) (`architecture`, `accepted`)
 - [ADR 100: Administrative policy can switch bb off, switch its MCP server off, or make it read-only](100-administrators-can-switch-bb-off-or-make-it-read-only.md) (`architecture`, `accepted`)
-- [ADR 101: The show tool puts what the tools found in front of the person as an MCP view](101-mcp-views-show-what-the-tools-found.md) (`architecture`, `accepted`)
+- [ADR 101: The MCP server adopts MCP Apps, and shows its views through one tool](101-mcp-server-adopts-mcp-apps.md) (`architecture`, `accepted`)
 

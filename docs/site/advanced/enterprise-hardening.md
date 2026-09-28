@@ -441,8 +441,6 @@ For a client you do not trust with the tool annotations and those confirmations,
 
 An administrator can decide this for every client on a machine. `read_only: true` in system policy starts every server read-only whatever its client configuration says, and `disable_mcp_server: true` refuses to start one at all ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)).
 
-Views from the `show` tool render in the client's sandboxed frame with no network access: what a view draws arrives inside the tool's result, avatars included, which bb fetches with its own credentials ([ADR-101](../adr/101-mcp-views-show-what-the-tools-found.md)). `--exclude show` turns views off.
-
 The [MCP tool reference](../reference/mcp-tools.md) lists every tool with what it can change and whether it asks:
 ```bash
 bb ai mcp tools
