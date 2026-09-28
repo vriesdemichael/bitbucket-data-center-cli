@@ -27,6 +27,11 @@ type Frame struct {
 	// Fullscreen says whether the host offers fullscreen at all. A host
 	// without it, as VS Code is, leaves the view to open out in place.
 	Fullscreen bool `json:"fullscreen"`
+	// Width is the view's width in pixels, such as a phone's; zero leaves it
+	// to the page's grid.
+	Width int `json:"width,omitempty"`
+	// Height is a fullscreen view's height in pixels; zero is the default.
+	Height int `json:"height,omitempty"`
 	// Arguments are the tool's input, as the host passes them.
 	Arguments map[string]any `json:"arguments"`
 	// Result is the tools/call result, as the client received it.

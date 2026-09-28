@@ -20,10 +20,13 @@ the client never contacts Bitbucket.
 In a client that renders MCP Apps, such as Claude Desktop, VS Code or Goose, the
 `show` tool puts a pull request, a list of pull requests or a diff in front of
 you as an interactive view: reviewers with their avatars and decisions, builds,
-open tasks and comments, and the diff file by file, in Bitbucket's own words.
-The model calls it once it has found what you asked about. A view carries what
-it draws, so it renders again from the conversation without bb running, and it
-opens what you click in Bitbucket. A terminal client shows the plain answer.
+open tasks and comments, the description as Bitbucket formats it, and the diff
+file by file, in Bitbucket's own words. Its counts are Bitbucket's, however many
+items it lists, and what needs you, such as a failed build, is never behind a
+click. The model calls it once it has found what you asked about. A view carries
+what it draws, so it renders again from the conversation without bb running, and
+says when it was read. It opens what you click in Bitbucket. A terminal client
+shows the plain answer.
 
 [**MCP Reference**](reference/mcp-tools.md) lists every tool, which of them
 write and which ask, and every resource and prompt.

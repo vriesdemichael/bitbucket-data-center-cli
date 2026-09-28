@@ -26,6 +26,32 @@ const view = {
   selectionBar: null,
   selectionPR: null,
   selectionNotice: "",
+  // unclamped are the long things and folded groups the person opened.
+  unclamped: new Set(),
+  // revealed is how many steps more of each growing list the person asked for.
+  revealed: new Map(),
+  // focusFile is the file a diff scrolls to once it is in fullscreen.
+  focusFile: null,
+  // narrow is a screen too narrow for the overview's side panel, and phone
+  // one where a list's rows wrap.
+  narrow: false,
+  phone: false,
+
+  toggleClamp(key) {
+    if (view.unclamped.has(key)) view.unclamped.delete(key);
+    else view.unclamped.add(key);
+    render();
+  },
+
+  reveal(key, step) {
+    view.revealed.set(key, (view.revealed.get(key) || 0) + step);
+    render();
+  },
+
+  unreveal(key) {
+    view.revealed.delete(key);
+    render();
+  },
 
   // expand opens the view out: fullscreen where the host has it, in place
   // where it does not. Again, it goes back.
@@ -133,6 +159,9 @@ bridge.on("ui/notifications/tool-result", (result) => {
     view.failure = null;
     view.diffFiles = null;
     view.openFiles = new Set();
+    view.unclamped = new Set();
+    view.revealed = new Map();
+    view.focusFile = null;
     view.selection = null;
   }
   render();
@@ -160,7 +189,10 @@ function applyHostContext(context) {
   if (styles.css && typeof styles.css.fonts === "string") {
     document.getElementById("host-fonts").textContent = styles.css.fonts;
   }
-  if (typeof context.locale === "string") view.locale = context.locale;
+  if (typeof context.locale === "string") {
+    view.locale = context.locale;
+    setNumberLocale(context.locale);
+  }
   if (Array.isArray(context.availableDisplayModes)) {
     view.canFullscreen = context.availableDisplayModes.includes("fullscreen");
   }
@@ -186,11 +218,52 @@ function setDisplayMode(mode) {
   render();
 }
 
+// NARROW_WIDTH is the widest a screen is that has no room for the overview's
+// side panel beside the description; view.css switches its layout there too.
+const NARROW_WIDTH = 720;
+const PHONE_WIDTH = 560;
+
+// SCROLLING are the parts of a view that scroll on their own. A view is drawn
+// again whenever something changes, and each keeps its place when it is.
+const SCROLLING = ["#diff-main", ".diff-tree", ".details-main", ".details-side", ".page > .details"];
+
 function render() {
   const app = document.getElementById("app");
+  const places = SCROLLING.map((selector) => [selector, (document.querySelector(selector) || {}).scrollTop || 0]);
+  const pagePlace = document.scrollingElement ? document.scrollingElement.scrollTop : 0;
   view.selectionBar = null;
+  view.narrow = window.innerWidth <= NARROW_WIDTH;
+  view.phone = window.innerWidth <= PHONE_WIDTH;
   app.replaceChildren(content());
+  revealClampToggles();
   paintSelection();
+  for (const [selector, top] of places) {
+    const part = document.querySelector(selector);
+    if (part && top > 0) part.scrollTop = top;
+  }
+  if (document.scrollingElement && pagePlace > 0) document.scrollingElement.scrollTop = pagePlace;
+  if (view.fullscreen && view.focusFile !== null) {
+    const target = document.getElementById("diff-file-" + view.focusFile);
+    if (target) target.scrollIntoView({ block: "start" });
+    view.focusFile = null;
+  }
+}
+
+// A screen that turns narrow, or wide, gets the views laid out for it.
+window.addEventListener("resize", () => {
+  if ((window.innerWidth <= NARROW_WIDTH) !== view.narrow || (window.innerWidth <= PHONE_WIDTH) !== view.phone) render();
+});
+
+// revealClampToggles shows a clamped block's button, and fades its last line,
+// only where the content runs past the clamp.
+function revealClampToggles() {
+  for (const holder of document.querySelectorAll(".clamp")) {
+    const content = holder.firstElementChild;
+    const toggle = holder.querySelector(".clamp-toggle");
+    const overflowing = content.scrollHeight > content.clientHeight + 1;
+    holder.classList.toggle("overflowing", overflowing);
+    if (toggle) toggle.hidden = !holder.classList.contains("open") && !overflowing;
+  }
 }
 
 function content() {

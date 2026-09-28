@@ -238,6 +238,10 @@ button {
 /* Pull request card */
 
 .pr-top { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--bb-text-xs); }
+.pr-top .badge { flex: none; }
+/* The repository gives way to a long name; the number after it never does. */
+.repo-label { display: inline-flex; align-items: baseline; gap: 4px; min-width: 0; }
+.repo-label > .ellipsis { flex: 0 1 auto; }
 .pr-title {
   margin: 6px 0 8px;
   font-size: var(--bb-heading);
@@ -245,14 +249,36 @@ button {
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
-.byline { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
-.byline .chip { max-width: 40%; }
+/* A title held to a few lines; the whole of it is in its tooltip and in fullscreen. */
+.pr-title.held, .pr-title.held-2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.pr-title.held-2 { -webkit-line-clamp: 2; }
+/* The author keeps their name: the branches move to a line of their own
+   rather than cut it short. */
+.byline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; min-width: 0; }
+.byline-author { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.byline-author > strong { max-width: 24em; }
+/* The source branch gives way first; the target keeps its name up to half the line. */
+.branches { display: flex; align-items: center; gap: 6px; flex: 1 1 18em; min-width: 0; }
+.branches .chip.branch.source { flex: 0 1 auto; min-width: 4em; max-width: none; }
+.branches .chip.branch.target { flex: 0 0 auto; max-width: 55%; }
 .facts { display: grid; gap: 8px; margin-top: 12px; }
 .fact { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
 .fact-label { width: 72px; flex: none; color: var(--bb-text-faint); font-size: var(--bb-text-xs); }
 .counts { display: inline-flex; gap: 10px; flex-wrap: wrap; }
+.avatar-stack .more { white-space: nowrap; }
+.stamp { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: var(--bb-text-xs); color: var(--bb-text-faint); white-space: nowrap; }
+.stamp.stale { color: var(--bb-warning); }
+.actions { align-items: center; }
 
-.details { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; padding: 20px 24px; }
+/* Fullscreen: a header over the content, which fills the rest of the screen.
+   In the overview the description and the side panel scroll each on their
+   own, so the reviewers and builds are never below the description. */
+.page { display: flex; flex-direction: column; height: 100vh; }
+.page > .fullscreen-header { flex: none; position: static; }
+.details { display: grid; grid-template-columns: minmax(0, 1fr) 320px; }
+.page > .details { flex: 1; min-height: 0; }
+.page > .details > .details-main, .page > .details > .details-side { min-height: 0; overflow: auto; padding: 20px 24px; }
+.page > .details > .details-side { border-left: 1px solid var(--bb-border); background: var(--bb-bg-sunken); }
 .details.inline {
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
@@ -270,14 +296,32 @@ button {
   text-transform: uppercase;
   color: var(--bb-text-faint);
 }
-.description {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-family: var(--bb-font);
-  line-height: 1.55;
-}
 .side-section + .side-section { margin-top: 20px; }
+.section-title .count { margin-left: 6px; font-weight: var(--font-weight-regular, 400); letter-spacing: 0; }
+.group + .group { margin-top: 12px; }
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 2px;
+  font-size: var(--bb-text-sm);
+  font-weight: var(--font-weight-semibold, 600);
+}
+button.group-title.fold { width: 100%; padding: 4px 0; border: 0; background: transparent; cursor: pointer; text-align: left; }
+button.group-title.fold:hover { color: var(--bb-info); }
+.check-list .unlisted, .more-row { display: flex; align-items: center; gap: 8px; }
+.more-row { padding: 4px 0; }
+.detail-value { min-width: 0; overflow-wrap: anywhere; }
+
+/* Long content, held to a few lines until the person asks for the rest. */
+.clamp:not(.open) > :first-child { max-height: calc(1.55em * 12); overflow: hidden; }
+.clamp.overflowing:not(.open) > :first-child {
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+.clamp-toggle, .list-toggle { min-height: 28px; margin-top: 4px; padding: 2px 6px; color: var(--bb-info); }
+.clamp-toggle[hidden] { display: none; }
+tr.more td { padding: 6px 8px; background: var(--bb-bg-subtle); }
 .person-list, .check-list, .pr-list, .file-list { list-style: none; margin: 0; padding: 0; }
 .person-list li, .check-list li {
   display: flex;
@@ -287,10 +331,12 @@ button {
   min-width: 0;
 }
 .person-list li + li, .check-list li + li { border-top: 1px solid var(--bb-border); }
+/* The header's title takes the line; the buttons move below it on a narrow screen. */
 .fullscreen-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 10px 16px;
   padding: 12px 24px;
   border-bottom: 1px solid var(--bb-border);
   background: var(--bb-bg);
@@ -298,17 +344,21 @@ button {
   top: 0;
   z-index: 2;
 }
-.fullscreen-header .pr-title { margin: 0; font-size: var(--bb-heading-lg); }
+.fullscreen-header .row-main { flex: 1 1 360px; min-width: 0; }
+.fullscreen-header .pr-title { margin: 2px 0 0; font-size: var(--bb-heading-lg); }
+.fullscreen-header .diff-summary { margin-top: 4px; }
+.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
 /* Pull request list */
 
-.list-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
-.list-header h1 { margin: 0; font-size: var(--bb-heading); font-weight: var(--font-weight-semibold, 600); }
+.list-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-bottom: 8px; }
+.list-header h1 { margin: 0; font-size: var(--bb-heading); font-weight: var(--font-weight-semibold, 600); white-space: nowrap; }
 .pr-list li + li { border-top: 1px solid var(--bb-border); }
 .row-button {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 4px 10px;
   width: 100%;
   padding: 9px 4px;
   border: 0;
@@ -319,24 +369,59 @@ button {
 }
 .row-button:hover { background: var(--bb-bg-subtle); }
 .row-main { flex: 1; min-width: 0; }
-.row-title { display: block; font-weight: var(--font-weight-medium, 500); }
+.row-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--font-weight-medium, 500); }
+/* On one line, the branches give way first; the repository keeps its name up
+   to half the line, and its number, the time and the counts never give way. */
 .row-meta { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--bb-text-xs); color: var(--bb-text-faint); }
-.row-meta > .ellipsis { flex: 0 1 auto; }
+.row-meta > * { flex: none; }
+.row-meta > .meta-repo { display: inline-flex; gap: 4px; max-width: 50%; min-width: 0; }
+.row-meta > .meta-repo > .ellipsis { flex: 0 1 auto; }
+.row-meta > .meta-branches { flex: 0 4 auto; min-width: 0; }
 .row-meta .counts { flex: none; gap: 6px; }
 .row-meta .icon { width: 12px; height: 12px; vertical-align: -1px; }
 .row-side { display: flex; align-items: center; gap: 10px; flex: none; }
 .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .filters .button { min-height: 28px; padding: 3px 10px; font-size: var(--bb-text-xs); }
+.filters-note { align-self: center; font-size: var(--bb-text-xs); }
 .list-page { padding: 16px 24px; }
 
 /* Diff */
 
-.diff-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: var(--bb-text-xs); }
+.diff-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; font-size: var(--bb-text-xs); }
+.diff-summary > :not(.branches) { flex: none; }
 .additions { color: var(--bb-success); font-family: var(--bb-mono); }
 .deletions { color: var(--bb-danger); font-family: var(--bb-mono); }
 .file-list li + li { border-top: 1px solid var(--bb-border); }
-.diff-summary + .file-list, .diff-summary + .notice { margin-top: 10px; }
+.diff-summary + .file-list, .diff-summary + .notice, .notice + .file-list { margin-top: 10px; }
 .file-name { display: flex; flex-direction: column; min-width: 0; }
+/* A path gives way from its directory, and keeps its file name. */
+.path { display: flex; min-width: 0; }
+.path > .dir { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.path > .name { flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.omitted-mark { color: var(--bb-warning); }
+.notice.omitted p { margin: 0 0 6px; }
+.notice.omitted p:last-child { margin: 6px 0 0; }
+.omitted-list { list-style: none; margin: 0; padding: 0; }
+.omitted-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 3px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--bb-mono);
+  font-size: var(--bb-text-xs);
+  color: var(--bb-text);
+}
+.omitted-link:hover { background: var(--bb-bg); }
+.omitted-link:focus-visible { outline: 2px solid var(--bb-info); outline-offset: 1px; }
+.omitted-link .link-icon { color: var(--bb-info); }
+.button.icon-only { min-height: 26px; padding: 2px 6px; }
 .file-name .faint { font-size: 11px; }
 .file-link {
   display: flex;
@@ -366,7 +451,8 @@ button {
 .bar i.add { background: light-dark(#1f845a, #2abb7f); }
 .bar i.del { background: light-dark(#c9372c, #f87168); }
 
-.diff-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); height: calc(100vh - 57px); }
+.diff-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); flex: 1; min-height: 0; }
+.diff-main > .notice { margin-top: 16px; }
 .diff-tree {
   overflow: auto;
   padding: 8px;
@@ -436,6 +522,7 @@ button {
 }
 .line-number:hover { color: var(--bb-text); }
 .code { white-space: pre-wrap; overflow-wrap: anywhere; width: 98%; }
+.code .cut { color: var(--bb-text-faint); font-style: italic; }
 .code::before { display: inline-block; width: 1.2em; color: var(--bb-text-faint); user-select: none; }
 tr.add .code::before { content: "+"; }
 tr.del .code::before { content: "-"; }
@@ -453,9 +540,58 @@ tr.selected .line-number { color: var(--bb-info); font-weight: var(--font-weight
 .diff-note { padding: 12px; color: var(--bb-text-muted); }
 .inline-file { margin-top: 10px; }
 
+/* Markdown, as a pull request's description is written. */
+
+.markdown { line-height: 1.55; overflow-wrap: anywhere; }
+.markdown > :first-child { margin-top: 0; }
+.markdown > :last-child { margin-bottom: 0; }
+.markdown p, .markdown .md-list, .markdown .md-quote, .markdown .md-code, .markdown .md-table-wrap { margin: 0 0 10px; }
+.md-h { margin: 16px 0 8px; line-height: 1.3; font-weight: var(--font-weight-semibold, 600); }
+.md-h1 { font-size: 18px; }
+.md-h2 { font-size: 16px; }
+.md-h3 { font-size: 15px; }
+.md-h4, .md-h5, .md-h6 { font-size: var(--bb-text-sm); }
+.md-h1, .md-h2 { padding-bottom: 4px; border-bottom: 1px solid var(--bb-border); }
+.md-list { padding-left: 22px; }
+.md-list li > p, .md-list li > .md-list { margin: 0; }
+.md-list li + li { margin-top: 2px; }
+.md-task { list-style: none; margin-left: -18px; }
+.md-task > input { margin: 0 6px 0 0; vertical-align: -2px; }
+.md-task > p:first-of-type { display: inline; }
+.md-quote { margin-left: 0; margin-right: 0; padding: 0 12px; border-left: 3px solid var(--bb-border-strong); color: var(--bb-text-muted); }
+/* Code keeps its lines: a long one scrolls sideways inside its own box. */
+.md-code { padding: 8px 10px; border-radius: var(--bb-radius-sm); background: var(--bb-bg-subtle); overflow-x: auto; font-family: var(--bb-mono); font-size: 12px; line-height: 1.5; white-space: pre; overflow-wrap: normal; }
+.md-code-span { padding: 1px 4px; border-radius: 4px; background: var(--bb-bg-subtle); font-family: var(--bb-mono); font-size: 0.92em; }
+.md-rule { margin: 14px 0; border: 0; border-top: 1px solid var(--bb-border); }
+.md-table-wrap { max-width: 100%; overflow-x: auto; }
+.md-table { border-collapse: collapse; font-size: 13px; }
+.md-table th, .md-table td { padding: 4px 10px; border: 1px solid var(--bb-border); text-align: left; vertical-align: top; overflow-wrap: normal; }
+.md-table th { background: var(--bb-bg-subtle); font-weight: var(--font-weight-semibold, 600); }
+.md-table .align-center { text-align: center; }
+.md-table .align-right { text-align: right; }
+.md-link { display: inline; padding: 0; border: 0; background: none; color: var(--bb-info); cursor: pointer; font: inherit; text-align: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.md-link:hover { text-decoration-thickness: 2px; }
+.md-link:focus-visible { outline: 2px solid var(--bb-info); outline-offset: 1px; }
+.md-image { display: inline-flex; align-items: center; gap: 4px; }
+
+/* A narrow screen scrolls the whole page, header and all, so a long title
+   does not hold the content to what is left below it. */
 @media (max-width: 720px) {
   .details { grid-template-columns: minmax(0, 1fr); }
+  .page { display: block; height: auto; }
+  .page > .details > .details-main, .page > .details > .details-side { overflow: visible; }
+  .page > .details > .details-side { border-left: 0; border-top: 1px solid var(--bb-border); }
   .diff-layout { grid-template-columns: minmax(0, 1fr); }
   .diff-tree { display: none; }
-  .byline .chip { max-width: 100%; }
+  .fullscreen-header { padding: 12px 16px; }
+}
+
+/* A narrow list row puts its reviewers and state below its title, and lets
+   its details wrap rather than cut them short. */
+@media (max-width: 560px) {
+  .row-button { grid-template-columns: auto minmax(0, 1fr); }
+  .row-side { grid-column: 2; flex-wrap: wrap; }
+  .row-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; }
+  .row-meta { flex-wrap: wrap; row-gap: 2px; }
+  .row-meta > .meta-repo { max-width: 100%; }
 }

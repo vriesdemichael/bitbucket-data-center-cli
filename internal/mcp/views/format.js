@@ -59,50 +59,92 @@ const BUILD_STATES = {
   SUCCESSFUL: { className: "successful", icon: "buildSuccessful", title: "Build successful", count: (n) => plural(n, "build") + " passed" },
   FAILED: { className: "failed", icon: "buildFailed", title: "Build failed", count: (n) => plural(n, "build") + " failed" },
   INPROGRESS: { className: "inprogress", icon: "buildInProgress", title: "Build in progress", count: (n) => plural(n, "build") + " in progress" },
-  CANCELLED: { className: "cancelled", icon: "buildCancelled", title: "Build canceled", count: (n) => (n === 1 ? "1 build was" : n + " builds were") + " canceled" },
+  CANCELLED: { className: "cancelled", icon: "buildCancelled", title: "Build canceled", count: (n) => (n === 1 ? "1 build was" : formatNumber(n) + " builds were") + " canceled" },
   UNKNOWN: { className: "unknown", icon: "buildUnknown", title: "Build status unknown", count: (n) => plural(n, "build") + (n === 1 ? " has" : " have") + " unknown state" },
 };
+
+// BUILD_ORDER is the order builds are counted and listed in everywhere: what
+// needs attention first, the passes last.
+const BUILD_ORDER = ["FAILED", "INPROGRESS", "CANCELLED", "UNKNOWN", "SUCCESSFUL"];
+
+// BUILD_COUNT_FIELDS names each state's field in check_counts.
+const BUILD_COUNT_FIELDS = { FAILED: "failed", INPROGRESS: "in_progress", CANCELLED: "cancelled", UNKNOWN: "unknown", SUCCESSFUL: "successful" };
 
 function buildStateOf(state) {
   return BUILD_STATES[String(state || "").toUpperCase()] || BUILD_STATES.UNKNOWN;
 }
 
-// countBuilds counts a card's builds by state, in the shape a list's
-// check_counts has.
+// countBuilds counts listed builds by state, in the shape check_counts has.
 function countBuilds(builds) {
   const counts = { successful: 0, failed: 0, in_progress: 0, cancelled: 0, unknown: 0 };
   for (const build of builds || []) {
-    switch (String(build.state || "").toUpperCase()) {
-      case "SUCCESSFUL": counts.successful++; break;
-      case "FAILED": counts.failed++; break;
-      case "INPROGRESS": counts.in_progress++; break;
-      case "CANCELLED": counts.cancelled++; break;
-      default: counts.unknown++; break;
-    }
+    const state = String(build.state || "").toUpperCase();
+    counts[BUILD_COUNT_FIELDS[state] || "unknown"]++;
   }
   return counts;
 }
 
-// buildSummary draws build counts, what failed first: the count and its icon,
-// with Bitbucket's words as the tooltip, or those words in full. Nothing to
-// draw is null.
-function buildSummary(counts, compact) {
+// buildCountsOf is a pull request's build counts: Bitbucket's totals, which
+// hold however many builds the view lists, or, where Bitbucket gave none, the
+// listed builds counted, which are partial when the list was cut.
+function buildCountsOf(pr) {
+  if (pr.check_counts) return { counts: pr.check_counts, partial: false };
+  if (pr.checks) return { counts: countBuilds(pr.checks), partial: Boolean(pr.checks_limit_reached) };
+  return null;
+}
+
+function buildTotal(counts) {
+  return BUILD_ORDER.reduce((sum, state) => sum + (counts[BUILD_COUNT_FIELDS[state]] || 0), 0);
+}
+
+// buildSummary draws build counts in Bitbucket's words, what needs attention
+// first. Nothing to draw is null.
+function buildSummary(counts) {
   if (!counts) return null;
-  const parts = [];
-  const add = (count, state) => {
-    if (count > 0) {
-      const look = buildStateOf(state);
-      parts.push(el("span", { class: "build-state " + look.className, title: look.count(count) },
-        icon(look.icon, compact ? look.count(count) : undefined), compact ? String(count) : look.count(count)));
-    }
-  };
-  add(counts.failed, "FAILED");
-  add(counts.in_progress, "INPROGRESS");
-  add(counts.successful, "SUCCESSFUL");
-  add(counts.cancelled, "CANCELLED");
-  add(counts.unknown, "UNKNOWN");
+  const parts = BUILD_ORDER.filter((state) => counts[BUILD_COUNT_FIELDS[state]] > 0).map((state) => {
+    const look = buildStateOf(state);
+    const words = look.count(counts[BUILD_COUNT_FIELDS[state]]);
+    return el("span", { class: "build-state " + look.className, title: words }, icon(look.icon), words);
+  });
   if (parts.length === 0) return null;
   return el("span", { class: "counts" }, parts);
+}
+
+// buildBadge is a list row's one build icon, as Bitbucket's dashboard draws
+// it: the most pressing state with its count, and every count in the tooltip.
+function buildBadge(counts) {
+  if (!counts || buildTotal(counts) === 0) return null;
+  const present = BUILD_ORDER.filter((state) => counts[BUILD_COUNT_FIELDS[state]] > 0);
+  const look = buildStateOf(present[0]);
+  const words = present.map((state) => buildStateOf(state).count(counts[BUILD_COUNT_FIELDS[state]])).join(", ");
+  return el("span", { class: "build-state " + look.className, title: words },
+    icon(look.icon, words, "icon-sm"), formatNumber(counts[BUILD_COUNT_FIELDS[present[0]]]));
+}
+
+// SNAPSHOT_STALE_MS is how old a view is before it says it may be out of
+// date. A view shows what Bitbucket said when it was made, and a stored
+// conversation can show it again days later.
+const SNAPSHOT_STALE_MS = 60 * 60 * 1000;
+
+// snapshotStamp says when the view's data was read from Bitbucket.
+function snapshotStamp(generatedAt, locale) {
+  const time = Date.parse(generatedAt || "");
+  if (!Number.isFinite(time)) return null;
+  const when = new Date(time);
+  const sameDay = when.toDateString() === new Date().toDateString();
+  let label;
+  try {
+    label = sameDay
+      ? when.toLocaleTimeString(locale || undefined, { hour: "2-digit", minute: "2-digit" })
+      : when.toLocaleString(locale || undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  } catch {
+    label = when.toISOString();
+  }
+  const stale = Date.now() - time > SNAPSHOT_STALE_MS;
+  return el("span", {
+    class: "stamp" + (stale ? " stale" : ""),
+    title: "What Bitbucket said at " + when.toISOString() + (stale ? ". It may have changed since." : "."),
+  }, "As of " + label + (stale ? " · may be out of date" : ""));
 }
 
 // Bitbucket's change types, as the lozenge on a file in a diff.
@@ -142,8 +184,23 @@ function relativeTime(milliseconds, locale) {
   return "a moment ago";
 }
 
+let numberFormat = new Intl.NumberFormat();
+
+// setNumberLocale formats numbers as the host's locale does: 1,234 or 1.234.
+function setNumberLocale(locale) {
+  try {
+    numberFormat = new Intl.NumberFormat(locale || undefined);
+  } catch {
+    numberFormat = new Intl.NumberFormat();
+  }
+}
+
+function formatNumber(value) {
+  return typeof value === "number" && Number.isFinite(value) ? numberFormat.format(value) : String(value);
+}
+
 function plural(count, one, many) {
-  return count + " " + (count === 1 ? one : many || one + "s");
+  return formatNumber(count) + " " + (count === 1 ? one : many || one + "s");
 }
 
 function repositoryOf(pr) {

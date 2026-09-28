@@ -1,8 +1,25 @@
-// The diff view: the files inline, each opening in place, and the whole diff
-// with a file tree in fullscreen. Lines can be selected and handed to the
-// model, or asked about.
+// The diff view: the files inline, and the whole diff with a file tree in
+// fullscreen, where a file picked inline opens. In a host without
+// fullscreen, a file opens in place and the list grows a step at a time.
+// Lines can be selected and handed to the model, or asked about.
 
 const INLINE_FILES = 8;
+
+// FILE_STEP is how many more files a list opened out in place shows each time.
+const FILE_STEP = 50;
+
+// INLINE_FILE_LINES is how many lines of a file open in place, and
+// FILE_LINE_STEP how many more each "Show more" adds. An inline view grows
+// with what it shows, so it shows a little at a time.
+const INLINE_FILE_LINES = 60;
+const FILE_LINE_STEP = 200;
+
+// MAX_LINE_CHARS is how much of one line a view draws. A longer line, such as
+// a minified file's, is cut, and says how much more it has.
+const MAX_LINE_CHARS = 500;
+
+// OMITTED_NAMED is how many of the files too large to show a notice names.
+const OMITTED_NAMED = 3;
 
 // parseDiff reads a unified diff, as git and Bitbucket write one, into files
 // of hunks of lines numbered on both sides.
@@ -86,59 +103,103 @@ function filePath(file) {
 function renderDiff(payload, view) {
   const pr = payload.pull_request || {};
   const diff = payload.diff || {};
-  if (!view.diffFiles) view.diffFiles = parseDiff(diff.patch);
+  if (!view.diffFiles) view.diffFiles = diffFilesOf(diff);
   const files = view.diffFiles;
-  if (view.fullscreen) return diffPage(pr, diff, files, payload, view);
+  if (view.fullscreen) return diffPage(pr, files, payload, view);
 
-  const additions = files.reduce((sum, file) => sum + file.additions, 0);
-  const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
-  const shown = view.expanded ? files : files.slice(0, INLINE_FILES);
+  const shown = files.slice(0, shownCount("files", INLINE_FILES, view));
+  const left = files.length - shown.length;
 
   return el("div", {},
-    el("div", { class: "pr-top" },
-      icon("pullRequest", null, "faint"),
-      el("span", { class: "ellipsis muted" }, repositoryOf(pr) + " #" + pr.id + " · Diff"),
-      el("span", { class: "spacer" }),
-      stateBadges(pr)),
-    el("h1", { class: "pr-title" }, pr.title),
-    el("div", { class: "diff-summary" },
-      el("span", {}, plural(files.length, "file")),
-      el("span", { class: "additions" }, "+" + additions),
-      el("span", { class: "deletions" }, "−" + deletions),
-      branchChip(pr.source_branch),
-      icon("arrow", "into"),
-      branchChip(pr.target_branch)),
-    diff.truncated ? notice("This diff is too large to show whole; the files after these are in Bitbucket.") : null,
+    pullRequestTop(pr, "Diff"),
+    el("h1", { class: "pr-title held", title: pr.title }, pr.title),
+    diffSummary(files, pr, true),
+    omittedNotice(files, pr, view),
     files.length === 0 ? el("p", { class: "faint" }, "No changes.") : el("ul", { class: "file-list" },
       shown.map((file, index) => el("li", {},
-        fileLink(file, index, view, () => view.toggleFile(index)),
+        fileLink(file, index, view, () => openFile(index, view)),
         view.openFiles.has(index) ? el("div", { class: "inline-file" }, diffFile(file, index, pr, view, false)) : null))),
+    left > 0
+      ? el("div", { class: "more-row" }, view.canFullscreen
+        ? el("button", { type: "button", class: "button ghost list-toggle", onclick: () => view.expand() }, "and " + plural(left, "more file") + ", in full screen")
+        : moreButton("files", left, FILE_STEP, "files", view))
+      : null,
     el("div", { class: "actions" },
       view.canFullscreen
         ? el("button", { type: "button", class: "button primary", onclick: () => view.expand() }, icon("expand"), "Full screen")
         : null,
-      !view.canFullscreen && files.length > INLINE_FILES
-        ? el("button", { type: "button", class: "button", onclick: () => view.expand() },
-          icon(view.expanded ? "collapse" : "expand"), view.expanded ? "Show fewer files" : "Show all " + files.length + " files")
+      view.revealed.has("files")
+        ? el("button", { type: "button", class: "button", onclick: () => view.unreveal("files") }, icon("collapse"), "Show fewer files")
         : null,
-      linkButton("Open in Bitbucket", diffURL(pr), view.bridge)),
+      linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
+      el("span", { class: "spacer" }),
+      snapshotStamp(payload.generated_at, view.locale)),
     view.canFullscreen ? null : selectionBar(pr, view));
 }
 
-// fileLink is a file in a list: its path, and for a rename where it came
-// from, with the change as Bitbucket's lozenge, or as a dot in the narrow tree.
+// openFile shows a file's changes: in fullscreen, at that file, where the
+// host has it, and in place where it does not.
+function openFile(index, view) {
+  if (view.canFullscreen) {
+    view.focusFile = index;
+    view.expand();
+    return;
+  }
+  view.toggleFile(index);
+}
+
+function diffSummary(files, pr, withBranches) {
+  const additions = files.reduce((sum, file) => sum + file.additions, 0);
+  const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
+  return el("div", { class: "diff-summary" },
+    el("span", { class: "nowrap" }, plural(files.length, "file")),
+    el("span", { class: "additions" }, "+" + formatNumber(additions)),
+    el("span", { class: "deletions" }, "−" + formatNumber(deletions)),
+    withBranches ? branchPair(pr) : null);
+}
+
+// omittedNotice names the files whose changes are too large for a view to
+// carry, wherever the view is, so a person sees what is missing without
+// finding it in the list. Each links to its diff in Bitbucket.
+function omittedNotice(files, pr, view) {
+  const omitted = files.filter((file) => file.omitted);
+  if (omitted.length === 0) return null;
+  const named = omitted.slice(0, OMITTED_NAMED);
+  return el("div", { class: "notice omitted", role: "note" },
+    el("p", {}, omitted.length === 1
+      ? "One file is too large to show here. You can view its diff in Bitbucket:"
+      : formatNumber(omitted.length) + " files are too large to show here. You can view their diffs in Bitbucket:"),
+    el("ul", { class: "omitted-list" }, named.map((file) => el("li", {},
+      el("button", {
+        type: "button",
+        class: "omitted-link",
+        title: "View the diff of " + filePath(file) + " in Bitbucket",
+        onclick: () => openLink(view.bridge, fileURL(pr, file)),
+      },
+      changeDot(file.status),
+      pathLabel(filePath(file)),
+      el("span", { class: "spacer" }),
+      changeBar(file, true),
+      icon("external", null, "link-icon"))))),
+    omitted.length > named.length
+      ? el("p", { class: "faint" }, "And " + plural(omitted.length - named.length, "more file") + ", each marked where it is listed.")
+      : null);
+}
+
+// fileLink is a file in a list: its path, where a renamed file came from, and
+// whether it is too large to show, with the change as Bitbucket's lozenge, or
+// as a dot in the narrow tree.
 function fileLink(file, index, view, onclick, compact) {
   const path = filePath(file);
   const slash = path.lastIndexOf("/");
   const renamed = renamedFrom(file);
-  const label = compact
-    ? el("span", { class: "file-name" },
-      el("span", { class: "ellipsis" }, slash >= 0 ? path.slice(slash + 1) : path),
-      renamed ? el("span", { class: "ellipsis faint" }, renamed) : slash >= 0 ? el("span", { class: "ellipsis faint" }, path.slice(0, slash)) : null)
-    : el("span", { class: "file-name" },
-      el("span", { class: "ellipsis" }, path),
-      renamed ? el("span", { class: "ellipsis faint" }, renamed) : null);
-  return el("button", { type: "button", class: "file-link", title: renamed ? path + " · " + renamed : path, onclick },
+  const second = [file.omitted ? "too large to show here" : "", renamed || (compact && slash >= 0 ? path.slice(0, slash) : "")]
+    .filter(Boolean).join(" · ");
+  const label = el("span", { class: "file-name" },
+    compact ? el("span", { class: "ellipsis" }, slash >= 0 ? path.slice(slash + 1) : path) : pathLabel(path),
+    second ? el("span", { class: "ellipsis faint" + (file.omitted ? " omitted-mark" : "") }, second) : null);
+  const title = [path, renamed, file.omitted ? "too large to show here" : ""].filter(Boolean).join(" · ");
+  return el("button", { type: "button", class: "file-link", title, onclick },
     compact ? changeDot(file.status) : changeLozenge(file.status),
     label,
     el("span", { class: "spacer" }),
@@ -165,31 +226,27 @@ function changeBar(file, compact) {
     blocks.push(el("i", { class: total === 0 ? "" : i < added ? "add" : "del" }));
   }
   return el("span", { class: "nowrap" },
-    el("span", { class: "additions" }, "+" + file.additions), " ",
-    el("span", { class: "deletions" }, "−" + file.deletions),
+    el("span", { class: "additions" }, "+" + formatNumber(file.additions)), " ",
+    el("span", { class: "deletions" }, "−" + formatNumber(file.deletions)),
     compact ? null : [" ", el("span", { class: "bar", "aria-hidden": "true" }, blocks)]);
 }
 
-function diffPage(pr, diff, files, payload, view) {
-  const additions = files.reduce((sum, file) => sum + file.additions, 0);
-  const deletions = files.reduce((sum, file) => sum + file.deletions, 0);
+function diffPage(pr, files, payload, view) {
   const main = el("div", { class: "diff-main", id: "diff-main" },
     selectionBar(pr, view),
-    diff.truncated ? el("p", { class: "notice" }, "This diff is too large to show whole; the files after these are in Bitbucket.") : null,
+    omittedNotice(files, pr, view),
     files.length === 0 ? el("p", { class: "faint" }, "No changes.") : files.map((file, index) => diffFile(file, index, pr, view, true)));
 
-  return el("div", {},
+  return el("div", { class: "page" },
     el("header", { class: "fullscreen-header" },
       el("div", { class: "row-main" },
-        el("div", { class: "pr-top" },
-          icon("pullRequest", null, "faint"),
-          el("span", { class: "ellipsis muted" }, repositoryOf(pr) + " #" + pr.id + " · Diff"),
-          el("span", {}, plural(files.length, "file")),
-          el("span", { class: "additions" }, "+" + additions),
-          el("span", { class: "deletions" }, "−" + deletions)),
-        el("h1", { class: "pr-title ellipsis" }, pr.title)),
-      linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
-      el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen")),
+        pullRequestTop(pr, "Diff"),
+        el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
+        diffSummary(files, pr, false)),
+      el("div", { class: "header-actions" },
+        snapshotStamp(payload.generated_at, view.locale),
+        linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
+        el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
     el("div", { class: "diff-layout" },
       el("nav", { class: "diff-tree", "aria-label": "Files" },
         el("ul", { class: "file-list" }, files.map((file, index) => el("li", {},
@@ -215,13 +272,18 @@ function diffFile(file, index, pr, view, withHeader) {
       },
     },
     icon("chevronDown"),
-    el("span", { class: "ellipsis" }, path),
-    renamedFrom(file) ? el("span", { class: "ellipsis faint" }, renamedFrom(file)) : null,
+    el("span", { class: "file-name" }, pathLabel(path), renamedFrom(file) ? el("span", { class: "ellipsis faint" }, renamedFrom(file)) : null),
     changeLozenge(file.status),
     el("span", { class: "spacer" }),
     file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file)));
   }
 
+  if (file.omitted) {
+    section.append(el("div", { class: "diff-note" },
+      el("p", {}, "This file's changes are too large to show here."),
+      linkButton("View its diff in Bitbucket", fileURL(pr, file), view.bridge)));
+    return section;
+  }
   if (file.binary) {
     section.append(el("p", { class: "diff-note" }, "Binary file. Open it in Bitbucket to see the change."));
     return section;
@@ -232,19 +294,64 @@ function diffFile(file, index, pr, view, withHeader) {
   }
 
   const body = el("tbody", {});
-  file.hunks.forEach((hunk) => {
+  const key = "file-" + index;
+  const cap = view.fullscreen ? Infinity : shownCount(key, INLINE_FILE_LINES, view);
+  const total = file.hunks.reduce((sum, hunk) => sum + hunk.lines.length, 0);
+  let drawn = 0;
+  for (const hunk of file.hunks) {
+    if (drawn >= cap) break;
     body.append(el("tr", { class: "hunk" }, el("td", { colspan: 3 }, hunk.header)));
     for (const line of hunk.lines) {
+      if (drawn >= cap) break;
       const row = el("tr", { class: line.type },
         lineNumberCell(line.oldNo, line, index, view),
         lineNumberCell(line.newNo, line, index, view),
-        el("td", { class: "code" }, line.text));
+        el("td", { class: "code" }, codeText(line.text)));
       line.row = row;
       body.append(row);
+      drawn++;
     }
-  });
+  }
+  if (drawn < total) {
+    body.append(el("tr", { class: "more" }, el("td", { colspan: 3 }, moreButton(key, total - drawn, FILE_LINE_STEP, "lines", view))));
+  }
   section.append(el("table", { class: "diff-table", role: "grid", "aria-label": path }, body));
   return section;
+}
+
+// codeText is a line of code as a view draws it: whole, or its first
+// MAX_LINE_CHARS characters and how many more it has.
+function codeText(text) {
+  if (text.length <= MAX_LINE_CHARS) return text;
+  let end = MAX_LINE_CHARS;
+  const code = text.charCodeAt(end - 1);
+  if (code >= 0xd800 && code <= 0xdbff) end++;
+  return [text.slice(0, end), el("span", { class: "cut" }, " … " + plural(text.length - end, "more character"))];
+}
+
+// fileURL is a file's diff in Bitbucket, as Bitbucket links one: the pull
+// request's diff, with the file's path after the #.
+function fileURL(pr, file) {
+  return diffURL(pr) + "#" + encodeURI(filePath(file));
+}
+
+// diffFilesOf is every file of the diff, with what the patch carries of each.
+// The file list comes from the server, whole however large the diff; the
+// patch carries the files that fit.
+function diffFilesOf(diff) {
+  const parsed = parseDiff(diff.patch);
+  if (!Array.isArray(diff.files)) return parsed;
+  const hunks = new Map(parsed.map((file) => [file.newPath, file.hunks]));
+  return diff.files.map((file) => ({
+    oldPath: file.old_path || file.path,
+    newPath: file.path,
+    status: file.status || "modified",
+    additions: file.additions || 0,
+    deletions: file.deletions || 0,
+    binary: Boolean(file.binary),
+    omitted: Boolean(file.omitted),
+    hunks: hunks.get(file.path) || [],
+  }));
 }
 
 function lineNumberCell(number, line, fileIndex, view) {

@@ -88,6 +88,11 @@
     section.append(title, stage, log);
     document.getElementById("frames").append(section);
     record.iframe = iframe;
+    if (frame.width) {
+      stage.style.width = frame.width + "px";
+      section.style.justifySelf = "start";
+    }
+    if (frame.height) stage.style.height = frame.height + "px";
 
     const send = (message) => iframe.contentWindow.postMessage(message, "*");
     const reply = (id, result) => send({ jsonrpc: "2.0", id, result });

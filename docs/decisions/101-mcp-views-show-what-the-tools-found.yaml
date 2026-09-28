@@ -17,21 +17,31 @@ decision: >
   The view is one page, ui://bb/view: plain JavaScript and CSS embedded in the binary. It holds no
   Bitbucket data, stays out of resources/list, may be cached by anyone, and declares no network
   domains. bb fetches avatars from /users/{slug}/avatar.png with its own credentials and embeds
-  them as data. Text from Bitbucket only ever becomes a text node. The page uses Bitbucket's own
-  words and icon metaphors, and the host's theme variables.
+  them as data. Text from Bitbucket is never parsed as HTML: the page's own parser draws a
+  description's Markdown as elements, leaves HTML in it as text, and opens a link through the host,
+  only to a web address. The page uses Bitbucket's own words and icon metaphors, and the host's
+  theme variables.
+
+  A count in a view is Bitbucket's count of the whole, however many items the view lists, and a
+  view that lists fewer says so. What needs the person, such as a failed build, a request for
+  changes or a file too large to carry, is never behind a click. Inline, a view keeps one shape and
+  grows only a step at a time when the person asks; fullscreen shows everything the result carries.
+  A view says when its data was read.
 agent_instructions: >
   Add a view as a kind of show, never as _meta.ui on a data tool. Build elements with el() and never
   parse a string as HTML; TestViewScriptsBuildNoHTMLFromStrings and the browser tests under -tags
   views hold that. Put what a view draws in the result's _meta, and keep its text for the model
-  short. Take wording from Bitbucket's UI strings. Look at a change with go run ./tools/view-preview
-  against the local stack.
+  short. Count from Bitbucket's totals, never from what a view lists. Take wording from Bitbucket's
+  UI strings. Look at a change with go run ./tools/view-preview against the local stack.
 rationale: >
   A client mounts a live view for every call of a tool that has one, and an agent calls the data
   tools many times in a turn. Data in the result lets a stored conversation render without bb, and
   keeps the page the same for everyone. bb reaches Bitbucket with its credentials, CA bundle, client
   certificate and proxy, where a request from the client's webview has none of them, and Bitbucket
   answers an anonymous avatar request with its default image. A page with no build step keeps go
-  build complete, and the reference SDK's weight out of every view.
+  build complete, and the reference SDK's weight out of every view. A count taken from part of a
+  list reads as the whole, a tidy view that hides a failed build misleads more than a cluttered one,
+  and a chat holds a view of about one screen.
 rejected_alternatives:
   - alternative: A view on get_pull_request, list_pull_requests and get_pr_diff
     reason: >
@@ -43,6 +53,8 @@ rejected_alternatives:
       certificate, and gets the default image. The declaration admits scripts and styles too.
   - alternative: React and the reference SDK, bundled with Vite
     reason: Node in every build, some 400 KB in every view, and a go build without the bundle has no views.
-  - alternative: Fetch what a view draws from the view, once it renders
+  - alternative: Fetch what a view draws from the view, once it renders, or more of it as the person scrolls
     reason: A re-rendered conversation would need bb running, and each fetch is a tool call a host may confirm.
+  - alternative: Draw everything a result carries, inline
+    reason: A list or a diff of a thousand rows buries the conversation, and a host scrolls a view it caps inside the chat.
 provenance: guided-ai

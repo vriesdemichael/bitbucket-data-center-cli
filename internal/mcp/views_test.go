@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 )
 
 // viewClient is a client that renders views, as Claude Desktop and VS Code
@@ -307,21 +308,90 @@ func TestAvatarsAreRasterImagesOnly(t *testing.T) {
 	}
 }
 
-func TestTruncatePatchCutsAtAFileBoundary(t *testing.T) {
+// Every file of a diff is listed with its counts, however large the diff; the
+// patch keeps the files that fit, and a file too large to carry is marked
+// rather than dropped, even when it comes first.
+func TestSplitPatchListsEveryFileAndKeepsWhatFits(t *testing.T) {
 	t.Parallel()
 
-	first := "diff --git src://a dst://a\n@@ -1 +1 @@\n-a\n+b\n"
-	second := "diff --git src://b dst://b\n@@ -1 +1 @@\n-c\n+d\n"
-	patch := first + second
+	huge := "diff --git src://gen/big.go dst://gen/big.go\n@@ -1 +1,40 @@\n-old\n" + strings.Repeat("+generated line\n", 40)
+	small := "diff --git src://a.go dst://a.go\n--- src://a.go\n+++ dst://a.go\n@@ -1,2 +1,2 @@\n--- a comment\n+new\n context\n"
+	renamed := "diff --git src://old.yaml dst://new.yaml\nsimilarity index 90%\nrename from old.yaml\nrename to new.yaml\n@@ -1 +1 @@\n-a\n+b\n"
 
-	if got, cut := truncatePatch(patch, len(patch)); got != patch || cut {
-		t.Errorf("a patch within the limit was cut: %q, %v", got, cut)
+	files, patch, truncated := splitPatch(huge+small+renamed, 200, 10_000)
+	if len(files) != 3 || !truncated {
+		t.Fatalf("got %d files, truncated %v; want all three, truncated", len(files), truncated)
 	}
-	if got, cut := truncatePatch(patch, len(first)+5); got != first || !cut {
-		t.Errorf("got %q, %v; want the first file whole, marked cut", got, cut)
+	if !files[0].Omitted || files[0].Additions != 40 || files[0].Deletions != 1 || files[0].Path != "gen/big.go" {
+		t.Errorf("the large file is %+v, want it listed with its counts and omitted", files[0])
 	}
-	if got, cut := truncatePatch(patch, 5); got != "" || !cut {
-		t.Errorf("got %q, %v; want nothing rather than half a file", got, cut)
+	if files[1].Omitted || files[1].Additions != 1 || files[1].Deletions != 1 {
+		t.Errorf("the small file is %+v; a removed line reading -- counts as a removal, and the file fits", files[1])
+	}
+	if files[2].Status != "renamed" || files[2].OldPath != "old.yaml" || files[2].Path != "new.yaml" {
+		t.Errorf("the rename is %+v", files[2])
+	}
+	if patch != small+renamed {
+		t.Errorf("the patch kept %q, want the two files that fit", patch)
+	}
+
+	// The whole budget: a file after it is full is omitted too.
+	files, patch, _ = splitPatch(small+renamed, 10_000, len(small)+1)
+	if files[0].Omitted || !files[1].Omitted || patch != small {
+		t.Errorf("within %d bytes got %+v and %q", len(small)+1, files, patch)
+	}
+
+	added, _, _ := splitPatch("diff --git src://n dst://n\nnew file mode 100644\n--- /dev/null\n+++ dst://n\n@@ -0,0 +1 @@\n+x\n", 1000, 1000)
+	gone, _, _ := splitPatch("diff --git src://g dst://g\ndeleted file mode 100644\n--- src://g\n+++ /dev/null\n@@ -1 +0,0 @@\n-x\n", 1000, 1000)
+	binary, _, _ := splitPatch("diff --git a/i.png b/i.png\nBinary files a/i.png and b/i.png differ\n", 1000, 1000)
+	if added[0].Status != "added" || gone[0].Status != "deleted" || !binary[0].Binary || binary[0].Path != "i.png" {
+		t.Errorf("added %+v, deleted %+v, binary %+v", added[0], gone[0], binary[0])
+	}
+}
+
+// The avatars a view carries are the people it draws, in the order it draws
+// them, and no more than it may carry.
+func TestViewsCarryTheAvatarsOfWhomTheyDraw(t *testing.T) {
+	t.Parallel()
+
+	pr := pullrequestservice.PullRequest{AuthorUsername: "alice", AuthorSlug: "alice", Reviewers: []pullrequestservice.Reviewer{
+		{Name: "dave", Slug: "dave", DisplayName: "Dave"},
+		{Name: "carol", Slug: "carol", DisplayName: "Carol", Status: "NEEDS_WORK"},
+		{Name: "bob", Slug: "bob", DisplayName: "Bob", Approved: true},
+		{Name: "anna", Slug: "anna", DisplayName: "Anna"},
+	}}
+	var order []string
+	for _, reviewer := range sortedReviewers(pr.Reviewers) {
+		order = append(order, reviewer.Name)
+	}
+	if strings.Join(order, ",") != "bob,carol,anna,dave" {
+		t.Errorf("reviewers sort as %v, want approvals, then changes requested, then the rest by name", order)
+	}
+	people := peopleOf(pr, 3)
+	if len(people) != 3 || people["alice"] == "" || people["bob"] == "" || people["carol"] == "" {
+		t.Errorf("three people are %v, want the author and the first two reviewers drawn", people)
+	}
+}
+
+// The summary a model reads counts the builds as the card does: Bitbucket's
+// totals, however many builds the card lists, and when it has only the list
+// to count, it says the count is of part of them.
+func TestSummariesCountEveryBuild(t *testing.T) {
+	t.Parallel()
+
+	pr := viewPullRequest{
+		PullRequest: pullrequestservice.PullRequest{ID: 6, Title: "Generate the client", State: "OPEN",
+			Repository: &pullrequestservice.RepositoryRef{ProjectKey: "PAY", Slug: "ledger"}},
+		Checks:             []viewCheck{{State: "FAILED"}, {State: "SUCCESSFUL"}},
+		CheckCounts:        &viewCheckCounts{Failed: 4, InProgress: 2, Cancelled: 1, Unknown: 1, Successful: 142},
+		ChecksLimitReached: true,
+	}
+	if summary := summarizePullRequest(pr); !strings.Contains(summary, "Builds: 4 failed, 2 in progress, 1 canceled, 1 unknown, 142 passed.") {
+		t.Errorf("the summary counts the builds as %q, want Bitbucket's totals", summary)
+	}
+	pr.CheckCounts = nil
+	if summary := summarizePullRequest(pr); !strings.Contains(summary, "Builds, of the first 2: 1 failed, 1 passed.") {
+		t.Errorf("without totals the summary reads %q, want the listed builds counted as a part", summary)
 	}
 }
 
