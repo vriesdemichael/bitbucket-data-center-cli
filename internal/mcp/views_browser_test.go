@@ -88,8 +88,8 @@ func fixtureFrames(t *testing.T) []viewhost.Frame {
 	}
 	avatars := map[string]string{
 		"alice": onePixelPNG,
-		// Not an embedded image, so never a source: bob is drawn with initials.
-		"bob": "javascript:window.parent.bbHost.pwned='avatar'",
+		// Not an embedded image, so never a source: carol is drawn with initials.
+		"carol": "javascript:window.parent.bbHost.pwned='avatar'",
 	}
 
 	second, third := fixturePullRequest(), fixturePullRequest()
@@ -222,7 +222,7 @@ func TestViewsDrawTextOthersWroteAsText(t *testing.T) {
 
 	var card string
 	inFrame(t, ctx, 0, `return d.body.textContent;`, &card)
-	for _, want := range []string{hostileTitle, hostileName, "1 of 3 approved", "1 changes requested", "1 failed", "1 in progress", "1 passed", "Changes requested", "Builds", "Overview"} {
+	for _, want := range []string{hostileTitle, hostileName, "Carol Diaz requested changes", "1 build failed", "1 build in progress", "1 of 3 approved", "1 of 3 builds passed", "Changes requested", "Overview"} {
 		if !strings.Contains(card, want) {
 			t.Errorf("the card does not show %q:\n%s", want, card)
 		}
@@ -259,8 +259,8 @@ func TestViewsDrawOnlyEmbeddedImages(t *testing.T) {
 
 	var initials []string
 	inFrame(t, ctx, 0, `return [...d.querySelectorAll(".initials")].map((i) => i.textContent);`, &initials)
-	if !containsString(initials, "BC") {
-		t.Errorf("bob, whose avatar was not an embedded image, is not drawn with initials: %v", initials)
+	if !containsString(initials, "CD") {
+		t.Errorf("carol, whose avatar was not an embedded image, is not drawn with initials: %v", initials)
 	}
 }
 
@@ -285,7 +285,7 @@ func TestViewsOpenLinksThroughTheHostAndNeverOthers(t *testing.T) {
 	ctx := browser(t, fixtureFrames(t))
 
 	inFrame(t, ctx, 1, `d.querySelector(".row-button").click(); return null;`, nil)
-	inFrame(t, ctx, 0, `d.querySelector(".button.primary").click(); return null;`, nil)
+	clickButton(t, ctx, 0, "Open in Bitbucket")
 	chromedp.Run(ctx, chromedp.Sleep(200*time.Millisecond))
 
 	for frame, want := range map[int]string{
@@ -398,6 +398,7 @@ func stressFrames(t *testing.T) []viewhost.Frame {
 	pr.Repository = &pullrequestservice.RepositoryRef{ProjectKey: "PAYMENTS-PLATFORM", Slug: "payment-provider-client-generator-and-retry-middleware"}
 	pr.SourceBranch = "feature/PAY-4821-generated-payment-provider-client-with-retries-idempotency-telemetry-and-typed-errors"
 	pr.TargetBranch = "release/2026.09-payments-platform-hotfix-candidate"
+	pr.Mergeability = &pullrequestservice.Mergeability{Outcome: "CONFLICTED", Conflicted: true}
 	pr.Description = "## Why\n\nThe hand-written client drifted from its schema.\n\n" + strings.Repeat("A line of a long description.\n", 200)
 	pr.Reviewers = nil
 	for i := range 30 {
@@ -539,18 +540,12 @@ func TestViewsCountTheWhole(t *testing.T) {
 	ctx := browser(t, stressFrames(t))
 
 	card := frameText(t, ctx, stressCard)
-	for _, want := range []string{"4 failed", "2 in progress", "1 canceled", "1 unknown", "142 passed", "6 of 30 approved", "2 changes requested"} {
+	for _, want := range []string{"4 builds failed", "2 builds in progress", "142 of 150 builds passed", "6 of 30 approved"} {
 		if !strings.Contains(card, want) {
 			t.Errorf("the card does not say %q:\n%s", want, card)
 		}
 	}
-	// Each count carries Bitbucket's own phrase for it.
-	var phrases []string
-	inFrame(t, ctx, stressCard, `return [...d.querySelectorAll(".facts .build-state")].map((s) => s.title);`, &phrases)
-	if !slices.Contains(phrases, "4 builds failed") || !slices.Contains(phrases, "142 builds passed") {
-		t.Errorf("the card's build counts are titled %q, want Bitbucket's phrases", phrases)
-	}
-	if strings.Contains(card, "93 passed") {
+	if strings.Contains(card, "93 of") {
 		t.Errorf("the card counted the builds it lists rather than Bitbucket's totals:\n%s", card)
 	}
 	// Read three hours ago, the card says it may be out of date.
@@ -571,23 +566,41 @@ func TestViewsCountTheWhole(t *testing.T) {
 func TestViewsNeverHideWhatNeedsAttention(t *testing.T) {
 	ctx := browser(t, stressFrames(t))
 
-	// The card's six avatars include both reviewers who requested changes,
-	// though six approvals sort before them.
+	// The card names both reviewers who requested changes, with their
+	// avatars, though six approvals sort before them.
+	var asked string
+	inFrame(t, ctx, stressCard, `const a = d.querySelector(".pr-card .attention .changes-requested"); return a ? a.querySelector(".who").textContent + "|" + [...a.querySelectorAll(".avatar")].map((v) => v.title).join(",") : "";`, &asked)
+	if asked != "Reviewer 28 and Reviewer 29 requested changes|Reviewer 28,Reviewer 29" {
+		t.Errorf("the card's requests for changes read %q, want both reviewers named and drawn", asked)
+	}
+	// And a conflict, in Bitbucket's words.
+	var conflict string
+	inFrame(t, ctx, stressCard, `const c = [...d.querySelectorAll(".pr-card .attention .attention-item")].find((i) => i.textContent === "Conflict"); return c ? c.title : "";`, &conflict)
+	if conflict != "This pull request has conflicts that need to be resolved before it can be merged." {
+		t.Errorf("the card does not flag the conflict as Bitbucket does: %q", conflict)
+	}
+
+	// A fullscreen row's avatars include those who requested changes, though
+	// approvals sort before them.
 	var votes []string
-	inFrame(t, ctx, stressCard, `return [...d.querySelectorAll(".pr-card .avatar-stack .avatar")].map((a) => a.title);`, &votes)
+	inFrame(t, ctx, stressListFullscreen, `const row = [...d.querySelectorAll(".pr-list > li")].find((r) => r.querySelector(".meta-repo .nowrap").textContent === "#970");
+		return [...row.querySelectorAll(".avatar-stack .avatar")].map((a) => a.title);`, &votes)
 	requested := 0
 	for _, vote := range votes {
 		if strings.HasSuffix(vote, ": Changes requested") {
 			requested++
 		}
 	}
-	if len(votes) != 6 || requested != 2 {
-		t.Errorf("the card shows %v, want six avatars with both reviewers who requested changes", votes)
+	if len(votes) != 3 || requested != 2 {
+		t.Errorf("the fullscreen row shows %v, want three avatars with both reviewers who requested changes", votes)
 	}
-	var more string
-	inFrame(t, ctx, stressCard, `const m = d.querySelector(".pr-card .avatar-stack .more"); return m ? m.textContent + "|" + m.title : "";`, &more)
-	if !strings.HasPrefix(more, "+24|") || !strings.Contains(more, "Reviewer") {
-		t.Errorf("the card's other reviewers read %q, want +24 naming them", more)
+
+	// An inline row flags its failed builds, and no state while it is plainly
+	// open.
+	var flags []string
+	inFrame(t, ctx, stressList, `return [...d.querySelectorAll(".pr-list > li .row-side")].map((side) => side.textContent);`, &flags)
+	if len(flags) != 6 || slices.ContainsFunc(flags, func(flag string) bool { return flag != "4" }) {
+		t.Errorf("the inline rows flag %q, want each open row's 4 failed builds and nothing else", flags)
 	}
 
 	// The overview lists every build that failed, runs or was canceled without

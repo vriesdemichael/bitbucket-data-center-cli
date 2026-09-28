@@ -55,14 +55,12 @@ function stateBadges(pr) {
 
 // Bitbucket's build states: the words of its build icon's tooltip, and an
 // icon after the one it draws.
-// A card beside its "Builds" label says each state in a word, and keeps the
-// whole phrase for its tooltip.
 const BUILD_STATES = {
-  SUCCESSFUL: { className: "successful", icon: "buildSuccessful", title: "Build successful", word: "passed", count: (n) => plural(n, "build") + " passed" },
-  FAILED: { className: "failed", icon: "buildFailed", title: "Build failed", word: "failed", count: (n) => plural(n, "build") + " failed" },
-  INPROGRESS: { className: "inprogress", icon: "buildInProgress", title: "Build in progress", word: "in progress", count: (n) => plural(n, "build") + " in progress" },
-  CANCELLED: { className: "cancelled", icon: "buildCancelled", title: "Build canceled", word: "canceled", count: (n) => (n === 1 ? "1 build was" : formatNumber(n) + " builds were") + " canceled" },
-  UNKNOWN: { className: "unknown", icon: "buildUnknown", title: "Build status unknown", word: "unknown", count: (n) => plural(n, "build") + (n === 1 ? " has" : " have") + " unknown state" },
+  SUCCESSFUL: { className: "successful", icon: "buildSuccessful", title: "Build successful", count: (n) => plural(n, "build") + " passed" },
+  FAILED: { className: "failed", icon: "buildFailed", title: "Build failed", count: (n) => plural(n, "build") + " failed" },
+  INPROGRESS: { className: "inprogress", icon: "buildInProgress", title: "Build in progress", count: (n) => plural(n, "build") + " in progress" },
+  CANCELLED: { className: "cancelled", icon: "buildCancelled", title: "Build canceled", count: (n) => (n === 1 ? "1 build was" : formatNumber(n) + " builds were") + " canceled" },
+  UNKNOWN: { className: "unknown", icon: "buildUnknown", title: "Build status unknown", count: (n) => plural(n, "build") + (n === 1 ? " has" : " have") + " unknown state" },
 };
 
 // BUILD_ORDER is the order builds are counted and listed in everywhere: what
@@ -99,20 +97,6 @@ function buildTotal(counts) {
   return BUILD_ORDER.reduce((sum, state) => sum + (counts[BUILD_COUNT_FIELDS[state]] || 0), 0);
 }
 
-// buildSummary draws build counts, what needs attention first: each as a count
-// and a word, with Bitbucket's phrase for it as the tooltip. Nothing to draw
-// is null.
-function buildSummary(counts) {
-  if (!counts) return null;
-  const parts = BUILD_ORDER.filter((state) => counts[BUILD_COUNT_FIELDS[state]] > 0).map((state) => {
-    const look = buildStateOf(state);
-    const count = counts[BUILD_COUNT_FIELDS[state]];
-    return el("span", { class: "build-state " + look.className, title: look.count(count) }, icon(look.icon), formatNumber(count) + " " + look.word);
-  });
-  if (parts.length === 0) return null;
-  return el("span", { class: "counts" }, parts);
-}
-
 // buildBadge is a list row's one build icon, as Bitbucket's dashboard draws
 // it: the most pressing state with its count, and every count in the tooltip.
 function buildBadge(counts) {
@@ -129,10 +113,12 @@ function buildBadge(counts) {
 // conversation can show it again days later.
 const SNAPSHOT_STALE_MS = 60 * 60 * 1000;
 
-// snapshotStamp says when the view's data was read from Bitbucket.
-function snapshotStamp(generatedAt, locale) {
+// snapshotStamp says when the view's data was read from Bitbucket. A view
+// made for a glance says it only once that is long enough ago to matter.
+function snapshotStamp(generatedAt, locale, onlyWhenStale) {
   const time = Date.parse(generatedAt || "");
   if (!Number.isFinite(time)) return null;
+  if (onlyWhenStale && Date.now() - time <= SNAPSHOT_STALE_MS) return null;
   const when = new Date(time);
   const sameDay = when.toDateString() === new Date().toDateString();
   let label;
@@ -200,6 +186,15 @@ function setNumberLocale(locale) {
 
 function formatNumber(value) {
   return typeof value === "number" && Number.isFinite(value) ? numberFormat.format(value) : String(value);
+}
+
+// namesOf names people in a sentence: "Carol", "Carol and Bob", or
+// "Carol, Bob and 3 others", naming at most max of them.
+function namesOf(names, max) {
+  if (names.length <= 1) return names.join("");
+  if (names.length <= max) return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+  const others = names.length - max;
+  return names.slice(0, max).join(", ") + " and " + plural(others, "other");
 }
 
 function plural(count, one, many) {

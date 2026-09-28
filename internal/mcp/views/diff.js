@@ -112,7 +112,7 @@ function renderDiff(payload, view) {
 
   return el("div", {},
     pullRequestTop(pr, "Diff"),
-    el("h1", { class: "pr-title held", title: pr.title }, pr.title),
+    el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
     diffSummary(files, pr, true),
     omittedNotice(files, pr, view),
     files.length === 0 ? el("p", { class: "faint" }, "No changes.") : el("ul", { class: "file-list" },
@@ -124,16 +124,16 @@ function renderDiff(payload, view) {
         ? el("button", { type: "button", class: "button ghost list-toggle", onclick: () => view.expand() }, "and " + plural(left, "more file") + ", in full screen")
         : moreButton("files", left, FILE_STEP, "files", view))
       : null,
-    el("div", { class: "actions" },
+    el("div", { class: "actions quiet" },
       view.canFullscreen
-        ? el("button", { type: "button", class: "button primary", onclick: () => view.expand() }, icon("expand"), "Full screen")
+        ? el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("expand"), "Full screen")
         : null,
       view.revealed.has("files")
         ? el("button", { type: "button", class: "button", onclick: () => view.unreveal("files") }, icon("collapse"), "Show fewer files")
         : null,
-      linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
+      linkButton("Open in Bitbucket", diffURL(pr), view.bridge, "ghost"),
       el("span", { class: "spacer" }),
-      snapshotStamp(payload.generated_at, view.locale)),
+      snapshotStamp(payload.generated_at, view.locale, true)),
     view.canFullscreen ? null : selectionBar(pr, view));
 }
 
@@ -186,9 +186,9 @@ function omittedNotice(files, pr, view) {
       : null);
 }
 
-// fileLink is a file in a list: its path, where a renamed file came from, and
-// whether it is too large to show, with the change as Bitbucket's lozenge, or
-// as a dot in the narrow tree.
+// fileLink is a file in a list: its change as a colored dot, its path, or its
+// name alone in the tree under its directory, where a renamed file came from,
+// whether it is too large to show, and its counts.
 function fileLink(file, index, view, onclick, compact) {
   const path = filePath(file);
   const slash = path.lastIndexOf("/");
@@ -199,10 +199,10 @@ function fileLink(file, index, view, onclick, compact) {
     second ? el("span", { class: "ellipsis faint" + (file.omitted ? " omitted-mark" : "") }, second) : null);
   const title = [path, renamed, file.omitted ? "too large to show here" : ""].filter(Boolean).join(" · ");
   return el("button", { type: "button", class: "file-link", title, onclick },
-    compact ? changeDot(file.status) : changeLozenge(file.status),
+    changeDot(file.status),
     label,
     el("span", { class: "spacer" }),
-    file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file, compact));
+    file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file, true));
 }
 
 // renamedFrom is Bitbucket's line for a renamed file, or nothing.

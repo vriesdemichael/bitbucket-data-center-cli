@@ -1,10 +1,11 @@
 // The pull request view: a card inline, and its overview in fullscreen or
 // opened out beneath the card.
 //
-// The card keeps one shape however large the pull request: counts, a few
-// avatars and the title held to three lines. The overview has everything the
-// view carries. Either way, a count is Bitbucket's count of the whole, and a
-// view that lists fewer than that says so.
+// The card is for a glance: where the pull request stands, and what on it
+// asks something of someone, in color, with the rest of its state in one
+// quiet line. The overview has everything the view carries. Either way, a
+// count is Bitbucket's count of the whole, and a view that lists fewer than
+// that says so.
 
 function renderPullRequest(payload, view) {
   const pr = payload.pull_request;
@@ -21,20 +22,19 @@ function pullRequestCard(pr, payload, view) {
     pullRequestTop(pr),
     el("h1", { class: "pr-title held", title: pr.title }, pr.title),
     byline(pr, avatars),
-    el("div", { class: "facts" },
-      fact("Reviewers", reviewersFact(pr.reviewers || [], avatars)),
-      fact("Builds", buildsFact(pr)),
-      fact("Activity", activityFact(pr))),
-    el("div", { class: "actions" },
-      linkButton("Open in Bitbucket", pr.url, view.bridge, "primary"),
+    el("div", { class: "status" },
+      attentionLine(pr, avatars),
+      quietLine(pr)),
+    el("div", { class: "actions quiet" },
       el("button", {
         type: "button",
         class: "button",
         "aria-expanded": view.expanded ? "true" : "false",
         onclick: () => view.expand(),
       }, icon(view.expanded ? "collapse" : "expand"), view.expanded ? "Hide overview" : "Overview"),
+      linkButton("Open in Bitbucket", pr.url, view.bridge, "ghost"),
       el("span", { class: "spacer" }),
-      snapshotStamp(payload.generated_at, view.locale)));
+      snapshotStamp(payload.generated_at, view.locale, true)));
 }
 
 // pullRequestTop is where the pull request lives, its number and its state.
@@ -73,55 +73,65 @@ function branchPair(pr) {
     branchChip(pr.source_branch, "source"), icon("arrow", "into"), branchChip(pr.target_branch, "target"));
 }
 
-function fact(label, value) {
-  return el("div", { class: "fact" }, el("span", { class: "fact-label" }, label), value);
-}
-
-function reviewersFact(reviewers, avatars) {
-  if (reviewers.length === 0) return el("span", { class: "faint" }, "No reviewers");
-  const approved = reviewers.filter((reviewer) => voteOf(reviewer) === "approved").length;
-  const requested = reviewers.filter((reviewer) => voteOf(reviewer) === "changes-requested").length;
-  const text = [formatNumber(approved) + " of " + formatNumber(reviewers.length) + " approved"];
-  if (requested > 0) text.push(formatNumber(requested) + " changes requested");
-  return el("span", { class: "fact" },
-    reviewerStack(reviewers, avatars, 6),
-    el("span", { class: "muted" }, text.join(" · ")));
-}
-
-function buildsFact(pr) {
+// attentionLine is what on the pull request asks something of someone, most
+// pressing first, each in its own color: requests for changes, with who made
+// them; a conflict; builds that failed or still run; open tasks. A pull
+// request that asks nothing has no such line.
+function attentionLine(pr, avatars) {
+  const items = [];
+  const requested = sortReviewers(pr.reviewers || []).filter((reviewer) => voteOf(reviewer) === "changes-requested");
+  if (requested.length > 0) {
+    const names = requested.map(nameOf);
+    items.push(el("span", { class: "attention-item changes-requested", title: names.join(", ") + " requested changes" },
+      el("span", { class: "avatar-stack tight" }, requested.slice(0, 2).map((reviewer) => avatar(reviewer.name, reviewer.display_name, avatars, "sm"))),
+      el("span", { class: "who" }, namesOf(names, 2) + " requested changes")));
+  }
+  if (pr.mergeability && pr.mergeability.conflicted) {
+    items.push(el("span", { class: "attention-item failed", title: "This pull request has conflicts that need to be resolved before it can be merged." },
+      icon("buildFailed"), "Conflict"));
+  }
   const builds = buildCountsOf(pr);
-  if (!builds) return el("span", { class: "faint" }, "Not reported");
-  const summary = buildSummary(builds.counts);
-  if (!summary) return el("span", { class: "faint" }, "No builds");
-  return builds.partial
-    ? el("span", { class: "fact" }, summary, el("span", { class: "faint" }, "of the first " + formatNumber(pr.checks.length)))
-    : summary;
-}
-
-// activityFact counts what is open on the pull request, in the words of
-// Bitbucket's tasks and comments columns. Bitbucket gives no comment count
-// for one pull request, so the card counts the comments still unresolved,
-// which bb reads from its activity.
-function activityFact(pr) {
+  if (builds) {
+    for (const state of ["FAILED", "INPROGRESS"]) {
+      const count = builds.counts[BUILD_COUNT_FIELDS[state]] || 0;
+      if (count > 0) {
+        const look = buildStateOf(state);
+        items.push(el("span", { class: "attention-item " + look.className, title: look.count(count) }, icon(look.icon), look.count(count)));
+      }
+    }
+  }
   const summary = pr.review_summary || {};
   const tasks = summary.open_tasks !== undefined ? summary.open_tasks : pr.open_task_count;
-  const parts = [];
-  if (tasks !== undefined) parts.push(counter("task", plural(tasks, "open task"), tasks));
-  if (pr.comment_count !== undefined) {
-    parts.push(counter("comment", plural(pr.comment_count, "comment"), pr.comment_count));
-  } else if (summary.unresolved_threads !== undefined) {
-    parts.push(counter("comment", plural(summary.unresolved_threads, "unresolved comment"), summary.unresolved_threads));
-  }
-  if (pr.auto_merge && pr.auto_merge.enabled) {
-    parts.push(el("span", { class: "counter inprogress", title: "It will be merged automatically once all pending merge checks have passed" },
-      icon("autoMerge"), "Auto-merge"));
-  }
-  if (parts.length === 0) return el("span", { class: "faint" }, "Not reported");
-  return el("span", { class: "counts" }, parts);
+  if (tasks > 0) items.push(el("span", { class: "attention-item" }, icon("task"), plural(tasks, "open task")));
+  if (items.length === 0) return null;
+  return el("div", { class: "attention" }, items);
 }
 
-function counter(iconName, words, count) {
-  return el("span", { class: "counter" + (count > 0 ? "" : " faint") }, icon(iconName), words);
+// quietLine is the rest of where the pull request stands, in one grey line:
+// how many approved, how many of its builds passed, the comments still
+// unresolved and whether it merges itself.
+function quietLine(pr) {
+  const parts = [];
+  const reviewers = pr.reviewers || [];
+  const approved = reviewers.filter((reviewer) => voteOf(reviewer) === "approved").length;
+  parts.push(reviewers.length === 0 ? "No reviewers" : formatNumber(approved) + " of " + formatNumber(reviewers.length) + " approved");
+  const builds = buildCountsOf(pr);
+  if (builds) {
+    const total = buildTotal(builds.counts);
+    const passed = builds.counts.successful || 0;
+    if (total === 0) parts.push("No builds");
+    else if (passed === total && !builds.partial) parts.push(plural(total, "build") + " passed");
+    else parts.push(formatNumber(passed) + " of " + (builds.partial ? "the first " : "") + plural(total, "build") + " passed");
+  }
+  const summary = pr.review_summary || {};
+  const unresolved = pr.comment_count === undefined ? summary.unresolved_threads : undefined;
+  if (unresolved > 0) parts.push(plural(unresolved, "unresolved comment"));
+  if (pr.comment_count > 0) parts.push(plural(pr.comment_count, "comment"));
+  const line = el("div", { class: "quiet-line" }, parts.join(" · "));
+  if (pr.auto_merge && pr.auto_merge.enabled) {
+    line.append(" · ", el("span", { title: "It will be merged automatically once all pending merge checks have passed" }, "Auto-merge on"));
+  }
+  return line;
 }
 
 // pullRequestPage is the pull request in fullscreen: its overview, with the
