@@ -1,5 +1,5 @@
 number: 101
-title: The show tool puts what the tools found in front of the person as an MCP view
+title: The MCP server adopts MCP Apps, and shows its views through one tool
 category: architecture
 status: accepted
 amends:
@@ -7,26 +7,26 @@ amends:
   - 94
   - 99
 decision: >
-  bb ai mcp serve offers MCP Apps views through one tool, show, which the model calls once it has
-  what the person asked about: a pull request, a list of pull requests, or a pull request's diff.
-  The data tools carry no view. show declares its view statically in its _meta, and its result
-  carries what the view draws in _meta beside a short text for the model. A client that renders no
-  views is told nothing was shown, and nothing is fetched for it. A kind is offered while the tool
-  whose answer it shows is exposed.
+  bb ai mcp serve adopts MCP Apps. In a client that renders them, the model can put what it found in
+  front of the person as an interactive view instead of describing it; a client that renders none
+  gets text as before.
 
-  The view is one page, ui://bb/view: plain JavaScript and CSS embedded in the binary. It holds no
-  Bitbucket data, stays out of resources/list, may be cached by anyone, and declares no network
-  domains. bb fetches avatars from /users/{slug}/avatar.png with its own credentials and embeds
-  them as data. Text from Bitbucket is never parsed as HTML: the page's own parser draws a
-  description's Markdown as elements, leaves HTML in it as text, and opens a link through the host,
-  only to a web address. The page uses Bitbucket's own words and icon metaphors, and the host's
-  theme variables.
+  Views are kinds of one tool, show, which the model calls once it has what the person asked about.
+  The data tools carry no view. A kind is offered while the tool whose answer it shows is exposed,
+  and a client that renders no views is told nothing was shown, and nothing is fetched for it.
 
-  A count in a view is Bitbucket's count of the whole, however many items the view lists, and a
-  view that lists fewer says so. What needs the person, such as a failed build, a request for
-  changes or a file too large to carry, is never behind a click. Inline, a view keeps one shape and
-  grows only a step at a time when the person asks; fullscreen shows everything the result carries.
-  A view says when its data was read.
+  One page, ui://bb/view, draws every view: plain JavaScript and CSS embedded in the binary. It holds
+  no Bitbucket data, stays out of resources/list, may be cached by anyone, and declares no network
+  domains. What a view draws travels in the result's _meta beside a short text for the model,
+  avatars included, which bb fetches with its own credentials. Text from Bitbucket is never parsed
+  as HTML: the page builds elements with the DOM API, draws Markdown with a parser of its own, and
+  opens a link only through the host, only to a web address. It uses Bitbucket's own words and icon
+  metaphors, and the host's theme.
+
+  A count in a view is Bitbucket's count of the whole, and a view that lists fewer says so. What
+  needs the person is never behind a click. Inline, a view keeps one shape and grows a step at a
+  time when the person asks; fullscreen shows everything the result carries. A view says when its
+  data was read.
 agent_instructions: >
   Add a view as a kind of show, never as _meta.ui on a data tool. Build elements with el() and never
   parse a string as HTML; TestViewScriptsBuildNoHTMLFromStrings and the browser tests under -tags
@@ -34,16 +34,18 @@ agent_instructions: >
   short. Count from Bitbucket's totals, never from what a view lists. Take wording from Bitbucket's
   UI strings. Look at a change with go run ./tools/view-preview against the local stack.
 rationale: >
-  A client mounts a live view for every call of a tool that has one, and an agent calls the data
-  tools many times in a turn. Data in the result lets a stored conversation render without bb, and
-  keeps the page the same for everyone. bb reaches Bitbucket with its credentials, CA bundle, client
+  A person takes in a pull request faster laid out as Bitbucket lays it out than from a model's
+  account of it, and MCP Apps is how a server draws in any client that renders views. A client
+  mounts a live view for every call of a tool that has one, and an agent calls the data tools many
+  times in a turn. Data in the result lets a stored conversation render without bb, and keeps the
+  page the same for everyone. bb reaches Bitbucket with its credentials, CA bundle, client
   certificate and proxy, where a request from the client's webview has none of them, and Bitbucket
   answers an anonymous avatar request with its default image. A page with no build step keeps go
   build complete, and the reference SDK's weight out of every view. A count taken from part of a
   list reads as the whole, a tidy view that hides a failed build misleads more than a cluttered one,
   and a chat holds a view of about one screen.
 rejected_alternatives:
-  - alternative: A view on get_pull_request, list_pull_requests and get_pr_diff
+  - alternative: A view on each data tool
     reason: >
       An agent that looks at six pull requests would leave six live views in its turn, above an
       answer about one of them.
