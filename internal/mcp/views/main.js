@@ -16,8 +16,12 @@ const view = {
   failure: null,
   standalone: false,
   fullscreen: false,
-  canFullscreen: false,
+  // canFullscreen is whether to ask the host for fullscreen: yes unless it
+  // said which modes it has without fullscreen among them, or refused once.
+  canFullscreen: true,
   expanded: false,
+  // refusedLink is a link the host would not open, shown to open by hand.
+  refusedLink: null,
   locale: undefined,
   filter: "all",
   openFiles: new Set(),
@@ -54,16 +58,23 @@ const view = {
   },
 
   // expand opens the view out: fullscreen where the host has it, in place
-  // where it does not. Again, it goes back.
+  // where it does not. Again, it goes back. A host that has not said whether
+  // it has fullscreen is asked; one that answers with anything else, or not
+  // at all, gets the view opened in place, and is not asked again.
   expand() {
+    if (view.fullscreen) {
+      bridge.requestDisplayMode("inline")
+        .then((result) => setDisplayMode(result && result.mode ? result.mode : "inline"))
+        .catch(() => setDisplayMode("inline"));
+      return;
+    }
     if (view.canFullscreen) {
-      const mode = view.fullscreen ? "inline" : "fullscreen";
-      bridge.requestDisplayMode(mode)
-        .then((result) => setDisplayMode(result && result.mode ? result.mode : mode))
-        .catch(() => {
-          view.expanded = !view.expanded;
-          render();
-        });
+      bridge.requestDisplayMode("fullscreen")
+        .then((result) => {
+          if (!result || !result.mode || result.mode === "fullscreen") setDisplayMode("fullscreen");
+          else fullscreenRefused();
+        })
+        .catch(fullscreenRefused);
       return;
     }
     view.expanded = !view.expanded;
@@ -218,6 +229,52 @@ function setDisplayMode(mode) {
   render();
 }
 
+// fullscreenRefused opens the view out in place, where the host would not go
+// fullscreen, and a file picked to open there opens in place instead.
+function fullscreenRefused() {
+  view.canFullscreen = false;
+  view.expanded = true;
+  if (view.focusFile !== null) {
+    view.openFiles.add(view.focusFile);
+    view.focusFile = null;
+  }
+  render();
+}
+
+// linkRefused shows a link the host would not open, so the person can open it
+// by hand, rather than a click that seems to do nothing.
+function linkRefused(url) {
+  view.refusedLink = url;
+  render();
+}
+
+function linkNotice() {
+  const url = view.refusedLink;
+  if (!url) return null;
+  const address = el("span", { class: "mono link-address" }, url);
+  const copy = el("button", { type: "button", class: "button ghost" }, "Copy");
+  copy.addEventListener("click", () => {
+    const select = () => {
+      const range = document.createRange();
+      range.selectNodeContents(address);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      copy.textContent = "Selected: press Ctrl+C";
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => { copy.textContent = "Copied"; }, select);
+    } else {
+      select();
+    }
+  });
+  return el("div", { class: "notice link-notice", role: "status" },
+    el("p", {}, "This client did not open the link." + (url.startsWith("http:") ? " Some clients open only https links." : "")),
+    el("div", { class: "link-row" },
+      address,
+      copy,
+      el("button", { type: "button", class: "button ghost", onclick: () => { view.refusedLink = null; render(); } }, "Dismiss")));
+}
+
 // NARROW_WIDTH is the widest a screen is that has no room for the overview's
 // side panel beside the description; view.css switches its layout there too.
 const NARROW_WIDTH = 720;
@@ -234,7 +291,7 @@ function render() {
   view.selectionBar = null;
   view.narrow = window.innerWidth <= NARROW_WIDTH;
   view.phone = window.innerWidth <= PHONE_WIDTH;
-  app.replaceChildren(content());
+  app.replaceChildren(...[content(), linkNotice()].filter(Boolean));
   revealClampToggles();
   paintSelection();
   for (const [selector, top] of places) {

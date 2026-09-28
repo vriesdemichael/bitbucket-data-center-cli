@@ -27,6 +27,14 @@ type Frame struct {
 	// Fullscreen says whether the host offers fullscreen at all. A host
 	// without it, as VS Code is, leaves the view to open out in place.
 	Fullscreen bool `json:"fullscreen"`
+	// HideDisplayModes leaves the display modes out of the host context, as a
+	// host does that does not say which it has; it still grants fullscreen
+	// only when Fullscreen is set.
+	HideDisplayModes bool `json:"hideDisplayModes,omitempty"`
+	// RefuseLinks answers every request to open a link with an error, as a
+	// host does that opens only some links, such as Claude's, which opens
+	// https links alone.
+	RefuseLinks bool `json:"refuseLinks,omitempty"`
 	// Width is the view's width in pixels, such as a phone's; zero leaves it
 	// to the page's grid.
 	Width int `json:"width,omitempty"`

@@ -104,7 +104,7 @@
     const context = () => ({
       theme: frame.theme,
       displayMode: record.mode,
-      availableDisplayModes: frame.fullscreen ? ["inline", "fullscreen"] : ["inline"],
+      availableDisplayModes: frame.hideDisplayModes ? undefined : frame.fullscreen ? ["inline", "fullscreen"] : ["inline"],
       locale: "en-US",
       platform: "desktop",
       styles: { variables: THEMES[frame.theme] || THEMES.light },
@@ -145,6 +145,11 @@
           break;
         }
         case "ui/open-link":
+          if (frame.refuseLinks) {
+            send({ jsonrpc: "2.0", id: message.id, error: { code: -32000, message: "open-link refused" } });
+            note("refused to open link: " + (message.params && message.params.url));
+            break;
+          }
           reply(message.id, {});
           note("open link: " + (message.params && message.params.url));
           break;
