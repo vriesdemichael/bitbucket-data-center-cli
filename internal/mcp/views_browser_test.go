@@ -225,12 +225,15 @@ func browser(t *testing.T, frames []viewhost.Frame) context.Context {
 		t.Fatalf("write the host page: %v", err)
 	}
 
+	// A CI runner's first Chrome can take longer to start than the 20 seconds
+	// chromedp waits by default, and the first test failed that way; a minute
+	// covers a cold start.
 	allocator, cancelAllocator := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:], chromedp.NoSandbox)...)
+		append(chromedp.DefaultExecAllocatorOptions[:], chromedp.NoSandbox, chromedp.WSURLReadTimeout(time.Minute))...)
 	t.Cleanup(cancelAllocator)
 	ctx, cancelBrowser := chromedp.NewContext(allocator)
 	t.Cleanup(cancelBrowser)
-	ctx, cancelTimeout := context.WithTimeout(ctx, time.Minute)
+	ctx, cancelTimeout := context.WithTimeout(ctx, 2*time.Minute)
 	t.Cleanup(cancelTimeout)
 
 	drawn := `window.bbHost && window.bbHost.frames.length === ` + fmt.Sprint(len(frames)) + ` && window.bbHost.frames.every((f) => {
