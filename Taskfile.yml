@@ -648,10 +648,6 @@ tasks:
     desc: Start this checkout's local Bitbucket instance and enable basic auth (no licence key required)
     cmd: bash scripts/stack.sh up {{.RELEASE}}
 
-  stack:tls:
-    desc: Put an https front before this checkout's instance, for clients that open only https links
-    cmd: bash scripts/stack.sh tls {{.RELEASE}}
-
   stack:bootstrap:
     desc: Enable basic auth on this checkout's running instance (and apply a licence key if one is set)
     cmd: bash scripts/stack.sh bootstrap {{.RELEASE}}
