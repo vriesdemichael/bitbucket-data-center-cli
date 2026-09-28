@@ -564,6 +564,74 @@ func TestLivePullRequestApplySuggestion(t *testing.T) {
 	}
 }
 
+// TestLiveResolvedCommentThreadReadsResolved covers a comment thread resolved
+// as Bitbucket's UI resolves one: threadResolved set, and the state left OPEN,
+// because the state is a task's. bb read the state first, and listed such a
+// thread, and counted it, as unresolved.
+func TestLiveResolvedCommentThreadReadsResolved(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	branch := "feature/thread-resolved"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "thread-resolved.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	addOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", "thread to resolve")
+	if err != nil {
+		t.Fatalf("pr comment add failed: %v\noutput: %s", err, addOutput)
+	}
+	addData := decodeJSONMap(t, addOutput)
+	commentObject, ok := addData["comment"].(map[string]any)
+	if !ok {
+		commentObject = addData
+	}
+	commentID, ok := numericOrStringID(commentObject["id"])
+	if !ok {
+		t.Fatalf("expected a comment id in the add output: %s", addOutput)
+	}
+
+	version, _ := prReviewComment(t, pullRequestID, commentID)["version"].(float64)
+	path := "/rest/api/latest/projects/" + seeded.Key + "/repos/" + repo.Slug + "/pull-requests/" + pullRequestID + "/comments/" + commentID
+	if _, err := harness.liveJSON(ctx, http.MethodPut, path, map[string]any{"version": int(version), "threadResolved": true}); err != nil {
+		t.Fatalf("resolve the thread failed: %v", err)
+	}
+	stored, err := harness.liveJSON(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		t.Fatalf("read the comment back failed: %v", err)
+	}
+	if stored["threadResolved"] != true || stored["state"] != "OPEN" {
+		t.Fatalf("Bitbucket stored threadResolved %v and state %v, want true and OPEN: the case this test is about", stored["threadResolved"], stored["state"])
+	}
+
+	listed := decodeJSONMap(t, mustLiveCLI(t, "--json", "pr", "comment", "list", pullRequestID))
+	threads, _ := listed["threads"].([]any)
+	if len(threads) != 1 {
+		t.Fatalf("pr comment list has %d threads, want the one: %v", len(threads), listed)
+	}
+	if thread, _ := threads[0].(map[string]any); thread["resolved"] != true {
+		t.Errorf("the resolved thread is listed with resolved %v, want true", thread["resolved"])
+	}
+	summary, _ := listed["summary"].(map[string]any)
+	if summary["resolved"] != float64(1) || summary["unresolved"] != float64(0) {
+		t.Errorf("pr comment list counts %v resolved and %v unresolved, want 1 and 0", summary["resolved"], summary["unresolved"])
+	}
+}
+
 // TestLivePullRequestCommentResolveReopen covers bb pr comment resolve and
 // reopen, which are what replaced marking a pull request task done.
 //

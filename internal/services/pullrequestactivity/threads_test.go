@@ -226,6 +226,31 @@ func TestThreadResolutionFallsBackToThreadFlags(t *testing.T) {
 	}
 }
 
+// A comment thread resolved in Bitbucket keeps the state OPEN, as 10.4 stores
+// it (TestLiveResolvedCommentThreadReadsResolved), so threadResolved decides.
+// A task's own state still does: an open task is open.
+func TestResolvedCommentThreadKeepsItsOpenState(t *testing.T) {
+	t.Parallel()
+
+	body := `{"isLastPage":true,"values":[
+      {"id":1,"action":"COMMENTED","comment":{"id":10,"text":"a","state":"OPEN","threadResolved":true}},
+      {"id":2,"action":"COMMENTED","comment":{"id":20,"text":"b","state":"OPEN","severity":"BLOCKER","threadResolved":true}},
+      {"id":3,"action":"COMMENTED","comment":{"id":30,"text":"c","state":"OPEN","threadResolved":false}}
+    ]}`
+
+	threads, summary := ExtractThreads(activitiesFromJSON(t, body), ThreadOptions{})
+
+	if resolved, _ := findThread(threads, 10); !resolved.Resolved {
+		t.Error("a comment thread with threadResolved and state OPEN reads as unresolved")
+	}
+	if task, _ := findThread(threads, 20); task.Resolved {
+		t.Error("an open task in a thread marked resolved reads as done")
+	}
+	if summary.Resolved != 1 || summary.Unresolved != 2 || summary.OpenTasks != 1 {
+		t.Errorf("summary = %+v, want 1 resolved and 2 unresolved, one an open task", summary)
+	}
+}
+
 func TestThreadSuggestionDetection(t *testing.T) {
 	t.Parallel()
 

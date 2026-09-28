@@ -307,7 +307,7 @@ func mapThread(comment openapigenerated.RestComment, options ThreadOptions) Thre
 		thread.Kind = ThreadKindTask
 	}
 
-	thread.Resolved = commentResolved(comment, thread.State)
+	thread.Resolved = commentResolved(comment, thread.State, thread.Kind == ThreadKindTask)
 	thread.HasSuggestion = suggestionPattern.MatchString(thread.Text)
 	thread.Anchor = mapAnchor(comment)
 	thread.URL = threadURL(options, thread.ID)
@@ -325,17 +325,21 @@ func mapThread(comment openapigenerated.RestComment, options ThreadOptions) Thre
 	return thread
 }
 
-// commentResolved treats an explicit RESOLVED state as authoritative and falls
-// back to the thread-level flags for servers that omit it.
-func commentResolved(comment openapigenerated.RestComment, state string) bool {
-	if state == ThreadStateResolved {
-		return true
-	}
-	if state == ThreadStateOpen || state == ThreadStatePending {
+// commentResolved is whether a comment's thread is resolved. A task is done when
+// its state says RESOLVED. A comment thread resolved in Bitbucket keeps the
+// state OPEN, which is a task's state, and says so in threadResolved: read the
+// state first and every resolved thread reads as open. A pending draft is not
+// resolved, and a server that reports no state says so with the thread flags.
+func commentResolved(comment openapigenerated.RestComment, state string, task bool) bool {
+	switch {
+	case state == ThreadStatePending:
 		return false
-	}
-	if comment.ThreadResolved != nil && *comment.ThreadResolved {
+	case state == ThreadStateResolved:
 		return true
+	case !task && comment.ThreadResolved != nil && *comment.ThreadResolved:
+		return true
+	case state == ThreadStateOpen:
+		return false
 	}
 
 	return comment.ResolvedDate != nil && *comment.ResolvedDate > 0
