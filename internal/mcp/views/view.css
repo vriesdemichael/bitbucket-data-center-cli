@@ -585,6 +585,53 @@ tr.selected .line-number { color: var(--bb-info); font-weight: var(--font-weight
 .diff-note { padding: 12px; color: var(--bb-text-muted); }
 .inline-file { margin: 4px 0 10px; border: 1px solid var(--bb-border); border-radius: var(--bb-radius); overflow: hidden; }
 
+/* Comment threads */
+
+.thread-row .thread-excerpt { font-weight: var(--font-weight-regular, 400); }
+/* The author gives way before where the thread is, and neither to nothing. */
+.row-meta > .thread-author { flex: 0 3 auto; min-width: 4em; max-width: 14em; color: var(--bb-text-muted); font-weight: var(--font-weight-medium, 500); }
+.row-meta > .thread-anchor { flex: 0 1 auto; min-width: 5em; }
+.row-meta > .thread-anchor::before { content: "·"; margin-right: 8px; }
+.thread-anchor { display: inline-flex; align-items: baseline; min-width: 0; }
+.threads-main { flex: 1; min-height: 0; overflow: auto; padding: 16px 24px 24px; }
+.threads-main > * { max-width: 960px; }
+.thread-group + .thread-group { margin-top: 24px; }
+.thread-group-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 8px;
+  font-size: var(--bb-text-sm);
+  font-weight: var(--font-weight-semibold, 600);
+}
+.thread-group-title .count { flex: none; color: var(--bb-text-faint); font-size: var(--bb-text-xs); font-weight: var(--font-weight-regular, 400); }
+.thread { border: 1px solid var(--bb-border); border-radius: var(--bb-radius); overflow: hidden; background: var(--bb-bg); }
+.thread + .thread, .thread-group > .group { margin-top: 10px; }
+.group > .thread { margin-top: 8px; }
+.thread.task { border-left: 3px solid var(--bb-info); }
+.thread.resolved .comment.root { color: var(--bb-text-muted); }
+.thread-context { border-bottom: 1px solid var(--bb-border); }
+.thread-context .line-number { cursor: default; }
+/* The line a thread is on: a bar at its edge and its number in bold, which
+   hold in both themes where a tint alone gets lost on an added line. */
+tr.anchor-line td { box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--bb-warning) 16%, transparent); }
+tr.anchor-line td:first-child { box-shadow: inset 3px 0 0 var(--bb-warning), inset 0 0 0 9999px color-mix(in srgb, var(--bb-warning) 16%, transparent); }
+tr.anchor-line .line-number { color: var(--bb-text); font-weight: var(--font-weight-semibold, 600); }
+.thread-note { margin: 0; padding: 6px 12px; border-bottom: 1px solid var(--bb-border); font-size: var(--bb-text-xs); }
+.comment { padding: 10px 12px; min-width: 0; }
+.comment-head { display: flex; align-items: center; gap: 8px; min-width: 0; margin-bottom: 4px; font-size: var(--bb-text-sm); }
+.comment-head > strong { min-width: 0; }
+.comment-head > .badge, .comment-head > .nowrap { flex: none; }
+/* The text lines up under the name, past the avatar. */
+.comment-body { padding-left: 32px; min-width: 0; }
+.comment-body > p.faint { margin: 6px 0 0; font-size: var(--bb-text-xs); }
+.replies { border-top: 1px solid var(--bb-border); background: var(--bb-bg-sunken); }
+.replies > .fold { margin: 6px 12px 0; }
+.replies > .comment { padding: 8px 12px 8px 24px; }
+.replies > .comment + .comment { border-top: 1px solid var(--bb-border); }
+.icon-button { min-height: 0; padding: 2px 6px; }
+
 /* Markdown, as a pull request's description is written. */
 
 .markdown { line-height: 1.55; overflow-wrap: anywhere; }

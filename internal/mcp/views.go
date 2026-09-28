@@ -61,23 +61,25 @@ const (
 	showKindPullRequest  = "pull_request"
 	showKindPullRequests = "pull_requests"
 	showKindDiff         = "diff"
+	showKindThreads      = "threads"
 )
 
 var showKindTools = map[string]string{
 	showKindPullRequest:  "get_pull_request",
 	showKindPullRequests: "list_pull_requests",
 	showKindDiff:         "get_pr_diff",
+	showKindThreads:      "list_pr_comments",
 }
 
 // showKinds is the order the kinds are described in.
-var showKinds = []string{showKindPullRequest, showKindPullRequests, showKindDiff}
+var showKinds = []string{showKindPullRequest, showKindPullRequests, showKindDiff, showKindThreads}
 
 // ShowInput is the argument set for show.
 type ShowInput struct {
 	Kind    string `json:"kind"`
 	Project string `json:"project,omitempty" jsonschema:"Bitbucket project key"`
 	Repo    string `json:"repo,omitempty" jsonschema:"Repository slug"`
-	ID      string `json:"id,omitempty" jsonschema:"Pull request ID, for kind pull_request and diff"`
+	ID      string `json:"id,omitempty" jsonschema:"Pull request ID, for kind pull_request, diff and threads"`
 	// State's description is set in specShow, from the values the service
 	// accepts, as list_pull_requests does.
 	State string `json:"state,omitempty"`
@@ -98,10 +100,11 @@ type ShowOutput struct {
 func specShow() Spec {
 	tool := &mcp.Tool{
 		Name: "show",
-		Description: "Show the person a pull request, a list of pull requests, or a pull request's diff as an interactive view, " +
-			"in clients that display MCP Apps views. Call it once, after you have what you need and before your answer, for what the " +
-			"person should see; use the other tools to find it. kind pull_request and kind diff take project, repo and id; kind " +
-			"pull_requests takes the filters list_pull_requests takes. In a client that displays no views, it shows nothing and says so.",
+		Description: "Show the person a pull request, a list of pull requests, a pull request's diff or its comment threads as an " +
+			"interactive view, in clients that display MCP Apps views. Call it once, after you have what you need and before your answer, " +
+			"for what the person should see; use the other tools to find it. kinds pull_request, diff and threads take project, repo " +
+			"and id; kind pull_requests takes the filters list_pull_requests takes. In a client that displays no views, it shows nothing " +
+			"and says so.",
 		Annotations: readOnly("Show a view"),
 		InputSchema: showInputSchema(showKinds),
 		Meta:        viewToolMeta(),
@@ -262,7 +265,7 @@ func showHandler(c Clients, kinds []string) mcp.ToolHandlerFor[ShowInput, ShowOu
 
 func checkShowInput(in ShowInput) error {
 	switch in.Kind {
-	case showKindPullRequest, showKindDiff:
+	case showKindPullRequest, showKindDiff, showKindThreads:
 		if in.Project == "" || in.Repo == "" || in.ID == "" {
 			return fmt.Errorf("kind %s needs project, repo and id", in.Kind)
 		}
@@ -295,6 +298,7 @@ type viewPayload struct {
 	PullRequests []viewPullRequest `json:"pull_requests,omitempty"`
 	LimitReached bool              `json:"limit_reached,omitempty"`
 	Diff         *viewDiff         `json:"diff,omitempty"`
+	Threads      *viewThreads      `json:"threads,omitempty"`
 	// Avatars maps a username to its avatar as a data: URI. A user missing
 	// from it is drawn with initials.
 	Avatars map[string]string `json:"avatars,omitempty"`
@@ -465,6 +469,19 @@ func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, strin
 		payload.Diff = &viewDiff{Files: files, Patch: patch, Truncated: truncated}
 		payload.Avatars = fetchAvatars(ctx, c, map[string]string{pr.AuthorUsername: pr.AuthorSlug})
 		return payload, summarizeDiff(in, pr, result.Patch), nil
+	case showKindThreads:
+		pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+		if err != nil {
+			return viewPayload{}, "", err
+		}
+		threads, people, err := threadsForView(ctx, c, in)
+		if err != nil {
+			return viewPayload{}, "", err
+		}
+		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
+		payload.Threads = &threads
+		payload.Avatars = fetchAvatars(ctx, c, people)
+		return payload, summarizeThreads(in, pr.Title, threads), nil
 	}
 
 	return viewPayload{}, "", fmt.Errorf("unknown kind %q", in.Kind)
@@ -978,6 +995,7 @@ var viewScripts = []string{
 	"pull_request.js",
 	"pull_requests.js",
 	"diff.js",
+	"threads.js",
 	"main.js",
 }
 
