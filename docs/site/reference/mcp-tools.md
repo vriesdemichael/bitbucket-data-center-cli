@@ -9,6 +9,8 @@ This page is generated from the server's registries by `task docs:export-mcp-too
 
 `bb ai mcp serve` registers 25 tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. 7 ask the person to confirm a call in the MCP client before they run.
 
+The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.
+
 | Tool | Access | Asks | What it does |
 |---|---|---|---|
 | `add_pr_comment` | writes | never | Add a comment to a pull request. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment. |
