@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,6 +19,7 @@ import (
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
@@ -301,11 +304,16 @@ type viewPullRequest struct {
 	pullrequestservice.PullRequest
 	URL           string                            `json:"url"`
 	ReviewSummary *pullrequestservice.ReviewSummary `json:"review_summary,omitempty"`
-	Checks        []viewCheck                       `json:"checks,omitempty"`
-	// CheckCounts is the build count per state on the source commit, for a
-	// list, where each pull request's checks are counted rather than listed.
+	// Checks are the builds a card lists: at most maxViewChecks of them, the
+	// ones that need attention first.
+	Checks []viewCheck `json:"checks,omitempty"`
+	// CheckCounts is the build count per state on the source commit, as
+	// Bitbucket totals it: every build, however many the card lists. A view
+	// counts from it, never from Checks.
 	CheckCounts *viewCheckCounts              `json:"check_counts,omitempty"`
 	AutoMerge   *pullrequestservice.AutoMerge `json:"auto_merge,omitempty"`
+	// ChecksLimitReached says the card lists fewer builds than the commit has.
+	ChecksLimitReached bool `json:"checks_limit_reached,omitempty"`
 }
 
 type viewCheck struct {
@@ -323,17 +331,79 @@ type viewCheckCounts struct {
 	Unknown    int `json:"unknown"`
 }
 
+func (counts viewCheckCounts) total() int {
+	return counts.Successful + counts.Failed + counts.InProgress + counts.Cancelled + counts.Unknown
+}
+
+// checkCountsOf is Bitbucket's build totals for a commit, as a view counts
+// them.
+func checkCountsOf(stats openapigenerated.RestBuildStats) *viewCheckCounts {
+	return &viewCheckCounts{
+		Successful: intValue(stats.Successful),
+		Failed:     intValue(stats.Failed),
+		InProgress: intValue(stats.InProgress),
+		Cancelled:  intValue(stats.Cancelled),
+		Unknown:    intValue(stats.Unknown),
+	}
+}
+
+// countChecks counts listed builds by state, for when Bitbucket's totals are
+// not to be had.
+func countChecks(checks []viewCheck) viewCheckCounts {
+	var counts viewCheckCounts
+	for _, check := range checks {
+		switch strings.ToUpper(check.State) {
+		case "SUCCESSFUL":
+			counts.Successful++
+		case "FAILED":
+			counts.Failed++
+		case "INPROGRESS":
+			counts.InProgress++
+		case "CANCELLED":
+			counts.Cancelled++
+		default:
+			counts.Unknown++
+		}
+	}
+	return counts
+}
+
+// viewDiff is the diff a view draws: every file, with its change and counts,
+// and the patch of as many of them as fit.
 type viewDiff struct {
-	Patch string `json:"patch"`
-	// Truncated says the patch stops before the end of the diff, at a file
-	// boundary, because the whole of it is more than a view carries.
+	Files []viewDiffFile `json:"files"`
+	Patch string         `json:"patch"`
+	// Truncated says some files' changes are not in the patch.
 	Truncated bool `json:"truncated,omitempty"`
 }
 
-// maxViewPatchBytes bounds the diff a view carries. The payload lives in the
-// conversation, so a diff larger than this is cut at a file boundary and the
-// view links to the rest in Bitbucket.
-const maxViewPatchBytes = 256 << 10
+// viewDiffFile is one file of a diff, as the view lists it.
+type viewDiffFile struct {
+	Path      string `json:"path"`
+	OldPath   string `json:"old_path,omitempty"`
+	Status    string `json:"status"`
+	Additions int    `json:"additions"`
+	Deletions int    `json:"deletions"`
+	Binary    bool   `json:"binary,omitempty"`
+	// Omitted says the file's changes are not in the patch: they are more than
+	// a view carries for one file, or the patch was full.
+	Omitted bool `json:"omitted,omitempty"`
+}
+
+// The payload lives in the conversation, so a view carries at most this much
+// of a diff, and at most maxViewFileBytes of one file. A file that does not
+// fit is still listed, with its counts, and the view links to it in Bitbucket.
+const (
+	maxViewPatchBytes = 256 << 10
+	maxViewFileBytes  = 64 << 10
+)
+
+// maxViewChecks is how many builds a card lists. Its counts come from
+// Bitbucket's totals, so they hold for any number of builds.
+const maxViewChecks = 100
+
+// maxViewPeople is how many avatars a view carries.
+const maxViewPeople = 60
 
 func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, string, error) {
 	payload := viewPayload{
@@ -349,7 +419,7 @@ func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, strin
 			return viewPayload{}, "", err
 		}
 		payload.PullRequest = &pr
-		payload.Avatars = fetchAvatars(ctx, c, peopleOf(pr.PullRequest))
+		payload.Avatars = fetchAvatars(ctx, c, peopleOf(pr.PullRequest, maxViewPeople))
 		return payload, summarizePullRequest(pr), nil
 	case showKindPullRequests:
 		list, err := listPullRequests(ctx, c, ListPullRequestsInput{
@@ -360,10 +430,19 @@ func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, strin
 		}
 		payload.PullRequests = pullRequestsForView(ctx, c, list.PullRequests)
 		payload.LimitReached = list.LimitReached
+		// A row draws its author and its first three reviewers, so those are
+		// the avatars the list carries.
 		people := map[string]string{}
 		for _, pr := range list.PullRequests {
-			for username, slug := range peopleOf(pr) {
-				people[username] = slug
+			shown := pr
+			shown.Reviewers = sortedReviewers(pr.Reviewers)
+			if len(shown.Reviewers) > 3 {
+				shown.Reviewers = shown.Reviewers[:3]
+			}
+			for username, slug := range peopleOf(shown, maxViewPeople) {
+				if len(people) < maxViewPeople {
+					people[username] = slug
+				}
 			}
 		}
 		payload.Avatars = fetchAvatars(ctx, c, people)
@@ -381,9 +460,9 @@ func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, strin
 		if err != nil {
 			return viewPayload{}, "", err
 		}
-		patch, truncated := truncatePatch(result.Patch, maxViewPatchBytes)
+		files, patch, truncated := splitPatch(result.Patch, maxViewFileBytes, maxViewPatchBytes)
 		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
-		payload.Diff = &viewDiff{Patch: patch, Truncated: truncated}
+		payload.Diff = &viewDiff{Files: files, Patch: patch, Truncated: truncated}
 		payload.Avatars = fetchAvatars(ctx, c, map[string]string{pr.AuthorUsername: pr.AuthorSlug})
 		return payload, summarizeDiff(in, pr, result.Patch), nil
 	}
@@ -411,20 +490,7 @@ func pullRequestForView(ctx context.Context, c Clients, in ShowInput) (viewPullR
 	// the scope the call was bound to. That is why a scoped server shows them
 	// here while it withholds get_build_status, which takes any commit.
 	if commit := out.PullRequest.SourceCommit; commit != "" {
-		if statuses, err := qualityservice.NewService(c.OpenAPI).GetBuildStatuses(ctx, commit, 100, ""); err == nil {
-			view.Checks = make([]viewCheck, 0, len(statuses))
-			for _, status := range statuses {
-				check := viewCheck{
-					Name: safederef.String(status.Name),
-					Key:  safederef.String(status.Key),
-					URL:  safederef.String(status.Url),
-				}
-				if status.State != nil {
-					check.State = string(*status.State)
-				}
-				view.Checks = append(view.Checks, check)
-			}
-		}
+		view.CheckCounts, view.Checks, view.ChecksLimitReached = buildsForView(ctx, c, commit)
 	}
 
 	ref := pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}
@@ -435,12 +501,57 @@ func pullRequestForView(ctx context.Context, c Clients, in ShowInput) (viewPullR
 	return view, nil
 }
 
+// buildsForView reads a commit's builds as a card shows them: Bitbucket's
+// count per state, whole however many builds there are, and the builds
+// themselves, at most maxViewChecks of them, the ones that need attention
+// first. Either part is left out when Bitbucket cannot answer for it, and the
+// last result says the card lists fewer builds than the commit has.
+func buildsForView(ctx context.Context, c Clients, commit string) (*viewCheckCounts, []viewCheck, bool) {
+	quality := qualityservice.NewService(c.OpenAPI)
+	var counts *viewCheckCounts
+	if stats, err := quality.GetBuildStatusStats(ctx, commit, false); err == nil {
+		counts = checkCountsOf(stats)
+	}
+
+	// Ordered by state, the canceled, failed and running builds come before
+	// the passes, so a list cut at maxViewChecks keeps them. Bitbucket orders
+	// the states alphabetically, which puts UNKNOWN last, and its published
+	// specification calls the order STATUS, which it refuses. A release that
+	// refuses STATE as well still lists the builds, newest first.
+	statuses, err := quality.GetBuildStatuses(ctx, commit, maxViewChecks, "STATE")
+	if err != nil {
+		statuses, err = quality.GetBuildStatuses(ctx, commit, maxViewChecks, "")
+	}
+	if err != nil {
+		return counts, nil, false
+	}
+	checks := make([]viewCheck, 0, len(statuses))
+	for _, status := range statuses {
+		check := viewCheck{
+			Name: safederef.String(status.Name),
+			Key:  safederef.String(status.Key),
+			URL:  safederef.String(status.Url),
+		}
+		if status.State != nil {
+			check.State = string(*status.State)
+		}
+		checks = append(checks, check)
+	}
+	if counts != nil {
+		return counts, checks, counts.total() > len(checks)
+	}
+	return nil, checks, len(checks) >= maxViewChecks
+}
+
 // pullRequestsForView adds each pull request's link and its build counts,
 // which one request fetches for every source commit at once.
 func pullRequestsForView(ctx context.Context, c Clients, prs []pullrequestservice.PullRequest) []viewPullRequest {
 	views := make([]viewPullRequest, 0, len(prs))
 	commits := make([]string, 0, len(prs))
 	for _, pr := range prs {
+		// A list draws no description, and twenty-five of them would weigh
+		// more than the rest of the payload.
+		pr.Description = ""
 		view := viewPullRequest{PullRequest: pr}
 		if pr.Repository != nil {
 			view.URL = pullRequestURL(c.BaseURL, pr.Repository.ProjectKey, pr.Repository.Slug, strconv.FormatInt(pr.ID, 10))
@@ -460,16 +571,8 @@ func pullRequestsForView(ctx context.Context, c Clients, prs []pullrequestservic
 	}
 	for i := range views {
 		// Bitbucket leaves a commit with no builds out of the answer.
-		counts, ok := stats[views[i].SourceCommit]
-		if !ok {
-			continue
-		}
-		views[i].CheckCounts = &viewCheckCounts{
-			Successful: intValue(counts.Successful),
-			Failed:     intValue(counts.Failed),
-			InProgress: intValue(counts.InProgress),
-			Cancelled:  intValue(counts.Cancelled),
-			Unknown:    intValue(counts.Unknown),
+		if counts, ok := stats[views[i].SourceCommit]; ok {
+			views[i].CheckCounts = checkCountsOf(counts)
 		}
 	}
 	return views
@@ -480,14 +583,18 @@ func pullRequestURL(baseURL, project, repo, id string) string {
 		strings.TrimRight(baseURL, "/"), url.PathEscape(project), url.PathEscape(repo), url.PathEscape(id))
 }
 
-// peopleOf maps the username of everyone a pull request's card draws to the
-// slug their avatar is addressed by.
-func peopleOf(pr pullrequestservice.PullRequest) map[string]string {
+// peopleOf maps the username of the author and the reviewers of a pull
+// request, at most limit of them, to the slug their avatar is addressed by.
+// The reviewers go in the order the view draws them.
+func peopleOf(pr pullrequestservice.PullRequest, limit int) map[string]string {
 	people := map[string]string{}
 	if pr.AuthorUsername != "" && pr.AuthorSlug != "" {
 		people[pr.AuthorUsername] = pr.AuthorSlug
 	}
-	for _, reviewer := range pr.Reviewers {
+	for _, reviewer := range sortedReviewers(pr.Reviewers) {
+		if len(people) >= limit {
+			break
+		}
 		if reviewer.Name != "" && reviewer.Slug != "" {
 			people[reviewer.Name] = reviewer.Slug
 		}
@@ -495,26 +602,122 @@ func peopleOf(pr pullrequestservice.PullRequest) map[string]string {
 	return people
 }
 
-// truncatePatch cuts a patch to at most limit bytes, at the start of a file,
-// so the view never draws half a file.
-func truncatePatch(patch string, limit int) (string, bool) {
-	if len(patch) <= limit {
-		return patch, false
-	}
-	const header = "\ndiff --git "
-	// The last file that starts within the limit. Its header may run past
-	// the limit, so the search does too.
-	search := patch[:min(len(patch), limit+len(header))]
-	for {
-		cut := strings.LastIndex(search, header)
-		if cut < 0 {
-			return "", true
+// sortedReviewers orders reviewers as Bitbucket does, and as the view draws
+// them: approvals first, then requests for changes, then the rest, each by
+// name.
+func sortedReviewers(reviewers []pullrequestservice.Reviewer) []pullrequestservice.Reviewer {
+	rank := func(reviewer pullrequestservice.Reviewer) int {
+		switch {
+		case reviewer.Approved || reviewer.Status == "APPROVED":
+			return 1
+		case reviewer.Status == "NEEDS_WORK":
+			return 2
+		default:
+			return 3
 		}
-		if cut+1 <= limit {
-			return patch[:cut+1], true
-		}
-		search = search[:cut]
 	}
+	name := func(reviewer pullrequestservice.Reviewer) string {
+		if reviewer.DisplayName != "" {
+			return reviewer.DisplayName
+		}
+		return reviewer.Name
+	}
+	sorted := slices.Clone(reviewers)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		if rank(sorted[i]) != rank(sorted[j]) {
+			return rank(sorted[i]) < rank(sorted[j])
+		}
+		return name(sorted[i]) < name(sorted[j])
+	})
+	return sorted
+}
+
+// splitPatch reads a unified diff into its files, each with its change and
+// counts, and keeps the patch of as many whole files as fit: none larger than
+// perFile, and together no more than total. A file that does not fit is still
+// listed, marked omitted, so the view names every file and draws what it can.
+func splitPatch(patch string, perFile, total int) ([]viewDiffFile, string, bool) {
+	files := []viewDiffFile{}
+	var kept strings.Builder
+	truncated := false
+	for _, chunk := range patchFiles(patch) {
+		file := describePatchFile(chunk)
+		if len(chunk) > perFile || kept.Len()+len(chunk) > total {
+			file.Omitted = true
+			truncated = true
+		} else {
+			kept.WriteString(chunk)
+		}
+		files = append(files, file)
+	}
+	return files, kept.String(), truncated
+}
+
+// patchFiles splits a unified diff at each file's header.
+func patchFiles(patch string) []string {
+	var chunks []string
+	start := -1
+	for offset := 0; offset < len(patch); {
+		next := len(patch)
+		if end := strings.IndexByte(patch[offset:], '\n'); end >= 0 {
+			next = offset + end + 1
+		}
+		if strings.HasPrefix(patch[offset:], "diff --git ") {
+			if start >= 0 {
+				chunks = append(chunks, patch[start:offset])
+			}
+			start = offset
+		}
+		offset = next
+	}
+	if start >= 0 {
+		chunks = append(chunks, patch[start:])
+	}
+	return chunks
+}
+
+// patchHeader reads a file's paths from its header, as git writes them and as
+// Bitbucket does, with src:// and dst:// for a/ and b/.
+var patchHeader = regexp.MustCompile(`^diff --git (?:a/|src://)(.*) (?:b/|dst://)(.*)$`)
+
+// describePatchFile reads one file of a diff: its paths, how it changed, and
+// how many lines it adds and removes.
+func describePatchFile(chunk string) viewDiffFile {
+	file := viewDiffFile{Status: "modified"}
+	inHunks := false
+	for _, line := range strings.Split(chunk, "\n") {
+		switch {
+		case strings.HasPrefix(line, "diff --git "):
+			if paths := patchHeader.FindStringSubmatch(line); paths != nil {
+				file.OldPath, file.Path = paths[1], paths[2]
+			}
+		case inHunks && strings.HasPrefix(line, "+"):
+			file.Additions++
+		case inHunks && strings.HasPrefix(line, "-"):
+			file.Deletions++
+		case strings.HasPrefix(line, "@@"):
+			inHunks = true
+		case inHunks:
+		case strings.HasPrefix(line, "new file mode"), line == "--- /dev/null":
+			file.Status = "added"
+		case strings.HasPrefix(line, "deleted file mode"), line == "+++ /dev/null":
+			file.Status = "deleted"
+		case strings.HasPrefix(line, "rename from "):
+			file.OldPath, file.Status = strings.TrimPrefix(line, "rename from "), "renamed"
+		case strings.HasPrefix(line, "rename to "):
+			file.Path, file.Status = strings.TrimPrefix(line, "rename to "), "renamed"
+		case strings.HasPrefix(line, "copy from "):
+			file.OldPath, file.Status = strings.TrimPrefix(line, "copy from "), "copied"
+		case strings.HasPrefix(line, "copy to "):
+			file.Path, file.Status = strings.TrimPrefix(line, "copy to "), "copied"
+		case strings.HasPrefix(line, "Binary files "), strings.HasPrefix(line, "GIT binary patch"):
+			file.Binary = true
+		}
+	}
+	if file.Status != "renamed" && file.Status != "copied" {
+		file.OldPath = ""
+	}
+	return file
 }
 
 // The summaries are the text a model reads beside the view: enough to answer
@@ -540,12 +743,13 @@ func summarizePullRequest(pr viewPullRequest) string {
 		reviewers += fmt.Sprintf(", %d changes requested", requested)
 	}
 	lines = append(lines, reviewers+fmt.Sprintf(", of %d.", len(pr.Reviewers)))
-	if len(pr.Checks) > 0 {
-		counts := map[string]int{}
-		for _, check := range pr.Checks {
-			counts[buildStateWord(check.State)]++
-		}
-		lines = append(lines, "Builds: "+formatCounts(counts)+".")
+	switch {
+	case pr.CheckCounts != nil && pr.CheckCounts.total() > 0:
+		lines = append(lines, "Builds: "+buildCountsText(*pr.CheckCounts)+".")
+	case len(pr.Checks) > 0 && pr.ChecksLimitReached:
+		lines = append(lines, fmt.Sprintf("Builds, of the first %d: %s.", len(pr.Checks), buildCountsText(countChecks(pr.Checks))))
+	case len(pr.Checks) > 0:
+		lines = append(lines, "Builds: "+buildCountsText(countChecks(pr.Checks))+".")
 	}
 	if pr.AutoMerge != nil {
 		lines = append(lines, "Auto-merge is on.")
@@ -589,31 +793,23 @@ func diffCounts(patch string) (files, additions, deletions int) {
 	return files, additions, deletions
 }
 
-// buildStateWord is a build state in the words Bitbucket's UI uses for it.
-func buildStateWord(state string) string {
-	switch strings.ToUpper(state) {
-	case "SUCCESSFUL":
-		return "passed"
-	case "FAILED":
-		return "failed"
-	case "INPROGRESS":
-		return "in progress"
-	case "CANCELLED":
-		return "canceled"
-	default:
-		return "unknown"
-	}
-}
-
-func formatCounts(counts map[string]int) string {
-	states := make([]string, 0, len(counts))
-	for state := range counts {
-		states = append(states, state)
-	}
-	sort.Strings(states)
-	parts := make([]string, 0, len(states))
-	for _, state := range states {
-		parts = append(parts, fmt.Sprintf("%d %s", counts[state], state))
+// buildCountsText is build counts in the words Bitbucket's UI uses, in the
+// order the view draws them: what needs attention first, the passes last.
+func buildCountsText(counts viewCheckCounts) string {
+	var parts []string
+	for _, state := range []struct {
+		count int
+		word  string
+	}{
+		{counts.Failed, "failed"},
+		{counts.InProgress, "in progress"},
+		{counts.Cancelled, "canceled"},
+		{counts.Unknown, "unknown"},
+		{counts.Successful, "passed"},
+	} {
+		if state.count > 0 {
+			parts = append(parts, fmt.Sprintf("%d %s", state.count, state.word))
+		}
 	}
 	return strings.Join(parts, ", ")
 }
@@ -778,6 +974,7 @@ var viewScripts = []string{
 	"bridge.js",
 	"dom.js",
 	"format.js",
+	"markdown.js",
 	"pull_request.js",
 	"pull_requests.js",
 	"diff.js",

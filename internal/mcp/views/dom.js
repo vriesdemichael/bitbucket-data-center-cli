@@ -69,6 +69,8 @@ const ICON_SHAPES = {
   expand: [["path", "M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4.5 4.5M2.5 13.5L7 9"]],
   collapse: [["path", "M13.5 6.5h-4v-4M2.5 9.5h4v4M9.5 6.5L14 2M6.5 9.5L2 14"]],
   chevronDown: [["path", "M3.5 6L8 10.5 12.5 6"]],
+  chevronRight: [["path", "M6 3.5L10.5 8 6 12.5"]],
+  image: [["path", "M2.5 3.5h11v9h-11z"], ["path", "M2.5 11l3.5-3.5 3 3 2-2 2.5 2.5"], ["circle", 10.5, 6.2, 1.2]],
   autoMerge: [["circle", 4.5, 3.5, 1.6], ["circle", 4.5, 12.5, 1.6], ["path", "M4.5 5.1v5.8M4.5 5.2c0 3.5 5 2.8 6.5 5.3"], ["path", "M12.8 1.8l-2 3h2.4l-2 3"]],
 };
 
@@ -141,9 +143,13 @@ function reviewerAvatar(reviewer, avatars, size) {
   } else if (vote === "changes-requested") {
     holder.append(el("span", { class: "vote changes-requested" }, icon("changesRequested", voteLabel(vote))));
   }
-  const name = reviewer.display_name || reviewer.name;
+  const name = nameOf(reviewer);
   holder.title = vote === "none" ? name : name + ": " + voteLabel(vote);
   return holder;
+}
+
+function nameOf(reviewer) {
+  return reviewer.display_name || reviewer.name || "?";
 }
 
 // sortReviewers orders reviewers as Bitbucket does: approvals first, then
@@ -151,12 +157,77 @@ function reviewerAvatar(reviewer, avatars, size) {
 function sortReviewers(reviewers) {
   const order = { approved: 1, "changes-requested": 2, none: 3 };
   return reviewers.slice().sort((a, b) =>
-    order[voteOf(a)] - order[voteOf(b)] ||
-    String(a.display_name || a.name).localeCompare(String(b.display_name || b.name)));
+    order[voteOf(a)] - order[voteOf(b)] || String(nameOf(a)).localeCompare(String(nameOf(b))));
 }
 
-function branchChip(name) {
-  return el("span", { class: "chip branch", title: name }, icon("branch", null, "icon-sm"), el("span", { class: "ellipsis" }, name));
+// reviewerStack is a row of at most limit reviewers' avatars, in Bitbucket's
+// order. A reviewer who requested changes is always among them, however many
+// approved; the rest are counted, and named on hover.
+function reviewerStack(reviewers, avatars, limit, size) {
+  if (reviewers.length === 0) return null;
+  const sorted = sortReviewers(reviewers);
+  const requested = sorted.filter((reviewer) => voteOf(reviewer) === "changes-requested");
+  const others = sorted.filter((reviewer) => voteOf(reviewer) !== "changes-requested");
+  const kept = new Set([...requested.slice(0, limit), ...others.slice(0, Math.max(0, limit - requested.length))]);
+  const rest = sorted.filter((reviewer) => !kept.has(reviewer));
+  return el("span", { class: "avatar-stack" },
+    sorted.filter((reviewer) => kept.has(reviewer)).map((reviewer) => reviewerAvatar(reviewer, avatars, size)),
+    rest.length > 0 ? el("span", { class: "faint more", title: rest.map(nameOf).join(", ") }, "+" + formatNumber(rest.length)) : null);
+}
+
+// clampable holds long content to a few lines, with a button to show the rest
+// that appears only when there is more to show (see revealClampToggles).
+function clampable(key, content, view) {
+  const open = view.unclamped.has(key);
+  return el("div", { class: "clamp" + (open ? " open" : ""), dataset: { clamp: key } },
+    content,
+    el("button", { type: "button", class: "button ghost clamp-toggle", hidden: true, onclick: () => view.toggleClamp(key) },
+      open ? "Show less" : "Show more"));
+}
+
+// FOLD_AFTER is how many items a group that asks nothing of the person, such
+// as the passed builds, shows before it folds to its count.
+const FOLD_AFTER = 3;
+
+// foldButton is the title of a group that folds: its count, and a chevron
+// that opens it, or closes it again.
+function foldButton(key, title, view) {
+  const open = view.unclamped.has(key);
+  return el("button", {
+    type: "button",
+    class: "group-title fold",
+    "aria-expanded": open ? "true" : "false",
+    onclick: () => view.toggleClamp(key),
+  }, icon(open ? "chevronDown" : "chevronRight", null, "faint"), title);
+}
+
+// shownCount is how many items of a list that grows in steps are showing:
+// the first few, and a step more each time the person asked.
+function shownCount(key, first, view) {
+  return first + (view.revealed.get(key) || 0);
+}
+
+// moreButton grows a list by a step, and says how many are still not shown.
+function moreButton(key, left, step, noun, view) {
+  if (left <= 0) return null;
+  const next = Math.min(step, left);
+  return el("button", { type: "button", class: "button ghost list-toggle", onclick: () => view.reveal(key, step) },
+    "Show " + formatNumber(next) + " more " + noun + (left > next ? " (" + formatNumber(left) + " not shown)" : ""));
+}
+
+// branchChip is a branch, as source or target of a pull request.
+function branchChip(name, role) {
+  return el("span", { class: "chip branch" + (role ? " " + role : ""), title: name },
+    icon("branch", null, "icon-sm"), el("span", { class: "ellipsis" }, name));
+}
+
+// pathLabel is a file's path, drawn so that a long one gives way from its
+// directory first and keeps its file name.
+function pathLabel(path) {
+  const slash = path.lastIndexOf("/");
+  return el("span", { class: "path", title: path },
+    slash >= 0 ? el("span", { class: "dir" }, path.slice(0, slash + 1)) : null,
+    el("span", { class: "name" }, slash >= 0 ? path.slice(slash + 1) : path));
 }
 
 function linkButton(label, url, bridge, extraClass) {
