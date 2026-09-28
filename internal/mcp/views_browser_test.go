@@ -140,8 +140,10 @@ func fixtureFrames(t *testing.T) []viewhost.Frame {
 			Result: fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &card, Avatars: avatars})},
 		{Title: "card in a host that does not say, and stays inline", Mode: "inline", Fullscreen: false, HideDisplayModes: true, Arguments: arguments,
 			Result: fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &card, Avatars: avatars})},
-		{Title: "card on http, in a host that opens no links", Mode: "inline", Fullscreen: true, RefuseLinks: true, Arguments: arguments,
+		{Title: "card on http, in a host that refuses its links", Mode: "inline", Fullscreen: true, RefuseLinks: true, Arguments: arguments,
 			Result: fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &plainCard, Avatars: avatars})},
+		{Title: "card in a host that opens no links", Mode: "inline", Fullscreen: true, OpensNoLinks: true, Arguments: arguments,
+			Result: fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &card, Avatars: avatars})},
 	}
 }
 
@@ -150,6 +152,7 @@ const (
 	fixtureUnsaidGrants = 5 + iota
 	fixtureUnsaidInline
 	fixtureRefusesLinks
+	fixtureOpensNoLinks
 )
 
 // plainCardURL is a Bitbucket served over plain http, as a local one often
@@ -191,8 +194,20 @@ func TestLinksTheHostRefusesAreShown(t *testing.T) {
 	var shown string
 	err := chromedp.Run(ctx, chromedp.Poll(fmt.Sprintf(`(() => { const n = window.bbHost.frames[%d].iframe.contentDocument.querySelector(".link-notice"); return n ? n.textContent : ""; })()`, fixtureRefusesLinks), &shown,
 		chromedp.WithPollingTimeout(5*time.Second)))
-	if err != nil || !strings.Contains(shown, plainCardURL) || !strings.Contains(shown, "only https") {
-		t.Errorf("a refused link reads %q, want it shown to open by hand, with why: %v", shown, err)
+	if err != nil || !strings.Contains(shown, plainCardURL) || !strings.Contains(shown, "did not open") {
+		t.Errorf("a refused link reads %q, want it shown to open by hand: %v", shown, err)
+	}
+
+	// A host that says it opens no links is not asked: the address shows at
+	// once.
+	clickButton(t, ctx, fixtureOpensNoLinks, "Open in Bitbucket")
+	var address string
+	inFrame(t, ctx, fixtureOpensNoLinks, `const n = d.querySelector(".link-notice"); return n ? n.textContent : "";`, &address)
+	if !strings.Contains(address, "https://bitbucket.example.com/projects/PAY/repos/ledger/pull-requests/42/overview") || !strings.Contains(address, "does not open links") {
+		t.Errorf("a host that opens no links shows %q, want the address to open by hand", address)
+	}
+	if asked := hostMessages(t, ctx, fixtureOpensNoLinks, "ui/open-link"); len(asked) != 0 {
+		t.Errorf("the view asked a host that opens no links to open one: %v", asked)
 	}
 }
 

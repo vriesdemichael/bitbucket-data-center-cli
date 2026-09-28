@@ -248,8 +248,13 @@ function textLink(label, url, bridge) {
 }
 
 // openLink asks the host to open a web page, and says so when it will not.
+// A host that opens no links is not asked.
 function openLink(bridge, url) {
   if (!isWebURL(url)) return;
+  if (!view.opensLinks) {
+    linkRefused(url);
+    return;
+  }
   bridge.openLink(url).then((result) => {
     if (result && result.isError) linkRefused(url);
   }, () => linkRefused(url));

@@ -120,7 +120,7 @@
           reply(message.id, {
             protocolVersion: "2026-01-26",
             hostInfo: { name: "bb-view-host", version: "1" },
-            hostCapabilities: { openLinks: {}, updateModelContext: {}, message: {} },
+            hostCapabilities: frame.opensNoLinks ? { updateModelContext: {}, message: {} } : { openLinks: {}, updateModelContext: {}, message: {} },
             hostContext: context(),
           });
           break;
