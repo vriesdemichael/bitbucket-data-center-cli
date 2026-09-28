@@ -24,7 +24,14 @@
 # project, image tag, Docker-assigned ports and .tmp/bitbucket-<release>.env. It
 # is how the live suite is run against the older releases bb supports.
 #
-# Usage: scripts/stack.sh up|bootstrap|down|restart|reset|status|logs|prune|purge-fixtures [release]
+# `tls` puts an https front before the instance, for a client that opens only
+# https links, such as Claude: Caddy, with a certificate for localhost from a CA
+# of its own (docker/tls/Caddyfile). It copies that CA out next to the state
+# file and adds the front's address to it. Once started, the front comes back
+# with the instance on every `up`, until `down`. The main checkout's is on port
+# 7443, a linked worktree's on one Docker assigns.
+#
+# Usage: scripts/stack.sh up|tls|bootstrap|down|restart|reset|status|logs|prune|purge-fixtures [release]
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -49,6 +56,7 @@ if [ "$(git rev-parse --path-format=absolute --git-dir)" = "$(git rev-parse --pa
   project=bitbucket-data-center-cli
   http_port="${BITBUCKET_HOST_PORT:-7990}"
   ssh_port="${BITBUCKET_SSH_HOST_PORT:-7999}"
+  tls_port="${BITBUCKET_TLS_HOST_PORT:-7443}"
 else
   name="$(basename "$worktree" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9\n' '-' | cut -c1-30)"
   hash="$(printf '%s' "$worktree" | git hash-object --stdin | cut -c1-6)"
@@ -56,6 +64,7 @@ else
   # 0 asks Docker for a free port.
   http_port=0
   ssh_port=0
+  tls_port=0
 fi
 
 release="${2:-}"
@@ -68,6 +77,7 @@ if [ -n "$release" ]; then
   # Never the main checkout's 7990: its own instance may be using it.
   http_port=0
   ssh_port=0
+  tls_port=0
   state_file=".tmp/bitbucket-${release}.env"
   harness_tag="$release"
   # Appended to the task commands this script suggests, so they name the same instance.
@@ -77,11 +87,15 @@ else
   harness_tag=local
   task_release=""
 fi
-readonly project http_port ssh_port release state_file harness_tag task_release
+# The CA the https front's certificate chains to, in the front and copied out.
+tls_ca_file="${state_file%.env}-tls-ca.crt"
+readonly tls_ca_path=/data/caddy/pki/authorities/local/root.crt
+readonly project http_port ssh_port tls_port release state_file harness_tag task_release tls_ca_file
 
 compose() {
   BITBUCKET_HOST_PORT="$http_port" \
     BITBUCKET_SSH_HOST_PORT="$ssh_port" \
+    BITBUCKET_TLS_HOST_PORT="$tls_port" \
     BB_STACK_WORKTREE="$worktree" \
     BB_HARNESS_TAG="$harness_tag" \
     docker compose -p "$project" -f "$compose_file" "$@"
@@ -144,16 +158,65 @@ other_instances() {
     | awk -F '\t' -v own="$project" '$1 != own'
 }
 
+# tls_container prints this instance's https front when it is running.
+tls_container() {
+  compose --profile tls ps -q --status running tls 2>/dev/null || true
+}
+
+# tls_profile prints "tls" when this instance has an https front, running or
+# not, so that `up` brings it back with the instance.
+tls_profile() {
+  if [ -n "$(compose --profile tls ps -a -q tls 2>/dev/null)" ]; then
+    echo tls
+  fi
+}
+
+# tls_ready waits until an https front has its CA and reaches the instance
+# through it, and fails when it has not within half a minute.
+tls_ready() {
+  local attempts=0 answer
+  while :; do
+    answer="$(MSYS_NO_PATHCONV=1 docker exec "$1" wget -q -O - http://bitbucket:7991/status 2>/dev/null || true)"
+    if [[ "$answer" == *RUNNING* ]] && MSYS_NO_PATHCONV=1 docker exec "$1" test -s "$tls_ca_path"; then
+      return 0
+    fi
+    attempts=$(( attempts + 1 ))
+    [ "$attempts" -lt 30 ] || return 1
+    sleep 1
+  done
+}
+
+# host_path prints a file's absolute path as programs on this host take it:
+# C:/... from Git Bash, which a Windows build of bb needs.
+host_path() {
+  local directory
+  directory="$(cd "$(dirname "$1")" && { pwd -W 2>/dev/null || pwd; })"
+  echo "${directory}/$(basename "$1")"
+}
+
 write_state() {
-  local container name port
+  local container name port tls tls_url=""
   container="$(running_container)"
   name="$(docker inspect --format '{{.Name}}' "$container" | sed 's#^/##')"
   port="$(compose port bitbucket 7990 | head -n 1 | sed 's/.*://')"
   mkdir -p "$(dirname "$state_file")"
+  tls="$(tls_container)"
+  if [ -n "$tls" ]; then
+    if tls_ready "$tls"; then
+      MSYS_NO_PATHCONV=1 docker exec "$tls" cat "$tls_ca_path" > "$tls_ca_file"
+      tls_url="https://localhost:$(compose --profile tls port tls 443 | head -n 1 | sed 's/.*://')"
+    else
+      echo "The https front does not reach the instance on its second connector, port 7991; ${state_file} leaves it out." >&2
+    fi
+  fi
   {
     echo "# Written by scripts/stack.sh up: this checkout's own Bitbucket instance."
     echo "BITBUCKET_URL=http://localhost:${port}"
     echo "BB_STACK_CONTAINER=${name}"
+    if [ -n "$tls_url" ]; then
+      echo "BITBUCKET_TLS_URL=${tls_url}"
+      echo "BITBUCKET_TLS_CA_FILE=$(host_path "$tls_ca_file")"
+    fi
   } > "$state_file"
 }
 
@@ -251,7 +314,8 @@ up() {
     build_release_image
     build=--no-build
   fi
-  if ! compose up -d "$build" --wait; then
+  # With the https front, if the instance has one, so it comes back too.
+  if ! COMPOSE_PROFILES="$(tls_profile)" compose up -d "$build" --wait; then
     echo "" >&2
     echo "The stack did not come up healthy." >&2
     echo "" >&2
@@ -267,14 +331,30 @@ up() {
   bootstrap
 }
 
+# tls starts the https front, and the instance first if need be.
+tls() {
+  up
+  compose --profile tls up -d --no-deps tls
+  write_state
+  if ! grep -q '^BITBUCKET_TLS_URL=' "$state_file"; then
+    echo "'task stack:restart${task_release}' creates the instance again, with the connector the front needs." >&2
+    exit 1
+  fi
+  echo ""
+  grep '^BITBUCKET_TLS_' "$state_file"
+  echo ""
+  echo "Give bb that URL as BITBUCKET_URL and the CA file as BB_CA_FILE, and its links are https."
+  echo "The CA is the front's own: a browser warns about the certificate until you trust it yourself."
+}
+
 down() {
-  compose down
-  rm -f "$state_file"
+  compose --profile tls down
+  rm -f "$state_file" "$tls_ca_file"
 }
 
 status() {
-  local remaining
-  compose ps
+  local remaining tls_url
+  compose --profile tls ps
   if remaining="$(remaining_seconds)"; then
     echo "SDK licence: the instance stops itself in $(( remaining / 60 ))m; 'task stack:up${task_release}' then starts it with a new one"
   else
@@ -283,6 +363,11 @@ status() {
   if [ -f "$state_file" ]; then
     # shellcheck disable=SC1090
     echo "URL: $(. "./${state_file}" && echo "$BITBUCKET_URL")"
+    # shellcheck disable=SC1090
+    tls_url="$(. "./${state_file}" && echo "${BITBUCKET_TLS_URL:-}")"
+    if [ -n "$tls_url" ]; then
+      echo "https front: ${tls_url}, its CA in ${tls_ca_file}"
+    fi
   fi
   echo ""
   echo "Local Bitbucket instances on this machine:"
@@ -292,12 +377,13 @@ status() {
 
 case "${1:-}" in
   up) up ;;
+  tls) tls ;;
   bootstrap) bootstrap ;;
   down) down ;;
   restart) down && up ;;
   reset)
-    compose down --volumes --remove-orphans
-    rm -f "$state_file"
+    compose --profile tls down --volumes --remove-orphans
+    rm -f "$state_file" "$tls_ca_file"
     up
     ;;
   status) status ;;
@@ -309,7 +395,7 @@ case "${1:-}" in
     bash scripts/purge-live-fixtures.sh "$BITBUCKET_URL"
     ;;
   *)
-    echo "usage: scripts/stack.sh up|bootstrap|down|restart|reset|status|logs|prune|purge-fixtures [release]" >&2
+    echo "usage: scripts/stack.sh up|tls|bootstrap|down|restart|reset|status|logs|prune|purge-fixtures [release]" >&2
     exit 2
     ;;
 esac

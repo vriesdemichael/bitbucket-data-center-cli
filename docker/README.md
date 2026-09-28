@@ -40,6 +40,7 @@ CI never reaches the limit: each run creates the container from scratch.
 
 ```bash
 task stack:up        # start this checkout's instance and enable basic auth
+task stack:tls       # an https front before it, for clients that open only https links
 task stack:status    # this instance, how long before it stops itself, every local instance
 task stack:logs
 task stack:down
@@ -77,6 +78,29 @@ checkout started from WSL records a `/mnt/c/...` path that Git Bash cannot see,
 and the reverse, so a worktree that exists can look missing from the other
 side. An instance whose worktree really is gone stops itself within three
 hours, and is removed then.
+
+### An https front
+
+Some clients open only https links: Claude will not open the http links in
+bb's views. `task stack:tls` starts the instance if need be, puts an https
+front before it, and adds its address to `.tmp/bitbucket.env`:
+
+```bash
+BITBUCKET_TLS_URL=https://localhost:7443
+BITBUCKET_TLS_CA_FILE=/path/to/checkout/.tmp/bitbucket-tls-ca.crt
+```
+
+Give bb the URL as `BITBUCKET_URL` and the file as `BB_CA_FILE`, and the links
+it builds are https. The front is Caddy, with a certificate for `localhost`
+from a CA of its own that nothing installs, so a browser warns about it until
+you trust that CA yourself. It passes each request to a second connector of
+the instance, which reports requests as https, so the links and redirects
+Bitbucket builds are https too. Port 7990 stays plain http, and the live suite
+uses it.
+
+The main checkout's front is on port 7443, a worktree's on a port Docker
+assigns. Once started, it comes back with the instance on every `task
+stack:up`, until `task stack:down`.
 
 ## Version
 

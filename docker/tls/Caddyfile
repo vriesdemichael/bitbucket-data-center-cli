@@ -1,0 +1,21 @@
+# The https front `task stack:tls` puts before this checkout's instance, for a
+# client that opens only https links, such as Claude. See docker/README.md.
+{
+	# No HTTP/3: Caddy would announce it for port 443, its port inside the
+	# container, which on the host belongs to whatever else listens there.
+	servers {
+		protocols h1 h2
+	}
+	# The certificate is from Caddy's own CA, which nothing installs:
+	# scripts/stack.sh copies it out for the clients told to trust it.
+	skip_install_trust
+	auto_https disable_redirects
+	admin off
+}
+
+localhost {
+	tls internal
+	# The instance's second connector, which reports every request as https,
+	# so the links and redirects Bitbucket builds are https as well.
+	reverse_proxy bitbucket:7991
+}
