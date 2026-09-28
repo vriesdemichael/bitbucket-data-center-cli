@@ -125,13 +125,16 @@ function counter(iconName, words, count) {
 }
 
 // pullRequestPage is the pull request in fullscreen: its overview, with the
-// description and the side panel scrolling each on their own.
+// description and the side panel scrolling each on their own. The header
+// reads as Bitbucket's does: where it lives, the title, and under it the
+// state with who wants what merged where.
 function pullRequestPage(pr, payload, view) {
   return el("div", { class: "page" },
     el("header", { class: "fullscreen-header" },
       el("div", { class: "row-main" },
-        pullRequestTop(pr),
-        el("h1", { class: "pr-title" }, pr.title)),
+        el("div", { class: "pr-top" }, icon("pullRequest", null, "faint"), repositoryLabel(pr)),
+        el("h1", { class: "pr-title" }, pr.title),
+        el("div", { class: "header-meta" }, stateBadges(pr), byline(pr, payload.avatars || {}))),
       el("div", { class: "header-actions" },
         snapshotStamp(payload.generated_at, view.locale),
         linkButton("Open in Bitbucket", pr.url, view.bridge, "primary"),
@@ -143,7 +146,6 @@ function pullRequestOverview(pr, payload, view) {
   const avatars = payload.avatars || {};
   return el("div", { class: view.fullscreen ? "details" : "details inline" },
     el("section", { class: "details-main" },
-      view.fullscreen ? byline(pr, avatars) : null,
       el("h2", { class: "section-title" }, "Description"),
       descriptionOf(pr, view)),
     el("aside", { class: "details-side" },
@@ -186,8 +188,8 @@ function reviewersSection(reviewers, avatars, view) {
     const title = group.title + " · " + formatNumber(members.length);
     section.append(el("div", { class: "group" },
       folds ? foldButton(key, title, view) : el("h3", { class: "group-title" }, title),
-      folds && !view.unclamped.has(key) ? null : el("ul", { class: "person-list" }, members.map((reviewer) => el("li", {},
-        reviewerAvatar(reviewer, avatars),
+      folds && !view.unclamped.has(key) ? null : el("ul", { class: "person-list compact" }, members.map((reviewer) => el("li", {},
+        reviewerAvatar(reviewer, avatars, "sm"),
         el("span", { class: "ellipsis", title: nameOf(reviewer) }, nameOf(reviewer)))))));
   }
   return section;
@@ -220,13 +222,12 @@ function buildsSection(pr, view) {
     section.append(el("div", { class: "group" },
       folds ? foldButton(key, title, view) : el("h3", { class: "group-title" }, title),
       folds && !view.unclamped.has(key) ? null : el("ul", { class: "check-list" },
-        listed.map((build) => buildRow(build, view)),
+        listed.map((build) => buildRow(build, look, view)),
         unlisted > 0 ? el("li", { class: "unlisted" },
           el("span", { class: "faint" }, listed.length === 0
-            ? (count === 1 ? "Not listed in this view" : "None listed in this view")
-            : "and " + formatNumber(unlisted) + " more, not listed in this view"),
-          el("span", { class: "spacer" }),
-          linkButton("Bitbucket", pr.url, view.bridge, "ghost")) : null)));
+            ? (count === 1 ? "Not listed in this view. " : "None listed in this view. ")
+            : "And " + formatNumber(unlisted) + " more, not listed in this view. "),
+          textLink(count === 1 ? "View it in Bitbucket" : "View them in Bitbucket", pr.url, view.bridge)) : null)));
   }
   if (builds.partial) {
     section.append(el("p", { class: "faint" }, "Counted among the first " + formatNumber(pr.checks.length) + "; Bitbucket has more."));
@@ -234,16 +235,17 @@ function buildsSection(pr, view) {
   return section;
 }
 
-function buildRow(build, view) {
-  const look = buildStateOf(build.state);
+// buildRow is a build under its state's heading, which already says how it
+// went: its name, which opens the build where there is one to open.
+function buildRow(build, look, view) {
   const name = build.name || build.key || "Build";
-  return el("li", {},
-    el("span", { class: "build-state " + look.className, title: look.title }, icon(look.icon, look.title)),
-    el("span", { class: "ellipsis", title: build.name && build.key ? name + " (" + build.key + ")" : name }, name),
-    el("span", { class: "spacer" }),
-    isWebURL(build.url)
-      ? el("button", { type: "button", class: "button ghost icon-only", "aria-label": "Open the build", title: "Open the build", onclick: () => openLink(view.bridge, build.url) }, icon("external"))
-      : null);
+  const title = build.name && build.key ? name + " (" + build.key + ")" : name;
+  if (!isWebURL(build.url)) {
+    return el("li", { dataset: { state: look.className } }, el("span", { class: "build-name ellipsis", title }, name));
+  }
+  return el("li", { dataset: { state: look.className } },
+    el("button", { type: "button", class: "build-link", title: title + ": open the build", onclick: () => openLink(view.bridge, build.url) },
+      el("span", { class: "ellipsis" }, name), icon("external", null, "link-icon")));
 }
 
 function detailsSection(pr, view) {

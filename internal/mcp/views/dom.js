@@ -71,6 +71,7 @@ const ICON_SHAPES = {
   chevronDown: [["path", "M3.5 6L8 10.5 12.5 6"]],
   chevronRight: [["path", "M6 3.5L10.5 8 6 12.5"]],
   image: [["path", "M2.5 3.5h11v9h-11z"], ["path", "M2.5 11l3.5-3.5 3 3 2-2 2.5 2.5"], ["circle", 10.5, 6.2, 1.2]],
+  folder: [["path", "M2 4.2a1 1 0 0 1 1-1h3l1.5 1.6H13a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"]],
   autoMerge: [["circle", 4.5, 3.5, 1.6], ["circle", 4.5, 12.5, 1.6], ["path", "M4.5 5.1v5.8M4.5 5.2c0 3.5 5 2.8 6.5 5.3"], ["path", "M12.8 1.8l-2 3h2.4l-2 3"]],
 };
 
@@ -222,11 +223,12 @@ function branchChip(name, role) {
 }
 
 // pathLabel is a file's path, drawn so that a long one gives way from its
-// directory first and keeps its file name.
+// directory first and keeps its file name; the directory gives way from its
+// start, which keeps the folders nearest the file.
 function pathLabel(path) {
   const slash = path.lastIndexOf("/");
   return el("span", { class: "path", title: path },
-    slash >= 0 ? el("span", { class: "dir" }, path.slice(0, slash + 1)) : null,
+    slash >= 0 ? [el("span", { class: "dir" }, path.slice(0, slash)), el("span", { class: "slash" }, "/")] : null,
     el("span", { class: "name" }, slash >= 0 ? path.slice(slash + 1) : path));
 }
 
@@ -237,6 +239,12 @@ function linkButton(label, url, bridge, extraClass) {
     onclick: () => openLink(bridge, url),
     disabled: !isWebURL(url),
   }, icon("external"), label);
+}
+
+// textLink is a link in running text, which opens through the host.
+function textLink(label, url, bridge) {
+  if (!isWebURL(url)) return null;
+  return el("button", { type: "button", class: "text-link", onclick: () => openLink(bridge, url) }, label);
 }
 
 function openLink(bridge, url) {

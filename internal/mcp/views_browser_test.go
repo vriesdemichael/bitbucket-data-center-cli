@@ -222,7 +222,7 @@ func TestViewsDrawTextOthersWroteAsText(t *testing.T) {
 
 	var card string
 	inFrame(t, ctx, 0, `return d.body.textContent;`, &card)
-	for _, want := range []string{hostileTitle, hostileName, "1 of 3 approved", "1 changes requested", "1 build failed", "1 build in progress", "1 build passed", "Changes requested", "Builds", "Overview"} {
+	for _, want := range []string{hostileTitle, hostileName, "1 of 3 approved", "1 changes requested", "1 failed", "1 in progress", "1 passed", "Changes requested", "Builds", "Overview"} {
 		if !strings.Contains(card, want) {
 			t.Errorf("the card does not show %q:\n%s", want, card)
 		}
@@ -539,12 +539,18 @@ func TestViewsCountTheWhole(t *testing.T) {
 	ctx := browser(t, stressFrames(t))
 
 	card := frameText(t, ctx, stressCard)
-	for _, want := range []string{"4 builds failed", "2 builds in progress", "1 build was canceled", "1 build has unknown state", "142 builds passed", "6 of 30 approved", "2 changes requested"} {
+	for _, want := range []string{"4 failed", "2 in progress", "1 canceled", "1 unknown", "142 passed", "6 of 30 approved", "2 changes requested"} {
 		if !strings.Contains(card, want) {
 			t.Errorf("the card does not say %q:\n%s", want, card)
 		}
 	}
-	if strings.Contains(card, "93 builds passed") {
+	// Each count carries Bitbucket's own phrase for it.
+	var phrases []string
+	inFrame(t, ctx, stressCard, `return [...d.querySelectorAll(".facts .build-state")].map((s) => s.title);`, &phrases)
+	if !slices.Contains(phrases, "4 builds failed") || !slices.Contains(phrases, "142 builds passed") {
+		t.Errorf("the card's build counts are titled %q, want Bitbucket's phrases", phrases)
+	}
+	if strings.Contains(card, "93 passed") {
 		t.Errorf("the card counted the builds it lists rather than Bitbucket's totals:\n%s", card)
 	}
 	// Read three hours ago, the card says it may be out of date.
@@ -594,7 +600,7 @@ func TestViewsNeverHideWhatNeedsAttention(t *testing.T) {
 		t.Error("the long description opened in place is not held short, with a way to show the rest")
 	}
 	var listed map[string]int
-	inFrame(t, ctx, stressCardInPlace, `const n = {}; for (const s of d.querySelectorAll(".check-list li .build-state")) { const c = s.className.replace("build-state ", ""); n[c] = (n[c] || 0) + 1; } return n;`, &listed)
+	inFrame(t, ctx, stressCardInPlace, `const n = {}; for (const row of d.querySelectorAll(".check-list li[data-state]")) { n[row.dataset.state] = (n[row.dataset.state] || 0) + 1; } return n;`, &listed)
 	if listed["failed"] != 4 || listed["inprogress"] != 2 || listed["cancelled"] != 1 || listed["successful"] != 0 {
 		t.Errorf("the overview lists builds by state as %v, want 4 failed, 2 in progress and 1 canceled open, and the passes folded", listed)
 	}
@@ -603,13 +609,13 @@ func TestViewsNeverHideWhatNeedsAttention(t *testing.T) {
 		t.Errorf("the overview does not say the build it does not carry is missing:\n%.2000s", overview)
 	}
 	clickButton(t, ctx, stressCardInPlace, "142 builds passed")
-	inFrame(t, ctx, stressCardInPlace, `return { successful: d.querySelectorAll(".check-list li .build-state.successful").length };`, &listed)
+	inFrame(t, ctx, stressCardInPlace, `return { successful: d.querySelectorAll(".check-list li[data-state='successful']").length };`, &listed)
 	if listed["successful"] != 93 {
 		t.Errorf("the passes open to %d builds, want the 93 the view carries", listed["successful"])
 	}
 	var unlisted string
 	inFrame(t, ctx, stressCardInPlace, `return [...d.querySelectorAll(".check-list .unlisted")].map((l) => l.textContent).join("|");`, &unlisted)
-	if !strings.Contains(unlisted, "and 49 more, not listed in this view") {
+	if !strings.Contains(unlisted, "And 49 more, not listed in this view") {
 		t.Errorf("the opened passes say %q, want the 49 the view does not carry counted", unlisted)
 	}
 

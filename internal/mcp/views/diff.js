@@ -193,8 +193,7 @@ function fileLink(file, index, view, onclick, compact) {
   const path = filePath(file);
   const slash = path.lastIndexOf("/");
   const renamed = renamedFrom(file);
-  const second = [file.omitted ? "too large to show here" : "", renamed || (compact && slash >= 0 ? path.slice(0, slash) : "")]
-    .filter(Boolean).join(" · ");
+  const second = [file.omitted ? "too large to show here" : "", renamed].filter(Boolean).join(" · ");
   const label = el("span", { class: "file-name" },
     compact ? el("span", { class: "ellipsis" }, slash >= 0 ? path.slice(slash + 1) : path) : pathLabel(path),
     second ? el("span", { class: "ellipsis faint" + (file.omitted ? " omitted-mark" : "") }, second) : null);
@@ -240,21 +239,37 @@ function diffPage(pr, files, payload, view) {
   return el("div", { class: "page" },
     el("header", { class: "fullscreen-header" },
       el("div", { class: "row-main" },
-        pullRequestTop(pr, "Diff"),
+        el("div", { class: "pr-top" }, icon("pullRequest", null, "faint"), repositoryLabel(pr, "Diff")),
         el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
-        diffSummary(files, pr, false)),
+        el("div", { class: "header-meta" }, stateBadges(pr), diffSummary(files, pr, true))),
       el("div", { class: "header-actions" },
         snapshotStamp(payload.generated_at, view.locale),
         linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
         el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
     el("div", { class: "diff-layout" },
-      el("nav", { class: "diff-tree", "aria-label": "Files" },
-        el("ul", { class: "file-list" }, files.map((file, index) => el("li", {},
-          fileLink(file, index, view, () => {
-            const target = document.getElementById("diff-file-" + index);
-            if (target) target.scrollIntoView({ block: "start" });
-          }, true))))),
+      el("nav", { class: "diff-tree", "aria-label": "Files" }, fileTree(files, view)),
       main));
+}
+
+// fileTree lists the files under their directories, in the diff's order, as
+// Bitbucket's file tree does: a directory heads the files in it.
+function fileTree(files, view) {
+  const rows = [];
+  let directory = null;
+  files.forEach((file, index) => {
+    const path = filePath(file);
+    const slash = path.lastIndexOf("/");
+    const here = slash >= 0 ? path.slice(0, slash) : "";
+    if (here !== directory) {
+      directory = here;
+      if (here) rows.push(el("li", { class: "tree-dir", title: here }, icon("folder", null, "icon-sm"), el("span", { class: "ellipsis" }, here)));
+    }
+    rows.push(el("li", {}, fileLink(file, index, view, () => {
+      const target = document.getElementById("diff-file-" + index);
+      if (target) target.scrollIntoView({ block: "start" });
+    }, true)));
+  });
+  return el("ul", { class: "file-list tree" }, rows);
 }
 
 function diffFile(file, index, pr, view, withHeader) {
@@ -272,8 +287,8 @@ function diffFile(file, index, pr, view, withHeader) {
       },
     },
     icon("chevronDown"),
-    el("span", { class: "file-name" }, pathLabel(path), renamedFrom(file) ? el("span", { class: "ellipsis faint" }, renamedFrom(file)) : null),
     changeLozenge(file.status),
+    el("span", { class: "file-name" }, pathLabel(path), renamedFrom(file) ? el("span", { class: "ellipsis faint" }, renamedFrom(file)) : null),
     el("span", { class: "spacer" }),
     file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file)));
   }

@@ -92,12 +92,14 @@ function pullRequestRow(pr, avatars, view) {
       el("span", { class: "row-meta" },
         el("span", { class: "meta-repo" }, el("span", { class: "ellipsis" }, repositoryOf(pr)), el("span", { class: "nowrap" }, "#" + pr.id)),
         el("span", { class: "meta-branches ellipsis" }, pr.source_branch + " → " + pr.target_branch),
-        pr.updated_date ? el("span", { class: "nowrap" }, lastUpdated(pr.updated_date, view.locale)) : null,
+        pr.updated_date ? el("span", { class: "meta-updated nowrap" }, lastUpdated(pr.updated_date, view.locale)) : null,
         el("span", { class: "counts" },
           buildBadge(pr.check_counts),
           pr.open_task_count > 0 ? el("span", { class: "counter", title: plural(pr.open_task_count, "open task") }, icon("task", null, "icon-sm"), formatNumber(pr.open_task_count)) : null,
           pr.comment_count > 0 ? el("span", { class: "counter", title: plural(pr.comment_count, "comment") }, icon("comment", null, "icon-sm"), formatNumber(pr.comment_count)) : null))),
+    // The state over the reviewers, both at the right edge, so the avatars
+    // line up down the list whatever the state's length.
     el("span", { class: "row-side" },
-      reviewerStack(pr.reviewers || [], avatars, 3, "sm"),
-      stateBadges(pr))));
+      stateBadges(pr),
+      reviewerStack(pr.reviewers || [], avatars, 3, "sm"))));
 }

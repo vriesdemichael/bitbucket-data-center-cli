@@ -55,12 +55,14 @@ function stateBadges(pr) {
 
 // Bitbucket's build states: the words of its build icon's tooltip, and an
 // icon after the one it draws.
+// A card beside its "Builds" label says each state in a word, and keeps the
+// whole phrase for its tooltip.
 const BUILD_STATES = {
-  SUCCESSFUL: { className: "successful", icon: "buildSuccessful", title: "Build successful", count: (n) => plural(n, "build") + " passed" },
-  FAILED: { className: "failed", icon: "buildFailed", title: "Build failed", count: (n) => plural(n, "build") + " failed" },
-  INPROGRESS: { className: "inprogress", icon: "buildInProgress", title: "Build in progress", count: (n) => plural(n, "build") + " in progress" },
-  CANCELLED: { className: "cancelled", icon: "buildCancelled", title: "Build canceled", count: (n) => (n === 1 ? "1 build was" : formatNumber(n) + " builds were") + " canceled" },
-  UNKNOWN: { className: "unknown", icon: "buildUnknown", title: "Build status unknown", count: (n) => plural(n, "build") + (n === 1 ? " has" : " have") + " unknown state" },
+  SUCCESSFUL: { className: "successful", icon: "buildSuccessful", title: "Build successful", word: "passed", count: (n) => plural(n, "build") + " passed" },
+  FAILED: { className: "failed", icon: "buildFailed", title: "Build failed", word: "failed", count: (n) => plural(n, "build") + " failed" },
+  INPROGRESS: { className: "inprogress", icon: "buildInProgress", title: "Build in progress", word: "in progress", count: (n) => plural(n, "build") + " in progress" },
+  CANCELLED: { className: "cancelled", icon: "buildCancelled", title: "Build canceled", word: "canceled", count: (n) => (n === 1 ? "1 build was" : formatNumber(n) + " builds were") + " canceled" },
+  UNKNOWN: { className: "unknown", icon: "buildUnknown", title: "Build status unknown", word: "unknown", count: (n) => plural(n, "build") + (n === 1 ? " has" : " have") + " unknown state" },
 };
 
 // BUILD_ORDER is the order builds are counted and listed in everywhere: what
@@ -97,14 +99,15 @@ function buildTotal(counts) {
   return BUILD_ORDER.reduce((sum, state) => sum + (counts[BUILD_COUNT_FIELDS[state]] || 0), 0);
 }
 
-// buildSummary draws build counts in Bitbucket's words, what needs attention
-// first. Nothing to draw is null.
+// buildSummary draws build counts, what needs attention first: each as a count
+// and a word, with Bitbucket's phrase for it as the tooltip. Nothing to draw
+// is null.
 function buildSummary(counts) {
   if (!counts) return null;
   const parts = BUILD_ORDER.filter((state) => counts[BUILD_COUNT_FIELDS[state]] > 0).map((state) => {
     const look = buildStateOf(state);
-    const words = look.count(counts[BUILD_COUNT_FIELDS[state]]);
-    return el("span", { class: "build-state " + look.className, title: words }, icon(look.icon), words);
+    const count = counts[BUILD_COUNT_FIELDS[state]];
+    return el("span", { class: "build-state " + look.className, title: look.count(count) }, icon(look.icon), formatNumber(count) + " " + look.word);
   });
   if (parts.length === 0) return null;
   return el("span", { class: "counts" }, parts);
