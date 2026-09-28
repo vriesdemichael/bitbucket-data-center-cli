@@ -121,6 +121,8 @@ func fixtureFrames(t *testing.T) []viewhost.Frame {
 		"",
 	}, "\n")
 	diff := viewPullRequest{PullRequest: pr, URL: card.URL}
+	plainCard := card
+	plainCard.URL = plainCardURL
 
 	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": "42"}
 	return []viewhost.Frame{
@@ -134,6 +136,63 @@ func fixtureFrames(t *testing.T) []viewhost.Frame {
 			Result: fixtureResult(t, viewPayload{Kind: showKindDiff, PullRequest: &diff, Diff: &viewDiff{Patch: patch}})},
 		{Title: "card in a host without fullscreen", Mode: "inline", Fullscreen: false, Arguments: arguments,
 			Result: fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &card, Avatars: avatars})},
+		{Title: "card in a host that does not say, and grants fullscreen", Mode: "inline", Fullscreen: true, HideDisplayModes: true, Arguments: arguments,
+			Result: fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &card, Avatars: avatars})},
+		{Title: "card in a host that does not say, and stays inline", Mode: "inline", Fullscreen: false, HideDisplayModes: true, Arguments: arguments,
+			Result: fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &card, Avatars: avatars})},
+		{Title: "card on http, in a host that opens no links", Mode: "inline", Fullscreen: true, RefuseLinks: true, Arguments: arguments,
+			Result: fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &plainCard, Avatars: avatars})},
+	}
+}
+
+// The fixture frames past the first five, by what they show.
+const (
+	fixtureUnsaidGrants = 5 + iota
+	fixtureUnsaidInline
+	fixtureRefusesLinks
+)
+
+// plainCardURL is a Bitbucket served over plain http, as a local one often
+// is, whose links Claude does not open.
+const plainCardURL = "http://bitbucket.example.com/projects/PAY/repos/ledger/pull-requests/42/overview"
+
+// A host that does not say which display modes it has is asked for
+// fullscreen: one that grants it gets the overview there, and one that
+// answers with inline gets it opened in place, and is not asked again.
+func TestDetailsAskAHostThatDoesNotSay(t *testing.T) {
+	ctx := browser(t, fixtureFrames(t))
+
+	clickButton(t, ctx, fixtureUnsaidGrants, "Overview")
+	var header bool
+	if err := chromedp.Run(ctx, chromedp.Poll(fmt.Sprintf(`window.bbHost.frames[%d].iframe.contentDocument.querySelector(".fullscreen-header") !== null`, fixtureUnsaidGrants), &header,
+		chromedp.WithPollingTimeout(5*time.Second))); err != nil {
+		t.Errorf("a host that grants fullscreen without saying so did not get the overview in fullscreen: %v", err)
+	}
+
+	clickButton(t, ctx, fixtureUnsaidInline, "Overview")
+	var inPlace bool
+	if err := chromedp.Run(ctx, chromedp.Poll(fmt.Sprintf(`window.bbHost.frames[%d].iframe.contentDocument.querySelector(".inline-details .markdown") !== null`, fixtureUnsaidInline), &inPlace,
+		chromedp.WithPollingTimeout(5*time.Second))); err != nil {
+		t.Errorf("a host that answers with inline did not get the overview in place: %v", err)
+	}
+	clickButton(t, ctx, fixtureUnsaidInline, "Hide overview")
+	clickButton(t, ctx, fixtureUnsaidInline, "Overview")
+	if requested := hostMessages(t, ctx, fixtureUnsaidInline, "ui/request-display-mode"); len(requested) != 1 {
+		t.Errorf("the view asked a host that stayed inline for fullscreen %d times, want once", len(requested))
+	}
+}
+
+// A link the host will not open is shown to open by hand, with why when it
+// is not https, rather than a click that seems to do nothing.
+func TestLinksTheHostRefusesAreShown(t *testing.T) {
+	ctx := browser(t, fixtureFrames(t))
+
+	clickButton(t, ctx, fixtureRefusesLinks, "Open in Bitbucket")
+	var shown string
+	err := chromedp.Run(ctx, chromedp.Poll(fmt.Sprintf(`(() => { const n = window.bbHost.frames[%d].iframe.contentDocument.querySelector(".link-notice"); return n ? n.textContent : ""; })()`, fixtureRefusesLinks), &shown,
+		chromedp.WithPollingTimeout(5*time.Second)))
+	if err != nil || !strings.Contains(shown, plainCardURL) || !strings.Contains(shown, "only https") {
+		t.Errorf("a refused link reads %q, want it shown to open by hand, with why: %v", shown, err)
 	}
 }
 

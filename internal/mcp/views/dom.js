@@ -247,9 +247,12 @@ function textLink(label, url, bridge) {
   return el("button", { type: "button", class: "text-link", onclick: () => openLink(bridge, url) }, label);
 }
 
+// openLink asks the host to open a web page, and says so when it will not.
 function openLink(bridge, url) {
   if (!isWebURL(url)) return;
-  bridge.openLink(url).catch(() => {});
+  bridge.openLink(url).then((result) => {
+    if (result && result.isError) linkRefused(url);
+  }, () => linkRefused(url));
 }
 
 function isWebURL(value) {

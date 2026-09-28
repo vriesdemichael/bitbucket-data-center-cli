@@ -234,6 +234,12 @@ button {
   color: var(--bb-text-muted);
 }
 .notice.danger { background: var(--bb-danger-bg); color: var(--bb-danger); }
+/* A link the client would not open, to open by hand; over the page in fullscreen. */
+.link-notice { margin-top: 12px; }
+.link-notice p { margin: 0 0 6px; }
+.link-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.link-address { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; color: var(--bb-text); font-size: var(--bb-text-xs); user-select: all; }
+:root[data-mode="fullscreen"] .link-notice { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 5; margin: 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
 
 /* Pull request card */
 
