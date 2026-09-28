@@ -377,9 +377,25 @@ body::before {
   margin: 0;
 }
 
+/* A card with a view beside what it says, for showing bb's MCP views. */
+.bb-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1.2rem;
+  align-items: center;
+  margin: 0 0 1.5rem;
+}
+
+.bb-showcase img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 @media screen and (max-width: 76.1875em) {
   .bb-grid-2,
-  .bb-grid-3 {
+  .bb-grid-3,
+  .bb-showcase {
     grid-template-columns: 1fr;
   }
 }

@@ -26,7 +26,8 @@ items it lists, and what needs you, such as a failed build, is never behind a
 click. The model calls it once it has found what you asked about. A view carries
 what it draws, so it renders again from the conversation without bb running, and
 says when it was read. It opens what you click in Bitbucket. A terminal client
-shows the plain answer.
+shows the plain answer. [**Views in your agent**](views.md) shows what they look
+like.
 
 [**MCP Reference**](reference/mcp-tools.md) lists every tool, which of them
 write and which ask, and every resource and prompt.

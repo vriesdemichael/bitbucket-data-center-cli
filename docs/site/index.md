@@ -41,6 +41,18 @@ hide:
 	</article>
 </section>
 
+<section class="bb-card bb-link-card bb-showcase">
+	<div>
+		<p class="bb-card-kicker">In your agent</p>
+		<h2><a href="views/">See the pull request, not a description of it</a></h2>
+		<p>Ask an agent about a pull request, and in a client that renders MCP Apps, such as Claude Desktop, VS Code or Goose, the MCP server <code>bb</code> ships answers with the pull request itself, right in the chat. Lists of pull requests and diffs too.</p>
+	</div>
+	<div>
+		<img src="assets/views/card-light.webp#only-light" alt="A pull request card in the chat: its title, author and branches, who requested changes, a failed and a running build, an open task, and how many approvals and builds passed">
+		<img src="assets/views/card-dark.webp#only-dark" alt="A pull request card in the chat: its title, author and branches, who requested changes, a failed and a running build, an open task, and how many approvals and builds passed">
+	</div>
+</section>
+
 ## Start here
 
 <section class="bb-grid bb-grid-2">
