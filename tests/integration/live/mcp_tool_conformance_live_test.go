@@ -92,6 +92,10 @@ func TestLiveMCPEveryToolReturnsAClientCompatibleResult(t *testing.T) {
 	// and accepts each, as a person would. Without one those tools refuse the
 	// call, and a tool that never runs is a tool whose result is never checked.
 	person, answers := answeringClient(acceptConfirmation)
+	// One that displays views too, so show fetches what it is given and sends
+	// the view, rather than answering that nothing could be shown.
+	person.Capabilities = &mcp.ClientCapabilities{}
+	person.Capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
 	executeLiveMCPServerAs(t, person, func(session *mcp.ClientSession) {
 		callCtx := context.Background()
 
@@ -354,6 +358,7 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 		"list_commits":         repoArgs(nil),
 		"get_commit":           repoArgs(map[string]any{"commit_id": fixture.commitID}),
 		"compare_refs":         repoArgs(map[string]any{"from": "feature/mcp-main", "to": "master"}),
+		"show":                 repoArgs(map[string]any{"kind": "pull_request", "id": fixture.mainPR}),
 	}
 
 	return fixture
@@ -415,6 +420,12 @@ func assertMCPToolAnswer(t *testing.T, fixture mcpToolFixture, name string, answ
 		tags, _ := answer["tags"].([]any)
 		commandCoverageAssertFields(t, "the tag list_tags answered with", mcpAnswerEntry(t, tags, "displayId", "v0.0.1-mcp"),
 			map[string]any{"latestCommit": fixture.olderCommit})
+	case "show":
+		// The sweep's client displays views, so the view was sent, and it is
+		// of the pull request show was given.
+		if want := fixture.repoRef + "#" + fixture.mainPR; answer["shown"] != true || answer["target"] != want {
+			t.Errorf("show answered shown=%v of %v, want the view sent of %s", answer["shown"], answer["target"], want)
+		}
 	}
 }
 
