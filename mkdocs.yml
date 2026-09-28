@@ -99,7 +99,6 @@ nav:
       - Shell Completion: advanced/shell-completion.md
       - Server-Side Hooks: advanced/server-side-hooks.md
       - Webhook Secrets: advanced/webhook-secrets.md
-  - Views in your agent: views.md
   - AI and llms.txt: ai-and-llms.md
   - ADR Records: adr/index.md
   # Linked rather than copied into docs_dir: the guide is 365 lines that change with the

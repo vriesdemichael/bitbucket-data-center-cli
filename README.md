@@ -21,7 +21,7 @@ request itself, right in the chat:
   <img alt="A pull request card in the chat: its title, author and branches, who requested changes, a failed and a running build, an open task, and how many approvals and builds passed" src="docs/site/assets/views/card-light.webp" width="632">
 </picture>
 
-[Views in your agent](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/views/) shows
+[Views in your agent](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/ai-and-llms/#views-in-your-agent) shows
 the overview, lists of pull requests and diffs too.
 
 ## Why teams adopt `bb`

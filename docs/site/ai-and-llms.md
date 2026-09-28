@@ -18,16 +18,8 @@ request, path and ref as you type. bb reads them with its own credentials, so
 the client never contacts Bitbucket.
 
 In a client that renders MCP Apps, such as Claude Desktop, VS Code or Goose, the
-`show` tool puts a pull request, a list of pull requests or a diff in front of
-you as an interactive view: reviewers with their avatars and decisions, builds,
-open tasks and comments, the description as Bitbucket formats it, and the diff
-file by file, in Bitbucket's own words. Its counts are Bitbucket's, however many
-items it lists, and what needs you, such as a failed build, is never behind a
-click. The model calls it once it has found what you asked about. A view carries
-what it draws, so it renders again from the conversation without bb running, and
-says when it was read. It opens what you click in Bitbucket. A terminal client
-shows the plain answer. [**Views in your agent**](views.md) shows what they look
-like.
+agent answers with the pull request itself, a list of pull requests or a diff,
+right in the chat: [views in your agent](#views-in-your-agent).
 
 [**MCP Reference**](reference/mcp-tools.md) lists every tool, which of them
 write and which ask, and every resource and prompt.
@@ -63,6 +55,50 @@ The strongest limit is not a flag: a read-only personal access token in
 `BITBUCKET_TOKEN` makes every write fail at the server regardless of which tools
 are exposed. [Enterprise Hardening](advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve)
 covers scoping, token restriction and mandating an audit trail by policy.
+
+### Views in your agent
+
+Ask about a pull request, and in a client that renders MCP Apps the answer comes
+with the pull request itself, laid out as Bitbucket lays it out. There is
+nothing to turn on: the model calls the `show` tool once it has found what you
+asked about. A terminal client, such as Claude Code, shows the plain answer, and
+`--exclude show` turns views off.
+
+![A pull request card: its title, author and branches, who requested changes, a failed and a running build, an open task, and how many approvals and builds passed](assets/views/card-light.webp#only-light)
+![A pull request card: its title, author and branches, who requested changes, a failed and a running build, an open task, and how many approvals and builds passed](assets/views/card-dark.webp#only-dark)
+
+The card puts what asks something of someone on one line: who requested
+changes, a conflict, failed and running builds, open tasks. The counts under it
+are Bitbucket's, however many reviewers and builds there are. **Overview** opens
+the rest, fullscreen where the client has it and opened out in place where it
+does not: the description as Bitbucket formats it, the reviewers by their
+decision, every build by its state, and the comments and tasks.
+
+![A pull request's overview: its description beside the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-light.webp#only-light)
+![A pull request's overview: its description beside the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-dark.webp#only-dark)
+
+A list flags only what needs attention in each pull request: a request for
+changes, a draft, failed builds. Fullscreen adds Bitbucket's dashboard columns
+and filters.
+
+![A list of four pull requests, two of them with changes requested and a failed build, one a draft](assets/views/list-light.webp#only-light)
+![A list of four pull requests, two of them with changes requested and a failed build, one a draft](assets/views/list-dark.webp#only-dark)
+
+A diff comes file by file, with Bitbucket's change lozenges and the files in
+their directories. Select lines to add them to the chat, or to ask about them. A
+file too large to carry is named, with a link to its diff in Bitbucket.
+
+![A pull request's diff: the changed files by directory beside the modified, renamed and deleted files with their hunks](assets/views/diff-light.webp#only-light)
+![A pull request's diff: the changed files by directory beside the modified, renamed and deleted files with their hunks](assets/views/diff-dark.webp#only-dark)
+
+- A view carries what it draws. It renders again when you come back to the
+  conversation, even without bb running, and it says when it was read.
+- A count is Bitbucket's count of the whole, and a view that lists fewer says
+  so. A failed build or a request for changes is never behind a click.
+- What you click opens in Bitbucket, through the client. A client that will not
+  open a link shows you its address to copy.
+- bb reads everything a view shows, avatars included, with its own credentials:
+  the client never contacts Bitbucket.
 
 ### What a tool returns
 
