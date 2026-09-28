@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"time"
 
+	cdppage "github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -49,6 +50,11 @@ func main() {
 
 // capture opens the page in headless Chrome and saves each frame as it is
 // drawn, at twice the pixel density so text stays sharp.
+//
+// The viewport is tall enough to hold every frame at once, and each frame is
+// cut from what is on screen. Scrolling to a frame, or capturing past the
+// viewport, makes Chrome lay the page out again mid-capture, and a view in a
+// sandboxed frame redraws late: the capture caught views half laid out.
 func capture(page, dir string, count int) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -62,8 +68,9 @@ func capture(page, dir string, count int) error {
 	ctx, cancel = context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
+	const viewportHeight = 6000
 	if err := chromedp.Run(ctx,
-		chromedp.EmulateViewport(1400, 1000, chromedp.EmulateScale(2)),
+		chromedp.EmulateViewport(1400, viewportHeight, chromedp.EmulateScale(2)),
 		chromedp.Navigate("file:///"+filepath.ToSlash(absolute)),
 		chromedp.WaitVisible("section.frame"),
 		// The views draw once the stand-in host has answered them.
@@ -71,14 +78,31 @@ func capture(page, dir string, count int) error {
 	); err != nil {
 		return err
 	}
-	for i := 1; i <= count; i++ {
-		var shot []byte
-		selector := fmt.Sprintf("#frames > section:nth-of-type(%d)", i)
-		if err := chromedp.Run(ctx, chromedp.ScrollIntoView(selector), chromedp.Sleep(300*time.Millisecond),
-			chromedp.Screenshot(selector, &shot, chromedp.NodeVisible)); err != nil {
-			return fmt.Errorf("frame %d: %w", i, err)
+	var boxes []struct{ X, Y, Width, Height float64 }
+	if err := chromedp.Run(ctx, chromedp.Evaluate(`[...document.querySelectorAll("#frames > section")].map((section) => {
+		const box = section.getBoundingClientRect();
+		return { X: box.left, Y: box.top, Width: box.width, Height: box.height };
+	})`, &boxes)); err != nil {
+		return err
+	}
+	if len(boxes) != count {
+		return fmt.Errorf("the page has %d frames, want %d", len(boxes), count)
+	}
+	for i, box := range boxes {
+		if box.Y+box.Height > viewportHeight {
+			return fmt.Errorf("frame %d ends %.0fpx down, past the %dpx the capture holds", i+1, box.Y+box.Height, viewportHeight)
 		}
-		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("view-%02d.png", i)), shot, 0o600); err != nil {
+		var shot []byte
+		if err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+			var err error
+			shot, err = cdppage.CaptureScreenshot().
+				WithClip(&cdppage.Viewport{X: box.X, Y: box.Y, Width: box.Width, Height: box.Height, Scale: 1}).
+				Do(ctx)
+			return err
+		})); err != nil {
+			return fmt.Errorf("frame %d: %w", i+1, err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("view-%02d.png", i+1)), shot, 0o600); err != nil {
 			return err
 		}
 	}
