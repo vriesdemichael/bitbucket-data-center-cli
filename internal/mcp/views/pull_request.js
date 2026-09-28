@@ -124,7 +124,7 @@ function quietLine(pr) {
     else parts.push(formatNumber(passed) + " of " + (builds.partial ? "the first " : "") + plural(total, "build") + " passed");
   }
   const summary = pr.review_summary || {};
-  const unresolved = pr.comment_count === undefined ? summary.unresolved_threads : undefined;
+  const unresolved = pr.comment_count === undefined ? commentsOf(summary).unresolved : undefined;
   if (unresolved > 0) parts.push(plural(unresolved, "unresolved comment"));
   if (pr.comment_count > 0) parts.push(plural(pr.comment_count, "comment"));
   const line = el("div", { class: "quiet-line" }, parts.join(" · "));
@@ -269,12 +269,20 @@ function detailsSection(pr, view) {
       detailRow("Tasks", openAndResolved(summary.open_tasks, summary.resolved_tasks, "open")),
       detailRow("Comments", pr.comment_count !== undefined
         ? formatNumber(pr.comment_count)
-        : openAndResolved(summary.unresolved_threads, summary.resolved_threads, "unresolved")),
+        : openAndResolved(commentsOf(summary).unresolved, commentsOf(summary).resolved, "unresolved")),
       pr.auto_merge && pr.auto_merge.enabled ? detailRow("Auto-merge", "On, once all pending merge checks have passed") : null));
 }
 
 function detailRow(label, value) {
   return el("li", {}, el("span", { class: "fact-label" }, label), el("span", { class: "detail-value" }, value));
+}
+
+// commentsOf is a review summary's comment threads without its tasks, which
+// are counted as tasks: Bitbucket's thread counts include them, and a task
+// counted twice reads as more to do than there is.
+function commentsOf(summary) {
+  const less = (all, tasks) => (all === undefined ? undefined : Math.max(0, all - (tasks || 0)));
+  return { unresolved: less(summary.unresolved_threads, summary.open_tasks), resolved: less(summary.resolved_threads, summary.resolved_tasks) };
 }
 
 function openAndResolved(open, resolved, openWord) {

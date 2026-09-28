@@ -13,6 +13,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/viewhost"
+	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
@@ -257,5 +258,38 @@ func TestThreadsOpenThroughTheHost(t *testing.T) {
 	if err := chromedp.Run(ctx, chromedp.Poll(fmt.Sprintf(`(() => { const d = window.bbHost.frames[%d].iframe.contentDocument; return d.querySelector(".threads-main") !== null && d.getElementById("thread-1") !== null; })()`, threadsInline), &at,
 		chromedp.WithPollingTimeout(5*time.Second))); err != nil {
 		t.Errorf("a thread picked in the card did not open the threads in fullscreen: %v", err)
+	}
+}
+
+// Bitbucket's thread counts include the tasks. A pull request's card and
+// overview count a task as a task and not as a comment too, as the threads
+// view does: 7 unresolved threads, 2 of them tasks, are 2 open tasks and 5
+// unresolved comments.
+func TestTheCardCountsATaskOnce(t *testing.T) {
+	count := func(n int) *int { return &n }
+	pr := viewPullRequest{
+		PullRequest: fixturePullRequest(),
+		URL:         threadsURL,
+		ReviewSummary: &pullrequestservice.ReviewSummary{
+			UnresolvedThreads: count(7), OpenTasks: count(2), ResolvedThreads: count(2), ResolvedTasks: count(1),
+		},
+	}
+	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": "42"}
+	payload := fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &pr})
+	ctx := browser(t, []viewhost.Frame{
+		{Title: "card", Mode: "inline", Fullscreen: true, Arguments: arguments, Result: payload},
+		{Title: "overview", Mode: "fullscreen", Fullscreen: true, Arguments: arguments, Result: payload},
+	})
+
+	card := frameText(t, ctx, 0)
+	if !strings.Contains(card, "2 open tasks") || !strings.Contains(card, "5 unresolved comments") || strings.Contains(card, "7 unresolved") {
+		t.Errorf("the card counts %q, want 2 open tasks and 5 unresolved comments", card)
+	}
+	var rows []string
+	inFrame(t, ctx, 1, `return [...d.querySelectorAll(".details-list li")].map((li) => li.textContent);`, &rows)
+	for _, want := range []string{"Tasks2 open · 1 resolved", "Comments5 unresolved · 1 resolved"} {
+		if !containsString(rows, want) {
+			t.Errorf("the overview's details are %v, want %q", rows, want)
+		}
 	}
 }
