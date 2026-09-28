@@ -40,7 +40,7 @@ function renderPullRequests(payload, view) {
     el("h1", {}, "Pull requests"),
     el("span", { class: "faint" }, formatNumber(prs.length) + (payload.limit_reached ? "+" : "")),
     el("span", { class: "spacer" }),
-    snapshotStamp(payload.generated_at, view.locale),
+    snapshotStamp(payload.generated_at, view.locale, !view.fullscreen),
     open
       ? el("button", { type: "button", class: "button ghost", onclick: () => view.expand() }, icon("collapse"), view.fullscreen ? "Exit full screen" : "Show fewer")
       : null);
@@ -66,7 +66,7 @@ function renderPullRequests(payload, view) {
   let footer = null;
   if (!open && (left > 0 || payload.limit_reached)) {
     footer = el("div", { class: "actions" },
-      el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("expand"), "Show all " + formatNumber(prs.length)));
+      el("button", { type: "button", class: "button ghost", onclick: () => view.expand() }, icon("expand"), "Show all " + formatNumber(prs.length)));
   } else if (open && left > 0) {
     footer = el("div", { class: "actions" }, moreButton("rows", left, LIST_STEP, "pull requests", view));
   }
@@ -76,8 +76,12 @@ function renderPullRequests(payload, view) {
 }
 
 // pullRequestRow keeps what identifies a pull request, its repository and
-// number, over its branches, which give way first on a narrow row.
+// number, over its branches, which give way first on a narrow row. Inline, a
+// row is for a glance: its title, where it lives, and at the right only what
+// asks something of someone. Fullscreen has room for its counts and
+// reviewers too.
 function pullRequestRow(pr, avatars, view) {
+  const detailed = view.fullscreen;
   return el("li", {},
     el("button", {
       type: "button",
@@ -93,13 +97,27 @@ function pullRequestRow(pr, avatars, view) {
         el("span", { class: "meta-repo" }, el("span", { class: "ellipsis" }, repositoryOf(pr)), el("span", { class: "nowrap" }, "#" + pr.id)),
         el("span", { class: "meta-branches ellipsis" }, pr.source_branch + " → " + pr.target_branch),
         pr.updated_date ? el("span", { class: "meta-updated nowrap" }, lastUpdated(pr.updated_date, view.locale)) : null,
-        el("span", { class: "counts" },
+        detailed ? el("span", { class: "counts" },
           buildBadge(pr.check_counts),
           pr.open_task_count > 0 ? el("span", { class: "counter", title: plural(pr.open_task_count, "open task") }, icon("task", null, "icon-sm"), formatNumber(pr.open_task_count)) : null,
-          pr.comment_count > 0 ? el("span", { class: "counter", title: plural(pr.comment_count, "comment") }, icon("comment", null, "icon-sm"), formatNumber(pr.comment_count)) : null))),
+          pr.comment_count > 0 ? el("span", { class: "counter", title: plural(pr.comment_count, "comment") }, icon("comment", null, "icon-sm"), formatNumber(pr.comment_count)) : null) : null)),
     // The state over the reviewers, both at the right edge, so the avatars
     // line up down the list whatever the state's length.
-    el("span", { class: "row-side" },
-      stateBadges(pr),
-      reviewerStack(pr.reviewers || [], avatars, 3, "sm"))));
+    el("span", { class: "row-side" }, detailed
+      ? [stateBadges(pr), reviewerStack(pr.reviewers || [], avatars, 3, "sm")]
+      : rowFlags(pr))));
+}
+
+// rowFlags is what a row flags at a glance: a state other than plain open,
+// such as a request for changes, and, while it is open, builds that failed.
+// A row that asks nothing of anyone flags nothing.
+function rowFlags(pr) {
+  const flags = [];
+  if (pr.state !== "OPEN" || pr.draft || changesRequested(pr)) flags.push(stateBadges(pr));
+  const failed = pr.state === "OPEN" && pr.check_counts ? pr.check_counts.failed : 0;
+  if (failed > 0) {
+    const words = plural(failed, "build") + " failed";
+    flags.push(el("span", { class: "build-state failed", title: words }, icon("buildFailed", words, "icon-sm"), formatNumber(failed)));
+  }
+  return flags.length > 0 ? flags : null;
 }

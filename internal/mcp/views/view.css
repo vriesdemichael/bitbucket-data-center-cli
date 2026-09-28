@@ -261,11 +261,23 @@ button {
 .branches { display: flex; align-items: center; gap: 6px; flex: 1 1 18em; min-width: 0; }
 .branches .chip.branch.source { flex: 0 1 auto; min-width: 4em; max-width: none; }
 .branches .chip.branch.target { flex: 0 0 auto; max-width: 55%; }
-.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 8px 14px; margin-top: 12px; }
-.facts > .fact { display: contents; }
-.fact { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+/* A card at a glance: what asks something of someone, each in its own
+   color, over one quiet line with the rest. */
+.status { display: grid; gap: 6px; margin-top: 12px; }
+.attention { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; }
+.attention-item { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--font-weight-medium, 500); }
+.attention-item.changes-requested { color: var(--bb-warning); }
+.attention-item.failed { color: var(--bb-danger); }
+.attention-item.inprogress { color: var(--bb-info); }
+.avatar-stack.tight { gap: 3px; }
+.quiet-line { color: var(--bb-text-faint); font-size: 13px; }
+/* The card's branches, and an inline diff's, read as text, not boxes. */
+.pr-card .chip.branch, .diff-summary .chip.branch { padding: 0; border-color: transparent; background: transparent; color: var(--bb-text-muted); }
+.pr-card .chip.branch .icon, .diff-summary .chip.branch .icon { color: var(--bb-text-faint); }
+/* An inline view's buttons stay out of the way of what it says. */
+.actions.quiet { margin-top: 12px; gap: 6px; }
+.actions.quiet .button { min-height: 28px; padding: 3px 10px; font-size: 13px; }
 .fact-label { width: 72px; flex: none; color: var(--bb-text-faint); font-size: var(--bb-text-xs); }
-.facts .fact-label { width: auto; }
 .counts { display: inline-flex; gap: 4px 12px; flex-wrap: wrap; }
 .avatar-stack .more { white-space: nowrap; }
 .stamp { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: var(--bb-text-xs); color: var(--bb-text-faint); white-space: nowrap; }
@@ -611,11 +623,6 @@ tr.selected .line-number { color: var(--bb-info); font-weight: var(--font-weight
   .diff-layout { grid-template-columns: minmax(0, 1fr); }
   .diff-tree { display: none; }
   .fullscreen-header { padding: 12px 16px; }
-}
-
-@media (max-width: 420px) {
-  .facts { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
-  .facts .fact-label { margin-top: 6px; }
 }
 
 /* A narrow list row puts its reviewers and state below its title, and lets
