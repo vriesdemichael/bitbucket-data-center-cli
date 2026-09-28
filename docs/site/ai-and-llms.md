@@ -91,6 +91,15 @@ file too large to carry is named, with a link to its diff in Bitbucket.
 ![A pull request's diff: the changed files by directory beside the modified, renamed and deleted files with their hunks](assets/views/diff-light.webp#only-light)
 ![A pull request's diff: the changed files by directory beside the modified, renamed and deleted files with their hunks](assets/views/diff-dark.webp#only-dark)
 
+The comment threads come where they are: those on the pull request first, then
+each file's, the open ones out and the resolved folded to their count. A thread
+on a changed line comes with the lines of the diff that lead to it, and a long
+discussion folds its earlier replies. The card lists what is still open, the
+open tasks first.
+
+![A pull request's comment threads: tasks and comments on the pull request, a comment on a file, and a task on a changed line with the lines of the diff leading to it](assets/views/threads-light.webp#only-light)
+![A pull request's comment threads: tasks and comments on the pull request, a comment on a file, and a task on a changed line with the lines of the diff leading to it](assets/views/threads-dark.webp#only-dark)
+
 - A view carries what it draws. It renders again when you come back to the
   conversation, even without bb running, and it says when it was read.
 - A count is Bitbucket's count of the whole, and a view that lists fewer says

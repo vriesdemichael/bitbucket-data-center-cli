@@ -22,7 +22,7 @@ request itself, right in the chat:
 </picture>
 
 [Views in your agent](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/ai-and-llms/#views-in-your-agent) shows
-the overview, lists of pull requests and diffs too.
+the overview, lists of pull requests, diffs and comment threads too.
 
 ## Why teams adopt `bb`
 
