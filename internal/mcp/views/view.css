@@ -185,7 +185,7 @@ button {
 .avatar.lg { --size: 32px; }
 .avatar.sm { --size: 20px; }
 /* Side by side rather than overlapping, so each vote stays readable. */
-.avatar-stack { display: inline-flex; align-items: center; gap: 6px; }
+.avatar-stack { display: inline-flex; align-items: center; gap: 8px; }
 
 .vote {
   position: absolute;
@@ -261,10 +261,12 @@ button {
 .branches { display: flex; align-items: center; gap: 6px; flex: 1 1 18em; min-width: 0; }
 .branches .chip.branch.source { flex: 0 1 auto; min-width: 4em; max-width: none; }
 .branches .chip.branch.target { flex: 0 0 auto; max-width: 55%; }
-.facts { display: grid; gap: 8px; margin-top: 12px; }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 8px 14px; margin-top: 12px; }
+.facts > .fact { display: contents; }
 .fact { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
 .fact-label { width: 72px; flex: none; color: var(--bb-text-faint); font-size: var(--bb-text-xs); }
-.counts { display: inline-flex; gap: 10px; flex-wrap: wrap; }
+.facts .fact-label { width: auto; }
+.counts { display: inline-flex; gap: 4px 12px; flex-wrap: wrap; }
 .avatar-stack .more { white-space: nowrap; }
 .stamp { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: var(--bb-text-xs); color: var(--bb-text-faint); white-space: nowrap; }
 .stamp.stale { color: var(--bb-warning); }
@@ -279,6 +281,7 @@ button {
 .page > .details { flex: 1; min-height: 0; }
 .page > .details > .details-main, .page > .details > .details-side { min-height: 0; overflow: auto; padding: 20px 24px; }
 .page > .details > .details-side { border-left: 1px solid var(--bb-border); background: var(--bb-bg-sunken); }
+.page > .details > .details-main > * { max-width: 880px; }
 .details.inline {
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
@@ -309,8 +312,20 @@ button {
 }
 button.group-title.fold { width: 100%; padding: 4px 0; border: 0; background: transparent; cursor: pointer; text-align: left; }
 button.group-title.fold:hover { color: var(--bb-info); }
-.check-list .unlisted, .more-row { display: flex; align-items: center; gap: 8px; }
-.more-row { padding: 4px 0; }
+.more-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.person-list.compact li { padding: 3px 0; }
+.person-list.compact li + li, .person-list.details-list li + li { border-top: 0; }
+.person-list.details-list li { padding: 3px 0; }
+.group .check-list li { display: block; padding: 0; }
+.group .check-list li + li { border-top: 0; }
+.build-link, .build-name { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 3px 4px 3px 22px; }
+.build-link { border: 0; border-radius: 4px; background: transparent; cursor: pointer; text-align: left; }
+.build-link:hover { background: var(--bb-bg-subtle); }
+.build-link .link-icon { margin-left: auto; color: var(--bb-text-faint); }
+.build-link:hover .link-icon { color: var(--bb-info); }
+.group .check-list .unlisted { padding: 3px 0 3px 22px; font-size: var(--bb-text-xs); }
+.text-link { display: inline; padding: 0; border: 0; background: none; color: var(--bb-info); cursor: pointer; font: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.text-link:hover { text-decoration-thickness: 2px; }
 .detail-value { min-width: 0; overflow-wrap: anywhere; }
 
 /* Long content, held to a few lines until the person asks for the rest. */
@@ -335,7 +350,7 @@ tr.more td { padding: 6px 8px; background: var(--bb-bg-subtle); }
 .fullscreen-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px 16px;
   padding: 12px 24px;
   border-bottom: 1px solid var(--bb-border);
@@ -346,8 +361,9 @@ tr.more td { padding: 6px 8px; background: var(--bb-bg-subtle); }
 }
 .fullscreen-header .row-main { flex: 1 1 360px; min-width: 0; }
 .fullscreen-header .pr-title { margin: 2px 0 0; font-size: var(--bb-heading-lg); }
-.fullscreen-header .diff-summary { margin-top: 4px; }
-.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.header-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 8px; min-width: 0; }
+.header-meta > .byline, .header-meta > .diff-summary { flex: 1 1 18em; min-width: 0; }
+.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 14px; }
 
 /* Pull request list */
 
@@ -370,20 +386,25 @@ tr.more td { padding: 6px 8px; background: var(--bb-bg-subtle); }
 .row-button:hover { background: var(--bb-bg-subtle); }
 .row-main { flex: 1; min-width: 0; }
 .row-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--font-weight-medium, 500); }
-/* On one line, the branches give way first; the repository keeps its name up
-   to half the line, and its number, the time and the counts never give way. */
+/* On one line, the branches give way first and then the time, neither to
+   nothing; a long repository is cut at a set width, and its number and the
+   counts never give way. */
 .row-meta { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--bb-text-xs); color: var(--bb-text-faint); }
 .row-meta > * { flex: none; }
-.row-meta > .meta-repo { display: inline-flex; gap: 4px; max-width: 50%; min-width: 0; }
-.row-meta > .meta-repo > .ellipsis { flex: 0 1 auto; }
-.row-meta > .meta-branches { flex: 0 4 auto; min-width: 0; }
+.row-meta > .meta-repo { display: inline-flex; gap: 4px; }
+.row-meta > .meta-repo > .ellipsis { max-width: 14em; }
+.list-page .row-meta > .meta-repo > .ellipsis { max-width: 32em; }
+.row-meta > .meta-branches { flex: 0 6 auto; min-width: 5em; }
+.row-meta > .meta-updated { flex: 0 3 auto; min-width: 5em; overflow: hidden; text-overflow: ellipsis; }
+.row-main { overflow: hidden; }
 .row-meta .counts { flex: none; gap: 6px; }
 .row-meta .icon { width: 12px; height: 12px; vertical-align: -1px; }
-.row-side { display: flex; align-items: center; gap: 10px; flex: none; }
+.row-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.row-meta > .meta-branches::before, .row-meta > .meta-updated::before { content: "·"; margin-right: 8px; }
 .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .filters .button { min-height: 28px; padding: 3px 10px; font-size: var(--bb-text-xs); }
 .filters-note { align-self: center; font-size: var(--bb-text-xs); }
-.list-page { padding: 16px 24px; }
+.list-page { max-width: 1200px; margin: 0 auto; padding: 16px 24px; }
 
 /* Diff */
 
@@ -396,7 +417,8 @@ tr.more td { padding: 6px 8px; background: var(--bb-bg-subtle); }
 .file-name { display: flex; flex-direction: column; min-width: 0; }
 /* A path gives way from its directory, and keeps its file name. */
 .path { display: flex; min-width: 0; }
-.path > .dir { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.path > .dir { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+.path > .slash { flex: none; }
 .path > .name { flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .omitted-mark { color: var(--bb-warning); }
 .notice.omitted p { margin: 0 0 6px; }
@@ -439,7 +461,7 @@ tr.more td { padding: 6px 8px; background: var(--bb-bg-subtle); }
 }
 .file-link:hover { background: var(--bb-bg-subtle); }
 /* One width for every change lozenge, so the paths beside them line up. */
-.file-link .badge, .diff-file-header .badge { min-width: 76px; justify-content: center; }
+.file-link .badge, .diff-file-header .badge { min-width: 66px; justify-content: center; padding: 0 6px; font-size: 10px; }
 .file-link[aria-current="true"] { background: var(--bb-info-bg); }
 .change-dot { width: 8px; height: 8px; flex: none; border-radius: var(--bb-radius-full); background: var(--bb-text-faint); }
 .change-dot.success { background: light-dark(#1f845a, #2abb7f); }
@@ -459,6 +481,11 @@ tr.more td { padding: 6px 8px; background: var(--bb-bg-subtle); }
   border-right: 1px solid var(--bb-border);
   background: var(--bb-bg-sunken);
 }
+.file-list.tree li + li { border-top: 0; }
+.file-list.tree .file-link { padding: 3px 4px 3px 16px; }
+.tree-dir { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 10px 4px 2px; font-family: var(--bb-mono); font-size: 11px; color: var(--bb-text-faint); }
+.tree-dir > .ellipsis { direction: rtl; text-align: left; }
+.tree-dir:first-child { padding-top: 2px; }
 .diff-main { overflow: auto; padding: 0 16px 24px; }
 .selection-bar {
   position: sticky;
@@ -538,7 +565,7 @@ tr.meta td { color: var(--bb-text-faint); font-style: italic; }
 tr.selected td { box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--bb-info) 16%, transparent); }
 tr.selected .line-number { color: var(--bb-info); font-weight: var(--font-weight-semibold, 600); }
 .diff-note { padding: 12px; color: var(--bb-text-muted); }
-.inline-file { margin-top: 10px; }
+.inline-file { margin: 4px 0 10px; border: 1px solid var(--bb-border); border-radius: var(--bb-radius); overflow: hidden; }
 
 /* Markdown, as a pull request's description is written. */
 
@@ -586,12 +613,20 @@ tr.selected .line-number { color: var(--bb-info); font-weight: var(--font-weight
   .fullscreen-header { padding: 12px 16px; }
 }
 
+@media (max-width: 420px) {
+  .facts { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  .facts .fact-label { margin-top: 6px; }
+}
+
 /* A narrow list row puts its reviewers and state below its title, and lets
    its details wrap rather than cut them short. */
 @media (max-width: 560px) {
   .row-button { grid-template-columns: auto minmax(0, 1fr); }
-  .row-side { grid-column: 2; flex-wrap: wrap; }
+  .row-side { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; }
   .row-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; }
   .row-meta { flex-wrap: wrap; row-gap: 2px; }
   .row-meta > .meta-repo { max-width: 100%; }
+  .row-meta > .meta-repo > .ellipsis { max-width: none; }
+  .row-meta > .meta-branches { flex-basis: 100%; }
+  .row-meta > .meta-branches::before, .row-meta > .meta-updated::before { content: none; }
 }
