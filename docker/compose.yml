@@ -44,6 +44,15 @@ services:
     # the container starts Bitbucket, immediately stops it, and exits 0.
     stdin_open: true
     tty: true
+    environment:
+      # A second connector, which reports every request as https: the https
+      # front below passes requests to it, and Bitbucket builds its links and
+      # redirects from the scheme a connector gives it. Nothing publishes the
+      # port, and 7990 stays plain http for everything else. Marked not
+      # secure, which an https connector otherwise is: its cookies would then
+      # be Secure ones, which a browser keeps http from replacing, and every
+      # local instance's http sign-in would fail in that browser.
+      SPRING_APPLICATION_JSON: '{"server.additional-connector.1.port":7991,"server.additional-connector.1.scheme":"https","server.additional-connector.1.secure":false}'
     ports:
       # Host ports are overridable so a second instance (for example a different
       # Bitbucket version) can run alongside this one without editing the file.
@@ -82,5 +91,20 @@ services:
       retries: 3
       start_period: 600s
 
+  # An https front for the instance, for a client that opens only https links,
+  # such as Claude. Only `task stack:tls` starts it: scripts/stack.sh copies out
+  # the CA its certificate chains to and writes its address.
+  tls:
+    image: caddy:2.11.4-alpine
+    profiles: [tls]
+    ports:
+      - "${BITBUCKET_TLS_HOST_PORT:-7443}:443"
+    volumes:
+      - ./tls/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Caddy's CA, kept so a client told to trust it goes on trusting it when
+      # the front starts again.
+      - bb-tls-data:/data
+
 volumes:
   bb-maven-cache:
+  bb-tls-data:
