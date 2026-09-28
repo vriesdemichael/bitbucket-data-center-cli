@@ -40,7 +40,6 @@ CI never reaches the limit: each run creates the container from scratch.
 
 ```bash
 task stack:up        # start this checkout's instance and enable basic auth
-task stack:tls       # an https front before it, for clients that open only https links
 task stack:status    # this instance, how long before it stops itself, every local instance
 task stack:logs
 task stack:down
@@ -79,28 +78,30 @@ and the reverse, so a worktree that exists can look missing from the other
 side. An instance whose worktree really is gone stops itself within three
 hours, and is removed then.
 
-### An https front
+### An https address
 
 Some clients open only https links: Claude will not open the http links in
-bb's views. `task stack:tls` starts the instance if need be, puts an https
-front before it, and adds its address to `.tmp/bitbucket.env`:
+bb's views. So the instance serves https as well, from a second connector with
+a self-signed certificate for `localhost` made when the image is built. `task
+stack:up` writes both addresses to `.tmp/bitbucket.env` and copies the
+certificate out next to it:
 
 ```bash
+BITBUCKET_URL=http://localhost:7990
 BITBUCKET_TLS_URL=https://localhost:7443
-BITBUCKET_TLS_CA_FILE=/path/to/checkout/.tmp/bitbucket-tls-ca.crt
+BITBUCKET_TLS_CA_FILE=/path/to/checkout/.tmp/bitbucket-tls.crt
 ```
 
-Give bb the URL as `BITBUCKET_URL` and the file as `BB_CA_FILE`, and the links
-it builds are https. The front is Caddy, with a certificate for `localhost`
-from a CA of its own that nothing installs, so a browser warns about it until
-you trust that CA yourself. It passes each request to a second connector of
-the instance, which reports requests as https, so the links and redirects
-Bitbucket builds are https too. Port 7990 stays plain http, and the live suite
-uses it.
+Give bb the https URL as `BITBUCKET_URL` and the file as `BB_CA_FILE`, and the
+links it builds are https. A browser warns about the certificate until you
+trust it yourself, which vouches for `localhost` alone. The main checkout
+serves https on port 7443, a worktree on a port Docker assigns. The live suite
+uses http.
 
-The main checkout's front is on port 7443, a worktree's on a port Docker
-assigns. Once started, it comes back with the instance on every `task
-stack:up`, until `task stack:down`.
+Bitbucket marks the cookies it sets over https Secure, and a browser keeps
+http from replacing them: once a browser has signed in to a local instance over
+https, an http sign-in in that browser fails until its cookies for `localhost`
+are cleared.
 
 ## Version
 

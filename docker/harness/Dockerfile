@@ -94,6 +94,16 @@ RUN /opt/atlassian-sdk/apache-maven-3.9.8/bin/mvn -q --batch-mode --no-transfer-
         -Dartifact="com.atlassian.bitbucket.server:bitbucket-webapp:$(cat /bitbucket-version):war" \
     || echo "WARN: could not pre-fetch bitbucket-webapp; it will download on first start"
 
+# A certificate for localhost, which the https connector docker/compose.yml
+# configures serves. Self-signed and no CA, so trusting it vouches for
+# localhost alone; scripts/stack.sh copies it out for bb's --ca-file. After the
+# large layers, so it changes only when they do.
+RUN keytool -genkeypair -alias tomcat -keyalg RSA -keysize 2048 -validity 3650 \
+        -dname "CN=localhost" -ext "SAN=dns:localhost,ip:127.0.0.1" -ext "BC=ca:false" \
+        -keystore /bitbucket-tls.p12 -storetype PKCS12 -storepass changeit \
+    && keytool -exportcert -rfc -alias tomcat -keystore /bitbucket-tls.p12 -storepass changeit \
+        -file /bitbucket-tls.crt
+
 # How old the SDK licence may get before the instance stops itself: 2h58m, two
 # minutes before the three hours it is issued for run out. start-bitbucket.sh
 # stops the container at this age, and the compose healthcheck and the live
@@ -103,7 +113,7 @@ ENV BB_LICENCE_RETIRE_SECONDS=10680
 COPY start-bitbucket.sh /usr/local/bin/start-bitbucket.sh
 RUN chmod +x /usr/local/bin/start-bitbucket.sh
 
-EXPOSE 7990 7999
+EXPOSE 7990 7999 8443
 
 # The base image ships an entrypoint that starts the bundled Bitbucket. We run
 # the SDK-provisioned instance instead, so clear it.
