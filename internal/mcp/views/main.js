@@ -20,8 +20,10 @@ const view = {
   // said which modes it has without fullscreen among them, or refused once.
   canFullscreen: true,
   expanded: false,
-  // refusedLink is a link the host would not open, shown to open by hand.
+  // refusedLink is a link the host would not open, shown to open by hand, and
+  // opensLinks whether the host said it opens links at all.
   refusedLink: null,
+  opensLinks: true,
   locale: undefined,
   filter: "all",
   openFiles: new Set(),
@@ -268,7 +270,7 @@ function linkNotice() {
     }
   });
   return el("div", { class: "notice link-notice", role: "status" },
-    el("p", {}, "This client did not open the link." + (url.startsWith("http:") ? " Some clients open only https links." : "")),
+    el("p", {}, view.opensLinks ? "This client did not open the link." : "This client does not open links."),
     el("div", { class: "link-row" },
       address,
       copy,
@@ -376,6 +378,11 @@ async function start() {
   watchSize();
   try {
     const result = await bridge.connect(CONNECT_TIMEOUT_MS);
+    // A host that says what it can do, and leaves opening links out, opens
+    // none: its links are shown to open by hand without asking.
+    if (result.hostCapabilities && typeof result.hostCapabilities === "object") {
+      view.opensLinks = Boolean(result.hostCapabilities.openLinks);
+    }
     applyHostContext(result.hostContext);
   } catch (error) {
     view.standalone = true;

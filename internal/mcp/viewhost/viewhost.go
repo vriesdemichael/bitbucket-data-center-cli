@@ -35,6 +35,9 @@ type Frame struct {
 	// host does that opens only some links, such as Claude's, which opens
 	// https links alone.
 	RefuseLinks bool `json:"refuseLinks,omitempty"`
+	// OpensNoLinks leaves opening links out of the host's capabilities, as a
+	// host does that opens none.
+	OpensNoLinks bool `json:"opensNoLinks,omitempty"`
 	// Width is the view's width in pixels, such as a phone's; zero leaves it
 	// to the page's grid.
 	Width int `json:"width,omitempty"`
