@@ -12,6 +12,18 @@ against a real Bitbucket server.
 It is designed as the `gh`-style CLI experience for Bitbucket Data Center, including
 repository cloning and browser navigation ergonomics tailored to Bitbucket-hosted projects.
 
+It ships an MCP server for AI agents too. Ask one about a pull request, and in a client
+that renders MCP Apps, such as Claude Desktop, VS Code or Goose, it answers with the pull
+request itself, right in the chat:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/site/assets/views/card-dark.webp">
+  <img alt="A pull request card in the chat: its title, author and branches, who requested changes, a failed and a running build, an open task, and how many approvals and builds passed" src="docs/site/assets/views/card-light.webp" width="632">
+</picture>
+
+[Views in your agent](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/views/) shows
+the overview, lists of pull requests and diffs too.
+
 ## Why teams adopt `bb`
 
 - **Operationally safe by default**: dry-run planning for server mutations, and a confirmation before any command that deletes, removes, clears or revokes.
