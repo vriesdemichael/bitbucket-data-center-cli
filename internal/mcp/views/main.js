@@ -36,8 +36,10 @@ const view = {
   unclamped: new Set(),
   // revealed is how many steps more of each growing list the person asked for.
   revealed: new Map(),
-  // focusFile is the file a diff scrolls to once it is in fullscreen.
+  // focusFile is the file a diff scrolls to once it is in fullscreen, and
+  // focusThread the thread the threads view scrolls to once it is open.
   focusFile: null,
+  focusThread: null,
   // narrow is a screen too narrow for the overview's side panel, and phone
   // one where a list's rows wrap.
   narrow: false,
@@ -175,6 +177,7 @@ bridge.on("ui/notifications/tool-result", (result) => {
     view.unclamped = new Set();
     view.revealed = new Map();
     view.focusFile = null;
+    view.focusThread = null;
     view.selection = null;
   }
   render();
@@ -284,7 +287,7 @@ const PHONE_WIDTH = 560;
 
 // SCROLLING are the parts of a view that scroll on their own. A view is drawn
 // again whenever something changes, and each keeps its place when it is.
-const SCROLLING = ["#diff-main", ".diff-tree", ".details-main", ".details-side", ".page > .details"];
+const SCROLLING = ["#diff-main", ".diff-tree", "#threads-main", ".details-main", ".details-side", ".page > .details"];
 
 function render() {
   const app = document.getElementById("app");
@@ -305,6 +308,11 @@ function render() {
     const target = document.getElementById("diff-file-" + view.focusFile);
     if (target) target.scrollIntoView({ block: "start" });
     view.focusFile = null;
+  }
+  if (view.fullscreen && view.focusThread !== null) {
+    const target = document.getElementById("thread-" + view.focusThread);
+    if (target) target.scrollIntoView({ block: "start" });
+    view.focusThread = null;
   }
 }
 
@@ -333,6 +341,7 @@ function content() {
         case "pull_request": return renderPullRequest(view.payload, view);
         case "pull_requests": return renderPullRequests(view.payload, view);
         case "diff": return renderDiff(view.payload, view);
+        case "threads": return renderThreads(view.payload, view);
         default: return notice("This version of the page cannot show a " + view.payload.kind + ".");
       }
     } catch (error) {

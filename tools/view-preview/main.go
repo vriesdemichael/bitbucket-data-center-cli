@@ -165,6 +165,7 @@ func run(project, repo, id, state, theme, out string) (int, error) {
 	card := map[string]any{"kind": "pull_request", "project": project, "repo": repo, "id": id}
 	list := map[string]any{"kind": "pull_requests", "project": project, "repo": repo, "state": state}
 	diff := map[string]any{"kind": "diff", "project": project, "repo": repo, "id": id}
+	threads := map[string]any{"kind": "threads", "project": project, "repo": repo, "id": id}
 
 	var frames []viewhost.Frame
 	for _, want := range []struct {
@@ -180,6 +181,8 @@ func run(project, repo, id, state, theme, out string) (int, error) {
 		{"Diff, inline in a host without fullscreen", "light", "inline", false, diff},
 		{"Pull request, fullscreen", "light", "fullscreen", true, card},
 		{"Diff, fullscreen", "dark", "fullscreen", true, diff},
+		{"Comment threads, inline", "light", "inline", true, threads},
+		{"Comment threads, fullscreen", "light", "fullscreen", true, threads},
 	} {
 		result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show", Arguments: want.arguments})
 		if err != nil {

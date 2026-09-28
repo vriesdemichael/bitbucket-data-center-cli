@@ -43,6 +43,15 @@ type Reply struct {
 	Author string `json:"author,omitempty"`
 	Date   int64  `json:"date,omitempty"`
 	Text   string `json:"text,omitempty"`
+	// AuthorAccount is the author's account, which a view draws an avatar
+	// for. It is not part of the answer an agent reads.
+	AuthorAccount Account `json:"-"`
+}
+
+// Account is the username and slug of a comment's author.
+type Account struct {
+	Username string
+	Slug     string
 }
 
 // Thread is the agent-sized view of a pull request comment thread. It carries
@@ -67,6 +76,9 @@ type Thread struct {
 	LastReply     *Reply  `json:"last_reply,omitempty"`
 	Replies       []Reply `json:"replies,omitempty"`
 	URL           string  `json:"url,omitempty"`
+	// AuthorAccount is the author's account, which a view draws an avatar
+	// for. It is not part of the answer an agent reads.
+	AuthorAccount Account `json:"-"`
 }
 
 // Summary is the aggregate view of a set of threads. It answers "is there
@@ -289,12 +301,13 @@ func sortThreads(threads []Thread) {
 
 func mapThread(comment openapigenerated.RestComment, options ThreadOptions) Thread {
 	thread := Thread{
-		Kind:        ThreadKindComment,
-		State:       strings.ToUpper(strings.TrimSpace(safederef.String(comment.State))),
-		Author:      commentAuthor(comment),
-		CreatedDate: safederef.Int64(comment.CreatedDate),
-		UpdatedDate: safederef.Int64(comment.UpdatedDate),
-		Text:        strings.TrimSpace(safederef.String(comment.Text)),
+		Kind:          ThreadKindComment,
+		State:         strings.ToUpper(strings.TrimSpace(safederef.String(comment.State))),
+		Author:        commentAuthor(comment),
+		AuthorAccount: commentAccount(comment),
+		CreatedDate:   safederef.Int64(comment.CreatedDate),
+		UpdatedDate:   safederef.Int64(comment.UpdatedDate),
+		Text:          strings.TrimSpace(safederef.String(comment.Text)),
 	}
 
 	if comment.Id != nil {
@@ -408,9 +421,10 @@ func collectReplies(comments *[]openapigenerated.RestComment) []Reply {
 	replies := make([]Reply, 0, len(*comments))
 	for _, comment := range *comments {
 		reply := Reply{
-			Author: commentAuthor(comment),
-			Date:   safederef.Int64(comment.CreatedDate),
-			Text:   strings.TrimSpace(safederef.String(comment.Text)),
+			Author:        commentAuthor(comment),
+			AuthorAccount: commentAccount(comment),
+			Date:          safederef.Int64(comment.CreatedDate),
+			Text:          strings.TrimSpace(safederef.String(comment.Text)),
 		}
 		if comment.Id != nil {
 			reply.ID = *comment.Id
@@ -478,6 +492,13 @@ func commentAuthor(comment openapigenerated.RestComment) string {
 	}
 
 	return strings.TrimSpace(comment.Author.Name)
+}
+
+func commentAccount(comment openapigenerated.RestComment) Account {
+	if comment.Author == nil {
+		return Account{}
+	}
+	return Account{Username: strings.TrimSpace(comment.Author.Name), Slug: strings.TrimSpace(comment.Author.Slug)}
 }
 
 func threadURL(options ThreadOptions, commentID int64) string {

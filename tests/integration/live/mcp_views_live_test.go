@@ -232,3 +232,118 @@ func TestLiveMCPShowCountsEveryBuild(t *testing.T) {
 		}
 	}, "ai", "mcp", "serve")
 }
+
+// TestLiveMCPShowThreadsCarriesEveryThreadWhereItIs: show's threads view
+// carries a pull request's threads as Bitbucket has them: a comment on a
+// changed line with the lines of the diff that lead to it and its reply, a
+// task, and a thread resolved as Bitbucket's UI resolves one, counted as a
+// whole, with the avatars of the people who wrote them.
+func TestLiveMCPShowThreadsCarriesEveryThreadWhereItIs(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	branch := testsupport.UniqueName("feature/threads-")
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, "threads.txt", "one\ntwo\nthree\nfour\nfive\n"); err != nil {
+		t.Fatalf("push failed: %v", err)
+	}
+	created := extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "create",
+		"--from-ref", branch, "--to-ref", "refs/heads/master", "--title", testsupport.UniqueName("Threads "),
+		"--no-default-reviewers", "--no-codeowners")))
+	id := fmt.Sprint(created["id"])
+	comments := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/comments", seeded.Key, repo.Slug, id)
+	post := func(body map[string]any) map[string]any {
+		t.Helper()
+		out, err := harness.liveJSON(ctx, http.MethodPost, comments, body)
+		if err != nil {
+			t.Fatalf("post comment %v failed: %v", body["text"], err)
+		}
+		return out
+	}
+
+	inline := post(map[string]any{"text": "on line four",
+		"anchor": map[string]any{"path": "threads.txt", "line": 4, "lineType": "ADDED", "fileType": "TO", "diffType": "EFFECTIVE"}})
+	post(map[string]any{"text": "a reply", "parent": map[string]any{"id": inline["id"]}})
+	post(map[string]any{"text": "a task", "severity": "BLOCKER"})
+	resolved := post(map[string]any{"text": "resolved"})
+	if _, err := harness.liveJSON(ctx, http.MethodPut, fmt.Sprintf("%s/%v", comments, resolved["id"]),
+		map[string]any{"version": resolved["version"], "threadResolved": true}); err != nil {
+		t.Fatalf("resolve the thread failed: %v", err)
+	}
+
+	capabilities := &mcp.ClientCapabilities{}
+	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
+	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
+		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "show",
+			Arguments: map[string]any{"kind": "threads", "project": seeded.Key, "repo": repo.Slug, "id": id}})
+		if err != nil || result.IsError {
+			t.Fatalf("show threads: %v %s", err, mcpResultText(result))
+		}
+		payload, _ := result.Meta[viewPayloadKey].(map[string]any)
+		threads, _ := payload["threads"].(map[string]any)
+		if threads == nil {
+			t.Fatalf("show threads carries no threads: %v", result.Meta)
+		}
+
+		summary, _ := threads["summary"].(map[string]any)
+		for field, want := range map[string]float64{"total_threads": 3, "unresolved": 2, "resolved": 1, "open_tasks": 1} {
+			if summary[field] != want {
+				t.Errorf("the summary counts %s %v, want %v: %v", field, summary[field], want, summary)
+			}
+		}
+		if text := mcpResultText(result); !strings.Contains(text, "2 unresolved (1 of them open tasks), 1 resolved") {
+			t.Errorf("the model reads %q, want the counts", text)
+		}
+
+		byText := map[string]map[string]any{}
+		listed, _ := threads["threads"].([]any)
+		for _, item := range listed {
+			thread, _ := item.(map[string]any)
+			byText[asString(thread["text"])] = thread
+		}
+		if len(byText) != 3 {
+			t.Fatalf("the view carries threads %v, want the three", listed)
+		}
+
+		onLine := byText["on line four"]
+		anchor, _ := onLine["anchor"].(map[string]any)
+		if anchor["path"] != "threads.txt" || anchor["line"] != float64(4) {
+			t.Errorf("the comment on line four is anchored at %v", anchor)
+		}
+		context, _ := onLine["context"].([]any)
+		if len(context) == 0 {
+			t.Fatalf("the comment on line four carries no diff: %v", onLine)
+		}
+		last, _ := context[len(context)-1].(map[string]any)
+		if last["text"] != "four" || last["type"] != "add" || last["new"] != float64(4) || last["anchor"] != true {
+			t.Errorf("the diff leading to line four ends %v, want the added line four, marked", last)
+		}
+		replies, _ := onLine["replies"].([]any)
+		if len(replies) != 1 || asString(replies[0].(map[string]any)["text"]) != "a reply" {
+			t.Errorf("the comment on line four carries replies %v, want the one", replies)
+		}
+		if onLine["author_username"] != harness.username() {
+			t.Errorf("the comment on line four is by %v, want %s", onLine["author_username"], harness.username())
+		}
+		if task := byText["a task"]; task["task"] != true || task["resolved"] == true {
+			t.Errorf("the task reads %v, want an open task", task)
+		}
+		if byText["resolved"]["resolved"] != true {
+			t.Errorf("the resolved thread reads %v, want it resolved", byText["resolved"])
+		}
+
+		avatars, _ := payload["avatars"].(map[string]any)
+		if !strings.HasPrefix(asString(avatars[harness.username()]), "data:image/") {
+			t.Errorf("the threads view has no avatar image for %s: %.40q", harness.username(), asString(avatars[harness.username()]))
+		}
+	}, "ai", "mcp", "serve")
+}
