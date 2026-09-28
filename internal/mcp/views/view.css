@@ -587,6 +587,10 @@ tr.selected .line-number { color: var(--bb-info); font-weight: var(--font-weight
 
 /* Comment threads */
 
+/* A heading where the card's threads change place: the pull request, or a
+   file. A line parts one place from the next, not a heading from its rows. */
+.thread-list > .thread-place { padding: 10px 4px 2px; color: var(--bb-text-muted); font-size: var(--bb-text-xs); font-weight: var(--font-weight-semibold, 600); }
+.thread-list > .thread-place + li { border-top: 0; }
 .thread-row .thread-excerpt { font-weight: var(--font-weight-regular, 400); }
 /* The author gives way before where the thread is, and neither to nothing. */
 .row-meta > .thread-author { flex: 0 3 auto; min-width: 4em; max-width: 14em; color: var(--bb-text-muted); font-weight: var(--font-weight-medium, 500); }

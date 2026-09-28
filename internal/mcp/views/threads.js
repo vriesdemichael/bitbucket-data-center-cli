@@ -36,7 +36,7 @@ function renderThreads(payload, view) {
     el("div", { class: "status" }, threadsAttention(summary), threadsQuiet(summary)),
     shown.length === 0
       ? el("p", { class: "faint" }, (summary.total_threads || 0) === 0 ? "No comments." : "Nothing is still open.")
-      : el("ul", { class: "pr-list thread-list" }, shown.map((thread) => el("li", {}, threadRow(thread, avatars, view)))),
+      : el("ul", { class: "pr-list thread-list" }, cardRows(shown, avatars, view)),
     left > 0
       ? el("div", { class: "more-row" }, view.canFullscreen && !view.expanded
         ? el("button", { type: "button", class: "button ghost list-toggle", onclick: () => view.expand() }, "and " + plural(left, "more open comment") + ", in full screen")
@@ -55,11 +55,39 @@ function renderThreads(payload, view) {
     view.expanded ? el("div", { class: "inline-details" }, threadGroups(pr, summary, threads, avatars, view)) : null);
 }
 
-// openThreadsOf are the threads still open, as the card lists them: open
-// tasks first, then the rest, the latest first.
+// openThreadsOf are the threads still open, in the order the full view has
+// them, so the card lists its start.
 function openThreadsOf(threads) {
-  return threads.filter((thread) => !thread.resolved).sort((a, b) =>
-    (b.task ? 1 : 0) - (a.task ? 1 : 0) || (b.created_date || 0) - (a.created_date || 0));
+  return threads.filter((thread) => !thread.resolved).sort(byPlace);
+}
+
+// byPlace orders threads by where they are: those on the pull request first,
+// then each file's by path, and in a file by line, the oldest first on one.
+function byPlace(a, b) {
+  const pathA = pathOf(a);
+  const pathB = pathOf(b);
+  if (pathA !== pathB) return pathA === "" ? -1 : pathB === "" ? 1 : pathA.localeCompare(pathB);
+  return lineOf(a) - lineOf(b) || (a.created_date || 0) - (b.created_date || 0);
+}
+
+function pathOf(thread) {
+  return thread.anchor && thread.anchor.path ? thread.anchor.path : "";
+}
+
+// cardRows are the card's open threads under where they are, a heading each
+// time the place changes, as the full view groups them.
+function cardRows(shown, avatars, view) {
+  const rows = [];
+  let place = null;
+  for (const thread of shown) {
+    const path = pathOf(thread);
+    if (path !== place) {
+      place = path;
+      rows.push(el("li", { class: "thread-place" }, path ? pathLabel(path) : "On the pull request"));
+    }
+    rows.push(el("li", {}, threadRow(thread, avatars, view)));
+  }
+  return rows;
 }
 
 // threadsAttention is what the threads ask of someone: the open tasks, and
@@ -84,8 +112,9 @@ function threadsQuiet(summary) {
   return parts.length > 0 ? el("div", { class: "quiet-line" }, parts.join(" · ")) : null;
 }
 
-// threadRow is an open thread in the card: who opened it, where, and the
-// start of what they wrote. It opens the thread in the overview.
+// threadRow is an open thread in the card: the start of what was written,
+// who wrote it and on which line, under the heading that names the file. It
+// opens the thread in the overview.
 function threadRow(thread, avatars, view) {
   const author = thread.author || thread.author_username || "Someone";
   return el("button", {
@@ -99,7 +128,7 @@ function threadRow(thread, avatars, view) {
     el("span", { class: "row-title thread-excerpt" }, excerptOf(thread.text)),
     el("span", { class: "row-meta" },
       el("span", { class: "thread-author ellipsis" }, author),
-      anchorLabel(thread.anchor))),
+      lineLabel(thread.anchor))),
   el("span", { class: "row-side" },
     thread.task ? badge("Task") : null,
     thread.replies && thread.replies.length > 0
@@ -115,12 +144,11 @@ function openThread(thread, view) {
   else render();
 }
 
-// anchorLabel is where a thread is: its file and line, or the pull request.
-function anchorLabel(anchor) {
-  if (!anchor || !anchor.path) return el("span", { class: "thread-anchor" }, "on the pull request");
-  return el("span", { class: "thread-anchor" },
-    pathLabel(anchor.path),
-    anchor.line ? el("span", { class: "nowrap" }, ":" + anchor.line) : null);
+// lineLabel is where in its file a thread is; the heading above names the
+// file, and a thread on the pull request has none.
+function lineLabel(anchor) {
+  if (!anchor || !anchor.path) return null;
+  return el("span", { class: "thread-anchor nowrap" }, anchor.line ? "line " + formatNumber(anchor.line) : "on the file");
 }
 
 function anchorWords(anchor) {
@@ -192,16 +220,12 @@ function threadGroups(pr, summary, threads, avatars, view) {
 // threadGroups draws them.
 function groupThreads(threads) {
   const groups = new Map();
-  for (const thread of threads) {
-    const path = thread.anchor && thread.anchor.path ? thread.anchor.path : "";
+  for (const thread of threads.slice().sort(byPlace)) {
+    const path = pathOf(thread);
     if (!groups.has(path)) groups.set(path, { key: path || "pull-request", path, threads: [] });
     groups.get(path).threads.push(thread);
   }
-  const sorted = [...groups.values()].sort((a, b) => (a.path === "" ? -1 : b.path === "" ? 1 : a.path.localeCompare(b.path)));
-  for (const group of sorted) {
-    group.threads.sort((a, b) => lineOf(a) - lineOf(b) || (a.created_date || 0) - (b.created_date || 0));
-  }
-  return sorted;
+  return [...groups.values()];
 }
 
 function lineOf(thread) {

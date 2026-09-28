@@ -162,11 +162,14 @@ func TestThreadsCountTheWhole(t *testing.T) {
 func TestThreadsNeverHideWhatNeedsAttention(t *testing.T) {
 	ctx := browser(t, threadsFrames(t))
 
-	// The card lists the open tasks first.
-	var first string
-	inFrame(t, ctx, threadsInline, `const r = d.querySelector(".thread-row"); return r ? r.textContent : "";`, &first)
-	if !strings.Contains(first, "Cap the time a charge spends retrying.") || !strings.Contains(first, "Task") {
-		t.Errorf("the card's first thread is %q, want the open task", first)
+	// The card lists what is open where it is, as the full view does: the
+	// pull request's own threads first, then each file's, by path, under a
+	// heading each.
+	var card []string
+	inFrame(t, ctx, threadsInline, `return [...d.querySelectorAll(".thread-list > li")].map((li) => li.classList.contains("thread-place") ? "@" + li.textContent : li.querySelector(".thread-excerpt").textContent.slice(0, 14));`, &card)
+	want := []string{"@On the pull request", "Cap the time a", "A long comment", "@" + hostilePath, "Please fix.", "@internal/ledger/ledger.go", "Should the cap"}
+	if strings.Join(card, "|") != strings.Join(want, "|") {
+		t.Errorf("the card lists\n  %v\nwant\n  %v", card, want)
 	}
 
 	// In fullscreen every open thread is out, and the resolved ones fold to
