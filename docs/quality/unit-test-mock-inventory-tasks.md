@@ -6,7 +6,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `keep` | 178 | legitimate unit test under ADR-079 |
+| `remove` | 1 | delete; it asserts nothing a live test would not already give |
+| `keep` | 179 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 27 | outside the Bitbucket policy; needs its own decision |
 
@@ -30,6 +31,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/sshkey/service_test.go` | 4 | 0 | 0 | 3 | 1 |
 | `internal/transport/githubrelease/download_test.go` | 4 | 0 | 0 | 0 | 4 |
 | `internal/cli/cmd/pr/reviewer_automation_test.go` | 3 | 0 | 0 | 3 | 0 |
+| `internal/cli/cmd/repo/clone_parent_credential_test.go` | 3 | 0 | 1 | 2 | 0 |
 | `internal/cli/cmd/reviewer/reviewer_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/cli/pr_inspection_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/cli/pr_status_command_test.go` | 3 | 0 | 0 | 3 | 0 |
@@ -75,7 +77,6 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/cmd/pr/reviewer_helpers_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/pr/status_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/repo/archive_test.go` | 1 | 0 | 0 | 1 | 0 |
-| `internal/cli/cmd/repo/clone_parent_credential_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/repo/sync_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/reviewergroup/reviewer_group_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/tag/tag_test.go` | 1 | 0 | 0 | 1 | 0 |

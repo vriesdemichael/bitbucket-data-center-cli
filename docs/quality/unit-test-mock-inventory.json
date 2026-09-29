@@ -1,13 +1,14 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 223,
+    "mocked_servers": 225,
     "files": 76,
-    "functions": 211,
+    "functions": 213,
     "by_class": {
+      "canned-response": 1,
       "external-service": 27,
       "harness-constructor": 18,
-      "routing-beacon": 9,
+      "routing-beacon": 10,
       "transport-fault": 101,
       "unreachable-state": 25,
       "unreached-guard": 43
@@ -405,15 +406,39 @@
     },
     {
       "file": "internal/cli/cmd/repo/clone_parent_credential_test.go",
-      "line": 29,
+      "line": 42,
       "function": "newAuthorizationBeacon",
       "class": "routing-beacon",
       "signals": [
-        "answers-any-request"
+        "handler-supplied-by-the-caller"
       ],
       "action": "keep",
       "reason": "the reply is never read as Bitbucket's; the subject is which credential a request to this host carried.",
       "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/repo/clone_parent_credential_test.go",
+      "line": 53,
+      "function": "newCertificateBeacon",
+      "class": "routing-beacon",
+      "signals": [
+        "handler-supplied-by-the-caller"
+      ],
+      "action": "keep",
+      "reason": "the reply is never read as Bitbucket's; the subject is which client certificate a request to this host presented.",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/repo/clone_parent_credential_test.go",
+      "line": 62,
+      "function": "record",
+      "class": "canned-response",
+      "signals": [
+        "answers-any-request",
+        "handler-passed-to-a-helper"
+      ],
+      "action": "remove",
+      "reason": "answers every request identically, so it distinguishes a correct call from a wrong one in no way"
     },
     {
       "file": "internal/cli/cmd/repo/permissions_test.go",

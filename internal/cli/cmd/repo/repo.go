@@ -31,9 +31,13 @@ type Dependencies struct {
 	DryRunEnabled       func() bool
 	LoadConfig          func() (config.AppConfig, error)
 	LoadConfigAndClient func() (config.AppConfig, *openapigenerated.ClientWithResponses, error)
-	WriteJSON           func(io.Writer, any) error
-	WriteJSONList       func(io.Writer, any, bool) error
-	PermissionChecker   func(*openapigenerated.ClientWithResponses) PermissionChecker
+	// LoadConfigWithOverrides resolves the configuration for a host other than
+	// the default one, with the global flags applied: the fork lookup after a
+	// clone asks the clone host with that host's own settings.
+	LoadConfigWithOverrides func(config.Overrides) (config.AppConfig, error)
+	WriteJSON               func(io.Writer, any) error
+	WriteJSONList           func(io.Writer, any, bool) error
+	PermissionChecker       func(*openapigenerated.ClientWithResponses) PermissionChecker
 	// RepositoryWasInferred reports that --repo was filled in from the git
 	// remote rather than named by the caller.
 	//
@@ -72,6 +76,9 @@ func (deps *Dependencies) withDefaults() Dependencies {
 		d.LoadConfig = func() (config.AppConfig, error) {
 			return config.LoadFromEnv()
 		}
+	}
+	if d.LoadConfigWithOverrides == nil {
+		d.LoadConfigWithOverrides = config.LoadWithOverrides
 	}
 	if d.LoadConfigAndClient == nil {
 		d.LoadConfigAndClient = func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {

@@ -107,7 +107,7 @@ func newCloneCommand(deps Dependencies) *cobra.Command {
 				// parent, or one whose parent the user cannot read, is not a
 				// clone failure -- the remote is not added, and the JSON output
 				// reports that as upstream.configured: false.
-				upstreamOwner, upstreamURL, _ = lookupParentCloneURL(cmd.Context(), cfg, cloneHost, repo)
+				upstreamOwner, upstreamURL, _ = lookupParentCloneURL(cmd.Context(), deps, cfg, cloneHost, repo)
 				if strings.TrimSpace(upstreamURL) != "" {
 					if strings.EqualFold(strings.TrimSpace(upstreamRemoteName), "@owner") && strings.TrimSpace(upstreamOwner) != "" {
 						resolvedUpstreamName = strings.ToLower(strings.TrimSpace(upstreamOwner))
@@ -631,19 +631,11 @@ func normalizeUpstreamRemoteName(name string, fallbackOwner string) (string, err
 	return trimmed, nil
 }
 
-func lookupParentCloneURL(ctx context.Context, cfg config.AppConfig, cloneHost string, repo cloneRepoRef) (string, string, error) {
-	// The lookup carries the credential git is given for cloneHost, which
-	// resolveCloneHTTPAuth resolves strictly. The configuration's own is the
-	// default host's, and a clone URL on another server took it there.
-	auth, _, found, err := resolveCloneHTTPAuth(cfg, cloneHost)
-	if err != nil || !found {
-		auth = config.AppConfig{}
+func lookupParentCloneURL(ctx context.Context, deps Dependencies, cfg config.AppConfig, cloneHost string, repo cloneRepoRef) (string, string, error) {
+	probeCfg, ok := forkLookupConfig(deps, cfg, cloneHost)
+	if !ok {
+		return "", "", nil
 	}
-	probeCfg := cfg
-	probeCfg.BitbucketURL = cloneHost
-	probeCfg.BitbucketToken = auth.BitbucketToken
-	probeCfg.BitbucketUsername = auth.BitbucketUsername
-	probeCfg.BitbucketPassword = auth.BitbucketPassword
 
 	client := httpclient.NewFromConfig(probeCfg)
 	path := fmt.Sprintf("/rest/api/1.0/projects/%s/repos/%s", url.PathEscape(repo.ProjectKey), url.PathEscape(repo.Slug))
@@ -674,6 +666,40 @@ func lookupParentCloneURL(ctx context.Context, cfg config.AppConfig, cloneHost s
 	}
 
 	return response.Origin.Project.Key, parentURL, nil
+}
+
+// forkLookupConfig is what the fork lookup on cloneHost is sent with.
+//
+// The configuration loaded at the start is the default host's, with its
+// credential and any client certificate stored for it, and the lookup used to
+// copy it and change only the address. For another clone host the settings are
+// loaded for that host, as bb api does for a URL, so its client certificate is
+// one set for every host or the one stored for cloneHost.
+//
+// The credential is the one git is given for cloneHost, which
+// resolveCloneHTTPAuth resolves strictly; the load would also take
+// BITBUCKET_TOKEN, which belongs to the configured host. A clone host whose
+// settings cannot be loaded -- one allowed_hosts refuses, say -- is not asked.
+func forkLookupConfig(deps Dependencies, cfg config.AppConfig, cloneHost string) (config.AppConfig, bool) {
+	probeCfg := cfg
+	if !sameCloneHost(cfg.BitbucketURL, cloneHost) {
+		loaded, err := deps.LoadConfigWithOverrides(config.Overrides{Host: cloneHost})
+		if err != nil {
+			return config.AppConfig{}, false
+		}
+		probeCfg = loaded
+	}
+
+	auth, _, found, err := resolveCloneHTTPAuth(cfg, cloneHost)
+	if err != nil || !found {
+		auth = config.AppConfig{}
+	}
+	probeCfg.BitbucketURL = cloneHost
+	probeCfg.BitbucketToken = auth.BitbucketToken
+	probeCfg.BitbucketUsername = auth.BitbucketUsername
+	probeCfg.BitbucketPassword = auth.BitbucketPassword
+
+	return probeCfg, true
 }
 
 func buildBitbucketSSHCloneURL(baseURL, projectKey, slug string) (string, error) {

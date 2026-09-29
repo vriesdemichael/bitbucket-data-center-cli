@@ -197,25 +197,27 @@ your behalf using the link above.`,
 		WriteJSONList:           writeJSONList,
 	}))
 	rootCmd.AddCommand(repocmd.New(repocmd.Dependencies{
-		JSONEnabled:         options.machineOutput,
-		DryRunEnabled:       func() bool { return options.DryRun },
-		LoadConfig:          options.loadConfig,
-		LoadConfigAndClient: options.loadConfigAndClient,
-		WriteJSON:           writeJSON,
-		WriteJSONList:       writeJSONList,
+		JSONEnabled:             options.machineOutput,
+		DryRunEnabled:           func() bool { return options.DryRun },
+		LoadConfig:              options.loadConfig,
+		LoadConfigAndClient:     options.loadConfigAndClient,
+		LoadConfigWithOverrides: options.loadConfigWithOverrides,
+		WriteJSON:               writeJSON,
+		WriteJSONList:           writeJSONList,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) repocmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
 		},
 		RepositoryWasInferred: func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(repocmd.NewClone(repocmd.Dependencies{
-		JSONEnabled:           options.machineOutput,
-		DryRunEnabled:         func() bool { return options.DryRun },
-		LoadConfig:            options.loadConfig,
-		LoadConfigAndClient:   options.loadConfigAndClient,
-		WriteJSON:             writeJSON,
-		WriteJSONList:         writeJSONList,
-		RepositoryWasInferred: func() bool { return options.repositoryInferred },
+		JSONEnabled:             options.machineOutput,
+		DryRunEnabled:           func() bool { return options.DryRun },
+		LoadConfig:              options.loadConfig,
+		LoadConfigAndClient:     options.loadConfigAndClient,
+		LoadConfigWithOverrides: options.loadConfigWithOverrides,
+		WriteJSON:               writeJSON,
+		WriteJSONList:           writeJSONList,
+		RepositoryWasInferred:   func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(tagcmd.New(tagcmd.Dependencies{
 		JSONEnabled:         options.machineOutput,
