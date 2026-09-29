@@ -13,7 +13,8 @@ decision: >
 
   Views are kinds of one tool, show, which the model calls once it has what the person asked about.
   The data tools carry no view. A kind is offered while the tool whose answer it shows is exposed,
-  and a client that renders no views is told nothing was shown, and nothing is fetched for it.
+  and a client that renders no views is told nothing was shown, and nothing is fetched for it. A
+  diff or a file is for what the person cannot open in their own editor.
 
   One page, ui://bb/view, draws every view: plain JavaScript and CSS embedded in the binary. It holds
   no Bitbucket data, stays out of resources/list, may be cached by anyone, and declares no network
@@ -34,7 +35,8 @@ decision: >
   often while something is in motion, such as a running build, less often the longer nothing
   changes, never off screen or after teardown, and not again once a pull request is closed and
   still. Status changes in place; a changed diff is offered rather than swapped under the person's
-  reading. A view that changed tells the model, through ui/update-model-context.
+  reading. A view that changed tells the model, through ui/update-model-context. A form, which holds
+  what the person writes, and a file, read a window at a time, are not read again by themselves.
 
   A view opens what else the person asks for in place, through refresh_view: a pull request's
   other views, a list's pull requests, a list in another state; it goes back, and tells the model
@@ -51,9 +53,10 @@ agent_instructions: >
   parse a string as HTML; TestViewScriptsBuildNoHTMLFromStrings and the browser tests under -tags
   views hold that. Put what a view draws in the result's _meta, and keep its text for the model
   short. Count from Bitbucket's totals, never from what a view lists. Keep a new kind refreshable,
-  and out of its fingerprint anything that differs between two reads of the same state. Take
-  wording from Bitbucket's UI strings. Look at a change with go run ./tools/view-preview against the
-  local stack.
+  and out of its fingerprint anything that differs between two reads of the same state. Send what
+  the person wrote from a button, never a form element: a view's frame may be sandboxed without
+  forms. Take wording from Bitbucket's UI strings. Look at a change with go run ./tools/view-preview
+  against the local stack.
 rationale: >
   A person takes in a pull request faster laid out as Bitbucket lays it out than from a model's
   account of it, and MCP Apps is how a server draws in any client that renders views. A client
