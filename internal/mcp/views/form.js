@@ -186,7 +186,7 @@ function reviewersField(draft, show, view, busy) {
         }, "×"))),
       input),
     suggestionList("form-reviewers", "reviewer", view),
-    el("span", { class: "faint form-hint-line" }, "Default reviewers are added by Bitbucket as usual."));
+    el("span", { class: "faint form-hint-line" }, "The repository's default reviewers for these branches are filled in; only those listed here are added."));
 }
 
 function reviewersReadOnly(form) {
