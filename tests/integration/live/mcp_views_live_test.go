@@ -95,6 +95,11 @@ func TestLiveMCPShowCarriesWhatItsViewDraws(t *testing.T) {
 		if len(reviewers) != 1 || asString(reviewers[0].(map[string]any)["status"]) != "APPROVED" {
 			t.Errorf("the card shows reviewers %v, want %s approved", reviewers, reviewer.Username)
 		}
+		// bb acts as the harness's user, who opened the pull request, so the
+		// card offers them no review of their own.
+		if me, _ := card["me"].(map[string]any); !strings.EqualFold(asString(me["username"]), harness.username()) || me["author"] != true {
+			t.Errorf("the card sees bb's user as %v, want %s, the author", card["me"], harness.username())
+		}
 		checks, _ := pr["checks"].([]any)
 		if len(checks) != 1 || asString(checks[0].(map[string]any)["key"]) != buildKey || asString(checks[0].(map[string]any)["state"]) != "FAILED" {
 			t.Errorf("the card shows builds %v, want %s failed", checks, buildKey)

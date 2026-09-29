@@ -155,6 +155,10 @@ button {
 .form-hint { margin-left: auto; font-size: var(--bb-text-xs); }
 .form-error { margin: 0; color: var(--bb-danger); font-size: var(--bb-text-xs); overflow-wrap: anywhere; }
 .reply-row { margin-top: 2px; }
+/* Approve and request changes. */
+.review-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.details-side > .review-actions { margin-bottom: 4px; }
+.review-actions .form-error { flex-basis: 100%; }
 .new-comment { margin-bottom: 14px; }
 
 /* Read by a screen reader, not drawn. */

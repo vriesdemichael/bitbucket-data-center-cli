@@ -353,6 +353,59 @@ type viewPayload struct {
 	// Offers is what the view may do here beyond drawing. It is the same for
 	// every read, so it is set after the fingerprint is taken.
 	Offers *viewOffers `json:"offers,omitempty"`
+	// Me is the person bb acts for, as the pull request sees them, so a view
+	// offers a review only to someone who can give one.
+	Me *viewMe `json:"me,omitempty"`
+}
+
+// viewMe is the person bb acts for, on one pull request: whether they wrote
+// it, and how they reviewed it, in Bitbucket's words (APPROVED, NEEDS_WORK,
+// UNAPPROVED), empty when they are not among its reviewers.
+type viewMe struct {
+	Username string `json:"username"`
+	Author   bool   `json:"author,omitempty"`
+	Status   string `json:"status,omitempty"`
+}
+
+// meFor is username on the pull request.
+func meFor(username string, pr pullrequestservice.PullRequest) *viewMe {
+	if username == "" {
+		return nil
+	}
+	me := &viewMe{Username: username, Author: strings.EqualFold(pr.AuthorUsername, username)}
+	for _, reviewer := range pr.Reviewers {
+		if !strings.EqualFold(reviewer.Name, username) {
+			continue
+		}
+		me.Status = reviewer.Status
+		if reviewer.Approved {
+			me.Status = "APPROVED"
+		}
+	}
+	return me
+}
+
+// currentUsers caches who bb acts for on each Bitbucket, for the life of the
+// server: the credentials do not change while it runs.
+var currentUsers sync.Map
+
+// currentUsername is who bb acts for, as Bitbucket says on any answer, or
+// empty when it does not say.
+func currentUsername(ctx context.Context, c Clients) string {
+	if cached, ok := currentUsers.Load(c.BaseURL); ok {
+		if username, isString := cached.(string); isString {
+			return username
+		}
+	}
+	if c.HTTP == nil {
+		return ""
+	}
+	username, err := c.HTTP.CurrentUserSlug(ctx)
+	if err != nil {
+		return ""
+	}
+	currentUsers.Store(c.BaseURL, username)
+	return username
 }
 
 type viewPullRequest struct {
@@ -482,6 +535,7 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 			return viewPayload{}, nil, viewSummary{}, err
 		}
 		payload.PullRequest = &pr
+		payload.Me = meFor(currentUsername(ctx, c), pr.PullRequest)
 		people = peopleOf(pr.PullRequest, maxViewPeople)
 		summary = summarizePullRequest(pr)
 	case showKindPullRequests:
@@ -525,6 +579,7 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 		files, patch, truncated := splitPatch(result.Patch, maxViewFileBytes, maxViewPatchBytes)
 		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
 		payload.Diff = &viewDiff{Files: files, Patch: patch, Truncated: truncated}
+		payload.Me = meFor(currentUsername(ctx, c), pr)
 		people = map[string]string{pr.AuthorUsername: pr.AuthorSlug}
 		// The diff draws each comment on its line, as Bitbucket's diff does,
 		// where the server shows the threads at all. A Bitbucket that cannot

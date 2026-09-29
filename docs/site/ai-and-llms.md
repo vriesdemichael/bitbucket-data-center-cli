@@ -74,6 +74,8 @@ the rest, fullscreen where the client has it and opened out in place where it
 does not: the description as Bitbucket formats it, the reviewers by their
 decision, every build by its state, and the comments and tasks. **Diff** and
 **Comments** open those in the same view, and **Back** returns to the card.
+**Approve** and **Request changes**, in the overview and over the diff, review
+the pull request once you confirm it in your client.
 
 ![A pull request's overview: its description beside the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-light.webp#only-light)
 ![A pull request's overview: its description beside the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-dark.webp#only-dark)

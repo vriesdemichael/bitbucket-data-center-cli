@@ -99,6 +99,52 @@ function commentForm(view, key, options) {
     el("span", { class: "faint form-hint" }, "Markdown · Ctrl+Enter sends")));
 }
 
+// reviewActions approve or request changes, as Bitbucket's pull request
+// page does, for someone other than the author while the pull request is
+// open. Pressed again, either takes the review back. submit_pr_review asks
+// the person to confirm in the client before it runs.
+function reviewActions(pr, payload, view) {
+  const me = payload.me;
+  if (!me || me.author || !pr.repository || pr.state !== "OPEN" || !canCall(view, "submit_pr_review")) return null;
+  const approved = me.status === "APPROVED";
+  const changesRequested = me.status === "NEEDS_WORK";
+  const busy = Boolean(view.reviewing);
+  return el("div", { class: "review-actions", role: "group", "aria-label": "Your review" },
+    el("button", {
+      type: "button",
+      class: "button" + (approved ? "" : " primary") + (view.reviewing === (approved ? "unapprove" : "approve") ? " busy" : ""),
+      "aria-pressed": approved ? "true" : "false",
+      title: approved ? "Take back your approval" : "Approve this pull request",
+      disabled: busy,
+      onclick: () => submitReview(pr, approved ? "unapprove" : "approve", view),
+    }, icon("approved"), approved ? "Approved" : "Approve"),
+    el("button", {
+      type: "button",
+      class: "button" + (view.reviewing === (changesRequested ? "unapprove" : "needs_work") ? " busy" : ""),
+      "aria-pressed": changesRequested ? "true" : "false",
+      title: changesRequested ? "Take back your request for changes" : "Request changes to this pull request",
+      disabled: busy,
+      onclick: () => submitReview(pr, changesRequested ? "unapprove" : "needs_work", view),
+    }, icon("changesRequested"), changesRequested ? "Changes requested" : "Request changes"),
+    view.reviewError ? el("p", { class: "form-error", role: "alert" }, view.reviewError) : null);
+}
+
+async function submitReview(pr, action, view) {
+  if (view.reviewing) return;
+  view.reviewing = action;
+  view.reviewError = null;
+  render();
+  try {
+    await callForPerson(view, "submit_pr_review", Object.assign(pullRequestArgs(pr), { action }));
+    refreshView(view, true);
+  } catch (error) {
+    view.reviewError = (error && error.message) || "The review did not go through.";
+  } finally {
+    view.reviewing = null;
+    render();
+  }
+}
+
 // replyArea replies to a thread, where the server lets a view comment.
 function replyArea(thread, pr, view) {
   if (!pr.repository || !canCall(view, "add_pr_comment")) return null;
