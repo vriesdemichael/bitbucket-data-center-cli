@@ -169,3 +169,46 @@ func TestADiffWhoseCommentsChangedChangesInPlace(t *testing.T) {
 		t.Errorf("after a refresh that changed only comments: offered anew = %v, the file the person opened still open = %v; want false and true", offered, open)
 	}
 }
+
+// A comment on a line is numbered on the side Bitbucket numbers it on: a
+// removed line as the file was, and a line both sides have as it is now,
+// whatever it was numbered before.
+func TestACommentOnALineIsNumberedOnItsSide(t *testing.T) {
+	ctx := browser(t, []viewhost.Frame{
+		{Title: "diff fullscreen", Mode: "fullscreen", Fullscreen: true, Result: fixtureResult(t, commentedDiff(time.Now(), "one", commentedThreads())),
+			ToolResults: map[string][]json.RawMessage{
+				"add_pr_comment": {toolAnswer(t, `{"comment":{"id":20}}`, false)},
+				"refresh_view":   {refreshAnswer(t, nil, "unchanged")},
+			}},
+	})
+
+	comment := func(rowClass, number, text string) {
+		t.Helper()
+		var clicked bool
+		inFrame(t, ctx, 0, `const b = [...d.querySelectorAll("#diff-file-0 tr.`+rowClass+` .line-number")].find((b) => b.textContent === "`+number+`"); if (b) b.click(); return Boolean(b);`, &clicked)
+		if !clicked {
+			t.Fatalf("no %s line numbered %s to select", rowClass, number)
+		}
+		inFrame(t, ctx, 0, `const b = [...d.querySelectorAll("#selection-bar button")].find((b) => b.textContent.trim() === "Comment"); if (b) b.click(); return Boolean(b);`, &clicked)
+		if !clicked {
+			t.Fatal("the selection bar has no Comment button")
+		}
+		typeInto(t, ctx, 0, `tr.diff-draft textarea`, text)
+		inFrame(t, ctx, 0, `d.querySelector("tr.diff-draft .send-button").click(); return true;`, &clicked)
+		waitInFrame(t, ctx, 0, `!d.querySelector("tr.diff-draft")`, "the comment box did not close once sent")
+	}
+
+	// The removed line 9, and the closing brace: line 10 before, 11 now.
+	comment("del", "9", "Why was this truncating?")
+	comment("context", "11", "Close enough.")
+	calls := toolCalls(t, ctx, 0, "add_pr_comment")
+	if len(calls) != 2 {
+		t.Fatalf("the view called add_pr_comment %d times, want twice: %v", len(calls), calls)
+	}
+	if calls[0]["line"] != float64(9) || calls[0]["line_type"] != "REMOVED" {
+		t.Errorf("the comment on the removed line sent line %v %v, want 9 REMOVED", calls[0]["line"], calls[0]["line_type"])
+	}
+	if calls[1]["line"] != float64(11) || calls[1]["line_type"] != "CONTEXT" {
+		t.Errorf("the comment on the unchanged line sent line %v %v, want 11 CONTEXT", calls[1]["line"], calls[1]["line_type"])
+	}
+}
