@@ -50,12 +50,12 @@ func formForView(ctx context.Context, c Clients, in ShowInput) (viewForm, *viewP
 		form := viewForm{
 			Mode:          "create",
 			RepositoryURL: repositoryURL,
-			FromRef:     strings.TrimSpace(in.FromRef),
-			ToRef:       strings.TrimSpace(in.ToRef),
-			Title:       in.Title,
-			Description: in.Description,
-			Reviewers:   parseCommaList(in.Reviewers),
-			Draft:       in.Draft,
+			FromRef:       strings.TrimSpace(in.FromRef),
+			ToRef:         strings.TrimSpace(in.ToRef),
+			Title:         in.Title,
+			Description:   in.Description,
+			Reviewers:     parseCommaList(in.Reviewers),
+			Draft:         in.Draft,
 		}
 		// A repository whose default branch cannot be read leaves the target
 		// to the person, rather than failing the form.
@@ -80,11 +80,11 @@ func formForView(ctx context.Context, c Clients, in ShowInput) (viewForm, *viewP
 		Mode:          "edit",
 		RepositoryURL: repositoryURL,
 		FromRef:       pr.SourceBranch,
-		ToRef:       pr.TargetBranch,
-		Title:       pr.Title,
-		Description: pr.Description,
-		Draft:       pr.Draft,
-		Version:     pr.Version,
+		ToRef:         pr.TargetBranch,
+		Title:         pr.Title,
+		Description:   pr.Description,
+		Draft:         pr.Draft,
+		Version:       pr.Version,
 	}
 	for _, reviewer := range pr.Reviewers {
 		form.Reviewers = append(form.Reviewers, reviewer.Name)
