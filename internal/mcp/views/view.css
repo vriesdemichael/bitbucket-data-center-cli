@@ -155,6 +155,37 @@ button {
 .form-hint { margin-left: auto; font-size: var(--bb-text-xs); }
 .form-error { margin: 0; color: var(--bb-danger); font-size: var(--bb-text-xs); overflow-wrap: anywhere; }
 .reply-row { margin-top: 2px; }
+/* The file viewer. */
+.file-view { display: grid; gap: 8px; }
+.file-title { margin: 2px 0 0; font-family: var(--bb-mono); font-size: var(--bb-text-md); }
+.file-meta { font-size: var(--bb-text-xs); }
+.file-main { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 12px 20px 20px; }
+.file-lines { border: 1px solid var(--bb-border); border-radius: var(--bb-radius); overflow: hidden; }
+.file-lines .more-row { padding: 6px 8px; border-top: 1px solid var(--bb-border); }
+.file-table .line-number { cursor: default; }
+.file-table .code::before { content: none; }
+.file-figure { margin: 0; display: grid; gap: 6px; justify-items: start; }
+.file-figure img { display: block; max-width: 100%; height: auto; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-sm); background: repeating-conic-gradient(var(--bb-bg-subtle) 0 25%, var(--bb-bg) 0 50%) 0 0 / 16px 16px; cursor: zoom-in; }
+.file-figure.actual { overflow: auto; max-width: 100%; }
+.file-figure.actual img { max-width: none; cursor: zoom-out; }
+.file-media { display: grid; gap: 6px; }
+.file-player { width: 100%; max-height: 70vh; }
+
+/* Code, coloured as bb highlighted it: a palette of its own for each theme,
+   since hosts send none for code. */
+.hl-k { color: light-dark(#a626a4, #c678dd); }
+.hl-y { color: light-dark(#c18401, #e5c07b); }
+.hl-b { color: light-dark(#986801, #d19a66); }
+.hl-f { color: light-dark(#4078f2, #61afef); }
+.hl-s, .hl-e { color: light-dark(#50a14f, #98c379); }
+.hl-e { font-weight: var(--font-weight-semibold, 600); }
+.hl-n { color: light-dark(#986801, #d19a66); }
+.hl-c { color: light-dark(#6a737d, #7f848e); font-style: italic; }
+.hl-m { color: light-dark(#0184bc, #56b6c2); }
+.hl-g { color: light-dark(#e45649, #e06c75); }
+.hl-a { color: light-dark(#986801, #d19a66); }
+.hl-o { color: light-dark(#0184bc, #56b6c2); }
+
 /* The pull request form. */
 .pr-form { display: grid; gap: 12px; }
 .pr-form.page-form { max-width: 880px; margin: 0 auto; padding: 16px 20px 28px; }
@@ -630,6 +661,19 @@ tr.more td { padding: 6px 8px; background: var(--bb-bg-subtle); }
   cursor: pointer;
 }
 .diff-file[data-collapsed="true"] .diff-file-header { border-bottom: 0; }
+/* A file's header, and the button that views the file as the pull request
+   has it. */
+.diff-file-head { display: flex; align-items: stretch; }
+.diff-file-head .diff-file-header { flex: 1 1 auto; min-width: 0; }
+.diff-file-head .view-file {
+  flex: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--bb-border);
+  border-left: 1px solid var(--bb-border);
+  background: var(--bb-bg-subtle);
+  font-size: var(--bb-text-xs);
+}
+.diff-file[data-collapsed="true"] .view-file { border-bottom: 0; }
 .diff-file[data-collapsed="true"] .diff-table, .diff-file[data-collapsed="true"] .diff-note { display: none; }
 .diff-table {
   width: 100%;

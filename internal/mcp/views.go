@@ -68,6 +68,7 @@ const (
 	// showKindPullRequestForm is a pull request for the person to finish and
 	// submit, offered while the tool that creates one is.
 	showKindPullRequestForm = "pull_request_form"
+	showKindFile            = "file"
 )
 
 var showKindTools = map[string]string{
@@ -76,10 +77,11 @@ var showKindTools = map[string]string{
 	showKindDiff:            "get_pr_diff",
 	showKindThreads:         "list_pr_comments",
 	showKindPullRequestForm: "create_pull_request",
+	showKindFile:            "get_file_content",
 }
 
 // showKinds is the order the kinds are described in.
-var showKinds = []string{showKindPullRequest, showKindPullRequests, showKindDiff, showKindThreads, showKindPullRequestForm}
+var showKinds = []string{showKindPullRequest, showKindPullRequests, showKindDiff, showKindThreads, showKindPullRequestForm, showKindFile}
 
 // viewActionTools are the model's tools a view calls for the person: what a
 // click in a view does goes through them, so the scope, the audit trail and
@@ -139,6 +141,10 @@ type ShowInput struct {
 	Description string `json:"description,omitempty" jsonschema:"For kind pull_request_form: the description you drafted, in Markdown"`
 	Reviewers   string `json:"reviewers,omitempty" jsonschema:"For kind pull_request_form: comma-separated reviewer usernames"`
 	Draft       bool   `json:"draft,omitempty" jsonschema:"For kind pull_request_form: open it as a draft"`
+	// The file for kind file, named as get_file_content names it.
+	Path      string `json:"path,omitempty" jsonschema:"For kind file: the file's path in the repository"`
+	At        string `json:"at,omitempty" jsonschema:"For kind file: the branch, tag or commit to read it at; omit for the default branch"`
+	StartLine int    `json:"start_line,omitempty" jsonschema:"For kind file: the first line to show (default 1)"`
 }
 
 // ShowOutput says whether anything was shown, and what.
@@ -159,9 +165,10 @@ func specShow() Spec {
 			"after you have what you need and before your answer, for what the person should see; use the other tools to find it. kinds " +
 			"pull_request, diff and threads take project, repo and id; kind pull_requests takes the filters list_pull_requests takes. " +
 			"Kind pull_request_form takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), " +
-			"or an id to edit that pull request; nothing is created or changed until the person submits it. A diff is for changes the " +
-			"person cannot open in their own editor, such as another repository's. In a client that displays no views, it shows nothing " +
-			"and says so.",
+			"or an id to edit that pull request; nothing is created or changed until the person submits it. Kind file takes project, " +
+			"repo, path and at, and shows code, a picture, audio, a video or an archive's listing. A diff or a file is for what the " +
+			"person cannot open in their own editor, such as another repository's. In a client that displays no views, it shows " +
+			"nothing and says so.",
 		Annotations: readOnly("Show a view"),
 		InputSchema: showInputSchema(showKinds),
 		Meta:        viewToolMeta(),
@@ -323,6 +330,10 @@ func showHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[ShowInput, Sho
 
 func checkShowInput(in ShowInput) error {
 	switch in.Kind {
+	case showKindFile:
+		if in.Project == "" || in.Repo == "" || strings.TrimSpace(in.Path) == "" {
+			return fmt.Errorf("kind file needs project, repo and path")
+		}
 	case showKindPullRequestForm:
 		if in.Project == "" || in.Repo == "" {
 			return fmt.Errorf("kind pull_request_form needs project and repo")
@@ -381,6 +392,8 @@ type viewPayload struct {
 	// Form is a pull request for the person to finish, for kind
 	// pull_request_form.
 	Form *viewForm `json:"form,omitempty"`
+	// File is a file, for kind file.
+	File *viewFile `json:"file,omitempty"`
 }
 
 // viewMe is the person bb acts for, on one pull request: whether they wrote
@@ -641,6 +654,13 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 		payload.Form = &form
 		payload.PullRequest = pr
 		summary = formSummary
+	case showKindFile:
+		file, fileSummary, err := fileForView(ctx, c, in)
+		if err != nil {
+			return viewPayload{}, nil, viewSummary{}, err
+		}
+		payload.File = &file
+		summary = fileSummary
 	default:
 		return viewPayload{}, nil, viewSummary{}, fmt.Errorf("unknown kind %q", in.Kind)
 	}
@@ -1219,6 +1239,7 @@ var viewScripts = []string{
 	"open.js",
 	"actions.js",
 	"form.js",
+	"file.js",
 	"main.js",
 }
 

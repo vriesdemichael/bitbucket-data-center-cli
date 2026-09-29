@@ -35,8 +35,12 @@ function newRefreshState() {
 // tool calls to the server, and the data says what it answers.
 function canRefresh(view) {
   const payload = view.payload;
-  return Boolean(view.hostTools && payload && payload.show && payload.fingerprint && !view.refresh.torndown);
+  return Boolean(view.hostTools && payload && payload.show && payload.fingerprint && !view.refresh.torndown && !STILL_KINDS.includes(payload.kind));
 }
+
+// STILL_KINDS are views that are not read again: a form holds what the person
+// writes, and a file is read a window at a time, as the person asks.
+const STILL_KINDS = ["pull_request_form", "file"];
 
 // inMotion is a view whose data is bound to change soon.
 function inMotion(payload) {

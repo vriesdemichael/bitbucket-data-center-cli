@@ -3,6 +3,7 @@
 package live_test
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"context"
 	"fmt"
@@ -614,6 +615,81 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 		editForm, _ := editPayload["form"].(map[string]any)
 		if editForm["mode"] != "edit" || editForm["title"] != "Made with the form, finished" || editForm["version"] != readPR["version"] {
 			t.Errorf("the edit form starts with %v, want the pull request's title and version %v", editForm, readPR["version"])
+		}
+	}, "ai", "mcp", "serve")
+}
+
+// TestLiveMCPShowsAFileAsWhatItIs: the file viewer reads a text file as a
+// window of its lines, the next window where the view asks for it, and a
+// picture as the picture, through bb.
+func TestLiveMCPShowsAFileAsWhatItIs(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	// A PNG of one pixel, as a picture in a repository is stored.
+	png, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+	branch := testsupport.UniqueName("feature/files-")
+	if err := harness.pushFilesOnBranch(seeded.Key, repo.Slug, branch, map[string][]byte{
+		"ledger.go": []byte("package ledger\n\n// Refund reverses an entry.\nfunc Refund() {}\n"),
+		"logo.png":  png,
+	}); err != nil {
+		t.Fatalf("push failed: %v", err)
+	}
+
+	capabilities := &mcp.ClientCapabilities{}
+	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
+	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
+		show := func(arguments map[string]any) (map[string]any, string) {
+			t.Helper()
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show", Arguments: arguments})
+			if err != nil || result.IsError {
+				t.Fatalf("show %v: %v %s", arguments, err, mcpResultText(result))
+			}
+			payload, _ := result.Meta[viewPayloadKey].(map[string]any)
+			file, _ := payload["file"].(map[string]any)
+			if file == nil {
+				t.Fatalf("show %v carries no file: %v", arguments, payload)
+			}
+			return file, mcpResultText(result)
+		}
+
+		code, text := show(map[string]any{"kind": "file", "project": seeded.Key, "repo": repo.Slug, "path": "ledger.go", "at": branch})
+		for key, want := range map[string]any{
+			"kind": "text", "lines": "package ledger\n\n// Refund reverses an entry.\nfunc Refund() {}\n",
+			"start_line": float64(1), "end_line": float64(4), "total_lines": float64(4), "at": branch,
+		} {
+			if code[key] != want {
+				t.Errorf("the file carries %s = %v, want %v", key, code[key], want)
+			}
+		}
+		if next, ok := code["next_line"]; ok && next != float64(0) {
+			t.Errorf("a file read whole says it goes on at line %v", next)
+		}
+		if !strings.Contains(asString(code["url"]), "/browse/ledger.go") {
+			t.Errorf("the file links to %v, want its page in Bitbucket", code["url"])
+		}
+		if !strings.Contains(text, "lines 1 to 4 of 4.") {
+			t.Errorf("the model reads %q, want which lines it shows", text)
+		}
+
+		window, _ := show(map[string]any{"kind": "file", "project": seeded.Key, "repo": repo.Slug, "path": "ledger.go", "at": branch, "start_line": 3})
+		if window["start_line"] != float64(3) || window["lines"] != "// Refund reverses an entry.\nfunc Refund() {}\n" {
+			t.Errorf("the window from line 3 carries %v from line %v, want the last two lines", window["lines"], window["start_line"])
+		}
+
+		picture, _ := show(map[string]any{"kind": "file", "project": seeded.Key, "repo": repo.Slug, "path": "logo.png", "at": branch})
+		if picture["kind"] != "image" || picture["data"] != "data:image/png;base64,"+base64.StdEncoding.EncodeToString(png) || picture["width"] != float64(1) {
+			t.Errorf("the picture is carried as %v, %.60v, %v wide; want the PNG itself, one pixel wide", picture["kind"], picture["data"], picture["width"])
 		}
 	}, "ai", "mcp", "serve")
 }
