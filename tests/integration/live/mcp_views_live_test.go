@@ -540,6 +540,16 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 		openapigenerated.SetPermissionForUserParamsPermissionREPOREAD); err != nil {
 		t.Fatalf("grant the reviewer read access failed: %v", err)
 	}
+	// The reviewer is the repository's default reviewer for every branch:
+	// create_pull_request adds only the reviewers it is given, so the form
+	// fills them in, as Bitbucket's create page does.
+	reviewerID, err := harness.userID(ctx, reviewer.Username)
+	if err != nil {
+		t.Fatalf("look up the reviewer's id failed: %v", err)
+	}
+	mustLiveCLI(t, "reviewer", "condition", "create", fmt.Sprintf(
+		`{"sourceMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},"targetMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},"reviewers":[{"id":%d}],"requiredApprovals":0}`,
+		reviewerID), "--repo", seeded.Key+"/"+repo.Slug)
 	branch := testsupport.UniqueName("feature/form-")
 	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, "form.txt", "made with the form\n"); err != nil {
 		t.Fatalf("push failed: %v", err)
@@ -575,6 +585,9 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 		}
 		if !strings.HasSuffix(asString(form["repository_url"]), "/projects/"+seeded.Key+"/repos/"+repo.Slug) {
 			t.Errorf("the form links under %v, want the repository's page", form["repository_url"])
+		}
+		if filled, _ := form["reviewers"].([]any); len(filled) != 1 || filled[0] != reviewer.Username {
+			t.Errorf("the form fills in reviewers %v, want %s, the default reviewer for these branches", form["reviewers"], reviewer.Username)
 		}
 		if text := mcpResultText(shown); !strings.Contains(text, "Nothing is created until they submit it.") {
 			t.Errorf("the model reads %q, want it told nothing is created yet", text)

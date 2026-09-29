@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	branchservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/branch"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	reviewerservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reviewer"
 )
 
 // The pull request form (#686): the model drafts a pull request, and the
@@ -64,6 +66,21 @@ func formForView(ctx context.Context, c Clients, in ShowInput) (viewForm, *viewP
 		}
 		if form.ToRef == "" {
 			form.ToRef = form.DefaultBranch
+		}
+		// Bitbucket's own create page fills in the default reviewers for the
+		// branches, and create_pull_request adds only the reviewers it is
+		// given, so the form fills them in, beside the model's, for the
+		// person to keep or remove. A lookup that fails leaves them out.
+		if form.FromRef != "" && form.ToRef != "" {
+			defaults, err := reviewerservice.NewService(c.OpenAPI).ResolveDefaultReviewers(ctx, in.Project, in.Repo,
+				reviewerservice.DefaultReviewerQuery{SourceRef: form.FromRef, TargetRef: form.ToRef})
+			if err == nil {
+				for _, name := range defaults {
+					if !slices.Contains(form.Reviewers, name) {
+						form.Reviewers = append(form.Reviewers, name)
+					}
+				}
+			}
 		}
 		return form, nil, viewSummary{
 			subject: "a new pull request in " + repository,
