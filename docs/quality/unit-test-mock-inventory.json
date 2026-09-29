@@ -1,13 +1,13 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 216,
+    "mocked_servers": 217,
     "files": 73,
-    "functions": 204,
+    "functions": 205,
     "by_class": {
       "external-service": 27,
       "harness-constructor": 18,
-      "routing-beacon": 5,
+      "routing-beacon": 6,
       "transport-fault": 98,
       "unreachable-state": 25,
       "unreached-guard": 43
@@ -17,7 +17,7 @@
   "entries": [
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 151,
+      "line": 152,
       "function": "TestApiPaginatedErrors",
       "class": "transport-fault",
       "signals": [
@@ -34,7 +34,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 192,
+      "line": 193,
       "function": "TestApiHostFlagOverride",
       "class": "routing-beacon",
       "signals": [
@@ -48,7 +48,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 228,
+      "line": 229,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
       "class": "routing-beacon",
       "signals": [
@@ -61,7 +61,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 235,
+      "line": 236,
       "function": "TestApiHostFlagDoesNotFallBackToDefaultHost",
       "class": "routing-beacon",
       "signals": [
@@ -74,7 +74,19 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 278,
+      "line": 284,
+      "function": "newCredentialBeacon",
+      "class": "routing-beacon",
+      "signals": [
+        "answers-any-request"
+      ],
+      "action": "keep",
+      "reason": "the reply is never read as Bitbucket's; the subject is which host a request reached and what Authorization went with it.",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/api/api_test.go",
+      "line": 420,
       "function": "TestApiHostFlagLeavesEnvironmentAlone",
       "class": "routing-beacon",
       "signals": [
@@ -379,7 +391,7 @@
     },
     {
       "file": "internal/cli/cmd/repo/archive_test.go",
-      "line": 23,
+      "line": 24,
       "function": "TestAnArchiveThatBreaksOffLeavesNoFile",
       "class": "transport-fault",
       "signals": [
@@ -472,7 +484,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 534,
+      "line": 526,
       "function": "TestReviewerPermissionErrors",
       "class": "unreached-guard",
       "signals": [
@@ -484,7 +496,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 627,
+      "line": 619,
       "function": "TestConditionJSONIsValidatedNotReportedAsADefect",
       "class": "transport-fault",
       "signals": [
@@ -1536,7 +1548,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 706,
+      "line": 712,
       "function": "TestRebaseRejectsOutOfRangeVersion",
       "class": "unreached-guard",
       "signals": [
@@ -1549,7 +1561,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 778,
+      "line": 784,
       "function": "TestRebaseRetriesOnceOnAVersionItReadItself",
       "class": "unreachable-state",
       "signals": [
@@ -2739,7 +2751,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 588,
+      "line": 616,
       "function": "TestGetRawReturnsBodyVerbatim",
       "class": "transport-fault",
       "signals": [
@@ -2755,7 +2767,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 628,
+      "line": 656,
       "function": "TestGetRawRetriesServerErrors",
       "class": "transport-fault",
       "signals": [
@@ -2771,7 +2783,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 658,
+      "line": 686,
       "function": "TestGetRawTransientNetworkFailure",
       "class": "transport-fault",
       "signals": [
@@ -2785,7 +2797,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 682,
+      "line": 710,
       "function": "TestCurrentUserSlugMissingHeader",
       "class": "transport-fault",
       "signals": [
@@ -2799,7 +2811,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 706,
+      "line": 734,
       "function": "TestDoRequestSuccess",
       "class": "transport-fault",
       "signals": [
@@ -2817,7 +2829,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 768,
+      "line": 796,
       "function": "TestDoRequestFullURL",
       "class": "transport-fault",
       "signals": [
@@ -2832,7 +2844,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 820,
+      "line": 848,
       "function": "TestDoRequestRetriesAndStatusErrors",
       "class": "transport-fault",
       "signals": [
@@ -2847,7 +2859,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 859,
+      "line": 887,
       "function": "TestDoRequestRetryExhaustion",
       "class": "transport-fault",
       "signals": [
@@ -2863,7 +2875,7 @@
     },
     {
       "file": "internal/transport/httpclient/client_test.go",
-      "line": 904,
+      "line": 932,
       "function": "TestRetriesDoNotReplayMutations",
       "class": "transport-fault",
       "signals": [

@@ -4,6 +4,7 @@ package live_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 )
@@ -32,5 +33,17 @@ func TestLiveApiRawPassthrough(t *testing.T) {
 	values, ok := payload["values"].([]any)
 	if !ok || len(values) == 0 {
 		t.Fatalf("expected non-empty values in projects list: %s", output)
+	}
+
+	// An endpoint given as the instance's own URL is resolved for that host and
+	// still carries its credential. The seeded project is private, so only a
+	// caller who is signed in gets it back.
+	endpoint := strings.TrimRight(harness.config.BitbucketURL, "/") + "/rest/api/1.0/projects/" + seeded.Key
+	output, err = executeLiveCLI(t, "--json", "api", endpoint)
+	if err != nil {
+		t.Fatalf("bb api %s failed: %v\noutput: %s", endpoint, err, output)
+	}
+	if key := decodeJSONMap(t, output)["key"]; key != seeded.Key {
+		t.Fatalf("bb api %s answered project %v, want %s: %s", endpoint, key, seeded.Key, output)
 	}
 }

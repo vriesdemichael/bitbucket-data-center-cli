@@ -526,6 +526,34 @@ func TestApplyAuthPrefersTokenOverBasic(t *testing.T) {
 	}
 }
 
+// The credential was resolved for the configured host and goes only to it. A
+// path given as an absolute URL is sent where it points, so a URL on any other
+// server -- another host, scheme or port -- is sent without it.
+func TestApplyAuthWithholdsCredentialFromAnotherServer(t *testing.T) {
+	t.Parallel()
+
+	client := NewFromConfig(config.AppConfig{BitbucketURL: "https://bitbucket.example/context", BitbucketToken: "tok"})
+
+	for target, want := range map[string]string{
+		"https://bitbucket.example/context/rest/api/1.0/projects": "Bearer tok",
+		"https://BITBUCKET.example:443/rest/api/1.0/projects":     "Bearer tok",
+		"https://elsewhere.example/rest/api/1.0/projects":         "",
+		"https://bitbucket.example.elsewhere.example/rest":        "",
+		"http://bitbucket.example/rest/api/1.0/projects":          "",
+		"https://bitbucket.example:8443/rest/api/1.0/projects":    "",
+	} {
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, target, nil)
+		if err != nil {
+			t.Fatalf("failed to create request: %v", err)
+		}
+
+		client.applyAuth(req)
+		if got := req.Header.Get("Authorization"); got != want {
+			t.Errorf("%s: Authorization %q, want %q", target, got, want)
+		}
+	}
+}
+
 func TestClientInitErrorFromInvalidCA(t *testing.T) {
 	t.Parallel()
 

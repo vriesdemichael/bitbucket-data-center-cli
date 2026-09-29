@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
@@ -261,6 +262,147 @@ func TestApiHostFlagDoesNotFallBackToDefaultHost(t *testing.T) {
 	if defaultHit || !customHit {
 		t.Fatalf("--host must target the requested server, not the stored default (default hit=%v, custom hit=%v): %s",
 			defaultHit, customHit, buf.String())
+	}
+}
+
+// credentialBeacon is a server that is not Bitbucket: it answers every request
+// alike and records the Authorization it was sent, so a test can see which host
+// a request reached and which credential went with it.
+type credentialBeacon struct {
+	*httptest.Server
+
+	mu            sync.Mutex
+	hits          int
+	authorization string
+}
+
+// mock-inventory: routing-beacon — the reply is never read as Bitbucket's; the subject is which host a request reached and what Authorization went with it.
+func newCredentialBeacon(t *testing.T) *credentialBeacon {
+	t.Helper()
+
+	beacon := &credentialBeacon{}
+	beacon.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		beacon.mu.Lock()
+		beacon.hits++
+		beacon.authorization = r.Header.Get("Authorization")
+		beacon.mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(beacon.Close)
+
+	return beacon
+}
+
+func (beacon *credentialBeacon) seen() (int, string) {
+	beacon.mu.Lock()
+	defer beacon.mu.Unlock()
+
+	return beacon.hits, beacon.authorization
+}
+
+// storeCredentialFor makes host the stored default with a token, and clears
+// every credential the environment could supply, so the only credential in
+// play is the one stored for host.
+func storeCredentialFor(t *testing.T, host string) {
+	t.Helper()
+
+	for _, key := range []string{
+		"BITBUCKET_URL", "BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD",
+		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
+	} {
+		t.Setenv(key, "")
+	}
+
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	storedConfig := fmt.Sprintf(
+		"default_host: %s\nhosts:\n  %s:\n    url: %s\ninsecure_secrets:\n  %s:\n    token: stored-token\n",
+		host, host, host, host)
+	if err := os.WriteFile(configPath, []byte(storedConfig), 0o600); err != nil {
+		t.Fatalf("write stored config: %v", err)
+	}
+	t.Setenv("BB_CONFIG_PATH", configPath)
+}
+
+// An endpoint given as a URL names its host, and the credential stored for
+// another host does not go with it. It used to be resolved for the default
+// host, so `bb api http://elsewhere/...` sent that host's credential to
+// elsewhere -- and so did naming the default with --host alongside it.
+func TestApiEndpointURLGetsOnlyItsOwnHostsCredential(t *testing.T) {
+	stored := newCredentialBeacon(t)
+	foreign := newCredentialBeacon(t)
+	storeCredentialFor(t, stored.URL)
+
+	run := func(args ...string) error {
+		cmd := New(Dependencies{})
+		cmd.SetOut(&bytes.Buffer{})
+		cmd.SetErr(&bytes.Buffer{})
+		cmd.SetArgs(args)
+		return cmd.Execute()
+	}
+
+	// A GET streams through the downloader and a POST does not; both are asked.
+	for _, method := range []string{"GET", "POST"} {
+		if err := run(foreign.URL+"/rest/api/1.0/projects", "-X", method); err != nil {
+			t.Fatalf("%s to a URL on another host: %v", method, err)
+		}
+	}
+	if hits, authorization := foreign.seen(); hits != 2 || authorization != "" {
+		t.Fatalf("the other host must be reached with no credential, got %d hits and Authorization %q", hits, authorization)
+	}
+
+	err := run(foreign.URL+"/rest/api/1.0/projects", "--host", stored.URL)
+	if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "different servers") {
+		t.Fatalf("--host and a URL on another server must be refused, got %v", err)
+	}
+	if hits, _ := foreign.seen(); hits != 2 {
+		t.Fatalf("a refused request must not reach the other host, got %d hits", hits)
+	}
+
+	// The stored host's own URL, with --host or without, still carries its
+	// credential.
+	for _, args := range [][]string{
+		{stored.URL + "/rest/api/1.0/projects"},
+		{stored.URL + "/rest/api/1.0/projects", "--host", stored.URL},
+	} {
+		if err := run(args...); err != nil {
+			t.Fatalf("bb api %v: %v", args, err)
+		}
+	}
+	if hits, authorization := stored.seen(); hits != 2 || authorization != "Bearer stored-token" {
+		t.Fatalf("the stored host must get its own credential, got %d hits and Authorization %q", hits, authorization)
+	}
+}
+
+// allowed_hosts refuses a host outside the list before any request is made, and
+// a URL endpoint names a host. It used to be checked against the default host
+// instead, and the request went to the URL's host regardless.
+func TestApiEndpointURLIsHeldToAllowedHosts(t *testing.T) {
+	stored := newCredentialBeacon(t)
+	foreign := newCredentialBeacon(t)
+	storeCredentialFor(t, stored.URL)
+
+	policyPath := filepath.Join(t.TempDir(), "policy.yaml")
+	if err := os.WriteFile(policyPath, []byte(fmt.Sprintf("allowed_hosts:\n  - %q\n", stored.URL)), 0o600); err != nil {
+		t.Fatalf("write policy: %v", err)
+	}
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", policyPath)
+
+	// allowed_hosts compares host names, not ports, so the other server is
+	// reached by another name for the same loopback.
+	elsewhere := strings.Replace(foreign.URL, "127.0.0.1", "localhost", 1)
+
+	cmd := New(Dependencies{})
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{elsewhere + "/rest/api/1.0/projects"})
+
+	err := cmd.Execute()
+	if !apperrors.IsKind(err, apperrors.KindAuthorization) || !strings.Contains(err.Error(), "not permitted by administrative policy") {
+		t.Fatalf("a URL on a host outside allowed_hosts must be refused, got %v", err)
+	}
+	if hits, _ := foreign.seen(); hits != 0 {
+		t.Fatalf("a refused host must not be reached, got %d hits", hits)
 	}
 }
 
