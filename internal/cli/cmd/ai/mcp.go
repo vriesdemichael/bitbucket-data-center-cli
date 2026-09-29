@@ -93,8 +93,8 @@ trust with them should not make changes in Bitbucket, so make them yourself.
 
 Use --tools to expose only the tools you name, and --exclude to suppress
 individual tools. Neither exposes a tool that --read-only or a scope withholds.
-refresh_view, which keeps the views of show current, goes with show whether or
-not --tools names it.
+The tools only the views of show call, refresh_view and suggest_form_values, go
+with show whether or not --tools names them.
 
 When more than one Bitbucket instance is configured the --host flag is required.
 

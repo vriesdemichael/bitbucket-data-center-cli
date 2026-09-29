@@ -61,6 +61,11 @@ const view = {
   drafts: new Map(),
   // focusDraft is a draft to put the caret in once the view is drawn.
   focusDraft: null,
+  // The pull request form's suggestions by field, the timers that ask for
+  // them, and the pull request it made where it cannot be opened here.
+  formSuggestions: {},
+  suggestTimers: {},
+  formDone: null,
 
   toggleClamp(key) {
     if (view.unclamped.has(key)) view.unclamped.delete(key);
@@ -375,6 +380,7 @@ function content() {
         case "pull_requests": return renderPullRequests(view.payload, view);
         case "diff": return renderDiff(view.payload, view);
         case "threads": return renderThreads(view.payload, view);
+        case "pull_request_form": return renderPullRequestForm(view.payload, view);
         default: return notice("This version of the page cannot show a " + view.payload.kind + ".");
       }
     } catch (error) {

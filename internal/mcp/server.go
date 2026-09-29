@@ -276,6 +276,9 @@ func AllSpecs() []Spec {
 		// Offered to views, not to the model: keeps a view current while it
 		// is on screen.
 		specRefreshView(),
+		// Offered to views, not to the model: the pull request form's
+		// suggestions for branches and reviewers.
+		specSuggestFormValues(),
 	}
 }
 

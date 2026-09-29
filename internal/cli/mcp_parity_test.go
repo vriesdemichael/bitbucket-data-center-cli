@@ -62,6 +62,8 @@ var mcpOnly = map[string]string{
 		"a terminal has no view to show, and `bb pr get`, `bb pr list` and `bb pr diff` print the same content",
 	"refresh_view": "keeps a view that show put in front of the person current; only views call it, and a terminal " +
 		"reads again by running the command again",
+	"suggest_form_values": "suggests branches and reviewers as the person fills in the pull request form, which only views " +
+		"call; `bb pr create` completes the same values in the shell",
 }
 
 // TestEveryMCPToolIsAccountedFor fails when a tool is added without deciding

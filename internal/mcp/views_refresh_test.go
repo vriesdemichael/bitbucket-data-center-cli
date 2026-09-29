@@ -34,8 +34,9 @@ func TestRefreshViewIsOfferedToViewsOnly(t *testing.T) {
 	}
 
 	for _, spec := range AllSpecs() {
-		if spec.AppOnly() != (spec.Tool.Name == "refresh_view") {
-			t.Errorf("%s: AppOnly() = %v", spec.Tool.Name, spec.AppOnly())
+		want := spec.Tool.Name == "refresh_view" || spec.Tool.Name == "suggest_form_values"
+		if spec.AppOnly() != want {
+			t.Errorf("%s: AppOnly() = %v, want %v", spec.Tool.Name, spec.AppOnly(), want)
 		}
 	}
 }
@@ -216,7 +217,7 @@ func TestAViewIsOfferedWhatTheServerExposes(t *testing.T) {
 	}
 
 	all := allOffers()
-	if !slices.Equal(all.Kinds, showKinds) || !slices.Equal(all.Tools, viewActionTools) {
+	if !slices.Equal(all.Kinds, showKinds) || !slices.Equal(all.Tools, append(slices.Clone(viewActionTools), viewHelperTools...)) {
 		t.Errorf("a server with every tool offers %v and %v, want every kind and every action", all.Kinds, all.Tools)
 	}
 }
