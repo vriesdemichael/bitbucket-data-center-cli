@@ -117,6 +117,11 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 				fmt.Fprintf(cmd.ErrOrStderr(), "warning: path %q appears to be mangled by shell path conversion; sanitized to %q (set MSYS_NO_PATHCONV=1 to prevent mangling)\n", rawArgPath, path)
 			}
 
+			targetHost, err := requestHost(host, path)
+			if err != nil {
+				return err
+			}
+
 			resolvedMethod := strings.ToUpper(strings.TrimSpace(method))
 			if resolvedMethod == "" {
 				if len(rawFields) > 0 || len(typedFields) > 0 || inputFile != "" {
@@ -158,7 +163,7 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 				}
 			}
 
-			cfg, err := loadConfigForHost(d, host, path)
+			cfg, err := loadConfigForHost(d, targetHost)
 			if err != nil {
 				return err
 			}
@@ -421,7 +426,8 @@ func executePaginated(
 	return writeResponse(out, http.Header{"Content-Type": []string{"application/json"}}, mergedJSON, deps)
 }
 
-// loadConfigForHost resolves the configuration to use, honouring --host.
+// loadConfigForHost resolves the configuration to use, for the host
+// requestHost chose.
 //
 // The host is passed into the load so the full resolution path runs against it
 // — administrative allowed-host policy, per-host stored credentials and TLS
@@ -432,32 +438,14 @@ func executePaginated(
 // which is right for `bb pr list` and wrong for a flag whose entire purpose is
 // to leave the default behind: without the pin, the command answers
 // confidently from a server the caller never named.
-//
-// An endpoint given as a URL names its host too, and is resolved the same way:
-// loaded for the default host instead, it carried that host's credential to
-// wherever the URL pointed. A --host naming a different server is refused
-// rather than one of the two being chosen.
-func loadConfigForHost(d Dependencies, host string, endpoint string) (config.AppConfig, error) {
+func loadConfigForHost(d Dependencies, host string) (config.AppConfig, error) {
 	trimmedHost := strings.TrimSpace(host)
-	if trimmedHost != "" && !strings.Contains(trimmedHost, "://") {
-		trimmedHost = "https://" + trimmedHost
-	}
-
-	endpointHost, err := hostOfEndpoint(endpoint)
-	if err != nil {
-		return config.AppConfig{}, err
-	}
-	if endpointHost != nil {
-		if trimmedHost == "" {
-			trimmedHost = endpointHost.Scheme + "://" + endpointHost.Host
-		} else if named, err := url.Parse(trimmedHost); err != nil || !httpclient.SameOrigin(named, endpointHost) {
-			return config.AppConfig{}, apperrors.New(apperrors.KindValidation, fmt.Sprintf(
-				"--host %s and the endpoint URL name different servers; leave out --host, or give the endpoint as a path", host), nil)
-		}
-	}
-
 	if trimmedHost == "" {
 		return d.LoadConfig(config.Overrides{})
+	}
+
+	if !strings.Contains(trimmedHost, "://") {
+		trimmedHost = "https://" + trimmedHost
 	}
 
 	cfg, err := d.LoadConfig(config.Overrides{Host: trimmedHost})
@@ -470,20 +458,36 @@ func loadConfigForHost(d Dependencies, host string, endpoint string) (config.App
 	return cfg, nil
 }
 
-// hostOfEndpoint parses an endpoint given as an absolute URL, which is sent
-// where it points, and returns nil for a path, which is resolved against the
-// configured host.
-func hostOfEndpoint(endpoint string) (*url.URL, error) {
+// requestHost is the host a request goes to, which the configuration is loaded
+// for: the one --host names, or the one an endpoint given as a URL names.
+//
+// A URL is sent where it points, and loaded for the default host instead it
+// carried that host's credential there. A --host naming a different server is
+// refused rather than one of the two being chosen. Nothing here needs the
+// network, so it is decided before a dry run is previewed.
+func requestHost(host string, endpoint string) (string, error) {
 	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
-		return nil, nil
+		return host, nil
 	}
 
-	parsed, err := url.Parse(endpoint)
-	if err != nil || parsed.Host == "" {
-		return nil, apperrors.New(apperrors.KindValidation, fmt.Sprintf("endpoint %q is not a URL with a host", endpoint), err)
+	target, err := url.Parse(endpoint)
+	if err != nil || target.Host == "" {
+		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf("endpoint %q is not a URL with a host", endpoint), err)
 	}
 
-	return parsed, nil
+	named := strings.TrimSpace(host)
+	if named == "" {
+		return target.Scheme + "://" + target.Host, nil
+	}
+	if !strings.Contains(named, "://") {
+		named = "https://" + named
+	}
+	if parsed, err := url.Parse(named); err != nil || !httpclient.SameOrigin(parsed, target) {
+		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf(
+			"--host %s and the endpoint URL name different servers; leave out --host, or give the endpoint as a path", host), nil)
+	}
+
+	return host, nil
 }
 
 // htmlResponseError reports the login-page trap: a REST endpoint that answers

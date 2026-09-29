@@ -301,10 +301,12 @@ func (beacon *credentialBeacon) seen() (int, string) {
 	return beacon.hits, beacon.authorization
 }
 
-// storeCredentialFor makes host the stored default with a token, and clears
-// every credential the environment could supply, so the only credential in
-// play is the one stored for host.
-func storeCredentialFor(t *testing.T, host string) {
+// storeCredentials stores a token for each host, the first as the default, and
+// clears every credential the environment could supply, so the only
+// credentials in play are the stored ones. The policy and workspace tiers are
+// pointed at files that are not there, so this machine's own cannot steer the
+// load.
+func storeCredentials(t *testing.T, tokens ...[2]string) {
 	t.Helper()
 
 	for _, key := range []string{
@@ -313,28 +315,37 @@ func storeCredentialFor(t *testing.T, host string) {
 	} {
 		t.Setenv(key, "")
 	}
+	absent := t.TempDir()
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(absent, "policy.yaml"))
+	t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(absent, "workspace.yaml"))
+
+	hosts, secrets := "hosts:\n", "insecure_secrets:\n"
+	for _, stored := range tokens {
+		hosts += fmt.Sprintf("  %s:\n    url: %s\n", stored[0], stored[0])
+		secrets += fmt.Sprintf("  %s:\n    token: %s\n", stored[0], stored[1])
+	}
 
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	storedConfig := fmt.Sprintf(
-		"default_host: %s\nhosts:\n  %s:\n    url: %s\ninsecure_secrets:\n  %s:\n    token: stored-token\n",
-		host, host, host, host)
+	storedConfig := "default_host: " + tokens[0][0] + "\n" + hosts + secrets
 	if err := os.WriteFile(configPath, []byte(storedConfig), 0o600); err != nil {
 		t.Fatalf("write stored config: %v", err)
 	}
 	t.Setenv("BB_CONFIG_PATH", configPath)
 }
 
-// An endpoint given as a URL names its host, and the credential stored for
-// another host does not go with it. It used to be resolved for the default
-// host, so `bb api http://elsewhere/...` sent that host's credential to
-// elsewhere -- and so did naming the default with --host alongside it.
+// An endpoint given as a URL names its host, and the configuration is loaded
+// for that host. It used to be loaded for the default host, so `bb api
+// http://elsewhere/...` sent the default host's credential to elsewhere -- and
+// so did naming the default with --host alongside it -- while a URL on another
+// stored host got the default's credential rather than its own.
 func TestApiEndpointURLGetsOnlyItsOwnHostsCredential(t *testing.T) {
-	stored := newCredentialBeacon(t)
+	defaultHost := newCredentialBeacon(t)
+	otherStored := newCredentialBeacon(t)
 	foreign := newCredentialBeacon(t)
-	storeCredentialFor(t, stored.URL)
+	storeCredentials(t, [2]string{defaultHost.URL, "default-token"}, [2]string{otherStored.URL, "other-token"})
 
-	run := func(args ...string) error {
-		cmd := New(Dependencies{})
+	run := func(dryRun bool, args ...string) error {
+		cmd := New(Dependencies{DryRunEnabled: func() bool { return dryRun }})
 		cmd.SetOut(&bytes.Buffer{})
 		cmd.SetErr(&bytes.Buffer{})
 		cmd.SetArgs(args)
@@ -343,34 +354,45 @@ func TestApiEndpointURLGetsOnlyItsOwnHostsCredential(t *testing.T) {
 
 	// A GET streams through the downloader and a POST does not; both are asked.
 	for _, method := range []string{"GET", "POST"} {
-		if err := run(foreign.URL+"/rest/api/1.0/projects", "-X", method); err != nil {
-			t.Fatalf("%s to a URL on another host: %v", method, err)
+		if err := run(false, foreign.URL+"/rest/api/1.0/projects", "-X", method); err != nil {
+			t.Fatalf("%s to a URL on a host with nothing stored: %v", method, err)
 		}
 	}
 	if hits, authorization := foreign.seen(); hits != 2 || authorization != "" {
-		t.Fatalf("the other host must be reached with no credential, got %d hits and Authorization %q", hits, authorization)
+		t.Fatalf("a host with nothing stored must be reached with no credential, got %d hits and Authorization %q", hits, authorization)
 	}
 
-	err := run(foreign.URL+"/rest/api/1.0/projects", "--host", stored.URL)
-	if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "different servers") {
-		t.Fatalf("--host and a URL on another server must be refused, got %v", err)
+	if err := run(false, otherStored.URL+"/rest/api/1.0/projects"); err != nil {
+		t.Fatalf("a URL on another stored host: %v", err)
+	}
+	if hits, authorization := otherStored.seen(); hits != 1 || authorization != "Bearer other-token" {
+		t.Fatalf("another stored host must get its own credential, got %d hits and Authorization %q", hits, authorization)
+	}
+
+	// Refused before anything is sent, and before a dry run is previewed: the
+	// real run would refuse it, so a preview saying it would be sent is wrong.
+	for _, dryRun := range []bool{false, true} {
+		err := run(dryRun, foreign.URL+"/rest/api/1.0/projects", "-X", "POST", "--host", defaultHost.URL)
+		if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), "different servers") {
+			t.Fatalf("--host and a URL on another server must be refused (dry run %v), got %v", dryRun, err)
+		}
 	}
 	if hits, _ := foreign.seen(); hits != 2 {
 		t.Fatalf("a refused request must not reach the other host, got %d hits", hits)
 	}
 
-	// The stored host's own URL, with --host or without, still carries its
+	// The default host's own URL, with --host or without, still carries its
 	// credential.
 	for _, args := range [][]string{
-		{stored.URL + "/rest/api/1.0/projects"},
-		{stored.URL + "/rest/api/1.0/projects", "--host", stored.URL},
+		{defaultHost.URL + "/rest/api/1.0/projects"},
+		{defaultHost.URL + "/rest/api/1.0/projects", "--host", defaultHost.URL},
 	} {
-		if err := run(args...); err != nil {
+		if err := run(false, args...); err != nil {
 			t.Fatalf("bb api %v: %v", args, err)
 		}
 	}
-	if hits, authorization := stored.seen(); hits != 2 || authorization != "Bearer stored-token" {
-		t.Fatalf("the stored host must get its own credential, got %d hits and Authorization %q", hits, authorization)
+	if hits, authorization := defaultHost.seen(); hits != 2 || authorization != "Bearer default-token" {
+		t.Fatalf("the default host must get its own credential, got %d hits and Authorization %q", hits, authorization)
 	}
 }
 
@@ -378,12 +400,12 @@ func TestApiEndpointURLGetsOnlyItsOwnHostsCredential(t *testing.T) {
 // a URL endpoint names a host. It used to be checked against the default host
 // instead, and the request went to the URL's host regardless.
 func TestApiEndpointURLIsHeldToAllowedHosts(t *testing.T) {
-	stored := newCredentialBeacon(t)
+	defaultHost := newCredentialBeacon(t)
 	foreign := newCredentialBeacon(t)
-	storeCredentialFor(t, stored.URL)
+	storeCredentials(t, [2]string{defaultHost.URL, "default-token"})
 
 	policyPath := filepath.Join(t.TempDir(), "policy.yaml")
-	if err := os.WriteFile(policyPath, []byte(fmt.Sprintf("allowed_hosts:\n  - %q\n", stored.URL)), 0o600); err != nil {
+	if err := os.WriteFile(policyPath, []byte(fmt.Sprintf("allowed_hosts:\n  - %q\n", defaultHost.URL)), 0o600); err != nil {
 		t.Fatalf("write policy: %v", err)
 	}
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", policyPath)
