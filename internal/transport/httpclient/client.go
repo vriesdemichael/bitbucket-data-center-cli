@@ -371,7 +371,7 @@ func (client *Client) Download(ctx context.Context, opts RequestOptions, destina
 		header = make(http.Header)
 	}
 	if header.Get("Authorization") == "" {
-		client.authorize(header)
+		client.authorize(header, requestURL)
 	}
 
 	downloads := client.downloads
@@ -520,12 +520,21 @@ func (client *Client) Health(ctx context.Context) (HealthStatus, error) {
 }
 
 func (client *Client) applyAuth(request *http.Request) {
-	client.authorize(request.Header)
+	client.authorize(request.Header, request.URL)
 }
 
 // authorize adds the configured credentials to header: the token when there is
 // one, and a username with its password otherwise.
-func (client *Client) authorize(header http.Header) {
+//
+// They were resolved for the configured host and go only to it. A path given
+// as an absolute URL is sent where it points, and a URL on another server gets
+// no credential.
+func (client *Client) authorize(header http.Header, target *url.URL) {
+	base, err := url.Parse(client.baseURL)
+	if err != nil || !SameOrigin(base, target) {
+		return
+	}
+
 	if client.token != "" {
 		header.Set("Authorization", "Bearer "+client.token)
 		return
@@ -533,6 +542,33 @@ func (client *Client) authorize(header http.Header) {
 
 	if client.username != "" && client.password != "" {
 		header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(client.username+":"+client.password)))
+	}
+}
+
+// SameOrigin reports whether two URLs address the same server: the same
+// scheme, host and port, a port left out being the scheme's default.
+func SameOrigin(a, b *url.URL) bool {
+	if a == nil || b == nil || a.Host == "" {
+		return false
+	}
+
+	return strings.EqualFold(a.Scheme, b.Scheme) &&
+		strings.EqualFold(a.Hostname(), b.Hostname()) &&
+		portOf(a) == portOf(b)
+}
+
+func portOf(address *url.URL) string {
+	if port := address.Port(); port != "" {
+		return port
+	}
+
+	switch strings.ToLower(address.Scheme) {
+	case "http":
+		return "80"
+	case "https":
+		return "443"
+	default:
+		return ""
 	}
 }
 
