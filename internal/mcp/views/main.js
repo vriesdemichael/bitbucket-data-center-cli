@@ -309,7 +309,7 @@ const PHONE_WIDTH = 560;
 
 // SCROLLING are the parts of a view that scroll on their own. A view is drawn
 // again whenever something changes, and each keeps its place when it is.
-const SCROLLING = ["#diff-main", ".diff-tree", "#threads-main", ".details-main", ".details-side", ".page > .details"];
+const SCROLLING = ["#diff-main", ".diff-tree", "#threads-main", "#file-main", ".details-main", ".details-side", ".page > .details"];
 
 function render() {
   const app = document.getElementById("app");
@@ -381,6 +381,7 @@ function content() {
         case "diff": return renderDiff(view.payload, view);
         case "threads": return renderThreads(view.payload, view);
         case "pull_request_form": return renderPullRequestForm(view.payload, view);
+        case "file": return renderFile(view.payload, view);
         default: return notice("This version of the page cannot show a " + view.payload.kind + ".");
       }
     } catch (error) {

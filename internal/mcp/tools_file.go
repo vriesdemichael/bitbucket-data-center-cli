@@ -106,6 +106,13 @@ func specGetFileContent() Spec {
 // readFileView fetches a file and converts it into what a model can use, as
 // get_file_content and the file resource answer with it.
 func readFileView(ctx context.Context, c Clients, in GetFileContentInput) (fileview.Request, fileview.View, error) {
+	request, view, _, err := readFile(ctx, c, in)
+	return request, view, err
+}
+
+// readFile is readFileView with the bytes of the file, which a view shows as
+// they are where it can: a picture as stored rather than scaled down.
+func readFile(ctx context.Context, c Clients, in GetFileContentInput) (fileview.Request, fileview.View, []byte, error) {
 	request := fileview.Request{
 		Path:      in.Path,
 		At:        in.At,
@@ -116,7 +123,7 @@ func readFileView(ctx context.Context, c Clients, in GetFileContentInput) (filev
 	// Refused before the file is fetched, since no file makes a negative line
 	// number mean anything.
 	if err := request.Validate(); err != nil {
-		return request, fileview.View{}, err
+		return request, fileview.View{}, nil, err
 	}
 
 	// Held in memory, because it is converted as a whole, so capped. A file
@@ -129,9 +136,9 @@ func readFileView(ctx context.Context, c Clients, in GetFileContentInput) (filev
 	var limit *download.LimitError
 	switch {
 	case errors.As(err, &limit):
-		return request, fileview.TooLarge(request, limit.Limit, limit.Size), nil
+		return request, fileview.TooLarge(request, limit.Limit, limit.Size), nil, nil
 	case err != nil:
-		return request, fileview.View{}, fmt.Errorf("reading the file failed: %w", err)
+		return request, fileview.View{}, nil, fmt.Errorf("reading the file failed: %w", err)
 	}
 
 	// The call's context: a conversion that takes seconds -- a compressed
@@ -139,7 +146,7 @@ func readFileView(ctx context.Context, c Clients, in GetFileContentInput) (filev
 	// and the call ends in its error.
 	view, err := fileview.Read(ctx, request, held.Bytes())
 
-	return request, view, err
+	return request, view, held.Bytes(), err
 }
 
 // fileContentResult puts a view of a file into a tool result.

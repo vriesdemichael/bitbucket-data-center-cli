@@ -109,6 +109,11 @@ suggests. Edit what you like, with branches and reviewers completed as you
 type, and create it; nothing is created until you do. An existing pull
 request's title, description and draft state are edited the same way.
 
+A file you have no copy of, such as another repository's, is shown as what it
+is: code with line numbers, a picture fitted to the view or at its size, audio
+and video that play, an archive's listing. A long file comes a window at a
+time. In a diff, **View file** opens a changed file as the pull request has it.
+
 ![A pull request's comment threads: tasks and comments on the pull request, a comment on a file, and a task on a changed line with the lines of the diff leading to it](assets/views/threads-light.webp#only-light)
 ![A pull request's comment threads: tasks and comments on the pull request, a comment on a file, and a task on a changed line with the lines of the diff leading to it](assets/views/threads-dark.webp#only-dark)
 

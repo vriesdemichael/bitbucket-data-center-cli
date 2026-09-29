@@ -293,7 +293,9 @@ function diffFile(file, index, pr, view, withHeader, comments, avatars) {
   const place = (comments && comments.files.get(path)) || { onFile: [], lines: new Map() };
   const section = el("section", { class: "diff-file", id: "diff-file-" + index, dataset: { collapsed: "false" } });
   if (withHeader) {
-    section.append(el("button", {
+    const head = el("div", { class: "diff-file-head" });
+    section.append(head);
+    head.append(el("button", {
       type: "button",
       class: "diff-file-header",
       "aria-expanded": "true",
@@ -307,7 +309,8 @@ function diffFile(file, index, pr, view, withHeader, comments, avatars) {
     changeLozenge(file.status),
     el("span", { class: "file-name" }, pathLabel(path), renamedFrom(file) ? el("span", { class: "ellipsis faint" }, renamedFrom(file)) : null),
     el("span", { class: "spacer" }),
-    file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file)));
+    file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file)),
+    fileButton(file, pr, view));
   }
 
   // The file's own comments, and those on lines the diff does not draw,
@@ -374,13 +377,37 @@ function diffFile(file, index, pr, view, withHeader, comments, avatars) {
 }
 
 // codeText is a line of code as a view draws it: whole, or its first
-// MAX_LINE_CHARS characters and how many more it has.
-function codeText(text) {
-  if (text.length <= MAX_LINE_CHARS) return text;
-  let end = MAX_LINE_CHARS;
-  const code = text.charCodeAt(end - 1);
-  if (code >= 0xd800 && code <= 0xdbff) end++;
-  return [text.slice(0, end), el("span", { class: "cut" }, " … " + plural(text.length - end, "more character"))];
+// MAX_LINE_CHARS characters and how many more it has, coloured by the spans
+// bb highlighted it with where it did.
+function codeText(text, spans) {
+  let end = text.length;
+  if (end > MAX_LINE_CHARS) {
+    end = MAX_LINE_CHARS;
+    const code = text.charCodeAt(end - 1);
+    if (code >= 0xd800 && code <= 0xdbff) end++;
+  }
+  const shown = spans ? coloured(text.slice(0, end), spans) : text.slice(0, end);
+  if (end >= text.length) return shown;
+  return [shown, el("span", { class: "cut" }, " … " + plural(text.length - end, "more character"))];
+}
+
+// coloured splits a line by its spans, each a class letter and a length in
+// the line's UTF-16 units, as bb writes them. A letter it does not know is
+// plain text, and whatever the spans do not cover stays plain.
+function coloured(text, spans) {
+  const parts = [];
+  let at = 0;
+  for (const span of String(spans).split(" ")) {
+    const kind = span.charAt(0);
+    const length = Number(span.slice(1));
+    if (!/^[a-z]$/.test(kind) || !Number.isInteger(length) || length <= 0) continue;
+    const piece = text.slice(at, at + length);
+    at += length;
+    if (!piece) break;
+    parts.push(kind === "t" ? piece : el("span", { class: "hl-" + kind }, piece));
+  }
+  if (at < text.length) parts.push(text.slice(at));
+  return parts;
 }
 
 // fileURL is a file's diff in Bitbucket, as Bitbucket links one: the pull

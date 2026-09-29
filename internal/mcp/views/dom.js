@@ -12,6 +12,10 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 // network, and a source that is anything else is dropped.
 const EMBEDDED_IMAGE = /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
 
+// Audio or a video a view plays is a file bb embedded as data, and only an
+// audio or video element takes it.
+const EMBEDDED_MEDIA = /^data:(?:(?:audio|video)\/[a-z0-9.+-]+|application\/ogg);base64,[A-Za-z0-9+/]+=*$/;
+
 function el(tag, props, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props || {})) {
@@ -26,7 +30,8 @@ function el(tag, props, ...children) {
       if (typeof value !== "function") throw new Error("an event handler must be a function");
       node.addEventListener(key.slice(2), value);
     } else if (key === "src") {
-      if (EMBEDDED_IMAGE.test(value)) node.setAttribute("src", value);
+      const media = tag === "audio" || tag === "video";
+      if (media ? EMBEDDED_MEDIA.test(value) : EMBEDDED_IMAGE.test(value)) node.setAttribute("src", value);
     } else if (key === "href" || key === "srcdoc" || key === "style") {
       // Links open through the host, and nothing styles itself from data.
       throw new Error("el does not set " + key);
