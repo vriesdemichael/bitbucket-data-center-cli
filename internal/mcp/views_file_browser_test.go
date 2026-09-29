@@ -134,7 +134,7 @@ func TestADiffDrawsItsCodeHighlighted(t *testing.T) {
 		"",
 	}, "\n")
 	diff := refreshDiffPayload(patch, time.Now(), "diff")
-	withHighlights(&diff)
+	withHighlights(&diff, viewOffers{})
 	ctx := browser(t, []viewhost.Frame{
 		{Title: "diff fullscreen", Mode: "fullscreen", Fullscreen: true, Result: fixtureResult(t, diff)},
 	})

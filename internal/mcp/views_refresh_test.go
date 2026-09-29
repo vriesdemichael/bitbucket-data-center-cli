@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/highlight"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 )
 
@@ -203,7 +204,7 @@ func TestTheModelIsToldWhenAViewChanges(t *testing.T) {
 func TestAViewIsOfferedWhatTheServerExposes(t *testing.T) {
 	t.Parallel()
 
-	offers := offersFor(map[string]bool{
+	offers := offersFor(ServerOptions{}, map[string]bool{
 		"get_pull_request": true, "list_pr_comments": true, "add_pr_comment": true, "show": true, "get_commit": true,
 	})
 	if !slices.Equal(offers.Kinds, []string{showKindPullRequest, showKindThreads}) {
@@ -273,7 +274,7 @@ func TestADiffIsHighlightedOutsideItsFingerprint(t *testing.T) {
 		"diff --git a/ledger.go b/ledger.go\n--- a/ledger.go\n+++ b/ledger.go\n@@ -1,2 +1,2 @@\n package ledger\n-var x = 1\n+var x = 2\n"
 	payload := viewPayload{Version: viewPayloadVersion, Kind: showKindDiff, Diff: &viewDiff{Patch: patch}}
 	before := fingerprintOf(payload)
-	withHighlights(&payload)
+	withHighlights(&payload, viewOffers{})
 
 	if _, plain := payload.Diff.Highlight[0]; plain {
 		t.Errorf("the text file is highlighted: %v", payload.Diff.Highlight[0])
@@ -284,5 +285,30 @@ func TestADiffIsHighlightedOutsideItsFingerprint(t *testing.T) {
 	}
 	if after := fingerprintOf(payload); after != before {
 		t.Errorf("highlighting changed the fingerprint from %s to %s", before, after)
+	}
+}
+
+// --highlight-templates reaches what a view is sent: the code inside a
+// template is highlighted with it, and without it only the markup is.
+func TestHighlightTemplatesReachesTheViews(t *testing.T) {
+	t.Parallel()
+
+	patch := "diff --git a/App.svelte b/App.svelte\n--- a/App.svelte\n+++ b/App.svelte\n@@ -1 +1 @@\n-{#if total}\n+{#if count}\n"
+	for _, templates := range []bool{false, true} {
+		offers := offersFor(ServerOptions{HighlightTemplates: templates}, map[string]bool{"get_pr_diff": true})
+		payload := viewPayload{Version: viewPayloadVersion, Kind: showKindDiff, Diff: &viewDiff{Patch: patch}}
+		withHighlights(&payload, offers)
+
+		keywords := 0
+		for _, line := range payload.Diff.Highlight[0] {
+			for _, span := range strings.Fields(line) {
+				if strings.HasPrefix(span, string(highlight.ClassKeyword)) {
+					keywords++
+				}
+			}
+		}
+		if want := map[bool]int{false: 0, true: 2}[templates]; keywords != want {
+			t.Errorf("with templates %v, the diff's {#if} lines have %d keywords, want %d: %q", templates, keywords, want, payload.Diff.Highlight[0])
+		}
 	}
 }

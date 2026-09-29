@@ -40,7 +40,7 @@ func sampleName(glob string) string {
 func TestNameIndexAgreesWithChroma(t *testing.T) {
 	t.Parallel()
 
-	index := lexerIndex()
+	index := lexerState().index
 	variants := []func(string) string{
 		func(name string) string { return name + "~" },
 		func(name string) string { return "a" + name },
@@ -110,31 +110,80 @@ func lexerName(lexer chroma.Lexer) string {
 	return lexer.Config().Name
 }
 
-// A lexer that lexes the whole text before its first token is gone from the
-// registry: a file of its language has no lexer, and a Markdown code block
-// naming it is plain text, where Svelte's own lexer takes seconds on it.
-func TestLexAheadLexersAreReplaced(t *testing.T) {
+// A lexer that lexes the whole text before its first token stands aside: a
+// template is highlighted by the lexer of its markup, which stops at the
+// deadline, and so is a Markdown code block naming it, where Svelte's own
+// lexer takes seconds on a crafted one. PHP, which chroma lexes on its own
+// as well as inside HTML, keeps its lexer.
+func TestTemplatesHaveStandIns(t *testing.T) {
 	t.Parallel()
 
-	lexerIndex()
+	lexerState()
 	delegating := reflect.TypeOf(chroma.DelegatingLexer(nil, nil))
 	for _, lexer := range lexers.GlobalLexerRegistry.Lexers {
 		if reflect.TypeOf(lexer) == delegating {
 			t.Errorf("%s still lexes a whole text before its first token", lexer.Config().Name)
 		}
 	}
-	for _, name := range []string{"App.svelte", "index.html.erb", "page.phtml", "top.sls"} {
-		if lexer := lexerFor(name); lexer != nil {
-			t.Errorf("%s has lexer %s", name, lexer.Config().Name)
+	for name, template := range map[string]string{"App.svelte": "Svelte", "index.html.erb": "ERB", "page.phtml": "PHTML", "top.sls": "YAML+Jinja"} {
+		lexer := lexerFor(name, false)
+		if _, stands := lexer.(standIn); !stands || lexer.Config().Name != template {
+			t.Errorf("%s has lexer %v, want a stand-in for %s", name, lexer, template)
 		}
 	}
+	if lexer := lexerFor("index.php", false); lexer == nil || lexer.Config().Name != "PHP" {
+		t.Errorf("index.php has lexer %v, want PHP", lexer)
+	}
 
-	block := "```svelte\n<script lang=\"ts\">" + strings.Repeat("{", 16<<10) + "\n```\n"
+	// An ordinary Svelte file has its markup and its script highlighted.
+	svelte, ok := Lines("App.svelte", "<script>\n  let total = 0;\n</script>\n<p class=\"total\">{total}</p>\n", time.Now().Add(time.Second))
+	if !ok || !strings.Contains(svelte[1], string(ClassKeyword)) || !strings.Contains(svelte[3], string(ClassTag)) {
+		t.Errorf("an ordinary Svelte file is highlighted as %q, ok %v; want its script's keyword and its tags", svelte, ok)
+	}
+	// A crafted one slows the markup's lexer too, which stops at the deadline.
+	started := time.Now()
+	Lines("App.svelte", craftedSvelte(), started.Add(100*time.Millisecond))
+	if waited := time.Since(started); waited > 500*time.Millisecond {
+		t.Errorf("a crafted Svelte file held the answer %v, past its 100ms deadline", waited)
+	}
+
+	block := "```svelte\n<div class=\"total\">{total}</div>\n```\n"
 	spans, ok := Lines("README.md", block, time.Now().Add(time.Second))
 	if !ok {
 		t.Fatal("a Markdown file with a Svelte block was not highlighted within a second")
 	}
-	if got := classes(t, spans[1])[0]; got != ClassText {
-		t.Errorf("the Svelte block's text is %c, want %c", got, ClassText)
+	if !strings.Contains(spans[1], string(ClassTag)) {
+		t.Errorf("the Svelte block's markup is %q, want its tags highlighted", spans[1])
 	}
+}
+
+// Asked for, chroma's own lexer highlights a template, the code in it too;
+// on a crafted file that keeps it busy for seconds, nothing waits for it past
+// the deadline.
+func TestTemplatesOwnLexerOnRequestDoesNotHoldTheAnswer(t *testing.T) {
+	t.Parallel()
+
+	own := lexerFor("App.svelte", true)
+	if reflect.TypeOf(own) != reflect.TypeOf(chroma.DelegatingLexer(nil, nil)) {
+		t.Fatalf("asked for chroma's own lexer, App.svelte has %T", own)
+	}
+	spans, ok := LinesWith("App.svelte", "<script>\nlet total = 1;\n</script>\n", Options{Deadline: time.Now().Add(time.Second), Templates: true})
+	if !ok || !strings.HasPrefix(spans[1], "k3") {
+		t.Errorf("chroma's own lexer highlighted the script as %q, ok %v; want let a keyword", spans, ok)
+	}
+
+	crafted := craftedSvelte()
+	started := time.Now()
+	if _, ok := LinesWith("App.svelte", crafted, Options{Deadline: started.Add(100 * time.Millisecond), Templates: true}); ok {
+		t.Error("a crafted Svelte file was highlighted by chroma's own lexer within its deadline; the test no longer shows what it means to")
+	}
+	if waited := time.Since(started); waited > 500*time.Millisecond {
+		t.Errorf("the answer waited %v for chroma's own lexer, past its 100ms deadline", waited)
+	}
+}
+
+// craftedSvelte is 16 KiB of Svelte its own lexer backtracks through for
+// seconds.
+func craftedSvelte() string {
+	return `<script lang="ts">` + strings.Repeat("{", 16<<10) + "\n"
 }

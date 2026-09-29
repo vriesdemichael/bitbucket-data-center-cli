@@ -55,11 +55,11 @@ func specRefreshView() Spec {
 		Register: func(server *mcp.Server, clients Clients) {
 			mcp.AddTool(server, tool, refreshViewHandler(clients, allOffers()))
 		},
-		RegisterExposed: func(server *mcp.Server, clients Clients, exposed map[string]bool) {
-			offers := offersFor(exposed)
+		RegisterExposed: func(server *mcp.Server, opts ServerOptions, exposed map[string]bool) {
+			offers := offersFor(opts, exposed)
 			offered := *tool
 			offered.InputSchema = refreshViewInputSchema(offers.Kinds)
-			mcp.AddTool(server, &offered, refreshViewHandler(clients, offers))
+			mcp.AddTool(server, &offered, refreshViewHandler(opts.Clients, offers))
 		},
 	}
 }
@@ -113,7 +113,7 @@ func refreshViewHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[Refresh
 
 		payload.Avatars = fetchAvatars(ctx, c, people)
 		payload.Offers = &offers
-		withHighlights(&payload)
+		withHighlights(&payload, offers)
 		// A view that holds nothing yet is opening this, rather than finding
 		// what it holds changed.
 		text := summary.changed()

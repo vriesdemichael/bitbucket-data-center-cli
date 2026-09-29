@@ -135,6 +135,11 @@ time. In a diff, **View file** opens a changed file as the pull request has it.
   read it. `--exclude refresh_view` keeps views as they were drawn.
 - A count is Bitbucket's count of the whole, and a view that lists fewer says
   so. A failed build or a request for changes is never behind a click.
+- Code is highlighted as far as bb gets before a deadline, and the rest drawn
+  plain. Of a Svelte, ERB, PHTML, Go HTML or Jinja template only the markup is
+  highlighted: the lexers for the code inside cannot be stopped midway, and a
+  crafted file keeps one busy for seconds. `--highlight-templates` highlights
+  that code too, and no view waits for it.
 - What you click opens in Bitbucket, through the client. A client that will not
   open a link shows you its address to copy.
 - bb reads everything a view shows, avatars included, with its own credentials:

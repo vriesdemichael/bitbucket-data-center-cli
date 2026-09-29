@@ -317,6 +317,12 @@ individual tools. Neither exposes a tool that --read-only or a scope withholds.
 The tools only the views of show call, refresh_view and suggest_form_values, go
 with show whether or not --tools names them.
 
+Views highlight the code in diffs and files. Of a Svelte, ERB, PHTML, Go HTML or
+Jinja template, only the markup is highlighted: the lexers for the code inside
+cannot be stopped midway, and a crafted file keeps one busy for seconds. Use
+--highlight-templates to highlight that code too. No view waits for a lexer
+past its deadline, but the server works on until the lexer finishes.
+
 When more than one Bitbucket instance is configured the --host flag is required.
 
 Use --project or --repo to confine the server to one project or repository. Any
@@ -343,6 +349,7 @@ Flags:
       --audit-failure string   What to do when an audit record cannot be written (one of: deny, warn) (default "deny")
       --audit-file string      Append a JSON Lines audit record per tool call to this path, or to 'stderr'
       --exclude string         Comma-separated denylist of tool names to suppress
+      --highlight-templates    In views, highlight the code inside templates too, not only their markup
       --host string            Target Bitbucket instance URL; required when multiple instances are configured
       --project string         Confine the server to this project key; calls aimed elsewhere are refused
       --read-only              Expose only the tools that read, for a client you do not trust to make changes

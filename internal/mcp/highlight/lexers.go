@@ -15,27 +15,50 @@ import (
 // lexerFor returns the lexer for a file, chosen by its name alone: sniffing
 // the content is slow, and wrong on the fragment of a file a hunk holds. It
 // returns nil for a name no lexer matches, and for a plain-text file, whose
-// every span would be ClassText.
-func lexerFor(name string) chroma.Lexer {
-	index := lexerIndex()
-	lexer := index.match(name)
-	if lexer == nil || index.plain[lexer.Config().Name] {
+// every span would be ClassText. templates asks for chroma's own lexer for a
+// template, in place of the stand-in that highlights its markup.
+func lexerFor(name string, templates bool) chroma.Lexer {
+	state := lexerState()
+	lexer := state.index.match(name)
+	if lexer == nil {
+		return nil
+	}
+	if own, ok := state.templates[lexer.Config().Name]; ok && templates {
+		return own
+	}
+	if state.index.plain[lexer.Config().Name] {
 		return nil
 	}
 	return lexer
 }
 
-// lexerIndex prepares chroma's registry once, on first use, and indexes it.
-var lexerIndex = sync.OnceValue(func() *nameIndex {
-	plain := map[string]bool{"plaintext": true}
-	for _, name := range replaceLexAhead(lexers.GlobalLexerRegistry) {
-		plain[name] = true
-	}
-	return newNameIndex(lexers.GlobalLexerRegistry, plain)
+// registryState is chroma's registry as prepared here: its index, and
+// chroma's own lexers for the templates, kept aside by name.
+type registryState struct {
+	index     *nameIndex
+	templates map[string]chroma.Lexer
+}
+
+// lexerState prepares chroma's registry once, on first use, and indexes it.
+var lexerState = sync.OnceValue(func() registryState {
+	templates, plain := standInForTemplates(lexers.GlobalLexerRegistry)
+	plain["plaintext"] = true
+	return registryState{index: newNameIndex(lexers.GlobalLexerRegistry, plain), templates: templates}
 })
 
-// replaceLexAhead replaces each lexer in the registry that lexes a whole text
-// before it yields a token, and returns their names.
+// markupOfTemplates names, for each template language, the language it is
+// written in around the code: the lexer that stands in for it.
+var markupOfTemplates = map[string]string{
+	"ERB":              "HTML",
+	"Go HTML Template": "HTML",
+	"PHTML":            "HTML",
+	"Svelte":           "HTML",
+	"YAML+Jinja":       "YAML",
+}
+
+// standInForTemplates replaces each lexer in the registry that lexes a whole
+// text before it yields a token, and returns those lexers by name, and the
+// names of those it replaced with plain text.
 //
 // A DelegatingLexer, which chroma uses where one language is embedded in
 // another (ERB, Svelte, PHTML, YAML+Jinja, Go HTML templates), lexes the whole
@@ -43,22 +66,42 @@ var lexerIndex = sync.OnceValue(func() *nameIndex {
 // tokens can stop it, and Svelte's and ERB's patterns are quadratic: 16 KiB of
 // crafted Svelte takes seconds. A Markdown code block, an org-mode source
 // block and the like name their language, so a file of any language can reach
-// one. Each is therefore replaced by a plain-text lexer of the same name and
-// file names: a file of such a language, or a block naming one, is left
-// uncoloured. bb uses chroma for nothing else.
-func replaceLexAhead(registry *chroma.LexerRegistry) []string {
-	var replaced []string
+// one. Each is therefore replaced, under the same name and file names, by the
+// lexer of the markup the template is written in, HTML or YAML, which yields
+// as it goes: the markup is highlighted, and the code inside the template is
+// not. A template language with no markup named here is replaced by plain
+// text. chroma's own lexer is kept for a caller that accepts what it costs
+// (Options.Templates). bb uses chroma for nothing else.
+func standInForTemplates(registry *chroma.LexerRegistry) (own map[string]chroma.Lexer, plain map[string]bool) {
+	own, plain = map[string]chroma.Lexer{}, map[string]bool{}
 	delegating := reflect.TypeOf(chroma.DelegatingLexer(nil, nil))
 	for _, lexer := range registry.Lexers {
 		if reflect.TypeOf(lexer) != delegating {
 			continue
 		}
 		config := *lexer.Config()
-		replaced = append(replaced, config.Name)
+		own[config.Name] = lexer
+		if name := markupOfTemplates[config.Name]; name != "" {
+			if markup := registry.Get(name); markup != nil && reflect.TypeOf(markup) != delegating {
+				registry.Register(standIn{Lexer: markup, config: &config})
+				continue
+			}
+		}
+		plain[config.Name] = true
 		registry.Register(chroma.MustNewLexer(&config, lexers.PlaintextRules))
 	}
-	return replaced
+	return own, plain
 }
+
+// standIn is a lexer registered under another's name and file names: the
+// markup lexer that highlights a template in place of chroma's own.
+type standIn struct {
+	chroma.Lexer
+	config *chroma.Config
+}
+
+// Config is the template's, so the stand-in is found, and ranked, as it was.
+func (s standIn) Config() *chroma.Config { return s.config }
 
 // nameIndex answers what lexers.Match answers, faster. Match tries every glob
 // of every lexer with filepath.Match, and tries each again with every backup
