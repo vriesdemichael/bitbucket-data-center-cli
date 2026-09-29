@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -73,6 +74,9 @@ func New(deps Dependencies) *cobra.Command {
 		Long: `Send a raw HTTP request to the Bitbucket REST API as an escape hatch for uncovered endpoints.
 
 Reuses stored authentication, host aliases, TLS options, retries, and pagination.
+A request is authenticated as every other command's is, so a header that
+carries a credential -- Authorization, Proxy-Authorization or Cookie -- is
+refused rather than putting a secret on the command line.
 
 Field arguments:
   -f, --raw-field k=v    Pass a string parameter (query parameter for GET, JSON field for POST/PUT/DELETE)
@@ -122,6 +126,11 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 				return err
 			}
 
+			customHeaders, err := parseHeaders(headers)
+			if err != nil {
+				return err
+			}
+
 			resolvedMethod := strings.ToUpper(strings.TrimSpace(method))
 			if resolvedMethod == "" {
 				if len(rawFields) > 0 || len(typedFields) > 0 || inputFile != "" {
@@ -166,15 +175,6 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 			cfg, err := loadConfigForHost(d, targetHost)
 			if err != nil {
 				return err
-			}
-
-			customHeaders := make(http.Header)
-			for _, h := range headers {
-				name, val, ok := strings.Cut(h, ":")
-				if !ok {
-					return apperrors.New(apperrors.KindValidation, fmt.Sprintf("invalid header format %q (expected Name: Value)", h), nil)
-				}
-				customHeaders.Add(strings.TrimSpace(name), strings.TrimSpace(val))
 			}
 
 			var bodyBytes []byte
@@ -285,6 +285,34 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 
 	return cmd
 }
+
+// parseHeaders reads the -H values, refusing one that carries a credential.
+//
+// A request is authenticated as every other command's is, with the credential
+// stored for its host or supplied through the environment. One given as a
+// header would sit in the process argument list and in shell history, which is
+// what ADR-083 keeps every secret out of. Nothing here needs the network, so it
+// is decided before a dry run is previewed.
+func parseHeaders(headers []string) (http.Header, error) {
+	parsed := make(http.Header)
+	for _, h := range headers {
+		name, val, ok := strings.Cut(h, ":")
+		if !ok {
+			return nil, apperrors.New(apperrors.KindValidation, fmt.Sprintf("invalid header format %q (expected Name: Value)", h), nil)
+		}
+		name = http.CanonicalHeaderKey(strings.TrimSpace(name))
+		if slices.Contains(credentialHeaders, name) {
+			return nil, apperrors.New(apperrors.KindValidation, fmt.Sprintf(
+				"bb api does not take a %s header: a request carries the credential bb auth login stored for its host, or BITBUCKET_TOKEN from the environment, so no secret goes on the command line (ADR-083)", name), nil)
+		}
+		parsed.Add(name, strings.TrimSpace(val))
+	}
+
+	return parsed, nil
+}
+
+// credentialHeaders are the headers whose value is a secret.
+var credentialHeaders = []string{"Authorization", "Proxy-Authorization", "Cookie"}
 
 func isBodyMethod(method string) bool {
 	switch method {

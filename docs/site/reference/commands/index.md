@@ -619,6 +619,9 @@ Send a raw HTTP request to the Bitbucket REST API
 Send a raw HTTP request to the Bitbucket REST API as an escape hatch for uncovered endpoints.
 
 Reuses stored authentication, host aliases, TLS options, retries, and pagination.
+A request is authenticated as every other command's is, so a header that
+carries a credential -- Authorization, Proxy-Authorization or Cookie -- is
+refused rather than putting a secret on the command line.
 
 Field arguments:
   -f, --raw-field k=v    Pass a string parameter (query parameter for GET, JSON field for POST/PUT/DELETE)

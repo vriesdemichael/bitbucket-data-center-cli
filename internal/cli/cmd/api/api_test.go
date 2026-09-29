@@ -396,6 +396,42 @@ func TestApiEndpointURLGetsOnlyItsOwnHostsCredential(t *testing.T) {
 	}
 }
 
+// A header that carries a credential is refused, as ADR-083 refuses every
+// secret on the command line: the request is authenticated with the credential
+// resolved for its host. It is refused before the configuration is loaded,
+// under a dry run too, and the refusal does not repeat the secret.
+func TestApiRefusesACredentialHeader(t *testing.T) {
+	t.Parallel()
+
+	for _, header := range []string{
+		"authorization: Bearer secret-value",
+		"Proxy-Authorization: Basic secret-value",
+		"COOKIE: JSESSIONID=secret-value",
+	} {
+		for _, dryRun := range []bool{false, true} {
+			deps := newTestDependencies("http://example.local", false, dryRun)
+			deps.LoadConfig = func(config.Overrides) (config.AppConfig, error) {
+				t.Errorf("%q (dry run %v): the configuration was loaded for a request that is refused", header, dryRun)
+				return config.AppConfig{}, nil
+			}
+
+			cmd := New(deps)
+			cmd.SetOut(&bytes.Buffer{})
+			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetArgs([]string{"/rest/api/1.0/projects", "-X", "POST", "-H", header})
+
+			err := cmd.Execute()
+			name, _, _ := strings.Cut(header, ":")
+			if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), http.CanonicalHeaderKey(name)+" header") {
+				t.Fatalf("%q (dry run %v) must be refused naming the header, got %v", header, dryRun, err)
+			}
+			if strings.Contains(err.Error(), "secret-value") {
+				t.Fatalf("the refusal repeats the secret: %v", err)
+			}
+		}
+	}
+}
+
 // allowed_hosts refuses a host outside the list before any request is made, and
 // a URL endpoint names a host. It used to be checked against the default host
 // instead, and the request went to the URL's host regardless.
