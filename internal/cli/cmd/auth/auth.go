@@ -367,20 +367,21 @@ to fail instead of falling back.`,
 		Use:   "token-url",
 		Short: "Show personal access token creation URL",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load config once. If --host is provided, override the URL so the identity
-			// lookup targets the same server as the PAT URL being generated.
-			cfg, err := deps.LoadConfig()
+			// The configuration is resolved for the host --host names, as
+			// identity's is. Loaded without it, the command failed before any
+			// login -- when finding where to make the first token is its whole
+			// purpose -- and the identity lookup below went to the named host
+			// with the default host's credential.
+			if host := strings.TrimSpace(tokenHost); host != "" {
+				if _, err := personalAccessTokenURL(host, ""); err != nil {
+					return err
+				}
+			}
+			cfg, err := deps.loadWith(tokenHost)
 			if err != nil {
 				return err
 			}
-
-			resolvedHost := strings.TrimSpace(tokenHost)
-			if resolvedHost == "" {
-				resolvedHost = cfg.BitbucketURL
-			} else {
-				// Apply --host override so identity resolution targets the right server.
-				cfg.BitbucketURL = resolvedHost
-			}
+			resolvedHost := cfg.BitbucketURL
 
 			// Attempt to resolve the current user slug for a per-user PAT URL.
 			// If credentials are not configured, fall back to the generic URL.

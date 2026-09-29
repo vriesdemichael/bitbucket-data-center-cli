@@ -90,7 +90,7 @@ covers both spellings, so the checksum step above works either way.
 **Authenticate** — store a token for your Bitbucket instance:
 
 ```bash
-printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
 bb auth status
 ```
 
