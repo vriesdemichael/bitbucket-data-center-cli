@@ -277,6 +277,30 @@ func TestViewScriptsBuildNoHTMLFromStrings(t *testing.T) {
 	}
 }
 
+// topLevelName is a name a view script declares at its top level: the page
+// concatenates the scripts into one scope, where a second function of one
+// name silently replaces the first, and a second const fails the page.
+var topLevelName = regexp.MustCompile(`(?m)^(?:async\s+)?(?:function\s+([A-Za-z_$][\w$]*)|(?:const|let|var|class)\s+([A-Za-z_$][\w$]*))`)
+
+func TestViewScriptsDeclareEachNameOnce(t *testing.T) {
+	t.Parallel()
+
+	declared := map[string]string{}
+	for _, name := range viewScripts {
+		for _, match := range topLevelName.FindAllStringSubmatch(mustReadViewAsset(name), -1) {
+			identifier := match[1] + match[2]
+			if first, ok := declared[identifier]; ok {
+				t.Errorf("%s declares %s, which %s declares already", name, identifier, first)
+				continue
+			}
+			declared[identifier] = name
+		}
+	}
+	if len(declared) < 50 {
+		t.Fatalf("found %d top-level names in the view scripts; the pattern no longer reads them", len(declared))
+	}
+}
+
 func TestViewPageReadsThePayloadKeyTheToolWrites(t *testing.T) {
 	t.Parallel()
 

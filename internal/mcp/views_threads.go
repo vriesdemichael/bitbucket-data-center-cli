@@ -82,8 +82,9 @@ type viewContextLine struct {
 
 // threadsForView reads a pull request's threads with everything the view
 // draws, as list_pr_comments reads them, and the avatars of the people who
-// wrote them.
-func threadsForView(ctx context.Context, c Clients, in ShowInput) (viewThreads, map[string]string, error) {
+// wrote them. withContext adds the lines of the diff leading to each
+// anchored line, which the diff view does without: it draws the diff.
+func threadsForView(ctx context.Context, c Clients, in ShowInput, withContext bool) (viewThreads, map[string]string, error) {
 	out, err := pullRequestThreads(ctx, c, ListPRCommentsInput{
 		Project: in.Project, Repo: in.Repo, PRID: in.ID, State: "all", WithReplies: true, Limit: maxViewThreads,
 	})
@@ -102,7 +103,9 @@ func threadsForView(ctx context.Context, c Clients, in ShowInput) (viewThreads, 
 		budget -= size
 		threads.Threads = append(threads.Threads, view)
 	}
-	withAnchorContext(ctx, c, in, threads.Threads)
+	if withContext {
+		withAnchorContext(ctx, c, in, threads.Threads)
+	}
 
 	people := map[string]string{}
 	add := func(account pullrequestactivityservice.Account) {

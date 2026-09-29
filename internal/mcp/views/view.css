@@ -647,6 +647,25 @@ tr.meta td { color: var(--bb-text-faint); font-style: italic; }
 tr.selected td { box-shadow: inset 0 0 0 9999px color-mix(in srgb, var(--bb-info) 16%, transparent); }
 tr.selected .line-number { color: var(--bb-info); font-weight: var(--font-weight-semibold, 600); }
 .diff-note { padding: 12px; color: var(--bb-text-muted); }
+/* A diff's comments where they are: under their line, at the top of their
+   file, and the pull request's own over the files. They read as prose, not
+   code. */
+.diff-table tr.diff-thread td, .diff-table tr.diff-draft td {
+  padding: 6px 10px 8px 12px;
+  border-top: 1px solid var(--bb-border);
+  border-bottom: 1px solid var(--bb-border);
+  background: var(--bb-bg);
+  font-family: var(--bb-font);
+  font-size: var(--bb-text-sm);
+  line-height: 1.45;
+  white-space: normal;
+}
+.diff-table tr.diff-thread + tr.diff-thread td { border-top: 0; }
+.diff-thread .thread, .file-threads .thread { margin: 0; }
+.file-threads { display: grid; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--bb-border); }
+.diff-pr-comments { margin: 12px 0 4px; }
+.diff-pr-threads { display: grid; gap: 10px; margin-top: 8px; }
+.more-note { margin-left: 8px; font-family: var(--bb-font); font-size: var(--bb-text-xs); }
 .inline-file { margin: 4px 0 10px; border: 1px solid var(--bb-border); border-radius: var(--bb-radius); overflow: hidden; }
 
 /* Comment threads */

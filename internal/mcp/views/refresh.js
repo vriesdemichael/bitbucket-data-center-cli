@@ -106,7 +106,7 @@ async function refreshView(view, byPerson) {
       const payload = payloadOf(result);
       if (!payload || payload.version !== VIEW_PAYLOAD_VERSION) throw new Error("bb answered with data this page cannot draw.");
       state.idleMs = REFRESH_IDLE_MS;
-      if (payload.kind === "diff" && !byPerson) {
+      if (payload.kind === "diff" && !byPerson && patchChanged(view.payload, payload)) {
         state.pending = { payload, text: textOf(result) };
       } else {
         showRefreshed(view, payload, textOf(result));
@@ -133,7 +133,7 @@ async function refreshView(view, byPerson) {
 // opened. A diff starts over, since its files and lines have moved. The model
 // is told, so it answers the person's next message from what they see.
 function showRefreshed(view, payload, text) {
-  if (payload.kind === "diff") {
+  if (payload.kind === "diff" && patchChanged(view.payload, payload)) {
     view.diffFiles = null;
     view.openFiles = new Set();
     view.selection = null;
@@ -146,6 +146,14 @@ function showRefreshed(view, payload, text) {
   view.payload = payload;
   view.refresh.pending = null;
   if (view.tellsModel && text) view.bridge.updateModelContext(text).catch(() => {});
+}
+
+// patchChanged is whether a diff's lines changed, rather than only what is
+// said about them: a comment leaves them where they are, and changes in place.
+function patchChanged(before, after) {
+  const was = (before && before.diff) || {};
+  const now = (after && after.diff) || {};
+  return was.patch !== now.patch || (was.files || []).length !== (now.files || []).length;
 }
 
 // refreshNotice offers a diff that changed while the person may have been
