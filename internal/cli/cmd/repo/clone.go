@@ -632,8 +632,18 @@ func normalizeUpstreamRemoteName(name string, fallbackOwner string) (string, err
 }
 
 func lookupParentCloneURL(ctx context.Context, cfg config.AppConfig, cloneHost string, repo cloneRepoRef) (string, string, error) {
+	// The lookup carries the credential git is given for cloneHost, which
+	// resolveCloneHTTPAuth resolves strictly. The configuration's own is the
+	// default host's, and a clone URL on another server took it there.
+	auth, _, found, err := resolveCloneHTTPAuth(cfg, cloneHost)
+	if err != nil || !found {
+		auth = config.AppConfig{}
+	}
 	probeCfg := cfg
 	probeCfg.BitbucketURL = cloneHost
+	probeCfg.BitbucketToken = auth.BitbucketToken
+	probeCfg.BitbucketUsername = auth.BitbucketUsername
+	probeCfg.BitbucketPassword = auth.BitbucketPassword
 
 	client := httpclient.NewFromConfig(probeCfg)
 	path := fmt.Sprintf("/rest/api/1.0/projects/%s/repos/%s", url.PathEscape(repo.ProjectKey), url.PathEscape(repo.Slug))
@@ -647,8 +657,7 @@ func lookupParentCloneURL(ctx context.Context, cfg config.AppConfig, cloneHost s
 		} `json:"origin"`
 	}
 
-	err := client.GetJSON(ctx, path, nil, &response)
-	if err != nil {
+	if err := client.GetJSON(ctx, path, nil, &response); err != nil {
 		return "", "", nil
 	}
 

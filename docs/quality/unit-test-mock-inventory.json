@@ -1,13 +1,13 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 218,
-    "files": 74,
-    "functions": 206,
+    "mocked_servers": 219,
+    "files": 75,
+    "functions": 207,
     "by_class": {
       "external-service": 27,
       "harness-constructor": 18,
-      "routing-beacon": 7,
+      "routing-beacon": 8,
       "transport-fault": 98,
       "unreachable-state": 25,
       "unreached-guard": 43
@@ -401,6 +401,18 @@
       ],
       "action": "keep",
       "reason": "a connection dropped mid-archive, which no",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/repo/clone_parent_credential_test.go",
+      "line": 29,
+      "function": "newAuthorizationBeacon",
+      "class": "routing-beacon",
+      "signals": [
+        "answers-any-request"
+      ],
+      "action": "keep",
+      "reason": "the reply is never read as Bitbucket's; the subject is which credential a request to this host carried.",
       "reviewed": true
     },
     {
