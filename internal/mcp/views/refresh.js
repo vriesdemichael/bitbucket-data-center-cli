@@ -5,11 +5,11 @@
 
 const REFRESH_TOOL = "refresh_view";
 
-// How long a view waits before it asks again: half a minute while something
+// How long a view waits before it asks again: fifteen seconds while something
 // is in motion, such as a running build or auto-merge waiting on one; two
 // minutes otherwise, twice as long after each answer that nothing changed,
 // up to ten. A failed refresh waits as long as a quiet one.
-const REFRESH_BUSY_MS = 30 * 1000;
+const REFRESH_BUSY_MS = 15 * 1000;
 const REFRESH_IDLE_MS = 2 * 60 * 1000;
 const REFRESH_MAX_MS = 10 * 60 * 1000;
 const REFRESH_TIMEOUT_MS = 60 * 1000;
