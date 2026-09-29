@@ -102,11 +102,51 @@ function attentionLine(pr, avatars) {
       }
     }
   }
+  const missing = missingRequired(pr);
+  if (missing.length > 0) {
+    const words = plural(missing.length, "required build") + " missing";
+    items.push(el("span", { class: "attention-item failed", title: words + ": " + missing.map((check) => check.key).join(", ") },
+      icon("buildUnknown"), words));
+  }
   const summary = pr.review_summary || {};
   const tasks = summary.open_tasks !== undefined ? summary.open_tasks : pr.open_task_count;
   if (tasks > 0) items.push(el("span", { class: "attention-item" }, icon("task"), plural(tasks, "open task")));
   if (items.length === 0) return null;
   return el("div", { class: "attention" }, items);
+}
+
+// missingRequired are the builds the target branch requires that have not
+// reported on the source commit, when bb could tell.
+function missingRequired(pr) {
+  if (!pr.required_known) return [];
+  return (pr.required_checks || []).filter((check) => !check.state);
+}
+
+// requiredSection is the checks board: the builds the target branch
+// requires before the pull request merges, each where it stands, what needs
+// attention first. A key no build reported under is missing; one a build
+// reported under without naming it as its parent says why Bitbucket does not
+// count that build.
+function requiredSection(pr, view) {
+  if (!pr.required_known || !(pr.required_checks || []).length) return null;
+  return el("section", { class: "side-section" },
+    el("h2", { class: "section-title" }, "Required builds"),
+    el("ul", { class: "check-list required-list" }, pr.required_checks.map((check) => {
+      const look = check.state ? buildStateOf(check.state) : null;
+      return el("li", { class: "required-check" },
+        look ? icon(look.icon, look.title, "build-state " + look.className) : icon("buildUnknown", "Missing", "build-state failed"),
+        el("span", { class: "row-main" },
+          el("span", { class: "mono ellipsis", title: check.key }, check.key),
+          check.name && check.name !== check.key ? el("span", { class: "faint ellipsis" }, check.name) : null,
+          !check.state
+            ? el("span", { class: "faint required-note" }, check.unparented
+              ? "A build reported this key without naming it as its parent, so Bitbucket does not count it."
+              : "Not reported on this commit.")
+            : null),
+        check.url && isWebURL(check.url)
+          ? el("button", { type: "button", class: "button ghost icon-button", title: "Open the build", onclick: () => openLink(view.bridge, check.url) }, icon("external", "Open the build"))
+          : null);
+    })));
 }
 
 // quietLine is the rest of where the pull request stands, in one grey line:
@@ -165,6 +205,7 @@ function pullRequestOverview(pr, payload, view) {
     el("aside", { class: "details-side" },
       reviewActions(pr, payload, view),
       reviewersSection(pr.reviewers || [], avatars, view),
+      requiredSection(pr, view),
       buildsSection(pr, view),
       detailsSection(pr, view)));
 }

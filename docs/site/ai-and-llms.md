@@ -68,11 +68,13 @@ asked about. A terminal client, such as Claude Code, shows the plain answer, and
 ![A pull request card: its title, author and branches, who requested changes, a failed and a running build, an open task, and how many approvals and builds passed](assets/views/card-dark.webp#only-dark)
 
 The card puts what asks something of someone on one line: who requested
-changes, a conflict, failed and running builds, open tasks. The counts under it
+changes, a conflict, failed and running builds, required builds that have not
+run, open tasks. The counts under it
 are Bitbucket's, however many reviewers and builds there are. **Overview** opens
 the rest, fullscreen where the client has it and opened out in place where it
 does not: the description as Bitbucket formats it, the reviewers by their
-decision, every build by its state, and the comments and tasks. **Diff** and
+decision, the builds the target branch requires before it merges, every build
+by its state, and the comments and tasks. **Diff** and
 **Comments** open those in the same view, and **Back** returns to the card.
 **Approve** and **Request changes**, in the overview and over the diff, review
 the pull request once you confirm it in your client.

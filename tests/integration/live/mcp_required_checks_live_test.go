@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
@@ -299,6 +300,38 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 		agree(t, "into develop", toDevelop, map[string]string{"dev": "SUCCESSFUL"})
 		agree(t, "into stable/1.0", toStable, map[string]string{"cat": "INPROGRESS"})
 		agree(t, "a hotfix into master", hotfix, map[string]string{"brn": "", "dfl": "", "exp": ""})
+	})
+
+	// The card carries what the function says, missing first, and the model
+	// is told what is still missing.
+	t.Run("the card shows them", func(t *testing.T) {
+		capabilities := &mcp.ClientCapabilities{}
+		capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
+		executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show",
+				Arguments: map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": fmt.Sprint(toMaster.ID)}})
+			if err != nil || result.IsError {
+				t.Fatalf("show the card: %v %s", err, mcpResultText(result))
+			}
+			payload, _ := result.Meta[viewPayloadKey].(map[string]any)
+			card, _ := payload["pull_request"].(map[string]any)
+			if card["required_known"] != true {
+				t.Fatalf("the card says bb could not tell what is required: %v", card["required_known"])
+			}
+			var got []string
+			listed, _ := card["required_checks"].([]any)
+			for _, entry := range listed {
+				check, _ := entry.(map[string]any)
+				got = append(got, asString(check["key"])+"="+asString(check["state"]))
+			}
+			want := []string{key("dfl") + "=", key("exc") + "=", key("brn") + "=SUCCESSFUL"}
+			if !slices.Equal(got, want) {
+				t.Errorf("the card lists required builds %v, want %v", got, want)
+			}
+			if text := mcpResultText(result); !strings.Contains(text, "Required builds: 2 missing, 0 failed, of 3.") {
+				t.Errorf("the model reads %q, want the required builds still missing", text)
+			}
+		}, "ai", "mcp", "serve")
 	})
 
 	scoped(map[string]any{"key": key("exc"), "parent": key("exc"), "state": "SUCCESSFUL"})
