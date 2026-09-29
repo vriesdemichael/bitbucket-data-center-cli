@@ -114,6 +114,7 @@ function renderDiff(payload, view) {
     pullRequestTop(pr, "Diff"),
     el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
     diffSummary(files, pr, true),
+    refreshNotice(view),
     omittedNotice(files, pr, view),
     files.length === 0 ? el("p", { class: "faint" }, "No changes.") : el("ul", { class: "file-list" },
       shown.map((file, index) => el("li", {},
@@ -133,7 +134,7 @@ function renderDiff(payload, view) {
         : null,
       linkButton("Open in Bitbucket", diffURL(pr), view.bridge, "ghost"),
       el("span", { class: "spacer" }),
-      snapshotStamp(payload.generated_at, view.locale, true)),
+      snapshotStamp(payload, view, true)),
     view.canFullscreen ? null : selectionBar(pr, view));
 }
 
@@ -233,6 +234,7 @@ function changeBar(file, compact) {
 function diffPage(pr, files, payload, view) {
   const main = el("div", { class: "diff-main", id: "diff-main" },
     selectionBar(pr, view),
+    refreshNotice(view),
     omittedNotice(files, pr, view),
     files.length === 0 ? el("p", { class: "faint" }, "No changes.") : files.map((file, index) => diffFile(file, index, pr, view, true)));
 
@@ -243,7 +245,7 @@ function diffPage(pr, files, payload, view) {
         el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
         el("div", { class: "header-meta" }, stateBadges(pr), diffSummary(files, pr, true))),
       el("div", { class: "header-actions" },
-        snapshotStamp(payload.generated_at, view.locale),
+        snapshotStamp(payload, view),
         linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
         el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
     el("div", { class: "diff-layout" },

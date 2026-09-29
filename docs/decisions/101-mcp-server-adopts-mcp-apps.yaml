@@ -27,12 +27,23 @@ decision: >
   needs the person is never behind a click. Inline, a view keeps one shape and grows a step at a
   time when the person asks; fullscreen shows everything the result carries. A view says when its
   data was read.
+
+  A view keeps itself current while it is on screen. It draws what its result carries, then calls
+  refresh_view, a read-only tool offered to views and not to the model, with the show call it answers
+  and a fingerprint of what it draws; the answer carries the data only when it has changed. It asks
+  often while something is in motion, such as a running build, less often the longer nothing
+  changes, never off screen or after teardown, and not again once a pull request is closed and
+  still. Status changes in place; a changed diff is offered rather than swapped under the person's
+  reading. A view that changed tells the model, through ui/update-model-context. refresh_view goes
+  with show, whatever --tools names, and --exclude withholds it.
 agent_instructions: >
   Add a view as a kind of show, never as _meta.ui on a data tool. Build elements with el() and never
   parse a string as HTML; TestViewScriptsBuildNoHTMLFromStrings and the browser tests under -tags
   views hold that. Put what a view draws in the result's _meta, and keep its text for the model
-  short. Count from Bitbucket's totals, never from what a view lists. Take wording from Bitbucket's
-  UI strings. Look at a change with go run ./tools/view-preview against the local stack.
+  short. Count from Bitbucket's totals, never from what a view lists. Keep a new kind refreshable,
+  and out of its fingerprint anything that differs between two reads of the same state. Take
+  wording from Bitbucket's UI strings. Look at a change with go run ./tools/view-preview against the
+  local stack.
 rationale: >
   A person takes in a pull request faster laid out as Bitbucket lays it out than from a model's
   account of it, and MCP Apps is how a server draws in any client that renders views. A client
@@ -43,7 +54,11 @@ rationale: >
   answers an anonymous avatar request with its default image. A page with no build step keeps go
   build complete, and the reference SDK's weight out of every view. A count taken from part of a
   list reads as the whole, a tidy view that hides a failed build misleads more than a cluttered one,
-  and a chat holds a view of about one screen.
+  and a chat holds a view of about one screen. A view left open goes stale while the person watches
+  a build finish or a reviewer answer, and the model answers from what show told it; asking only
+  for what is on screen, and less for what is quiet, keeps the load on Bitbucket to what someone is
+  looking at. Bitbucket leaves a pull request's version and update time alone when a comment is
+  added or resolved, so only the view's own data tells whether it changed.
 rejected_alternatives:
   - alternative: A view on each data tool
     reason: >
@@ -55,8 +70,10 @@ rejected_alternatives:
       certificate, and gets the default image. The declaration admits scripts and styles too.
   - alternative: React and the reference SDK, bundled with Vite
     reason: Node in every build, some 400 KB in every view, and a go build without the bundle has no views.
-  - alternative: Fetch what a view draws from the view, once it renders, or more of it as the person scrolls
-    reason: A re-rendered conversation would need bb running, and each fetch is a tool call a host may confirm.
+  - alternative: Fetch what a view draws from the view once it renders, or more of it as the person scrolls
+    reason: A re-rendered conversation would show nothing without bb running, and a view would wait on a tool call before it drew.
+  - alternative: Refresh a view by calling show again
+    reason: Every refresh would carry the whole payload, changed or not, and show is the model's tool.
   - alternative: Draw everything a result carries, inline
     reason: A list or a diff of a thousand rows buries the conversation, and a host scrolls a view it caps inside the chat.
 provenance: guided-ai

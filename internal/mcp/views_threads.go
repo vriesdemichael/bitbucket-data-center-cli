@@ -279,10 +279,10 @@ func cutLine(text string) (string, int) {
 }
 
 // summarizeThreads is what the model reads beside the threads view.
-func summarizeThreads(in ShowInput, title string, threads viewThreads) string {
+func summarizeThreads(in ShowInput, title string, threads viewThreads) viewSummary {
 	summary := threads.Summary
 	var b strings.Builder
-	fmt.Fprintf(&b, "Showed the person the comment threads of %s/%s#%s %q as an interactive view: %d unresolved", in.Project, in.Repo, in.ID, title, summary.Unresolved)
+	fmt.Fprintf(&b, "%d unresolved", summary.Unresolved)
 	if summary.OpenTasks > 0 {
 		fmt.Fprintf(&b, " (%d of them open tasks)", summary.OpenTasks)
 	}
@@ -294,5 +294,9 @@ func summarizeThreads(in ShowInput, title string, threads viewThreads) string {
 	if len(threads.Threads) < summary.TotalThreads {
 		fmt.Fprintf(&b, " The view carries the first %d of the %d threads.", len(threads.Threads), summary.TotalThreads)
 	}
-	return b.String()
+	return viewSummary{
+		subject: fmt.Sprintf("the comment threads of %s/%s#%s %q", in.Project, in.Repo, in.ID, title),
+		form:    "an interactive view",
+		state:   b.String(),
+	}
 }

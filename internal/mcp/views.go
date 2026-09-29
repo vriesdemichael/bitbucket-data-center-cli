@@ -3,8 +3,11 @@ package mcp
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"embed"
 	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -252,12 +255,13 @@ func showHandler(c Clients, kinds []string) mcp.ToolHandlerFor[ShowInput, ShowOu
 			}}}, ShowOutput{Shown: false, Kind: in.Kind, Target: target}, nil
 		}
 
-		payload, summary, err := buildView(ctx, c, in)
+		payload, people, summary, err := buildView(ctx, c, in)
 		if err != nil {
 			return nil, ShowOutput{}, fmt.Errorf("show failed: %w", err)
 		}
+		payload.Avatars = fetchAvatars(ctx, c, people)
 		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: summary}},
+			Content: []mcp.Content{&mcp.TextContent{Text: summary.shown()}},
 			Meta:    mcp.Meta{viewPayloadKey: payload},
 		}, ShowOutput{Shown: true, Kind: in.Kind, Target: target, LimitReached: payload.LimitReached}, nil
 	}
@@ -302,6 +306,11 @@ type viewPayload struct {
 	// Avatars maps a username to its avatar as a data: URI. A user missing
 	// from it is drawn with initials.
 	Avatars map[string]string `json:"avatars,omitempty"`
+	// Show is the call the payload answers, which the view repeats to keep
+	// itself current, and Fingerprint identifies what the payload shows: a
+	// refresh sends the data again only when it changes.
+	Show        *ShowInput `json:"show,omitempty"`
+	Fingerprint string     `json:"fingerprint,omitempty"`
 }
 
 type viewPullRequest struct {
@@ -409,34 +418,41 @@ const maxViewChecks = 100
 // maxViewPeople is how many avatars a view carries.
 const maxViewPeople = 60
 
-func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, string, error) {
+// buildView reads what a view of the kind shows, and what the model reads
+// beside it. It names the people whose avatars the view draws and leaves
+// fetching them to the caller, which needs them only for data it sends.
+func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, map[string]string, viewSummary, error) {
 	payload := viewPayload{
 		Version:     viewPayloadVersion,
 		Kind:        in.Kind,
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 	}
+	var (
+		people  map[string]string
+		summary viewSummary
+	)
 
 	switch in.Kind {
 	case showKindPullRequest:
 		pr, err := pullRequestForView(ctx, c, in)
 		if err != nil {
-			return viewPayload{}, "", err
+			return viewPayload{}, nil, viewSummary{}, err
 		}
 		payload.PullRequest = &pr
-		payload.Avatars = fetchAvatars(ctx, c, peopleOf(pr.PullRequest, maxViewPeople))
-		return payload, summarizePullRequest(pr), nil
+		people = peopleOf(pr.PullRequest, maxViewPeople)
+		summary = summarizePullRequest(pr)
 	case showKindPullRequests:
 		list, err := listPullRequests(ctx, c, ListPullRequestsInput{
 			Project: in.Project, Repo: in.Repo, State: in.State, Role: in.Role, Limit: in.Limit,
 		})
 		if err != nil {
-			return viewPayload{}, "", err
+			return viewPayload{}, nil, viewSummary{}, err
 		}
 		payload.PullRequests = pullRequestsForView(ctx, c, list.PullRequests)
 		payload.LimitReached = list.LimitReached
 		// A row draws its author and its first three reviewers, so those are
 		// the avatars the list carries.
-		people := map[string]string{}
+		people = map[string]string{}
 		for _, pr := range list.PullRequests {
 			shown := pr
 			shown.Reviewers = sortedReviewers(pr.Reviewers)
@@ -449,12 +465,11 @@ func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, strin
 				}
 			}
 		}
-		payload.Avatars = fetchAvatars(ctx, c, people)
-		return payload, summarizePullRequests(payload.PullRequests, list.LimitReached), nil
+		summary = summarizePullRequests(payload.PullRequests, list.LimitReached)
 	case showKindDiff:
 		pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
 		if err != nil {
-			return viewPayload{}, "", err
+			return viewPayload{}, nil, viewSummary{}, err
 		}
 		result, err := diffservice.NewService(c.OpenAPI).DiffPR(ctx, diffservice.DiffPRInput{
 			Repository:    diffservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
@@ -462,29 +477,51 @@ func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, strin
 			Output:        diffservice.OutputKindRaw,
 		})
 		if err != nil {
-			return viewPayload{}, "", err
+			return viewPayload{}, nil, viewSummary{}, err
 		}
 		files, patch, truncated := splitPatch(result.Patch, maxViewFileBytes, maxViewPatchBytes)
 		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
 		payload.Diff = &viewDiff{Files: files, Patch: patch, Truncated: truncated}
-		payload.Avatars = fetchAvatars(ctx, c, map[string]string{pr.AuthorUsername: pr.AuthorSlug})
-		return payload, summarizeDiff(in, pr, result.Patch), nil
+		people = map[string]string{pr.AuthorUsername: pr.AuthorSlug}
+		summary = summarizeDiff(in, pr, result.Patch)
 	case showKindThreads:
 		pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
 		if err != nil {
-			return viewPayload{}, "", err
+			return viewPayload{}, nil, viewSummary{}, err
 		}
-		threads, people, err := threadsForView(ctx, c, in)
+		threads, threadPeople, err := threadsForView(ctx, c, in)
 		if err != nil {
-			return viewPayload{}, "", err
+			return viewPayload{}, nil, viewSummary{}, err
 		}
 		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
 		payload.Threads = &threads
-		payload.Avatars = fetchAvatars(ctx, c, people)
-		return payload, summarizeThreads(in, pr.Title, threads), nil
+		people = threadPeople
+		summary = summarizeThreads(in, pr.Title, threads)
+	default:
+		return viewPayload{}, nil, viewSummary{}, fmt.Errorf("unknown kind %q", in.Kind)
 	}
 
-	return viewPayload{}, "", fmt.Errorf("unknown kind %q", in.Kind)
+	show := in
+	payload.Show = &show
+	payload.Fingerprint = fingerprintOf(payload)
+	return payload, people, summary, nil
+}
+
+// fingerprintOf identifies what a payload shows. When it was read and the
+// avatars are left out: they differ between two reads of the same state, and
+// the avatars go with the people, who are in the payload already.
+func fingerprintOf(payload viewPayload) string {
+	payload.GeneratedAt = ""
+	payload.Avatars = nil
+	payload.Fingerprint = ""
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		// Unreachable for a payload of plain data. An empty fingerprint
+		// matches nothing a view holds, so the view is sent the data.
+		return ""
+	}
+	sum := sha256.Sum256(encoded)
+	return hex.EncodeToString(sum[:16])
 }
 
 // pullRequestForView reads a pull request with everything its card shows:
@@ -741,11 +778,37 @@ func describePatchFile(chunk string) viewDiffFile {
 // with if it called show without looking first, and short, because the person
 // has the view.
 
-func summarizePullRequest(pr viewPullRequest) string {
+// viewSummary is what a view shows, as what, and the state it shows, so the
+// model can be told of the view once it is shown and again when it changes.
+type viewSummary struct {
+	subject string
+	form    string
+	state   string
+}
+
+// shown is the text of show's answer.
+func (s viewSummary) shown() string {
+	return "Showed the person " + s.subject + " as " + s.form + ":" + s.stateText()
+}
+
+// changed is what the model is told when a view the person has open changes.
+func (s viewSummary) changed() string {
+	return "The view of " + s.subject + " you showed the person has changed:" + s.stateText()
+}
+
+// stateText is the state after a colon: on the same line, or on lines of its
+// own when it is a list.
+func (s viewSummary) stateText() string {
+	if strings.HasPrefix(s.state, "\n") {
+		return s.state
+	}
+	return " " + s.state
+}
+
+func summarizePullRequest(pr viewPullRequest) viewSummary {
 	var lines []string
-	lines = append(lines, fmt.Sprintf("Showed the person pull request %s/%s#%d as an interactive card: %q, %s%s, by %s, %s into %s.",
-		repositoryKey(pr.PullRequest), repositorySlug(pr.PullRequest), pr.ID, pr.Title, strings.ToLower(pr.State), draftNote(pr.PullRequest),
-		pr.Author, pr.SourceBranch, pr.TargetBranch))
+	lines = append(lines, fmt.Sprintf("%q, %s%s, by %s, %s into %s.",
+		pr.Title, strings.ToLower(pr.State), draftNote(pr.PullRequest), pr.Author, pr.SourceBranch, pr.TargetBranch))
 	approved, requested := 0, 0
 	for _, reviewer := range pr.Reviewers {
 		switch {
@@ -771,27 +834,33 @@ func summarizePullRequest(pr viewPullRequest) string {
 	if pr.AutoMerge != nil {
 		lines = append(lines, "Auto-merge is on.")
 	}
-	return strings.Join(lines, " ")
+	return viewSummary{
+		subject: fmt.Sprintf("pull request %s/%s#%d", repositoryKey(pr.PullRequest), repositorySlug(pr.PullRequest), pr.ID),
+		form:    "an interactive card",
+		state:   strings.Join(lines, " "),
+	}
 }
 
-func summarizePullRequests(prs []viewPullRequest, limitReached bool) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "Showed the person %d pull requests as an interactive list", len(prs))
+func summarizePullRequests(prs []viewPullRequest, limitReached bool) viewSummary {
+	form := "an interactive list"
 	if limitReached {
-		b.WriteString(" (there may be more)")
+		form += " (there may be more)"
 	}
-	b.WriteString(":")
+	var b strings.Builder
 	for _, pr := range prs {
 		fmt.Fprintf(&b, "\n- %s/%s#%d %q, %s%s, by %s", repositoryKey(pr.PullRequest), repositorySlug(pr.PullRequest), pr.ID, pr.Title,
 			strings.ToLower(pr.State), draftNote(pr.PullRequest), pr.Author)
 	}
-	return b.String()
+	return viewSummary{subject: fmt.Sprintf("%d pull requests", len(prs)), form: form, state: b.String()}
 }
 
-func summarizeDiff(in ShowInput, pr pullrequestservice.PullRequest, patch string) string {
+func summarizeDiff(in ShowInput, pr pullrequestservice.PullRequest, patch string) viewSummary {
 	files, additions, deletions := diffCounts(patch)
-	return fmt.Sprintf("Showed the person the diff of %s/%s#%s %q as an interactive view: %d files, +%d -%d.",
-		in.Project, in.Repo, in.ID, pr.Title, files, additions, deletions)
+	return viewSummary{
+		subject: fmt.Sprintf("the diff of %s/%s#%s %q", in.Project, in.Repo, in.ID, pr.Title),
+		form:    "an interactive view",
+		state:   fmt.Sprintf("%d files, +%d -%d.", files, additions, deletions),
+	}
 }
 
 // diffCounts counts a unified diff's files and changed lines.
@@ -996,6 +1065,7 @@ var viewScripts = []string{
 	"pull_requests.js",
 	"diff.js",
 	"threads.js",
+	"refresh.js",
 	"main.js",
 }
 

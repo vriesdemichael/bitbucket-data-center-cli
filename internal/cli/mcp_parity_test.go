@@ -60,6 +60,8 @@ var mcpOnly = map[string]string{
 		"because it does not share the agent's working tree",
 	"show": "puts what the other tools found in front of the person as a view in their MCP client (ADR-101); " +
 		"a terminal has no view to show, and `bb pr get`, `bb pr list` and `bb pr diff` print the same content",
+	"refresh_view": "keeps a view that show put in front of the person current; only views call it, and a terminal " +
+		"reads again by running the command again",
 }
 
 // TestEveryMCPToolIsAccountedFor fails when a tool is added without deciding

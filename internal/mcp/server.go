@@ -49,6 +49,10 @@ func ClientsFromConfig(cfg config.AppConfig) (Clients, error) {
 // Needs names the tools whose answers this one shows: it is exposed only while
 // at least one of them is. RegisterExposed, when set, registers the tool in
 // place of Register, knowing which tools the server exposes.
+//
+// A tool offered only to views (AppOnly) is not among what --tools selects
+// for the model: it goes with the tools it needs, and --exclude still
+// withholds it.
 type Spec struct {
 	Tool            *mcp.Tool
 	Register        func(*mcp.Server, Clients)
@@ -61,6 +65,14 @@ type Spec struct {
 // It is what --read-only exposes.
 func (s Spec) ReadOnly() bool {
 	return s.Tool.Annotations != nil && s.Tool.Annotations.ReadOnlyHint
+}
+
+// AppOnly reports whether the tool is offered to views and not to the model,
+// as its MCP Apps visibility says (ADR-101).
+func (s Spec) AppOnly() bool {
+	ui, _ := s.Tool.Meta["ui"].(map[string]any)
+	visibility, _ := ui["visibility"].([]string)
+	return len(visibility) == 1 && visibility[0] == "app"
 }
 
 // toolSpec binds a tool definition to a typed handler factory, for a tool that
@@ -261,6 +273,9 @@ func AllSpecs() []Spec {
 		// View group: puts what the tools above found in front of the
 		// person, in clients that display MCP Apps views (ADR-101).
 		specShow(),
+		// Offered to views, not to the model: keeps a view current while it
+		// is on screen.
+		specRefreshView(),
 	}
 }
 
@@ -397,7 +412,7 @@ func exposedSpecs(opts ServerOptions) []Spec {
 	var exposed []Spec
 	for _, spec := range AllSpecs() {
 		toolName := spec.Tool.Name
-		if len(allowSet) > 0 && !allowSet[toolName] {
+		if len(allowSet) > 0 && !allowSet[toolName] && !spec.AppOnly() {
 			continue
 		}
 		if excludeSet[toolName] {
@@ -418,20 +433,25 @@ func exposedSpecs(opts ServerOptions) []Spec {
 	}
 
 	// A tool that shows what other tools answer goes with them: it is exposed
-	// while at least one of them is.
-	names := make(map[string]bool, len(exposed))
-	for _, spec := range exposed {
-		names[spec.Tool.Name] = true
-	}
-	kept := exposed[:0]
-	for _, spec := range exposed {
-		if len(spec.Needs) > 0 && !anyExposed(spec.Needs, names) {
-			continue
+	// while at least one of them is. A tool can need one that needs others,
+	// as refresh_view needs show, so this runs until nothing more goes.
+	for {
+		names := make(map[string]bool, len(exposed))
+		for _, spec := range exposed {
+			names[spec.Tool.Name] = true
 		}
-		kept = append(kept, spec)
+		kept := make([]Spec, 0, len(exposed))
+		for _, spec := range exposed {
+			if len(spec.Needs) > 0 && !anyExposed(spec.Needs, names) {
+				continue
+			}
+			kept = append(kept, spec)
+		}
+		if len(kept) == len(exposed) {
+			return kept
+		}
+		exposed = kept
 	}
-
-	return kept
 }
 
 func anyExposed(tools []string, exposed map[string]bool) bool {

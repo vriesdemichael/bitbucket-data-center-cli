@@ -65,6 +65,7 @@ func exportToolReference(outputPath string) error {
 	fmt.Fprintf(&out, "`bb ai mcp serve` registers %d tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. %d ask the person to confirm a call in the MCP client before they run.\n\n",
 		len(rows), asking)
 	out.WriteString("The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.\n\n")
+	out.WriteString("`refresh_view` is for those views: MCP Apps offers it to them and not to the model, and it goes with `show` whether or not `--tools` names it.\n\n")
 
 	out.WriteString("| Tool | Access | Asks | What it does |\n|---|---|---|---|\n")
 	for _, row := range rows {
