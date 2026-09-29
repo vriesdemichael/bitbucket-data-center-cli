@@ -48,7 +48,8 @@ func ClientsFromConfig(cfg config.AppConfig) (Clients, error) {
 //
 // Needs names the tools whose answers this one shows: it is exposed only while
 // at least one of them is. RegisterExposed, when set, registers the tool in
-// place of Register, knowing which tools the server exposes.
+// place of Register, knowing how the server is configured and which tools it
+// exposes.
 //
 // A tool offered only to views (AppOnly) is not among what --tools selects
 // for the model: it goes with the tools it needs, and --exclude still
@@ -58,7 +59,7 @@ type Spec struct {
 	Register        func(*mcp.Server, Clients)
 	Asks            Asking
 	Needs           []string
-	RegisterExposed func(*mcp.Server, Clients, map[string]bool)
+	RegisterExposed func(*mcp.Server, ServerOptions, map[string]bool)
 }
 
 // ReadOnly reports whether the tool changes nothing, as its annotation says.
@@ -315,6 +316,12 @@ type ServerOptions struct {
 	// written. Empty means AuditFailureDeny.
 	AuditFailure AuditFailureMode
 
+	// HighlightTemplates highlights the code inside templates in views, with
+	// lexers a crafted file can keep busy for seconds; no view waits for them
+	// past its deadline (see highlight.Options). Off, a template's markup is
+	// highlighted.
+	HighlightTemplates bool
+
 	// Warn receives operational messages that must not go to stdout, which is
 	// the protocol channel. Optional.
 	Warn func(string)
@@ -375,7 +382,7 @@ func NewServer(opts ServerOptions) *mcp.Server {
 
 	for _, spec := range tools {
 		if spec.RegisterExposed != nil {
-			spec.RegisterExposed(server, opts.Clients, exposed)
+			spec.RegisterExposed(server, opts, exposed)
 			continue
 		}
 		spec.Register(server, opts.Clients)

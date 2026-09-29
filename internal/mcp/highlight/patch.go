@@ -20,12 +20,17 @@ import (
 // spanning lines colours every line of it. A removed line takes its spans
 // from the old side, an added or context line from the new.
 func Patch(patch string, deadline time.Time) map[int][]string {
+	return PatchWith(patch, Options{Deadline: deadline})
+}
+
+// PatchWith is Patch, with the options Options describes.
+func PatchWith(patch string, options Options) map[int][]string {
 	highlighted := map[int][]string{}
 	for index, file := range parsePatch(patch) {
-		if time.Now().After(deadline) {
+		if time.Now().After(options.Deadline) {
 			break
 		}
-		if spans, ok := file.spans(deadline); ok {
+		if spans, ok := file.spans(options); ok {
 			highlighted[index] = spans
 		}
 	}
@@ -179,11 +184,12 @@ func (f *patchFile) languageName() string {
 }
 
 // spans tokenizes the file's hunks and returns the spans of its code lines.
-func (f *patchFile) spans(deadline time.Time) ([]string, bool) {
+func (f *patchFile) spans(options Options) ([]string, bool) {
+	deadline := options.Deadline
 	if f.binary || len(f.hunks) == 0 || f.size > MaxBytes {
 		return nil, false
 	}
-	lexer := lexerFor(f.languageName())
+	lexer := lexerFor(f.languageName(), options.Templates)
 	if lexer == nil {
 		return nil, false
 	}

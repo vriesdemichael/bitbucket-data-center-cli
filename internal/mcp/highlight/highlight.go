@@ -69,15 +69,35 @@ const (
 	ClassText = 't'
 )
 
-// Lines returns the spans of each line of text, tokenized as the language
+// Options say how far highlighting goes.
+type Options struct {
+	// Deadline stops the work: what is not highlighted by then is left plain,
+	// and nothing waits past it.
+	Deadline time.Time
+	// Templates highlights the code inside a template, Svelte, ERB, PHTML, Go
+	// HTML or Jinja, with chroma's own lexer for it. Such a lexer reads a
+	// whole text before it yields a token, so nothing stops it midway, and a
+	// crafted file keeps it busy for seconds: the answer does not wait for it
+	// past the deadline, and the work goes on until it is done. Off, the
+	// markup the template is written in is highlighted, by a lexer that stops
+	// at the deadline.
+	Templates bool
+}
+
+// Lines is LinesWith, with the deadline alone.
+func Lines(path, text string, deadline time.Time) (lines []string, ok bool) {
+	return LinesWith(path, text, Options{Deadline: deadline})
+}
+
+// LinesWith returns the spans of each line of text, tokenized as the language
 // path names by its file name. ok is false when no lexer matches the name, the
 // text is larger than MaxBytes, or tokenizing fails or runs past the deadline.
 // A plain-text file has no lexer here: its every span would be ClassText.
-func Lines(path, text string, deadline time.Time) (lines []string, ok bool) {
+func LinesWith(path, text string, options Options) (lines []string, ok bool) {
 	if len(text) > MaxBytes {
 		return nil, false
 	}
-	lexer := lexerFor(path)
+	lexer := lexerFor(path, options.Templates)
 	if lexer == nil {
 		return nil, false
 	}
@@ -88,7 +108,7 @@ func Lines(path, text string, deadline time.Time) (lines []string, ok bool) {
 	if !strings.HasSuffix(text, "\n") {
 		text += "\n"
 	}
-	return tokenize(lexer, text, deadline)
+	return tokenize(lexer, text, options.Deadline)
 }
 
 // tokenize returns the spans of each line of text, which ends in \n.
@@ -103,11 +123,44 @@ func Lines(path, text string, deadline time.Time) (lines []string, ok bool) {
 // bounds the text. It is checked after every token, so the work stops within
 // one token of it, and a token costs the rules tried until one yields it,
 // each within its timeout. The lexers that lex a whole text before their
-// first token are replaced in the registry (see replaceLexAhead), so every
-// lexer here yields as it goes. Chroma's Coalesce is not used either: it reads
-// on through a run of tokens of one type, up to 8 KiB of them, before it
-// yields one. The spans are coalesced here instead, between deadline checks.
+// first token stand aside in the registry (see standInForTemplates), unless
+// a caller asks for them. Chroma's Coalesce is not used either: it reads on
+// through a run of tokens of one type, up to 8 KiB of them, before it yields
+// one. The spans are coalesced here instead, between deadline checks.
+//
+// Whatever the lexer, nothing waits for it past the deadline: it runs on its
+// own, and an answer not in by the deadline is dropped. A lexer that yields
+// as it goes stops there too; one that lexes ahead finishes on its own, and
+// only then is it gone.
 func tokenize(lexer chroma.Lexer, text string, deadline time.Time) (lines []string, ok bool) {
+	if time.Now().After(deadline) {
+		return nil, false
+	}
+	type answer struct {
+		lines []string
+		ok    bool
+	}
+	answered := make(chan answer, 1)
+	go func() {
+		lines, ok := tokenizeUntil(lexer, text, deadline)
+		answered <- answer{lines, ok}
+	}()
+	timer := time.NewTimer(time.Until(deadline) + deadlineGrace)
+	defer timer.Stop()
+	select {
+	case got := <-answered:
+		return got.lines, got.ok
+	case <-timer.C:
+		return nil, false
+	}
+}
+
+// deadlineGrace is how long past the deadline tokenize waits for a lexer that
+// checks the deadline itself to notice it and answer.
+const deadlineGrace = 20 * time.Millisecond
+
+// tokenizeUntil tokenizes text, checking the deadline between tokens.
+func tokenizeUntil(lexer chroma.Lexer, text string, deadline time.Time) (lines []string, ok bool) {
 	if time.Now().After(deadline) {
 		return nil, false
 	}

@@ -96,11 +96,15 @@ var viewActionTools = []string{"add_pr_comment", "submit_pr_review", "create_pul
 type viewOffers struct {
 	Kinds []string `json:"kinds"`
 	Tools []string `json:"tools,omitempty"`
+	// templates highlights the code inside templates (--highlight-templates).
+	// It decides what the view is sent, not what it may do, so it is not sent.
+	templates bool
 }
 
-// offersFor is what views may do on a server that exposes these tools.
-func offersFor(exposed map[string]bool) viewOffers {
-	offers := viewOffers{Kinds: offeredShowKinds(exposed)}
+// offersFor is what views may do on a server with these options that exposes
+// these tools.
+func offersFor(opts ServerOptions, exposed map[string]bool) viewOffers {
+	offers := viewOffers{Kinds: offeredShowKinds(exposed), templates: opts.HighlightTemplates}
 	for _, tool := range append(slices.Clone(viewActionTools), viewHelperTools...) {
 		if exposed[tool] {
 			offers.Tools = append(offers.Tools, tool)
@@ -115,7 +119,7 @@ func allOffers() viewOffers {
 	for _, spec := range AllSpecs() {
 		exposed[spec.Tool.Name] = true
 	}
-	return offersFor(exposed)
+	return offersFor(ServerOptions{}, exposed)
 }
 
 // kind reports whether a view may open the kind.
@@ -183,13 +187,13 @@ func specShow() Spec {
 		Register: func(server *mcp.Server, clients Clients) {
 			mcp.AddTool(server, tool, showHandler(clients, allOffers()))
 		},
-		RegisterExposed: func(server *mcp.Server, clients Clients, exposed map[string]bool) {
-			offers := offersFor(exposed)
+		RegisterExposed: func(server *mcp.Server, opts ServerOptions, exposed map[string]bool) {
+			offers := offersFor(opts, exposed)
 			// The schema names only the kinds this server offers, so a model is
 			// not told about a view it would be refused.
 			offered := *tool
 			offered.InputSchema = showInputSchema(offers.Kinds)
-			mcp.AddTool(server, &offered, showHandler(clients, offers))
+			mcp.AddTool(server, &offered, showHandler(opts.Clients, offers))
 		},
 	}
 }
@@ -322,7 +326,7 @@ func showHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[ShowInput, Sho
 		}
 		payload.Avatars = fetchAvatars(ctx, c, people)
 		payload.Offers = &offers
-		withHighlights(&payload)
+		withHighlights(&payload, offers)
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: summary.shown()}},
 			Meta:    mcp.Meta{viewPayloadKey: payload},
@@ -539,13 +543,18 @@ type viewDiff struct {
 // reached by then is drawn plain.
 const highlightBudget = 2 * time.Second
 
+// highlighting is how far code is highlighted from now on, for views.
+func (offers viewOffers) highlighting() highlight.Options {
+	return highlight.Options{Deadline: time.Now().Add(highlightBudget), Templates: offers.templates}
+}
+
 // withHighlights colours the diff a payload carries, once it is to be sent:
 // an answer that finds nothing changed sends none, and pays for none.
-func withHighlights(payload *viewPayload) {
+func withHighlights(payload *viewPayload, offers viewOffers) {
 	if payload.Diff == nil || payload.Diff.Patch == "" {
 		return
 	}
-	if spans := highlight.Patch(payload.Diff.Patch, time.Now().Add(highlightBudget)); len(spans) > 0 {
+	if spans := highlight.PatchWith(payload.Diff.Patch, offers.highlighting()); len(spans) > 0 {
 		payload.Diff.Highlight = spans
 	}
 }
@@ -682,7 +691,7 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 		payload.PullRequest = pr
 		summary = formSummary
 	case showKindFile:
-		file, fileSummary, err := fileForView(ctx, c, in)
+		file, fileSummary, err := fileForView(ctx, c, in, offers)
 		if err != nil {
 			return viewPayload{}, nil, viewSummary{}, err
 		}

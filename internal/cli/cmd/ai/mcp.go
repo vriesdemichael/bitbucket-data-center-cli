@@ -37,6 +37,7 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	var repoScope string
 	var auditFile string
 	var auditFailure string
+	var highlightTemplates bool
 
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -95,6 +96,12 @@ Use --tools to expose only the tools you name, and --exclude to suppress
 individual tools. Neither exposes a tool that --read-only or a scope withholds.
 The tools only the views of show call, refresh_view and suggest_form_values, go
 with show whether or not --tools names them.
+
+Views highlight the code in diffs and files. Of a Svelte, ERB, PHTML, Go HTML or
+Jinja template, only the markup is highlighted: the lexers for the code inside
+cannot be stopped midway, and a crafted file keeps one busy for seconds. Use
+--highlight-templates to highlight that code too. No view waits for a lexer
+past its deadline, but the server works on until the lexer finishes.
 
 When more than one Bitbucket instance is configured the --host flag is required.
 
@@ -186,15 +193,16 @@ server -- give this server a narrower PAT than your own through env.`,
 			}
 
 			s := bbmcp.NewServer(bbmcp.ServerOptions{
-				Name:         "bb",
-				Version:      deps.Version(),
-				Clients:      clients,
-				Allow:        splitCSV(toolsFlag),
-				Exclude:      splitCSV(excludeFlag),
-				ReadOnly:     serveReadOnly,
-				Scope:        scope,
-				Audit:        audit,
-				AuditFailure: failureMode,
+				Name:               "bb",
+				Version:            deps.Version(),
+				Clients:            clients,
+				Allow:              splitCSV(toolsFlag),
+				Exclude:            splitCSV(excludeFlag),
+				ReadOnly:           serveReadOnly,
+				Scope:              scope,
+				Audit:              audit,
+				AuditFailure:       failureMode,
+				HighlightTemplates: highlightTemplates,
 				// stdout is the protocol channel, so operational messages go to
 				// stderr like every other diagnostic (ADR-046).
 				Warn: func(message string) { fmt.Fprintln(cmd.ErrOrStderr(), message) },
@@ -228,6 +236,7 @@ server -- give this server a narrower PAT than your own through env.`,
 	cmd.Flags().StringVar(&repoScope, "repo", "", "Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)")
 	cmd.Flags().StringVar(&auditFile, "audit-file", "", "Append a JSON Lines audit record per tool call to this path, or to 'stderr'")
 	enumflag.Register(cmd.Flags(), &auditFailure, "audit-failure", string(bbmcp.AuditFailureDeny), auditFailureModes, "What to do when an audit record cannot be written")
+	cmd.Flags().BoolVar(&highlightTemplates, "highlight-templates", false, "In views, highlight the code inside templates too, not only their markup")
 
 	return cmd
 }

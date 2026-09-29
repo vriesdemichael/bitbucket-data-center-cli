@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/fileview"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/highlight"
@@ -59,8 +58,9 @@ type viewFile struct {
 	Description string `json:"description,omitempty"`
 }
 
-// fileForView reads the file, or the window of it starting at in.StartLine.
-func fileForView(ctx context.Context, c Clients, in ShowInput) (viewFile, viewSummary, error) {
+// fileForView reads the file, or the window of it starting at in.StartLine,
+// and highlights a text as the server offers views highlighting.
+func fileForView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) (viewFile, viewSummary, error) {
 	request, view, content, err := readFile(ctx, c, GetFileContentInput{
 		Project: in.Project, Repo: in.Repo, Path: in.Path, At: in.At, StartLine: in.StartLine, LineCount: fileViewLines,
 	})
@@ -79,7 +79,7 @@ func fileForView(ctx context.Context, c Clients, in ShowInput) (viewFile, viewSu
 		// Text is highlighted whole and the window's lines taken from it, so
 		// a comment that opens above the window colours the lines in it.
 		if view.Kind == fileview.KindText && file.StartLine >= 1 && file.EndLine >= file.StartLine {
-			if lines, ok := highlight.Lines(in.Path, string(content), time.Now().Add(highlightBudget)); ok && len(lines) >= file.EndLine {
+			if lines, ok := highlight.LinesWith(in.Path, string(content), offers.highlighting()); ok && len(lines) >= file.EndLine {
 				file.Highlight = lines[file.StartLine-1 : file.EndLine]
 			}
 		}
