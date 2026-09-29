@@ -111,6 +111,7 @@ function renderDiff(payload, view) {
   const left = files.length - shown.length;
 
   return el("div", {},
+    backButton(view),
     pullRequestTop(pr, "Diff"),
     el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
     diffSummary(files, pr, true),
@@ -132,6 +133,7 @@ function renderDiff(payload, view) {
       view.revealed.has("files")
         ? el("button", { type: "button", class: "button", onclick: () => view.unreveal("files") }, icon("collapse"), "Show fewer files")
         : null,
+      pullRequestTabs(pr, "diff", view),
       linkButton("Open in Bitbucket", diffURL(pr), view.bridge, "ghost"),
       el("span", { class: "spacer" }),
       snapshotStamp(payload, view, true)),
@@ -241,11 +243,13 @@ function diffPage(pr, files, payload, view) {
   return el("div", { class: "page" },
     el("header", { class: "fullscreen-header" },
       el("div", { class: "row-main" },
+        backButton(view),
         el("div", { class: "pr-top" }, icon("pullRequest", null, "faint"), repositoryLabel(pr, "Diff")),
         el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
         el("div", { class: "header-meta" }, stateBadges(pr), diffSummary(files, pr, true))),
       el("div", { class: "header-actions" },
         snapshotStamp(payload, view),
+        pullRequestTabs(pr, "diff", view),
         linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
         el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
     el("div", { class: "diff-layout" },

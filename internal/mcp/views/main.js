@@ -50,6 +50,15 @@ const view = {
   hostTools: false,
   tellsModel: false,
   refresh: newRefreshState(),
+  // history is what the view showed before what it shows now, to go back
+  // to; opening is the kind on its way, and openFailure why the last one
+  // could not be opened.
+  history: [],
+  opening: null,
+  openFailure: null,
+  // drafts are what the person is writing in the view, by where: a reply, a
+  // comment on a line, a form's fields. They outlive a redraw.
+  drafts: new Map(),
 
   toggleClamp(key) {
     if (view.unclamped.has(key)) view.unclamped.delete(key);
@@ -176,18 +185,8 @@ bridge.on("ui/notifications/tool-result", (result) => {
   } else if (payload.version !== VIEW_PAYLOAD_VERSION) {
     view.failure = "This view was made by a different version of bb; ask for it again.";
   } else {
-    view.payload = payload;
-    view.failure = null;
-    view.diffFiles = null;
-    view.openFiles = new Set();
-    view.unclamped = new Set();
-    view.revealed = new Map();
-    view.focusFile = null;
-    view.focusThread = null;
-    view.selection = null;
-    view.refresh.pending = null;
-    view.refresh.failure = null;
-    view.refresh.idleMs = REFRESH_IDLE_MS;
+    showPayload(view, payload);
+    view.history = [];
   }
   render();
   scheduleRefresh(view);
@@ -312,7 +311,7 @@ function render() {
   view.selectionBar = null;
   view.narrow = window.innerWidth <= NARROW_WIDTH;
   view.phone = window.innerWidth <= PHONE_WIDTH;
-  app.replaceChildren(...[content(), linkNotice()].filter(Boolean));
+  app.replaceChildren(...[content(), linkNotice(), openNotice(view)].filter(Boolean));
   revealClampToggles();
   paintSelection();
   for (const [selector, top] of places) {

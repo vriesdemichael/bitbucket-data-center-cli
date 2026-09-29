@@ -77,6 +77,45 @@ var showKindTools = map[string]string{
 // showKinds is the order the kinds are described in.
 var showKinds = []string{showKindPullRequest, showKindPullRequests, showKindDiff, showKindThreads}
 
+// viewActionTools are the model's tools a view calls for the person: what a
+// click in a view does goes through them, so the scope, the audit trail and
+// the confirmations of the tools that ask apply to it as to the model's call.
+var viewActionTools = []string{"add_pr_comment", "submit_pr_review", "create_pull_request", "update_pull_request"}
+
+// viewOffers is what a server lets its views do beyond drawing: the kinds a
+// view can open in place, and the tools it can call for the person. A view
+// offers only what works here, so a server that leaves a tool out has views
+// without its button.
+type viewOffers struct {
+	Kinds []string `json:"kinds"`
+	Tools []string `json:"tools,omitempty"`
+}
+
+// offersFor is what views may do on a server that exposes these tools.
+func offersFor(exposed map[string]bool) viewOffers {
+	offers := viewOffers{Kinds: offeredShowKinds(exposed)}
+	for _, tool := range viewActionTools {
+		if exposed[tool] {
+			offers.Tools = append(offers.Tools, tool)
+		}
+	}
+	return offers
+}
+
+// allOffers is what views may do on a server that exposes every tool.
+func allOffers() viewOffers {
+	exposed := map[string]bool{}
+	for _, spec := range AllSpecs() {
+		exposed[spec.Tool.Name] = true
+	}
+	return offersFor(exposed)
+}
+
+// kind reports whether a view may open the kind.
+func (offers viewOffers) kind(kind string) bool {
+	return slices.Contains(offers.Kinds, kind)
+}
+
 // ShowInput is the argument set for show.
 type ShowInput struct {
 	Kind    string `json:"kind"`
@@ -119,15 +158,15 @@ func specShow() Spec {
 		Asks:  AsksNever,
 		Needs: sortedValues(showKindTools),
 		Register: func(server *mcp.Server, clients Clients) {
-			mcp.AddTool(server, tool, showHandler(clients, showKinds))
+			mcp.AddTool(server, tool, showHandler(clients, allOffers()))
 		},
 		RegisterExposed: func(server *mcp.Server, clients Clients, exposed map[string]bool) {
-			kinds := offeredShowKinds(exposed)
+			offers := offersFor(exposed)
 			// The schema names only the kinds this server offers, so a model is
 			// not told about a view it would be refused.
 			offered := *tool
-			offered.InputSchema = showInputSchema(kinds)
-			mcp.AddTool(server, &offered, showHandler(clients, kinds))
+			offered.InputSchema = showInputSchema(offers.Kinds)
+			mcp.AddTool(server, &offered, showHandler(clients, offers))
 		},
 	}
 }
@@ -236,11 +275,10 @@ func clientDisplaysViews(req *mcp.CallToolRequest) bool {
 	return false
 }
 
-func showHandler(c Clients, kinds []string) mcp.ToolHandlerFor[ShowInput, ShowOutput] {
-	offered := toSet(kinds)
+func showHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[ShowInput, ShowOutput] {
 	return func(ctx context.Context, req *mcp.CallToolRequest, in ShowInput) (*mcp.CallToolResult, ShowOutput, error) {
-		if !offered[in.Kind] {
-			return nil, ShowOutput{}, fmt.Errorf("show cannot show %q here; it shows %s", in.Kind, strings.Join(kinds, ", "))
+		if !offers.kind(in.Kind) {
+			return nil, ShowOutput{}, fmt.Errorf("show cannot show %q here; it shows %s", in.Kind, strings.Join(offers.Kinds, ", "))
 		}
 		if err := checkShowInput(in); err != nil {
 			return nil, ShowOutput{}, err
@@ -255,11 +293,12 @@ func showHandler(c Clients, kinds []string) mcp.ToolHandlerFor[ShowInput, ShowOu
 			}}}, ShowOutput{Shown: false, Kind: in.Kind, Target: target}, nil
 		}
 
-		payload, people, summary, err := buildView(ctx, c, in)
+		payload, people, summary, err := buildView(ctx, c, in, offers)
 		if err != nil {
 			return nil, ShowOutput{}, fmt.Errorf("show failed: %w", err)
 		}
 		payload.Avatars = fetchAvatars(ctx, c, people)
+		payload.Offers = &offers
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: summary.shown()}},
 			Meta:    mcp.Meta{viewPayloadKey: payload},
@@ -311,6 +350,9 @@ type viewPayload struct {
 	// refresh sends the data again only when it changes.
 	Show        *ShowInput `json:"show,omitempty"`
 	Fingerprint string     `json:"fingerprint,omitempty"`
+	// Offers is what the view may do here beyond drawing. It is the same for
+	// every read, so it is set after the fingerprint is taken.
+	Offers *viewOffers `json:"offers,omitempty"`
 }
 
 type viewPullRequest struct {
@@ -421,7 +463,8 @@ const maxViewPeople = 60
 // buildView reads what a view of the kind shows, and what the model reads
 // beside it. It names the people whose avatars the view draws and leaves
 // fetching them to the caller, which needs them only for data it sends.
-func buildView(ctx context.Context, c Clients, in ShowInput) (viewPayload, map[string]string, viewSummary, error) {
+// offers says what else the server shows, which a view may carry some of.
+func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) (viewPayload, map[string]string, viewSummary, error) {
 	payload := viewPayload{
 		Version:     viewPayloadVersion,
 		Kind:        in.Kind,
@@ -796,6 +839,12 @@ func (s viewSummary) changed() string {
 	return "The view of " + s.subject + " you showed the person has changed:" + s.stateText()
 }
 
+// opened is what the model is told when the person opens something else in a
+// view, such as a pull request's diff from its card.
+func (s viewSummary) opened() string {
+	return "The person opened " + s.subject + " in a view:" + s.stateText()
+}
+
 // stateText is the state after a colon: on the same line, or on lines of its
 // own when it is a list.
 func (s viewSummary) stateText() string {
@@ -1066,6 +1115,7 @@ var viewScripts = []string{
 	"diff.js",
 	"threads.js",
 	"refresh.js",
+	"open.js",
 	"main.js",
 }
 

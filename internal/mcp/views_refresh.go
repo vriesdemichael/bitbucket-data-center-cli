@@ -38,9 +38,8 @@ type RefreshViewOutput struct {
 func specRefreshView() Spec {
 	tool := &mcp.Tool{
 		Name: "refresh_view",
-		Description: "Called by bb's views, not by the model: reads a view's data again, and answers with it when it differs " +
-			"from what the view draws. A view calls it while it is on screen, with the show call it answers and the " +
-			"fingerprint of its data.",
+		Description: "Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep " +
+			"current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.",
 		Annotations: readOnly("Refresh a view"),
 		InputSchema: refreshViewInputSchema(showKinds),
 		Meta:        appOnlyToolMeta(),
@@ -54,13 +53,13 @@ func specRefreshView() Spec {
 		// not of what the model is offered.
 		Needs: []string{"show"},
 		Register: func(server *mcp.Server, clients Clients) {
-			mcp.AddTool(server, tool, refreshViewHandler(clients, showKinds))
+			mcp.AddTool(server, tool, refreshViewHandler(clients, allOffers()))
 		},
 		RegisterExposed: func(server *mcp.Server, clients Clients, exposed map[string]bool) {
-			kinds := offeredShowKinds(exposed)
+			offers := offersFor(exposed)
 			offered := *tool
-			offered.InputSchema = refreshViewInputSchema(kinds)
-			mcp.AddTool(server, &offered, refreshViewHandler(clients, kinds))
+			offered.InputSchema = refreshViewInputSchema(offers.Kinds)
+			mcp.AddTool(server, &offered, refreshViewHandler(clients, offers))
 		},
 	}
 }
@@ -87,17 +86,16 @@ func appOnlyToolMeta() mcp.Meta {
 	}
 }
 
-func refreshViewHandler(c Clients, kinds []string) mcp.ToolHandlerFor[RefreshViewInput, RefreshViewOutput] {
-	offered := toSet(kinds)
+func refreshViewHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[RefreshViewInput, RefreshViewOutput] {
 	return func(ctx context.Context, _ *mcp.CallToolRequest, in RefreshViewInput) (*mcp.CallToolResult, RefreshViewOutput, error) {
-		if !offered[in.Kind] {
-			return nil, RefreshViewOutput{}, fmt.Errorf("refresh_view cannot refresh %q here; it refreshes %s", in.Kind, strings.Join(kinds, ", "))
+		if !offers.kind(in.Kind) {
+			return nil, RefreshViewOutput{}, fmt.Errorf("refresh_view cannot refresh %q here; it refreshes %s", in.Kind, strings.Join(offers.Kinds, ", "))
 		}
 		if err := checkShowInput(in.ShowInput); err != nil {
 			return nil, RefreshViewOutput{}, err
 		}
 
-		payload, people, summary, err := buildView(ctx, c, in.ShowInput)
+		payload, people, summary, err := buildView(ctx, c, in.ShowInput, offers)
 		if err != nil {
 			return nil, RefreshViewOutput{}, fmt.Errorf("refresh failed: %w", err)
 		}
@@ -114,8 +112,15 @@ func refreshViewHandler(c Clients, kinds []string) mcp.ToolHandlerFor[RefreshVie
 		}
 
 		payload.Avatars = fetchAvatars(ctx, c, people)
+		payload.Offers = &offers
+		// A view that holds nothing yet is opening this, rather than finding
+		// what it holds changed.
+		text := summary.changed()
+		if in.Since == "" {
+			text = summary.opened()
+		}
 		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: summary.changed()}},
+			Content: []mcp.Content{&mcp.TextContent{Text: text}},
 			Meta:    mcp.Meta{viewPayloadKey: payload},
 		}, out, nil
 	}

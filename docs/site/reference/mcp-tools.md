@@ -34,7 +34,7 @@ The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client,
 | `list_required_builds` | read-only | never | List required build checks that must pass before a pull request can be merged. Check this before attempting a merge to understand what CI must succeed. |
 | `list_tags` | read-only | never | List tags in a repository. Use to find the latest release baseline or versioning information. |
 | `merge_pull_request` | writes | always | Merge a pull request. All required build checks must pass and all reviewers must have approved. Asks the person to confirm in the client before it runs. |
-| `refresh_view` | read-only | never | Called by bb's views, not by the model: reads a view's data again, and answers with it when it differs from what the view draws. A view calls it while it is on screen, with the show call it answers and the fingerprint of its data. |
+| `refresh_view` | read-only | never | Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs. |
 | `resolve_ref` | read-only | never | Resolve a branch or tag name to its tip commit SHA. Use as a cheap existence check before cloning or creating a pull request. |
 | `search_repositories` | read-only | never | Search for repositories by name, optionally filtered by project. Returns project key, slug, and display name. |
 | `set_build_status` | writes | always | Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views. Asks the person to confirm in the client before it runs. |

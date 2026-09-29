@@ -433,7 +433,7 @@ func remarshal(from any, to any) error {
 func TestShowRefusesAKindItDoesNotOffer(t *testing.T) {
 	t.Parallel()
 
-	handler := showHandler(testClients(t), []string{showKindPullRequest})
+	handler := showHandler(testClients(t), viewOffers{Kinds: []string{showKindPullRequest}})
 	_, _, err := handler(context.Background(), nil, ShowInput{Kind: showKindDiff, Project: "PROJ", Repo: "app", ID: "7"})
 	if err == nil || !strings.Contains(err.Error(), "cannot show") {
 		t.Errorf("show accepted a kind it does not offer: %v", err)

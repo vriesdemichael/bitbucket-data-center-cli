@@ -19,6 +19,7 @@ function renderPullRequest(payload, view) {
 function pullRequestCard(pr, payload, view) {
   const avatars = payload.avatars || {};
   return el("article", { class: "pr-card", "aria-label": "Pull request " + repositoryOf(pr) + " #" + pr.id },
+    backButton(view),
     pullRequestTop(pr),
     el("h1", { class: "pr-title held", title: pr.title }, pr.title),
     byline(pr, avatars),
@@ -32,6 +33,7 @@ function pullRequestCard(pr, payload, view) {
         "aria-expanded": view.expanded ? "true" : "false",
         onclick: () => view.expand(),
       }, icon(view.expanded ? "collapse" : "expand"), view.expanded ? "Hide overview" : "Overview"),
+      pullRequestTabs(pr, "pull_request", view),
       linkButton("Open in Bitbucket", pr.url, view.bridge, "ghost"),
       el("span", { class: "spacer" }),
       snapshotStamp(payload, view, true)));
@@ -142,11 +144,13 @@ function pullRequestPage(pr, payload, view) {
   return el("div", { class: "page" },
     el("header", { class: "fullscreen-header" },
       el("div", { class: "row-main" },
+        backButton(view),
         el("div", { class: "pr-top" }, icon("pullRequest", null, "faint"), repositoryLabel(pr)),
         el("h1", { class: "pr-title" }, pr.title),
         el("div", { class: "header-meta" }, stateBadges(pr), byline(pr, payload.avatars || {}))),
       el("div", { class: "header-actions" },
         snapshotStamp(payload, view),
+        pullRequestTabs(pr, "pull_request", view),
         linkButton("Open in Bitbucket", pr.url, view.bridge, "primary"),
         el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
     pullRequestOverview(pr, payload, view));
