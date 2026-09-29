@@ -102,6 +102,11 @@ the same order, under a heading for each place.
 
 - A view carries what it draws. It renders again when you come back to the
   conversation, even without bb running, and it says when it was read.
+- While a view is on screen, it keeps itself current: a build that finishes or
+  a new comment appears in place, and the model is told. It asks bb every half
+  minute while a build runs, less often the longer nothing changes, and not at
+  all off screen. A changed diff is offered rather than swapped in while you
+  read it. `--exclude refresh_view` keeps views as they were drawn.
 - A count is Bitbucket's count of the whole, and a view that lists fewer says
   so. A failed build or a request for changes is never behind a click.
 - What you click opens in Bitbucket, through the client. A client that will not

@@ -490,6 +490,8 @@ bb ai mcp serve --host https://bitbucket.example.com --project PAYMENTS --audit-
 
 `status` is `success`, `error`, or `denied`. A tool that asks adds `confirmation`: `accepted`, `declined`, `cancelled`, or `unavailable` when the client could not show the confirmation. A call the confirmation stops is also `denied`, including one whose answer the server cannot use, which records no `confirmation`. One decision is one record, however many round trips the client needed:
 
+A view the agent put in front of the person keeps itself current while it is on screen by calling `refresh_view`, every half minute while a build runs and less often the longer nothing changes. Each call is a record like any other; `--exclude refresh_view` keeps views as they were drawn.
+
 Resource reads, the resource list and prompts are recorded too, as `mcp_resource_read`, `mcp_resource_list` and `mcp_prompt_get`, with `resource` or `prompt` in place of `tool`. Completions, which a client sends as the person types, are not:
 
 ```json
