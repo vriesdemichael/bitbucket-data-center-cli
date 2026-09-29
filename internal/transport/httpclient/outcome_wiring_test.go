@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -52,6 +53,42 @@ func TestARejectedCertificateIsNotRetried(t *testing.T) {
 	}
 	if got := connections.Load(); got != 1 {
 		t.Fatalf("a rejected certificate was tried %d times", got)
+	}
+}
+
+// A plain-HTTP server at an https:// URL is tried once (#704): it answers the
+// same way every time, and it was tried RetryCount more times.
+//
+// mock-inventory: transport-fault — a plain-HTTP listener answers a TLS client; the subject is that the client does not retry it.
+func TestAPlainHTTPServerAtAnHTTPSURLIsNotRetried(t *testing.T) {
+	t.Parallel()
+
+	var connections atomic.Int32
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("a TLS handshake was served as a request")
+	}))
+	server.Config.ErrorLog = log.New(io.Discard, "", 0)
+	server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			connections.Add(1)
+		}
+	}
+	server.Start()
+	t.Cleanup(server.Close)
+
+	client := NewFromConfig(config.AppConfig{
+		BitbucketURL:   "https://" + strings.TrimPrefix(server.URL, "http://"),
+		RetryCount:     2,
+		RetryBackoff:   time.Millisecond,
+		RequestTimeout: 5 * time.Second,
+	})
+
+	err := client.GetJSON(context.Background(), "/rest/api/latest/projects", nil, nil)
+	if !apperrors.IsKind(err, apperrors.KindPermanent) || !strings.Contains(err.Error(), "should begin with http://") {
+		t.Fatalf("got %v, want a permanent failure that points at the scheme", err)
+	}
+	if got := connections.Load(); got != 1 {
+		t.Fatalf("a plain-HTTP server was tried %d times", got)
 	}
 }
 

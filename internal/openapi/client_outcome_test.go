@@ -133,6 +133,38 @@ func TestAStatusThatArrivedSaysWhetherTheChangeWasRefused(t *testing.T) {
 	}
 }
 
+// The generated client decides its retries below http.Client, where a
+// plain-HTTP answer to an https:// URL is still a TLS record-header error.
+//
+// mock-inventory: transport-fault — a plain-HTTP listener answers a TLS client; the subject is that the generated client does not retry it.
+func TestTheGeneratedClientDoesNotRetryAPlainHTTPServer(t *testing.T) {
+	t.Parallel()
+
+	var connections atomic.Int32
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("a TLS handshake was served as a request")
+	}))
+	server.Config.ErrorLog = log.New(io.Discard, "", 0)
+	server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			connections.Add(1)
+		}
+	}
+	server.Start()
+	t.Cleanup(server.Close)
+
+	secureURL := "https://" + strings.TrimPrefix(server.URL, "http://")
+	_, err := generatedClient(t, secureURL).GetProjectsWithResponse(context.Background(), &openapigenerated.GetProjectsParams{})
+	err = apperrors.Transport("failed to list projects", err)
+
+	if !apperrors.IsKind(err, apperrors.KindPermanent) || !strings.Contains(err.Error(), "answered in plain HTTP") {
+		t.Fatalf("got %v, want permanent, saying the server answered in plain HTTP", err)
+	}
+	if got := connections.Load(); got != 1 {
+		t.Fatalf("a plain-HTTP server was tried %d times", got)
+	}
+}
+
 func TestTheGeneratedClientDoesNotRetryARejectedCertificate(t *testing.T) {
 	t.Parallel()
 

@@ -1,14 +1,14 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 220,
+    "mocked_servers": 223,
     "files": 76,
-    "functions": 208,
+    "functions": 211,
     "by_class": {
       "external-service": 27,
       "harness-constructor": 18,
       "routing-beacon": 9,
-      "transport-fault": 98,
+      "transport-fault": 101,
       "unreachable-state": 25,
       "unreached-guard": 43
     },
@@ -905,7 +905,20 @@
     },
     {
       "file": "internal/openapi/client_outcome_test.go",
-      "line": 140,
+      "line": 144,
+      "function": "TestTheGeneratedClientDoesNotRetryAPlainHTTPServer",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "a plain-HTTP listener answers a TLS client; the subject is that the generated client does not retry it.",
+      "reviewed": true
+    },
+    {
+      "file": "internal/openapi/client_outcome_test.go",
+      "line": 172,
       "function": "TestTheGeneratedClientDoesNotRetryARejectedCertificate",
       "class": "unreached-guard",
       "signals": [
@@ -2914,7 +2927,7 @@
     },
     {
       "file": "internal/transport/httpclient/outcome_wiring_test.go",
-      "line": 30,
+      "line": 31,
       "function": "TestARejectedCertificateIsNotRetried",
       "class": "unreached-guard",
       "signals": [
@@ -2924,6 +2937,20 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/transport/httpclient/outcome_wiring_test.go",
+      "line": 67,
+      "function": "TestAPlainHTTPServerAtAnHTTPSURLIsNotRetried",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "fails-if-the-server-is-reached",
+        "serves-bitbucket-routes"
+      ],
+      "action": "keep",
+      "reason": "a plain-HTTP listener answers a TLS client; the subject is that the client does not retry it.",
+      "reviewed": true
     },
     {
       "file": "internal/transport/network/transport_test.go",
@@ -2975,6 +3002,19 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/transport/outcome/outcome_test.go",
+      "line": 299,
+      "function": "TestAPlainHTTPServerAtAnHTTPSURLIsPermanent",
+      "class": "transport-fault",
+      "signals": [
+        "answers-any-request",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "a plain-HTTP listener answers a TLS client; the subject is how that failure is classified.",
+      "reviewed": true
     },
     {
       "file": "internal/transport/sigstore/trustedroot_test.go",

@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -420,6 +422,13 @@ func summarizeUpstream(body []byte) string {
 		return diagnostics.RedactText(strings.Join(messages, "; "))
 	}
 
+	// An HTML page is an error page, Bitbucket's or a proxy's in front of it,
+	// and what its first characters hold is markup. Its title says what it is.
+	if title, ok := htmlTitle(raw); ok {
+		return fmt.Sprintf("an HTML page titled %q (%d characters; pass --full-error-body to see all of it)",
+			diagnostics.RedactText(title), len([]rune(raw)))
+	}
+
 	trimmed := diagnostics.RedactText(raw)
 	if trimmed == "" {
 		return ""
@@ -437,6 +446,31 @@ func summarizeUpstream(body []byte) string {
 		"%s... (%d more characters; pass --full-error-body to see all of it)",
 		string(characters[:upstreamBodyLimit]), len(characters)-upstreamBodyLimit,
 	)
+}
+
+var htmlTitlePattern = regexp.MustCompile(`(?is)<title[^>]*>(.*?)</title>`)
+
+// htmlTitle is the title of a body that is an HTML page, as it reads: entities
+// decoded, whitespace collapsed, and no longer than a message has room for.
+func htmlTitle(body string) (string, bool) {
+	opening := strings.ToLower(body[:min(len(body), len("<!doctype html"))])
+	if !strings.HasPrefix(opening, "<!doctype html") && !strings.HasPrefix(opening, "<html") {
+		return "", false
+	}
+
+	match := htmlTitlePattern.FindStringSubmatch(body)
+	if match == nil {
+		return "", false
+	}
+	title := strings.Join(strings.Fields(html.UnescapeString(match[1])), " ")
+	if title == "" {
+		return "", false
+	}
+	if characters := []rune(title); len(characters) > upstreamBodyLimit {
+		title = string(characters[:upstreamBodyLimit]) + "..."
+	}
+
+	return title, true
 }
 
 // upstreamMessages are the sentences Bitbucket put in its error envelope.
