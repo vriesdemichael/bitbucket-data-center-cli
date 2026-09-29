@@ -56,8 +56,11 @@ function inMotion(payload) {
 }
 
 // settled is a view with nothing left to wait for: a pull request that is
-// closed, with no build running. A list is never settled.
+// closed, with no build running, or a form. A list is never settled.
 function settled(payload) {
+  // A form is the person's to fill in; reading it again would change nothing
+  // they have not changed themselves.
+  if (payload.kind === "pull_request_form") return true;
   if (payload.kind === "pull_requests") return false;
   const pr = payload.pull_request;
   return Boolean(pr && pr.state && pr.state !== "OPEN") && !inMotion(payload);

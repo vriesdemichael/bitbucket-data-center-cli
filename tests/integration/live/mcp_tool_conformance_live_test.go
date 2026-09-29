@@ -360,6 +360,7 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 		"compare_refs":         repoArgs(map[string]any{"from": "feature/mcp-main", "to": "master"}),
 		"show":                 repoArgs(map[string]any{"kind": "pull_request", "id": fixture.mainPR}),
 		"refresh_view":         repoArgs(map[string]any{"kind": "pull_request", "id": fixture.mainPR}),
+		"suggest_form_values":  repoArgs(map[string]any{"field": "branch", "text": "feature"}),
 	}
 
 	return fixture

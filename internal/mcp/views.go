@@ -65,17 +65,21 @@ const (
 	showKindPullRequests = "pull_requests"
 	showKindDiff         = "diff"
 	showKindThreads      = "threads"
+	// showKindPullRequestForm is a pull request for the person to finish and
+	// submit, offered while the tool that creates one is.
+	showKindPullRequestForm = "pull_request_form"
 )
 
 var showKindTools = map[string]string{
-	showKindPullRequest:  "get_pull_request",
-	showKindPullRequests: "list_pull_requests",
-	showKindDiff:         "get_pr_diff",
-	showKindThreads:      "list_pr_comments",
+	showKindPullRequest:     "get_pull_request",
+	showKindPullRequests:    "list_pull_requests",
+	showKindDiff:            "get_pr_diff",
+	showKindThreads:         "list_pr_comments",
+	showKindPullRequestForm: "create_pull_request",
 }
 
 // showKinds is the order the kinds are described in.
-var showKinds = []string{showKindPullRequest, showKindPullRequests, showKindDiff, showKindThreads}
+var showKinds = []string{showKindPullRequest, showKindPullRequests, showKindDiff, showKindThreads, showKindPullRequestForm}
 
 // viewActionTools are the model's tools a view calls for the person: what a
 // click in a view does goes through them, so the scope, the audit trail and
@@ -94,7 +98,7 @@ type viewOffers struct {
 // offersFor is what views may do on a server that exposes these tools.
 func offersFor(exposed map[string]bool) viewOffers {
 	offers := viewOffers{Kinds: offeredShowKinds(exposed)}
-	for _, tool := range viewActionTools {
+	for _, tool := range append(slices.Clone(viewActionTools), viewHelperTools...) {
 		if exposed[tool] {
 			offers.Tools = append(offers.Tools, tool)
 		}
@@ -127,6 +131,14 @@ type ShowInput struct {
 	State string `json:"state,omitempty"`
 	Role  string `json:"role,omitempty" jsonschema:"For kind pull_requests without repo: REVIEWER, AUTHOR or PARTICIPANT. Omit for all three"`
 	Limit int    `json:"limit,omitempty" jsonschema:"For kind pull_requests: how many to show (default 25)"`
+	// What the model drafted for kind pull_request_form, named as
+	// create_pull_request names them.
+	FromRef     string `json:"from_ref,omitempty" jsonschema:"For kind pull_request_form: the source branch"`
+	ToRef       string `json:"to_ref,omitempty" jsonschema:"For kind pull_request_form: the target branch; omit for the repository's default branch"`
+	Title       string `json:"title,omitempty" jsonschema:"For kind pull_request_form: the title you drafted"`
+	Description string `json:"description,omitempty" jsonschema:"For kind pull_request_form: the description you drafted, in Markdown"`
+	Reviewers   string `json:"reviewers,omitempty" jsonschema:"For kind pull_request_form: comma-separated reviewer usernames"`
+	Draft       bool   `json:"draft,omitempty" jsonschema:"For kind pull_request_form: open it as a draft"`
 }
 
 // ShowOutput says whether anything was shown, and what.
@@ -143,9 +155,12 @@ func specShow() Spec {
 	tool := &mcp.Tool{
 		Name: "show",
 		Description: "Show the person a pull request, a list of pull requests, a pull request's diff or its comment threads as an " +
-			"interactive view, in clients that display MCP Apps views. Call it once, after you have what you need and before your answer, " +
-			"for what the person should see; use the other tools to find it. kinds pull_request, diff and threads take project, repo " +
-			"and id; kind pull_requests takes the filters list_pull_requests takes. In a client that displays no views, it shows nothing " +
+			"interactive view, in clients that display MCP Apps views, or a pull request form for them to finish and submit. Call it once, " +
+			"after you have what you need and before your answer, for what the person should see; use the other tools to find it. kinds " +
+			"pull_request, diff and threads take project, repo and id; kind pull_requests takes the filters list_pull_requests takes. " +
+			"Kind pull_request_form takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), " +
+			"or an id to edit that pull request; nothing is created or changed until the person submits it. A diff is for changes the " +
+			"person cannot open in their own editor, such as another repository's. In a client that displays no views, it shows nothing " +
 			"and says so.",
 		Annotations: readOnly("Show a view"),
 		InputSchema: showInputSchema(showKinds),
@@ -308,6 +323,13 @@ func showHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[ShowInput, Sho
 
 func checkShowInput(in ShowInput) error {
 	switch in.Kind {
+	case showKindPullRequestForm:
+		if in.Project == "" || in.Repo == "" {
+			return fmt.Errorf("kind pull_request_form needs project and repo")
+		}
+		if in.ID == "" && strings.TrimSpace(in.FromRef) == "" {
+			return fmt.Errorf("kind pull_request_form needs from_ref for a new pull request, or id to edit one")
+		}
 	case showKindPullRequest, showKindDiff, showKindThreads:
 		if in.Project == "" || in.Repo == "" || in.ID == "" {
 			return fmt.Errorf("kind %s needs project, repo and id", in.Kind)
@@ -356,6 +378,9 @@ type viewPayload struct {
 	// Me is the person bb acts for, as the pull request sees them, so a view
 	// offers a review only to someone who can give one.
 	Me *viewMe `json:"me,omitempty"`
+	// Form is a pull request for the person to finish, for kind
+	// pull_request_form.
+	Form *viewForm `json:"form,omitempty"`
 }
 
 // viewMe is the person bb acts for, on one pull request: whether they wrote
@@ -608,6 +633,14 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 		payload.Threads = &threads
 		people = threadPeople
 		summary = summarizeThreads(in, pr.Title, threads)
+	case showKindPullRequestForm:
+		form, pr, formSummary, err := formForView(ctx, c, in)
+		if err != nil {
+			return viewPayload{}, nil, viewSummary{}, err
+		}
+		payload.Form = &form
+		payload.PullRequest = pr
+		summary = formSummary
 	default:
 		return viewPayload{}, nil, viewSummary{}, fmt.Errorf("unknown kind %q", in.Kind)
 	}
@@ -1185,6 +1218,7 @@ var viewScripts = []string{
 	"refresh.js",
 	"open.js",
 	"actions.js",
+	"form.js",
 	"main.js",
 }
 

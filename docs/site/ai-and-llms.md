@@ -103,6 +103,12 @@ discussion folds its earlier replies. The card lists what is still open in
 the same order, under a heading for each place. Reply to a thread, or comment
 on the pull request, from the view itself.
 
+Ask for a pull request to be opened, and the agent can hand you its draft as a
+form: the branches, the title and description it wrote, the reviewers it
+suggests. Edit what you like, with branches and reviewers completed as you
+type, and create it; nothing is created until you do. An existing pull
+request's title, description and draft state are edited the same way.
+
 ![A pull request's comment threads: tasks and comments on the pull request, a comment on a file, and a task on a changed line with the lines of the diff leading to it](assets/views/threads-light.webp#only-light)
 ![A pull request's comment threads: tasks and comments on the pull request, a comment on a file, and a task on a changed line with the lines of the diff leading to it](assets/views/threads-dark.webp#only-dark)
 

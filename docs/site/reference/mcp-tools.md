@@ -7,11 +7,11 @@ search:
 
 This page is generated from the server's registries by `task docs:export-mcp-tools`. Do not edit manually.
 
-`bb ai mcp serve` registers 26 tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. 7 ask the person to confirm a call in the MCP client before they run.
+`bb ai mcp serve` registers 27 tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. 7 ask the person to confirm a call in the MCP client before they run.
 
 The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.
 
-`refresh_view` is for those views: MCP Apps offers it to them and not to the model, and it goes with `show` whether or not `--tools` names it.
+`refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them.
 
 | Tool | Access | Asks | What it does |
 |---|---|---|---|
@@ -38,8 +38,9 @@ The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client,
 | `resolve_ref` | read-only | never | Resolve a branch or tag name to its tip commit SHA. Use as a cheap existence check before cloning or creating a pull request. |
 | `search_repositories` | read-only | never | Search for repositories by name, optionally filtered by project. Returns project key, slug, and display name. |
 | `set_build_status` | writes | always | Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views. Asks the person to confirm in the client before it runs. |
-| `show` | read-only | never | Show the person a pull request, a list of pull requests, a pull request's diff or its comment threads as an interactive view, in clients that display MCP Apps views. Call it once, after you have what you need and before your answer, for what the person should see; use the other tools to find it. kinds pull_request, diff and threads take project, repo and id; kind pull_requests takes the filters list_pull_requests takes. In a client that displays no views, it shows nothing and says so. |
+| `show` | read-only | never | Show the person a pull request, a list of pull requests, a pull request's diff or its comment threads as an interactive view, in clients that display MCP Apps views, or a pull request form for them to finish and submit. Call it once, after you have what you need and before your answer, for what the person should see; use the other tools to find it. kinds pull_request, diff and threads take project, repo and id; kind pull_requests takes the filters list_pull_requests takes. Kind pull_request_form takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), or an id to edit that pull request; nothing is created or changed until the person submits it. A diff is for changes the person cannot open in their own editor, such as another repository's. In a client that displays no views, it shows nothing and says so. |
 | `submit_pr_review` | writes | always | Set review status on a pull request: approve, unapprove, or request changes (needs_work). Asks the person to confirm in the client before it runs. |
+| `suggest_form_values` | read-only | never | Called by bb's pull request form, not by the model: suggests the repository's branches, or the people who can read it as reviewers, matching what the person typed. |
 | `update_pull_request` | writes | when-setting-draft | Update a pull request's title, description, or draft state. Use draft=false to mark a draft pull request ready for review. Requires the current version from get_pull_request for optimistic locking; a stale version is rejected rather than overwriting someone else's edit. Setting draft asks the person to confirm in the client first. |
 
 ## Tools that ask

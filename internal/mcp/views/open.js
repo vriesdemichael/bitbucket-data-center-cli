@@ -45,9 +45,10 @@ function canCall(view, tool) {
 }
 
 // openInView reads what show would put in front of the person, and shows it
-// in this view. replace is a list asked for again, which takes the place of
-// the one it was rather than one to go back to.
-async function openInView(view, show, replace) {
+// in this view. replace is a list asked for again, or a pull request a form
+// made, which takes the place of what it was rather than one to go back to.
+// lead is what the model is told first, such as that the person made it.
+async function openInView(view, show, replace, lead) {
   if (view.opening) return;
   view.opening = show.kind;
   view.openFailure = null;
@@ -61,7 +62,8 @@ async function openInView(view, show, replace) {
     const keep = replace ? { filter: view.filter } : null;
     showPayload(view, payload);
     if (keep) view.filter = keep.filter;
-    if (view.tellsModel) view.bridge.updateModelContext(textOf(result)).catch(() => {});
+    const told = lead ? lead + " " + textOf(result) : textOf(result);
+    if (view.tellsModel) view.bridge.updateModelContext(told).catch(() => {});
   } catch (error) {
     view.openFailure = (error && error.message) || "bb could not open it.";
   } finally {
@@ -99,6 +101,8 @@ function showPayload(view, payload) {
   view.drafts = new Map();
   view.reviewing = null;
   view.reviewError = null;
+  view.formDone = null;
+  view.formSuggestions = {};
   view.refresh.pending = null;
   view.refresh.failure = null;
   view.refresh.idleMs = REFRESH_IDLE_MS;

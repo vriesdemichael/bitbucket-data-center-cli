@@ -3,6 +3,7 @@
 package live_test
 
 import (
+	"encoding/json"
 	"context"
 	"fmt"
 	"net/http"
@@ -509,4 +510,110 @@ func containsAny(values []any, want string) bool {
 		}
 	}
 	return false
+}
+
+// TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends: the pull request
+// form starts from what the model drafted and the repository's default
+// branch, suggests the repository's branches and the people who can read
+// it, and the calls the form makes create and save the pull request as the
+// person finished it.
+func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	reviewer, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create a reviewer failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username,
+		openapigenerated.SetPermissionForUserParamsPermissionREPOREAD); err != nil {
+		t.Fatalf("grant the reviewer read access failed: %v", err)
+	}
+	branch := testsupport.UniqueName("feature/form-")
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, "form.txt", "made with the form\n"); err != nil {
+		t.Fatalf("push failed: %v", err)
+	}
+
+	capabilities := &mcp.ClientCapabilities{}
+	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
+	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
+		call := func(name string, arguments map[string]any) *mcp.CallToolResult {
+			t.Helper()
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: arguments})
+			if err != nil || result.IsError {
+				t.Fatalf("%s %v: %v %s", name, arguments, err, mcpResultText(result))
+			}
+			return result
+		}
+		structured := func(result *mcp.CallToolResult) map[string]any {
+			t.Helper()
+			encoded, _ := json.Marshal(result.StructuredContent)
+			var decoded map[string]any
+			_ = json.Unmarshal(encoded, &decoded)
+			return decoded
+		}
+
+		shown := call("show", map[string]any{"kind": "pull_request_form", "project": seeded.Key, "repo": repo.Slug,
+			"from_ref": branch, "title": "Made with the form", "description": "Drafted by the model."})
+		payload, _ := shown.Meta[viewPayloadKey].(map[string]any)
+		form, _ := payload["form"].(map[string]any)
+		for key, want := range map[string]any{"mode": "create", "from_ref": branch, "to_ref": "master", "default_branch": "master", "title": "Made with the form"} {
+			if form[key] != want {
+				t.Errorf("the form starts with %s = %v, want %v (all: %v)", key, form[key], want, form)
+			}
+		}
+		if !strings.HasSuffix(asString(form["repository_url"]), "/projects/"+seeded.Key+"/repos/"+repo.Slug) {
+			t.Errorf("the form links under %v, want the repository's page", form["repository_url"])
+		}
+		if text := mcpResultText(shown); !strings.Contains(text, "Nothing is created until they submit it.") {
+			t.Errorf("the model reads %q, want it told nothing is created yet", text)
+		}
+
+		branches, _ := structured(call("suggest_form_values", map[string]any{"project": seeded.Key, "repo": repo.Slug, "field": "branch", "text": "form-"}))["values"].([]any)
+		if len(branches) != 1 || asString(branches[0].(map[string]any)["value"]) != branch {
+			t.Errorf("the form suggests branches %v for what was typed, want %s", branches, branch)
+		}
+		people, _ := structured(call("suggest_form_values", map[string]any{"project": seeded.Key, "repo": repo.Slug, "field": "reviewer", "text": reviewer.Username}))["values"].([]any)
+		if len(people) != 1 || asString(people[0].(map[string]any)["value"]) != reviewer.Username {
+			t.Errorf("the form suggests reviewers %v, want %s, who can read the repository", people, reviewer.Username)
+		}
+		everyone, _ := structured(call("suggest_form_values", map[string]any{"project": seeded.Key, "repo": repo.Slug, "field": "reviewer"}))["values"].([]any)
+		for _, person := range everyone {
+			if strings.EqualFold(asString(person.(map[string]any)["value"]), harness.username()) {
+				t.Errorf("the form suggests bb's own user %s as a reviewer of their pull request", harness.username())
+			}
+		}
+
+		// The person finishes it and submits: the form calls create_pull_request
+		// with what they wrote, as the view does.
+		created := structured(call("create_pull_request", map[string]any{"project": seeded.Key, "repo": repo.Slug,
+			"from_ref": branch, "to_ref": "master", "title": "Made with the form, finished", "description": "Drafted by the model.",
+			"reviewers": reviewer.Username, "draft": false}))
+		pr, _ := created["pull_request"].(map[string]any)
+		id := fmt.Sprint(pr["id"])
+		read := structured(call("get_pull_request", map[string]any{"project": seeded.Key, "repo": repo.Slug, "id": id}))
+		readPR, _ := read["pull_request"].(map[string]any)
+		reviewers, _ := readPR["reviewers"].([]any)
+		if readPR["title"] != "Made with the form, finished" || len(reviewers) != 1 || asString(reviewers[0].(map[string]any)["name"]) != reviewer.Username {
+			t.Errorf("Bitbucket holds %v with reviewers %v, want the title and the reviewer the person finished it with", readPR["title"], reviewers)
+		}
+
+		// Shown again to edit, the form starts from the pull request as it is.
+		edit := call("show", map[string]any{"kind": "pull_request_form", "project": seeded.Key, "repo": repo.Slug, "id": id})
+		editPayload, _ := edit.Meta[viewPayloadKey].(map[string]any)
+		editForm, _ := editPayload["form"].(map[string]any)
+		if editForm["mode"] != "edit" || editForm["title"] != "Made with the form, finished" || editForm["version"] != readPR["version"] {
+			t.Errorf("the edit form starts with %v, want the pull request's title and version %v", editForm, readPR["version"])
+		}
+	}, "ai", "mcp", "serve")
 }

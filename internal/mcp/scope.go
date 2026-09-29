@@ -145,6 +145,8 @@ var scopeRules = map[string]scopeRule{
 	"show": scopeOptionalProjectRepo,
 	// Repeats a show call, so it is bound as show is.
 	"refresh_view": scopeOptionalProjectRepo,
+	// Suggests a repository's branches and the people who can read it.
+	"suggest_form_values": scopeProjectRepo,
 }
 
 // withheldUnderScope reports whether a scope removes a tool altogether.
