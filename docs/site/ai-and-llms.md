@@ -87,8 +87,9 @@ pull requests in another state or role.
 ![A list of four pull requests, two of them with changes requested and a failed build, one a draft](assets/views/list-dark.webp#only-dark)
 
 A diff comes file by file, with Bitbucket's change lozenges and the files in
-their directories. Select lines to add them to the chat, or to ask about them. A
-file too large to carry is named, with a link to its diff in Bitbucket.
+their directories, and each comment on the line it was written on. Select lines
+to add them to the chat, to ask about them, or to comment on them. A file too
+large to carry is named, with a link to its diff in Bitbucket.
 
 ![A pull request's diff: the changed files by directory beside the modified, renamed and deleted files with their hunks](assets/views/diff-light.webp#only-light)
 ![A pull request's diff: the changed files by directory beside the modified, renamed and deleted files with their hunks](assets/views/diff-dark.webp#only-dark)

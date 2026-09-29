@@ -1,7 +1,9 @@
 // The diff view: the files inline, and the whole diff with a file tree in
 // fullscreen, where a file picked inline opens. In a host without
 // fullscreen, a file opens in place and the list grows a step at a time.
-// Lines can be selected and handed to the model, or asked about.
+// Lines can be selected and handed to the model, asked about, or commented
+// on, and the pull request's comments are drawn where they are, as
+// Bitbucket's diff draws them.
 
 const INLINE_FILES = 8;
 
@@ -105,7 +107,9 @@ function renderDiff(payload, view) {
   const diff = payload.diff || {};
   if (!view.diffFiles) view.diffFiles = diffFilesOf(diff);
   const files = view.diffFiles;
-  if (view.fullscreen) return diffPage(pr, files, payload, view);
+  const comments = threadPlaces(payload);
+  const avatars = payload.avatars || {};
+  if (view.fullscreen) return diffPage(pr, files, payload, view, comments);
 
   const shown = files.slice(0, shownCount("files", INLINE_FILES, view));
   const left = files.length - shown.length;
@@ -119,8 +123,8 @@ function renderDiff(payload, view) {
     omittedNotice(files, pr, view),
     files.length === 0 ? el("p", { class: "faint" }, "No changes.") : el("ul", { class: "file-list" },
       shown.map((file, index) => el("li", {},
-        fileLink(file, index, view, () => openFile(index, view)),
-        view.openFiles.has(index) ? el("div", { class: "inline-file" }, diffFile(file, index, pr, view, false)) : null))),
+        fileLink(file, index, view, () => openFile(index, view), false, openCommentsOn(comments, file)),
+        view.openFiles.has(index) ? el("div", { class: "inline-file" }, diffFile(file, index, pr, view, false, comments, avatars)) : null))),
     left > 0
       ? el("div", { class: "more-row" }, view.canFullscreen
         ? el("button", { type: "button", class: "button ghost list-toggle", onclick: () => view.expand() }, "and " + plural(left, "more file") + ", in full screen")
@@ -191,8 +195,8 @@ function omittedNotice(files, pr, view) {
 
 // fileLink is a file in a list: its change as a colored dot, its path, or its
 // name alone in the tree under its directory, where a renamed file came from,
-// whether it is too large to show, and its counts.
-function fileLink(file, index, view, onclick, compact) {
+// whether it is too large to show, its open comments and its counts.
+function fileLink(file, index, view, onclick, compact, openComments) {
   const path = filePath(file);
   const slash = path.lastIndexOf("/");
   const renamed = renamedFrom(file);
@@ -205,6 +209,9 @@ function fileLink(file, index, view, onclick, compact) {
     changeDot(file.status),
     label,
     el("span", { class: "spacer" }),
+    openComments > 0
+      ? el("span", { class: "counter", title: plural(openComments, "open comment") }, icon("comment", null, "icon-sm"), formatNumber(openComments))
+      : null,
     file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file, true));
 }
 
@@ -233,12 +240,14 @@ function changeBar(file, compact) {
     compact ? null : [" ", el("span", { class: "bar", "aria-hidden": "true" }, blocks)]);
 }
 
-function diffPage(pr, files, payload, view) {
+function diffPage(pr, files, payload, view, comments) {
+  const avatars = payload.avatars || {};
   const main = el("div", { class: "diff-main", id: "diff-main" },
     selectionBar(pr, view),
     refreshNotice(view),
+    pullRequestComments(comments, pr, avatars, view),
     omittedNotice(files, pr, view),
-    files.length === 0 ? el("p", { class: "faint" }, "No changes.") : files.map((file, index) => diffFile(file, index, pr, view, true)));
+    files.length === 0 ? el("p", { class: "faint" }, "No changes.") : files.map((file, index) => diffFile(file, index, pr, view, true, comments, avatars)));
 
   return el("div", { class: "page" },
     el("header", { class: "fullscreen-header" },
@@ -253,13 +262,13 @@ function diffPage(pr, files, payload, view) {
         linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
         el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
     el("div", { class: "diff-layout" },
-      el("nav", { class: "diff-tree", "aria-label": "Files" }, fileTree(files, view)),
+      el("nav", { class: "diff-tree", "aria-label": "Files" }, fileTree(files, view, comments)),
       main));
 }
 
 // fileTree lists the files under their directories, in the diff's order, as
 // Bitbucket's file tree does: a directory heads the files in it.
-function fileTree(files, view) {
+function fileTree(files, view, comments) {
   const rows = [];
   let directory = null;
   files.forEach((file, index) => {
@@ -273,13 +282,14 @@ function fileTree(files, view) {
     rows.push(el("li", {}, fileLink(file, index, view, () => {
       const target = document.getElementById("diff-file-" + index);
       if (target) target.scrollIntoView({ block: "start" });
-    }, true)));
+    }, true, openCommentsOn(comments, file))));
   });
   return el("ul", { class: "file-list tree" }, rows);
 }
 
-function diffFile(file, index, pr, view, withHeader) {
+function diffFile(file, index, pr, view, withHeader, comments, avatars) {
   const path = filePath(file);
+  const place = (comments && comments.files.get(path)) || { onFile: [], lines: new Map() };
   const section = el("section", { class: "diff-file", id: "diff-file-" + index, dataset: { collapsed: "false" } });
   if (withHeader) {
     section.append(el("button", {
@@ -297,6 +307,14 @@ function diffFile(file, index, pr, view, withHeader) {
     el("span", { class: "file-name" }, pathLabel(path), renamedFrom(file) ? el("span", { class: "ellipsis faint" }, renamedFrom(file)) : null),
     el("span", { class: "spacer" }),
     file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file)));
+  }
+
+  // The file's own comments, and those on lines the diff does not draw,
+  // come first, as Bitbucket puts a file's comments at its top.
+  const lineKeys = new Set(file.hunks.flatMap((hunk) => hunk.lines).filter((line) => line.type !== "meta").map(keyOfLine));
+  const elsewhere = place.onFile.concat(...[...place.lines.entries()].filter(([key]) => !lineKeys.has(key)).map(([, threads]) => threads));
+  if (elsewhere.length > 0) {
+    section.append(el("div", { class: "file-threads" }, elsewhere.map((thread) => threadArticle(thread, pr, avatars, view))));
   }
 
   if (file.omitted) {
@@ -318,6 +336,7 @@ function diffFile(file, index, pr, view, withHeader) {
   const key = "file-" + index;
   const cap = view.fullscreen ? Infinity : shownCount(key, INLINE_FILE_LINES, view);
   const total = file.hunks.reduce((sum, hunk) => sum + hunk.lines.length, 0);
+  const drawnKeys = new Set();
   let drawn = 0;
   for (const hunk of file.hunks) {
     if (drawn >= cap) break;
@@ -331,10 +350,23 @@ function diffFile(file, index, pr, view, withHeader) {
       line.row = row;
       body.append(row);
       drawn++;
+      if (line.type === "meta") continue;
+      drawnKeys.add(keyOfLine(line));
+      for (const thread of place.lines.get(keyOfLine(line)) || []) {
+        body.append(el("tr", { class: "diff-thread" }, el("td", { colspan: 3 }, threadArticle(thread, pr, avatars, view))));
+      }
+      if (view.drafts.has(lineDraftKey(file, line))) {
+        body.append(el("tr", { class: "diff-draft" }, el("td", { colspan: 3 }, lineCommentForm(file, line, pr, view))));
+      }
     }
   }
   if (drawn < total) {
-    body.append(el("tr", { class: "more" }, el("td", { colspan: 3 }, moreButton(key, total - drawn, FILE_LINE_STEP, "lines", view))));
+    // Comments on lines still folded away are counted where the file goes on.
+    const further = [...place.lines.entries()].filter(([lineKey]) => lineKeys.has(lineKey) && !drawnKeys.has(lineKey))
+      .reduce((sum, [, threads]) => sum + threads.length, 0);
+    body.append(el("tr", { class: "more" }, el("td", { colspan: 3 },
+      moreButton(key, total - drawn, FILE_LINE_STEP, "lines", view),
+      further > 0 ? el("span", { class: "faint more-note" }, plural(further, "comment") + " further down") : null)));
   }
   section.append(el("table", { class: "diff-table", role: "grid", "aria-label": path }, body));
   return section;
@@ -409,6 +441,9 @@ function updateSelectionBar(view) {
   bar.replaceChildren(
     el("span", {}, el("strong", {}, plural(selection.lines.length, "line")), " of ", el("span", { class: "mono" }, selection.path), " · " + selection.range),
     el("span", { class: "spacer" }),
+    canCall(view, "add_pr_comment") && view.selectionPR && view.selectionPR.repository
+      ? el("button", { type: "button", class: "button", onclick: () => commentOnSelection(view) }, "Comment")
+      : null,
     el("button", { type: "button", class: "button", onclick: () => view.addSelectionToContext() }, "Add to chat context"),
     el("button", { type: "button", class: "button primary", onclick: () => view.askAboutSelection() }, icon("comment"), "Ask about this"),
     el("button", { type: "button", class: "button ghost", onclick: () => view.clearSelection() }, "Clear"));
@@ -448,4 +483,87 @@ function selectionText(pr, selection) {
 
 function diffURL(pr) {
   return pr.url ? String(pr.url).replace(/\/overview$/, "/diff") : "";
+}
+
+// threadPlaces sorts the threads a diff carries by where they are: on the pull
+// request, on a file, or on a line of a file, by the side it is numbered on.
+function threadPlaces(payload) {
+  const index = { onPullRequest: [], files: new Map() };
+  for (const thread of (payload.threads && payload.threads.threads) || []) {
+    const anchor = thread.anchor;
+    if (!anchor || !anchor.path) {
+      index.onPullRequest.push(thread);
+      continue;
+    }
+    if (!index.files.has(anchor.path)) index.files.set(anchor.path, { onFile: [], lines: new Map() });
+    const place = index.files.get(anchor.path);
+    if (!anchor.line || anchor.orphaned) {
+      place.onFile.push(thread);
+      continue;
+    }
+    // A removed line is numbered as the file was, anything else as it is.
+    const key = (anchor.line_type === "REMOVED" ? "old:" : "new:") + anchor.line;
+    if (!place.lines.has(key)) place.lines.set(key, []);
+    place.lines.get(key).push(thread);
+  }
+  return index;
+}
+
+function keyOfLine(line) {
+  return line.type === "del" ? "old:" + line.oldNo : "new:" + line.newNo;
+}
+
+// openCommentsOn counts the comments on a file still open.
+function openCommentsOn(comments, file) {
+  const place = comments && comments.files.get(filePath(file));
+  if (!place) return 0;
+  const all = place.onFile.concat(...place.lines.values());
+  return all.filter((thread) => !thread.resolved).length;
+}
+
+// pullRequestComments are the pull request's own comments, over the files,
+// folded to their count, and a box to add one.
+function pullRequestComments(comments, pr, avatars, view) {
+  const threads = comments.onPullRequest.slice().sort(byPlace);
+  if (threads.length === 0 && !canCall(view, "add_pr_comment")) return null;
+  const key = "pr-comments";
+  const open = threads.filter((thread) => !thread.resolved).length;
+  const title = threads.length === 0
+    ? "Comment on the pull request"
+    : plural(threads.length, "comment") + " on the pull request" + (open > 0 ? " · " + formatNumber(open) + " open" : "");
+  return el("section", { class: "diff-pr-comments" },
+    foldButton(key, title, view),
+    view.unclamped.has(key)
+      ? el("div", { class: "diff-pr-threads" }, newCommentArea(pr, view), threads.map((thread) => threadArticle(thread, pr, avatars, view)))
+      : null);
+}
+
+// lineDraftKey is where a comment on a line is written: the line, by its
+// file and number.
+function lineDraftKey(file, line) {
+  return "line|" + filePath(file) + "|" + keyOfLine(line);
+}
+
+// commentOnSelection opens a box to comment on the last line selected, as
+// Bitbucket anchors a comment on one line.
+function commentOnSelection(view) {
+  const selection = currentSelection(view);
+  if (!selection) return;
+  const line = selection.lines[selection.lines.length - 1];
+  view.selection = null;
+  view.selectionNotice = "";
+  openDraft(view, lineDraftKey(selection.file, line));
+}
+
+// lineCommentForm comments on one line of the diff through add_pr_comment,
+// numbered on the side Bitbucket numbers it on.
+function lineCommentForm(file, line, pr, view) {
+  const number = line.type === "del" ? line.oldNo : line.newNo;
+  const lineType = line.type === "del" ? "REMOVED" : line.type === "add" ? "ADDED" : "CONTEXT";
+  return commentForm(view, lineDraftKey(file, line), {
+    placeholder: "Comment on line " + number + " of " + filePath(file),
+    submitLabel: "Comment",
+    busyLabel: "Commenting…",
+    send: (text) => callForPerson(view, "add_pr_comment", Object.assign(pullRequestArgs(pr), { text, path: filePath(file), line: number, line_type: lineType })),
+  });
 }

@@ -345,6 +345,32 @@ func TestLiveMCPShowThreadsCarriesEveryThreadWhereItIs(t *testing.T) {
 		if !strings.HasPrefix(asString(avatars[harness.username()]), "data:image/") {
 			t.Errorf("the threads view has no avatar image for %s: %.40q", harness.username(), asString(avatars[harness.username()]))
 		}
+
+		// The diff carries the same threads, to draw each on its line, and
+		// none of the lines leading to it: it draws the diff itself.
+		shown, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show",
+			Arguments: map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": id}})
+		if err != nil || shown.IsError {
+			t.Fatalf("show diff: %v %s", err, mcpResultText(shown))
+		}
+		diff, _ := shown.Meta[viewPayloadKey].(map[string]any)
+		diffThreads, _ := diff["threads"].(map[string]any)
+		carried, _ := diffThreads["threads"].([]any)
+		var inDiff map[string]any
+		for _, item := range carried {
+			if thread, _ := item.(map[string]any); asString(thread["text"]) == "on line four" {
+				inDiff = thread
+			}
+		}
+		if len(carried) != 3 || inDiff == nil {
+			t.Fatalf("the diff carries threads %v, want the three with the one on line four", carried)
+		}
+		if anchor, _ := inDiff["anchor"].(map[string]any); anchor["path"] != "threads.txt" || anchor["line"] != float64(4) || anchor["line_type"] != "ADDED" {
+			t.Errorf("in the diff the comment on line four is anchored at %v", inDiff["anchor"])
+		}
+		if inDiff["context"] != nil {
+			t.Errorf("the diff's comment carries the lines leading to it: %v", inDiff["context"])
+		}
 	}, "ai", "mcp", "serve")
 }
 

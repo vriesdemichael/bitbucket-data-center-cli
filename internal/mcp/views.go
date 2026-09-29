@@ -526,13 +526,26 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
 		payload.Diff = &viewDiff{Files: files, Patch: patch, Truncated: truncated}
 		people = map[string]string{pr.AuthorUsername: pr.AuthorSlug}
+		// The diff draws each comment on its line, as Bitbucket's diff does,
+		// where the server shows the threads at all. A Bitbucket that cannot
+		// answer for them leaves the diff without them.
+		if offers.kind(showKindThreads) {
+			if threads, threadPeople, err := threadsForView(ctx, c, in, false); err == nil {
+				payload.Threads = &threads
+				for username, slug := range threadPeople {
+					if len(people) < maxViewPeople {
+						people[username] = slug
+					}
+				}
+			}
+		}
 		summary = summarizeDiff(in, pr, result.Patch)
 	case showKindThreads:
 		pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
 		if err != nil {
 			return viewPayload{}, nil, viewSummary{}, err
 		}
-		threads, threadPeople, err := threadsForView(ctx, c, in)
+		threads, threadPeople, err := threadsForView(ctx, c, in, true)
 		if err != nil {
 			return viewPayload{}, nil, viewSummary{}, err
 		}
