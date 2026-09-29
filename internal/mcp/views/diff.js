@@ -258,6 +258,7 @@ function diffPage(pr, files, payload, view, comments) {
         el("div", { class: "header-meta" }, stateBadges(pr), diffSummary(files, pr, true))),
       el("div", { class: "header-actions" },
         snapshotStamp(payload, view),
+        reviewActions(pr, payload, view),
         pullRequestTabs(pr, "diff", view),
         linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
         el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),

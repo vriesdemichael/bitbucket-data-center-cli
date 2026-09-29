@@ -97,6 +97,8 @@ function showPayload(view, payload) {
   view.filter = "all";
   view.expanded = false;
   view.drafts = new Map();
+  view.reviewing = null;
+  view.reviewError = null;
   view.refresh.pending = null;
   view.refresh.failure = null;
   view.refresh.idleMs = REFRESH_IDLE_MS;

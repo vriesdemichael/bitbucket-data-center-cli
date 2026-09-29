@@ -163,6 +163,7 @@ function pullRequestOverview(pr, payload, view) {
       el("h2", { class: "section-title" }, "Description"),
       descriptionOf(pr, view)),
     el("aside", { class: "details-side" },
+      reviewActions(pr, payload, view),
       reviewersSection(pr.reviewers || [], avatars, view),
       buildsSection(pr, view),
       detailsSection(pr, view)));

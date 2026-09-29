@@ -231,3 +231,33 @@ func TestTheModelIsToldWhatThePersonOpened(t *testing.T) {
 		t.Errorf("opening reads %q", got)
 	}
 }
+
+// The person bb acts for is seen as the pull request sees them: its author,
+// or a reviewer with the review they gave, matched however the username is
+// cased.
+func TestMeIsHowThePullRequestSeesThePerson(t *testing.T) {
+	t.Parallel()
+
+	pr := pullrequestservice.PullRequest{
+		AuthorUsername: "alice",
+		Reviewers: []pullrequestservice.Reviewer{
+			{Name: "bob", Status: "UNAPPROVED", Approved: true},
+			{Name: "Carol", Status: "NEEDS_WORK"},
+		},
+	}
+	for _, tc := range []struct {
+		username string
+		want     *viewMe
+	}{
+		{"alice", &viewMe{Username: "alice", Author: true}},
+		{"bob", &viewMe{Username: "bob", Status: "APPROVED"}},
+		{"carol", &viewMe{Username: "carol", Status: "NEEDS_WORK"}},
+		{"dave", &viewMe{Username: "dave"}},
+		{"", nil},
+	} {
+		got := meFor(tc.username, pr)
+		if (got == nil) != (tc.want == nil) || (got != nil && *got != *tc.want) {
+			t.Errorf("meFor(%q) = %+v, want %+v", tc.username, got, tc.want)
+		}
+	}
+}
