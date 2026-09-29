@@ -91,7 +91,8 @@ pull requests in another state or role.
 ![A list of four pull requests, two of them with changes requested and a failed build, one a draft](assets/views/list-dark.webp#only-dark)
 
 A diff comes file by file, with Bitbucket's change lozenges and the files in
-their directories, and each comment on the line it was written on. Select lines
+their directories, the code highlighted, and each comment on the line it was
+written on. Select lines
 to add them to the chat, to ask about them, or to comment on them. A file too
 large to carry is named, with a link to its diff in Bitbucket.
 
@@ -112,7 +113,7 @@ type, and create it; nothing is created until you do. An existing pull
 request's title, description and draft state are edited the same way.
 
 A file you have no copy of, such as another repository's, is shown as what it
-is: code with line numbers, a picture fitted to the view or at its size, audio
+is: highlighted code with line numbers, a picture fitted to the view or at its size, audio
 and video that play, an archive's listing. A long file comes a window at a
 time. In a diff, **View file** opens a changed file as the pull request has it.
 

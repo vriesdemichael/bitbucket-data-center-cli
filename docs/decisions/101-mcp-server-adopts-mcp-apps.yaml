@@ -21,7 +21,8 @@ decision: >
   domains. What a view draws travels in the result's _meta beside a short text for the model,
   avatars included, which bb fetches with its own credentials. Text from Bitbucket is never parsed
   as HTML: the page builds elements with the DOM API, draws Markdown with a parser of its own, and
-  opens a link only through the host, only to a web address. It uses Bitbucket's own words and icon
+  opens a link only through the host, only to a web address. Code is highlighted in bb, which sends
+  each line's token classes, and the page colours them. It uses Bitbucket's own words and icon
   metaphors, and the host's theme.
 
   A count in a view is Bitbucket's count of the whole, and a view that lists fewer says so. What

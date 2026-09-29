@@ -117,3 +117,38 @@ func TestADiffViewsAFileAsThePullRequestHasIt(t *testing.T) {
 		t.Errorf("viewing the file asked %v, want the file at the pull request's source commit", calls)
 	}
 }
+
+// A diff draws each code line in the colours bb highlighted it with, the
+// spans matched to its lines in the order the patch has them, a line that
+// is not code skipped.
+func TestADiffDrawsItsCodeHighlighted(t *testing.T) {
+	patch := strings.Join([]string{
+		"diff --git a/ledger.go b/ledger.go",
+		"--- a/ledger.go",
+		"+++ b/ledger.go",
+		"@@ -1,2 +1,2 @@",
+		" package ledger",
+		"-var x = 1",
+		`\ No newline at end of file`,
+		"+var x = 2",
+		"",
+	}, "\n")
+	diff := refreshDiffPayload(patch, time.Now(), "diff")
+	withHighlights(&diff)
+	ctx := browser(t, []viewhost.Frame{
+		{Title: "diff fullscreen", Mode: "fullscreen", Fullscreen: true, Result: fixtureResult(t, diff)},
+	})
+
+	var rows []string
+	inFrame(t, ctx, 0, `return [...d.querySelectorAll("#diff-file-0 tr.context, #diff-file-0 tr.add, #diff-file-0 tr.del")].map((r) =>
+		[...r.querySelectorAll(".code [class^='hl-']")].map((s) => s.className + ":" + s.textContent).join(" "));`, &rows)
+	want := []string{"hl-k:package", "hl-k:var hl-n:1", "hl-k:var hl-n:2"}
+	if len(rows) != len(want) {
+		t.Fatalf("the diff draws %d code lines, want %d: %q", len(rows), len(want), rows)
+	}
+	for i := range want {
+		if rows[i] != want[i] {
+			t.Errorf("code line %d is coloured %q, want %q", i+1, rows[i], want[i])
+		}
+	}
+}

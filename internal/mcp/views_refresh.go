@@ -113,6 +113,7 @@ func refreshViewHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[Refresh
 
 		payload.Avatars = fetchAvatars(ctx, c, people)
 		payload.Offers = &offers
+		withHighlights(&payload)
 		// A view that holds nothing yet is opening this, rather than finding
 		// what it holds changed.
 		text := summary.changed()

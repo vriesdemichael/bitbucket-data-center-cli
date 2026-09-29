@@ -262,3 +262,27 @@ func TestMeIsHowThePullRequestSeesThePerson(t *testing.T) {
 		}
 	}
 }
+
+// A diff is highlighted when it is sent, in the file order of its patch, and
+// the highlighting stays out of the fingerprint: it stops at a deadline, so
+// two reads of the same code can colour it differently.
+func TestADiffIsHighlightedOutsideItsFingerprint(t *testing.T) {
+	t.Parallel()
+
+	patch := "diff --git a/notes.txt b/notes.txt\n--- a/notes.txt\n+++ b/notes.txt\n@@ -1 +1 @@\n-old\n+new\n" +
+		"diff --git a/ledger.go b/ledger.go\n--- a/ledger.go\n+++ b/ledger.go\n@@ -1,2 +1,2 @@\n package ledger\n-var x = 1\n+var x = 2\n"
+	payload := viewPayload{Version: viewPayloadVersion, Kind: showKindDiff, Diff: &viewDiff{Patch: patch}}
+	before := fingerprintOf(payload)
+	withHighlights(&payload)
+
+	if _, plain := payload.Diff.Highlight[0]; plain {
+		t.Errorf("the text file is highlighted: %v", payload.Diff.Highlight[0])
+	}
+	spans := payload.Diff.Highlight[1]
+	if len(spans) != 3 || !strings.HasPrefix(spans[0], "k7") || !strings.HasPrefix(spans[1], "k3") {
+		t.Errorf("the Go file's code lines are highlighted as %q, want its three lines with package and var as keywords", spans)
+	}
+	if after := fingerprintOf(payload); after != before {
+		t.Errorf("highlighting changed the fingerprint from %s to %s", before, after)
+	}
+}

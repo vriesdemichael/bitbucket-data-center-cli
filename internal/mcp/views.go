@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/highlight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
@@ -321,6 +322,7 @@ func showHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[ShowInput, Sho
 		}
 		payload.Avatars = fetchAvatars(ctx, c, people)
 		payload.Offers = &offers
+		withHighlights(&payload)
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: summary.shown()}},
 			Meta:    mcp.Meta{viewPayloadKey: payload},
@@ -527,6 +529,25 @@ type viewDiff struct {
 	Patch string         `json:"patch"`
 	// Truncated says some files' changes are not in the patch.
 	Truncated bool `json:"truncated,omitempty"`
+	// Highlight are the spans of each code line of each file in the patch,
+	// keyed by the file's place among the patch's files, for the languages
+	// the highlighter knows and as far as it got in its time.
+	Highlight map[int][]string `json:"highlight,omitempty"`
+}
+
+// highlightBudget is how long a view's code is highlighted for. Code not
+// reached by then is drawn plain.
+const highlightBudget = 2 * time.Second
+
+// withHighlights colours the diff a payload carries, once it is to be sent:
+// an answer that finds nothing changed sends none, and pays for none.
+func withHighlights(payload *viewPayload) {
+	if payload.Diff == nil || payload.Diff.Patch == "" {
+		return
+	}
+	if spans := highlight.Patch(payload.Diff.Patch, time.Now().Add(highlightBudget)); len(spans) > 0 {
+		payload.Diff.Highlight = spans
+	}
 }
 
 // viewDiffFile is one file of a diff, as the view lists it.
@@ -677,13 +698,26 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 	return payload, people, summary, nil
 }
 
-// fingerprintOf identifies what a payload shows. When it was read and the
-// avatars are left out: they differ between two reads of the same state, and
-// the avatars go with the people, who are in the payload already.
+// fingerprintOf identifies what a payload shows. When it was read, the
+// avatars and the highlighting are left out: they differ between two reads of
+// the same state, and the avatars go with the people, who are in the payload
+// already.
 func fingerprintOf(payload viewPayload) string {
 	payload.GeneratedAt = ""
 	payload.Avatars = nil
 	payload.Fingerprint = ""
+	// Highlighting stops at a deadline, so two reads of the same code can
+	// colour it differently.
+	if payload.Diff != nil {
+		diff := *payload.Diff
+		diff.Highlight = nil
+		payload.Diff = &diff
+	}
+	if payload.File != nil {
+		file := *payload.File
+		file.Highlight = nil
+		payload.File = &file
+	}
 	encoded, err := json.Marshal(payload)
 	if err != nil {
 		// Unreachable for a payload of plain data. An empty fingerprint
