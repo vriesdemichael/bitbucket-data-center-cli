@@ -42,7 +42,7 @@ Pass the token on stdin. A secret passed as a flag value appears in the process 
 list, where any local user can read it, and the shell records it in history:
 
 ```bash
-printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
 ```
 
 If the user does not have a token yet, print the host-specific creation URL for them:

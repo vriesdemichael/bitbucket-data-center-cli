@@ -87,7 +87,7 @@ Per-archive signatures, build provenance and SBOMs are covered in
 
 ```bash
 bb auth token-url --host https://bitbucket.acme.corp
-printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
 bb auth status
 ```
 

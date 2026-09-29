@@ -230,7 +230,7 @@ replacement and store it:
 
 ```bash
 bb auth token-url --host https://bitbucket.example.com
-printf '%s' "$BB_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
 ```
 
 If `BITBUCKET_TOKEN` is set in your environment it wins over anything stored, so

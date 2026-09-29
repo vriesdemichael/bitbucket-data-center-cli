@@ -522,7 +522,11 @@ func TestTokenURLCommand(t *testing.T) {
 		cmd := New(Dependencies{
 			JSONEnabled: func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
+				t.Error("--host must resolve the configuration for the host it names")
 				return config.AppConfig{}, nil
+			},
+			LoadConfigWithOverrides: func(overrides config.Overrides) (config.AppConfig, error) {
+				return config.AppConfig{BitbucketURL: overrides.Host}, nil
 			},
 			WriteJSON: func(writer io.Writer, payload any) error {
 				return jsonoutput.Write(writer, payload)
