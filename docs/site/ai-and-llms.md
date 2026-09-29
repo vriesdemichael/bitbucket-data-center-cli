@@ -79,8 +79,8 @@ by its state, and the comments and tasks. **Diff** and
 **Approve** and **Request changes**, in the overview and over the diff, review
 the pull request once you confirm it in your client.
 
-![A pull request's overview: its description beside the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-light.webp#only-light)
-![A pull request's overview: its description beside the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-dark.webp#only-dark)
+![A pull request's overview: its description beside Approve and Request changes, the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-light.webp#only-light)
+![A pull request's overview: its description beside Approve and Request changes, the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-dark.webp#only-dark)
 
 A list flags only what needs attention in each pull request: a request for
 changes, a draft, failed builds. A row opens its card in the same view.
@@ -96,8 +96,8 @@ written on. Select lines
 to add them to the chat, to ask about them, or to comment on them. A file too
 large to carry is named, with a link to its diff in Bitbucket.
 
-![A pull request's diff: the changed files by directory beside the modified, renamed and deleted files with their hunks](assets/views/diff-light.webp#only-light)
-![A pull request's diff: the changed files by directory beside the modified, renamed and deleted files with their hunks](assets/views/diff-dark.webp#only-dark)
+![A pull request's diff: the changed files by directory, each with its open comments counted, beside the highlighted changes, a comment on the line it was written on, and Approve and Request changes over it](assets/views/diff-light.webp#only-light)
+![A pull request's diff: the changed files by directory, each with its open comments counted, beside the highlighted changes, a comment on the line it was written on, and Approve and Request changes over it](assets/views/diff-dark.webp#only-dark)
 
 The comment threads come where they are: those on the pull request first, then
 each file's, the open ones out and the resolved folded to their count. A thread
@@ -112,13 +112,19 @@ suggests. Edit what you like, with branches and reviewers completed as you
 type, and create it; nothing is created until you do. An existing pull
 request's title, description and draft state are edited the same way.
 
+![A pull request form: the source and target branches, the title and the description the agent drafted, a reviewer field, the draft box, and Create pull request](assets/views/form-light.webp#only-light)
+![A pull request form: the source and target branches, the title and the description the agent drafted, a reviewer field, the draft box, and Create pull request](assets/views/form-dark.webp#only-dark)
+
 A file you have no copy of, such as another repository's, is shown as what it
 is: highlighted code with line numbers, a picture fitted to the view or at its size, audio
 and video that play, an archive's listing. A long file comes a window at a
 time. In a diff, **View file** opens a changed file as the pull request has it.
 
-![A pull request's comment threads: tasks and comments on the pull request, a comment on a file, and a task on a changed line with the lines of the diff leading to it](assets/views/threads-light.webp#only-light)
-![A pull request's comment threads: tasks and comments on the pull request, a comment on a file, and a task on a changed line with the lines of the diff leading to it](assets/views/threads-dark.webp#only-dark)
+![A Go file shown as highlighted code with line numbers](assets/views/file-light.webp#only-light)
+![A Go file shown as highlighted code with line numbers](assets/views/file-dark.webp#only-dark)
+
+![A pull request's comment threads: tasks and comments on the pull request and on a file, each with Reply, under Add a comment](assets/views/threads-light.webp#only-light)
+![A pull request's comment threads: tasks and comments on the pull request and on a file, each with Reply, under Add a comment](assets/views/threads-dark.webp#only-dark)
 
 - A view carries what it draws. It renders again when you come back to the
   conversation, even without bb running, and it says when it was read.
