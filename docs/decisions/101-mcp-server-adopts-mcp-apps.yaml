@@ -36,6 +36,12 @@ decision: >
   still. Status changes in place; a changed diff is offered rather than swapped under the person's
   reading. A view that changed tells the model, through ui/update-model-context. refresh_view goes
   with show, whatever --tools names, and --exclude withholds it.
+
+  A view opens what else the person asks for in place, through refresh_view: a pull request's
+  other views, a list's pull requests, a list in another state; it goes back, and tells the model
+  what the person opened. What the person does in a view goes through the model's own tool, so
+  the scope, the audit trail and the confirmation of a tool that asks apply as to the model's
+  call. A view offers only the kinds and tools the server exposes.
 agent_instructions: >
   Add a view as a kind of show, never as _meta.ui on a data tool. Build elements with el() and never
   parse a string as HTML; TestViewScriptsBuildNoHTMLFromStrings and the browser tests under -tags

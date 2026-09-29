@@ -450,5 +450,32 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 		if _, again := refresh(payload, asString(payload["fingerprint"])); again["changed"] != false {
 			t.Errorf("asked again with the new fingerprint, refresh_view answered changed=%v", again["changed"])
 		}
+
+		// A view opening something it does not hold yet, such as a card
+		// opening its diff, is sent the data, with what the server lets the
+		// view do there; the model is told what the person opened.
+		opened, answer := refresh(map[string]any{"show": map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": id}}, "")
+		diff, _ := opened.Meta[viewPayloadKey].(map[string]any)
+		if answer["changed"] != true || diff == nil || diff["kind"] != "diff" {
+			t.Fatalf("opening the diff answered changed=%v with %v, want the diff", answer["changed"], diff)
+		}
+		if text := mcpResultText(opened); !strings.HasPrefix(text, "The person opened the diff of ") {
+			t.Errorf("the model would be told %q, want what the person opened", text)
+		}
+		offers, _ := diff["offers"].(map[string]any)
+		kinds, _ := offers["kinds"].([]any)
+		tools, _ := offers["tools"].([]any)
+		if len(kinds) != 4 || !containsAny(tools, "add_pr_comment") || !containsAny(tools, "submit_pr_review") {
+			t.Errorf("a server with every tool offers its views %v, want every kind and the actions", offers)
+		}
 	}, "ai", "mcp", "serve")
+}
+
+func containsAny(values []any, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }

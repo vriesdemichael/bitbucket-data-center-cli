@@ -72,14 +72,16 @@ changes, a conflict, failed and running builds, open tasks. The counts under it
 are Bitbucket's, however many reviewers and builds there are. **Overview** opens
 the rest, fullscreen where the client has it and opened out in place where it
 does not: the description as Bitbucket formats it, the reviewers by their
-decision, every build by its state, and the comments and tasks.
+decision, every build by its state, and the comments and tasks. **Diff** and
+**Comments** open those in the same view, and **Back** returns to the card.
 
 ![A pull request's overview: its description beside the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-light.webp#only-light)
 ![A pull request's overview: its description beside the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-dark.webp#only-dark)
 
 A list flags only what needs attention in each pull request: a request for
-changes, a draft, failed builds. Fullscreen adds Bitbucket's dashboard columns
-and filters.
+changes, a draft, failed builds. A row opens its card in the same view.
+Fullscreen adds Bitbucket's dashboard columns and filters, and asks for the
+pull requests in another state or role.
 
 ![A list of four pull requests, two of them with changes requested and a failed build, one a draft](assets/views/list-light.webp#only-light)
 ![A list of four pull requests, two of them with changes requested and a failed build, one a draft](assets/views/list-dark.webp#only-dark)

@@ -94,7 +94,7 @@ func TestRefreshViewOffersTheKindsShowOffers(t *testing.T) {
 		t.Errorf("refresh_view offers %v and show %v; want the same, without diff", kinds(refresh), kinds(show))
 	}
 
-	handler := refreshViewHandler(testClients(t), []string{showKindPullRequest})
+	handler := refreshViewHandler(testClients(t), viewOffers{Kinds: []string{showKindPullRequest}})
 	if _, _, err := handler(context.Background(), nil, RefreshViewInput{ShowInput: ShowInput{Kind: showKindDiff, Project: "PROJ", Repo: "app", ID: "7"}}); err == nil ||
 		!strings.Contains(err.Error(), "cannot refresh") {
 		t.Errorf("refresh_view accepted a kind it does not offer: %v", err)
@@ -194,5 +194,40 @@ func TestTheModelIsToldWhenAViewChanges(t *testing.T) {
 		Repository: &pullrequestservice.RepositoryRef{ProjectKey: "PAY", Slug: "ledger"}}})
 	if got := card.changed(); !strings.HasPrefix(got, `The view of pull request PAY/ledger#7 you showed the person has changed: "Retry payments", merged`) {
 		t.Errorf("the card's change reads %q", got)
+	}
+}
+
+// A view is offered what the server exposes, and nothing more: the kinds it
+// can open, and the model's tools it can call for the person.
+func TestAViewIsOfferedWhatTheServerExposes(t *testing.T) {
+	t.Parallel()
+
+	offers := offersFor(map[string]bool{
+		"get_pull_request": true, "list_pr_comments": true, "add_pr_comment": true, "show": true, "get_commit": true,
+	})
+	if !slices.Equal(offers.Kinds, []string{showKindPullRequest, showKindThreads}) {
+		t.Errorf("kinds = %v, want pull_request and threads", offers.Kinds)
+	}
+	if !slices.Equal(offers.Tools, []string{"add_pr_comment"}) {
+		t.Errorf("tools = %v, want add_pr_comment alone", offers.Tools)
+	}
+	if offers.kind(showKindDiff) {
+		t.Error("a server without get_pr_diff offers the diff")
+	}
+
+	all := allOffers()
+	if !slices.Equal(all.Kinds, showKinds) || !slices.Equal(all.Tools, viewActionTools) {
+		t.Errorf("a server with every tool offers %v and %v, want every kind and every action", all.Kinds, all.Tools)
+	}
+}
+
+// What the person opens in a view is told to the model as what they opened,
+// not as a change to what they had.
+func TestTheModelIsToldWhatThePersonOpened(t *testing.T) {
+	t.Parallel()
+
+	summary := summarizeDiff(ShowInput{Project: "PAY", Repo: "ledger", ID: "7"}, pullrequestservice.PullRequest{Title: "Retry payments"}, "diff --git a/x b/x\n+new\n")
+	if got := summary.opened(); !strings.HasPrefix(got, `The person opened the diff of PAY/ledger#7 "Retry payments" in a view: 1 files`) {
+		t.Errorf("opening reads %q", got)
 	}
 }

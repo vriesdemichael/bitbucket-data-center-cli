@@ -36,6 +36,7 @@ function renderPullRequests(payload, view) {
   const left = matching.length - shown.length;
 
   const header = el("div", { class: "list-header" },
+    backButton(view),
     icon("pullRequest", null, "faint"),
     el("h1", {}, "Pull requests"),
     el("span", { class: "faint" }, formatNumber(prs.length) + (payload.limit_reached ? "+" : "")),
@@ -46,8 +47,10 @@ function renderPullRequests(payload, view) {
       : null);
 
   // A list that stopped at its limit counts only what it holds, and says so.
+  // The state and the role ask Bitbucket again; the chips sort what came back.
   const filters = open && prs.length > 0
     ? el("div", { class: "filters", role: "toolbar", "aria-label": "Filter" },
+      listScope(payload, view),
       LIST_FILTERS
         .filter((candidate) => candidate.id === "all" || prs.some(candidate.matches))
         .map((candidate) => el("button", {
@@ -86,8 +89,8 @@ function pullRequestRow(pr, avatars, view) {
     el("button", {
       type: "button",
       class: "row-button",
-      title: pr.title + " (" + repositoryOf(pr) + " #" + pr.id + "), open in Bitbucket",
-      onclick: () => openLink(view.bridge, pr.url),
+      title: pr.title + " (" + repositoryOf(pr) + " #" + pr.id + ")" + (canOpen(view, "pull_request") ? ": open it here" : ", open in Bitbucket"),
+      onclick: () => openPullRequest(pr, view),
     },
     avatar(pr.author_username, pr.author, avatars, "lg"),
     el("span", { class: "row-main" },

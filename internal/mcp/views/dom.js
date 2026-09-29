@@ -65,6 +65,7 @@ const ICON_SHAPES = {
   branch: [["circle", 5, 3.5, 1.6], ["circle", 5, 12.5, 1.6], ["circle", 11, 5.5, 1.6], ["path", "M5 5.1v5.8M11 7.1c0 2.6-6 2.2-6 3.8"]],
   pullRequest: [["circle", 4.5, 3.5, 1.6], ["circle", 4.5, 12.5, 1.6], ["circle", 11.5, 12.5, 1.6], ["path", "M4.5 5.1v5.8M11.5 10.9V6.5a2 2 0 0 0-2-2H7M8.6 2.9L7 4.5l1.6 1.6"]],
   arrow: [["path", "M3 8h10M9.5 4.5L13 8l-3.5 3.5"]],
+  arrowLeft: [["path", "M13 8H3M6.5 4.5L3 8l3.5 3.5"]],
   external: [["path", "M9.5 2.5h4v4M13.5 2.5L7.5 8.5M11.5 9.5v4h-9v-9h4"]],
   expand: [["path", "M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5l-4.5 4.5M2.5 13.5L7 9"]],
   collapse: [["path", "M13.5 6.5h-4v-4M2.5 9.5h4v4M9.5 6.5L14 2M6.5 9.5L2 14"]],

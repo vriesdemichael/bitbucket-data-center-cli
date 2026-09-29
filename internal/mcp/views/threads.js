@@ -31,6 +31,7 @@ function renderThreads(payload, view) {
   const left = Math.max(0, (summary.unresolved || 0) - shown.length);
 
   return el("div", {},
+    backButton(view),
     pullRequestTop(pr, "Comments"),
     el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
     el("div", { class: "status" }, threadsAttention(summary), threadsQuiet(summary)),
@@ -49,6 +50,7 @@ function renderThreads(payload, view) {
         "aria-expanded": view.expanded ? "true" : "false",
         onclick: () => view.expand(),
       }, icon(view.expanded ? "collapse" : "expand"), view.expanded ? "Hide the threads" : "All threads"),
+      pullRequestTabs(pr, "threads", view),
       linkButton("Open in Bitbucket", pr.url, view.bridge, "ghost"),
       el("span", { class: "spacer" }),
       snapshotStamp(payload, view, true)),
@@ -170,11 +172,13 @@ function threadsPage(pr, summary, threads, payload, view) {
   return el("div", { class: "page" },
     el("header", { class: "fullscreen-header" },
       el("div", { class: "row-main" },
+        backButton(view),
         el("div", { class: "pr-top" }, icon("pullRequest", null, "faint"), repositoryLabel(pr, "Comments")),
         el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
         el("div", { class: "header-meta" }, stateBadges(pr), threadsAttention(summary), threadsQuiet(summary))),
       el("div", { class: "header-actions" },
         snapshotStamp(payload, view),
+        pullRequestTabs(pr, "threads", view),
         linkButton("Open in Bitbucket", pr.url, view.bridge, "primary"),
         el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
     el("div", { class: "threads-main", id: "threads-main" }, threadGroups(pr, summary, threads, payload.avatars || {}, view)));
