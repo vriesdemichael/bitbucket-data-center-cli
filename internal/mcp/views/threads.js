@@ -188,7 +188,7 @@ function threadsPage(pr, summary, threads, payload, view) {
 // itself first, then each file's, by path. In a group the open threads come
 // first, by line; the resolved ones fold to their count.
 function threadGroups(pr, summary, threads, avatars, view) {
-  const parts = [];
+  const parts = [newCommentArea(pr, view)];
   const total = summary.total_threads || 0;
   if (threads.length < total) {
     parts.push(el("p", { class: "notice", role: "note" },
@@ -254,7 +254,8 @@ function threadArticle(thread, pr, avatars, view) {
     ? el("div", { class: "replies" },
       earlier > 0 ? foldButton(key, plural(earlier, "earlier reply", "earlier replies"), view) : null,
       (unfolded ? replies : replies.slice(earlier)).map((reply) => commentBlock(reply, thread, pr, avatars, view, false)))
-    : null);
+    : null,
+  replyArea(thread, pr, view));
 }
 
 // threadContext is the diff leading to the line a thread is on, the line

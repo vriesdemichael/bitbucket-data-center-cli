@@ -59,6 +59,8 @@ const view = {
   // drafts are what the person is writing in the view, by where: a reply, a
   // comment on a line, a form's fields. They outlive a redraw.
   drafts: new Map(),
+  // focusDraft is a draft to put the caret in once the view is drawn.
+  focusDraft: null,
 
   toggleClamp(key) {
     if (view.unclamped.has(key)) view.unclamped.delete(key);
@@ -307,6 +309,11 @@ const SCROLLING = ["#diff-main", ".diff-tree", "#threads-main", ".details-main",
 function render() {
   const app = document.getElementById("app");
   const places = SCROLLING.map((selector) => [selector, (document.querySelector(selector) || {}).scrollTop || 0]);
+  // What the person is writing in keeps the caret across the redraw.
+  const active = document.activeElement;
+  const writing = active && active.dataset && active.dataset.draft
+    ? { key: active.dataset.draft, start: active.selectionStart, end: active.selectionEnd }
+    : null;
   const pagePlace = document.scrollingElement ? document.scrollingElement.scrollTop : 0;
   view.selectionBar = null;
   view.narrow = window.innerWidth <= NARROW_WIDTH;
@@ -319,6 +326,17 @@ function render() {
     if (part && top > 0) part.scrollTop = top;
   }
   if (document.scrollingElement && pagePlace > 0) document.scrollingElement.scrollTop = pagePlace;
+  // A draft just opened is scrolled to; one written in keeps its place.
+  const opened = view.focusDraft;
+  view.focusDraft = null;
+  const caret = opened ? { key: opened } : writing;
+  if (caret) {
+    const input = [...document.querySelectorAll("[data-draft]")].find((node) => node.dataset.draft === caret.key);
+    if (input && !input.disabled) {
+      input.focus({ preventScroll: !opened });
+      if (typeof caret.start === "number") input.setSelectionRange(caret.start, caret.end);
+    }
+  }
   if (view.fullscreen && view.focusFile !== null) {
     const target = document.getElementById("diff-file-" + view.focusFile);
     if (target) target.scrollIntoView({ block: "start" });

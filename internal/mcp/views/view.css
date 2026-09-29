@@ -136,6 +136,27 @@ button {
 }
 .list-scope select:focus-visible { outline: 2px solid var(--bb-info); outline-offset: 1px; }
 
+/* Writing in a view: a reply, a comment, a form's field. */
+.comment-form { display: grid; gap: 6px; margin-top: 8px; }
+.comment-input, .form-field input[type="text"], .form-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--bb-border-strong);
+  border-radius: var(--bb-radius-sm);
+  background: var(--bb-bg);
+  color: var(--bb-text);
+  font: inherit;
+}
+.comment-input { min-height: 64px; resize: vertical; }
+.comment-input:focus-visible, .form-field input:focus-visible, .form-field textarea:focus-visible { outline: 2px solid var(--bb-info); outline-offset: 1px; }
+.comment-input:disabled { opacity: 0.7; }
+.form-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.form-hint { margin-left: auto; font-size: var(--bb-text-xs); }
+.form-error { margin: 0; color: var(--bb-danger); font-size: var(--bb-text-xs); overflow-wrap: anywhere; }
+.reply-row { margin-top: 2px; }
+.new-comment { margin-bottom: 14px; }
+
 /* Read by a screen reader, not drawn. */
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 

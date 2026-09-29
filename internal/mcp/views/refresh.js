@@ -82,7 +82,13 @@ function scheduleRefresh(view) {
 // person asked for, which shows a changed diff at once.
 async function refreshView(view, byPerson) {
   const state = view.refresh;
-  if (!canRefresh(view) || state.busy) return;
+  if (!canRefresh(view)) return;
+  // A refresh the person needs, after a reply say, follows the one already
+  // on its way rather than being dropped.
+  if (state.busy) {
+    if (byPerson) state.again = true;
+    return;
+  }
   clearTimeout(state.timer);
   state.busy = true;
   state.attemptedAt = Date.now();
@@ -116,6 +122,10 @@ async function refreshView(view, byPerson) {
     state.busy = false;
     render();
     scheduleRefresh(view);
+    if (state.again) {
+      state.again = false;
+      refreshView(view, true);
+    }
   }
 }
 

@@ -1116,6 +1116,7 @@ var viewScripts = []string{
 	"threads.js",
 	"refresh.js",
 	"open.js",
+	"actions.js",
 	"main.js",
 }
 
