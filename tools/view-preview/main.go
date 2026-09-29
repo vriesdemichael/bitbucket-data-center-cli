@@ -14,6 +14,11 @@
 // the docs show them, and -theme draws every frame light or dark:
 //
 //	go run ./tools/view-preview -project PAY -repo ledger -id 1 -screenshots out -bare -theme dark
+//
+// -from adds the pull request form for a new pull request from that branch,
+// and -file the file viewer on that path. The stand-in host passes tool
+// calls, so the views offer what they do in a client; a view the person
+// clicks in does nothing here.
 package main
 
 import (
@@ -43,13 +48,15 @@ func main() {
 	screenshots := flag.String("screenshots", "", "a directory to write a PNG of each frame into, taken with headless Chrome")
 	bare := flag.Bool("bare", false, "capture each view alone, without its frame's title and the host's log")
 	theme := flag.String("theme", "", "light or dark for every frame; empty draws each in its own")
+	from := flag.String("from", "", "a branch to draft a new pull request from, in the pull request form")
+	file := flag.String("file", "", "a file to show in the file viewer, at the pull request's source branch")
 	flag.Parse()
 
 	if *theme != "" && *theme != "light" && *theme != "dark" {
 		fmt.Fprintln(os.Stderr, "view-preview: -theme is light or dark")
 		os.Exit(2)
 	}
-	count, err := run(*project, *repo, *id, *state, *theme, *out)
+	count, err := run(*project, *repo, *id, *state, *theme, *from, *file, *out)
 	if err == nil && *screenshots != "" {
 		err = capture(*out, *screenshots, count, *bare)
 	}
@@ -124,7 +131,7 @@ func capture(page, dir string, count int, bare bool) error {
 	return nil
 }
 
-func run(project, repo, id, state, theme, out string) (int, error) {
+func run(project, repo, id, state, theme, from, file, out string) (int, error) {
 	if project == "" || repo == "" || id == "" {
 		return 0, fmt.Errorf("-project, -repo and -id are required")
 	}
@@ -167,14 +174,14 @@ func run(project, repo, id, state, theme, out string) (int, error) {
 	diff := map[string]any{"kind": "diff", "project": project, "repo": repo, "id": id}
 	threads := map[string]any{"kind": "threads", "project": project, "repo": repo, "id": id}
 
-	var frames []viewhost.Frame
-	for _, want := range []struct {
+	type frame struct {
 		title      string
 		theme      string
 		mode       string
 		fullscreen bool
 		arguments  map[string]any
-	}{
+	}
+	wanted := []frame{
 		{"Pull request card, inline", "light", "inline", true, card},
 		{"Pull request card, dark", "dark", "inline", true, card},
 		{"Pull request list", "light", "inline", true, list},
@@ -183,7 +190,33 @@ func run(project, repo, id, state, theme, out string) (int, error) {
 		{"Diff, fullscreen", "dark", "fullscreen", true, diff},
 		{"Comment threads, inline", "light", "inline", true, threads},
 		{"Comment threads, fullscreen", "light", "fullscreen", true, threads},
-	} {
+	}
+	if from != "" {
+		wanted = append(wanted, frame{"Pull request form", "light", "inline", true, map[string]any{
+			"kind": "pull_request_form", "project": project, "repo": repo, "from_ref": from,
+			"title":       "Retry transient payment failures",
+			"description": "Retries a charge the provider refused with a transient error, **twice**, with backoff.\n\n- Caps the time a charge spends retrying\n- Leaves declined cards alone",
+		}})
+	}
+	if file != "" {
+		wanted = append(wanted, frame{"File, fullscreen", "light", "fullscreen", true, map[string]any{
+			"kind": "file", "project": project, "repo": repo, "path": file,
+		}})
+	}
+
+	// An answer for the views' own tool, so the stand-in host says it passes
+	// tool calls and the views offer what they offer in a client. A view
+	// whose data was read just now does not call it while the page is taken.
+	unchanged, err := json.Marshal(&mcp.CallToolResult{
+		Content:           []mcp.Content{&mcp.TextContent{Text: "Unchanged."}},
+		StructuredContent: map[string]any{"changed": false},
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	var frames []viewhost.Frame
+	for _, want := range wanted {
 		result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show", Arguments: want.arguments})
 		if err != nil {
 			return 0, fmt.Errorf("show %v: %w", want.arguments["kind"], err)
@@ -196,12 +229,13 @@ func run(project, repo, id, state, theme, out string) (int, error) {
 			want.theme = theme
 		}
 		frames = append(frames, viewhost.Frame{
-			Title:      want.title,
-			Theme:      want.theme,
-			Mode:       want.mode,
-			Fullscreen: want.fullscreen,
-			Arguments:  want.arguments,
-			Result:     encoded,
+			Title:       want.title,
+			Theme:       want.theme,
+			Mode:        want.mode,
+			Fullscreen:  want.fullscreen,
+			Arguments:   want.arguments,
+			Result:      encoded,
+			ToolResults: map[string][]json.RawMessage{"refresh_view": {unchanged}},
 		})
 	}
 
