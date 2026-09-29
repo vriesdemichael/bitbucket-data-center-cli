@@ -350,7 +350,7 @@ function diffFile(file, index, pr, view, withHeader, comments, avatars) {
       const row = el("tr", { class: line.type },
         lineNumberCell(line.oldNo, line, index, view),
         lineNumberCell(line.newNo, line, index, view),
-        el("td", { class: "code" }, codeText(line.text)));
+        el("td", { class: "code" }, codeText(line.text, line.spans)));
       line.row = row;
       body.append(row);
       drawn++;
@@ -421,6 +421,7 @@ function fileURL(pr, file) {
 // patch carries the files that fit.
 function diffFilesOf(diff) {
   const parsed = parseDiff(diff.patch);
+  withSpans(parsed, diff.highlight || {});
   if (!Array.isArray(diff.files)) return parsed;
   const hunks = new Map(parsed.map((file) => [file.newPath, file.hunks]));
   return diff.files.map((file) => ({
@@ -433,6 +434,22 @@ function diffFilesOf(diff) {
     omitted: Boolean(file.omitted),
     hunks: hunks.get(file.path) || [],
   }));
+}
+
+// withSpans gives each code line of each file in the patch the spans bb
+// highlighted it with: a file's spans are its code lines', in the order the
+// patch has them, as parseDiff reads them.
+function withSpans(files, highlight) {
+  files.forEach((file, index) => {
+    const spans = highlight[index];
+    if (!Array.isArray(spans)) return;
+    let at = 0;
+    for (const hunk of file.hunks) {
+      for (const line of hunk.lines) {
+        if (line.type !== "meta") line.spans = spans[at++];
+      }
+    }
+  });
 }
 
 function lineNumberCell(number, line, fileIndex, view) {

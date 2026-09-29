@@ -704,5 +704,44 @@ func TestLiveMCPShowsAFileAsWhatItIs(t *testing.T) {
 		if picture["kind"] != "image" || picture["data"] != "data:image/png;base64,"+base64.StdEncoding.EncodeToString(png) || picture["width"] != float64(1) {
 			t.Errorf("the picture is carried as %v, %.60v, %v wide; want the PNG itself, one pixel wide", picture["kind"], picture["data"], picture["width"])
 		}
+
+		// Code comes highlighted, a span list for each line: the whole file,
+		// and a window's lines taken from it.
+		if lines, _ := code["highlight"].([]any); len(lines) != 4 || !strings.HasPrefix(asString(lines[0]), "k7") || !strings.HasPrefix(asString(lines[2]), "c") {
+			t.Errorf("ledger.go is highlighted as %v, want four lines, package a keyword and the comment a comment", code["highlight"])
+		}
+		if lines, _ := window["highlight"].([]any); len(lines) != 2 || !strings.HasPrefix(asString(lines[0]), "c") {
+			t.Errorf("the window from line 3 is highlighted as %v, want its two lines, the comment first", window["highlight"])
+		}
+		if picture["highlight"] != nil {
+			t.Errorf("the picture carries highlighting: %v", picture["highlight"])
+		}
+	}, "ai", "mcp", "serve")
+
+	// A diff of the same branch comes highlighted too, keyed by the file's
+	// place in the patch: ledger.go, not the picture.
+	created := extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "create",
+		"--from-ref", branch, "--to-ref", "refs/heads/master", "--title", testsupport.UniqueName("Files "),
+		"--no-default-reviewers", "--no-codeowners")))
+	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
+		result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show",
+			Arguments: map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": fmt.Sprint(created["id"])}})
+		if err != nil || result.IsError {
+			t.Fatalf("show diff: %v %s", err, mcpResultText(result))
+		}
+		payload, _ := result.Meta[viewPayloadKey].(map[string]any)
+		diff, _ := payload["diff"].(map[string]any)
+		highlighted, _ := diff["highlight"].(map[string]any)
+		files, _ := diff["files"].([]any)
+		index := -1
+		for i, entry := range files {
+			if asString(entry.(map[string]any)["path"]) == "ledger.go" {
+				index = i
+			}
+		}
+		spans, _ := highlighted[fmt.Sprint(index)].([]any)
+		if index < 0 || len(spans) != 4 || !strings.HasPrefix(asString(spans[0]), "k7") || len(highlighted) != 1 {
+			t.Errorf("the diff is highlighted as %v, want ledger.go's four added lines alone, package a keyword", highlighted)
+		}
 	}, "ai", "mcp", "serve")
 }

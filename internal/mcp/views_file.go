@@ -5,8 +5,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/fileview"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/highlight"
 )
 
 // The file viewer (#686): a file the person cannot open in their own editor,
@@ -74,6 +76,13 @@ func fileForView(ctx context.Context, c Clients, in ShowInput) (viewFile, viewSu
 		file.StartLine, file.EndLine = view.Window.StartLine, view.Window.EndLine
 		file.TotalLines, file.NextLine = view.Window.TotalLines, view.Window.NextStartLine
 		state = fmt.Sprintf("lines %d to %d of %d.", file.StartLine, file.EndLine, file.TotalLines)
+		// Text is highlighted whole and the window's lines taken from it, so
+		// a comment that opens above the window colours the lines in it.
+		if view.Kind == fileview.KindText && file.StartLine >= 1 && file.EndLine >= file.StartLine {
+			if lines, ok := highlight.Lines(in.Path, string(content), time.Now().Add(highlightBudget)); ok && len(lines) >= file.EndLine {
+				file.Highlight = lines[file.StartLine-1 : file.EndLine]
+			}
+		}
 	case view.Image != nil:
 		data, mimeType := view.Image.Data, view.Image.MIMEType
 		file.Scaled = view.Image.Scaled
