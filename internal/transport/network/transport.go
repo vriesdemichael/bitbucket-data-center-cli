@@ -22,6 +22,12 @@ func (t *SafeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		}
 	}
 
+	// Set on a copy: a RoundTripper must not change the request it is given.
+	if req.Header.Get("User-Agent") == "" {
+		req = req.Clone(req.Context())
+		req.Header.Set("User-Agent", UserAgent())
+	}
+
 	base := t.Base
 	if base == nil {
 		base = http.DefaultTransport

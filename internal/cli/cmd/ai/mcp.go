@@ -13,6 +13,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
 )
 
 func newMCPCommand(deps Dependencies) *cobra.Command {
@@ -146,6 +147,9 @@ server -- give this server a narrower PAT than your own through env.`,
 				return err
 			}
 
+			// The server's requests say they are the server's, so an
+			// administrator can tell an agent's traffic from a person's.
+			network.SetSurface("mcp")
 			clients, err := bbmcp.ClientsFromConfig(cfg)
 			if err != nil {
 				return apperrors.New(apperrors.KindInternal, "failed to create API clients", err)

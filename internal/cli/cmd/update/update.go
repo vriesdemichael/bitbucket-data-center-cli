@@ -73,7 +73,7 @@ var UpdateRunnerFactory = func(version string, httpConfig UpdateCommandHTTPConfi
 	client := githubrelease.NewClient(
 		baseURL,
 		httpClient,
-		fmt.Sprintf("bb/%s", strings.TrimSpace(version)),
+		network.UserAgent(),
 		githubrelease.Retries(httpConfig.RetryCount, httpConfig.RetryBackoff),
 	)
 

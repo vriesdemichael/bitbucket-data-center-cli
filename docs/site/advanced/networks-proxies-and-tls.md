@@ -52,6 +52,20 @@ git config --global http.proxy http://proxy.corp.example:3128
 Git does consult the environment as a fallback, but its precedence and matching
 rules differ from Go's, and an explicit `http.proxy` removes the ambiguity.
 
+## How bb names itself
+
+Every request `bb` sends carries a `User-Agent` naming its release and platform,
+and the MCP server's end in `mcp`:
+
+```text
+bb/[[ bb_version ]] (linux/amd64)
+bb/[[ bb_version ]] (linux/amd64) mcp
+```
+
+A proxy, a WAF or Bitbucket's access log can pick out `bb`'s traffic by the
+`bb/` prefix, and an agent's by the `mcp` at the end. `git`, which `bb repo
+clone` and `bb pr checkout` run, names itself.
+
 ## TLS with an internal CA
 
 Where Bitbucket presents a certificate issued by an internal authority, point

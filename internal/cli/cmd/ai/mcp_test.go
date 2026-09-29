@@ -18,6 +18,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	bbmcp "github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
 )
 
 // testMCPDeps builds a minimal Dependencies for MCP tests.
@@ -197,6 +198,33 @@ func TestMCPServeHostOverrideAndTokenFromEnvironment(t *testing.T) {
 	}
 	if got := os.Getenv("BITBUCKET_TOKEN"); got != "initial-token" {
 		t.Errorf("the token must not be written to the environment, got %q", got)
+	}
+}
+
+// The MCP server's requests say they are the server's, so an administrator can
+// tell an agent's traffic from a person's in Bitbucket's access log. The run
+// stops at the invalid --repo, after the clients are built and before serving.
+func TestMCPServeNamesItselfInTheUserAgent(t *testing.T) {
+	network.SetSurface("")
+	t.Cleanup(func() { network.SetSurface("") })
+
+	deps := Dependencies{
+		Version: func() string { return "test" },
+		LoadConfig: func(config.Overrides) (config.AppConfig, error) {
+			return config.AppConfig{BitbucketURL: "http://bb.example.com", RequestTimeout: time.Second}, nil
+		},
+		WriteJSON: func(w io.Writer, v any) error { return nil },
+	}
+	cmd := New(deps)
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"mcp", "serve", "--host", "http://bb.example.com", "--repo", "/demo"})
+
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "PROJECT/slug") {
+		t.Fatalf("expected serve to stop at the invalid --repo, got %v", err)
+	}
+	if got := network.UserAgent(); !strings.HasSuffix(got, " mcp") {
+		t.Fatalf("the MCP server's User-Agent is %q, want it to end in mcp", got)
 	}
 }
 
