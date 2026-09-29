@@ -25,7 +25,10 @@ decision: >
   metaphors, and the host's theme.
 
   A count in a view is Bitbucket's count of the whole, and a view that lists fewer says so. What
-  needs the person is never behind a click. Inline, a view keeps one shape and grows a step at a
+  needs the person is never behind a click. A card lists the builds its target branch requires as
+  Bitbucket's merge check decides them, from the builds listing Bitbucket's own pull request page
+  reads, since the public build endpoints do not say which required key a build reports under;
+  where bb cannot tell as the check would, the card says nothing about requirements. Inline, a view keeps one shape and grows a step at a
   time when the person asks; fullscreen shows everything the result carries. A view says when its
   data was read.
 

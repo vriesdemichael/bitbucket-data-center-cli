@@ -460,6 +460,12 @@ type viewPullRequest struct {
 	AutoMerge   *pullrequestservice.AutoMerge `json:"auto_merge,omitempty"`
 	// ChecksLimitReached says the card lists fewer builds than the commit has.
 	ChecksLimitReached bool `json:"checks_limit_reached,omitempty"`
+	// RequiredChecks are the builds the target branch requires before the
+	// pull request merges, and where each stands; RequiredKnown says bb could
+	// tell as Bitbucket's merge check would. Unknown, the card says nothing
+	// about requirements.
+	RequiredChecks []viewRequiredCheck `json:"required_checks,omitempty"`
+	RequiredKnown  bool                `json:"required_known,omitempty"`
 }
 
 type viewCheck struct {
@@ -710,6 +716,7 @@ func pullRequestForView(ctx context.Context, c Clients, in ShowInput) (viewPullR
 	if commit := out.PullRequest.SourceCommit; commit != "" {
 		view.CheckCounts, view.Checks, view.ChecksLimitReached = buildsForView(ctx, c, commit)
 	}
+	view.RequiredChecks, view.RequiredKnown = requiredChecksForView(ctx, c, in.Project, in.Repo, out.PullRequest)
 
 	ref := pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}
 	if autoMerge, err := pullrequestservice.NewService(c.HTTP).GetAutoMerge(ctx, ref, in.ID); err == nil && autoMerge.Enabled {
@@ -1001,6 +1008,9 @@ func summarizePullRequest(pr viewPullRequest) viewSummary {
 	case len(pr.Checks) > 0:
 		lines = append(lines, "Builds: "+buildCountsText(countChecks(pr.Checks))+".")
 	}
+	if missing, failed := requiredStanding(pr); missing+failed > 0 {
+		lines = append(lines, fmt.Sprintf("Required builds: %d missing, %d failed, of %d.", missing, failed, len(pr.RequiredChecks)))
+	}
 	if pr.AutoMerge != nil {
 		lines = append(lines, "Auto-merge is on.")
 	}
@@ -1009,6 +1019,23 @@ func summarizePullRequest(pr viewPullRequest) viewSummary {
 		form:    "an interactive card",
 		state:   strings.Join(lines, " "),
 	}
+}
+
+// requiredStanding counts the required builds that have not reported and
+// those that failed, when bb could tell.
+func requiredStanding(pr viewPullRequest) (missing, failed int) {
+	if !pr.RequiredKnown {
+		return 0, 0
+	}
+	for _, check := range pr.RequiredChecks {
+		switch strings.ToUpper(check.State) {
+		case "":
+			missing++
+		case "FAILED":
+			failed++
+		}
+	}
+	return missing, failed
 }
 
 func summarizePullRequests(prs []viewPullRequest, limitReached bool) viewSummary {

@@ -206,6 +206,11 @@ button {
 .chip-remove { padding: 0 2px; border: 0; background: transparent; color: var(--bb-text-muted); cursor: pointer; font: inherit; line-height: 1; }
 .chip-remove:hover { color: var(--bb-danger); }
 
+/* The checks board: the builds the target branch requires. */
+.required-list .required-check { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
+.required-check .row-main { display: grid; min-width: 0; flex: 1 1 auto; }
+.required-note { font-size: var(--bb-text-xs); }
+
 /* Approve and request changes. */
 .review-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .details-side > .review-actions { margin-bottom: 4px; }
