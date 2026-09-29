@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `keep` | 174 | legitimate unit test under ADR-079 |
+| `keep` | 175 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 27 | outside the Bitbucket policy; needs its own decision |
 
@@ -89,3 +89,4 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/testsupport/unreached_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/transport/httpclient/outcome_wiring_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/transport/network/transport_test.go` | 1 | 0 | 0 | 1 | 0 |
+| `internal/transport/network/useragent_clients_test.go` | 1 | 0 | 0 | 1 | 0 |

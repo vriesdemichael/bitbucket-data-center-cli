@@ -1,13 +1,13 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 219,
-    "files": 75,
-    "functions": 207,
+    "mocked_servers": 220,
+    "files": 76,
+    "functions": 208,
     "by_class": {
       "external-service": 27,
       "harness-constructor": 18,
-      "routing-beacon": 8,
+      "routing-beacon": 9,
       "transport-fault": 98,
       "unreachable-state": 25,
       "unreached-guard": 43
@@ -2937,6 +2937,19 @@
       ],
       "action": "keep",
       "reason": "a server demanding a client certificate,",
+      "reviewed": true
+    },
+    {
+      "file": "internal/transport/network/useragent_clients_test.go",
+      "line": 26,
+      "function": "TestBothBitbucketClientsNameBB",
+      "class": "routing-beacon",
+      "signals": [
+        "answers-any-request",
+        "serves-bitbucket-routes"
+      ],
+      "action": "keep",
+      "reason": "the reply is never read as Bitbucket's; the subject is the User-Agent each request arrived with.",
       "reviewed": true
     },
     {

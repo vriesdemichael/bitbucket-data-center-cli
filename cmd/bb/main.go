@@ -20,6 +20,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outwriter"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/diagnostics"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/network"
 	updateworkflow "github.com/vriesdemichael/bitbucket-data-center-cli/internal/workflows/update"
 )
 
@@ -46,6 +47,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	// because the version is stamped into this package at build time and the
 	// ~250 sites that write an envelope have no reason to know it.
 	jsonoutput.SetReleaseVersion(Version)
+	// And every request names it, for the administrator reading Bitbucket's
+	// access log.
+	network.SetVersion(Version)
 
 	// An interrupt cancels the command's context instead of killing the
 	// process, so a request in flight ends through the transport and is
