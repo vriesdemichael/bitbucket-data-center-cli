@@ -398,6 +398,28 @@ func TestAnUpstreamBodyIsSummarizedNotPasted(t *testing.T) {
 	}
 }
 
+// An HTML error page is reported by its title (#704). Cut to its first 300
+// characters it was all markup, and the title -- the one line that says what
+// happened -- sat further in. The page here has the shape of the one Bitbucket
+// serves for a bad request; the second is a login page's, with entities and
+// line breaks in its title.
+func TestAnHTMLErrorPageIsReportedByItsTitle(t *testing.T) {
+	for page, title := range map[string]string{
+		`<!DOCTYPE html><html lang="en" data-theme="dark:dark light:light" class="aui-responsive"><head><meta charset="utf-8">` +
+			`<meta name="viewport" content="width=device-width"><script nonce="n">` + strings.Repeat("var x = 1;", 200) + `</script>` +
+			`<title>Bad request - Bitbucket</title></head><body>` + strings.Repeat("<div></div>", 1_500) + `</body></html>`: "Bad request - Bitbucket",
+		"<html><head><title>\n  Sign in &amp; continue\n</title></head><body>form</body></html>": "Sign in & continue",
+	} {
+		message := MapStatusError(400, []byte(page)).Error()
+		if !strings.Contains(message, `an HTML page titled "`+title+`"`) {
+			t.Errorf("the page is not reported by its title %q: %s", title, message)
+		}
+		if strings.Contains(message, "<") || !strings.Contains(message, "--full-error-body") {
+			t.Errorf("the message carries markup, or does not say how to see the page: %s", message)
+		}
+	}
+}
+
 // The way out has to work, for somebody debugging a server bb cannot summarise.
 func TestFullUpstreamBodiesPrintsTheWholeThing(t *testing.T) {
 	page := []byte("<html>" + strings.Repeat("y", 5_000) + "</html>")

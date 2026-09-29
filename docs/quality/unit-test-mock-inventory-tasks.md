@@ -6,7 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
-| `keep` | 175 | legitimate unit test under ADR-079 |
+| `keep` | 178 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 27 | outside the Bitbucket policy; needs its own decision |
 
@@ -38,6 +38,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/reviewer/regressions_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/services/tag/service_test.go` | 3 | 0 | 0 | 2 | 1 |
 | `internal/services/token/service_test.go` | 3 | 0 | 0 | 2 | 1 |
+| `internal/transport/outcome/outcome_test.go` | 3 | 0 | 0 | 3 | 0 |
 | `internal/cli/cmd/pr/permission_contract_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/pr/pr_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/project/permissions_test.go` | 2 | 0 | 0 | 2 | 0 |
@@ -48,6 +49,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/permissionchecker/permission_checker_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/root_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/mcp/tools_pr_review_test.go` | 2 | 0 | 0 | 2 | 0 |
+| `internal/openapi/client_outcome_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/openapi/client_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/services/commit/service_test.go` | 2 | 0 | 0 | 1 | 1 |
 | `internal/services/jira/service_test.go` | 2 | 0 | 0 | 1 | 1 |
@@ -57,7 +59,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/reviewer/service_coverage_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/services/reviewer/service_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/transport/download/destination_test.go` | 2 | 0 | 0 | 2 | 0 |
-| `internal/transport/outcome/outcome_test.go` | 2 | 0 | 0 | 2 | 0 |
+| `internal/transport/httpclient/outcome_wiring_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/transport/sigstore/trustedroot_test.go` | 2 | 0 | 0 | 0 | 2 |
 | `internal/cli/cmd/api/download_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/cmd/auth/gpg_test.go` | 1 | 0 | 0 | 1 | 0 |
@@ -83,10 +85,8 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/cli/pr_checkout_command_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/cli/pr_checkout_failures_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/mcp/tools_pr_test.go` | 1 | 0 | 0 | 1 | 0 |
-| `internal/openapi/client_outcome_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/services/codeowners/service_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/services/contract/paging_contract_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/testsupport/unreached_test.go` | 1 | 0 | 0 | 1 | 0 |
-| `internal/transport/httpclient/outcome_wiring_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/transport/network/transport_test.go` | 1 | 0 | 0 | 1 | 0 |
 | `internal/transport/network/useragent_clients_test.go` | 1 | 0 | 0 | 1 | 0 |

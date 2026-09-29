@@ -286,6 +286,40 @@ func TestAServerThatRefusesTheHandshakeIsPermanent(t *testing.T) {
 	}
 }
 
+// An https:// URL for a server that speaks only plain HTTP is the likeliest TLS
+// mistake, made for an internal instance, and it fails the same way however
+// often it is tried. It was classified transient and tried three times. Both
+// shapes the failure takes are classified: http.Client's, and the record
+// header a RoundTripper sees below the client.
+//
+// mock-inventory: transport-fault — a plain-HTTP listener answers a TLS client; the subject is how that failure is classified.
+func TestAPlainHTTPServerAtAnHTTPSURLIsPermanent(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("a TLS handshake was served as a request")
+	}))
+	server.Config.ErrorLog = log.New(io.Discard, "", 0)
+	server.Start()
+	t.Cleanup(server.Close)
+	secureURL := "https://" + strings.TrimPrefix(server.URL, "http://")
+
+	exchange, err := attempt(context.Background(), &http.Client{Timeout: 2 * time.Second}, http.MethodGet, secureURL)
+	if err == nil {
+		t.Fatal("a plain-HTTP server answered an https:// request")
+	}
+	classified := exchange.Classify(err)
+	assertKind(t, classified, apperrors.KindPermanent, "answered in plain HTTP")
+	if outcome.Retriable(classified) {
+		t.Fatal("a plain-HTTP answer is retriable")
+	}
+
+	request, _ := http.NewRequest(http.MethodPost, secureURL, nil)
+	_, below := outcome.Track(request)
+	recordHeader := tls.RecordHeaderError{Msg: "first record does not look like a TLS handshake", RecordHeader: [5]byte{'H', 'T', 'T', 'P', '/'}}
+	assertKind(t, below.Classify(recordHeader), apperrors.KindPermanent, "answered in plain HTTP")
+}
+
 // A name that does not resolve depends on the resolver the test runs under,
 // so it is classified from the error value rather than provoked.
 func TestAnUnresolvableHostIsPermanent(t *testing.T) {

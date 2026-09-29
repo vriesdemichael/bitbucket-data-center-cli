@@ -92,6 +92,9 @@ func (exchange *Exchange) Classify(err error) error {
 	case handshakeRefused(err):
 		return apperrors.New(apperrors.KindPermanent,
 			"the server refused the TLS connection, which retrying will not change", err)
+	case answeredInPlainHTTP(err):
+		return apperrors.New(apperrors.KindPermanent,
+			"the server answered in plain HTTP, which retrying will not change; check whether its URL should begin with http://", err)
 	case hostUnresolvable(err):
 		return apperrors.New(apperrors.KindPermanent,
 			"the host does not resolve, which retrying will not change", err)
@@ -341,6 +344,24 @@ func handshakeRefused(err error) bool {
 	var operation *net.OpError
 
 	return errors.As(err, &operation) && operation.Op == "remote error"
+}
+
+// answeredInPlainHTTP reports an https:// request that a server answered in
+// plain HTTP -- most often an internal instance whose URL was given as https.
+// Only the TLS handshake went out, so nothing was applied, and asking again
+// meets the same server.
+//
+// It arrives in two shapes. http.Client turns the record-header error into
+// ErrSchemeMismatch, and a RoundTripper below the client, where the generated
+// client's retries decide, sees the record header itself.
+func answeredInPlainHTTP(err error) bool {
+	if errors.Is(err, http.ErrSchemeMismatch) {
+		return true
+	}
+
+	var record tls.RecordHeaderError
+
+	return errors.As(err, &record) && string(record.RecordHeader[:]) == "HTTP/"
 }
 
 func hostUnresolvable(err error) bool {

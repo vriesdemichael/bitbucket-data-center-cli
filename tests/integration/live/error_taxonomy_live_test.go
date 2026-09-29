@@ -57,6 +57,27 @@ func TestLiveErrorTaxonomy404NotFound(t *testing.T) {
 	}
 }
 
+// Bitbucket answers a request it cannot route with an HTML error page, and bb
+// reports it by its title (#704). Cut to its first characters the page was all
+// markup; the title is the line that says what happened.
+func TestLiveErrorTaxonomyAnHTMLPageIsReportedByItsTitle(t *testing.T) {
+	t.Parallel()
+
+	_ = newLiveHarness(t)
+
+	output, err := executeLiveCLIUnscoped(t, "project", "get", "..%2F..")
+	if err == nil {
+		t.Fatalf("expected Bitbucket to refuse the request, got success:\n%s", output)
+	}
+	message := err.Error()
+	if !strings.Contains(message, `an HTML page titled "`) || !strings.Contains(message, "--full-error-body") {
+		t.Fatalf("the error page is not reported by its title: %v", err)
+	}
+	if strings.Contains(message, "<") {
+		t.Fatalf("the message carries markup: %v", err)
+	}
+}
+
 func TestLiveErrorTaxonomy409Conflict(t *testing.T) {
 	t.Parallel()
 
