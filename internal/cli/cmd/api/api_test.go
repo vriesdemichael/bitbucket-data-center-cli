@@ -396,37 +396,51 @@ func TestApiEndpointURLGetsOnlyItsOwnHostsCredential(t *testing.T) {
 	}
 }
 
-// A header that carries a credential is refused, as ADR-083 refuses every
-// secret on the command line: the request is authenticated with the credential
-// resolved for its host. It is refused before the configuration is loaded,
-// under a dry run too, and the refusal does not repeat the secret.
-func TestApiRefusesACredentialHeader(t *testing.T) {
+// A credential given on the command line is refused, as ADR-083 refuses every
+// secret there: the request is authenticated with the credential resolved for
+// its host. That holds for a header however it is written, and for a user or
+// password in a URL, which Go would otherwise send as basic auth. It is refused
+// before the configuration is loaded, under a dry run too, and no error
+// repeats the secret -- including the one for a header that is only malformed.
+func TestApiRefusesACredentialOnTheCommandLine(t *testing.T) {
 	t.Parallel()
 
-	for _, header := range []string{
-		"authorization: Bearer secret-value",
-		"Proxy-Authorization: Basic secret-value",
-		"COOKIE: JSESSIONID=secret-value",
+	for _, tc := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"/rest/api/1.0/projects", "-H", "authorization: Bearer secret-value"}, "the Authorization header"},
+		{[]string{"/rest/api/1.0/projects", "-H", "Proxy-Authorization: Basic secret-value"}, "the Proxy-Authorization header"},
+		{[]string{"/rest/api/1.0/projects", "-H", "COOKIE: JSESSIONID=secret-value"}, "the Cookie header"},
+		{[]string{"/rest/api/1.0/projects", "-H", "Authorization=Bearer secret-value"}, "the Authorization header"},
+		{[]string{"/rest/api/1.0/projects", "-H", "Authorization Bearer secret-value"}, "the Authorization header"},
+		{[]string{"http://alice:secret-value@example.local/rest/api/1.0/projects"}, "in the endpoint URL"},
+		{[]string{"http://secret-value@example.local/rest/api/1.0/projects"}, "in the endpoint URL"},
+		{[]string{"http://alice:secret-value@/rest/api/1.0/projects"}, "in the endpoint URL"},
+		{[]string{"/rest/api/1.0/projects", "--host", "https://alice:secret-value@example.local"}, "in --host"},
+		{[]string{"/rest/api/1.0/projects", "--host", "alice:secret-value@example.local"}, "in --host"},
+		{[]string{"http://alice:secret-value@exa mple.local/rest"}, "not a URL with a host"},
+		{[]string{"/rest/api/1.0/projects", "-H", "X-Note secret-value"}, `invalid header format "X-Note"`},
 	} {
 		for _, dryRun := range []bool{false, true} {
 			deps := newTestDependencies("http://example.local", false, dryRun)
 			deps.LoadConfig = func(config.Overrides) (config.AppConfig, error) {
-				t.Errorf("%q (dry run %v): the configuration was loaded for a request that is refused", header, dryRun)
+				t.Errorf("%q (dry run %v): the configuration was loaded for a request that is refused", tc.args, dryRun)
 				return config.AppConfig{}, nil
 			}
 
 			cmd := New(deps)
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
-			cmd.SetArgs([]string{"/rest/api/1.0/projects", "-X", "POST", "-H", header})
+			cmd.SetArgs(append([]string{"-X", "POST"}, tc.args...))
 
 			err := cmd.Execute()
-			name, _, _ := strings.Cut(header, ":")
-			if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), http.CanonicalHeaderKey(name)+" header") {
-				t.Fatalf("%q (dry run %v) must be refused naming the header, got %v", header, dryRun, err)
+			if !apperrors.IsKind(err, apperrors.KindValidation) || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("%q (dry run %v) must be refused with %q, got %v", tc.args, dryRun, tc.want, err)
+				continue
 			}
 			if strings.Contains(err.Error(), "secret-value") {
-				t.Fatalf("the refusal repeats the secret: %v", err)
+				t.Errorf("%q: the error repeats the secret: %v", tc.args, err)
 			}
 		}
 	}
