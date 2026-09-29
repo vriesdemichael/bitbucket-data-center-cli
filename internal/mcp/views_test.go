@@ -386,11 +386,11 @@ func TestSummariesCountEveryBuild(t *testing.T) {
 		CheckCounts:        &viewCheckCounts{Failed: 4, InProgress: 2, Cancelled: 1, Unknown: 1, Successful: 142},
 		ChecksLimitReached: true,
 	}
-	if summary := summarizePullRequest(pr); !strings.Contains(summary, "Builds: 4 failed, 2 in progress, 1 canceled, 1 unknown, 142 passed.") {
+	if summary := summarizePullRequest(pr).shown(); !strings.Contains(summary, "Builds: 4 failed, 2 in progress, 1 canceled, 1 unknown, 142 passed.") {
 		t.Errorf("the summary counts the builds as %q, want Bitbucket's totals", summary)
 	}
 	pr.CheckCounts = nil
-	if summary := summarizePullRequest(pr); !strings.Contains(summary, "Builds, of the first 2: 1 failed, 1 passed.") {
+	if summary := summarizePullRequest(pr).shown(); !strings.Contains(summary, "Builds, of the first 2: 1 failed, 1 passed.") {
 		t.Errorf("without totals the summary reads %q, want the listed builds counted as a part", summary)
 	}
 }

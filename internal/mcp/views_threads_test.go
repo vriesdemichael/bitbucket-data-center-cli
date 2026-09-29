@@ -111,7 +111,7 @@ func TestTheThreadsSummaryCountsTheWhole(t *testing.T) {
 		Summary: pullrequestactivityservice.Summary{TotalThreads: 240, Unresolved: 12, Resolved: 226, Pending: 2, OpenTasks: 3},
 		Threads: make([]viewThread, 200),
 	}
-	got := summarizeThreads(in, "Retry payments", threads)
+	got := summarizeThreads(in, "Retry payments", threads).shown()
 	for _, want := range []string{"PAY/ledger#7", `"Retry payments"`, "12 unresolved", "3 of them open tasks", "226 resolved", "2 pending", "the first 200 of the 240 threads"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("summary %q lacks %q", got, want)

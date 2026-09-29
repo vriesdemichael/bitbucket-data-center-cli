@@ -69,7 +69,7 @@
   FRAMES.forEach((frame, index) => mount(frame, index));
 
   function mount(frame, index) {
-    const record = { index, messages: [], mode: frame.mode, iframe: null };
+    const record = { index, messages: [], mode: frame.mode, iframe: null, answers: frame.toolResults || null, teardown: null };
     window.bbHost.frames.push(record);
 
     const section = document.createElement("section");
@@ -96,6 +96,7 @@
 
     const send = (message) => iframe.contentWindow.postMessage(message, "*");
     const reply = (id, result) => send({ jsonrpc: "2.0", id, result });
+    record.teardown = () => send({ jsonrpc: "2.0", id: "teardown-" + index, method: "ui/resource-teardown", params: {} });
     const note = (text) => {
       const line = document.createElement("li");
       line.textContent = text;
@@ -120,7 +121,8 @@
           reply(message.id, {
             protocolVersion: "2026-01-26",
             hostInfo: { name: "bb-view-host", version: "1" },
-            hostCapabilities: frame.opensNoLinks ? { updateModelContext: {}, message: {} } : { openLinks: {}, updateModelContext: {}, message: {} },
+            hostCapabilities: Object.assign(frame.opensNoLinks ? { updateModelContext: {}, message: {} } : { openLinks: {}, updateModelContext: {}, message: {} },
+              record.answers ? { serverTools: {} } : {}),
             hostContext: context(),
           });
           break;
@@ -161,6 +163,20 @@
           reply(message.id, {});
           note("message from the person: " + textOf(message.params));
           break;
+        case "tools/call": {
+          const name = message.params && message.params.name;
+          const queue = record.answers && record.answers[name];
+          if (!queue || queue.length === 0) {
+            send({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: "this host passes no call of " + name } });
+            note("tool call refused: " + name);
+            break;
+          }
+          const answer = queue.length > 1 ? queue.shift() : queue[0];
+          if (answer && answer.error) send({ jsonrpc: "2.0", id: message.id, error: answer.error });
+          else reply(message.id, answer);
+          note("tool call: " + name);
+          break;
+        }
         default:
           if (message.id !== undefined && message.method) {
             send({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: "Method not found" } });

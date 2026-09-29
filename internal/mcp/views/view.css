@@ -288,6 +288,17 @@ button {
 .avatar-stack .more { white-space: nowrap; }
 .stamp { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: var(--bb-text-xs); color: var(--bb-text-faint); white-space: nowrap; }
 .stamp.stale { color: var(--bb-warning); }
+/* When the data was read, and a button to read it again. */
+.stamp-row { display: inline-flex; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
+.stamp-row .stamp { min-width: 0; }
+.button.refresh-button, .actions.quiet .button.refresh-button { flex: none; min-height: 24px; padding: 2px 5px; color: var(--bb-text-faint); }
+.refresh-button.busy .icon { animation: turn 1s linear infinite; }
+@keyframes turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .refresh-button.busy .icon { animation: none; } }
+/* A diff that changed since the view drew it, offered rather than swapped in. */
+.refresh-notice { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 10px; background: var(--bb-info-bg); color: var(--bb-info); }
+.refresh-notice p { margin: 0; }
+.diff-main > .refresh-notice { margin-top: 16px; }
 .actions { align-items: center; }
 
 /* Fullscreen: a header over the content, which fills the rest of the screen.

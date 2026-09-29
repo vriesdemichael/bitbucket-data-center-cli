@@ -73,6 +73,7 @@ const ICON_SHAPES = {
   image: [["path", "M2.5 3.5h11v9h-11z"], ["path", "M2.5 11l3.5-3.5 3 3 2-2 2.5 2.5"], ["circle", 10.5, 6.2, 1.2]],
   folder: [["path", "M2 4.2a1 1 0 0 1 1-1h3l1.5 1.6H13a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"]],
   autoMerge: [["circle", 4.5, 3.5, 1.6], ["circle", 4.5, 12.5, 1.6], ["path", "M4.5 5.1v5.8M4.5 5.2c0 3.5 5 2.8 6.5 5.3"], ["path", "M12.8 1.8l-2 3h2.4l-2 3"]],
+  refresh: [["path", "M13 8a5 5 0 1 1-1.5-3.6"], ["path", "M11.8 1.7v2.9H8.9"]],
 };
 
 function icon(name, label, extraClass) {

@@ -347,3 +347,108 @@ func TestLiveMCPShowThreadsCarriesEveryThreadWhereItIs(t *testing.T) {
 		}
 	}, "ai", "mcp", "serve")
 }
+
+// TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged: a view that asks again
+// about the same state is told nothing changed, for every kind, and one that
+// asks after a comment is sent the data with it, although Bitbucket leaves the
+// pull request's version as it was.
+func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	branch := testsupport.UniqueName("feature/refresh-")
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, "refresh.txt", "one\ntwo\n"); err != nil {
+		t.Fatalf("push failed: %v", err)
+	}
+	created := extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "create",
+		"--from-ref", branch, "--to-ref", "refs/heads/master", "--title", testsupport.UniqueName("Refresh "),
+		"--no-default-reviewers", "--no-codeowners")))
+	id := fmt.Sprint(created["id"])
+
+	capabilities := &mcp.ClientCapabilities{}
+	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
+	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
+		show := func(arguments map[string]any) map[string]any {
+			t.Helper()
+			result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "show", Arguments: arguments})
+			if err != nil || result.IsError {
+				t.Fatalf("show %v: %v %s", arguments, err, mcpResultText(result))
+			}
+			payload, _ := result.Meta[viewPayloadKey].(map[string]any)
+			if payload == nil || asString(payload["fingerprint"]) == "" || payload["show"] == nil {
+				t.Fatalf("show %v carries no fingerprint or call to refresh with: %v", arguments, payload)
+			}
+			return payload
+		}
+		refresh := func(payload map[string]any, since string) (*mcp.CallToolResult, map[string]any) {
+			t.Helper()
+			arguments := map[string]any{"since": since}
+			call, _ := payload["show"].(map[string]any)
+			for key, value := range call {
+				arguments[key] = value
+			}
+			result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "refresh_view", Arguments: arguments})
+			if err != nil || result.IsError {
+				t.Fatalf("refresh_view %v: %v %s", arguments, err, mcpResultText(result))
+			}
+			answer, _ := result.StructuredContent.(map[string]any)
+			return result, answer
+		}
+
+		for _, arguments := range []map[string]any{
+			{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": id},
+			{"kind": "pull_requests", "project": seeded.Key, "repo": repo.Slug},
+			{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": id},
+			{"kind": "threads", "project": seeded.Key, "repo": repo.Slug, "id": id},
+		} {
+			payload := show(arguments)
+			fingerprint := asString(payload["fingerprint"])
+			result, answer := refresh(payload, fingerprint)
+			if answer["changed"] != false || answer["fingerprint"] != fingerprint || result.Meta[viewPayloadKey] != nil {
+				t.Errorf("%s: asked again about the same state, refresh_view answered changed=%v, fingerprint %v (the view has %s), data sent: %v",
+					arguments["kind"], answer["changed"], answer["fingerprint"], fingerprint, result.Meta[viewPayloadKey] != nil)
+			}
+			if asString(answer["generated_at"]) == "" {
+				t.Errorf("%s: refresh_view does not say when it read the data: %v", arguments["kind"], answer)
+			}
+		}
+
+		threads := show(map[string]any{"kind": "threads", "project": seeded.Key, "repo": repo.Slug, "id": id})
+		before := asString(threads["fingerprint"])
+		comments := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/comments", seeded.Key, repo.Slug, id)
+		if _, err := harness.liveJSON(ctx, http.MethodPost, comments, map[string]any{"text": "a comment after the view was drawn"}); err != nil {
+			t.Fatalf("post a comment failed: %v", err)
+		}
+
+		result, answer := refresh(threads, before)
+		payload, _ := result.Meta[viewPayloadKey].(map[string]any)
+		if answer["changed"] != true || payload == nil {
+			t.Fatalf("after a comment refresh_view answered changed=%v with data %v, want the data", answer["changed"], payload != nil)
+		}
+		if after := asString(payload["fingerprint"]); after == before || after != answer["fingerprint"] {
+			t.Errorf("the new data has fingerprint %q, the answer %v, the view had %q; want a new one, the same in both", after, answer["fingerprint"], before)
+		}
+		carried, _ := payload["threads"].(map[string]any)
+		listed, _ := carried["threads"].([]any)
+		if len(listed) != 1 || asString(listed[0].(map[string]any)["text"]) != "a comment after the view was drawn" {
+			t.Errorf("the new data carries threads %v, want the comment", listed)
+		}
+		if text := mcpResultText(result); !strings.Contains(text, "has changed") || !strings.Contains(text, "1 unresolved") {
+			t.Errorf("the model would be told %q, want the change and the count", text)
+		}
+
+		if _, again := refresh(payload, asString(payload["fingerprint"])); again["changed"] != false {
+			t.Errorf("asked again with the new fingerprint, refresh_view answered changed=%v", again["changed"])
+		}
+	}, "ai", "mcp", "serve")
+}

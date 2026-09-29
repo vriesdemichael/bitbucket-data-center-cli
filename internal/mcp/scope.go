@@ -143,6 +143,8 @@ var scopeRules = map[string]scopeRule{
 	// A pull request and its diff take project and repo, and a list takes
 	// them as filters, as list_pull_requests does.
 	"show": scopeOptionalProjectRepo,
+	// Repeats a show call, so it is bound as show is.
+	"refresh_view": scopeOptionalProjectRepo,
 }
 
 // withheldUnderScope reports whether a scope removes a tool altogether.

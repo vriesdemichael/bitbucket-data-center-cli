@@ -111,6 +111,11 @@ function createBridge(appInfo) {
       return request("ui/open-link", { url });
     },
 
+    // A call of one of bb's tools, which the host passes to the server.
+    callTool(name, args, timeout) {
+      return request("tools/call", { name, arguments: args }, timeout);
+    },
+
     requestDisplayMode(mode) {
       return request("ui/request-display-mode", { mode });
     },

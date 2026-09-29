@@ -359,6 +359,7 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 		"get_commit":           repoArgs(map[string]any{"commit_id": fixture.commitID}),
 		"compare_refs":         repoArgs(map[string]any{"from": "feature/mcp-main", "to": "master"}),
 		"show":                 repoArgs(map[string]any{"kind": "pull_request", "id": fixture.mainPR}),
+		"refresh_view":         repoArgs(map[string]any{"kind": "pull_request", "id": fixture.mainPR}),
 	}
 
 	return fixture
@@ -425,6 +426,12 @@ func assertMCPToolAnswer(t *testing.T, fixture mcpToolFixture, name string, answ
 		// of the pull request show was given.
 		if want := fixture.repoRef + "#" + fixture.mainPR; answer["shown"] != true || answer["target"] != want {
 			t.Errorf("show answered shown=%v of %v, want the view sent of %s", answer["shown"], answer["target"], want)
+		}
+	case "refresh_view":
+		// Asked without a fingerprint, as a view that has none would ask, it
+		// answers with the data.
+		if answer["changed"] != true || asString(answer["fingerprint"]) == "" {
+			t.Errorf("refresh_view answered changed=%v with fingerprint %v, want the data and its fingerprint", answer["changed"], answer["fingerprint"])
 		}
 	}
 }

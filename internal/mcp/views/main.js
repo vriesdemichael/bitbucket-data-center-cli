@@ -44,6 +44,12 @@ const view = {
   // one where a list's rows wrap.
   narrow: false,
   phone: false,
+  // hostTools is whether the host passes the view's tool calls to bb, which
+  // keeps a view current, and tellsModel whether it takes context for the
+  // model. refresh is how the view keeps current.
+  hostTools: false,
+  tellsModel: false,
+  refresh: newRefreshState(),
 
   toggleClamp(key) {
     if (view.unclamped.has(key)) view.unclamped.delete(key);
@@ -179,8 +185,18 @@ bridge.on("ui/notifications/tool-result", (result) => {
     view.focusFile = null;
     view.focusThread = null;
     view.selection = null;
+    view.refresh.pending = null;
+    view.refresh.failure = null;
+    view.refresh.idleMs = REFRESH_IDLE_MS;
   }
   render();
+  scheduleRefresh(view);
+});
+
+// A view the host takes down asks nothing more.
+bridge.on("teardown", () => {
+  view.refresh.torndown = true;
+  scheduleRefresh(view);
 });
 
 bridge.on("ui/notifications/tool-cancelled", (params) => {
@@ -385,14 +401,20 @@ function watchSize() {
 async function start() {
   render();
   watchSize();
+  watchVisibility(view);
   try {
     const result = await bridge.connect(CONNECT_TIMEOUT_MS);
     // A host that says what it can do, and leaves opening links out, opens
-    // none: its links are shown to open by hand without asking.
-    if (result.hostCapabilities && typeof result.hostCapabilities === "object") {
-      view.opensLinks = Boolean(result.hostCapabilities.openLinks);
+    // none: its links are shown to open by hand without asking. One that
+    // leaves out passing tool calls keeps its views as they were drawn.
+    const capabilities = result.hostCapabilities;
+    if (capabilities && typeof capabilities === "object") {
+      view.opensLinks = Boolean(capabilities.openLinks);
+      view.hostTools = Boolean(capabilities.serverTools);
+      view.tellsModel = Boolean(capabilities.updateModelContext);
     }
     applyHostContext(result.hostContext);
+    scheduleRefresh(view);
   } catch (error) {
     view.standalone = true;
     render();

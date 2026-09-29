@@ -51,7 +51,7 @@ function renderThreads(payload, view) {
       }, icon(view.expanded ? "collapse" : "expand"), view.expanded ? "Hide the threads" : "All threads"),
       linkButton("Open in Bitbucket", pr.url, view.bridge, "ghost"),
       el("span", { class: "spacer" }),
-      snapshotStamp(payload.generated_at, view.locale, true)),
+      snapshotStamp(payload, view, true)),
     view.expanded ? el("div", { class: "inline-details" }, threadGroups(pr, summary, threads, avatars, view)) : null);
 }
 
@@ -174,7 +174,7 @@ function threadsPage(pr, summary, threads, payload, view) {
         el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
         el("div", { class: "header-meta" }, stateBadges(pr), threadsAttention(summary), threadsQuiet(summary))),
       el("div", { class: "header-actions" },
-        snapshotStamp(payload.generated_at, view.locale),
+        snapshotStamp(payload, view),
         linkButton("Open in Bitbucket", pr.url, view.bridge, "primary"),
         el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
     el("div", { class: "threads-main", id: "threads-main" }, threadGroups(pr, summary, threads, payload.avatars || {}, view)));

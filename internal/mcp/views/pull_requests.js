@@ -40,7 +40,7 @@ function renderPullRequests(payload, view) {
     el("h1", {}, "Pull requests"),
     el("span", { class: "faint" }, formatNumber(prs.length) + (payload.limit_reached ? "+" : "")),
     el("span", { class: "spacer" }),
-    snapshotStamp(payload.generated_at, view.locale, !view.fullscreen),
+    snapshotStamp(payload, view, !view.fullscreen),
     open
       ? el("button", { type: "button", class: "button ghost", onclick: () => view.expand() }, icon("collapse"), view.fullscreen ? "Exit full screen" : "Show fewer")
       : null);

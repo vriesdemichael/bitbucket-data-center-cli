@@ -5,8 +5,9 @@
 // It writes one self-contained page that mounts the view page in sandboxed
 // frames and answers it the way a host does: it completes the handshake,
 // passes the host context and the tool's input and result, sizes an inline
-// frame to what the view reports, switches display modes, and records what
-// the view asks for, which a real host would act on.
+// frame to what the view reports, switches display modes, answers the view's
+// tool calls from answers given to it, and records what the view asks for,
+// which a real host would act on.
 package viewhost
 
 import (
@@ -47,6 +48,12 @@ type Frame struct {
 	Arguments map[string]any `json:"arguments"`
 	// Result is the tools/call result, as the client received it.
 	Result json.RawMessage `json:"result"`
+	// ToolResults answer the view's own tool calls, by tool name, in order,
+	// the last one again and again. An answer with an "error" member is sent
+	// as a JSON-RPC error. A frame without them is a host that passes no tool
+	// calls, and says so. A test can add answers to a frame's record while
+	// the page runs, and take the view down with its teardown function.
+	ToolResults map[string][]json.RawMessage `json:"toolResults,omitempty"`
 }
 
 // Options shape the page.

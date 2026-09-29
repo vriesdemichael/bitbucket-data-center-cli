@@ -113,27 +113,33 @@ function buildBadge(counts) {
 // conversation can show it again days later.
 const SNAPSHOT_STALE_MS = 60 * 60 * 1000;
 
-// snapshotStamp says when the view's data was read from Bitbucket. A view
-// made for a glance says it only once that is long enough ago to matter.
-function snapshotStamp(generatedAt, locale, onlyWhenStale) {
-  const time = Date.parse(generatedAt || "");
+// snapshotStamp says when the view's data was read from Bitbucket, or last
+// found unchanged, with a button to read it again where the view can. A view
+// made for a glance says it only once that is long enough ago to matter, or
+// once reading it again failed.
+function snapshotStamp(payload, view, onlyWhenStale) {
+  const time = Date.parse(payload.generated_at || "");
   if (!Number.isFinite(time)) return null;
-  if (onlyWhenStale && Date.now() - time <= SNAPSHOT_STALE_MS) return null;
+  const failure = view.refresh.failure;
+  const stale = Date.now() - time > SNAPSHOT_STALE_MS;
+  if (onlyWhenStale && !stale && !failure) return null;
   const when = new Date(time);
   const sameDay = when.toDateString() === new Date().toDateString();
   let label;
   try {
     label = sameDay
-      ? when.toLocaleTimeString(locale || undefined, { hour: "2-digit", minute: "2-digit" })
-      : when.toLocaleString(locale || undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      ? when.toLocaleTimeString(view.locale || undefined, { hour: "2-digit", minute: "2-digit" })
+      : when.toLocaleString(view.locale || undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   } catch {
     label = when.toISOString();
   }
-  const stale = Date.now() - time > SNAPSHOT_STALE_MS;
-  return el("span", {
-    class: "stamp" + (stale ? " stale" : ""),
-    title: "What Bitbucket said at " + when.toISOString() + (stale ? ". It may have changed since." : "."),
-  }, "As of " + label + (stale ? " · may be out of date" : ""));
+  const said = "What Bitbucket said at " + when.toISOString() + ".";
+  return el("span", { class: "stamp-row" },
+    el("span", {
+      class: "stamp" + (stale || failure ? " stale" : ""),
+      title: failure ? said + " Reading it again failed: " + failure : stale ? said + " It may have changed since." : said,
+    }, "As of " + label + (failure ? " · could not refresh" : stale ? " · may be out of date" : "")),
+    refreshButton(view));
 }
 
 // Bitbucket's change types, as the lozenge on a file in a diff.

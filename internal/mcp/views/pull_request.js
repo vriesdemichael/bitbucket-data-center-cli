@@ -34,7 +34,7 @@ function pullRequestCard(pr, payload, view) {
       }, icon(view.expanded ? "collapse" : "expand"), view.expanded ? "Hide overview" : "Overview"),
       linkButton("Open in Bitbucket", pr.url, view.bridge, "ghost"),
       el("span", { class: "spacer" }),
-      snapshotStamp(payload.generated_at, view.locale, true)));
+      snapshotStamp(payload, view, true)));
 }
 
 // pullRequestTop is where the pull request lives, its number and its state.
@@ -146,7 +146,7 @@ function pullRequestPage(pr, payload, view) {
         el("h1", { class: "pr-title" }, pr.title),
         el("div", { class: "header-meta" }, stateBadges(pr), byline(pr, payload.avatars || {}))),
       el("div", { class: "header-actions" },
-        snapshotStamp(payload.generated_at, view.locale),
+        snapshotStamp(payload, view),
         linkButton("Open in Bitbucket", pr.url, view.bridge, "primary"),
         el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
     pullRequestOverview(pr, payload, view));
