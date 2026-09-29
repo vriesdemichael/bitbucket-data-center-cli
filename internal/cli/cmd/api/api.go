@@ -74,9 +74,10 @@ func New(deps Dependencies) *cobra.Command {
 		Long: `Send a raw HTTP request to the Bitbucket REST API as an escape hatch for uncovered endpoints.
 
 Reuses stored authentication, host aliases, TLS options, retries, and pagination.
-A request is authenticated as every other command's is, so a header that
-carries a credential -- Authorization, Proxy-Authorization or Cookie -- is
-refused rather than putting a secret on the command line.
+A request is authenticated as every other command's is. A credential given on
+the command line -- an Authorization, Proxy-Authorization or Cookie header, or
+a user and password in a URL -- is refused, since it would be readable in the
+process list and shell history.
 
 Field arguments:
   -f, --raw-field k=v    Pass a string parameter (query parameter for GET, JSON field for POST/PUT/DELETE)
@@ -297,13 +298,20 @@ func parseHeaders(headers []string) (http.Header, error) {
 	parsed := make(http.Header)
 	for _, h := range headers {
 		name, val, ok := strings.Cut(h, ":")
-		if !ok {
-			return nil, apperrors.New(apperrors.KindValidation, fmt.Sprintf("invalid header format %q (expected Name: Value)", h), nil)
+		name = strings.TrimSpace(name)
+		// A header name holds no space or '='. One written without its colon,
+		// as Authorization=... or Authorization Bearer ..., still names the
+		// header, and what follows may be the secret, so only the name is
+		// ever repeated.
+		if end := strings.IndexAny(name, " \t="); end >= 0 {
+			name, ok = name[:end], false
 		}
-		name = http.CanonicalHeaderKey(strings.TrimSpace(name))
+		name = http.CanonicalHeaderKey(name)
 		if slices.Contains(credentialHeaders, name) {
-			return nil, apperrors.New(apperrors.KindValidation, fmt.Sprintf(
-				"bb api does not take a %s header: a request carries the credential bb auth login stored for its host, or BITBUCKET_TOKEN from the environment, so no secret goes on the command line (ADR-083)", name), nil)
+			return nil, credentialRefusal("the " + name + " header")
+		}
+		if !ok || name == "" {
+			return nil, apperrors.New(apperrors.KindValidation, fmt.Sprintf("invalid header format %q (expected Name: Value)", name), nil)
 		}
 		parsed.Add(name, strings.TrimSpace(val))
 	}
@@ -313,6 +321,13 @@ func parseHeaders(headers []string) (http.Header, error) {
 
 // credentialHeaders are the headers whose value is a secret.
 var credentialHeaders = []string{"Authorization", "Proxy-Authorization", "Cookie"}
+
+// credentialRefusal refuses a credential given on the command line, naming
+// where it was and never repeating it.
+func credentialRefusal(where string) error {
+	return apperrors.New(apperrors.KindValidation, fmt.Sprintf(
+		"bb api does not take %s: a request carries the credential bb auth login stored for its host, or BITBUCKET_TOKEN from the environment, so no secret goes on the command line (ADR-083)", where), nil)
+}
 
 func isBodyMethod(method string) bool {
 	switch method {
@@ -493,24 +508,37 @@ func loadConfigForHost(d Dependencies, host string) (config.AppConfig, error) {
 // carried that host's credential there. A --host naming a different server is
 // refused rather than one of the two being chosen. Nothing here needs the
 // network, so it is decided before a dry run is previewed.
+//
+// A user or password in either URL is refused: Go sends it as basic auth in
+// place of the credential resolved for the host, and it is a secret on the
+// command line all the same (ADR-083). No message here repeats a URL that could
+// hold one.
 func requestHost(host string, endpoint string) (string, error) {
+	named := strings.TrimSpace(host)
+	if named != "" && !strings.Contains(named, "://") {
+		named = "https://" + named
+	}
+	namedURL, namedErr := url.Parse(named)
+	if named != "" && namedErr == nil && namedURL.User != nil {
+		return "", credentialRefusal("a user or password in --host")
+	}
+
 	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
 		return host, nil
 	}
 
 	target, err := url.Parse(endpoint)
+	if err == nil && target.User != nil {
+		return "", credentialRefusal("a user or password in the endpoint URL")
+	}
 	if err != nil || target.Host == "" {
-		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf("endpoint %q is not a URL with a host", endpoint), err)
+		return "", apperrors.New(apperrors.KindValidation, "the endpoint begins with http:// or https:// but is not a URL with a host", nil)
 	}
 
-	named := strings.TrimSpace(host)
 	if named == "" {
 		return target.Scheme + "://" + target.Host, nil
 	}
-	if !strings.Contains(named, "://") {
-		named = "https://" + named
-	}
-	if parsed, err := url.Parse(named); err != nil || !httpclient.SameOrigin(parsed, target) {
+	if namedErr != nil || !httpclient.SameOrigin(namedURL, target) {
 		return "", apperrors.New(apperrors.KindValidation, fmt.Sprintf(
 			"--host %s and the endpoint URL name different servers; leave out --host, or give the endpoint as a path", host), nil)
 	}
