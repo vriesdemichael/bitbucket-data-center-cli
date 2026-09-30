@@ -224,7 +224,10 @@ func redactValue(key string, value any) any {
 
 	switch typed := value.(type) {
 	case string:
-		return redactURLString(typed)
+		// A field with an innocent name can still hold free text with a
+		// credential in it -- a path, a ref, a title an agent wrote -- so
+		// its value goes through the free-text pass too (#731).
+		return RedactText(redactURLString(typed))
 	case map[string]any:
 		return RedactFields(typed)
 	case map[string]string:
@@ -275,19 +278,33 @@ func redactURLString(value string) string {
 		if username == "" {
 			username = "redacted"
 		}
-		parsed.User = url.UserPassword(username, "[REDACTED]")
+		parsed.User = url.UserPassword(username, redactedMarker)
 	}
 
-	query := parsed.Query()
-	for key := range query {
-		if isSensitiveKey(key) {
-			query.Set(key, "[REDACTED]")
+	// Parameter by parameter, as written. Decoding the query into url.Values
+	// and encoding it again sorted the parameters and re-escaped the others.
+	if parsed.RawQuery != "" {
+		parameters := strings.Split(parsed.RawQuery, "&")
+		for index, parameter := range parameters {
+			key, _, found := strings.Cut(parameter, "=")
+			name, err := url.QueryUnescape(key)
+			if err != nil {
+				name = key
+			}
+			if found && isSensitiveKey(name) {
+				parameters[index] = key + "=" + redactedMarker
+			}
 		}
+		parsed.RawQuery = strings.Join(parameters, "&")
 	}
-	parsed.RawQuery = query.Encode()
 
-	return parsed.String()
+	// The userinfo is escaped on the way out, and %5BREDACTED%5D is a marker
+	// that a reader searching for one does not find.
+	return strings.ReplaceAll(parsed.String(), url.PathEscape(redactedMarker), redactedMarker)
 }
+
+// redactedMarker is what a credential is replaced with, everywhere.
+const redactedMarker = "[REDACTED]"
 
 func strconvQuote(value string) string {
 	encoded, err := json.Marshal(value)
@@ -310,8 +327,9 @@ var credentialField = regexp.MustCompile(`(?i)("[a-z0-9_.-]*(?:token|password|pa
 // hides in text that is not a URL field: clone links, Location headers, and the
 // echoed request line in an upstream error page. The slashes may arrive escaped,
 // as some JSON encoders write them, and the secret may contain a slash, as a
-// base64 token can.
-var credentialInURL = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*:(?:\\?/){2})([^/\\\s:@"']+):([^\s@"']+)@`)
+// base64 token can. There may be one slash rather than two: Bitbucket cleans a
+// path it echoes back, and https://user:pass@host returns as https:/user:pass@host.
+var credentialInURL = regexp.MustCompile(`([a-zA-Z][a-zA-Z0-9+.-]*:(?:\\?/){1,2})([^/\\\s:@"']+):([^\s@"']+)@`)
 
 // credentialQuery matches a credential carried as a query parameter.
 var credentialQuery = regexp.MustCompile(`(?i)([?&;](?:access_token|private_token|token|api[_-]?key|password|passwd|secret|client_secret|auth|sig|signature)=)([^&\s"'<#]+)`)
@@ -350,7 +368,13 @@ const schemeCredentialLength = 16
 
 // credentialAssignment matches key=value where no query string introduced it:
 // a form-encoded body, or a fragment of one echoed into an error.
-var credentialAssignment = regexp.MustCompile(`(?i)(^|[\s,{(])((?:access_token|private_token|token|api[_-]?key|password|passwd|secret|client_secret)=)([^&\s"'<#]+)`)
+//
+// Anything but a letter or digit may come before the key. Bitbucket quotes a
+// ref it cannot find, as Object "token=X"; an environment variable ends in
+// the key, as BITBUCKET_TOKEN=X; and a value can be an assignment itself, as
+// ?at=token=X. A letter before it makes another word, pagetoken=, which is
+// left alone.
+var credentialAssignment = regexp.MustCompile(`(?i)(^|[^a-z0-9])((?:access_token|private_token|token|api[_-]?key|password|passwd|secret|client_secret)=)([^&\s"'<#]+)`)
 
 // credentialQuotedField is credentialField for a document that quotes its keys
 // with apostrophes, which a Python or Ruby server prints when it repr()s a
