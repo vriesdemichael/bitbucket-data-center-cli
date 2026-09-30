@@ -16,9 +16,13 @@ request.
 | **[Task](https://taskfile.dev)** | every workflow in this repo is a `task` target |
 | **Docker** | runs the local Bitbucket instance for live tests |
 | **Bash** + **curl** | `scripts/bootstrap-bitbucket.sh` needs both |
-| **[uv](https://docs.astral.sh/uv/)** | builds the documentation site, which the pre-push hook checks |
-| **[lefthook](https://lefthook.dev)** | runs the git hooks |
 | **~6GB disk, ~4GB RAM** | the Bitbucket instance is a real JVM application |
+
+Recommended, not required: [lefthook](https://lefthook.dev) runs the unit tests
+before each commit and the fast gates before each push, and
+[uv](https://docs.astral.sh/uv/) builds the documentation site, which one of
+those gates checks. Without them CI runs the same checks, only later. uv fetches
+the Python it needs itself; building, testing and the live suite need none.
 
 Install Task with:
 
@@ -35,9 +39,6 @@ lefthook install
 On Windows, run the shell scripts from Git Bash or WSL. Line endings are handled
 for you: `.gitattributes` pins the whole tree to LF regardless of your
 `core.autocrlf` setting.
-
-Building, testing and the live suite need no Python. The documentation site
-builds through `uv` in `docs/`, which fetches the Python it needs itself.
 
 ## First run
 
@@ -94,9 +95,10 @@ failing partway through seeding with `License limit exceeded`. See
 ## Making a change
 
 **Branch from `next`.** Every change targets `next`, which collects work into the
-next release; `main` moves only when `next` is promoted to it (ADR-066). A change
-reaches `next` through a pull request. The promotion is a fast-forward push of
-`next` onto `main`, made by a maintainer after `task release:promote:check`.
+next release; `main` moves only when a maintainer promotes `next` to it
+(ADR-066). A change reaches `next` through a pull request, except a branch of
+more than 100 commits: GitHub cannot rebase-merge one that long, so it lands as a
+fast-forward push.
 
 **Use [Conventional Commits](https://www.conventionalcommits.org/).** The commit
 type decides the version of the release your change ships in, so it is worth
