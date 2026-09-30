@@ -216,6 +216,18 @@ func TestLinksTheHostRefusesAreShown(t *testing.T) {
 func browser(t *testing.T, frames []viewhost.Frame) context.Context {
 	t.Helper()
 
+	drawn := `window.bbHost && window.bbHost.frames.length === ` + fmt.Sprint(len(frames)) + ` && window.bbHost.frames.every((f) => {
+		const d = f.iframe.contentDocument;
+		return d && d.getElementById("app") && d.getElementById("app").childElementCount > 0 && !d.querySelector("[aria-busy]");
+	})`
+	return openHost(t, frames, nil, drawn)
+}
+
+// openHost opens the stand-in host with frames, after running before, and
+// waits until ready holds on the host page.
+func openHost(t *testing.T, frames []viewhost.Frame, before []chromedp.Action, ready string) context.Context {
+	t.Helper()
+
 	page, err := viewhost.Page(viewPage(), frames, viewhost.Options{SameOrigin: true})
 	if err != nil {
 		t.Fatalf("render the host page: %v", err)
@@ -236,15 +248,12 @@ func browser(t *testing.T, frames []viewhost.Frame) context.Context {
 	ctx, cancelTimeout := context.WithTimeout(ctx, 2*time.Minute)
 	t.Cleanup(cancelTimeout)
 
-	drawn := `window.bbHost && window.bbHost.frames.length === ` + fmt.Sprint(len(frames)) + ` && window.bbHost.frames.every((f) => {
-		const d = f.iframe.contentDocument;
-		return d && d.getElementById("app") && d.getElementById("app").childElementCount > 0 && !d.querySelector("[aria-busy]");
-	})`
-	if err := chromedp.Run(ctx,
+	actions := append(append([]chromedp.Action{}, before...),
 		chromedp.EmulateViewport(1280, 900),
 		chromedp.Navigate("file:///"+filepath.ToSlash(path)),
-		chromedp.Poll(drawn, nil, chromedp.WithPollingTimeout(30*time.Second)),
-	); err != nil {
+		chromedp.Poll(ready, nil, chromedp.WithPollingTimeout(30*time.Second)),
+	)
+	if err := chromedp.Run(ctx, actions...); err != nil {
 		t.Fatalf("the views did not draw (is Chrome installed?): %v", err)
 	}
 	return ctx

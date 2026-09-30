@@ -403,6 +403,7 @@ button {
 .skeleton.short { width: 40%; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+.waiting { margin: 12px 0 0; font-size: var(--bb-text-sm); }
 
 .notice {
   padding: 10px 12px;

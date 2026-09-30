@@ -1056,10 +1056,16 @@ type viewSummary struct {
 	state   string
 }
 
-// shown is the text of show's answer.
+// shown is the text of show's answer. The client said it draws views, which
+// no answer can confirm: it draws the view only once show has answered, so
+// the model is told how to go on if the person sees none.
 func (s viewSummary) shown() string {
-	return "Showed the person " + s.subject + " as " + s.form + ":" + s.stateText()
+	return "Showed the person " + s.subject + " as " + s.form + ":" + s.stateText() + "\n\n" + notDrawn
 }
+
+// notDrawn is how the model goes on when a client that said it draws views
+// did not draw one.
+const notDrawn = "If the person says they see no view, their client did not draw it: give them what they asked for in your own words."
 
 // changed is what the model is told when a view the person has open changes.
 func (s viewSummary) changed() string {

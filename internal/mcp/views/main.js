@@ -6,6 +6,12 @@
 const VIEW_PAYLOAD_KEY = "io.github.vriesdemichael.bb/view";
 const VIEW_PAYLOAD_VERSION = 1;
 const CONNECT_TIMEOUT_MS = 10000;
+// A view whose result is slow to come says so, and one whose result has not
+// come says how to go on, rather than hold its place with no reason given: bb
+// answers show in seconds, and a client that drew the view but never passed
+// the result on would leave it waiting for ever.
+const SLOW_RESULT_MS = 15000;
+const NO_RESULT_MS = 60000;
 
 const bridge = createBridge({ name: "bb", version: "1" });
 
@@ -15,6 +21,8 @@ const view = {
   toolInput: null,
   failure: null,
   standalone: false,
+  // waited is how long the result has been on the way: "slow", then "none".
+  waited: "",
   fullscreen: false,
   // canFullscreen is whether to ask the host for fullscreen: yes unless it
   // said which modes it has without fullscreen among them, or refused once.
@@ -390,16 +398,33 @@ function content() {
   if (view.standalone) {
     return notice("This page draws bb's views inside a client that renders MCP Apps.");
   }
-  return skeleton();
+  if (view.waited === "none") {
+    return notice("bb's answer has not reached this view, so it has nothing to show. Ask for it in the conversation instead.");
+  }
+  return skeleton(view.waited === "slow");
 }
 
-// skeleton holds the place of the view while its result is on the way.
-function skeleton() {
+// skeleton holds the place of the view while its result is on the way, and
+// says so once it is slow to come.
+function skeleton(slow) {
   return el("div", { "aria-busy": "true", "aria-label": "Loading" },
     el("span", { class: "skeleton short" }),
     el("span", { class: "skeleton title" }),
     el("span", { class: "skeleton" }),
-    el("span", { class: "skeleton short" }));
+    el("span", { class: "skeleton short" }),
+    slow ? el("p", { class: "faint waiting", role: "status" }, "Still waiting for bb's answer.") : null);
+}
+
+// waitForResult marks the result slow to come, and then not come, while
+// nothing has come; a result that comes after all is drawn as ever.
+function waitForResult() {
+  for (const [after, waited] of [[SLOW_RESULT_MS, "slow"], [NO_RESULT_MS, "none"]]) {
+    setTimeout(() => {
+      if (view.payload || view.failure) return;
+      view.waited = waited;
+      render();
+    }, after);
+  }
 }
 
 // The host sizes an inline view to what it reports.
@@ -424,6 +449,7 @@ async function start() {
   render();
   watchSize();
   watchVisibility(view);
+  waitForResult();
   try {
     const result = await bridge.connect(CONNECT_TIMEOUT_MS);
     // A host that says what it can do, and leaves opening links out, opens
