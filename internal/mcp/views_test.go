@@ -179,6 +179,30 @@ func TestShowKindsFollowTheirTools(t *testing.T) {
 	}
 }
 
+// The model is told that show is for the person and the other tools for it,
+// and that a view is for someone who is there to see it: never for an agent
+// working on its own, and never to read data. The server's instructions say
+// so, and so does show's description, which a client may list without them.
+func TestTheModelIsToldShowIsForAPersonWhoIsThere(t *testing.T) {
+	t.Parallel()
+
+	session := connect(t, testClients(t), nil, nil)
+	said := map[string]string{
+		"the instructions":   session.InitializeResult().Instructions,
+		"show's description": listedTool(t, session, "show").Description,
+	}
+	for where, text := range said {
+		for _, want := range []string{"for the person", "never when you work on your own", "scheduled", "background", "batch"} {
+			if !strings.Contains(text, want) {
+				t.Errorf("%s do not say %q:\n%s", where, want, text)
+			}
+		}
+	}
+	if text := said["the instructions"]; !strings.Contains(text, "never to read data") {
+		t.Errorf("the instructions do not say show is not for reading data:\n%s", text)
+	}
+}
+
 // Without show there is no view page and no extension to announce.
 func TestNoViewsWithoutShow(t *testing.T) {
 	t.Parallel()
