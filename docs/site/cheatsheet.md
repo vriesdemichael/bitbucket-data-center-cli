@@ -115,7 +115,7 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 
 ---
 
-## The Daily Driver Cookbook (10 Real-World Recipes)
+## The Daily Driver Cookbook
 
 ### Recipe 1: Morning Triage & Review Queue
 
