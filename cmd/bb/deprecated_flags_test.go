@@ -32,6 +32,8 @@ var deprecatedFlagRuns = map[string][]string{
 		"--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main", "--matcher-display", "main",
 	},
 
+	"bb build required delete --limit":       {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--limit", "1"},
+	"bb build required delete --all":         {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--all"},
 	"bb build status stats --include-unique": {"build", "status", "stats", "a1b2c3d", "--include-unique"},
 	"bb build status get --include-unique":   {"build", "status", "get", "a1b2c3d", "--repo", "PROJ/repo", "--include-unique"},
 	"bb build status set --include-unique": {

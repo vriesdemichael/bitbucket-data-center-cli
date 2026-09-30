@@ -541,6 +541,8 @@ func New(deps Dependencies) *cobra.Command {
   bb build required delete 5 --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb build required delete", "limit", "all")
+
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
 				return err
@@ -556,14 +558,13 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				checks, err := service.ListRequiredBuildChecks(cmd.Context(), repo, requiredPaging.ServiceLimit())
+				// Every check, whatever --limit says. Bitbucket has no read of
+				// one check by id, and a check past a cap was predicted "not
+				// found" while the real run deleted it (#728).
+				checks, err := service.ListRequiredBuildChecks(cmd.Context(), repo, paging.Options{}.All().ServiceLimit())
 				if err != nil {
 					return err
 				}
-
-				// The service already stops at the cap (ADR-074); this keeps --limit
-				// honest if one ever does not. A no-op under --all.
-				checks = paging.Truncate(requiredPaging, checks)
 
 				predicted := "no-op"
 				reason := "required build check was not found"
@@ -587,9 +588,6 @@ func New(deps Dependencies) *cobra.Command {
 				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
 			}
 
-			// limit-not-reported: the bounded read above finds the check to delete;
-			// what this command returns is one deletion, and meta.limitReached on a
-			// single object would be answering a question nobody asked.
 			if err := service.DeleteRequiredBuildCheck(cmd.Context(), repo, id); err != nil {
 				return err
 			}
@@ -602,9 +600,12 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	// The delete preview scans the existing checks, so it reads the flags
-	// too -- but create and update do not (#476).
-	requiredPaging.Register(deleteRequiredCmd, 25)
+	// Accepted, and inert: the preview reads every check to find the one it
+	// deletes, so there is nothing for a cap to bound (ADR-084).
+	deleteRequiredCmd.Flags().Int("limit", paging.DefaultLimit, "Deprecated: has no effect")
+	deleteRequiredCmd.Flags().Bool("all", false, "Deprecated: has no effect")
+	_ = deleteRequiredCmd.Flags().MarkHidden("limit")
+	_ = deleteRequiredCmd.Flags().MarkHidden("all")
 	requiredCmd.AddCommand(deleteRequiredCmd)
 
 	var scopedSetKey string

@@ -157,6 +157,22 @@ var Entries = []Entry{
 		Reason:       "the command never read it",
 		Advice:       "Remove it.",
 	},
+	// bb build required delete took --limit and --all for its preview, which
+	// looked the check up among as many as they allowed. A check past the
+	// cap was predicted not found and deleted by the real run (#728), so the
+	// preview reads every check and the flags bound nothing.
+	{
+		Name:         "bb build required delete --limit",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "the preview reads every required build check to find the one it deletes",
+		Advice:       "Remove it.",
+	},
+	{
+		Name:         "bb build required delete --all",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "the preview reads every required build check to find the one it deletes",
+		Advice:       "Remove it.",
+	},
 }
 
 // WarnFlags writes the registered warning for each of a command's deprecated

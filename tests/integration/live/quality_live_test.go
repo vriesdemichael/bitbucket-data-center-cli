@@ -809,6 +809,96 @@ func assertQualityCLIRequiredCheckStored(t *testing.T, listing, id string, keys 
 	}
 }
 
+// TestLiveCLIBuildRequiredDeletePreviewFindsEveryCheck is #728.
+//
+// The preview looks the check up among the existing ones, and it used to read
+// only as many as --limit allowed. With three checks and --limit 1, a check
+// past the first was predicted a no-op, "not found", and the real run with the
+// same flags deleted it. Bitbucket has no read of one check by id, so the
+// preview reads them all, and --limit and --all no longer change anything.
+func TestLiveCLIBuildRequiredDeletePreviewFindsEveryCheck(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	var created []string
+	for _, key := range []string{"ci-first", "ci-second", "ci-third"} {
+		body := fmt.Sprintf(`{"buildParentKeys":[%q],"refMatcher":{"id":"refs/heads/master","type":{"id":"BRANCH"}}}`, key)
+		created = append(created, createRequiredBuildCheckWithRetry(t, body))
+	}
+
+	listing := mustLiveCLI(t, "build", "required", "list")
+	var checks []any
+	decodeJSONData(t, listing, &checks)
+	if len(checks) != len(created) {
+		t.Fatalf("want the %d checks just created, got %d:\n%s", len(created), len(checks), listing)
+	}
+
+	// Every one of them, so the ones past the first in Bitbucket's order are
+	// asked about whatever that order is.
+	var limitWarning string
+	for _, id := range created {
+		preview, stderr, err := executeLiveCLISplit(t, "", "--json", "--dry-run", "build", "required", "delete", id, "--limit", "1")
+		if err != nil {
+			t.Fatalf("build required delete %s --limit 1 --dry-run failed: %v\n%s", id, err, preview)
+		}
+		assertLivePreviewOf(t, preview, "build required delete", jsonoutput.OutcomeWouldApply, "will be deleted")
+		limitWarning = stderr
+	}
+	assertDeprecationWarned(t, limitWarning, "bb build required delete --limit")
+
+	allPreview, allStderr, err := executeLiveCLISplit(t, "", "--json", "--dry-run", "build", "required", "delete", created[0], "--all")
+	if err != nil {
+		t.Fatalf("build required delete --all --dry-run failed: %v\n%s", err, allPreview)
+	}
+	assertLivePreviewOf(t, allPreview, "build required delete", jsonoutput.OutcomeWouldApply, "will be deleted")
+	assertDeprecationWarned(t, allStderr, "bb build required delete --all")
+
+	// Bitbucket answers a delete of a check it does not hold as it answers one
+	// it does, so nothing happens and the preview says so.
+	var highest int64
+	for _, check := range checks {
+		if id, ok := requiredBuildCheckID(check.(map[string]any)); ok && id > highest {
+			highest = id
+		}
+	}
+	missing := fmt.Sprintf("%d", highest+1000)
+	missingPreview, err := executeLiveCLI(t, "--json", "--dry-run", "build", "required", "delete", missing)
+	if err != nil {
+		t.Fatalf("build required delete %s --dry-run failed: %v\n%s", missing, err, missingPreview)
+	}
+	assertLivePreviewOf(t, missingPreview, "build required delete", jsonoutput.OutcomeNoOp, "not found")
+
+	if after := mustLiveCLI(t, "build", "required", "list"); after != listing {
+		t.Fatalf("a delete preview changed the checks\nbefore: %s\nafter: %s", listing, after)
+	}
+
+	// The real run, with the flag that hid it from the preview, deletes the
+	// check that lists last and leaves the others.
+	lastID, _ := numericOrStringID(checks[len(checks)-1].(map[string]any)["id"])
+	mustLiveCLI(t, "build", "required", "delete", lastID, "--limit", "1", "--yes")
+
+	var remaining []any
+	decodeJSONData(t, mustLiveCLI(t, "build", "required", "list"), &remaining)
+	if _, found := findByID(remaining, lastID); found {
+		t.Errorf("required build check %s survived its delete: %v", lastID, remaining)
+	}
+	if len(remaining) != len(created)-1 {
+		t.Errorf("want %d checks left after deleting one, got %d: %v", len(created)-1, len(remaining), remaining)
+	}
+}
+
 func requiredBuildCheckID(payload map[string]any) (int64, bool) {
 	value, ok := payload["id"]
 	if !ok {
