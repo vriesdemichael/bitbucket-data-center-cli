@@ -89,7 +89,7 @@ the API:
 Tracking both matters, and so does scanning past the services: `pullrequest` mixes the two
 transports, and the pull request review commands, the auth commands and the permission checker call
 the generated client from `internal/cli` directly. A generated-client-only metric, or one that
-looked only at `internal/services`, reports endpoints bb has called since v4.0.0 as gaps.
+looked only at `internal/services`, reports endpoints bb calls as gaps.
 
 Print current coverage with `task quality:spec-coverage`. The `gaps` array lists unimplemented
 operations (method, path, tag, summary) and is a useful source when scoping new commands.

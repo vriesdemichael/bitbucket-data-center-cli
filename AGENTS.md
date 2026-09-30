@@ -42,9 +42,8 @@ what let three broken commands pass.
 
 `tools/mock-inventory` classifies every mocked server from signals in the test,
 and the signals a fault-injection test leaves are the same ones a routing test
-leaves: serve a path, answer a status. It has already had to be widened twice in
-that direction, and each widening risks a wrong answer somewhere it was
-previously right.
+leaves: serve a path, answer a status. Widening it to fit one test risks a wrong
+answer for others.
 
 So when the classifier is wrong about a test, say so at the test rather than
 tuning the classifier:
@@ -64,8 +63,8 @@ buried in a heuristic.
 ### Writing a live test the scanner can read
 
 `tools/command-reach` finds invocations by parsing the tests, so a call it
-cannot read is a command missing from the report. It no longer skips those
-quietly: an unreadable call site fails the tool by name.
+cannot read is a command missing from the report, so an unreadable call site
+fails the tool by name.
 
 It reads the words from a literal at the call site, a `[]string` variable, an
 `append` onto either, a helper that forwards its variadic arguments, and a table
@@ -104,12 +103,6 @@ Rebasing therefore needs nothing special:
 task pr:rebase          # or: git rebase origin/next
 ```
 
-Earlier versions of this file described a procedure for regenerating and amending committed coverage
-artifacts after every rebase. That is gone. The artifacts existed because the live suite needed a
-licensed Bitbucket that CI could not provide, so a developer's machine was the only place combined
-coverage could be produced. CI now provisions its own instance (ADR-043), and the committed copies
-turned out to be ~5.7MB that conflicted on every rebase and that no gate ever read. See ADR-045.
-
 Coverage **baselines** are still committed, because they are contracts rather than measurements:
 
 | File | Asserts | Regenerate with |
@@ -119,10 +112,6 @@ Coverage **baselines** are still committed, because they are contracts rather th
 
 These are small, readable in a diff, and verified by static analysis needing no Bitbucket instance.
 A diff in them is the point: it is how a reviewer sees that a command lost live coverage.
-
-`generated-operation-contracts.json` used to sit here. It was deleted with the contract-coverage
-metric it fed (ADR-065): a hand-written map of operation to test file, verified by nothing, feeding
-a percentage measured against a threshold of zero.
 
 Run `task quality:verify` for every gate that needs no Bitbucket instance, and
 `task quality:coverage` for the full coverage gate when you want it locally. The latter
@@ -201,8 +190,7 @@ incidents took. And it snapshots the repository-scoped configuration before the 
 it afterwards, failing the package on any change and naming the exact keys. A repository a test
 creates and addresses directly is unaffected, because a ceiling only stops an upward search.
 
-The set of packages that need it is computed rather than listed here; this paragraph named three of
-them when there were four.
+The set of packages that need it is computed, so it is not listed here.
 
 This is not hypothetical. `Backend.Clone` persists `http.extraHeader` into the repository it clones
 into so later fetches carry authentication. A test that pointed it at the working copy instead of a
@@ -234,7 +222,7 @@ the guard is watching mid-run. That surfaced as several guarded packages failing
 only from the shared scope. Everything else still fails, so **if the guard names a key, believe
 it**: it is not the worktrees.
 
-The cost is that a test writing `branch.*` into this repository is no longer caught. Do not widen
+The cost is that a test writing `branch.*` into this repository is not caught. Do not widen
 the exclusion to buy quiet; if a key you think is noise fires, it came from a test.
 
 ### Documented commands are parsed, not just written
@@ -370,7 +358,7 @@ The governance guards, so the set is knowable:
 
 ### When running tests also uncovers a broken test
 
-If the rebase brought in API changes from `next` (e.g. a command's flag changed from `--host` to a positional argument), tests added on the branch may need updating. Fix them in the same amend so history stays clean.
+If the rebase brought in API changes from `next` (e.g. a command's flag changed from `--host` to a positional argument), tests added on the branch may need updating. Fix each in the commit that added it, so history stays clean.
 
 ## Development Tips & Gotchas
 
