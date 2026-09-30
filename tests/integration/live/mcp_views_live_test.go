@@ -804,8 +804,9 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 			return decoded
 		}
 
+		// The model names bb's own user too, whom the form leaves out.
 		shown := call("show", map[string]any{"kind": "pull_request_form", "project": seeded.Key, "repo": repo.Slug,
-			"from_ref": branch, "title": "Made with the form", "description": "Drafted by the model."})
+			"from_ref": branch, "title": "Made with the form", "description": "Drafted by the model.", "reviewers": harness.username()})
 		payload, _ := shown.Meta[viewPayloadKey].(map[string]any)
 		form, _ := payload["form"].(map[string]any)
 		for key, want := range map[string]any{"mode": "create", "from_ref": branch, "to_ref": "master", "default_branch": "master", "title": "Made with the form"} {
@@ -817,7 +818,8 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 			t.Errorf("the form links under %v, want the repository's page", form["repository_url"])
 		}
 		// The create page fills in the default reviewer and the code owner,
-		// and leaves out bb's own user, who owns the file too.
+		// and leaves out bb's own user, who owns the file too, and who opens
+		// the pull request whoever names them.
 		for key, want := range map[string][]any{
 			"reviewers":         {reviewer.Username, owner.Username},
 			"default_reviewers": {reviewer.Username},
