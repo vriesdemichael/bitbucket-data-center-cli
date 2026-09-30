@@ -22,10 +22,11 @@ const dayLayout = "2006-01-02"
 
 // periodFrom reads --since, --until and --date-field.
 //
-// A bound is a day, as a person names one, or a moment. A day is read in
-// location -- the day somebody worked, not the UTC one -- and the day given to
-// --until runs to its end, so that --since and --until naming the same day is
-// that day rather than nothing.
+// A bound is written as ISO 8601 writes a date: a day, a time on a day, or
+// either with an offset. Nobody works out a number of seconds to ask what they
+// did in July. Without an offset it is read in location -- the day somebody
+// worked, not the UTC one -- and the day given to --until runs to its end, so
+// that --since and --until naming the same day is that day rather than nothing.
 func periodFrom(since, until, field string, location *time.Location) (pullrequestservice.Period, error) {
 	period := pullrequestservice.Period{Field: field}
 
@@ -56,13 +57,22 @@ func boundOf(flag, value string, endOfDay bool, location *time.Location) (int64,
 		}
 		return day.UnixMilli(), nil
 	}
+	for _, layout := range localTimeLayouts {
+		if moment, err := time.ParseInLocation(layout, trimmed, location); err == nil {
+			return moment.UnixMilli(), nil
+		}
+	}
 	if moment, err := time.Parse(time.RFC3339, trimmed); err == nil {
 		return moment.UnixMilli(), nil
 	}
 
 	return 0, apperrors.New(apperrors.KindValidation,
-		fmt.Sprintf("%s %q is neither a day (YYYY-MM-DD) nor a moment (RFC 3339, as 2026-07-20T09:00:00+02:00)", flag, value), nil)
+		fmt.Sprintf("%s %q is not an ISO 8601 date: write a day (2026-07-20), a time on it (2026-07-20T09:00), or either with an offset (2026-07-20T09:00:00+02:00)", flag, value), nil)
 }
+
+// localTimeLayouts are a time on a day with no offset, to the minute or the
+// second, read where the caller is.
+var localTimeLayouts = []string{"2006-01-02T15:04", "2006-01-02T15:04:05"}
 
 // dateOf is the date of a pull request that field names, in milliseconds since
 // the epoch, and zero when it has none.

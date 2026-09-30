@@ -239,9 +239,10 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 		Long: "Search for pull requests globally or within a repository.\n\n" +
 			"Without --repo this is your own pull requests across every repository, as Bitbucket's dashboard lists " +
 			"them: --role says which, those you wrote, review or take part in.\n\n" +
-			"--since and --until bound the listing to a period, on the date --date-field names. Each takes a day " +
-			"as YYYY-MM-DD, in local time, or a moment as RFC 3339; a day given to --until runs to its end. With " +
-			"--since the listing holds the whole period rather than the first --limit.",
+			"--since and --until bound the listing to a period, on the date --date-field names. Each takes an " +
+			"ISO 8601 date: a day (2026-07-20), a time on it (2026-07-20T09:00), or either with an offset " +
+			"(2026-07-20T09:00:00+02:00). Without an offset it is local time, and a day given to --until runs to " +
+			"its end. With --since the listing holds the whole period rather than the first --limit.",
 		Example: "  # The pull requests you wrote that are still open\n" +
 			"  bb search prs --role author\n\n" +
 			"  # What you wrote in a period, whatever became of it, week by week\n" +
@@ -360,8 +361,8 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
 	enumflag.Register(cmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Filter by state; closed is merged and declined together")
 	enumflag.Register(cmd.Flags(), &role, "role", "", participantRoles, "Filter by role; dashboard only, so it cannot be combined with --repo")
-	cmd.Flags().StringVar(&since, "since", "", "Only pull requests dated on or after this day (YYYY-MM-DD) or moment (RFC 3339); lists the whole period unless --limit is given")
-	cmd.Flags().StringVar(&until, "until", "", "Only pull requests dated on or before this day (YYYY-MM-DD) or moment (RFC 3339)")
+	cmd.Flags().StringVar(&since, "since", "", "Only pull requests dated on or after this ISO 8601 date, such as 2026-07-20 or 2026-07-20T09:00; lists the whole period unless --limit is given")
+	cmd.Flags().StringVar(&until, "until", "", "Only pull requests dated on or before this ISO 8601 date, such as 2026-09-27; a day runs to its end")
 	enumflag.Register(cmd.Flags(), &dateField, "date-field", pullrequestservice.DateCreated, dateFields, "Which date --since and --until apply to")
 	enumflag.Register(cmd.Flags(), &groupBy, "group-by", "", groupings, "Group the text output by the week of the date, or by repository")
 
