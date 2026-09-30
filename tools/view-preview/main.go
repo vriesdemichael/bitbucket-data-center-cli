@@ -16,7 +16,9 @@
 //	go run ./tools/view-preview -project PAY -repo ledger -id 1 -screenshots out -bare -theme dark
 //
 // -from adds the pull request form for a new pull request from that branch,
-// and -file the file viewer on that path. The stand-in host passes tool
+// and -file the file viewer on that path. -kinds draws only the kinds it
+// names, and -height draws each fullscreen frame that tall, to see a long
+// view whole. The stand-in host passes tool
 // calls, so the views offer what they do in a client; a view the person
 // clicks in does nothing here.
 package main
@@ -28,6 +30,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 
 	cdppage "github.com/chromedp/cdproto/page"
@@ -50,13 +54,15 @@ func main() {
 	theme := flag.String("theme", "", "light or dark for every frame; empty draws each in its own")
 	from := flag.String("from", "", "a branch to draft a new pull request from, in the pull request form")
 	file := flag.String("file", "", "a file to show in the file viewer, at the pull request's source branch")
+	kinds := flag.String("kinds", "", "comma-separated kinds to draw, such as diff,threads; empty draws every kind")
+	height := flag.Int("height", 0, "how tall to draw each fullscreen frame, in pixels; zero is the stand-in host's default")
 	flag.Parse()
 
 	if *theme != "" && *theme != "light" && *theme != "dark" {
 		fmt.Fprintln(os.Stderr, "view-preview: -theme is light or dark")
 		os.Exit(2)
 	}
-	count, err := run(*project, *repo, *id, *state, *theme, *from, *file, *out)
+	count, err := run(*project, *repo, *id, *state, *theme, *from, *file, *kinds, *height, *out)
 	if err == nil && *screenshots != "" {
 		err = capture(*out, *screenshots, count, *bare)
 	}
@@ -86,15 +92,27 @@ func capture(page, dir string, count int, bare bool) error {
 	ctx, cancel = context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
-	const viewportHeight = 6000
+	viewportHeight := 6000
+	var pageHeight int
 	if err := chromedp.Run(ctx,
-		chromedp.EmulateViewport(1400, viewportHeight, chromedp.EmulateScale(2)),
+		chromedp.EmulateViewport(1400, int64(viewportHeight), chromedp.EmulateScale(2)),
 		chromedp.Navigate("file:///"+filepath.ToSlash(absolute)),
 		chromedp.WaitVisible("section.frame"),
 		// The views draw once the stand-in host has answered them.
 		chromedp.Sleep(2*time.Second),
+		chromedp.Evaluate(`document.documentElement.scrollHeight`, &pageHeight),
 	); err != nil {
 		return err
+	}
+	// Tall frames make a page longer than the viewport: it grows to hold them.
+	if pageHeight > viewportHeight {
+		viewportHeight = pageHeight
+		if err := chromedp.Run(ctx,
+			chromedp.EmulateViewport(1400, int64(viewportHeight), chromedp.EmulateScale(2)),
+			chromedp.Sleep(2*time.Second),
+		); err != nil {
+			return err
+		}
 	}
 	selector := "#frames > section"
 	if bare {
@@ -111,7 +129,7 @@ func capture(page, dir string, count int, bare bool) error {
 		return fmt.Errorf("the page has %d frames, want %d", len(boxes), count)
 	}
 	for i, box := range boxes {
-		if box.Y+box.Height > viewportHeight {
+		if box.Y+box.Height > float64(viewportHeight) {
 			return fmt.Errorf("frame %d ends %.0fpx down, past the %dpx the capture holds", i+1, box.Y+box.Height, viewportHeight)
 		}
 		var shot []byte
@@ -131,7 +149,7 @@ func capture(page, dir string, count int, bare bool) error {
 	return nil
 }
 
-func run(project, repo, id, state, theme, from, file, out string) (int, error) {
+func run(project, repo, id, state, theme, from, file, kinds string, height int, out string) (int, error) {
 	if project == "" || repo == "" || id == "" {
 		return 0, fmt.Errorf("-project, -repo and -id are required")
 	}
@@ -204,6 +222,11 @@ func run(project, repo, id, state, theme, from, file, out string) (int, error) {
 		}})
 	}
 
+	if kinds != "" {
+		drawn := strings.Split(kinds, ",")
+		wanted = slices.DeleteFunc(wanted, func(want frame) bool { return !slices.Contains(drawn, want.arguments["kind"].(string)) })
+	}
+
 	// An answer for the views' own tool, so the stand-in host says it passes
 	// tool calls and the views offer what they offer in a client. A view
 	// whose data was read just now does not call it while the page is taken.
@@ -228,11 +251,16 @@ func run(project, repo, id, state, theme, from, file, out string) (int, error) {
 		if theme != "" {
 			want.theme = theme
 		}
+		frameHeight := 0
+		if want.mode == "fullscreen" {
+			frameHeight = height
+		}
 		frames = append(frames, viewhost.Frame{
 			Title:       want.title,
 			Theme:       want.theme,
 			Mode:        want.mode,
 			Fullscreen:  want.fullscreen,
+			Height:      frameHeight,
 			Arguments:   want.arguments,
 			Result:      encoded,
 			ToolResults: map[string][]json.RawMessage{"refresh_view": {unchanged}},
