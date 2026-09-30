@@ -12,7 +12,9 @@ decision: >
   gets text as before.
 
   Views are kinds of one tool, show, which the model calls once it has what the person asked about.
-  The data tools carry no view. A kind is offered while the tool whose answer it shows is exposed,
+  The data tools carry no view. The server tells the model that the other tools answer it and show
+  is for the person: for someone who is there to see it, once an answer is ready, and never for an
+  agent working on its own. A kind is offered while the tool whose answer it shows is exposed,
   and a client that renders no views is told nothing was shown, and nothing is fetched for it. A
   diff is for what the person cannot open in their own editor.
 

@@ -542,6 +542,44 @@ When a record cannot be written the call is **refused**. An audit trail that sil
 
 **Collection.** The audit log is a file because every SIEM already tails files — Splunk Universal Forwarder, Datadog Agent, Fluent Bit, Vector, Filebeat. `bb` deliberately ships no direct SIEM integration: it would put a network call, an auth secret and retry buffering inside the tool-call path of a process that is spawned per IDE session and killed without warning. For a containerised or wrapper-managed deployment, pass `--audit-file stderr` and let the cluster log collector read the process streams. Rotation is the collector's job; `bb` appends and never truncates.
 
+### Principle 6: Views Stay Inside the MCP Server
+
+A view is not a web page that talks to Bitbucket. It is drawn from the result
+of a tool call, and everything it does is another tool call, through the MCP
+client to this server ([ADR-101](../adr/101-mcp-server-adopts-mcp-apps.md)):
+
+- **Drawn from a result.** The client reads the one page every view renders in, `ui://bb/view`, from bb as an MCP resource, and draws it in a sandboxed frame. The page holds no Bitbucket data. What a view shows arrives inside the result of the `show` call that asked for it, which bb read from Bitbucket with its own token, CA bundle, client certificate and proxy, avatars included.
+- **No network.** The page declares no domains, so the client gives its frame no network at all. It cannot reach Bitbucket, a CDN or anything else, and it never holds a token.
+- **Clicks are tool calls.** **Approve**, **Request changes**, **Reply**, **Comment** and **Create** call the model's own tools, `submit_pr_review`, `add_pr_comment`, `create_pull_request` and `update_pull_request`, through the client, as the model's calls go. The token's permissions, the scope, the audit record and the confirmation of a tool that asks apply to them as to the model. Keeping a view current calls `refresh_view`, and the form's suggestions call `suggest_form_values`: both read only, and offered to views and not to the model.
+- **Links leave through the client.** A link opens in the person's browser, where Bitbucket's own login and permissions apply.
+
+```mermaid
+sequenceDiagram
+    participant Person
+    participant Client as MCP client
+    participant View
+    participant bb as bb ai mcp serve
+    participant Bitbucket
+    Note over View: sandboxed frame, no network
+    Note over Client,Bitbucket: The model asks for a view
+    Client->>bb: tools/call show
+    bb->>Bitbucket: REST reads, with bb's token
+    Bitbucket-->>bb: pull request, builds, comments, avatars
+    bb-->>Client: result: text for the model, data for the view
+    Client->>View: draws ui://bb/view from that result
+    Note over Person,Bitbucket: The person clicks Approve
+    Person->>View: click
+    View->>Client: tools/call submit_pr_review
+    Client->>bb: tools/call submit_pr_review
+    bb->>Person: asks to confirm, through the client
+    bb->>Bitbucket: POST the review, with bb's token
+    bb-->>View: result, through the client
+    View->>Client: tools/call refresh_view
+    Client->>bb: tools/call refresh_view
+```
+
+There is no other channel: the view reaches nothing the client does not pass on, and nothing reaches Bitbucket but bb. `--exclude show` turns views off, with the tools only views call. `--read-only` leaves the views that read and takes away their buttons and the form, whose tools write.
+
 ### Recommended IDE Configuration (`.vscode/settings.json`)
 
 ```json
