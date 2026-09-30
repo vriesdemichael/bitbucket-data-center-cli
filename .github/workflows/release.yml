@@ -598,7 +598,7 @@ jobs:
 
           manifest = {
               "version": version_no_v,
-              "description": "A CLI for Bitbucket Server / Bitbucket Data Center",
+              "description": "A CLI for Bitbucket Data Center",
               "homepage": repo_url,
               "license": "Apache-2.0",
               "architecture": {

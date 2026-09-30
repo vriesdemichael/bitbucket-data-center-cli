@@ -49,7 +49,7 @@ def render_formula(version: str, repository: str, hashes: dict[str, str]) -> str
     linux_arm = hash_for(hashes, version, "linux_arm64")
     linux_amd = hash_for(hashes, version, "linux_amd64")
     return f'''class Bb < Formula
-  desc "A CLI for Bitbucket Server / Bitbucket Data Center"
+  desc "A CLI for Bitbucket Data Center"
   homepage "{repo_url}"
   version "{version}"
   license "Apache-2.0"

@@ -32,7 +32,7 @@ func ConfigJSONSchema() map[string]any {
 		},
 		"allowed_hosts": map[string]any{
 			"type":        "array",
-			"description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
+			"description": "Whitelist of permitted Bitbucket Data Center instance URLs or hostnames.",
 			"items": map[string]any{
 				"type": "string",
 			},
@@ -98,7 +98,7 @@ func ConfigJSONSchema() map[string]any {
 		"properties": map[string]any{
 			"url": map[string]any{
 				"type":        "string",
-				"description": "Bitbucket Server or Data Center base URL.",
+				"description": "Bitbucket Data Center base URL.",
 			},
 			"auth_mode": map[string]any{
 				"type":        "string",
@@ -145,7 +145,7 @@ func ConfigJSONSchema() map[string]any {
 	return map[string]any{
 		"$schema":              jsonSchemaVersion,
 		"$id":                  ConfigSchemaID,
-		"title":                "Bitbucket Server CLI Configuration",
+		"title":                "Bitbucket Data Center CLI Configuration",
 		"description":          "Schema for bb system, workspace, and user configuration files (/etc/bb/config.yaml, %ProgramData%\\bb\\config.yaml, .bb/config.yaml, and ~/.config/bb/config.yaml).",
 		"type":                 "object",
 		"additionalProperties": false,
@@ -156,7 +156,7 @@ func ConfigJSONSchema() map[string]any {
 			},
 			"default_host": map[string]any{
 				"type":        "string",
-				"description": "Default Bitbucket Server / Data Center instance URL or alias.",
+				"description": "Default Bitbucket Data Center instance URL or alias.",
 			},
 			"project_key": map[string]any{
 				"type":        "string",
