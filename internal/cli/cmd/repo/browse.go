@@ -22,7 +22,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 		Short: "Read a file, a tree, its history or its blame at any ref",
 	}
 
-	browseCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	browseCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	var treeAt string
 	var treePaging paging.Options

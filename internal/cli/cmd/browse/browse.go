@@ -134,7 +134,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&repositorySelector, "repo", "R", "", "Repository as [HOST/]PROJECT/slug (defaults to inferred repository context)")
+	cmd.Flags().StringVarP(&repositorySelector, "repo", "R", "", "Repository as [HOST/]PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	cmd.Flags().StringVarP(&branch, "branch", "b", "", "Select another branch")
 	cmd.Flags().StringVarP(&commit, "commit", "c", "", "Select another commit")
 	cmd.Flags().BoolVarP(&noBrowser, "no-browser", "n", false, "Print destination URL instead of opening the browser")

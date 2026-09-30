@@ -235,7 +235,7 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 	forkCmd.Flags().StringVar(&forkName, "name", "", "Name of the new fork")
 	forkCmd.Flags().StringVar(&forkProject, "project", "", "Project key of the new fork")
 	if repositorySelector == nil {
-		forkCmd.Flags().StringVar(&localRepoSelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+		forkCmd.Flags().StringVar(&localRepoSelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	}
 	return forkCmd
 }
@@ -356,7 +356,7 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 		},
 	}
 	if repositorySelector == nil {
-		deleteCmd.Flags().StringVar(&localRepoSelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+		deleteCmd.Flags().StringVar(&localRepoSelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	}
 	deleteCmd.Flags().BoolVar(&confirmed, "yes", false, "Skip the confirmation. Only applies when the repository is named explicitly.")
 	return deleteCmd
@@ -370,7 +370,7 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 		Short: "Create, fork, update and delete repositories",
 	}
 
-	repoAdminCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	repoAdminCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	repoAdminCmd.AddCommand(newRepoCreateCommand(deps, true))
 	repoAdminCmd.AddCommand(newRepoForkCommand(deps, &repositorySelector, true))

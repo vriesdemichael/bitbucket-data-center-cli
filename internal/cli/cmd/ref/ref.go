@@ -70,7 +70,7 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "List a repository's branches and tags, and resolve a ref to its commit",
 	}
 
-	refCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	refCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	var filterText string
 	listCmd := &cobra.Command{

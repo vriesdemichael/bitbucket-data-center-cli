@@ -217,7 +217,7 @@ for.`,
 			return nil
 		},
 	}
-	statusCmd.Flags().StringVar(&statusHost, "host", "", "Override host for this status check")
+	statusCmd.Flags().StringVar(&statusHost, "host", "", "Bitbucket host URL (defaults to the configured host)")
 	statusCmd.Flags().BoolVar(&statusCheckExit, "check", false, "Exit non-zero when a check fails (for CI)")
 	authCmd.AddCommand(statusCmd)
 
@@ -381,7 +381,7 @@ to fail instead of falling back.`,
 			return nil
 		},
 	}
-	identityCmd.Flags().StringVar(&identityHost, "host", "", "Override host for this identity check")
+	identityCmd.Flags().StringVar(&identityHost, "host", "", "Bitbucket host URL (defaults to the configured host)")
 	authCmd.AddCommand(identityCmd)
 
 	var tokenHost string
@@ -429,7 +429,7 @@ to fail instead of falling back.`,
 			return nil
 		},
 	}
-	tokenCmd.Flags().StringVar(&tokenHost, "host", "", "Bitbucket host URL")
+	tokenCmd.Flags().StringVar(&tokenHost, "host", "", "Bitbucket host URL (defaults to the configured host)")
 	authCmd.AddCommand(tokenCmd)
 
 	var logoutHost string
@@ -454,7 +454,7 @@ to fail instead of falling back.`,
 			return nil
 		},
 	}
-	logoutCmd.Flags().StringVar(&logoutHost, "host", "", "Bitbucket host URL (defaults to stored default host)")
+	logoutCmd.Flags().StringVar(&logoutHost, "host", "", "Bitbucket host URL (defaults to the configured host)")
 	authCmd.AddCommand(logoutCmd)
 
 	serverCmd := &cobra.Command{

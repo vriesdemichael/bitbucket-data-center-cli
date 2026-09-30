@@ -74,7 +74,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 		Short: "Add, list, update and delete comments on commits and pull requests",
 	}
 
-	commentCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	commentCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	commentCmd.PersistentFlags().StringVar(&commitID, "commit", "", "Commit ID context")
 	commentCmd.PersistentFlags().StringVar(&pullRequestID, "pr", "", "Pull request ID context")
 

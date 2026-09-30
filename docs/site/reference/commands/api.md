@@ -56,7 +56,7 @@ cat body.json | bb api /rest/api/1.0/projects/PROJ/repos/repo/branches -X POST -
 :   Add a custom HTTP request header (Name: Value)
 
 `--host string`
-:   Bitbucket host URL
+:   Bitbucket host URL (defaults to the configured host)
 
 `--input string`
 :   File to use as request body (or '-' for stdin)

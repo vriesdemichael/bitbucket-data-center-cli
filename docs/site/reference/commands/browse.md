@@ -44,7 +44,7 @@ bb browse --settings --repo PROJ/repo --no-browser
 :   Open repository tags/releases view
 
 `-R, --repo string`
-:   Repository as \[HOST/\]PROJECT/slug (defaults to inferred repository context)
+:   Repository as \[HOST/\]PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `-s, --settings`
 :   Open repository settings

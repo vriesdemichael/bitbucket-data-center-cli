@@ -50,7 +50,7 @@ Inherited from [`bb tag`](#bb-tag):
 :   Filter text for tag names
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -93,7 +93,7 @@ Inherited from [`bb tag`](#bb-tag):
 :   Filter text for tag names
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -141,7 +141,7 @@ Inherited from [`bb tag`](#bb-tag):
 :   Filter text for tag names
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -178,7 +178,7 @@ Inherited from [`bb tag`](#bb-tag):
 :   Filter text for tag names
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
