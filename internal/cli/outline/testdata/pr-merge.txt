@@ -27,6 +27,8 @@ data
     closedDate?         integer                         When it was merged or declined, in milliseconds since the epoch.
     url?                string                          Where the pull request is in Bitbucket, as the server links to
                                                         it.
+    issueKeys?          list of string                  Issue keys the title and source branch mention, such as
+                                                        PROJ-123, in the order they appear.
     reviewers?          list of object                  Everyone asked to review, with where they got to.
       name?             string                          Username.
       displayName?      string                          Human-readable name.

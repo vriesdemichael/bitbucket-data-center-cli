@@ -5536,7 +5536,7 @@ Flags:
       --limit int              Maximum number of results to return (default 25)
       --source-branch string   Optional source branch filter
       --start int              Start offset for Bitbucket pull request list operations
-      --state string           Pull request state filter (one of: open, closed, all) (default "open")
+      --state string           Pull request state filter (one of: open, merged, declined, closed, all) (default "open")
       --target-branch string   Optional target branch filter
       --with-review-status     Resolve unresolved comment threads per pull request (walks each activity timeline; slower)
 
@@ -12118,18 +12118,36 @@ Dry run:
 Search for pull requests globally or within a repository
 
 ```text
-Search for pull requests globally or within a repository
+Search for pull requests globally or within a repository.
+
+Without --repo this is your own pull requests across every repository, as Bitbucket's dashboard lists them: --role says which, those you wrote, review or take part in.
+
+--since and --until bound the listing to a period, on the date --date-field names. Each takes a day as YYYY-MM-DD, in local time, or a moment as RFC 3339; a day given to --until runs to its end. With --since the listing holds the whole period rather than the first --limit.
 
 Usage:
   bb search prs [flags]
 
+Examples:
+  # The pull requests you wrote that are still open
+  bb search prs --role author
+
+  # What you wrote in a period, whatever became of it, week by week
+  bb search prs --role author --state all --since 2026-07-20 --until 2026-09-27 --group-by week
+
+  # What was merged in one repository this month
+  bb search prs --repo PROJ/repo --state merged --date-field closed --since 2026-09-01
+
 Flags:
-      --all            Return every result rather than the first --limit
-      --limit int      Maximum number of results to return (default 25)
-      --repo string    Optional repository as PROJECT/slug to scope search
-      --role string    Filter by role; dashboard only, so it cannot be combined with --repo (one of: author, reviewer, participant)
-      --start int      Pagination start index
-      --state string   Filter by state (one of: open, closed, all) (default "open")
+      --all                 Return every result rather than the first --limit
+      --date-field string   Which date --since and --until apply to (one of: created, updated, closed) (default "created")
+      --group-by string     Group the text output by the week of the date, or by repository (one of: week, repo)
+      --limit int           Maximum number of results to return (default 25)
+      --repo string         Optional repository as PROJECT/slug to scope search
+      --role string         Filter by role; dashboard only, so it cannot be combined with --repo (one of: author, reviewer, participant)
+      --since string        Only pull requests dated on or after this day (YYYY-MM-DD) or moment (RFC 3339); lists the whole period unless --limit is given
+      --start int           Pagination start index
+      --state string        Filter by state; closed is merged and declined together (one of: open, merged, declined, closed, all) (default "open")
+      --until string        Only pull requests dated on or before this day (YYYY-MM-DD) or moment (RFC 3339)
 
 Dry run:
   Runs as usual: this command changes nothing, so there is nothing to hold back

@@ -43,9 +43,10 @@ var (
 	DiffLineTypes = []string{"ADDED", "REMOVED", "CONTEXT"}
 
 	// PullRequestStateFilters are the values --state takes when listing or
-	// searching pull requests. "all" is not a Bitbucket state -- it is the CLI
-	// asking for both -- so this set has no generated counterpart.
-	PullRequestStateFilters = []string{"open", "closed", "all"}
+	// searching pull requests. "closed" and "all" are not Bitbucket states --
+	// they are the CLI asking for merged and declined together, and for
+	// everything -- so this set has no generated counterpart.
+	PullRequestStateFilters = []string{"open", "merged", "declined", "closed", "all"}
 )
 
 // MergeStrategies are the pull request merge strategy ids Bitbucket accepts.

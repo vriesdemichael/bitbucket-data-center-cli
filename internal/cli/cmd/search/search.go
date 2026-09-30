@@ -3,6 +3,7 @@ package searchcmd
 import (
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/enumflag"
@@ -227,10 +228,26 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 	var repositorySelector string
 	var state string
 	var role string
+	var since string
+	var until string
+	var dateField string
+	var groupBy string
 
 	cmd := &cobra.Command{
 		Use:   "prs",
 		Short: "Search for pull requests globally or within a repository",
+		Long: "Search for pull requests globally or within a repository.\n\n" +
+			"Without --repo this is your own pull requests across every repository, as Bitbucket's dashboard lists " +
+			"them: --role says which, those you wrote, review or take part in.\n\n" +
+			"--since and --until bound the listing to a period, on the date --date-field names. Each takes a day " +
+			"as YYYY-MM-DD, in local time, or a moment as RFC 3339; a day given to --until runs to its end. With " +
+			"--since the listing holds the whole period rather than the first --limit.",
+		Example: "  # The pull requests you wrote that are still open\n" +
+			"  bb search prs --role author\n\n" +
+			"  # What you wrote in a period, whatever became of it, week by week\n" +
+			"  bb search prs --role author --state all --since 2026-07-20 --until 2026-09-27 --group-by week\n\n" +
+			"  # What was merged in one repository this month\n" +
+			"  bb search prs --repo PROJ/repo --state merged --date-field closed --since 2026-09-01",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// The repository pull-requests endpoint has no role parameter, so
 			// Bitbucket drops one that is sent and answers with every open pull
@@ -241,6 +258,19 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 			if repositorySelector != "" && role != "" {
 				return apperrors.New(apperrors.KindValidation,
 					"--role cannot be combined with --repo: Bitbucket applies a role only on the dashboard, so drop --repo to use it", nil)
+			}
+
+			period, err := periodFrom(since, until, dateField, time.Local)
+			if err != nil {
+				return err
+			}
+
+			// A period is its own bound: the walk stops where it begins. The
+			// default --limit would cut a quarter's pull requests to the first
+			// 25 and say nothing a timesheet could be corrected by, so it
+			// applies only when it was asked for.
+			if period.Since > 0 && !cmd.Flags().Changed("limit") {
+				listPaging = listPaging.All()
 			}
 
 			cfg, err := deps.LoadConfig()
@@ -268,6 +298,7 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 					MaxResults: listPaging.ServiceLimit(),
 					Start:      start,
 					State:      state,
+					Period:     period,
 				}
 				prs, err = service.List(cmd.Context(), repo, opts)
 			} else {
@@ -276,6 +307,7 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 					Start:      start,
 					State:      state,
 					Role:       role,
+					Period:     period,
 				}
 				prs, err = service.ListDashboard(cmd.Context(), opts)
 			}
@@ -295,15 +327,28 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 				return nil
 			}
 
-			rows := make([][]string, len(reported.PullRequests))
-			for i, pr := range reported.PullRequests {
-				repoStr := ""
-				if pr.Repository.ProjectKey != "" {
-					repoStr = fmt.Sprintf("[%s/%s] ", pr.Repository.ProjectKey, pr.Repository.Slug)
+			// The date is shown when the listing is about dates: bounded by a
+			// period, or grouped. It is the one the period looks at.
+			dated := period.Since > 0 || period.Until > 0 || groupBy != ""
+			for _, group := range groupPullRequests(reported.PullRequests, groupBy, period.Field, time.Local) {
+				if group.heading != "" {
+					fmt.Fprintln(cmd.OutOrStdout(), style.Label.Render(group.heading))
 				}
-				rows[i] = []string{style.Resource.Render(fmt.Sprintf("%s#%d", repoStr, pr.ID)), style.ActionStyle(pr.State).Render(pr.State), pr.Title}
+				rows := make([][]string, len(group.pullRequests))
+				for i, pr := range group.pullRequests {
+					// Under a repository's own heading the row need not repeat it.
+					repoStr := ""
+					if pr.Repository.ProjectKey != "" && groupBy != "repo" {
+						repoStr = fmt.Sprintf("[%s/%s] ", pr.Repository.ProjectKey, pr.Repository.Slug)
+					}
+					row := []string{style.Resource.Render(fmt.Sprintf("%s#%d", repoStr, pr.ID)), style.ActionStyle(pr.State).Render(pr.State), pr.Title}
+					if dated {
+						row = append([]string{dayOf(dateOf(pr, period.Field), time.Local)}, row...)
+					}
+					rows[i] = row
+				}
+				style.WriteTable(cmd.OutOrStdout(), rows)
 			}
-			style.WriteTable(cmd.OutOrStdout(), rows)
 			paging.Hint(cmd.ErrOrStderr(), listPaging, len(prs))
 
 			return nil
@@ -313,8 +358,12 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Optional repository as PROJECT/slug to scope search")
 	listPaging.Register(cmd, 25)
 	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
-	enumflag.Register(cmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Filter by state")
+	enumflag.Register(cmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Filter by state; closed is merged and declined together")
 	enumflag.Register(cmd.Flags(), &role, "role", "", participantRoles, "Filter by role; dashboard only, so it cannot be combined with --repo")
+	cmd.Flags().StringVar(&since, "since", "", "Only pull requests dated on or after this day (YYYY-MM-DD) or moment (RFC 3339); lists the whole period unless --limit is given")
+	cmd.Flags().StringVar(&until, "until", "", "Only pull requests dated on or before this day (YYYY-MM-DD) or moment (RFC 3339)")
+	enumflag.Register(cmd.Flags(), &dateField, "date-field", pullrequestservice.DateCreated, dateFields, "Which date --since and --until apply to")
+	enumflag.Register(cmd.Flags(), &groupBy, "group-by", "", groupings, "Group the text output by the week of the date, or by repository")
 
 	return cmd
 }
