@@ -12122,7 +12122,7 @@ Search for pull requests globally or within a repository.
 
 Without --repo this is your own pull requests across every repository, as Bitbucket's dashboard lists them: --role says which, those you wrote, review or take part in.
 
---since and --until bound the listing to a period, on the date --date-field names. Each takes a day as YYYY-MM-DD, in local time, or a moment as RFC 3339; a day given to --until runs to its end. With --since the listing holds the whole period rather than the first --limit.
+--since and --until bound the listing to a period, on the date --date-field names. Each takes an ISO 8601 date: a day (2026-07-20), a time on it (2026-07-20T09:00), or either with an offset (2026-07-20T09:00:00+02:00). Without an offset it is local time, and a day given to --until runs to its end. With --since the listing holds the whole period rather than the first --limit.
 
 Usage:
   bb search prs [flags]
@@ -12144,10 +12144,10 @@ Flags:
       --limit int           Maximum number of results to return (default 25)
       --repo string         Optional repository as PROJECT/slug to scope search
       --role string         Filter by role; dashboard only, so it cannot be combined with --repo (one of: author, reviewer, participant)
-      --since string        Only pull requests dated on or after this day (YYYY-MM-DD) or moment (RFC 3339); lists the whole period unless --limit is given
+      --since string        Only pull requests dated on or after this ISO 8601 date, such as 2026-07-20 or 2026-07-20T09:00; lists the whole period unless --limit is given
       --start int           Pagination start index
       --state string        Filter by state; closed is merged and declined together (one of: open, merged, declined, closed, all) (default "open")
-      --until string        Only pull requests dated on or before this day (YYYY-MM-DD) or moment (RFC 3339)
+      --until string        Only pull requests dated on or before this ISO 8601 date, such as 2026-09-27; a day runs to its end
 
 Dry run:
   Runs as usual: this command changes nothing, so there is nothing to hold back

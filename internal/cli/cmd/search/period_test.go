@@ -10,8 +10,10 @@ import (
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 )
 
-// A day is read where the person is, and --until runs to the end of the day it
-// names, so naming one day twice is that day. A moment is what it says.
+// A period is asked for as a person writes a date, in ISO 8601: a day, a time
+// on a day, or either with an offset. Without an offset it is read where the
+// person is, and --until runs to the end of the day it names, so naming one day
+// twice is that day. A number of seconds is not a way to write a date here.
 func TestAPeriodIsReadInTheCallersDays(t *testing.T) {
 	t.Parallel()
 
@@ -41,11 +43,18 @@ func TestAPeriodIsReadInTheCallersDays(t *testing.T) {
 		t.Errorf("a moment was read as %d (until %d): %v", period.Since, period.Until, err)
 	}
 
+	// A time with no offset is the caller's own, to the minute or the second,
+	// and --until takes it as written rather than running to the day's end.
+	period, err = periodFrom("2026-07-20T09:30", "2026-07-20T17:00:30", "", amsterdam)
+	if err != nil || period.Since != at("2026-07-20T09:30:00+02:00") || period.Until != at("2026-07-20T17:00:30+02:00") {
+		t.Errorf("local times were read as %d to %d: %v", period.Since, period.Until, err)
+	}
+
 	if period, err := periodFrom("", "", "", amsterdam); err != nil || period.Since != 0 || period.Until != 0 {
 		t.Errorf("no bounds were read as %+v: %v", period, err)
 	}
 
-	for _, bad := range [][2]string{{"yesterday", ""}, {"", "20-07-2026"}, {"2026-07-21", "2026-07-20"}} {
+	for _, bad := range [][2]string{{"yesterday", ""}, {"", "20-07-2026"}, {"1790756752000", ""}, {"2026-07-21", "2026-07-20"}} {
 		_, err := periodFrom(bad[0], bad[1], "", amsterdam)
 		if !apperrors.IsKind(err, apperrors.KindValidation) {
 			t.Errorf("--since %q --until %q was not refused as invalid: %v", bad[0], bad[1], err)
