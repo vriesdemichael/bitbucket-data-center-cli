@@ -22,6 +22,10 @@ jobs:
   determine-version:
     name: Determine release version
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
     outputs:
       should_release: ${{ steps.compute.outputs.should_release }}
       version: ${{ steps.compute.outputs.version }}
@@ -66,6 +70,39 @@ jobs:
           # allowing something in that this then cuts a major release from
           # (ADR-065).
           go run ./tools/release-version
+
+      # A pull request into main was gated by branch protection, which requires
+      # CI Complete. A push was not: promoting next is an administrator's
+      # fast-forward (ADR-066), and it releases whatever that commit holds. So a
+      # commit that arrived without a pull request has to carry the successful
+      # CI Complete it earned as the tip of next. Both answers exist before the
+      # push does, so this reads a result and never waits for one (#703).
+      - name: Refuse a commit CI has not passed
+        if: steps.compute.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          commit="repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}"
+          # Retried, because a merge GitHub has not yet tied to its pull request
+          # would read as a direct push.
+          for attempt in 1 2 3; do
+            pr=$(gh api -X GET "$commit/pulls" --jq '[.[] | select(.merged_at != null and .base.ref == "main") | .number] | .[0] // empty')
+            if [[ -n "$pr" ]]; then
+              echo "${GITHUB_SHA} was merged by pull request #${pr}, which required CI Complete."
+              exit 0
+            fi
+            # The push to main starts a second CI run on this commit, so there
+            # can be one CI Complete still running beside the one that passed.
+            ci=$(gh api -X GET "$commit/check-runs" -f check_name='CI Complete' --jq '[.check_runs[] | .conclusion // .status] | join(", ")')
+            if [[ ", $ci, " == *", success, "* ]]; then
+              echo "CI Complete succeeded on ${GITHUB_SHA}."
+              exit 0
+            fi
+            if [[ "$attempt" != 3 ]]; then sleep 10; fi
+          done
+          echo "::error::${GITHUB_SHA} reached main without a pull request, and CI Complete on it is: ${ci:-not reported}. Nothing was released. Re-run this job once CI Complete has succeeded on that commit."
+          exit 1
 
       # A version carrying a suffix -- v4.1.0-rc.1, which only the manual
       # dispatch can ask for -- is a prerelease. Conventional Commits never
