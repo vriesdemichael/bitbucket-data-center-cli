@@ -74,11 +74,13 @@ The server gives an agent two kinds of thing, for different readers:
 | A pull request in front of you, kept current as builds finish and reviews arrive | Shows its card |
 | To see what needs your attention | Shows a list of pull requests |
 | To review changes you have not checked out | Shows the diff |
-| To look over a pull request's draft before it exists | Shows the form; `create_pull_request` creates one straight away |
+| A pull request opened | Creates it with `create_pull_request`, filling in what you left to it |
+| A say in a pull request's description or reviewers before it exists | Shows the form |
 | Work done on its own: a scheduled, background or batch task | Uses the tools, and shows nothing |
 
 The server tells agents the same: `show` is for a person who is there to see
-it, once an answer is ready, and never for an agent working on its own.
+it, once an answer is ready, and never for an agent working on its own. A pull
+request you ask for is opened; the form is for when you want a say in it first.
 
 A button in a view is not a link into Bitbucket but a call of the tools the
 agent uses, through your client: **Reply** calls `add_pr_comment`, **Approve**
@@ -132,14 +134,15 @@ A file too large to carry is named, with a link to its diff in Bitbucket.
 ![A pull request's diff: the file tree with each file's open comments counted, beside one file's highlighted changes, a task on the line it was written on and a resolved thread folded to a line](assets/views/diff-light.webp#only-light)
 ![A pull request's diff: the file tree with each file's open comments counted, beside one file's highlighted changes, a task on the line it was written on and a resolved thread folded to a line](assets/views/diff-dark.webp#only-dark)
 
-Ask for a pull request to be opened, and the agent can hand you its draft as a
-form that works like Bitbucket's create page: the branches, picked from the
-repository's and swapped with one click; the title and description it wrote;
-the reviewers it suggests, with the default reviewers and code owners filled in
-as Bitbucket fills them in, and offered back if you remove them. Find more
-reviewers by name, and create it, or create it as a draft; nothing is created
-until you do. An existing pull request's title, description and draft state are
-edited the same way.
+Ask for a pull request to be opened and the agent opens it. Be particular about
+its description or reviewers, or ask to see the draft first, and it hands you
+the draft as a form that works like Bitbucket's create page: the branches,
+picked from the repository's and swapped with one click; the title and
+description it wrote; the reviewers it suggests, with the default reviewers and
+code owners filled in as Bitbucket fills them in, and offered back if you remove
+them. Find more reviewers by name, and create it, or create it as a draft;
+nothing is created until you do. An existing pull request's title, description
+and draft state are edited the same way.
 
 ![A pull request form: the source and destination branches with a swap button, the title and the description the agent drafted, two reviewers with their avatars, and Create and Create as draft](assets/views/form-light.webp#only-light)
 ![A pull request form: the source and destination branches with a swap button, the title and the description the agent drafted, two reviewers with their avatars, and Create and Create as draft](assets/views/form-dark.webp#only-dark)

@@ -200,7 +200,7 @@ type CreatePullRequestInput struct {
 func specCreatePullRequest() Spec {
 	tool := &mcp.Tool{
 		Name:        "create_pull_request",
-		Description: "Create a new pull request.",
+		Description: "Create a new pull request. When the person asks for one, create it, filling in what they left to you.",
 		// Not idempotent: once the first pull request closes, the same call
 		// opens another.
 		Annotations: writes("Create pull request", false, false),

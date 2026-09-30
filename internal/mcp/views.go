@@ -173,9 +173,11 @@ func specShow() Spec {
 			"repo and id; its view keeps its builds and reviews current, and its overview has its comments and activity. Kind diff " +
 			"takes the same, for changes the person cannot open in their own editor, such as another repository's, and draws the " +
 			"comments on their lines. Kind pull_requests, for what needs the person, takes the filters list_pull_requests takes. Kind " +
-			"pull_request_form, for a pull request the person should look over before it exists, takes project, repo, from_ref and what " +
-			"you drafted (title, description, to_ref, reviewers, draft), or an id to edit that pull request; nothing is created or " +
-			"changed until the person submits it. In a client that displays no views, it shows nothing and says so.",
+			"pull_request_form is for a person who wants a say in a pull request before it exists, being particular about its " +
+			"description or reviewers or asking to see the draft; for a clear request to open one, call create_pull_request instead. " +
+			"It takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), or an id to edit " +
+			"that pull request; nothing is created or changed until the person submits it. In a client that displays no views, it " +
+			"shows nothing and says so.",
 		Annotations: readOnly("Show a view"),
 		InputSchema: showInputSchema(showKinds),
 		Meta:        viewToolMeta(),
