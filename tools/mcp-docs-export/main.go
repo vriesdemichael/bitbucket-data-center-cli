@@ -65,7 +65,8 @@ func exportToolReference(outputPath string) error {
 	fmt.Fprintf(&out, "`bb ai mcp serve` registers %d tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. %d ask the person to confirm a call in the MCP client before they run.\n\n",
 		len(rows), asking)
 	out.WriteString("The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.\n\n")
-	out.WriteString("`refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them.\n\n")
+	out.WriteString("The tools answer the agent, and `show` is for the person: an agent uses the tools to find, read and change things, and `show` for someone who is there to see the result, never when it works on its own. [Tools and views](../ai-and-llms.md#tools-and-views) says which for what.\n\n")
+	out.WriteString("`refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them. A click in a view is a call of a tool, through the client, never a connection to Bitbucket ([how views work](../advanced/enterprise-hardening.md#principle-6-views-stay-inside-the-mcp-server)).\n\n")
 
 	out.WriteString("| Tool | Access | Asks | What it does |\n|---|---|---|---|\n")
 	for _, row := range rows {

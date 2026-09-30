@@ -56,6 +56,36 @@ The strongest limit is not a flag: a read-only personal access token in
 are exposed. [Enterprise Hardening](advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve)
 covers scoping, token restriction and mandating an audit trail by policy.
 
+### Tools and views
+
+The server gives an agent two kinds of thing, for different readers:
+
+- **Tools** answer the agent. Each returns data the model reads: a pull
+  request, a diff, a file, the result of a comment or a merge. They work in
+  every client, a terminal agent included, and they are how an agent does its
+  work, with you or on its own.
+- **Views** are for you. The `show` tool puts what the agent found in front of
+  you, drawn in the chat by a client that renders MCP Apps. Its answer tells the
+  agent only what it showed; the agent reads with the other tools.
+
+| You want | The agent |
+|---|---|
+| An answer, a summary or a change made | Uses the tools and answers in words |
+| A pull request in front of you, kept current as builds finish and reviews arrive | Shows its card |
+| To see what needs your attention | Shows a list of pull requests |
+| To review changes you have not checked out | Shows the diff |
+| To look over a pull request's draft before it exists | Shows the form; `create_pull_request` creates one straight away |
+| Work done on its own: a scheduled, background or batch task | Uses the tools, and shows nothing |
+
+The server tells agents the same: `show` is for a person who is there to see
+it, once an answer is ready, and never for an agent working on its own.
+
+A button in a view is not a link into Bitbucket but a call of the tools the
+agent uses, through your client: **Reply** calls `add_pr_comment`, **Approve**
+calls `submit_pr_review` and asks you to confirm, **Create** calls
+`create_pull_request`. [How views work](advanced/enterprise-hardening.md#principle-6-views-stay-inside-the-mcp-server)
+shows the whole path.
+
 ### Views in your agent
 
 Ask about a pull request, and in a client that renders MCP Apps the answer comes
@@ -128,8 +158,9 @@ edited the same way.
   highlighted: the lexers for the code inside cannot be stopped midway, and a
   crafted file keeps one busy for seconds. `--highlight-templates` highlights
   that code too, and no view waits for it.
-- What you click opens in Bitbucket, through the client. A client that will not
-  open a link shows you its address to copy.
+- A link opens in Bitbucket, in your browser, through the client; a client that
+  will not open links shows you the address to copy. A button, such as
+  **Reply** or **Approve**, calls a tool, as the agent does.
 - bb reads everything a view shows, avatars included, with its own credentials:
   the client never contacts Bitbucket.
 
