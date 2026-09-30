@@ -25,10 +25,12 @@ import (
 //
 // The conditions cover every matcher: a branch, by its full id and by its
 // name; a pattern for the target, and the same pattern for a branch one level
-// below it, which it does not match; the branching model's development branch
-// and a category of it, both of the repository's own choosing; the default
-// branch; an exemption for the source branch by category and by pattern; and
-// a condition for the merge queue alone. The builds cover what satisfies a key
+// below it, which it does not match; a branch and a pattern that differ from
+// the target only in letter case, which Bitbucket matches by default; the
+// branching model's development branch and a category of it, both of the
+// repository's own choosing; the default branch; an exemption for the source
+// branch by category and by pattern; and a condition for the merge queue
+// alone. The builds cover what satisfies a key
 // and what does not: a build that names the key as its parent, passed, failed
 // or running; a passing sibling beside a failed one; a build that has the key
 // as its own key and names no parent; one posted through the deprecated
@@ -125,6 +127,8 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 	}{
 		{code: "brn", target: liveMatcher{"BRANCH", "refs/heads/master"}},
 		{code: "pat", target: liveMatcher{"PATTERN", "release/*"}},
+		{code: "pcs", target: liveMatcher{"PATTERN", "RELEASE/*"}},
+		{code: "bcs", target: liveMatcher{"BRANCH", "refs/heads/Develop"}},
 		{code: "dev", target: liveMatcher{"MODEL_BRANCH", "development"}},
 		{code: "cat", target: liveMatcher{"MODEL_CATEGORY", "RELEASE"}},
 		{code: "dfl", target: liveMatcher{"DEFAULT_BRANCH", "#"}},
@@ -228,9 +232,9 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 
 	t.Run("no build has reported", func(t *testing.T) {
 		agree(t, "into master", toMaster, map[string]string{"brn": "", "dfl": "", "exc": ""})
-		agree(t, "into release/1.0", toRelease, map[string]string{"pat": ""})
+		agree(t, "into release/1.0", toRelease, map[string]string{"pat": "", "pcs": ""})
 		agree(t, "into release/1/2", toNested, map[string]string{})
-		agree(t, "into develop", toDevelop, map[string]string{"dev": ""})
+		agree(t, "into develop", toDevelop, map[string]string{"dev": "", "bcs": ""})
 		agree(t, "into stable/1.0", toStable, map[string]string{"cat": ""})
 		agree(t, "a hotfix into master", hotfix, map[string]string{"brn": "", "dfl": "", "exp": ""})
 	})
@@ -295,9 +299,9 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 		if !slices.Equal(checks, want) {
 			t.Errorf("the checks into master read\n%+v\nwant the missing first, each said to have reported without a parent\n%+v", checks, want)
 		}
-		agree(t, "into release/1.0", toRelease, map[string]string{"pat": "FAILED"})
+		agree(t, "into release/1.0", toRelease, map[string]string{"pat": "FAILED", "pcs": ""})
 		agree(t, "into release/1/2", toNested, map[string]string{})
-		agree(t, "into develop", toDevelop, map[string]string{"dev": "SUCCESSFUL"})
+		agree(t, "into develop", toDevelop, map[string]string{"dev": "SUCCESSFUL", "bcs": ""})
 		agree(t, "into stable/1.0", toStable, map[string]string{"cat": "INPROGRESS"})
 		agree(t, "a hotfix into master", hotfix, map[string]string{"brn": "", "dfl": "", "exp": ""})
 	})
@@ -330,6 +334,28 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 			}
 			if text := mcpResultText(result); !strings.Contains(text, "Required builds: 2 missing, 0 failed, of 3.") {
 				t.Errorf("the model reads %q, want the required builds still missing", text)
+			}
+
+			// The card's builds are the pull request's, as its page in Bitbucket
+			// counts them: those posted for its source branch or for none, and
+			// not the one posted on the same commit for the target branch of
+			// another pull request.
+			counts, _ := card["check_counts"].(map[string]any)
+			for state, want := range map[string]float64{"successful": 4, "failed": 2, "in_progress": 1, "cancelled": 0, "unknown": 0} {
+				if counts[state] != want {
+					t.Errorf("the card counts %v %s builds, want %v: %v", counts[state], state, want, counts)
+				}
+			}
+			var listedBuilds []string
+			builds, _ := card["checks"].([]any)
+			for _, entry := range builds {
+				listedBuilds = append(listedBuilds, asString(entry.(map[string]any)["key"]))
+			}
+			if slices.Contains(listedBuilds, key("pat")+"-tgt") || len(listedBuilds) != 7 {
+				t.Errorf("the card lists builds %v, want the seven of the pull request, not the one for release/1.0", listedBuilds)
+			}
+			if text := mcpResultText(result); !strings.Contains(text, "Builds: 2 failed, 1 in progress, 4 passed.") {
+				t.Errorf("the model reads %q, want the pull request's builds counted", text)
 			}
 		}, "ai", "mcp", "serve")
 	})

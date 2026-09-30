@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -49,7 +50,7 @@ func TestRequiredMatchersDecideAsBitbucketDoes(t *testing.T) {
 		{"a nested branch by its name", refMatcher{"BRANCH", "release/1.0"}, branchRef("release/1.0"), known, true, true},
 		{"another branch", refMatcher{"BRANCH", "refs/heads/master"}, branchRef("develop"), known, false, true},
 		{"heads/ qualifies only as written", refMatcher{"BRANCH", "HEADS/master"}, branchRef("master"), known, false, true},
-		{"a branch in another case", refMatcher{"BRANCH", "refs/heads/MASTER"}, branchRef("master"), known, true, false},
+		{"a branch in another case", refMatcher{"BRANCH", "refs/heads/MASTER"}, branchRef("master"), known, true, true},
 
 		{"a pattern one level down", refMatcher{"PATTERN", "release/*"}, branchRef("release/1.0"), known, true, true},
 		{"* stays within a segment", refMatcher{"PATTERN", "release/*"}, branchRef("release/1/2"), known, false, true},
@@ -64,8 +65,8 @@ func TestRequiredMatchersDecideAsBitbucketDoes(t *testing.T) {
 		{"a pattern at any depth", refMatcher{"PATTERN", "1/*"}, branchRef("release/1/2"), known, true, true},
 		{"a pattern that does not match", refMatcher{"PATTERN", "dev*"}, branchRef("master"), known, false, true},
 		{"case in what * matches decides nothing", refMatcher{"PATTERN", "feature/*"}, branchRef("feature/ABC-1"), known, true, true},
-		{"a pattern in another case", refMatcher{"PATTERN", "RELEASE/*"}, branchRef("release/1.0"), known, true, false},
-		{"a branch in another case than the pattern", refMatcher{"PATTERN", "release/*"}, branchRef("Release/2.0"), known, true, false},
+		{"a pattern in another case", refMatcher{"PATTERN", "RELEASE/*"}, branchRef("release/1.0"), known, true, true},
+		{"a branch in another case than the pattern", refMatcher{"PATTERN", "release/*"}, branchRef("Release/2.0"), known, true, true},
 		{"a pattern with a template variable", refMatcher{"PATTERN", "release/{version}"}, branchRef("release/1.0"), known, false, false},
 
 		{"the development branch", refMatcher{"MODEL_BRANCH", "development"}, branchRef("develop"), known, true, true},
@@ -310,6 +311,43 @@ func TestRequiredChecksListWhatNeedsAttentionFirst(t *testing.T) {
 	}
 }
 
+// A card counts every build of the listing by state, and lists the ones that
+// need attention first, at most maxViewChecks of them, saying when it lists
+// fewer than it counts.
+func TestACardCountsTheListingsBuildsAndListsTheUrgentFirst(t *testing.T) {
+	t.Parallel()
+
+	builds := []requiredBuild{
+		{Key: "ok", Name: "Unit", State: "SUCCESSFUL"},
+		{Key: "odd", Name: "Lint", State: "UNKNOWN"},
+		{Key: "run", Name: "Deploy", State: "INPROGRESS"},
+		{Key: "bad", Name: "Integration", State: "failed"},
+		{Key: "off", Name: "Nightly", State: "CANCELLED"},
+	}
+	counts, checks, cut := checksFromListing(builds)
+	if *counts != (viewCheckCounts{Successful: 1, Failed: 1, InProgress: 1, Cancelled: 1, Unknown: 1}) || cut {
+		t.Errorf("counts %+v, cut %v; want one of each state and nothing cut", *counts, cut)
+	}
+	var order []string
+	for _, check := range checks {
+		order = append(order, check.Key+"="+check.State)
+	}
+	if want := []string{"bad=FAILED", "run=INPROGRESS", "off=CANCELLED", "odd=UNKNOWN", "ok=SUCCESSFUL"}; !reflect.DeepEqual(order, want) {
+		t.Errorf("order %v, want %v", order, want)
+	}
+
+	many := make([]requiredBuild, 0, maxViewChecks+5)
+	for i := range maxViewChecks + 4 {
+		many = append(many, requiredBuild{Key: fmt.Sprintf("b%03d", i), Name: fmt.Sprintf("Build %03d", i), State: "SUCCESSFUL"})
+	}
+	many = append(many, requiredBuild{Key: "late", Name: "Zulu", State: "FAILED"})
+	counts, checks, cut = checksFromListing(many)
+	if counts.Successful != maxViewChecks+4 || counts.Failed != 1 || len(checks) != maxViewChecks || !cut || checks[0].Key != "late" {
+		t.Errorf("of %d builds the card counts %+v and lists %d starting %s, cut %v; want all counted, %d listed, the failed one first, and the cut said",
+			len(many), *counts, len(checks), checks[0].Key, cut, maxViewChecks)
+	}
+}
+
 // What bb cannot read it says nothing about: a pull request without a source
 // commit, or a Bitbucket that does not answer (here a port that refuses every
 // connection).
@@ -318,11 +356,11 @@ func TestRequiredChecksForViewSaysNothingItCannotRead(t *testing.T) {
 
 	clients := testClients(t)
 	pr := pullrequestservice.PullRequest{ID: 7, SourceCommit: "0123456789abcdef0123456789abcdef01234567"}
-	if checks, known := requiredChecksForView(context.Background(), clients, "PROJ", "app", pr); known || checks != nil {
+	if checks, known := requiredChecksForView(context.Background(), clients, "PROJ", "app", pr, nil); known || checks != nil {
 		t.Errorf("against an unreachable Bitbucket: %v, known %v; want nothing known", checks, known)
 	}
 	pr.SourceCommit = ""
-	if checks, known := requiredChecksForView(context.Background(), clients, "PROJ", "app", pr); known || checks != nil {
+	if checks, known := requiredChecksForView(context.Background(), clients, "PROJ", "app", pr, nil); known || checks != nil {
 		t.Errorf("without a source commit: %v, known %v; want nothing known", checks, known)
 	}
 }

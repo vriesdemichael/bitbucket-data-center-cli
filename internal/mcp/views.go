@@ -761,13 +761,23 @@ func pullRequestForView(ctx context.Context, c Clients, in ShowInput, offers vie
 		ReviewSummary: &out.ReviewSummary,
 	}
 
-	// The checks come from the pull request's own source commit, which is in
-	// the scope the call was bound to. That is why a scoped server shows them
-	// here while it withholds get_build_status, which takes any commit.
+	// The builds are the pull request's, as Bitbucket's pull request page
+	// lists and counts them: its source commit's builds for its own branch or
+	// for none. That commit is in the scope the call was bound to, which is
+	// why a scoped server shows them here while it withholds get_build_status,
+	// which takes any commit. A Bitbucket that cannot list them so gets the
+	// commit's builds, as the build-status endpoints count them, and nothing
+	// said about requirements.
+	var listing *pullRequestBuildList
 	if commit := out.PullRequest.SourceCommit; commit != "" {
-		view.CheckCounts, view.Checks, view.ChecksLimitReached = buildsForView(ctx, c, commit)
+		if listed, err := pullRequestBuilds(ctx, c, in.Project, in.Repo, out.PullRequest); err == nil {
+			listing = &listed
+			view.CheckCounts, view.Checks, view.ChecksLimitReached = checksFromListing(listed.builds)
+		} else {
+			view.CheckCounts, view.Checks, view.ChecksLimitReached = buildsForView(ctx, c, commit)
+		}
 	}
-	view.RequiredChecks, view.RequiredKnown = requiredChecksForView(ctx, c, in.Project, in.Repo, out.PullRequest)
+	view.RequiredChecks, view.RequiredKnown = requiredChecksForView(ctx, c, in.Project, in.Repo, out.PullRequest, listing)
 
 	ref := pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}
 	if autoMerge, err := pullrequestservice.NewService(c.HTTP).GetAutoMerge(ctx, ref, in.ID); err == nil && autoMerge.Enabled {
