@@ -257,19 +257,15 @@ Example machine output (`bb --json auth status`):
 }
 ```
 
-## Config and auth precedence
+## Configuration and authentication
 
-Runtime precedence order:
+A flag wins over an environment variable, a variable over the configuration
+files, and a file over the built-in default; a setting an administrator mandates
+outranks all of them. [Configuration](reference/configuration.md) gives the order
+for each setting and what each file holds. `bb` authenticates with a token, or
+with a username and password.
 
-1. CLI flags
-2. Environment variables / `.env`
-3. Git remote inference (repo + host context)
-4. Stored config (`%AppData%\bb\config.yaml`, `~/Library/Application Support/bb/config.yaml` or `~/.config/bb/config.yaml`) + keyring/fallback secrets
-5. Built-in defaults
-
-Supported day-to-day authentication modes are token and basic auth.
-
-That precedence governs how `bb` authenticates to the Bitbucket API. Plain `git`
+That configuration governs how `bb` authenticates to the Bitbucket API. Plain `git`
 authenticates separately: it does not read `bb`'s configuration, so `git push`
 and `git pull` inside a clone need `bb auth setup-git` once per host. Credentials
 are never written into a repository — see

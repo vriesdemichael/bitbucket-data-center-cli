@@ -40,13 +40,8 @@ Repository selection precedence for repo-scoped commands:
 2. Git remote discovery (if exactly one matching remote context exists)
 3. `BITBUCKET_PROJECT_KEY` + `BITBUCKET_REPO_SLUG`
 
-Host and auth source precedence:
-
-1. CLI flags
-2. Environment variables / `.env`
-3. Git remote inference host override (when `--repo` is inferred from a matching authenticated remote)
-4. Stored config (`~/.config/bb/config.yaml`) + keyring-backed credentials
-5. Built-in defaults
+When the repository comes from a git remote, so does the host, ahead of
+`BITBUCKET_URL`. [Configuration](../reference/configuration.md) gives the order for every setting.
 
 ## Ambiguity and fallback behavior
 
