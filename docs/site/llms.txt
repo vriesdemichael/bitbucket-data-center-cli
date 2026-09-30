@@ -1,6 +1,6 @@
 # Bitbucket Data Center CLI
 
-`bb` is the operational CLI for Bitbucket Data Center and Bitbucket Server. It is the
+`bb` is the operational CLI for Bitbucket Data Center. It is the
 high-signal command surface for working with self-hosted Bitbucket — pull requests,
 repositories, branches, tags, commits, build status, and project-wide settings — without
 scraping web pages or inventing API calls. It is not the CLI for Bitbucket Cloud.
@@ -35,7 +35,7 @@ bb --version
 
 `bb` authenticates with a personal access token. There is no OAuth flow: Bitbucket Data
 Center ships with no configured OAuth clients and non-admin users cannot create them, so
-token auth is the supported path (ADR-022). Ask the user for a PAT rather than trying to
+token auth is the supported path. Ask the user for a PAT rather than trying to
 provision one yourself.
 
 Pass the token on stdin. A secret passed as a flag value appears in the process argument

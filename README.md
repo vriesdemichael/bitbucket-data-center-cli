@@ -182,13 +182,10 @@ each problem with its line, needing no host and no network.
 
 ## Compatibility and contracts
 
-- Supported version: the newest Bitbucket Data Center release that runs in the project's
-  container stack and passes the live integration suite. There is no pinned target advertised
-  here — the version under test is the base image tag in `docker/harness/Dockerfile`, which is
-  the one place it is recorded. Newer releases are adopted by bumping that tag when they work;
-  some do not run in the stack, so the newest published release is not automatically the
-  supported one.
-  Set `BITBUCKET_VERSION_TARGET` if you want to record a version for your own environment.
+- Supported versions: every Bitbucket Data Center release Atlassian supports, each tested
+  against a real instance of it. A release keeps working after Atlassian's support for it ends.
+  [Bitbucket Versions](docs/site/reference/bitbucket-versions.md) lists where an older release
+  differs.
 - API contract source: a version-pinned Atlassian OpenAPI artifact
   (`docs/reference/atlassian/bitbucket-openapi.json`). This fixes the endpoint and payload
   shapes the generated client is built from — it is the provenance of the spec, not a statement

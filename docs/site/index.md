@@ -13,7 +13,7 @@ hide:
 	<div class="bb-actions">
 		<a class="md-button md-button--primary" href="installation-and-quickstart/">Get Started</a>
 		<a class="md-button" href="reference/commands/">Browse Commands</a>
-		<a class="md-button" href="advanced/">See Safety Model</a>
+		<a class="md-button" href="advanced/">See Advanced Topics</a>
 	</div>
 </section>
 

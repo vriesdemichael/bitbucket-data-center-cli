@@ -16,6 +16,8 @@ request.
 | **[Task](https://taskfile.dev)** | every workflow in this repo is a `task` target |
 | **Docker** | runs the local Bitbucket instance for live tests |
 | **Bash** + **curl** | `scripts/bootstrap-bitbucket.sh` needs both |
+| **[uv](https://docs.astral.sh/uv/)** | builds the documentation site, which the pre-push hook checks |
+| **[lefthook](https://lefthook.dev)** | runs the git hooks |
 | **~6GB disk, ~4GB RAM** | the Bitbucket instance is a real JVM application |
 
 Install Task with:
@@ -34,10 +36,8 @@ On Windows, run the shell scripts from Git Bash or WSL. Line endings are handled
 for you: `.gitattributes` pins the whole tree to LF regardless of your
 `core.autocrlf` setting.
 
-No Python is needed for any of this. One maintenance task, `docs:refresh-openapi`,
-still shells out to `python3` to sanity-check the vendored Atlassian spec after
-downloading it, and the documentation site builds through `uv` in `docs/` — but
-neither is part of building, testing, or running the live suite.
+Building, testing and the live suite need no Python. The documentation site
+builds through `uv` in `docs/`, which fetches the Python it needs itself.
 
 ## First run
 
@@ -94,8 +94,9 @@ failing partway through seeding with `License limit exceeded`. See
 ## Making a change
 
 **Branch from `next`.** Every change targets `next`, which collects work into the
-next release; `main` moves only when `next` is promoted to it (ADR-066). Both
-require a pull request; direct pushes are rejected.
+next release; `main` moves only when `next` is promoted to it (ADR-066). A change
+reaches `next` through a pull request. The promotion is a fast-forward push of
+`next` onto `main`, made by a maintainer after `task release:promote:check`.
 
 **Use [Conventional Commits](https://www.conventionalcommits.org/).** The commit
 type decides the version of the release your change ships in, so it is worth
@@ -111,7 +112,7 @@ getting right:
 Non-releasing commits are not second-class — they simply ship with the next
 `feat` or `fix` rather than publishing a version of their own. Reserve `!` for
 changes that actually break the CLI contract: a removed or renamed command or
-flag, a changed exit code, or a change to the `bb.machine` JSON envelope.
+flag, a changed exit code, or a change to the JSON or YAML document a command prints.
 
 **Keep history linear.** Rebase onto `next`; never merge `next` into your
 branch. This is a convention rather than a gate: the check that enforced it
@@ -275,14 +276,19 @@ They are still expected, and a reviewer will ask:
 
 | Job | What it does |
 |---|---|
+| Release Flow | refuses a pull request into `main` from anything but a `dependabot/*` or `hotfix/*` branch; the rest goes to `next` (ADR-066) |
 | ADR Validation | validates `docs/decisions/*.yaml` |
 | Unit Tests | formatting, line endings, `golangci-lint` against the pinned version, non-live tests, that the live-tagged tree compiles, that generated artifacts are current, and that every documented `bb ...` invocation parses |
 | Unit Tests (windows-latest), Unit Tests (macos-latest) | the non-live tests, natively on Windows and on macOS |
+| View Tests | draws the MCP views in headless Chrome (`task test:views`) |
+| Update End to End | on Linux, macOS and Windows, a bb built from the branch updates itself from a mirror serving a published release, verifies it and replaces its own binary |
+| Shell Completion | completes in bash, zsh, fish and PowerShell (`task completion:shells`) |
 | Release Artifacts | builds every release archive and Linux package, and checks each binary's SBOM against the archive it describes |
 | Docs Site | builds the MkDocs site |
 | Live Integration Tests | starts Bitbucket and runs the live suite |
 | Coverage Gates | global and patch coverage thresholds, against the profiles the live job produced |
 | Codecov | publishes coverage history and the README badge |
+| CI Complete | passes only when every job above did; it is the one status branch protection requires |
 
 Coverage gates are a separate job from the live suite on purpose: they fail for
 unrelated reasons, and reporting a patch-coverage breach as "Live Integration
@@ -322,7 +328,7 @@ Collected from actually doing this, not hypothetical:
   for AI agents, but the content applies to anyone.
 - [`docs/decisions/`](docs/decisions/) — architecture decision records. If you
   want to know *why* something works the way it does, it is usually there.
-  Relevant here: ADR-005 (coverage policy), ADR-006 (conventional commits),
+  Relevant here: ADR-065 (what the quality gates measure), ADR-006 (conventional commits),
   ADR-016 (test classification), ADR-025 (git discipline), ADR-026 (PR
   readiness), ADR-033 (release automation), ADR-043 (the test instance).
 - [`docker/README.md`](docker/README.md) — the local Bitbucket stack.

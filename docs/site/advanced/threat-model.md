@@ -281,7 +281,7 @@ Run it against the artifact under audit.
 
 #### 2. Architectural Mitigations
 - **Scoped TTL Tokens**: `bb auth token create --expiry-days <N>` supports time-bound tokens.
-- **Immediate Invalidation**: Tokens revoked in Bitbucket Server immediately invalidate all CLI and git operations.
+- **Immediate Invalidation**: Tokens revoked in Bitbucket immediately invalidate all CLI and git operations.
 
 #### 3. Audit Test Procedure
 ```bash

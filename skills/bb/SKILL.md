@@ -32,7 +32,7 @@ history. Use `--token-stdin`, or set `BITBUCKET_TOKEN` in the environment and sk
 `bb auth login` entirely — that is usually the better choice in CI and containers, since it
 never writes the credential to disk.
 
-Agents cannot complete OAuth flows. Always use a Personal Access Token (PAT).
+bb authenticates with a Personal Access Token (PAT); it has no browser login.
 Create one at: `bb auth token-url`
 
 `bb auth status` reports `Credential storage:` as `keyring`, `environment`, or
@@ -134,7 +134,7 @@ bb pr files 42
 # Open a normal PR
 bb pr create --repo MYPROJ/payments --from-ref feature/my-work --to-ref main --title "Add payment retries"
 
-# Open a draft PR (Bitbucket DC 8.0+) — signals work-in-progress, not ready for review
+# Open a draft PR — signals work-in-progress, not ready for review
 bb pr create --repo MYPROJ/payments --from-ref feature/my-work --to-ref main --title "Add payment retries" --draft
 
 # Assign reviewers at creation (repeatable or comma-separated)
@@ -274,7 +274,7 @@ payload. Use `--full` if you need the raw Bitbucket comment objects instead.
 ### 7. Merge pull requests (auto-merge or direct merge)
 
 Auto-merge lets Bitbucket complete the merge as soon as required builds pass and
-all approvals are in, instead of polling and merging manually (Bitbucket DC 8.0+).
+all approvals are in, instead of polling and merging manually.
 Only enable it after review feedback is addressed and required checks are green.
 
 ```bash
@@ -370,7 +370,7 @@ bb repo ssh-key add ~/.ssh/deploy_key.pub --repo MYPROJ/payments --label "CI Dep
 # List your HTTP access tokens (defaults to user scope)
 bb auth token list
 
-# Create a project access token (Bitbucket DC 8.2+)
+# Create a project access token
 bb auth token create "CI Token" --project MYPROJ --permission PROJECT_READ --expiry-days 90
 
 # Revoke an access token by ID
@@ -379,7 +379,7 @@ bb auth token revoke token-id-123
 
 ### 13. Scoped builds and deployments
 
-Associate builds and deployments with specific commits, or view statistics across multiple commits (Bitbucket DC 7.4+):
+Associate builds and deployments with specific commits, or view statistics across multiple commits:
 
 ```bash
 # --- Repository-scoped Builds ---

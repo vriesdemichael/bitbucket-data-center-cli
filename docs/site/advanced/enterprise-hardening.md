@@ -1,4 +1,4 @@
-# Fleet Hardening Runbook
+# Enterprise Hardening
 
 A practical, recipe-driven deployment and operational runbook for platform engineers, systems administrators, and DevOps teams deploying and governing `bb` across corporate fleets.
 
@@ -79,7 +79,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    - **JSON Schema Validation**: All configuration files are validated against [`config.schema.json`](../reference/schemas/config.schema.json). Supplying the `$schema` directive enables live linting and autocompletion in VS Code and IntelliJ. On the host, `bb doctor` reports every key the schema rejects in the deployed file, and the source each policy setting comes from.
    - `require_keyring: true`: Enforces OS keyring storage machine-wide; refuses fallback to plaintext files even if `BB_REQUIRE_KEYRING` is unset or set to `0`. If a user sets `BB_REQUIRE_KEYRING=0`, `bb` outputs an explicit warning to `stderr` and continues enforcing keyring policy.
    - `ca_file: <path>`: Mandates corporate Root CA bundle. Attempts to pass a conflicting CA file abort with an authorization error.
-   - `allowed_hosts: [...]`: Whitelists permitted Bitbucket Server / Data Center instances. Connection attempts to unlisted hosts abort with an authorization error.
+   - `allowed_hosts: [...]`: Whitelists permitted Bitbucket Data Center instances. Connection attempts to unlisted hosts abort with an authorization error.
    - `allow_insecure_skip_verify: false`: Hard-refuses `--insecure-skip-verify` and `BB_INSECURE_SKIP_VERIFY=true`.
    - `allow_http_update: false`: Hard-refuses plain-HTTP update URLs, `bb update --allow-http` and `BB_ALLOW_HTTP_UPDATE=1`.
 
@@ -643,7 +643,7 @@ Confirm:
 | Symptom / Error Message | Root Cause | Remediation |
 |---|---|---|
 | `read CA bundle: open ...: no such file or directory` | Imaging race condition: `BB_CA_FILE` was set before the CA certificate was written to disk. | Ensure the provisioning script copies the `.pem` file before setting the environment variable. |
-| `OS keyring is unavailable and keyring-backed storage is required` | Running on a headless Linux host or remote SSH session without an active D-Bus session bus. | Launch a temporary D-Bus session: `eval $(dbus-launch --sh-syntax)` or supply credentials via `BITBUCKET_TOKEN`. |
+| `OS keyring is unavailable and keyring-backed storage is required` | A headless Linux host or SSH session: no D-Bus session bus, or no Secret Service provider on it. | Start both, as [Troubleshooting](../troubleshooting.md#os-keyring-is-unavailable-and-keyring-backed-storage-is-required) shows, or supply credentials via `BITBUCKET_TOKEN`. |
 | Git prompts for password on `git push`/`git pull` | Git credential helper is not scoped to the exact URL or scheme used by the remote. | Run `git remote -v` and configure: `bb auth setup-git --host <remote-url>`. |
 | `certificate signed by unknown authority` | `BB_CA_FILE` is not set, or a GUI IDE failed to inherit shell environment variables. | Set `BB_CA_FILE` in the IDE's `"env"` block or export it in `/etc/zshenv` / `/etc/profile.d/bb.sh`. |
 | `host "..." is not permitted by administrative policy` | Target Bitbucket instance is not listed in `allowed_hosts` in system configuration or registry policy. | Connect only to approved corporate hosts, or request security to add the instance to `allowed_hosts`. |
@@ -669,7 +669,7 @@ Confirm:
 
 ### PAT Expiration & Rotation
 Personal Access Tokens expire based on enterprise TTL policies (e.g. 90 days). When rotating a token:
-1. Generate a replacement token in Bitbucket Server (`bb auth token create "Dev Token" --expiry-days 90` or via web UI).
+1. Generate a replacement token in Bitbucket (`bb auth token create "Dev Token" --expiry-days 90` or via web UI).
 2. Update the stored credential in the OS keyring without downtime:
    ```bash
    printf "%s" "$NEW_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin

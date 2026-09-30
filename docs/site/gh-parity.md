@@ -30,7 +30,7 @@ path rather than in a flag.
 | `gh pr ready 42` | `bb pr ready 42` | `--undo` turns it back into a draft |
 | `gh pr status` | `bb pr status` | The current branch's pull request, the ones you opened, and the ones waiting on your review |
 | `gh pr reopen 42` | `bb pr reopen 42` | Reopens a declined pull request |
-| `gh pr merge 42 --auto` | `bb pr auto-merge enable 42` | A subcommand rather than a flag: `disable` and `get` are the other two. Needs Bitbucket Data Center 8.0 or newer |
+| `gh pr merge 42 --auto` | `bb pr auto-merge enable 42` | A subcommand rather than a flag: `disable` and `get` are the other two |
 
 ## Repositories
 
