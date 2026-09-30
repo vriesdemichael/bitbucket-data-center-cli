@@ -3,21 +3,12 @@ search:
   boost: 0.3
 ---
 
-# ADR 065: What the quality apparatus measures, and why each part exists
+# ADR-065: What the quality apparatus measures, and why each part exists
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `065`
-- Title: `What the quality apparatus measures, and why each part exists`
-- Category: `development`
-- Status: `accepted`
-- Supersedes: `005`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/065-what-the-quality-apparatus-measures.yaml`
-
-## Decision
+> Replaces [ADR-005](005-minimum-coverage-and-integration-testing-policy.md).
 
 Record the intended shape of the quality apparatus as a whole. It grew one mechanism at a time, each added after a specific escape, and had never been reasoned about as a system. This states what each axis catches that no other does, when an artifact is committed, where thresholds live, and what is deliberately not measured.
+
 1. Coverage axes, and the distinct question each answers:
 
    - Patch line coverage blocks new untested code, with a lower bar for patches too small for a
@@ -91,11 +82,7 @@ Record the intended shape of the quality apparatus as a whole. It grew one mecha
    that. It is addressed by exercise instead, by deliberately breaking a governance test to
    confirm it fails (issue 484), and that is a habit rather than a mechanism.
 
-## Agent Instructions
-
 Do not add a ninth mechanism without first saying which axis it belongs to and what it catches that the existing ones do not. More coverage is not an answer. When adding a gate that needs no Bitbucket instance, add it to quality:verify in Taskfile.yml. Do not add it to the CI workflow directly; the workflow runs the same list and a test enforces that the two match. A gate that needs a Bitbucket instance goes in the live-tests job and not in a git hook, per ADR-045. When adding a committed artifact under docs/quality/, add its verify task in the same change. If it cannot be verified without a Bitbucket instance, it does not belong there. Do not add a coverage threshold to Taskfile.yml or to a workflow. Add it to .github/coverage-thresholds.env, which both read. Do not lower a threshold to make a change pass. When patch coverage fails, read the uncovered lines the gate prints. If they are unreachable, the code is wrong rather than the gate: extract the decision into something a test can reach, as the update killswitch origin naming was. A metric whose threshold is 0 must not be described as a gate in documentation or in a pull request. Say that it is reported, or delete it. Name a metric for what it measures. Command reach counts commands reached, not lines covered within them; do not reintroduce a name that claims more than the measurement supports.
-
-## Rationale
 
 The apparatus is unusually strong and every part of it was added for a reason that still holds. What had not happened was a pass over the result, and three problems were only visible from that altitude.
 Gates that ran in only one of the two places were the costly one. openapi:verify, openapi:operation-paths:verify and docs:verify-generated ran only in the pre-push hook; models:verify and client:verify ran only in CI. The second kind merely wastes a round trip. The first kind is worse in a way that took a concrete incident to see.
@@ -105,9 +92,9 @@ Thresholds in three places had not yet caused an incident, which is the reason t
 Line coverage keeps its floor but not for the reason usually given. The patch gate demonstrably catches new untested code. The global floor runs with only a couple of points of headroom, and ADR-049 measured that widening the scope to tools/ would cut that to about one. It is therefore close enough to bite on an unrelated change, which is tolerable only because its job is narrow and now stated: erosion, not new code. Thin headroom is a signal to add tests, never to lower the floor.
 Naming what is not measured is the cheapest part and prevents the most recurring argument. The honest admission is the last one: nothing here can tell a test that asserts something from a test that merely runs. A live test asserting a message that a unit test had already pinned stayed green for exactly as long as the message did not change, and a killswitch test next to it asserted only an error kind and would have passed against any wording at all. That is a habit problem, and a ninth mechanism would not have caught either.
 
-## Rejected Alternatives
+## Not chosen
 
-- `Have CI run task quality:verify as a single step instead of enumerating the gates`: It would make drift structurally impossible, which is the right instinct, but it collapses eleven named steps into one in the workflow UI and the pull request summary. Losing which gate failed at a glance is a real cost paid on every failure, against a drift that a test catches for free. The test keeps both properties.
-- `Drop the global line coverage floor and rely on the patch gate`: The patch gate cannot see a deleted test or a refactor that removes covered paths wholesale, because neither appears as uncovered changed lines. The floor costs nothing extra to compute, being the same run, and its only real cost is a false failure when headroom is thin, which is itself the signal that tests are owed.
-- `Raise the contract coverage threshold instead of deleting the axis`: A floor it already passes enshrines the status quo and creates a second metric that cannot fail; a floor it does not pass blocks every pull request on unrelated work. Neither is worth having when the underlying map is hand-written and unverified: the honest version of this axis is "which generated operations that we call are exercised by a test", computed rather than declared, and that is a different mechanism which nobody has asked for.
-- `Stop committing spec-coverage.json and command-reach.json`: Already rejected by ADR-045 and still right. They are verifiable with no Bitbucket instance, so they gate cheaply on every pull request, and command-reach.json has already caught a real regression that stayed green for years.
+- **Have CI run task quality:verify as a single step instead of enumerating the gates**: It would make drift structurally impossible, which is the right instinct, but it collapses eleven named steps into one in the workflow UI and the pull request summary. Losing which gate failed at a glance is a real cost paid on every failure, against a drift that a test catches for free. The test keeps both properties.
+- **Drop the global line coverage floor and rely on the patch gate**: The patch gate cannot see a deleted test or a refactor that removes covered paths wholesale, because neither appears as uncovered changed lines. The floor costs nothing extra to compute, being the same run, and its only real cost is a false failure when headroom is thin, which is itself the signal that tests are owed.
+- **Raise the contract coverage threshold instead of deleting the axis**: A floor it already passes enshrines the status quo and creates a second metric that cannot fail; a floor it does not pass blocks every pull request on unrelated work. Neither is worth having when the underlying map is hand-written and unverified: the honest version of this axis is "which generated operations that we call are exercised by a test", computed rather than declared, and that is a different mechanism which nobody has asked for.
+- **Stop committing spec-coverage.json and command-reach.json**: Already rejected by ADR-045 and still right. They are verifiable with no Bitbucket instance, so they gate cheaply on every pull request, and command-reach.json has already caught a real regression that stayed green for years.

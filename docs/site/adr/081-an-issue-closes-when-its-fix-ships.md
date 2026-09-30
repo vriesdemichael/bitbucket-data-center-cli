@@ -3,18 +3,9 @@ search:
   boost: 0.3
 ---
 
-# ADR 081: An issue closes when its fix ships, not when it merges
+# ADR-081: An issue closes when its fix ships, not when it merges
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `081`
-- Title: `An issue closes when its fix ships, not when it merges`
-- Category: `development`
-- Status: `proposed`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/081-an-issue-closes-when-its-fix-ships.yaml`
-
-## Decision
+> Proposed, and not yet in force.
 
 An issue closes when the release carrying its fix is published, not when the fix merges.
 On main this needs nothing: a Closes footer reaching main closes the issue and the release follows in the same push. On next GitHub does not close from a non-default branch, and that gap is the mechanism -- the issue stays open for the whole integration window and closes when next reaches main. It is not closed by hand in the meantime.
@@ -26,20 +17,16 @@ This takes effect after v4.0.0. That major was worked the other way throughout -
 One keyword per issue. GitHub reads `Closes #1, #2` as one reference and closes the first, so a footer covering several issues has to repeat the keyword: `Closes #1, closes #2`. A combined footer looks like it worked until the release leaves the rest open.
 The "staged on next" label exists. The closing step in the release workflow does not yet, so until it does, the issues a milestone still holds are closed by hand when the release publishes.
 
-## Agent Instructions
-
 From v5.0.0 on, do not close an issue because its fix merged to next. Apply "staged on next" and leave it open; the release closes it. For v4.0.0 keep closing on merge, which is how the rest of that milestone was worked.
 Put the Closes footer in the commit body of the change itself. A keyword that lives only in a pull request description does not survive into main's history. Repeat the keyword for each issue -- `Closes #1, closes #2` -- because a shared one closes only the first.
 Do not add a label per release, and do not mirror a milestone as sub-issues of its tracking issue. Both put the same work in two places, and the copy is the one that goes stale.
-
-## Rationale
 
 Adopters install signed binaries through change approval. To them a closed issue reads as fixed in the version they can install, which during a batched major is false for weeks. An open issue also draws the next reporter onto the existing thread instead of a duplicate, and gives them something to subscribe to.
 The label carries done for the maintainer, so one issue answers both audiences without misleading either.
 This is already GitHub's behaviour on a non-default branch. The record exists because it looks like an omission, and closing a board that never moves is the obvious thing to do to it.
 
-## Rejected Alternatives
+## Not chosen
 
-- `Close on merge and let the milestone say when it ships`: The reporter reads the issue, not the milestone, so duplicates arrive as new issues rather than as comments on the thread that is already open.
-- `Label each release separately, such as staged-for-v4`: Every major then leaves behind a label that means nothing afterwards, and the milestone already names the release.
-- `Cut prereleases from next so merged and shipped converge`: ADR-066 rules that out: the Sigstore certificate identity is pinned to the release workflow on main, so a build from anywhere else fails verification.
+- **Close on merge and let the milestone say when it ships**: The reporter reads the issue, not the milestone, so duplicates arrive as new issues rather than as comments on the thread that is already open.
+- **Label each release separately, such as staged-for-v4**: Every major then leaves behind a label that means nothing afterwards, and the milestone already names the release.
+- **Cut prereleases from next so merged and shipped converge**: ADR-066 rules that out: the Sigstore certificate identity is pinned to the release workflow on main, so a build from anywhere else fails verification.

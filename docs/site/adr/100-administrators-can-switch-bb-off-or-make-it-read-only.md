@@ -3,35 +3,21 @@ search:
   boost: 0.3
 ---
 
-# ADR 100: Administrative policy can switch bb off, switch its MCP server off, or make it read-only
+# ADR-100: Administrative policy can switch bb off, switch its MCP server off, or make it read-only
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `100`
-- Title: `Administrative policy can switch bb off, switch its MCP server off, or make it read-only`
-- Category: `architecture`
-- Status: `accepted`
-- Amends: `58`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/100-administrators-can-switch-bb-off-or-make-it-read-only.yaml`
-
-## Decision
+> Changes part of [ADR-058](058-system-wide-configuration-and-policy-enforcement.md).
 
 Three policy keys, read from the system configuration and the Windows registry and from nowhere else, restrict what bb may be used for. disable_mcp_server refuses bb ai mcp serve. read_only refuses every command that changes Bitbucket before it sends a request: --dry-run still runs, bb api decides by its method, running GET and HEAD, and bb ai mcp serve starts read-only. disable_bb refuses every command. Help, --describe, --version, bb doctor and the completion scripts stay under every lever, since they contact nothing and change nothing.
 The root's PersistentPreRunE applies the levers to every command, and read_only follows the dry-run classification of ADR-070. A refusal is KindAuthorization and names the key and the source that set it. A system configuration bb cannot parse refuses what the levers could, and an unreadable registry value takes the restrictive side, as ADR-058 has it for every key.
 
-## Agent Instructions
-
 Classify a new command in dryrun.go: read_only follows the classification, and TestReadOnlyCoversEveryCommandThatChangesBitbucket holds it. Give a lever no flag, environment variable or user configuration key. Add a command to unrefusable only when it contacts nothing and changes nothing. Do not describe the levers as an access control: they govern bb, not the token.
-
-## Rationale
 
 Whether bb, or an agent working through it, may be used on a machine is the organisation's decision, and ADR-058 already puts such decisions with the administrator, beyond the user's reach. One check at the root covers a command added later, because every command is classified already. Help and doctor stay so a refused person can find out why, and the completion scripts because a package manager prints one while installing bb. A token with read permissions is what holds against a shell; the levers say what bb is for.
 
-## Rejected Alternatives
+## Not chosen
 
-- `A check in each command that changes Bitbucket`: A command added later would be missed. The classification is exhaustive, and tested.
-- `Refuse bb ai mcp serve under read_only`: A read-only server is what the policy allows. Refusing it takes the reads away too.
-- `Refuse bb api under read_only`: Scripts use its reads. Its method is all bb api knows about a request, so the method decides.
-- `Refuse help, --describe and the completion scripts under disable_bb`: They contact nothing. Refusing help hides why bb refuses, and refusing the completion script breaks installing and upgrading bb through Homebrew.
-- `Refuse the git credential helper under read_only`: Git asks it for a fetch and a push alike, and says neither, so refusing it stops reads.
+- **A check in each command that changes Bitbucket**: A command added later would be missed. The classification is exhaustive, and tested.
+- **Refuse bb ai mcp serve under read_only**: A read-only server is what the policy allows. Refusing it takes the reads away too.
+- **Refuse bb api under read_only**: Scripts use its reads. Its method is all bb api knows about a request, so the method decides.
+- **Refuse help, --describe and the completion scripts under disable_bb**: They contact nothing. Refusing help hides why bb refuses, and refusing the completion script breaks installing and upgrading bb through Homebrew.
+- **Refuse the git credential helper under read_only**: Git asks it for a fetch and a push alike, and says neither, so refusing it stops reads.

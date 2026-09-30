@@ -27,7 +27,7 @@ the premise still holds.
 <!--
 Does this change a contract, a default, a flag's meaning, or the shape of output
 somebody parses? If so it is a decision, not just a change, and it probably wants
-an ADR in docs/decisions/ — see the existing ones for the shape, and
+an ADR in docs/site/adr/ — see the existing ones for the shape, and
 `task quality:validate-decisions` to check it.
 
 If it does not, say "no ADR needed" and delete the rest.

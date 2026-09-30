@@ -3,19 +3,9 @@ search:
   boost: 0.3
 ---
 
-# ADR 101: The MCP server adopts MCP Apps, and shows its views through one tool
+# ADR-101: The MCP server adopts MCP Apps, and shows its views through one tool
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `101`
-- Title: `The MCP server adopts MCP Apps, and shows its views through one tool`
-- Category: `architecture`
-- Status: `accepted`
-- Amends: `62, 94, 99`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/101-mcp-server-adopts-mcp-apps.yaml`
-
-## Decision
+> Changes part of [ADR-062](062-mcp-workspace-scoping-and-agent-audit-trail.md), [ADR-094](094-mcp-tools-pass-content-to-the-model-in-a-format-it-can-ingest.md), [ADR-099](099-mcp-resources-prompts-and-completions.md).
 
 bb ai mcp serve adopts MCP Apps. In a client that renders them, the model can put what it found in front of the person as an interactive view instead of describing it; a client that renders none gets text as before.
 Views are kinds of one tool, show, which the model calls once it has what the person asked about. The data tools carry no view. The server tells the model that the other tools answer it and show is for the person: for someone who is there to see it, once an answer is ready, and never for an agent working on its own. A kind is offered while the tool whose answer it shows is exposed, and a client that renders no views is told nothing was shown, and nothing is fetched for it. A client that says it renders views is taken at its word: it draws a view from show's answer, so nothing can confirm the view before show answers. The answer tells the model to answer in words if the person sees no view, and a view whose result does not come says so rather than wait. A diff is for what the person cannot open in their own editor.
@@ -25,23 +15,19 @@ A view keeps itself current while it is on screen. It draws what its result carr
 A view opens what else the person asks for in place, through refresh_view: a pull request's other views, a list's pull requests, a list in another state; it goes back, and tells the model what the person opened. What the person does in a view goes through the model's own tool, so the scope, the audit trail and the confirmation of a tool that asks apply as to the model's call. A view offers only the kinds and tools the server exposes. The pull request form is a kind like the others: the model drafts, the person submits, and nothing is created before. The model creates a pull request the person asks for, and shows the form only when they want a say in it first: particular about its description or reviewers, or asking to see the draft.
 Tools only views call, refresh_view and the form's suggest_form_values, are read-only, offered to views and not to the model, and go with show whatever --tools names; --exclude withholds them.
 
-## Agent Instructions
-
 Add a view as a kind of show, never as _meta.ui on a data tool. Build elements with el() and never parse a string as HTML; TestViewScriptsBuildNoHTMLFromStrings and the browser tests under -tags views hold that. Put what a view draws in the result's _meta, and keep its text for the model short. Count from Bitbucket's totals, never from what a view lists. Keep a new kind refreshable, and out of its fingerprint anything that differs between two reads of the same state. Send what the person wrote from a button, never a form element: a view's frame may be sandboxed without forms. Take wording from Bitbucket's UI strings. Look at a change with go run ./tools/view-preview against the local stack.
-
-## Rationale
 
 A person takes in a pull request faster laid out as Bitbucket lays it out than from a model's account of it, and MCP Apps is how a server draws in any client that renders views. A client mounts a live view for every call of a tool that has one, and an agent calls the data tools many times in a turn. Data in the result lets a stored conversation render without bb, and keeps the page the same for everyone. bb reaches Bitbucket with its credentials, CA bundle, client certificate and proxy, where a request from the client's webview has none of them, and Bitbucket answers an anonymous avatar request with its default image. A page with no build step keeps go build complete, and the reference SDK's weight out of every view. A count taken from part of a list reads as the whole, a tidy view that hides a failed build misleads more than a cluttered one, and a chat holds a view of about one screen. A view left open goes stale while the person watches a build finish or a reviewer answer, and the model answers from what show told it; asking only for what is on screen, and less for what is quiet, keeps the load on Bitbucket to what someone is looking at. Bitbucket leaves a pull request's version and update time alone when a comment is added or resolved, so only the view's own data tells whether it changed.
 
-## Rejected Alternatives
+## Not chosen
 
-- `A view on each data tool`: An agent that looks at six pull requests would leave six live views in its turn, above an answer about one of them.
-- `Declare the Bitbucket host in the view's policy and load avatars from it`: The request comes from the client's webview, without bb's credentials, CA bundle or client certificate, and gets the default image. The declaration admits scripts and styles too.
-- `React and the reference SDK, bundled with Vite`: Node in every build, some 400 KB in every view, and a go build without the bundle has no views.
-- `Fetch what a view draws from the view once it renders, or more of it as the person scrolls`: A re-rendered conversation would show nothing without bb running, and a view would wait on a tool call before it drew.
-- `Refresh a view by calling show again`: Every refresh would carry the whole payload, changed or not, and show is the model's tool.
-- `Draw everything a result carries, inline`: A list or a diff of a thousand rows buries the conversation, and a host scrolls a view it caps inside the chat.
-- `Say nothing about requirements when only letter case decides a match`: Bitbucket ignores case by default, and its users see its verdict; a card that goes quiet where the web interface does not tells them less than Bitbucket does.
-- `A view of a pull request's comments of its own`: Bitbucket has none, and a person reads a comment where it was written: gathered in one view apart from the diff and the activity, every thread at once read as a mess.
-- `Place a diff's comments by their anchors`: A comment written on the left of a side-by-side diff names its line as the file was, so on an unchanged line it lands on another line when read as the file is.
-- `A file viewer`: In a coding harness the model quotes the code that matters, highlighted, and the person has an editor; another repository's file is a click away in Bitbucket. Pictures and media were left, too rarely asked for to earn a kind of view.
+- **A view on each data tool**: An agent that looks at six pull requests would leave six live views in its turn, above an answer about one of them.
+- **Declare the Bitbucket host in the view's policy and load avatars from it**: The request comes from the client's webview, without bb's credentials, CA bundle or client certificate, and gets the default image. The declaration admits scripts and styles too.
+- **React and the reference SDK, bundled with Vite**: Node in every build, some 400 KB in every view, and a go build without the bundle has no views.
+- **Fetch what a view draws from the view once it renders, or more of it as the person scrolls**: A re-rendered conversation would show nothing without bb running, and a view would wait on a tool call before it drew.
+- **Refresh a view by calling show again**: Every refresh would carry the whole payload, changed or not, and show is the model's tool.
+- **Draw everything a result carries, inline**: A list or a diff of a thousand rows buries the conversation, and a host scrolls a view it caps inside the chat.
+- **Say nothing about requirements when only letter case decides a match**: Bitbucket ignores case by default, and its users see its verdict; a card that goes quiet where the web interface does not tells them less than Bitbucket does.
+- **A view of a pull request's comments of its own**: Bitbucket has none, and a person reads a comment where it was written: gathered in one view apart from the diff and the activity, every thread at once read as a mess.
+- **Place a diff's comments by their anchors**: A comment written on the left of a side-by-side diff names its line as the file was, so on an unchanged line it lands on another line when read as the file is.
+- **A file viewer**: In a coding harness the model quotes the code that matters, highlighted, and the person has an editor; another repository's file is a click away in Bitbucket. Pictures and media were left, too rarely asked for to earn a kind of view.
