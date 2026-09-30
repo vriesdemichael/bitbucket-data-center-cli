@@ -10,6 +10,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/highlight"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
 // refresh_view is for views: MCP Apps keeps it from the model, and nothing in
@@ -286,6 +287,26 @@ func TestADiffIsHighlightedOutsideItsFingerprint(t *testing.T) {
 	spans := payload.Diff.Highlight[1]
 	if len(spans) != 3 || !strings.HasPrefix(spans[0], "k7") || !strings.HasPrefix(spans[1], "k3") {
 		t.Errorf("the Go file's code lines are highlighted as %q, want its three lines with package and var as keywords", spans)
+	}
+	if after := fingerprintOf(payload); after != before {
+		t.Errorf("highlighting changed the fingerprint from %s to %s", before, after)
+	}
+}
+
+// The lines an activity shows a comment among are highlighted when it is
+// sent, and stay out of its fingerprint, as a diff's do.
+func TestAnActivityIsHighlightedOutsideItsFingerprint(t *testing.T) {
+	t.Parallel()
+
+	thread := viewThread{ID: 1, Anchor: &pullrequestactivityservice.Anchor{Path: "ledger.go", Line: 2, LineType: "ADDED"},
+		Context: []viewContextLine{{Type: "context", Old: 1, New: 1, Text: "package ledger"}, {Type: "add", New: 2, Text: "var x = 2", Anchor: true}}}
+	payload := viewPayload{Version: viewPayloadVersion, Kind: showKindPullRequest, Activity: &viewActivity{Total: 1, Items: []viewActivityItem{{Action: "COMMENTED", Thread: &thread}}}}
+	before := fingerprintOf(payload)
+	withHighlights(&payload, viewOffers{})
+
+	lines := payload.Activity.Items[0].Thread.Context
+	if !strings.HasPrefix(lines[0].Spans, "k7") || !strings.HasPrefix(lines[1].Spans, "k3") {
+		t.Errorf("the lines are highlighted as %q and %q, want package and var as keywords", lines[0].Spans, lines[1].Spans)
 	}
 	if after := fingerprintOf(payload); after != before {
 		t.Errorf("highlighting changed the fingerprint from %s to %s", before, after)

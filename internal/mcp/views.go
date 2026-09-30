@@ -544,14 +544,17 @@ func (offers viewOffers) highlighting() highlight.Options {
 	return highlight.Options{Deadline: time.Now().Add(highlightBudget), Templates: offers.templates}
 }
 
-// withHighlights colours the diff a payload carries, once it is to be sent:
-// an answer that finds nothing changed sends none, and pays for none.
+// withHighlights colours the diff a payload carries, and the lines of it its
+// activity shows comments among, once it is to be sent: an answer that finds
+// nothing changed sends none, and pays for none.
 func withHighlights(payload *viewPayload, offers viewOffers) {
-	if payload.Diff == nil || payload.Diff.Patch == "" {
-		return
+	if payload.Diff != nil && payload.Diff.Patch != "" {
+		if spans := highlight.Patch(payload.Diff.Patch, offers.highlighting()); len(spans) > 0 {
+			payload.Diff.Highlight = spans
+		}
 	}
-	if spans := highlight.Patch(payload.Diff.Patch, offers.highlighting()); len(spans) > 0 {
-		payload.Diff.Highlight = spans
+	if payload.Activity != nil {
+		highlightActivity(payload.Activity, offers.highlighting())
 	}
 }
 
@@ -703,6 +706,22 @@ func fingerprintOf(payload viewPayload) string {
 		diff := *payload.Diff
 		diff.Highlight = nil
 		payload.Diff = &diff
+	}
+	if payload.Activity != nil {
+		activity := *payload.Activity
+		activity.Items = slices.Clone(activity.Items)
+		for i, item := range activity.Items {
+			if item.Thread == nil || len(item.Thread.Context) == 0 {
+				continue
+			}
+			thread := *item.Thread
+			thread.Context = slices.Clone(thread.Context)
+			for j := range thread.Context {
+				thread.Context[j].Spans = ""
+			}
+			activity.Items[i].Thread = &thread
+		}
+		payload.Activity = &activity
 	}
 	encoded, err := json.Marshal(payload)
 	if err != nil {

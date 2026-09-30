@@ -84,6 +84,8 @@ type viewContextLine struct {
 	More int `json:"more,omitempty"`
 	// Anchor marks the line the comment is on.
 	Anchor bool `json:"anchor,omitempty"`
+	// Spans are the line's colours, as bb highlighted it, where it did.
+	Spans string `json:"spans,omitempty"`
 }
 
 // threadsForDiff reads a pull request's threads for its diff, as

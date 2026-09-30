@@ -109,7 +109,7 @@ function fileComment(thread, pr, avatars, view) {
     rows.append(el("tr", { class: line.type + (line.anchor ? " anchor-line" : "") },
       el("td", { class: "line-number" }, line.old ? String(line.old) : ""),
       el("td", { class: "line-number" }, line.new ? String(line.new) : ""),
-      el("td", { class: "code" }, line.text, line.more > 0 ? el("span", { class: "cut" }, " … " + plural(line.more, "more character")) : null)));
+      el("td", { class: "code" }, codeText(line.text, line.spans), line.more > 0 ? el("span", { class: "cut" }, " … " + plural(line.more, "more character")) : null)));
     if (index === at) {
       rows.append(el("tr", { class: "diff-thread " + line.type },
         el("td", { class: "line-number" }), el("td", { class: "line-number" }),
