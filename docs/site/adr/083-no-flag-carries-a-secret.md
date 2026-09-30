@@ -5,7 +5,7 @@ search:
 
 # ADR-083: No flag carries a secret
 
-> Changes part of [ADR-039](039-built-in-mcp-server-with-host-scoping-and-token-restriction.md), [ADR-047](047-credential-input-and-keyring-enforcement.md).
+> Changes part of [ADR-047](047-credential-input-and-keyring-enforcement.md).
 
 Remove every flag whose value is a credential. --token and --password on bb auth login are gone, and so is --token on bb ai mcp serve. A secret reaches bb through stdin (--token-stdin, --password-stdin), the environment (BITBUCKET_TOKEN), or the keyring, and through nothing else. That covers a header and a URL too: bb api refuses an Authorization, Proxy-Authorization or Cookie header and a URL carrying a user or password, and authenticates a request with the credential resolved for its host, as every command does. Scope the MCP server by the credential its environment supplies. An MCP client launches the server with an env block, so a read-only PAT set there as BITBUCKET_TOKEN restricts the server to that token's rights -- the same restriction --token performed, bound at Bitbucket rather than written into the process argument list. This ships in a major release and breaks callers on purpose. ADR-047 kept the flags with a warning; that traded a real exposure for compatibility, and the trade is now settled the other way.
 
