@@ -193,7 +193,7 @@ Also takes the [global flags](global-flags.md).
 Git credential helper (invoked by git, not run directly)
 
 ```text
-bb auth git-credential <get|store|erase>
+bb auth git-credential <get|store|erase> [flags]
 ```
 
 Supply stored Bitbucket credentials to git on demand.
@@ -210,6 +210,9 @@ Credentials are read from the same place `bb auth login` stores them, so git and
 # What git runs to ask for a credential; run it yourself to debug a failed push
 printf 'protocol=https\nhost=bitbucket.example.com\n\n' | bb auth git-credential get
 ```
+
+`--config string`
+:   Configuration file holding the login to answer with, in place of BB\_CONFIG\_PATH
 
 Also takes the [global flags](global-flags.md).
 

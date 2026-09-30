@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/gittest"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
@@ -18,6 +19,17 @@ import (
 // It also turns the retry policy off, so a test whose subject is a failure
 // stops sleeping through 750ms of backoff first, and turns off cobra's
 // Explorer check, which walks the Windows process table on every Execute.
+//
+// A git one of these tests starts runs this binary as its credential helper,
+// because the helper line bb writes names the executable it was written by.
+// That run is bb, not the tests, and it keeps the environment git gave it.
+// Starting git is also why the tests run under the ambient-config guard.
 func TestMain(m *testing.M) {
-	os.Exit(testsupport.SealedMain(m))
+	if os.Getenv(actAsBB) == "1" {
+		os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
+	}
+
+	testsupport.SealAmbientEnvironment()
+	testsupport.SkipWindowsMousetrap()
+	gittest.Guard(m)
 }

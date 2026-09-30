@@ -151,6 +151,16 @@ bb auth status
 A login is found only through the path it was made with, so after moving or renaming a
 configuration file, log in again from its new location.
 
+`bb auth setup-git` names the configuration file it read in git's helper line, so git
+authenticates as that identity whatever `BB_CONFIG_PATH` says when git runs. To push to one
+repository as the service account and to the rest as yourself, set that repository up on its
+own:
+
+```bash
+cd ~/src/deploy-scripts
+BB_CONFIG_PATH="$HOME/.config/bb/service-account.yaml" bb auth setup-git --global=false
+```
+
 ## Recommended team pattern
 
 - Keep one stored context per server (`bb auth login <host>`).

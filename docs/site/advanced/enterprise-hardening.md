@@ -143,7 +143,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    Writes a host-scoped credential helper into the user's global `~/.gitconfig`:
    ```ini
    [credential "https://bitbucket.example.com"]
-   	helper = !"/usr/local/bin/bb" auth git-credential
+   	helper = !"/usr/local/bin/bb" auth git-credential --config "/home/alice/.config/bb/config.yaml"
    ```
    *Note: `bb` writes the absolute executable path into the git configuration.* Git queries `bb` dynamically on demand for that specific host, ensuring zero credentials are ever written into local repository `.git/config` files and credentials are never offered to external remotes ([ADR-044](../adr/044-git-credential-helper-instead-of-persisted-credentials.md)).
 

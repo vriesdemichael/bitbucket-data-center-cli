@@ -34,12 +34,15 @@ runs a program, asks it, and uses the answer. Nothing is written to disk.
 `bb auth setup-git` writes one line of git configuration:
 
 ```
-credential.https://bitbucket.example.com.helper = !"/usr/local/bin/bb" auth git-credential
+credential.https://bitbucket.example.com.helper = !"/usr/local/bin/bb" auth git-credential --config "/home/alice/.config/bb/config.yaml"
 ```
 
 When git contacts that host it runs `bb auth git-credential`, which looks the
-host up in the same place `bb auth login` stored it and hands the credential
-back for that one request.
+host up in the configuration file the line names, where `bb auth login` stored
+it, and hands the credential back for that one request. The file is the one
+`bb auth setup-git` read, so git authenticates as that login whatever
+`BB_CONFIG_PATH` says when git runs it; see
+[Two identities on one host](repository-discovery-and-server-switching.md#two-identities-on-one-host).
 
 You never run `bb auth git-credential` yourself. Git runs it.
 

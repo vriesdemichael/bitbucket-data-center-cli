@@ -181,7 +181,7 @@ bb auth status --json
 - **Host-Scoped Credential Helper**: `bb auth setup-git` writes a credential helper rule scoped strictly to the Bitbucket hostname into the global `~/.gitconfig` ([ADR-044](../adr/044-git-credential-helper-instead-of-persisted-credentials.md)):
   ```ini
   [credential "https://bitbucket.example.com"]
-  	helper = !"/usr/local/bin/bb" auth git-credential
+  	helper = !"/usr/local/bin/bb" auth git-credential --config "/home/alice/.config/bb/config.yaml"
   ```
 - **Zero Repository Footprint**: Cloned repositories contain zero credentials or tokens in their local `.git/config`.
 - **A Credential Is Bound To Its Host**: a stored credential is released only for the host it was stored for. A host named by repository configuration, by `--host`, or by a URL passed to `bb api` therefore gets no credential unless one is stored for that exact host, whatever the default host is.
