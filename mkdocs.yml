@@ -121,6 +121,7 @@ nav:
           - bb update: reference/commands/update.md
           - bb webhook: reference/commands/webhook.md
       - JSON Schemas: reference/schemas.md
+      - Configuration: reference/configuration.md
       - Environment Variables: reference/environment.md
       - System Policy: reference/system-policy.md
       - Bitbucket Versions: reference/bitbucket-versions.md

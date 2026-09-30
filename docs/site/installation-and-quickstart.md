@@ -219,7 +219,8 @@ bb --json auth status
 
 Most global runtime controls exist as both a flag and an environment variable —
 `--ca-file` / `BB_CA_FILE`, `--retry-count` / `BB_RETRY_COUNT`, and so on. Flags
-win over environment variables, which win over stored configuration.
+win over environment variables, which win over the configuration files;
+[Configuration](reference/configuration.md) gives the whole order.
 
 **[Environment Variables](reference/environment.md)** is the complete list, with
 defaults and what each one does.
