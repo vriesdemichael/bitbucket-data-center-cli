@@ -320,6 +320,19 @@ func (service *Service) CreateRepositoryWebhook(ctx context.Context, repo Reposi
 		})
 }
 
+// FindRepositoryWebhook looks among a repository's webhooks for the one a
+// create of input would make (see webhookfields.FindExisting), for a preview
+// to say what the create would come to.
+func (service *Service) FindRepositoryWebhook(ctx context.Context, repo RepositoryRef, input WebhookCreateInput) (webhookfields.Existing, bool, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return webhookfields.Existing{}, false, err
+	}
+
+	return webhookfields.FindInScope(ctx, input, func(ctx context.Context, start, limit int) (openapi.Page[json.RawMessage], error) {
+		return service.repositoryWebhookPage(ctx, repo, start, limit)
+	})
+}
+
 // repositoryWebhookPage reads one page of a repository's webhooks.
 func (service *Service) repositoryWebhookPage(ctx context.Context, repo RepositoryRef, start, limit int) (openapi.Page[json.RawMessage], error) {
 	response, err := service.client.FindWebhooks1WithResponse(ctx, repo.ProjectKey, repo.Slug, nil, openapi.PageQuery(start, limit))

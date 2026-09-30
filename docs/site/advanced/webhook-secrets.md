@@ -151,7 +151,7 @@ $ export BB_WEBHOOK_SECRET=…
 $ bb webhook create ci https://ci.example.com/hook --dry-run --json
 {
   "preview": {
-    "tier": "predicted",
+    "tier": "preconditions-checked",
     "effects": [
       {
         "action": "create",

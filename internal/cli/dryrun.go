@@ -112,7 +112,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"repo default-task update": {Intent: "repo.default-task.update", Action: "update", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"repo default-task delete": {Intent: "repo.default-task.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	// webhook
-	"webhook create": {Intent: "repo.webhook.create", Action: "create", Stateful: true, Tier: dryrunpreview.TierPredicted},
+	"webhook create": {Intent: "repo.webhook.create", Action: "create", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"webhook update": {Intent: "repo.webhook.update", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"webhook delete": {Intent: "repo.webhook.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"webhook test":   {Intent: "repo.webhook.test", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
@@ -170,7 +170,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	// Shallow aliases of the four above; see the note on the repo pair.
 	"project permissions grant":         {Intent: "project.permission.user.grant", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"project permissions revoke":        {Intent: "project.permission.user.revoke", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPredicted},
-	"project webhook create":            {Intent: "project.webhook.create", Action: "create", Stateful: true, Tier: dryrunpreview.TierPredicted},
+	"project webhook create":            {Intent: "project.webhook.create", Action: "create", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"project webhook update":            {Intent: "project.webhook.update", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"project webhook delete":            {Intent: "project.webhook.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"project webhook test":              {Intent: "project.webhook.test", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},

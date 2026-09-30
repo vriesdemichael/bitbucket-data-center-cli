@@ -74,7 +74,7 @@ Inherited from [`bb webhook`](#bb-webhook):
 
 Also takes the [global flags](global-flags.md).
 
-**Dry run:** Predicts the outcome from what it can read, without changing anything (predicted)
+**Dry run:** Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
 
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
@@ -94,6 +94,7 @@ Also takes the [global flags](global-flags.md).
     secretConfigured          boolean         Whether a shared secret is configured.
     credentialsUsername?      string          Username Bitbucket authenticates to the endpoint with.
     secret?                   string          The shared secret in plaintext.
+  created                     boolean         Whether a webhook was created.
 </code></pre>
 </details>
 

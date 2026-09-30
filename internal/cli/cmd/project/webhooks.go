@@ -117,14 +117,16 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 
 				target := map[string]any{"project": args[0], "name": args[1], "url": args[2], "events": createEvents, "active": createActive}
 				webhookflags.DescribeCreate(target, input, createFields.Origins())
-				preview := dryrunpreview.New(dryrunpreview.Item{
-					Intent:          "project.webhook.create",
-					Target:          target,
-					Action:          "create",
-					PredictedAction: "create",
-					Reason:          "webhook will be created",
-				})
-				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
+				existing, found, findErr := service.FindProjectWebhook(cmd.Context(), args[0], input)
+				item, err := webhookoutput.PreviewCreate(dryrunpreview.Item{
+					Intent: "project.webhook.create",
+					Target: target,
+					Action: "create",
+				}, existing, found, findErr)
+				if err != nil {
+					return err
+				}
+				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), dryrunpreview.New(item))
 			}
 
 			written, err := service.CreateProjectWebhook(cmd.Context(), args[0], input)
@@ -133,13 +135,19 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 			}
 
 			// The webhook as read back after the create, in both renderings,
-			// as `bb webhook create` publishes it and for the same reason.
+			// as `bb webhook create` publishes it and for the same reason, or
+			// the one it found already there.
 			hook := webhookoutput.Published(cmd.ErrOrStderr(), written, "create")
+			webhookoutput.NoteExisting(cmd.ErrOrStderr(), written, hook)
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Project: args[0], Webhook: hook})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookCreation{Status: result.OK(), Project: args[0], Webhook: hook, Created: !written.Existing})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(strconv.Itoa(hook.ID)))
+			label := "Created webhook:"
+			if written.Existing {
+				label = "Webhook already exists:"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render(label), style.Secondary.Render(strconv.Itoa(hook.ID)))
 			webhookoutput.Detail(cmd.OutOrStdout(), hook)
 			return nil
 		},

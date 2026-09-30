@@ -2814,6 +2814,7 @@ Also takes the [global flags](global-flags.md).
     secretConfigured          boolean         Whether a shared secret is configured.
     credentialsUsername?      string          Username Bitbucket authenticates to the endpoint with.
     secret?                   string          The shared secret in plaintext.
+  created                     boolean         Whether a webhook was created.
 </code></pre>
 </details>
 

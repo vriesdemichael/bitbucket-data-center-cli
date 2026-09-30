@@ -54,20 +54,6 @@ func webhookEntries(payload any) []map[string]any {
 	return entries
 }
 
-func webhookExistsByNameAndURL(payload any, name, url string) bool {
-	trimmedName := strings.TrimSpace(name)
-	trimmedURL := strings.TrimSpace(url)
-	for _, entry := range webhookEntries(payload) {
-		entryName, _ := entry["name"].(string)
-		entryURL, _ := entry["url"].(string)
-		if strings.EqualFold(strings.TrimSpace(entryName), trimmedName) && strings.EqualFold(strings.TrimSpace(entryURL), trimmedURL) {
-			return true
-		}
-	}
-
-	return false
-}
-
 func webhookExistsByID(payload any, webhookID string) bool {
 	trimmedID := strings.TrimSpace(webhookID)
 	for _, entry := range webhookEntries(payload) {
@@ -195,32 +181,19 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				webhooks, err := service.ListRepositoryWebhooks(cmd.Context(), repo)
+				target := map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": webhookEvents, "active": webhookActive}
+				webhookflags.DescribeCreate(target, input, webhookFields.Origins())
+				existing, found, findErr := service.FindRepositoryWebhook(cmd.Context(), repo, input)
+				item, err := webhookoutput.PreviewCreate(dryrunpreview.Item{
+					Intent: "repo.webhook.create",
+					Target: target,
+					Action: "create",
+				}, existing, found, findErr)
 				if err != nil {
 					return err
 				}
 
-				// Still a create when the same webhook is there: Bitbucket does
-				// not refuse a second webhook with the name and URL of the first,
-				// it adds it beside the first.
-				predicted := "create"
-				reason := "webhook will be created"
-				if webhookExistsByNameAndURL(webhooks.Payload, args[0], args[1]) {
-					reason = "a webhook with this name and URL already exists; Bitbucket adds this one beside it"
-				}
-
-				target := map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": webhookEvents, "active": webhookActive}
-				webhookflags.DescribeCreate(target, input, webhookFields.Origins())
-				preview := dryrunpreview.New(dryrunpreview.Item{
-					Intent:          "repo.webhook.create",
-					Target:          target,
-					Action:          "create",
-					PredictedAction: predicted,
-					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Reason:          reason,
-				})
-
-				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
+				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), dryrunpreview.New(item))
 			}
 
 			written, err := service.CreateRepositoryWebhook(cmd.Context(), repo, input)
@@ -229,12 +202,18 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 			}
 
 			// The webhook as read back after the create, in both renderings,
-			// as `bb webhook create` publishes it and for the same reason.
+			// as `bb webhook create` publishes it and for the same reason, or
+			// the one it found already there.
 			hook := webhookoutput.Published(cmd.ErrOrStderr(), written, "create")
+			webhookoutput.NoteExisting(cmd.ErrOrStderr(), written, hook)
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Repository: settingsRepositoryOf(repo), Webhook: hook})
+				return deps.WriteJSON(cmd.OutOrStdout(), WebhookChange{Status: result.OK(), Repository: settingsRepositoryOf(repo), Webhook: hook, Created: !written.Existing})
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Webhook created:"), style.Resource.Render(args[0]))
+			label := "Webhook created:"
+			if written.Existing {
+				label = "Webhook already exists:"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render(label), style.Resource.Render(args[0]))
 			webhookoutput.Detail(cmd.OutOrStdout(), hook)
 			return nil
 		},

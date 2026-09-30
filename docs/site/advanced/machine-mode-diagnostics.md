@@ -231,7 +231,33 @@ the builds. With `--json` it exits `0` and each build's state is in `data`
 ([ADR-091](../adr/091-a-command-may-report-the-state-it-read-through-its-exit-status.md)).
 
 `bb webhook create` and `bb project webhook create` make that check themselves: when the
-webhook they asked for is there, they report it and exit `0`.
+webhook they asked for is there, they report it and exit `0`. So does running any webhook
+create again, with `created` false in `data` to tell it from a webhook just made:
+
+<!-- docs-lint: output-of bb webhook create -->
+```json
+{
+  "data": {
+    "status": "ok",
+    "repository": { "projectKey": "PROJ", "slug": "repo" },
+    "webhook": {
+      "id": 12,
+      "name": "ci",
+      "url": "https://ci.example.com/hooks/bitbucket",
+      "active": true,
+      "events": ["repo:refs_changed"],
+      "sslVerificationRequired": true,
+      "scopeType": "repository",
+      "secretConfigured": false
+    },
+    "created": false
+  },
+  "meta": { "command": "webhook create", "bbVersion": "[[ bb_version_tag ]]" }
+}
+```
+
+A webhook with the same name and URL and other settings is a `conflict`, which names it and
+what differs.
 
 A failure retrying cannot fix is `permanent`: a rejected TLS certificate, a host that
 does not resolve. bb does not retry those itself either.

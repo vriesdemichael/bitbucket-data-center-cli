@@ -21,6 +21,15 @@ type Change struct {
 	Webhook    result.Webhook    `json:"webhook"`
 }
 
+// Creation is what `bb webhook create` reports: the change, and whether it
+// made the webhook or found it already there.
+type Creation struct {
+	result.Status
+	Repository result.Repository `json:"repository"`
+	Webhook    result.Webhook    `json:"webhook"`
+	Created    bool              `json:"created" jsonschema:"Whether a webhook was created. False when one with this name, URL and settings was already there: that is the webhook reported, and nothing was sent."`
+}
+
 // Deletion is what `bb webhook delete` reports.
 type Deletion struct {
 	result.Status
@@ -31,7 +40,7 @@ type Deletion struct {
 func init() {
 	result.Declare("webhook get", result.For[SingleWebhook](nil))
 	result.Declare("webhook list", result.For[Webhooks](nil))
-	result.Declare("webhook create", result.For[Change](nil))
+	result.Declare("webhook create", result.For[Creation](nil))
 	result.Declare("webhook update", result.For[Change](nil))
 	result.Declare("webhook delete", result.For[Deletion](nil))
 

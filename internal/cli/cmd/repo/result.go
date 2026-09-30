@@ -335,6 +335,7 @@ type WebhookChange struct {
 	result.Status
 	Repository result.Repository `json:"repository"`
 	Webhook    result.Webhook    `json:"webhook"`
+	Created    bool              `json:"created" jsonschema:"Whether a webhook was created. False when one with this name, URL and settings was already there: that is the webhook reported, and nothing was sent."`
 }
 
 // WebhookDeletion is what `bb repo settings workflow webhooks delete` reports.
