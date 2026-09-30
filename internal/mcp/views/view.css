@@ -239,7 +239,9 @@ button {
 .reviewer-box:focus-within { outline: 2px solid var(--bb-info); outline-offset: 1px; }
 .reviewer-box.disabled, .reviewer-box.read-only { cursor: default; }
 .reviewer-box.read-only { border-color: var(--bb-border); background: var(--bb-bg-subtle); }
-.reviewers-field input.reviewer-search[type="text"] { flex: 1 1 64px; width: auto; min-width: 64px; padding: 4px 2px; border: 0; background: transparent; }
+/* The search takes what is left of the chips' last line; the whole box puts
+   the caret in it. */
+.reviewers-field input.reviewer-search[type="text"] { flex: 1 1 32px; width: auto; min-width: 32px; padding: 4px 2px; border: 0; background: transparent; }
 .reviewers-field input.reviewer-search[type="text"]:focus-visible { outline: none; }
 .reviewer-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; padding: 2px 2px 2px 3px; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-sm); background: var(--bb-bg-subtle); font-weight: var(--font-weight-medium, 500); }
 .reviewer-box.read-only .reviewer-chip { padding-right: 8px; background: var(--bb-bg); }
