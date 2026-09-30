@@ -251,7 +251,14 @@ func New(deps Dependencies) *cobra.Command {
   bb branch list --repo PROJ/repo --filter release/ --order-by MODIFICATION
 
   # Every branch, however many there are
-  bb branch list --repo PROJ/repo --all`,
+  bb branch list --repo PROJ/repo --all
+
+  # With how far each is ahead of and behind the default branch, its last
+  # commit, its builds and its pull requests
+  bb branch list --repo PROJ/repo --details
+
+  # The same, measured against another branch
+  bb branch list --repo PROJ/repo --base release/2.4`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -263,26 +270,37 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			var detailsFilter *bool
-			if cmd.Flags().Changed("details") {
-				detailsFilter = &details
-			}
-
-			service := branchservice.NewService(client)
-			branches, err := service.List(cmd.Context(), repo, branchservice.ListOptions{
+			options := branchservice.ListOptions{
 				MaxResults: listPaging.ServiceLimit(),
 				Start:      start,
 				OrderBy:    orderBy,
 				FilterText: filterText,
 				Base:       base,
-				Details:    detailsFilter,
-			})
-			if err != nil {
-				return err
+			}
+
+			// Naming a base is asking for the comparison with it, and Bitbucket
+			// makes that comparison only when details are asked for. On its own
+			// --base changed nothing at all.
+			withDetails := details || strings.TrimSpace(base) != ""
+
+			service := branchservice.NewService(client)
+			var branches []ListedBranch
+			if withDetails {
+				detailed, err := service.ListDetailed(cmd.Context(), repo, options)
+				if err != nil {
+					return err
+				}
+				branches = detailedBranchesFrom(detailed)
+			} else {
+				plain, err := service.List(cmd.Context(), repo, options)
+				if err != nil {
+					return err
+				}
+				branches = branchesFrom(plain)
 			}
 
 			if d.JSONEnabled() {
-				return d.WriteJSONList(cmd.OutOrStdout(), Branches{Repository: repositoryOf(repo), Branches: branchesFrom(branches)}, paging.LimitReached(listPaging, len(branches)))
+				return d.WriteJSONList(cmd.OutOrStdout(), Branches{Repository: repositoryOf(repo), Branches: branches}, paging.LimitReached(listPaging, len(branches)))
 			}
 
 			if len(branches) == 0 {
@@ -293,10 +311,13 @@ func New(deps Dependencies) *cobra.Command {
 			rows := make([][]string, len(branches))
 			for i, branch := range branches {
 				rows[i] = []string{
-					style.Resource.Render(safederef.String(branch.DisplayId)),
-					style.Secondary.Render(safederef.String(branch.Id)),
-					style.Secondary.Render(safederef.String(branch.LatestCommit)),
-					fmt.Sprintf("default=%t", branch.IsDefault != nil && *branch.IsDefault),
+					style.Resource.Render(branch.DisplayID),
+					style.Secondary.Render(branch.ID),
+					style.Secondary.Render(branch.LatestCommit),
+					fmt.Sprintf("default=%t", branch.Default),
+				}
+				if withDetails {
+					rows[i] = append(rows[i], detailCells(branch)...)
 				}
 			}
 			style.WriteTable(cmd.OutOrStdout(), rows)
@@ -307,8 +328,8 @@ func New(deps Dependencies) *cobra.Command {
 	}
 	enumflag.Register(listCmd.Flags(), &orderBy, "order-by", "", openapi.RefOrderings, "Branch ordering")
 	listCmd.Flags().StringVar(&filterText, "filter", "", "Filter text for branch names")
-	listCmd.Flags().StringVar(&base, "base", "", "Base ref filter")
-	listCmd.Flags().BoolVar(&details, "details", false, "Include branch details from Bitbucket")
+	listCmd.Flags().BoolVar(&details, "details", false, "Show what Bitbucket's branch list shows beside each branch: how far it is ahead of and behind --base, its last commit, its builds and its pull requests")
+	listCmd.Flags().StringVar(&base, "base", "", "Branch, tag or commit the ahead and behind counts are measured against (defaults to the default branch); implies --details")
 	listPaging.Register(listCmd, 25)
 	branchCmd.AddCommand(listCmd)
 

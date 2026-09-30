@@ -62,10 +62,10 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 
 	// The listing options, which nothing had driven.
 	//
-	// --filter, --base, --details and --order-by each add one query parameter,
-	// and a query parameter built wrong does not fail: it comes back with the
-	// wrong branches, or all of them, or in another order. So each is checked by
-	// what it changes. --all has nothing to page through in this repository;
+	// --filter and --order-by each add one query parameter, and a query
+	// parameter built wrong does not fail: it comes back with the wrong
+	// branches, or all of them, or in another order. So each is checked by what
+	// it changes. --all has nothing to page through in this repository;
 	// TestLiveListingsPageToTheEnd is where it is proven.
 	filtered := mustLiveCLI(t, "branch", "list", "--filter", branchName, "--all")
 	if !strings.Contains(filtered, branchName) {
@@ -78,19 +78,7 @@ func TestLiveCLIBranchLifecycle(t *testing.T) {
 		t.Fatalf("--filter %s listed %+v, want that branch alone", branchName, branches)
 	}
 
-	// --base and --details change only the metadata Bitbucket attaches to each
-	// branch, which bb's output leaves out. A base that names no branch shows
-	// both were sent: Bitbucket resolves the base only when details are asked
-	// for, and refuses one it cannot find. On its own, --base has no effect at
-	// all, so the first call here has nothing to read back.
-	mustLiveCLI(t, "branch", "list", "--base", "master", "--all")
-	mustLiveCLI(t, "branch", "list", "--details", "--all")
-	// The same base without --details has to be accepted, or the refusal below
-	// would not need --details to have been sent.
-	mustLiveCLI(t, "branch", "list", "--base", "no-such-branch", "--all")
-	if output, err := executeLiveCLI(t, "--json", "branch", "list", "--base", "no-such-branch", "--details", "--all"); !apperrors.IsKind(err, apperrors.KindNotFound) {
-		t.Fatalf("--base naming no branch, with --details, was not refused as not found: %v\n%s", err, output)
-	}
+	// --base and --details are read back in TestLiveCLIBranchListDetails.
 
 	// --order-by ALPHABETICAL against Bitbucket's default, which is by
 	// modification. The branch pushed here sorts last by name and first by
