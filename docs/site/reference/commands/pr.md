@@ -8,6 +8,8 @@ search:
 
 Create, review, merge and inspect pull requests
 
+A command that takes &lt;pr-id&gt; takes a pull request in any of three forms: its number, as 42 or #42; the branch it comes from, which picks that branch's open pull request when it has one; or its URL, which names the repository too, so --repo is not needed with it.
+
 41 commands.
 
 [`bb pr activity`](#bb-pr-activity)

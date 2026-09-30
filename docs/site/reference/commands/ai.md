@@ -34,25 +34,9 @@ Start the MCP server (stdio transport)
 bb ai mcp serve [flags]
 ```
 
-Start the bb MCP server using stdio transport for IDE integration.
+Start the bb MCP server on stdio, for an MCP client to run.
 
-Configure your IDE's MCP client to run:
-
-```text
-bb ai mcp serve
-```
-
-VS Code (settings.json):
-
-```text
-"mcp": {
-  "servers": {
-    "bb": { "type": "stdio", "command": "bb", "args": ["ai", "mcp", "serve"] }
-  }
-}
-```
-
-Give the server its own credential through the client's env block, which every MCP client supports -- Claude Code and Claude Desktop (.mcp.json / claude\_desktop\_config.json), Codex (\[mcp\_servers.bb.env\] in config.toml, or codex mcp add --env), and Antigravity (mcp\_config.json):
+Configure the client to run bb ai mcp serve, with a token of the server's own in the client's env block:
 
 ```text
 "bb": {
@@ -62,23 +46,17 @@ Give the server its own credential through the client's env block, which every M
 }
 ```
 
-The ${VAR} form is worth using deliberately: it keeps the agent on a different PAT from your own, so the token you use interactively can carry write rights while the one the agent gets is read-only, and neither is written into the config file. No flag takes the token: a flag's value sits in the process argument list for as long as the server runs, world-readable on Linux, unlike the process environment.
+Every MCP client has that block: Claude Code and Claude Desktop (.mcp.json, claude\_desktop\_config.json), VS Code, Codex (\[mcp\_servers.bb.env\] in config.toml, or codex mcp add --env) and Antigravity (mcp\_config.json). The ${VAR} form keeps the agent on a PAT of its own, which can be read-only while yours can write, and writes neither into the file. No flag takes a token: a flag's value is readable in the process list for as long as the server runs.
 
-Tools that change whether or when a pull request merges ask the person to confirm each call in the MCP client before they run: merging, enabling or disabling auto-merge, submitting a review, reporting a build status, creating a tag, and changing a pull request's draft flag. The confirmation is an MCP elicitation, and the tool acts only when it is accepted. A client that cannot show one gets error -32021 for those tools, and nothing reaches Bitbucket. bb ai mcp tools lists which tools ask.
+Tools that decide whether or when a pull request merges ask the person first, as an MCP elicitation in the client: merging, enabling or disabling auto-merge, submitting a review, reporting a build status, creating a tag, and changing a pull request's draft flag. A client that cannot ask gets error -32021 for them, and nothing reaches Bitbucket. bb ai mcp tools lists which tools ask.
 
-Use --read-only to expose only the tools that read. It is for a client you do not trust with the tool annotations and those confirmations: a client you cannot trust with them should not make changes in Bitbucket, so make them yourself.
+--read-only exposes only the tools that read, for a client you do not trust with those confirmations. --tools exposes only the tools you name, and --exclude leaves tools out; neither brings back a tool that --read-only or a scope withholds. refresh\_view and suggest\_form\_values, which only the views of show call, go with show.
 
-Use --tools to expose only the tools you name, and --exclude to suppress individual tools. Neither exposes a tool that --read-only or a scope withholds. The tools only the views of show call, refresh\_view and suggest\_form\_values, go with show whether or not --tools names them. A view is drawn from show's result and has no network of its own: its buttons call this server's tools through the client, so the confirmations, the scope and the audit trail apply to them.
+--project or --repo confines the server to one project or repository, and a call aimed elsewhere is refused. Build statuses, which hang off a commit rather than a project, are withheld while a scope is set. The server is never scoped by the directory it starts in. --host is required when more than one Bitbucket instance is configured.
 
-Views highlight the code in diffs and files. Of a Svelte, ERB, PHTML, Go HTML or Jinja template, only the markup is highlighted: the lexers for the code inside cannot be stopped midway, and a crafted file keeps one busy for seconds. Use --highlight-templates to highlight that code too. No view waits for a lexer past its deadline, but the server works on until the lexer finishes.
+A view is drawn from show's result and has no network of its own: its buttons call this server's tools through the client, with their confirmations, the scope and the audit trail. Views highlight code, but of a Svelte, ERB, PHTML, Go HTML or Jinja template only the markup, because a crafted file can keep the lexers for the code in it busy for seconds. --highlight-templates highlights that code too.
 
-When more than one Bitbucket instance is configured the --host flag is required.
-
-Use --project or --repo to confine the server to one project or repository. Any tool call aimed elsewhere is refused. Tools that address a resource Bitbucket does not scope to a project — build statuses, which hang off a commit SHA — are withheld entirely while a scope is set, because there is no argument to bound. Confinement applies only when the flags are passed explicitly: the server is never scoped by the repository of the directory it starts in.
-
-Use --audit-file to record every tool call as JSON Lines for SIEM collection. Pass a path, or 'stderr' for a containerised deployment whose log collector reads the process streams. Auditing is off by default. When it is on and a record cannot be written the call is refused; --audit-failure=warn relaxes that.
-
-The audit trail covers this server only. An agent that can run shell commands can invoke bb directly and bypass it, along with every other control here; the control that survives that is the token itself, which binds at the Bitbucket server -- give this server a narrower PAT than your own through env.
+--audit-file records every tool call as JSON Lines, to a path or to stderr for a log collector that reads the process streams. When a record cannot be written the call is refused; --audit-failure=warn relaxes that. The trail covers this server only: an agent that can run shell commands can run bb directly. What holds either way is the token, so give this server a narrower PAT than your own.
 
 ```bash
 # Serve every tool over stdio, for an MCP client to launch
