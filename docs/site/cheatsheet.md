@@ -233,92 +233,41 @@ bb browse src/config.yaml --repo PROJ/my-repo
 
 ### Recipe 7: One-Time Git Credential Helper Setup
 
-`bb` authenticates to the Bitbucket REST API, but standard `git push`, `git fetch`, and `git pull` contact Bitbucket directly. To let standard `git` reuse your stored `bb` credentials:
+`bb` authenticates to the Bitbucket REST API, but `git push`, `git fetch` and `git pull` contact Bitbucket themselves. To let them use your stored `bb` credential:
 
 ```bash
 bb auth setup-git
 ```
 
-This registers `bb auth git-credential` in your global git configuration (`~/.gitconfig`). Git will now authenticate seamlessly to your Bitbucket host without prompting for passwords or storing plaintext tokens in repository configs.
+This registers `bb auth git-credential` in your global git configuration, so git authenticates without prompting and without a token in any repository's configuration. [Git Authentication](advanced/git-authentication.md) explains how, and what to do when git still prompts.
 
 ---
 
 ### Recipe 8: Shell Autocompletion Setup
 
-Load `bb`'s completion script in your shell so commands, flags and the values they take — pull requests, branches, repositories, people — complete with `<TAB>`. [Shell Completion](advanced/shell-completion.md) covers what completes and what to do when nothing is offered.
+Homebrew, Scoop and the `.deb` and `.rpm` packages set completion up when they install `bb`. Anywhere else:
 
-=== "Bash"
+```bash
+bb completion install
+```
 
-    ```bash
-    # Add to ~/.bashrc
-    source <(bb completion bash)
-    ```
-
-=== "Zsh"
-
-    ```zsh
-    # Add to ~/.zshrc (after compinit)
-    source <(bb completion zsh)
-    ```
-
-=== "Fish"
-
-    ```fish
-    # Add to ~/.config/fish/config.fish
-    bb completion fish | source
-    ```
-
-=== "PowerShell"
-
-    ```powershell
-    # Add to $PROFILE
-    bb completion powershell | Out-String | Invoke-Expression
-    ```
+Commands, flags and the values they take — pull requests, branches, repositories, people — then complete with `<TAB>`. [Shell Completion](advanced/shell-completion.md) covers each shell, and what to do when nothing is offered.
 
 ---
 
-### Recipe 9: IDE MCP Server Integration (VS Code & Cursor)
+### Recipe 9: MCP Server in Your IDE
 
-`bb` includes a built-in Model Context Protocol (MCP) server that lets AI assistants (such as GitHub Copilot, Cursor, and Claude Desktop) query pull requests, CI builds, and repository files.
-
-Add to `.vscode/settings.json` (or Cursor's MCP configuration):
+`bb` includes an MCP server that lets an AI assistant, such as GitHub Copilot, Cursor or Claude Desktop, read and act on pull requests, builds and files. Add this server entry to your client's MCP configuration, giving it a token of its own:
 
 ```json
-{
-  "mcp": {
-    "servers": {
-      "bb": {
-        "type": "stdio",
-        "command": "bb",
-        "args": ["ai", "mcp", "serve"]
-      }
-    }
-  }
+"bb": {
+  "command": "bb",
+  "args": ["ai", "mcp", "serve"],
+  "env": { "BITBUCKET_TOKEN": "${BB_MCP_TOKEN}" }
 }
 ```
 
-To hold the server to read-only rights, give it its own PAT through the client's
-`env` block. Every MCP client supports one, and it keeps the agent's token separate
-from the one you use interactively:
-
-```json
-{
-  "mcp": {
-    "servers": {
-      "bb": {
-        "type": "stdio",
-        "command": "bb",
-        "args": ["ai", "mcp", "serve"],
-        "env": { "BITBUCKET_TOKEN": "${env:BB_MCP_READONLY_PAT}" }
-      }
-    }
-  }
-}
-```
-
-The rights of that PAT are what bound the server. Tools that ask before they merge, and
-`--read-only`, are a second layer, not the boundary. There is no `--token` flag: a flag value sits in the
-process argument list for as long as the server runs.
+The rights of that token are what bound the server: give it a read-only one if the assistant should only read. [The MCP server](ai-and-llms.md#the-mcp-server) covers the flags that narrow it further, and the views it shows.
 
 ---
 
