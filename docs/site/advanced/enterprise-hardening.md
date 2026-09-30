@@ -70,11 +70,11 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    require_keyring: true
    ca_file: /etc/ssl/certs/corp-root-ca.pem
    allowed_hosts:
-     - https://bitbucket.corp.internal
+     - https://bitbucket.example.com
    allow_insecure_skip_verify: false
    allow_http_update: false
    disable_update: true
-   update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
+   update_base_url: https://artifactory.example.com/artifactory/bb-releases
    ```
    - **JSON Schema Validation**: All configuration files are validated against [`config.schema.json`](../reference/schemas/config.schema.json). Supplying the `$schema` directive enables live linting and autocompletion in VS Code and IntelliJ. On the host, `bb doctor` reports every key the schema rejects in the deployed file, and the source each policy setting comes from.
    - `require_keyring: true`: Enforces OS keyring storage machine-wide; refuses fallback to plaintext files even if `BB_REQUIRE_KEYRING` is unset or set to `0`. If a user sets `BB_REQUIRE_KEYRING=0`, `bb` outputs an explicit warning to `stderr` and continues enforcing keyring policy.
@@ -116,7 +116,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
      ```json
      {
        "tag_name": "v[[ bb_version ]]",
-       "html_url": "https://artifactory.corp.internal/artifactory/bb-releases",
+       "html_url": "https://artifactory.example.com/artifactory/bb-releases",
        "assets": [
          { "name": "bb_[[ bb_version ]]_linux_amd64.tar.gz", "browser_download_url": "bb_[[ bb_version ]]_linux_amd64.tar.gz" },
          { "name": "sha256sums.txt", "browser_download_url": "sha256sums.txt" },
@@ -126,7 +126,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
      ```
      Mirror `bb_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows), `sha256sums.txt`, and `sha256sums.txt.sigstore.json` at the base URL. The mirror has to allow anonymous downloads of them: `bb update` sends no credentials, only a TLS client certificate when one is configured. Where the artifact server requires a login for every download, install `bb` through your own tooling instead, with the [`_noupdate` builds](#builds-with-self-update-compiled-out). Asset URLs may be relative, as above, or absolute mirror URLs; a manifest copied verbatim from GitHub also works, since `bb` fetches an off-mirror asset URL from `{base_url}/{asset_name}`, and never from the `github.com` address the manifest names. Verify a mirror without replacing any binary:
      ```bash
-     bb update --dry-run --base-url https://artifactory.corp.internal/artifactory/bb-releases
+     bb update --dry-run --base-url https://artifactory.example.com/artifactory/bb-releases
      ```
      The dry run verifies whatever release the mirror serves, the installed version included: the signature on `sha256sums.txt` against the configured trust material, that file's entry for this platform's archive, and the archive against that entry. It reports the trust material used and each check that passed (`preview.data.trust` under `--json`), and fails with exit `5` (`conflict`) when the mirror serves a release older than the installed one, the sign of a mirror that has stopped receiving releases.
 
@@ -230,7 +230,7 @@ sudo tee /etc/bb/config.yaml >/dev/null <<'EOF'
 require_keyring: true
 ca_file: /Library/Application Support/Corporate/Certs/corp-root-ca.pem
 allowed_hosts:
-  - https://bitbucket.corp.internal
+  - https://bitbucket.example.com
 allow_insecure_skip_verify: false
 allow_http_update: false
 disable_update: true
@@ -261,7 +261,7 @@ Linux workstations authenticate through the **Secret Service API over D-Bus** (G
 
     - name: Download verified bb Debian package
       get_url:
-        url: "https://artifactory.corp.internal/binaries/bb_{{ bb_version }}_linux_amd64.deb"
+        url: "https://artifactory.example.com/binaries/bb_{{ bb_version }}_linux_amd64.deb"
         dest: "/tmp/bb_{{ bb_version }}_linux_amd64.deb"
         mode: '0644'
       when: ansible_os_family == "Debian"
@@ -281,11 +281,11 @@ Linux workstations authenticate through the **Secret Service API over D-Bus** (G
           require_keyring: true
           ca_file: /etc/ssl/certs/corp-root-ca.pem
           allowed_hosts:
-            - https://bitbucket.corp.internal
+            - https://bitbucket.example.com
           allow_insecure_skip_verify: false
           allow_http_update: false
           disable_update: true
-          update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
+          update_base_url: https://artifactory.example.com/artifactory/bb-releases
 ```
 
 ---
@@ -326,11 +326,11 @@ Set-Acl -Path $ConfigDir -AclObject $Acl
 require_keyring: true
 ca_file: $CertDir\corp-root-ca.pem
 allowed_hosts:
-  - https://bitbucket.corp.internal
+  - https://bitbucket.example.com
 allow_insecure_skip_verify: false
 allow_http_update: false
 disable_update: true
-update_base_url: https://artifactory.corp.internal/artifactory/bb-releases
+update_base_url: https://artifactory.example.com/artifactory/bb-releases
 "@ | Set-Content -Path "$ConfigDir\config.yaml" -Encoding UTF8
 
 # 4. Option B: Native Windows Registry GPO Policies (HKLM\Software\Policies\bb)
@@ -338,7 +338,7 @@ $RegPath = "HKLM:\Software\Policies\bb"
 if (!(Test-Path $RegPath)) { New-Item -Path $RegPath -Force | Out-Null }
 Set-ItemProperty -Path $RegPath -Name "RequireKeyring" -Value 1 -Type DWord
 Set-ItemProperty -Path $RegPath -Name "CAFile" -Value "$CertDir\corp-root-ca.pem" -Type String
-Set-ItemProperty -Path $RegPath -Name "AllowedHosts" -Value "https://bitbucket.corp.internal" -Type String
+Set-ItemProperty -Path $RegPath -Name "AllowedHosts" -Value "https://bitbucket.example.com" -Type String
 Set-ItemProperty -Path $RegPath -Name "AllowInsecureSkipVerify" -Value 0 -Type DWord
 Set-ItemProperty -Path $RegPath -Name "AllowHTTPUpdate" -Value 0 -Type DWord
 Set-ItemProperty -Path $RegPath -Name "DisableUpdate" -Value 1 -Type DWord
@@ -375,7 +375,7 @@ ENV BB_CA_FILE=/etc/ssl/certs/corp-root-ca.pem
 ENV BB_DISABLE_STORED_CONFIG=1
 
 # Execution in CI: pass token via environment, zero disk persistence
-# docker run --rm -e BITBUCKET_TOKEN=$SECRET -e BITBUCKET_URL=https://bitbucket.corp.internal my-image bb repo list
+# docker run --rm -e BITBUCKET_TOKEN=$SECRET -e BITBUCKET_URL=https://bitbucket.example.com my-image bb repo list
 ```
 
 ---
@@ -631,7 +631,7 @@ Confirm:
 | `update_trusted_root and update_tuf_url are mutually exclusive` | Both Sigstore trust sources are configured. | Keep the trusted root file for air-gapped hosts, or the TUF mirror URL — not both. |
 | `the system configuration at ... could not be read` | The system configuration file is malformed, typically from a provisioning template or a partial write. bb fails closed rather than run without the policy. | Run `bb doctor` on the host: it lists every problem in the file with its line (see [Checking the configuration](../troubleshooting.md#checking-the-configuration)). Redeploy the corrected file. Users cannot work around it, by design. |
 | A policy setting is not enforced | The key is in a user or workspace configuration file, which bb reads no policy from. | Run `bb doctor`: it lists the key as `ignored` in that file, and names the source each policy setting comes from. Move the key to the system configuration. |
-| `update_tuf_url must be an absolute https URL` | The configured mirror is a bare hostname, a relative path, or plain `http`. | Give the full origin, for example `https://artifactory.corp.internal/tuf`. |
+| `update_tuf_url must be an absolute https URL` | The configured mirror is a bare hostname, a relative path, or plain `http`. | Give the full origin, for example `https://artifactory.example.com/tuf`. |
 | `uses plain HTTP; pass --allow-http or set BB_ALLOW_HTTP_UPDATE=1 to permit it` | The update base URL, an asset URL in the mirror's manifest, or a redirect uses `http://`. | Serve the mirror over `https`, or opt in explicitly for a mirror that has no TLS. |
 | `plain-HTTP update URLs are disabled by administrative policy` | `--allow-http` or `BB_ALLOW_HTTP_UPDATE` was set on a host whose policy sets `allow_http_update: false`. | Serve the mirror over `https`; the policy exists so the fleet cannot fall back to plain HTTP. |
 | `uses plain HTTP, which administrative policy forbids` | An update URL uses `http://` and policy sets `allow_http_update: false`. | Serve the mirror over `https`. |
