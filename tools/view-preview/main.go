@@ -215,7 +215,10 @@ func run(project, repo, id, state, theme, from, kinds string, height int, sameOr
 	}
 	if kinds != "" {
 		drawn := strings.Split(kinds, ",")
-		wanted = slices.DeleteFunc(wanted, func(want frame) bool { return !slices.Contains(drawn, want.arguments["kind"].(string)) })
+		wanted = slices.DeleteFunc(wanted, func(want frame) bool {
+			kind, _ := want.arguments["kind"].(string)
+			return !slices.Contains(drawn, kind)
+		})
 	}
 
 	// An answer for the views' own tool, so the stand-in host says it passes
