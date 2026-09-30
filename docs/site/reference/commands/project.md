@@ -85,9 +85,6 @@ bb project branch-restriction create PROJ --type fast-forward-only \
 `--group strings`
 :   Allowed group names
 
-`--matcher-display string`
-:   Matcher display value
-
 `--matcher-id string`
 :   Matcher id value
 
@@ -317,9 +314,6 @@ bb project branch-restriction update PROJ 7 --type no-deletes \
 
 `--group strings`
 :   Allowed group names
-
-`--matcher-display string`
-:   Matcher display value
 
 `--matcher-id string`
 :   Matcher id value

@@ -398,9 +398,6 @@ bb branch restriction create --repo PROJ/repo --type fast-forward-only \
 `--group strings`
 :   Group name allowed by restriction (repeatable)
 
-`--matcher-display string`
-:   Matcher display value
-
 `--matcher-id string`
 :   Matcher id value
 
@@ -686,9 +683,6 @@ bb branch restriction update 7 --repo PROJ/repo --type no-deletes \
 
 `--group strings`
 :   Group name allowed by restriction (repeatable)
-
-`--matcher-display string`
-:   Matcher display value
 
 `--matcher-id string`
 :   Matcher id value

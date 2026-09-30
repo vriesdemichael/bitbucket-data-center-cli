@@ -447,11 +447,6 @@ bb build status get a1b2c3d --repo PROJ/repo --order-by NEWEST
 `--order-by string`
 :   Build status ordering (one of: NEWEST, OLDEST, STATUS)
 
-Inherited from [`bb build status`](#bb-build-status):
-
-`--include-unique`
-:   Include unique result details when available
-
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
@@ -529,11 +524,6 @@ bb build status set a1b2c3d --key ci --state FAILED --url https://ci.example.com
 `--url string`
 :   Build URL
 
-Inherited from [`bb build status`](#bb-build-status):
-
-`--include-unique`
-:   Include unique result details when available
-
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
@@ -563,11 +553,6 @@ bb build status stats <commit>...
 # How many builds passed, failed and are running, for each of two commits
 bb build status stats a1b2c3d e4f5a6b
 ```
-
-Inherited from [`bb build status`](#bb-build-status):
-
-`--include-unique`
-:   Include unique result details when available
 
 Inherited from [`bb build`](#bb-build):
 

@@ -390,14 +390,7 @@ func readOnlyByPolicy(flag bool) (bool, error) {
 // (ADR-084). The warning comes from the registry, so it says what the reports
 // listing outstanding deprecations say.
 func warnDeprecatedFlags(cmd *cobra.Command, command string, flags ...string) {
-	for _, flag := range flags {
-		if !cmd.Flags().Changed(flag) {
-			continue
-		}
-		if entry, ok := deprecation.Named(command + " --" + flag); ok {
-			fmt.Fprintln(cmd.ErrOrStderr(), entry.Warning())
-		}
-	}
+	deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, command, flags...)
 }
 
 // nopWriteCloser adapts the command's output stream to the io.WriteCloser the
