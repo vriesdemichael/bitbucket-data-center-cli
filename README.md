@@ -90,12 +90,12 @@ covers both spellings, so the checksum step above works either way.
 **Authenticate** — store a token for your Bitbucket instance:
 
 ```bash
-printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
 bb auth status
 ```
 
 ```text
-Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored)
+Target Bitbucket: https://bitbucket.example.com (auth=token, source=stored)
 Credential storage: keyring
 ```
 
@@ -114,7 +114,7 @@ bb browse --repo PLATFORM/api
 ```text
 Cloning into 'api'...
 Cloned PLATFORM/api into api
-# browse opens https://bitbucket.acme.corp/projects/PLATFORM/repos/api in your browser
+# browse opens https://bitbucket.example.com/projects/PLATFORM/repos/api in your browser
 ```
 
 **Search** — find repositories across all projects:
@@ -140,7 +140,7 @@ bb --json auth status
 {
   "data": {
     "ok": true,
-    "bitbucketUrl": "https://bitbucket.acme.corp",
+    "bitbucketUrl": "https://bitbucket.example.com",
     "bitbucketVersionTarget": "",
     "authMode": "token",
     "authSource": "stored",

@@ -13,9 +13,9 @@ or `--role` on `bb search prs`.
 
 `bb` inspects git remotes and tries to parse Bitbucket-style URLs such as:
 
-- `https://bitbucket.acme.corp/scm/PLAT/payments-api.git`
-- `ssh://git@bitbucket.acme.corp:7999/scm/PLAT/payments-api.git`
-- `git@bitbucket.acme.corp:scm/PLAT/payments-api.git`
+- `https://bitbucket.example.com/scm/PLAT/payments-api.git`
+- `ssh://git@bitbucket.example.com:7999/scm/PLAT/payments-api.git`
+- `git@bitbucket.example.com:scm/PLAT/payments-api.git`
 
 If a remote endpoint matches an authenticated/stored server context or one of its aliases, `bb` infers:
 
@@ -27,7 +27,7 @@ If a remote endpoint matches an authenticated/stored server context or one of it
 Human mode emits a banner on `stderr`:
 
 ```text
-Using repository context from git remote "origin": PLAT/payments-api on https://bitbucket.acme.corp
+Using repository context from git remote "origin": PLAT/payments-api on https://bitbucket.example.com
 ```
 
 JSON mode suppresses that banner to preserve machine output contracts on `stdout`.
@@ -38,7 +38,7 @@ JSON mode suppresses that banner to preserve machine output contracts on `stdout
 
 Repository selection precedence for repo-scoped commands:
 
-1. Explicit `--repo` (accepts `PROJECT/slug`, personal repos `~username/slug`, or full Bitbucket URLs like `https://bitbucket.acme.corp/projects/PROJECT/repos/slug` and `ssh://...`)
+1. Explicit `--repo` (accepts `PROJECT/slug`, personal repos `~username/slug`, or full Bitbucket URLs like `https://bitbucket.example.com/projects/PROJECT/repos/slug` and `ssh://...`)
 2. Git remote discovery (if exactly one matching remote context exists)
 3. `BITBUCKET_PROJECT_KEY` + `BITBUCKET_REPO_SLUG`
 
@@ -58,32 +58,32 @@ When the repository comes from a git remote, so does the host, ahead of
 Many Bitbucket instances use different endpoints for browser/API access and git clone traffic.
 For example:
 
-- canonical Bitbucket URL: `https://bitbucket.acme.corp`
-- SSH clone host: `git.acme.corp:7999`
+- canonical Bitbucket URL: `https://bitbucket.example.com`
+- SSH clone host: `git.example.com:7999`
 
 `bb` stores one canonical server context and can attach one or more aliases to it. Alias matching is
 endpoint-aware and normalizes values as `host:port`.
 
 Examples:
 
-- `https://bitbucket.acme.corp` -> `bitbucket.acme.corp:443`
-- `http://bitbucket.acme.corp` -> `bitbucket.acme.corp:80`
-- `ssh://git@git.acme.corp:7999/scm/PLAT/payments-api.git` -> `git.acme.corp:7999`
-- `git@git.acme.corp:scm/PLAT/payments-api.git` -> `git.acme.corp:22`
+- `https://bitbucket.example.com` -> `bitbucket.example.com:443`
+- `http://bitbucket.example.com` -> `bitbucket.example.com:80`
+- `ssh://git@git.example.com:7999/scm/PLAT/payments-api.git` -> `git.example.com:7999`
+- `git@git.example.com:scm/PLAT/payments-api.git` -> `git.example.com:22`
 
 Manual alias management:
 
 ```bash
-bb auth alias list --host https://bitbucket.acme.corp
-bb auth alias add --host https://bitbucket.acme.corp git.acme.corp:7999
-bb auth alias remove --host https://bitbucket.acme.corp git.acme.corp:7999
+bb auth alias list --host https://bitbucket.example.com
+bb auth alias add --host https://bitbucket.example.com git.example.com:7999
+bb auth alias remove --host https://bitbucket.example.com git.example.com:7999
 ```
 
 Automatic alias discovery:
 
 ```bash
-printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
-bb auth alias discover --host https://bitbucket.acme.corp
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+bb auth alias discover --host https://bitbucket.example.com
 ```
 
 Discovery is best-effort. It requests only a small repository page and stops at the first accessible
@@ -97,7 +97,7 @@ or by the next `bb auth login`. Re-authenticating keeps stored aliases for the s
 To store only what discovery finds, ask for it explicitly. Anything dropped is named in the output:
 
 ```bash
-bb auth alias discover --host https://bitbucket.acme.corp --replace
+bb auth alias discover --host https://bitbucket.example.com --replace
 ```
 
 ## Server switching workflow
@@ -106,15 +106,15 @@ Use server contexts to control which host is active by default:
 
 ```bash
 bb auth server list
-bb auth server use --host https://bitbucket.acme.corp
+bb auth server use --host https://bitbucket.example.com
 bb auth status
 ```
 
 Expected human output:
 
 ```text
-Active server set to https://bitbucket.acme.corp
-Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored)
+Active server set to https://bitbucket.example.com
+Target Bitbucket: https://bitbucket.example.com (auth=token, source=stored)
 Credential storage: keyring
 ```
 
@@ -125,7 +125,7 @@ Expected JSON output (example):
 {
   "data": {
     "status": "ok",
-    "defaultHost": "https://bitbucket.acme.corp"
+    "defaultHost": "https://bitbucket.example.com"
   },
   "meta": {
     "bbVersion": "[[ bb_version_tag ]]"
@@ -141,7 +141,7 @@ each its own file through `BB_CONFIG_PATH`:
 
 ```bash
 export BB_CONFIG_PATH="$HOME/.config/bb/service-account.yaml"
-printf '%s' "$SERVICE_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
+printf '%s' "$SERVICE_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
 bb auth status
 ```
 

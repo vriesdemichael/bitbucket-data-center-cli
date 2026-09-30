@@ -42,12 +42,12 @@ identical output; each one's `--help` names the other so you can discover either
 
 ```bash
 bb pr diff 42
-bb repo create --project TEST --name my-repo
-bb repo fork --name my-fork --repo TEST/my-repo
-bb repo delete --repo TEST/my-fork
-bb repo permissions list --repo TEST/my-repo
-bb repo permissions grant alice REPO_WRITE --repo TEST/my-repo
-bb repo permissions grant --group developers REPO_READ --repo TEST/my-repo
+bb repo create --project PROJ --name my-repo
+bb repo fork --name my-fork --repo PROJ/my-repo
+bb repo delete --repo PROJ/my-fork
+bb repo permissions list --repo PROJ/my-repo
+bb repo permissions grant alice REPO_WRITE --repo PROJ/my-repo
+bb repo permissions grant --group developers REPO_READ --repo PROJ/my-repo
 bb project permissions grant TEST alice PROJECT_WRITE
 ```
 
@@ -70,16 +70,16 @@ Commands operating on a pull request (`bb pr get`, `bb pr checkout`, `bb pr diff
 - **Numeric ID**: `42`
 - **Hash prefix**: `#42`
 - **Source branch name**: `feature/login`, `refs/heads/feature/login`
-- **Full Bitbucket URL**: `https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42` (also supports personal repos `~username` and `/diff`, `/commits`, `/overview` subpaths)
+- **Full Bitbucket URL**: `https://bitbucket.example.com/projects/PRJ/repos/demo/pull-requests/42` (also supports personal repos `~username` and `/diff`, `/commits`, `/overview` subpaths)
 
 When you pass a full PR URL, `bb` automatically extracts the project, repository slug, and pull request ID, so you do not even need to supply `--repo` or stand inside a local clone:
 
 ```bash
 # Target via full browser PR URL (no local git clone needed)
-bb pr get https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42
+bb pr get https://bitbucket.example.com/projects/PRJ/repos/demo/pull-requests/42
 
 # Diff via PR URL
-bb pr diff https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42
+bb pr diff https://bitbucket.example.com/projects/PRJ/repos/demo/pull-requests/42
 
 # Check out via source branch name or hash
 bb pr checkout feature/payment-gateway
@@ -111,7 +111,7 @@ run it, review it, and push fixes back.
 bb pr checkout 42
 bb pr checkout '#42'
 bb pr checkout feature/login
-bb pr checkout https://bitbucket.acme.corp/projects/PRJ/repos/demo/pull-requests/42
+bb pr checkout https://bitbucket.example.com/projects/PRJ/repos/demo/pull-requests/42
 bb pr checkout 42 --branch review-42
 bb pr checkout 42 --detach
 ```
@@ -191,7 +191,7 @@ bb pr review reviewer add 42 --default-reviewers --codeowners
 
 ## Repository context behavior
 
-- `--repo PROJECT/slug` has highest precedence. `--repo` also accepts full Bitbucket repository URLs (`https://bitbucket.acme.corp/projects/PRJ/repos/demo`) and personal user repositories (`~username/slug`).
+- `--repo PROJECT/slug` has highest precedence. `--repo` also accepts full Bitbucket repository URLs (`https://bitbucket.example.com/projects/PRJ/repos/demo`) and personal user repositories (`~username/slug`).
 - If `--repo` is omitted, `bb` can infer repository context from local git remotes that match authenticated hosts.
 - When several remotes match, `origin` wins — a fork or mirror alongside it does not make the context ambiguous.
 - An `upstream` remote is the exception: it conventionally outranks `origin`, so having both is a genuine ambiguity and `bb` asks for explicit selection.
@@ -259,7 +259,7 @@ bb --json auth status
 bb repo clone PROJ/my-repo
 bb repo create --project PROJ --name my-service
 bb repo fork --repo PROJ/my-service --name my-service-fork
-bb pr get https://bitbucket.acme.corp/projects/PROJ/repos/my-service/pull-requests/42
+bb pr get https://bitbucket.example.com/projects/PROJ/repos/my-service/pull-requests/42
 bb pr checkout '#42'
 bb pr diff feature/payments
 bb browse --repo PROJ/my-repo src/main.go

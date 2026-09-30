@@ -86,8 +86,8 @@ Per-archive signatures, build provenance and SBOMs are covered in
 ## Authenticate to Bitbucket
 
 ```bash
-bb auth token-url --host https://bitbucket.acme.corp
-printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.acme.corp --token-stdin
+bb auth token-url --host https://bitbucket.example.com
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
 bb auth status
 ```
 
@@ -111,10 +111,10 @@ bb auth status
 ```
 
 ```text
-Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored)
+Target Bitbucket: https://bitbucket.example.com (auth=token, source=stored)
 Credential storage: keyring
 - authentication: Alice Smith (alice)
-- git credential helper: configured for https://bitbucket.acme.corp
+- git credential helper: configured for https://bitbucket.example.com
 ```
 
 `bb auth status` does not just report the configuration, it checks it: the
@@ -148,9 +148,9 @@ will try to discover aliases automatically from the first accessible repository 
 You can inspect or manage aliases explicitly with:
 
 ```bash
-bb auth alias list --host https://bitbucket.acme.corp
-bb auth alias discover --host https://bitbucket.acme.corp
-bb auth alias add --host https://bitbucket.acme.corp git.acme.corp:7999
+bb auth alias list --host https://bitbucket.example.com
+bb auth alias discover --host https://bitbucket.example.com
+bb auth alias add --host https://bitbucket.example.com git.example.com:7999
 ```
 
 ## Let git authenticate too
