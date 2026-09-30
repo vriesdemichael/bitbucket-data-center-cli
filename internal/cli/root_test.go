@@ -16,6 +16,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
@@ -553,6 +554,46 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		}
 		if got := os.Getenv("BITBUCKET_REPO_SLUG"); got != "keep" {
 			t.Fatalf("expected repo slug unchanged, got %q", got)
+		}
+	})
+
+	// #725: bb reviewer-group list --project PROJ, run in a clone, had the
+	// clone's repository filled in beside the project and was refused for
+	// naming both. The same command without --project must still infer, or
+	// this passes for a command that has stopped inferring at all.
+	t.Run("a scope named instead of --repo skips inference", func(t *testing.T) {
+		gitBackendFactory = func() git.Backend {
+			return inferenceGitBackendStub{
+				repoRoot: "/tmp/repo",
+				remotes:  []git.Remote{{Name: "origin", URL: "https://bitbucket.local:7990/scm/PRJ/demo.git"}},
+			}
+		}
+
+		for _, testCase := range []struct {
+			args  []string
+			infer bool
+		}{
+			{args: []string{"--project", "OTHER"}, infer: false},
+			{args: nil, infer: true},
+		} {
+			cmd := &cobra.Command{Use: "reviewer-group list"}
+			cmd.Flags().String("repo", "", "")
+			cmd.Flags().String("project", "", "")
+			reposel.MarkInsteadOfRepo(cmd.Flags(), "project")
+			if err := cmd.Flags().Parse(testCase.args); err != nil {
+				t.Fatalf("parse %v: %v", testCase.args, err)
+			}
+			cmd.SetErr(&bytes.Buffer{})
+
+			options := &rootOptions{}
+			if err := options.applyInferredRepositoryContext(cmd, false); err != nil {
+				t.Fatalf("%v: apply inferred repository context failed: %v", testCase.args, err)
+			}
+
+			repo := cmd.Flags().Lookup("repo")
+			if inferred := repo.Changed || options.repositoryInferred || options.runtime.ProjectKey != ""; inferred != testCase.infer {
+				t.Errorf("%v: inferred = %v (--repo %q), want %v", testCase.args, inferred, repo.Value.String(), testCase.infer)
+			}
 		}
 	})
 

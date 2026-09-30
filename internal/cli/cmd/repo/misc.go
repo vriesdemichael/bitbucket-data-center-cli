@@ -18,6 +18,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outwriter"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -1226,6 +1227,7 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 
 	repoSshCmd.PersistentFlags().StringVar(&projectFlag, "project", "", "Project key for project-level SSH keys")
 	repoSshCmd.PersistentFlags().StringVar(&repoFlag, "repo", "", "Repository reference (projectKey/repositorySlug) for repository-level SSH keys")
+	reposel.MarkInsteadOfRepo(repoSshCmd.PersistentFlags(), "project")
 
 	listCmd := &cobra.Command{
 		Use:   "list",

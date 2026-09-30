@@ -88,6 +88,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	reviewerCmd.PersistentFlags().StringVar(&projectKey, "project", "", "Project key")
 	reviewerCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug")
+	reposel.MarkInsteadOfRepo(reviewerCmd.PersistentFlags(), "project")
 	reviewerCmd.PersistentFlags().StringVar(&configFile, "config-file", "", "JSON file containing condition settings")
 
 	conditionCmd := &cobra.Command{
@@ -107,6 +108,10 @@ func New(deps Dependencies) *cobra.Command {
 repository: its own, and those it inherits from its project, which are marked
 as inherited.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := refuseBothScopes(projectKey, repositorySelector); err != nil {
+				return err
+			}
+
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -163,6 +168,10 @@ deleted through the repository, it would be deleted from every repository in
 the project. --project deletes it there.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := refuseBothScopes(projectKey, repositorySelector); err != nil {
+				return err
+			}
+
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -282,6 +291,10 @@ the project. --project deletes it there.`,
 		Long: "Create a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := refuseBothScopes(projectKey, repositorySelector); err != nil {
+				return err
+			}
+
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -416,6 +429,10 @@ With --repo, a condition the repository inherits from its project is refused;
 --project changes it there, for every repository in the project.`,
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := refuseBothScopes(projectKey, repositorySelector); err != nil {
+				return err
+			}
+
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -624,6 +641,17 @@ func refuseInheritedCondition(conditions []openapigenerated.RestPullRequestCondi
 
 	return inherited.Refusal("reviewer condition", trimmed, projectKey, change,
 		fmt.Sprintf("bb reviewer condition %s %s --project %s", change, trimmed, projectKey))
+}
+
+// refuseBothScopes refuses --project beside --repo, as bb reviewer-group does.
+// The repository used to win without a word, so a condition asked for on the
+// project was listed, written or deleted on the repository instead.
+func refuseBothScopes(projectKey, repositorySelector string) error {
+	if projectKey != "" && repositorySelector != "" {
+		return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
+	}
+
+	return nil
 }
 
 func reviewerConditionExists(conditions []openapigenerated.RestPullRequestCondition, id string) bool {

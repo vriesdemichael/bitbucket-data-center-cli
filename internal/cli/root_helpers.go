@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
@@ -100,6 +101,14 @@ func (options *rootOptions) applyInferredRepositoryContext(cmd *cobra.Command, a
 	}
 
 	if repoFlag.Changed && strings.TrimSpace(repoFlag.Value.String()) != "" {
+		return nil
+	}
+
+	// A scope named another way is as much the caller's choice as a --repo.
+	// Inferred beside --project, the checkout's repository got bb reviewer-group
+	// refused for naming both, and bb reviewer condition create writing to the
+	// repository rather than the project (#725).
+	if reposel.NamedInsteadOfRepo(cmd.Flags()) != "" {
 		return nil
 	}
 
