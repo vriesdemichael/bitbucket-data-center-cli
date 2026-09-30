@@ -166,13 +166,16 @@ func specShow() Spec {
 	tool := &mcp.Tool{
 		Name: "show",
 		Description: "Show the person a pull request, a list of pull requests or a pull request's diff as an interactive view, in " +
-			"clients that display MCP Apps views, or a pull request form for them to finish and submit. Call it once, after you have " +
-			"what you need and before your answer, for what the person should see; use the other tools to find it. Kinds pull_request " +
-			"and diff take project, repo and id; a pull request's overview has its comments and activity, and its diff the comments " +
-			"on its lines. Kind pull_requests takes the filters list_pull_requests takes. Kind pull_request_form takes project, repo, " +
-			"from_ref and what you drafted (title, description, to_ref, reviewers, draft), or an id to edit that pull request; nothing " +
-			"is created or changed until the person submits it. A diff is for changes the person cannot open in their own editor, " +
-			"such as another repository's. In a client that displays no views, it shows nothing and says so.",
+			"clients that display MCP Apps views, or a pull request form for them to finish and submit. It is for the person, not for " +
+			"you: its answer says what was shown, not the data, so read with the other tools. Call it only when a person is there to " +
+			"see it, never when you work on your own, as in a scheduled, background or batch task; and once, after you have what you " +
+			"need and before your answer. Kind pull_request, for a pull request the person asked about or should watch, takes project, " +
+			"repo and id; its view keeps its builds and reviews current, and its overview has its comments and activity. Kind diff " +
+			"takes the same, for changes the person cannot open in their own editor, such as another repository's, and draws the " +
+			"comments on their lines. Kind pull_requests, for what needs the person, takes the filters list_pull_requests takes. Kind " +
+			"pull_request_form, for a pull request the person should look over before it exists, takes project, repo, from_ref and what " +
+			"you drafted (title, description, to_ref, reviewers, draft), or an id to edit that pull request; nothing is created or " +
+			"changed until the person submits it. In a client that displays no views, it shows nothing and says so.",
 		Annotations: readOnly("Show a view"),
 		InputSchema: showInputSchema(showKinds),
 		Meta:        viewToolMeta(),

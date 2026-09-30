@@ -498,8 +498,12 @@ func instructions(opts ServerOptions) string {
 
 	for _, spec := range exposedSpecs(opts) {
 		if spec.Tool.Name == "show" {
-			paragraphs = append(paragraphs, "show puts what you found in front of the person as an interactive view, in clients that display views. "+
-				"Call it at most once or twice per answer, after you have what you need, and not for each thing you look at on the way.")
+			paragraphs = append(paragraphs, "The other tools answer you; show is for the person. Use the other tools to find, read and change things, "+
+				"then call show at most once or twice per answer, after you have what you need and not for each thing you look at on the way, for what "+
+				"the person should see: a pull request they asked about or should watch, a list of what needs them, a diff they cannot open in their "+
+				"own editor, or a pull request you drafted, as a form for them to finish before anything is created.")
+			paragraphs = append(paragraphs, "Call show only when a person is there to see it: never when you work on your own, as in a scheduled, "+
+				"background or batch task, and never to read data, which its answer does not carry.")
 		}
 	}
 

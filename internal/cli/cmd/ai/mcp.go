@@ -95,7 +95,9 @@ trust with them should not make changes in Bitbucket, so make them yourself.
 Use --tools to expose only the tools you name, and --exclude to suppress
 individual tools. Neither exposes a tool that --read-only or a scope withholds.
 The tools only the views of show call, refresh_view and suggest_form_values, go
-with show whether or not --tools names them.
+with show whether or not --tools names them. A view is drawn from show's result
+and has no network of its own: its buttons call this server's tools through the
+client, so the confirmations, the scope and the audit trail apply to them.
 
 Views highlight the code in diffs and files. Of a Svelte, ERB, PHTML, Go HTML or
 Jinja template, only the markup is highlighted: the lexers for the code inside
