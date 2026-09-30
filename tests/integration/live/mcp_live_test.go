@@ -962,6 +962,97 @@ func TestLiveMCPAuditTrailRecordsInvocations(t *testing.T) {
 	}
 }
 
+// TestLiveMCPAuditTrailRedactsWhatBitbucketEchoes is #731 against the server
+// that shaped it.
+//
+// A credential an agent puts in a free-text argument reaches the audit record
+// three times: in the arguments, in the resource URI, and in the error
+// message, where Bitbucket quotes it back. Bitbucket's quoting is the part only
+// a real server shows -- it wraps a ref in quotes, as Object "token=X", and it
+// cleans a path, so https://user:pass@host comes back as https:/user:pass@host.
+// Each of those kept the secret in one field or another.
+func TestLiveMCPAuditTrailRedactsWhatBitbucketEchoes(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	const secret = "SUPERSECRET731"
+	auditPath := filepath.Join(t.TempDir(), "mcp-audit.jsonl")
+
+	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+		callCtx := context.Background()
+
+		for _, arguments := range []map[string]any{
+			{"project": seeded.Key, "repo": repo.Slug, "path": "README.md", "at": "q?token=" + secret},
+			{"project": seeded.Key, "repo": repo.Slug, "path": "README.md", "at": "token=" + secret},
+			{"project": seeded.Key, "repo": repo.Slug, "path": "https://bob:" + secret + "@example.com/x"},
+		} {
+			result, err := session.CallTool(callCtx, &mcp.CallToolParams{Name: "get_file_content", Arguments: arguments})
+			if err != nil || result == nil || !result.IsError {
+				t.Fatalf("get_file_content %v was meant to fail in Bitbucket, and did not: %v %v", arguments, result, err)
+			}
+		}
+
+		uri := fmt.Sprintf("bitbucket://projects/%s/repos/%s/files/README.md?at=token=%s", seeded.Key, repo.Slug, secret)
+		if _, err := session.ReadResource(callCtx, &mcp.ReadResourceParams{URI: uri}); err == nil {
+			t.Fatalf("reading %s was meant to fail in Bitbucket, and did not", uri)
+		}
+	}, "ai", "mcp", "serve", "--project", seeded.Key, "--audit-file", auditPath)
+
+	contents, err := os.ReadFile(auditPath)
+	if err != nil {
+		t.Fatalf("read audit log: %v", err)
+	}
+
+	records := strings.Split(strings.TrimSpace(string(contents)), "\n")
+	if len(records) != 4 {
+		t.Fatalf("expected a record for each of the 4 requests, got %d:\n%s", len(records), contents)
+	}
+	for _, line := range records {
+		if strings.Contains(line, secret) {
+			t.Errorf("an audit record kept the secret:\n%s", line)
+		}
+
+		var record struct {
+			Event        string `json:"event"`
+			Status       string `json:"status"`
+			Resource     string `json:"resource"`
+			ErrorMessage string `json:"error_message"`
+		}
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("audit line is not valid JSON: %v\nline: %s", err, line)
+		}
+		if record.Status != "error" {
+			t.Errorf("want each request recorded as the error Bitbucket answered it with; got:\n%s", line)
+		}
+
+		switch record.Event {
+		case "mcp_tool_invocation":
+			// Bitbucket's answer has to be in the record, or the error
+			// message had nothing of the payload in it to redact.
+			if !strings.Contains(record.ErrorMessage, "[REDACTED]") {
+				t.Errorf("want an error message Bitbucket echoed the payload into, redacted; got:\n%s", line)
+			}
+		case "mcp_resource_read":
+			if !strings.HasSuffix(record.Resource, "?at=token=[REDACTED]") {
+				t.Errorf("want the resource recorded with its credential redacted; got:\n%s", line)
+			}
+		default:
+			t.Errorf("an audit record of an event this test did not cause:\n%s", line)
+		}
+	}
+}
+
 // TestLiveMCPSubmitReviewMutatesForReal covers submit_pr_review end to end.
 //
 // This is the one review action with no other way in: there is no `bb pr review
