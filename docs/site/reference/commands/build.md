@@ -200,12 +200,6 @@ bb build required delete <required-build-id> [flags]
 bb build required delete 5 --repo PROJ/repo
 ```
 
-`--all`
-:   Return every result rather than the first --limit
-
-`--limit int`
-:   Maximum number of results to return (default 25)
-
 `-y, --yes`
 :   Confirm without being asked
 
