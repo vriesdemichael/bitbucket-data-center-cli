@@ -85,6 +85,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	reviewerGroupCmd.PersistentFlags().StringVar(&projectKey, "project", "", "Project key")
 	reviewerGroupCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug")
+	reposel.MarkInsteadOfRepo(reviewerGroupCmd.PersistentFlags(), "project")
 
 	listCmd := &cobra.Command{
 		Use:   "list",

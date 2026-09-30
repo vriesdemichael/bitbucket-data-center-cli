@@ -129,12 +129,11 @@ func withLiveRepoContext(t *testing.T, root *cobra.Command, args []string) []str
 // written on the flag alone was tried, and it broke six tests that needed the
 // context it withheld.
 //
-// Two of these refuse the combination outright and one does not, which is why
-// the list is worth having rather than leaving each call to fail visibly:
-// `reviewer condition list --project X` with a --repo added lists the
-// repository's conditions and reports success, so a test asking about a
-// project that does not exist got an answer instead of the error it was
-// checking for.
+// Each of these refuses the combination, so a call naming its scope this way
+// would fail on the --repo added beside it. `reviewer condition` used to
+// accept it instead and list the repository's conditions, so a test asking
+// about a project that does not exist got an answer rather than the error it
+// was checking for.
 var competingScopes = map[string][]string{
 	"auth token":          {"--user", "--project"},
 	"reviewer-group":      {"--project"},

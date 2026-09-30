@@ -7,7 +7,9 @@ from matching remotes. This reduces repeated `--repo` flags while still keeping 
 
 ## Repository discovery behavior
 
-Discovery runs only when a command has a `--repo` flag and you did not set it.
+Discovery runs only when a command has a `--repo` flag and you did not set it, nor name the scope
+another way: `--project` on `bb reviewer-group`, `bb reviewer condition` and `bb repo ssh-key`,
+or `--role` on `bb search prs`.
 
 `bb` inspects git remotes and tries to parse Bitbucket-style URLs such as:
 

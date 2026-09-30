@@ -377,6 +377,7 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
 	enumflag.Register(cmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Filter by state; closed is merged and declined together")
 	enumflag.Register(cmd.Flags(), &role, "role", "", participantRoles, "Only the pull requests you wrote (author), are a reviewer on, or took part in (participant); all three when left out. Dashboard only, so it cannot be combined with --repo")
+	reposel.MarkInsteadOfRepo(cmd.Flags(), "role")
 	cmd.Flags().StringVar(&since, "since", "", "Only pull requests dated on or after this ISO 8601 date, such as 2026-07-20 or 2026-07-20T09:00; lists the whole period unless --limit is given")
 	cmd.Flags().StringVar(&until, "until", "", "Only pull requests dated on or before this ISO 8601 date, such as 2026-09-27; a day runs to its end")
 	enumflag.Register(cmd.Flags(), &dateField, "date-field", pullrequestservice.DateCreated, dateFields, "Which date --since and --until apply to")
