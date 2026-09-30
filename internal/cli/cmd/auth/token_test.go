@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -124,6 +125,8 @@ func TestAuthTokenCommandsErrors(t *testing.T) {
 	cmd4.SetArgs([]string{"token", "list"})
 	if err := cmd4.Execute(); err == nil || !strings.Contains(err.Error(), "api failure") {
 		t.Fatalf("expected api lookup failure, got: %v", err)
+	} else if kind := apperrors.KindOf(err); kind != apperrors.KindTransient {
+		t.Fatalf("a lookup that never got an answer is %q, want transient", kind)
 	}
 
 	// 5. API identity lookup non-200 status code
@@ -141,5 +144,26 @@ func TestAuthTokenCommandsErrors(t *testing.T) {
 	cmd5.SetArgs([]string{"token", "list"})
 	if err := cmd5.Execute(); err == nil || !strings.Contains(err.Error(), "failed to resolve current user slug") {
 		t.Fatalf("expected status error to fail user slug resolution, got: %v", err)
+	} else if kind := apperrors.KindOf(err); kind != apperrors.KindTransient {
+		t.Fatalf("a lookup answered 500 is %q, want transient", kind)
+	}
+
+	// 6. API identity lookup rejects the credentials
+	depsErrUnauthorized := Dependencies{
+		LoadConfig: func() (config.AppConfig, error) {
+			return config.AppConfig{
+				BitbucketURL: "http://localhost",
+			}, nil
+		},
+		NewUsersClient: func(cfg config.AppConfig) (usersClient, error) {
+			return &mockUsersClient{status: http.StatusUnauthorized}, nil
+		},
+	}
+	cmd6 := New(depsErrUnauthorized)
+	cmd6.SetArgs([]string{"token", "list"})
+	if err := cmd6.Execute(); err == nil || !strings.Contains(err.Error(), "--user") {
+		t.Fatalf("expected the --user hint on a rejected lookup, got: %v", err)
+	} else if kind := apperrors.KindOf(err); kind != apperrors.KindAuthentication {
+		t.Fatalf("a lookup answered 401 is %q, want authentication", kind)
 	}
 }

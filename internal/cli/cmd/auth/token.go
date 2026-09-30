@@ -50,7 +50,9 @@ func resolveTokenScope(ctx context.Context, cfg config.AppConfig, newUsersClient
 		// Attempt to resolve the current authenticated user slug
 		identity, err := resolveIdentity(ctx, cfg, newUsersClient)
 		if err != nil {
-			return "", "", apperrors.New(apperrors.KindValidation, "failed to resolve current user slug; please specify --user slug explicitly", err)
+			// The lookup's kind, not validation: an unreachable host or an
+			// expired token is not an invalid invocation.
+			return "", "", apperrors.New(apperrors.KindOf(err), "failed to resolve current user slug; please specify --user slug explicitly", err)
 		}
 		userSlug = identity.Slug
 	}

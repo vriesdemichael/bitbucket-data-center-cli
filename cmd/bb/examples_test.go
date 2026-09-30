@@ -110,14 +110,6 @@ func TestEveryExampleIsAnInvocationBBAccepts(t *testing.T) {
 				t.Parallel()
 
 				kind, output := dryRunKind(t, invocation)
-
-				// bb auth token looks up who is signed in before anything else,
-				// and reports that lookup failing as an invalid invocation. Here
-				// it fails because the host cannot be reached, which says nothing
-				// about the example.
-				if kind == "validation" && strings.Contains(output, networkBlocked) {
-					return
-				}
 				if kind == "validation" {
 					t.Errorf("bb refuses its own example as invalid:\n%s", output)
 				}
@@ -140,10 +132,6 @@ func TestEveryExampleIsAnInvocationBBAccepts(t *testing.T) {
 		t.Fatalf("ran only %d examples; the walk has stopped reaching the tree", ran)
 	}
 }
-
-// networkBlocked is what the transport says when a test process tries to reach
-// a host that is not this machine.
-const networkBlocked = "external network access is disabled during tests"
 
 // TestEveryCommandHasAnExample: the reference shows a command's examples, and
 // a command without one leaves its reader to work the invocation out from the
