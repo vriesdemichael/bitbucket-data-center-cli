@@ -154,10 +154,9 @@ bb stay in agreement and no token is ever written into a repository.`,
 
 				// The whole of the lookup reads the file through ConfigPath,
 				// the keyring entry's name included, and this process exists
-				// to answer this one request.
-				if err := os.Setenv("BB_CONFIG_PATH", pinned); err != nil {
-					return apperrors.New(apperrors.KindInternal, "failed to select the configuration file", err)
-				}
+				// to answer this one request. Setenv refuses only a value with
+				// a NUL byte in it, and os.Stat has refused that path already.
+				_ = os.Setenv("BB_CONFIG_PATH", pinned)
 			}
 
 			if strings.TrimSpace(request.Host) == "" {
@@ -419,16 +418,14 @@ func configureGitCredentialHelperIn(ctx context.Context, workingDirectory, key, 
 // wherever the repository is.
 func pinnedConfigPath() (string, error) {
 	path, err := config.ConfigPath()
+	if err == nil {
+		path, err = filepath.Abs(path)
+	}
 	if err != nil {
 		return "", apperrors.New(apperrors.KindInternal, "failed to resolve the configuration file", err)
 	}
 
-	absolute, err := filepath.Abs(path)
-	if err != nil {
-		return "", apperrors.New(apperrors.KindInternal, "failed to resolve the configuration file", err)
-	}
-
-	return absolute, nil
+	return path, nil
 }
 
 // unpinnedHelper matches a helper line that runs bb's helper with no --config:
