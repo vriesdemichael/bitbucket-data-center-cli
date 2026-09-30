@@ -123,6 +123,35 @@ func TestSetupGitNamesTheConfigurationInTheHelper(t *testing.T) {
 	}
 }
 
+// With nowhere to find a configuration file, there is no login to name, and
+// setup-git says so rather than writing a helper that answers from nothing.
+func TestSetupGitNeedsAConfigurationToName(t *testing.T) {
+	// Every variable os.UserConfigDir reads, on any OS.
+	for _, name := range []string{"BB_CONFIG_PATH", "AppData", "XDG_CONFIG_HOME", "HOME"} {
+		t.Setenv(name, "")
+	}
+
+	written := false
+	cmd := newSetupGitCommand(Dependencies{
+		LoadConfig: func() (config.AppConfig, error) { return config.AppConfig{}, nil },
+		ConfigureGitCredentialHelper: func(context.Context, string, string, bool, bool) error {
+			written = true
+			return nil
+		},
+	})
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"--host", "https://bitbucket.example.com"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "configuration file") {
+		t.Fatalf("want a refusal naming the configuration file, got %v", err)
+	}
+	if written {
+		t.Error("a helper was written with no configuration to name")
+	}
+}
+
 func TestReplaceableHelper(t *testing.T) {
 	t.Parallel()
 
