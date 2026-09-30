@@ -496,15 +496,22 @@ func instructions(opts ServerOptions) string {
 			"and refuse calls aimed anywhere else.", opts.Scope))
 	}
 
+	exposed := map[string]bool{}
 	for _, spec := range exposedSpecs(opts) {
-		if spec.Tool.Name == "show" {
-			paragraphs = append(paragraphs, "The other tools answer you; show is for the person. Use the other tools to find, read and change things, "+
-				"then call show at most once or twice per answer, after you have what you need and not for each thing you look at on the way, for what "+
-				"the person should see: a pull request they asked about or should watch, a list of what needs them, a diff they cannot open in their "+
-				"own editor, or a pull request you drafted, as a form for them to finish before anything is created.")
-			paragraphs = append(paragraphs, "Call show only when a person is there to see it: never when you work on your own, as in a scheduled, "+
-				"background or batch task, and never to read data, which its answer does not carry.")
+		exposed[spec.Tool.Name] = true
+	}
+	if exposed["show"] {
+		paragraphs = append(paragraphs, "The other tools answer you; show is for the person. Use the other tools to find, read and change things, "+
+			"then call show at most once or twice per answer, after you have what you need and not for each thing you look at on the way, for what "+
+			"the person should see: a pull request they asked about or should watch, a list of what needs them, or a diff they cannot open in "+
+			"their own editor.")
+		if exposed[showKindTools[showKindPullRequestForm]] {
+			paragraphs = append(paragraphs, "When the person asks for a pull request, create it with create_pull_request, filling in what they "+
+				"left to you. Show it as a form (show kind pull_request_form) only when they want a say in it before it exists: they are "+
+				"particular about its description or its reviewers, or ask to see the draft first.")
 		}
+		paragraphs = append(paragraphs, "Call show only when a person is there to see it: never when you work on your own, as in a scheduled, "+
+			"background or batch task, and never to read data, which its answer does not carry.")
 	}
 
 	return strings.Join(paragraphs, "\n\n")

@@ -203,6 +203,33 @@ func TestTheModelIsToldShowIsForAPersonWhoIsThere(t *testing.T) {
 	}
 }
 
+// A clear request for a pull request is created, and the form is for a
+// person who wants a say in it first: the instructions and show's description
+// say so, and create_pull_request's says to create what the person asks for.
+// Without create_pull_request there is no form, and nothing is said of it.
+func TestTheModelIsToldToCreateAClearPullRequest(t *testing.T) {
+	t.Parallel()
+
+	session := connect(t, testClients(t), nil, nil)
+	instructions := session.InitializeResult().Instructions
+	for _, want := range []string{"create it with create_pull_request", "pull_request_form", "particular about its description or its reviewers"} {
+		if !strings.Contains(instructions, want) {
+			t.Errorf("the instructions do not say %q:\n%s", want, instructions)
+		}
+	}
+	if description := listedTool(t, session, "show").Description; !strings.Contains(description, "for a clear request to open one, call create_pull_request instead") {
+		t.Errorf("show's description does not send a clear request to create_pull_request:\n%s", description)
+	}
+	if description := listedTool(t, session, "create_pull_request").Description; !strings.Contains(description, "When the person asks for one, create it") {
+		t.Errorf("create_pull_request's description does not say to create what the person asks for:\n%s", description)
+	}
+
+	without := connect(t, testClients(t), nil, []string{"create_pull_request"}).InitializeResult().Instructions
+	if strings.Contains(without, "pull_request_form") || !strings.Contains(without, "show is for the person") {
+		t.Errorf("without create_pull_request the instructions read:\n%s\nwant show described and no form", without)
+	}
+}
+
 // Without show there is no view page and no extension to announce.
 func TestNoViewsWithoutShow(t *testing.T) {
 	t.Parallel()
