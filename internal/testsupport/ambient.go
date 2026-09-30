@@ -64,6 +64,18 @@ func SealAmbientEnvironment() {
 	// git backend and no network anywhere took 830ms, and 750 of them were
 	// sleep. A test that means to check the retrying sets its own count.
 	_ = os.Setenv("BB_RETRY_COUNT", "0")
+
+	// No network beyond this machine (ADR-029).
+	//
+	// The transport refuses a host that is not loopback when this is set, and
+	// it was set by the packages that thought of it. cmd/bb did not, and its
+	// walk of every command ran `bb update` for real: twice, under --json and
+	// --yaml, against GitHub's release API, comparing the two answers. When
+	// one of the two requests failed the documents differed and the walk was
+	// red for a reason that had nothing to do with the tree -- and when both
+	// succeeded it had downloaded a release and installed it over the test
+	// binary.
+	_ = os.Setenv("BB_BLOCK_EXTERNAL_NETWORK", "1")
 }
 
 // SealedMain is TestMain for a package whose tests configure the CLI by
