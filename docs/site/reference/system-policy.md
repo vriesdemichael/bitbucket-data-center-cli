@@ -213,7 +213,9 @@ variable into a shell would let that thing approve its own update.
 
 - [Enterprise Hardening](../advanced/enterprise-hardening.md) — the deployment
   runbook these keys belong to, with worked examples.
+- [Configuration](configuration.md) — where every setting comes from, and which
+  file reads which key.
 - [Environment Variables](environment.md) — the per-user settings, and which of
   them policy overrides.
-- [`config.schema.json`](schemas/config.schema.json) — the generated schema,
-  which is what these descriptions are derived from.
+- [`config.schema.json`](schemas/config.schema.json) — the generated schema of
+  every configuration file.

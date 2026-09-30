@@ -3,10 +3,8 @@
 Every environment variable `bb` reads, what it does, and what happens when it is
 unset.
 
-Command-line flags take precedence over environment variables, which take
-precedence over stored configuration. See
-[Config and auth precedence](../basic-usage.md#config-and-auth-precedence) for
-the full order.
+A flag wins over these variables, and they win over the configuration files.
+[Configuration](configuration.md) gives the whole order.
 
 ## `.env` files
 
@@ -211,6 +209,6 @@ supported interface and may change without notice.
 
 - [System Policy](system-policy.md) — the machine-wide settings an administrator
   sets, and which of the variables above they override
-- [Config and auth precedence](../basic-usage.md#config-and-auth-precedence)
+- [Configuration](configuration.md) — the whole order, and the files `bb` reads
 - [Networks, Proxies and TLS](../advanced/networks-proxies-and-tls.md)
 - [Repository Discovery and Server Switching](../advanced/repository-discovery-and-server-switching.md)

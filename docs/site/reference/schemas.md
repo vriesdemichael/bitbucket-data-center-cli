@@ -47,7 +47,8 @@ sooner or later. Ask the binary.
 [config.schema.json](schemas/config.schema.json) describes every `bb`
 configuration file — the system one, a workspace `.bb/config.yaml`, and your own.
 It is what `bb doctor` checks a file against, so an editor validating from it
-reports the same keys `bb doctor` would.
+reports the same keys `bb doctor` would. Which file reads which key is in
+[Configuration](configuration.md#what-each-file-holds).
 
 ## IDE integration for YAML files
 
