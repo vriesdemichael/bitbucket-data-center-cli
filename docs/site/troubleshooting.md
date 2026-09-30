@@ -236,6 +236,22 @@ which one is in use as `source=env` rather than `source=stored`.
 
 <!-- docs-lint: message-of bb -->
 
+## `bitbucket API returned 401: You are not permitted to access this resource`
+
+```text
+authorization: bitbucket API returned 401: You are not permitted to access this resource
+```
+
+The credential is valid, and what it may do does not include this. Either the
+account lacks the permission, or the token does: a personal access token keeps
+the permission it was created with, so a token created to read cannot write, even
+for someone who can in the web interface. When you can do the same thing there,
+it is the token. Create one with the permission the command needs and log in
+with it; [what the token lets bb do](installation-and-quickstart.md#what-the-token-lets-bb-do)
+lists which permission covers what.
+
+<!-- docs-lint: message-of bb -->
+
 ## `bitbucket API returned 401: You are not currently licensed to use Bitbucket`
 
 ```text
