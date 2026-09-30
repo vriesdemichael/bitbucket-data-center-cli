@@ -624,11 +624,11 @@ bb auth status [flags]
 
 Reports the resolved host, how the credential is stored, whether that credential still authenticates, and whether git is set up to authenticate through bb.
 
-Reporting alone is not enough to be useful: an expired token, an unreachable host and a working setup used to produce the same confident output. Each line now says which it is, and what to do when it is not the last one.
+Each line says whether that part works, so an expired token, an unreachable host and a working setup read differently, and what to do when it does not.
 
 Lines marked ! are advisory: they report something worth knowing that does not mean the setup is broken. The git credential helper is one — it is needed to git push and irrelevant to anything that only calls the API — so it is reported but never fails the command.
 
-Exit status is unchanged by default, so existing scripts keep working. Pass --check to exit non-zero when a non-advisory check fails, which is the form worth putting in CI.
+By default the exit status does not depend on the checks. Pass --check to exit non-zero when a non-advisory check fails, which is the form worth putting in CI.
 
 Under --json the exit status is always zero and the verdict is the "ok" field. Machine output is a single document on stdout, so a failing exit would replace the findings with an error envelope — losing exactly the detail that was asked for.
 
@@ -655,9 +655,12 @@ Also takes the [global flags](global-flags.md).
 <pre><code>data
   ok                      boolean                 Whether every non-advisory check passed.
   bitbucketUrl            string                  The configured Bitbucket base URL.
-  bitbucketVersionTarget  string                  Version the operator pinned, empty when none was.
+  bitbucketVersionTarget  string                  The version BITBUCKET_VERSION_TARGET records, empty when it is not
+                                                  set. bb does not act on it.
   authMode                token|basic|none        How bb authenticates: token, basic, or none.
-  authSource              string                  Where that credential came from: env, keyring, or config.
+  authSource              string                  Where that credential came from: stored (a configuration file or the
+                                                  keyring), env (BITBUCKET_TOKEN or the basic-auth variables), or
+                                                  env/default when neither supplied one.
   credentialStorage       string                  How the credential is held.
   checks                  list of object or null  What was verified, in the order it was checked.
     name                  string                  What was checked.

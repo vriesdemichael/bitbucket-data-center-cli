@@ -476,7 +476,7 @@ func New(deps Dependencies) *cobra.Command {
 			"  # Create a pull request (automatically includes default reviewers and CODEOWNERS)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" \\\n" +
 			"    --description \"Why it is needed, and how to test it.\"\n\n" +
-			"  # Create a draft pull request (Bitbucket DC 8.0+)\n" +
+			"  # Create a draft pull request\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --draft\n\n" +
 			"  # Create a pull request with reviewers and reviewer groups (repeatable or comma-separated)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" \\\n" +
@@ -701,7 +701,7 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd.Flags().BoolVar(&createNoDefaultReviewers, "no-default-reviewers", false, "Do not include default reviewers")
 	createCmd.Flags().BoolVar(&createCodeOwners, "codeowners", true, "Assign the code owners Bitbucket reports for the change, the same ones the web interface offers; the CODEOWNERS syntax and its meaning are the server's")
 	createCmd.Flags().BoolVar(&createNoCodeOwners, "no-codeowners", false, "Do not assign code owners")
-	createCmd.Flags().BoolVar(&createDraft, "draft", false, "Create as a draft pull request (Bitbucket DC 8.0+)")
+	createCmd.Flags().BoolVar(&createDraft, "draft", false, "Create as a draft pull request")
 	// Not MarkFlagRequired: Cobra rejects before RunE, which forecloses asking
 	// a person who is there. FillMissing enforces the same requirement and, when
 	// nobody is there, produces the same message naming every absent flag at
@@ -2670,7 +2670,7 @@ state is in the output.`,
 
 	autoMergeCmd := &cobra.Command{
 		Use:   "auto-merge",
-		Short: "Pull request auto-merge commands (Bitbucket DC 8.0+)",
+		Short: "Pull request auto-merge commands",
 	}
 
 	autoMergeGetCmd := &cobra.Command{

@@ -61,6 +61,14 @@ func addCompletionSetup(root *cobra.Command, options *rootOptions) {
 		return
 	}
 
+	// Cobra's own words describe the script generators alone.
+	completionCmd.Short = "Set shell completion up, or print the script for a shell"
+	completionCmd.Long = `Set shell completion up with bb completion install, and take it out with bb
+completion remove.
+
+bb completion bash, zsh, fish and powershell print the script for that shell,
+for a startup file you keep yourself. See each one's help for where it goes.`
+
 	completionCmd.AddCommand(
 		newCompletionSetupCommand(options, completionsetup.Install, "install",
 			"Set completion up so every new shell completes bb",

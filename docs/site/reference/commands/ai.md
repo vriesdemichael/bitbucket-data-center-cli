@@ -62,7 +62,7 @@ Give the server its own credential through the client's env block, which every M
 }
 ```
 
-The ${VAR} form is worth using deliberately: it keeps the agent on a different PAT from your own, so the token you use interactively can carry write rights while the one the agent gets is read-only, and neither is written into the config file. Scoping the server this way replaces the old --token flag, which put the credential in the process argument list for as long as the server ran -- world-readable on Linux, unlike the process environment.
+The ${VAR} form is worth using deliberately: it keeps the agent on a different PAT from your own, so the token you use interactively can carry write rights while the one the agent gets is read-only, and neither is written into the config file. No flag takes the token: a flag's value sits in the process argument list for as long as the server runs, world-readable on Linux, unlike the process environment.
 
 Tools that change whether or when a pull request merges ask the person to confirm each call in the MCP client before they run: merging, enabling or disabling auto-merge, submitting a review, reporting a build status, creating a tag, and changing a pull request's draft flag. The confirmation is an MCP elicitation, and the tool acts only when it is accepted. A client that cannot show one gets error -32021 for those tools, and nothing reaches Bitbucket. bb ai mcp tools lists which tools ask.
 

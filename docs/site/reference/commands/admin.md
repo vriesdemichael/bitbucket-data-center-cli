@@ -21,9 +21,9 @@ Probe the configured Bitbucket for reachability and authentication
 bb admin health
 ```
 
-This was previously described as checking "local stack health", which it never did: it probes whichever host BITBUCKET\_URL resolves to, wherever that is. The description was wrong, not the command.
+Probe the configured Bitbucket for reachability and authentication: the host every other command would reach, resolved the same way.
 
-bb auth status now reports the same thing and more — identity, credential storage, and whether git is set up to authenticate through bb — so prefer that. This stays for scripts that already call it.
+bb auth status reports the same thing and more — identity, credential storage, and whether git is set up to authenticate through bb — so prefer that. This stays for scripts that call it.
 
 ```bash
 # Check that the configured Bitbucket answers and accepts your credentials

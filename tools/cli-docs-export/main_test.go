@@ -39,7 +39,11 @@ func documented(root *cobra.Command) []*cobra.Command {
 	var walk func(parent *cobra.Command)
 	walk = func(parent *cobra.Command) {
 		for _, child := range parent.Commands() {
-			if child.Hidden || child.Name() == "help" || child.Name() == "completion" {
+			if child.Hidden || child.Name() == "help" {
+				continue
+			}
+			// Cobra's four scripts; bb's own install and remove are documented.
+			if child.Parent().Name() == "completion" && child.Name() != "install" && child.Name() != "remove" {
 				continue
 			}
 			commands = append(commands, child)
