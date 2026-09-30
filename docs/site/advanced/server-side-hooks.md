@@ -14,8 +14,6 @@ tool for the jobs people reach for them to do.
 | `bb hook list` / `enable` / `disable` / `configure` | Plugin hooks — pre-receive and post-receive handlers contributed by installed apps |
 | `bb repo hook-script list` / `set` / `remove` | Hook scripts — shell scripts uploaded to the server and bound to repository triggers |
 
-Both existed in earlier versions of `bb` and were removed.
-
 ## Why
 
 A hook script is a shell script that runs on the Bitbucket server, in the
@@ -60,9 +58,7 @@ a migration, an audit, something one-off — `bb api` reaches them. The endpoint
 stay reachable; they just do not get first-class commands that imply they are a
 good idea.
 
-## If you disagree
+## Asking for it
 
-This is an opinionated call, and opinionated calls should be arguable. The place
-to argue it is an issue. What would change the decision is a workflow that
-genuinely needs these endpoints and cannot be expressed as a webhook, a merge
-check, or a CI job — not a preference for doing it from a terminal.
+A workflow that needs these endpoints and cannot be expressed as a webhook, a
+merge check or a CI job is what would change this. Describe it in an issue.

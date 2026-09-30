@@ -93,7 +93,7 @@ bb completion remove [flags]
 
 Take out what bb completion install set up: its file, or its block in a file it shares with you. Nothing else in a shared file is touched.
 
-A script saved from bb completion &lt;shell&gt;, as the documentation once said to do, is bb's too and is removed with it. A file bb did not write is left alone, and so is a script a package linked where --all-users writes.
+A script saved from bb completion &lt;shell&gt; where install puts its file is bb's too, and is removed with it. A file bb did not write is left alone, and so is a script a package linked where --all-users writes.
 
 `--all-users`
 :   For everyone on this machine rather than you; needs an administrator
