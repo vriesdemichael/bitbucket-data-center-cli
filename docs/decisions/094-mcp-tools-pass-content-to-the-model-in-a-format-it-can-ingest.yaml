@@ -1,5 +1,5 @@
 number: 94
-title: MCP tool results are what a model can use without files or a shell
+title: MCP tools pass content to the model in a format it can ingest
 category: architecture
 status: accepted
 amended_by:

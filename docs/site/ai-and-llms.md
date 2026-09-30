@@ -172,7 +172,7 @@ and draft state are edited the same way.
 A tool answers as if the client had nothing but MCP: no file system, no shell
 and no `bb`. What a model needs comes back as text or as an image, converted on
 the server, and never as a command to run, a path to open or a link to follow
-([ADR-094](adr/094-mcp-tool-results-are-what-a-model-can-use-without-files-or-a-shell.md)).
+([ADR-094](adr/094-mcp-tools-pass-content-to-the-model-in-a-format-it-can-ingest.md)).
 `get_file_content` shows what that means for a file:
 
 | The file | What comes back |
