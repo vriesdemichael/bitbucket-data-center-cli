@@ -80,7 +80,7 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "List, show and compare commits, and find a commit's pull requests",
 	}
 
-	commitCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	commitCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	commitCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var listPath string

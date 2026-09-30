@@ -143,7 +143,7 @@ func newSearchReposCommand(deps Dependencies) *cobra.Command {
 	}
 
 	listPaging.Register(cmd, 25)
-	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
+	cmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	cmd.Flags().StringVar(&projectKey, "project", "", "Filter by project key")
 
 	return cmd
@@ -224,7 +224,7 @@ func newSearchCommitsCommand(deps Dependencies) *cobra.Command {
 
 	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (required)")
 	listPaging.Register(cmd, 25)
-	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
+	cmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	cmd.Flags().StringVar(&path, "path", "", "Filter by file path")
 	cmd.Flags().StringVar(&since, "since", "", "Commit ID or ref to search after (exclusive)")
 	cmd.Flags().StringVar(&until, "until", "", "Commit ID or ref to search before (inclusive)")
@@ -374,7 +374,7 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 
 	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Optional repository as PROJECT/slug to scope search")
 	listPaging.Register(cmd, 25)
-	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
+	cmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	enumflag.Register(cmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Filter by state; closed is merged and declined together")
 	enumflag.Register(cmd.Flags(), &role, "role", "", participantRoles, "Only the pull requests you wrote (author), are a reviewer on, or took part in (participant); all three when left out. Dashboard only, so it cannot be combined with --repo")
 	reposel.MarkInsteadOfRepo(cmd.Flags(), "role")

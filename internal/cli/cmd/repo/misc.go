@@ -41,7 +41,7 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 		Use:   "label",
 		Short: "Add, list and remove a repository's labels",
 	}
-	labelCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	labelCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -206,7 +206,7 @@ func newRepoWatchCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	watchCmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	watchCmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	return watchCmd
 }
 
@@ -252,7 +252,7 @@ func newRepoUnwatchCommand(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	unwatchCmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	unwatchCmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	return unwatchCmd
 }
 
@@ -263,7 +263,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 		Use:   "default-task",
 		Short: "Add, list, update and delete the tasks each pull request in a repository starts with",
 	}
-	defaultTaskCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	defaultTaskCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -633,7 +633,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 	// listed REBASE inline and the schema did not, so a successful rebase sync
 	// emitted a document its own schema rejected (#577).
 	enumflag.Register(syncCmd.Flags(), &syncAction, "action", "MERGE", syncActions, "How to reconcile the ref")
-	syncCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	syncCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	statusCmd := &cobra.Command{
 		Use:   "status",
@@ -800,7 +800,7 @@ func newRepoCatCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug")
+	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	cmd.Flags().StringVar(&at, "at", "", "Commit ID or ref to cat")
 
 	return cmd
@@ -947,7 +947,7 @@ func newRepoEditCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug")
+	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	cmd.Flags().StringVar(&branch, "branch", "", "The branch on which the file should be modified or created")
 	cmd.Flags().StringVar(&message, "message", "", "Commit message")
 	cmd.Flags().StringVar(&content, "content", "", "The full content of the file")
@@ -1048,7 +1048,7 @@ func newRepoCompareCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug")
+	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	cmd.Flags().BoolVar(&diff, "diff", false, "Show the unified diff of the changes")
 
 	return cmd
@@ -1177,7 +1177,7 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug")
+	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	enumflag.Register(cmd.Flags(), &format, "format", "zip", []string{"zip", "tar", "tar.gz", "tgz"}, "The format to stream the archive in")
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Output filename (use '-' for stdout, defaults to <repo-slug>.<format>)")
 	cmd.Flags().StringVar(&at, "at", "", "The commit to stream an archive of")

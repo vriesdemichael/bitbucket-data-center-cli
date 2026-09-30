@@ -90,7 +90,7 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "Create, list, view and delete tags",
 	}
 
-	tagCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	tagCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	tagCmd.PersistentFlags().StringVar(&filterText, "filter", "", "Filter text for tag names")
 
 	listTagsCmd := &cobra.Command{

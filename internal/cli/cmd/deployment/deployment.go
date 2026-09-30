@@ -88,7 +88,7 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "Record, read and delete the deployments of a commit",
 	}
 
-	depCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	depCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	var seqNum int64
 	var description string

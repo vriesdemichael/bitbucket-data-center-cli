@@ -102,7 +102,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "insights",
 		Short: "Publish and read Code Insights reports and annotations",
 	}
-	insightsCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	insightsCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	reportCmd := &cobra.Command{
 		Use:   "report",

@@ -121,7 +121,7 @@ bb pr activity list 42 --repo PROJ/repo --all
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -207,7 +207,7 @@ bb pr auto-merge disable 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -246,7 +246,7 @@ bb pr auto-merge enable 42 --repo PROJ/repo --strategy rebase-ff-only
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -283,7 +283,7 @@ bb pr auto-merge get 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -338,7 +338,7 @@ bb pr build status 42 --repo PROJ/repo && bb pr merge 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -396,7 +396,7 @@ bb pr checkout 42 --detach
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -445,7 +445,7 @@ bb pr checks 42 --repo PROJ/repo && bb pr merge 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -547,7 +547,7 @@ bb pr comment add 49 --repo PROJ/repo --pending --text "Naming: prefer retryCoun
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -635,7 +635,7 @@ bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo --index 1 \
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -671,7 +671,7 @@ bb pr comment get 42 1389396 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -779,7 +779,7 @@ bb pr comment list 42 --repo PROJ/repo --path src/main.go --with-replies
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -894,7 +894,7 @@ bb pr comment react 42 1389396 thumbsup --repo PROJ/repo --remove
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -930,7 +930,7 @@ bb pr comment reopen 42 1389396 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -996,7 +996,7 @@ bb pr comment resolve 42 1389396 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1066,12 +1066,12 @@ bb pr commits 42 --repo PROJ/repo
 :   Maximum number of results to return (default 25)
 
 `--start int`
-:   Start offset for the pull request commit listing
+:   Start offset for list operations
 
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1175,7 +1175,7 @@ bb pr create --repo PROJ/repo --from-repo SANDBOX/repo-experiment --from-ref fea
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1258,7 +1258,7 @@ bb pr decline 42 --repo PROJ/repo --version 3
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1348,7 +1348,7 @@ bb pr default-reviewers --repo PROJ/repo \
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1426,7 +1426,7 @@ bb pr diff 42 --repo PROJ/repo --patch > pr-42.patch
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1467,12 +1467,12 @@ bb pr files 42 --repo PROJ/repo
 :   Maximum number of results to return (default 25)
 
 `--start int`
-:   Start offset for the pull request change listing
+:   Start offset for list operations
 
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1522,7 +1522,7 @@ bb pr get 42 --repo PROJ/repo --no-review-summary
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1620,7 +1620,7 @@ bb pr jira 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1673,7 +1673,7 @@ bb pr list --repo PROJ/repo --with-review-status
 :   Optional source branch filter
 
 `--start int`
-:   Start offset for Bitbucket pull request list operations
+:   Start offset for list operations
 
 `--state string`
 :   Pull request state filter (one of: open, merged, declined, closed, all) (default "open")
@@ -1687,7 +1687,7 @@ bb pr list --repo PROJ/repo --with-review-status
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1799,7 +1799,7 @@ bb pr merge 42 --repo PROJ/repo --strategy squash --version 3
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1874,7 +1874,7 @@ bb pr merge-base 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1924,7 +1924,7 @@ bb pr participants --search alice --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -1974,7 +1974,7 @@ bb pr ready 42 --repo PROJ/repo --undo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2053,7 +2053,7 @@ bb pr rebase 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2093,7 +2093,7 @@ bb pr reopen 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2198,7 +2198,7 @@ bb pr review approve 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2286,7 +2286,7 @@ bb pr review complete 42 --repo PROJ/repo --status NEEDS_WORK --comment "Unit te
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2320,7 +2320,7 @@ bb pr review discard 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2354,7 +2354,7 @@ bb pr review get 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2451,7 +2451,7 @@ bb pr review reviewer add 42 --repo PROJ/repo --codeowners
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2536,7 +2536,7 @@ bb pr review reviewer remove 42 --user alice --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2621,7 +2621,7 @@ bb pr review set 42 UNAPPROVED --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2698,7 +2698,7 @@ bb pr review unapprove 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2783,7 +2783,7 @@ bb pr status
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -2951,7 +2951,7 @@ bb pr unwatch 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -3017,7 +3017,7 @@ bb pr update 42 --repo PROJ/repo --version 1 --draft
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -3092,7 +3092,7 @@ bb pr watch 42 --repo PROJ/repo
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET\_PROJECT\_KEY and BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 

@@ -277,7 +277,7 @@ Note: On Windows Git Bash (MSYS2), set MSYS_NO_PATHCONV=1 or omit the leading sl
 	}
 
 	enumflag.RegisterP(cmd.Flags(), &method, "method", "X", "", httpMethods, "HTTP method")
-	cmd.Flags().StringVar(&host, "host", "", "Bitbucket host URL")
+	cmd.Flags().StringVar(&host, "host", "", "Bitbucket host URL (defaults to the configured host)")
 	cmd.Flags().StringArrayVarP(&rawFields, "raw-field", "f", nil, "Add a string parameter (key=value)")
 	cmd.Flags().StringArrayVarP(&typedFields, "field", "F", nil, "Add a typed parameter (key=value, booleans, numbers, null, or @file)")
 	cmd.Flags().StringArrayVarP(&headers, "header", "H", nil, "Add a custom HTTP request header (Name: Value)")

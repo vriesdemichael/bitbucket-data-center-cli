@@ -51,7 +51,7 @@ bb commit compare feature/x main --repo PROJ/repo
 Inherited from [`bb commit`](#bb-commit):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -100,7 +100,7 @@ bb commit get a1b2c3d --repo PROJ/repo
 Inherited from [`bb commit`](#bb-commit):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -167,7 +167,7 @@ bb commit list --repo PROJ/repo --jira PAY-128
 Inherited from [`bb commit`](#bb-commit):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -216,7 +216,7 @@ bb commit prs a1b2c3d --repo PROJ/repo
 Inherited from [`bb commit`](#bb-commit):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations

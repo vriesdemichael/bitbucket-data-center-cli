@@ -41,7 +41,7 @@ bb diff commit a1b2c3d --repo PROJ/repo --path src/main.go
 Inherited from [`bb diff`](#bb-diff):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -93,7 +93,7 @@ bb diff pr 42 --repo PROJ/repo --patch > pr-42.patch
 Inherited from [`bb diff`](#bb-diff):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -143,7 +143,7 @@ bb diff refs main feature/x --repo PROJ/repo --stat
 Inherited from [`bb diff`](#bb-diff):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 

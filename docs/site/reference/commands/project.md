@@ -1265,7 +1265,7 @@ bb project webhook list PROJ
 :   Maximum number of results to return (default 25)
 
 `--start int`
-:   Start index for webhooks listing
+:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 

@@ -85,7 +85,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "webhook",
 		Short: "Create, list, test and change a repository's webhooks",
 	}
-	webhookCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	webhookCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	var getRevealSecret bool
 	getCmd := &cobra.Command{
@@ -384,7 +384,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	listPaging.Register(listCmd, 25)
-	listCmd.Flags().IntVar(&listStart, "start", 0, "Start index for webhooks listing")
+	listCmd.Flags().IntVar(&listStart, "start", 0, "Start offset for list operations")
 
 	var createEvents []string
 	var createActive bool
