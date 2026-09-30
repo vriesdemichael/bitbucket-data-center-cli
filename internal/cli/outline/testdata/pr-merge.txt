@@ -24,6 +24,9 @@ data
     sourceCommit?       string                          Head commit of the source branch when this was read.
     createdDate?        integer                         When it was opened, in milliseconds since the epoch.
     updatedDate?        integer                         When it last changed, in milliseconds since the epoch.
+    closedDate?         integer                         When it was merged or declined, in milliseconds since the epoch.
+    url?                string                          Where the pull request is in Bitbucket, as the server links to
+                                                        it.
     reviewers?          list of object                  Everyone asked to review, with where they got to.
       name?             string                          Username.
       displayName?      string                          Human-readable name.

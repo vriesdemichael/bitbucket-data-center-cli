@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -259,6 +260,9 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "#%d\t%s\t%s -> %s\t%s\n", pullRequest.ID, pullRequest.State, pullRequest.SourceBranch, pullRequest.TargetBranch, pullRequest.Title)
+			if pullRequest.URL != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "URL: %s\n", pullRequest.URL)
+			}
 			if len(pullRequest.Reviewers) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "Reviewers: %d\n", len(pullRequest.Reviewers))
 			}
@@ -633,6 +637,11 @@ func New(deps Dependencies) *cobra.Command {
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Created pull request #%d\n", created.ID)
+			// On a line of its own: it is what a person wants next, to open or
+			// to paste, and a terminal links a bare URL.
+			if created.URL != "" {
+				fmt.Fprintln(cmd.OutOrStdout(), created.URL)
+			}
 			return nil
 		},
 	}
@@ -803,6 +812,7 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd.AddCommand(updateCmd)
 
 	var transitionVersion int
+	var mergeStrategy string
 	mergeCmd := &cobra.Command{
 		Use:   "merge <pr-id>",
 		Short: "Merge a pull request",
@@ -873,6 +883,27 @@ func New(deps Dependencies) *cobra.Command {
 					blocking = mergeBlockingReasons(*current.Mergeability)
 				}
 
+				// A strategy the repository has not enabled is refused when the
+				// merge is sent, whatever the mergeability check said, so it is
+				// looked up rather than left for the real run to find.
+				// Bitbucket answers it 400, which is a validation error rather than
+				// the conflict the refusals above are.
+				var fails apperrors.Kind
+				if mergeStrategy != "" && predicted != "blocked" {
+					enabled, err := service.EnabledMergeStrategies(cmd.Context(), repo)
+					switch {
+					case err != nil:
+						reason = fmt.Sprintf("pull request is open; whether the %s merge strategy is enabled could not be read", mergeStrategy)
+						tier = dryrunpreview.TierPredicted
+					case !slices.Contains(enabled, mergeStrategy):
+						predicted = "blocked"
+						reason = fmt.Sprintf("the %s merge strategy is not enabled for %s/%s; enabled: %s",
+							mergeStrategy, repo.ProjectKey, repo.Slug, strings.Join(enabled, ", "))
+						blocking = []string{reason}
+						fails = apperrors.KindValidation
+					}
+				}
+
 				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "pr.merge",
 					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "id": target.PullRequestID},
@@ -881,6 +912,7 @@ func New(deps Dependencies) *cobra.Command {
 					Tier:            tier,
 					Reason:          reason,
 					BlockingReasons: blocking,
+					Fails:           fails,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
@@ -891,7 +923,8 @@ func New(deps Dependencies) *cobra.Command {
 				version = &transitionVersion
 			}
 
-			merged, err := service.Merge(cmd.Context(), repo, target.PullRequestID, version)
+			merged, err := service.MergeWith(cmd.Context(), repo, target.PullRequestID,
+				pullrequestservice.MergeOptions{Version: version, StrategyID: mergeStrategy})
 			if err != nil {
 				return err
 			}
@@ -905,6 +938,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	mergeCmd.Flags().IntVar(&transitionVersion, "version", 0, "Expected pull request version; omit to act on whatever version is current")
+	enumflag.Register(mergeCmd.Flags(), &mergeStrategy, "strategy", "", openapi.MergeStrategies, "How to merge; omit for the repository's default. Bitbucket refuses one the repository has not enabled")
 	prCmd.AddCommand(mergeCmd)
 
 	declineCmd := &cobra.Command{

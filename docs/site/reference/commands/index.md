@@ -5573,7 +5573,8 @@ Usage:
   bb pr merge <pr-id> [flags]
 
 Flags:
-      --version int   Expected pull request version; omit to act on whatever version is current
+      --strategy string   How to merge; omit for the repository's default. Bitbucket refuses one the repository has not enabled (one of: no-ff, ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only)
+      --version int       Expected pull request version; omit to act on whatever version is current
 
 Dry run:
   Checks your permission and the current state this depends on, without changing anything (preconditions-checked)

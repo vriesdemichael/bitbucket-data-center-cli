@@ -52,6 +52,8 @@ type PullRequest struct {
 	SourceCommit   string `json:"sourceCommit,omitempty" jsonschema:"Head commit of the source branch when this was read."`
 	CreatedDate    int64  `json:"createdDate,omitempty" jsonschema:"When it was opened, in milliseconds since the epoch."`
 	UpdatedDate    int64  `json:"updatedDate,omitempty" jsonschema:"When it last changed, in milliseconds since the epoch."`
+	ClosedDate     int64  `json:"closedDate,omitempty" jsonschema:"When it was merged or declined, in milliseconds since the epoch. Absent while it is open."`
+	URL            string `json:"url,omitempty" jsonschema:"Where the pull request is in Bitbucket, as the server links to it."`
 
 	Reviewers    []Reviewer    `json:"reviewers,omitempty" jsonschema:"Everyone asked to review, with where they got to."`
 	Mergeability *Mergeability `json:"mergeability,omitempty" jsonschema:"Whether it can merge. Absent when not requested or not computed."`
@@ -83,6 +85,8 @@ func PullRequestFrom(upstream pullrequestservice.PullRequest) PullRequest {
 		SourceCommit:      upstream.SourceCommit,
 		CreatedDate:       upstream.CreatedDate,
 		UpdatedDate:       upstream.UpdatedDate,
+		ClosedDate:        upstream.ClosedDate,
+		URL:               upstream.URL,
 		CommentCount:      upstream.CommentCount,
 		OpenTaskCount:     upstream.OpenTaskCount,
 		ResolvedTaskCount: upstream.ResolvedTaskCount,
