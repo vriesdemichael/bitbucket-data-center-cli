@@ -103,8 +103,8 @@ jobs:
             --arch amd64,arm64 \
             --out cmd/bb/rsrc \
             --manifest cli \
-            --file-description "Bitbucket Server CLI" \
-            --product-name "Bitbucket Server CLI" \
+            --file-description "Bitbucket Data Center CLI" \
+            --product-name "Bitbucket Data Center CLI" \
             --file-version "${PE_VERSION}" \
             --product-version "${PE_VERSION}" \
             --copyright "Copyright ${YEAR} Michael de Vries" \

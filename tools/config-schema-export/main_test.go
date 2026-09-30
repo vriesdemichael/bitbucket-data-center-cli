@@ -31,7 +31,7 @@ func TestExportSchema(t *testing.T) {
 	if parsed["$schema"] != "https://json-schema.org/draft/2020-12/schema" {
 		t.Errorf("unexpected $schema: %v", parsed["$schema"])
 	}
-	if parsed["title"] != "Bitbucket Server CLI Configuration" {
+	if parsed["title"] != "Bitbucket Data Center CLI Configuration" {
 		t.Errorf("unexpected title: %v", parsed["title"])
 	}
 }

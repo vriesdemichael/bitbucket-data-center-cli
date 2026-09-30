@@ -21,7 +21,7 @@
       "type": "boolean"
     },
     "allowed_hosts": {
-      "description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
+      "description": "Whitelist of permitted Bitbucket Data Center instance URLs or hostnames.",
       "items": {
         "type": "string"
       },
@@ -32,7 +32,7 @@
       "type": "string"
     },
     "default_host": {
-      "description": "Default Bitbucket Server / Data Center instance URL or alias.",
+      "description": "Default Bitbucket Data Center instance URL or alias.",
       "type": "string"
     },
     "disable_bb": {
@@ -75,7 +75,7 @@
             "type": "string"
           },
           "url": {
-            "description": "Bitbucket Server or Data Center base URL.",
+            "description": "Bitbucket Data Center base URL.",
             "type": "string"
           },
           "username": {
@@ -130,7 +130,7 @@
           "type": "boolean"
         },
         "allowed_hosts": {
-          "description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
+          "description": "Whitelist of permitted Bitbucket Data Center instance URLs or hostnames.",
           "items": {
             "type": "string"
           },
@@ -204,7 +204,7 @@
           "type": "boolean"
         },
         "allowed_hosts": {
-          "description": "Whitelist of permitted Bitbucket Server / Data Center instance URLs or hostnames.",
+          "description": "Whitelist of permitted Bitbucket Data Center instance URLs or hostnames.",
           "items": {
             "type": "string"
           },
@@ -294,6 +294,6 @@
       "type": "string"
     }
   },
-  "title": "Bitbucket Server CLI Configuration",
+  "title": "Bitbucket Data Center CLI Configuration",
   "type": "object"
 }
