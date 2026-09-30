@@ -121,6 +121,10 @@ Every checkout has its own Bitbucket instance, and `task test:live` starts it be
 linked worktree it listens on ports Docker assigns, so a restart, an expired licence or a fixture
 purge in your worktree leaves every other worktree's live run alone.
 
+### When a rebase breaks a test on your branch
+
+If a rebase onto `next` brought in API changes (a command's flag that became a positional argument, say), tests added on the branch may need updating. Fix each in the commit that added it, so history stays clean.
+
 ### Iterating on patch coverage
 
 **Do not re-run the suite to re-check the number.** `task quality:coverage:replay` re-applies every
@@ -162,6 +166,43 @@ when it should not.
 
 Do not add `tools/` to `-scope-include`, and do not lower a threshold to accommodate a tool change.
 ADR-049 records the measurements behind that line.
+### Command reach
+
+`docs/quality/command-reach.json` records which CLI commands the live suite actually proves work
+against a real Bitbucket. CI verifies it via `task quality:command-reach:verify` (static analysis, no liveinfra needed — it is static analysis of the Cobra tree and the live test sources).
+
+It fails when:
+
+- a command that used to be covered loses its live coverage,
+- a new command arrives with no live test invoking it, or
+- a command becomes **masked** — its only live coverage comes from a test that calls `t.Skip` when the
+  call fails, so the suite passes whether or not the command works.
+
+That last case is the one that matters. `bb pr task *` called an endpoint Atlassian removed in
+Bitbucket 8.0, and the live tests hid it behind
+`if strings.Contains(err.Error(), "not_found") { t.Skipf(...) }` — CI stayed green for years. A skipped
+test is not a passing test. Fix the command or the test; do not add a skip.
+
+When you add a command, add a live test that runs it and asserts, then:
+
+```bash
+task quality:command-reach:update
+git add docs/quality/command-reach.json
+```
+
+### OpenAPI spec coverage
+
+`docs/quality/spec-coverage.json` is a separate committed artifact that does **not** depend on coverage profiles or live tests. If you change the OpenAPI spec, the generated client, or how `internal/services` calls the API, regenerate it and commit the result:
+
+```bash
+task quality:spec-coverage:update
+git add docs/quality/spec-coverage.json
+```
+
+CI verifies it via `task quality:spec-coverage:verify` (static analysis, no live infra).
+
+## Gates and guards
+
 ### Line endings are LF, enforced
 
 `.gitattributes` pins every file to LF in the repository and in every working tree, overriding
@@ -256,41 +297,6 @@ If the linter flags something you believe is correct, suspect a trailing carriag
 suspecting the documentation: on a CRLF checkout `\r` ends up inside the last token and pflag
 reports it as an unknown flag, with nothing visible in the message to say so. See ADR-048.
 
-### command reach artifact
-
-`docs/quality/command-reach.json` records which CLI commands the live suite actually proves work
-against a real Bitbucket. CI verifies it via `task quality:command-reach:verify` (static analysis, no liveinfra needed — it is static analysis of the Cobra tree and the live test sources).
-
-It fails when:
-
-- a command that used to be covered loses its live coverage,
-- a new command arrives with no live test invoking it, or
-- a command becomes **masked** — its only live coverage comes from a test that calls `t.Skip` when the
-  call fails, so the suite passes whether or not the command works.
-
-That last case is the one that matters. `bb pr task *` called an endpoint Atlassian removed in
-Bitbucket 8.0, and the live tests hid it behind
-`if strings.Contains(err.Error(), "not_found") { t.Skipf(...) }` — CI stayed green for years. A skipped
-test is not a passing test. Fix the command or the test; do not add a skip.
-
-When you add a command, add a live test that runs it and asserts, then:
-
-```bash
-task quality:command-reach:update
-git add docs/quality/command-reach.json
-```
-
-### OpenAPI spec coverage artifact
-
-`docs/quality/spec-coverage.json` is a separate committed artifact that does **not** depend on coverage profiles or live tests. If you change the OpenAPI spec, the generated client, or how `internal/services` calls the API, regenerate it and commit the result:
-
-```bash
-task quality:spec-coverage:update
-git add docs/quality/spec-coverage.json
-```
-
-CI verifies it via `task quality:spec-coverage:verify` (static analysis, no live infra).
-
 ### Adding a governance test: break it first
 
 A governance test asserts an invariant about the codebase rather than a
@@ -359,10 +365,6 @@ The governance guards, so the set is knowable:
 | `TestEveryDeprecatedFlagIsStillTakenAndSaysSo` | a deprecated flag is still taken, hidden, and warns on stderr until the major that removes it |
 | `TestConfigurationPageSaysWhichFileReadsWhichKey`, `TestSystemPolicyPageListsEveryPolicyKey`, `TestEnvironmentPageNamesEveryVariableBBReads` | the hand-written configuration, policy and environment tables name what the code reads |
 | `TestMachineModePageStatesEachKindsExitCode`, `TestTroubleshootingPageStatesEachKindsExitCode` | both exit-code tables give every error kind its real code |
-
-### When running tests also uncovers a broken test
-
-If the rebase brought in API changes from `next` (e.g. a command's flag changed from `--host` to a positional argument), tests added on the branch may need updating. Fix each in the commit that added it, so history stays clean.
 
 ## Development Tips & Gotchas
 
