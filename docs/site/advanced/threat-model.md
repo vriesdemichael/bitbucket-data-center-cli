@@ -112,9 +112,9 @@ flowchart TB
 
 | Boundary | Components | Trust Level | Security Invariants |
 |---|---|---|---|
-| **TB-1: Process & Terminal** | `bb` runtime process, memory, arguments, stdout/stderr | Trusted Local User | Zero secret leakage in process argument table (`/proc/<pid>/cmdline`). Zero telemetry. |
+| **TB-1: Process & Terminal** | `bb` runtime process, memory, arguments, stdout/stderr | Trusted Local User | No secret on the command line, so none in the process argument table (`/proc/<pid>/cmdline`). No telemetry. |
 | **TB-2: OS Keyring Store** | Windows Credential Manager, macOS Keychain, Linux Secret Service | System Security Enclave | Secrets held encrypted at rest. Immediate failure if plaintext fallback is needed when `BB_REQUIRE_KEYRING=1` is set. |
-| **TB-3: Git Working Tree** | Local git clone, `.git/config`, `git` CLI child processes | Semi-Trusted Filesystem | Zero credentials persisted into repository `.git/config`. Host-scoped credential querying. |
+| **TB-3: Git Working Tree** | Local git clone, `.git/config`, `git` CLI child processes | Semi-Trusted Filesystem | No credential written into a repository's `.git/config`. Credentials asked for per host. |
 | **TB-4: Network Perimeter** | Corporate forward proxies, internal enterprise PKI, Bitbucket DC | Untrusted / Inspected Network | Minimum TLS 1.2. Additive corporate CA trust pool. Strict non-interactive timeout enforcement. |
 | **TB-5: AI / MCP Surface** | IDE agent (Cursor, VS Code, Claude Desktop), stdio RPC pipe | Constrained Automation | Tools that decide a merge ask the person through the client before they run; `--read-only` for a client that cannot be trusted with that. Dedicated read-only tokens. |
 | **TB-6: Supply Chain** | GitHub Actions builder, release packaging, Sigstore/Cosign | Cryptographic Verification | Keyless OIDC signatures, SLSA build provenance attestations, attested SPDX 2.3 SBOM. |
@@ -132,7 +132,7 @@ When `bb ai mcp serve` runs, it communicates strictly over standard input/output
 [Bitbucket DC] ──(HTTPS/Internal CA)──> [bb CLI (Local)] ──(stdio RPC)──> [Local IDE] ──(HTTPS/IDE Config)──> [Cloud LLM]
 ```
 
-1. **Local CLI Boundary**: `bb` sends **zero external telemetry** and initiates no network requests to AI providers. It has three possible destinations and no others: the Bitbucket server you configure, and — only when someone runs `bb update` — the release host, `api.github.com` by default or an internal mirror via `update_base_url`, and Sigstore's `tuf-repo-cdn.sigstore.dev` for the trust material the signature check needs, unless `update_trusted_root` supplies it from disk. There is no background, start-up or periodic check, so nothing leaves the workstation unless a command asks it to. A binary built with `-tags no_self_update`, or one where policy sets `disable_update: true`, refuses before any request is made and leaves Bitbucket as the only destination ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)).
+1. **Local CLI Boundary**: `bb` sends no telemetry and makes no request to an AI provider. It has three possible destinations and no others: the Bitbucket server you configure, and — only when someone runs `bb update` — the release host, `api.github.com` by default or an internal mirror via `update_base_url`, and Sigstore's `tuf-repo-cdn.sigstore.dev` for the trust material the signature check needs, unless `update_trusted_root` supplies it from disk. There is no background, start-up or periodic check, so nothing leaves the workstation unless a command asks it to. A binary built with `-tags no_self_update`, or one where policy sets `disable_update: true`, refuses before any request is made and leaves Bitbucket as the only destination ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)).
 2. **The Stdio Pipe**: When an AI agent executes tools like `get_pr_diff`, `get_pull_request`, or `list_pr_comments`, `bb` fetches the data from Bitbucket and prints structured JSON to `stdout`.
 3. **The IDE & Cloud LLM Transmission**: The IDE consumes this output and includes the source code diffs in prompt contexts sent to the developer's configured LLM provider (e.g. OpenAI, Anthropic, or internal corporate Ollama/vLLM endpoints).
 
@@ -153,7 +153,7 @@ Enterprise policy enforcement mechanisms differ across operating systems, unifie
 | **Windows** | Microsoft Intune / SCCM / Active Directory GPO | **Windows Registry (`HKLM\Software\Policies\bb`)** | System Config (`%ProgramData%\bb\config.yaml`) | **High**. Unprivileged users cannot modify `HKLM\Software\Policies`. Registry policy takes immutable precedence over user environment variables and user configuration files. |
 | **macOS** | Jamf Pro, Kandji, Apple MDM | **System Config (`/etc/bb/config.yaml`, `chmod 644 root:wheel`)** | System Shell Profiles (`/etc/zshenv`) | **High**. Read directly by the `bb` binary across both terminal shells and GUI parent processes (such as IDE-launched MCP servers). |
 | **Linux (Workstations)** | Ansible, Puppet, SaltStack, Red Hat Satellite | **System Config (`/etc/bb/config.yaml`, `chmod 644 root:root`)** | Shell Environment (`/etc/profile.d/bb.sh`) | **High**. Standard root-owned system configuration. Immutable by non-root users on developer workstations and multi-user jump hosts. |
-| **Linux (CI Runners)** | Kubernetes, Docker, Runner Daemons | Ephemeral Environment Variables (`BITBUCKET_TOKEN`, `BB_DISABLE_STORED_CONFIG=1`, `BB_DISABLE_UPDATE=1`) | Baked Container Image `/etc/bb/config.yaml` | **High**. Containers lack desktop keyrings; `BB_DISABLE_STORED_CONFIG=1` guarantees zero stored credential reads and zero keyring daemon access. |
+| **Linux (CI Runners)** | Kubernetes, Docker, Runner Daemons | Ephemeral Environment Variables (`BITBUCKET_TOKEN`, `BB_DISABLE_STORED_CONFIG=1`, `BB_DISABLE_UPDATE=1`) | Baked Container Image `/etc/bb/config.yaml` | **High**. Containers lack desktop keyrings; `BB_DISABLE_STORED_CONFIG=1` reads no stored credential and contacts no keyring. |
 
 ---
 
@@ -185,7 +185,7 @@ bb auth status --json
 *Audit Assertion*: Verify that `.data.credentialStorage` equals `keyring` (on workstations) or `environment` (in CI runners), and never `config-file-plaintext`.
 
 #### 4. Residual Gap & Tracking
-- **Resolution**: Fully resolved via system-wide configuration (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`) and Windows Registry policy (`HKLM\Software\Policies\bb`) with `require_keyring: true` ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md), [Issue #420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420)). Plaintext fallback cannot occur when mandated by machine policy.
+- **Resolution**: Resolved by system-wide configuration (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`) and Windows Registry policy (`HKLM\Software\Policies\bb`) with `require_keyring: true` ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md), [Issue #420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420)). Plaintext fallback cannot occur when mandated by machine policy.
 
 ---
 
@@ -201,7 +201,7 @@ bb auth status --json
   [credential "https://bitbucket.example.com"]
   	helper = !"/usr/local/bin/bb" auth git-credential
   ```
-- **Zero Repository Footprint**: Cloned repositories contain zero credentials or tokens in their local `.git/config`.
+- **No Credentials in a Clone**: `bb` writes no credential or token into a clone's `.git/config`.
 - **A Credential Is Bound To Its Host**: a stored credential is released only for the host it was stored for. A host named by repository configuration, by `--host`, or by a URL passed to `bb api` therefore gets no credential unless one is stored for that exact host, whatever the default host is.
 - **Nothing Sensitive On The Command Line**: the header a clone needs is passed to git in its environment, which only the owner of the process can read, rather than in its arguments, which any local account can read while the clone runs.
 - **Instant Revocation**: If a token is revoked in Bitbucket or removed via `bb auth logout`, all local clones immediately lose access without requiring manual git cleanup.
@@ -225,7 +225,7 @@ git config --local --get http.extraHeader
 - **Proxy Traversal**: Inherits `HTTPS_PROXY`, `HTTP_PROXY`, and `NO_PROXY` directly from Go's `http.DefaultTransport`.
 - **TLS 1.2+ Enforced**: Pinned minimum version `tlsConfig.MinVersion = tls.VersionTLS12`.
 - **Insecure Verification Is Refusable by Policy**: `allow_insecure_skip_verify: false` in system configuration or Windows registry policy makes `--insecure-skip-verify` and `BB_INSECURE_SKIP_VERIFY=true` fail with an authorization error rather than downgrading the connection. This is the control that answers the bypass in the threat above, and it is off unless an administrator deploys it ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)).
-- **Zero Telemetry**: Guaranteed zero external analytics or metrics calls ([SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md)).
+- **No Telemetry**: `bb` makes no analytics or metrics calls ([SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md)).
 
 #### 3. Audit Test Procedure
 ```bash
@@ -316,11 +316,11 @@ bb auth token list
 
 | Threat ID | Threat Description | Regulatory Mapping | Residual Risk | Risk Treatment | Test Procedure | Tracked Issue |
 |---|---|---|---|---|---|---|
-| **T-1** | Process table secret sniffing & plaintext disk fallback | SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3 | **Low** | Fully mitigated via mandatory Keyring policy enforcement (`require_keyring: true`), system configuration tier, and stdin ingestion ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)). | `bb auth status --json` | — |
+| **T-1** | Process table secret sniffing & plaintext disk fallback | SOC 2 CC6.1, ISO 27001:2022 A.8.24, NIST SP 800-53 AC-3 | **Low** | Mitigated by mandatory Keyring policy enforcement (`require_keyring: true`), system configuration tier, and stdin ingestion ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)). | `bb auth status --json` | — |
 | **T-2** | Repository secret bleed & cross-remote credential leakage | SOC 2 CC6.6, ISO 27001:2022 A.8.12 | **Low** | Mitigated via host-scoped Git credential helper (`bb auth setup-git`). | `git config --local --get http.extraHeader` | — |
-| **T-3** | Inability to traverse mutual TLS (mTLS) ingress | NIST SP 800-207 (Zero Trust Architecture), SC-8 | **Low** | Fully mitigated via mTLS client cert/key support (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and stored profiles; [ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)). | `bb --client-cert ... --client-key ... repo list` | — |
+| **T-3** | Inability to traverse mutual TLS (mTLS) ingress | NIST SP 800-207 (Zero Trust Architecture), SC-8 | **Low** | Mitigated by mTLS client cert/key support (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and stored profiles; [ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)). | `bb --client-cert ... --client-key ... repo list` | — |
 | **T-4** | Prompt-injected AI agent executing unauthorized mutations | OWASP Top 10 LLM (2025 LLM01, LLM06), SOC 2 CC6.8 | **Low** | Mitigated via confirmation by the person for the tools that decide a merge, `--read-only` for untrusted clients, `read_only` or `disable_mcp_server` in system policy ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)), workspace scoping (`--project`, `--repo`), and a redacted JSONL audit trail recording allowed and denied invocations ([ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)). Residual: the trail is not tamper-evident, and an agent with shell access can bypass the MCP layer entirely — a read-only PAT supplied through the client's `env` block is the control that survives that. | `bb ai mcp serve --project PAYMENTS --audit-file <path>` | — |
-| **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Fully mitigated via `BB_DISABLE_UPDATE=1`, system config `disable_update: true`, build tag `no_self_update`, and internal release mirror resolution ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). Air-gapped mirrors additionally require an offline Sigstore trust root ([ADR-063](../adr/063-offline-release-signature-verification.md)). | `bb update` on managed machine | — |
+| **T-5** | Unmanaged binary updates breaking package manager state | ISO 27001:2022 A.8.19, NIST SP 800-53 SI-2 | **Low** | Mitigated by `BB_DISABLE_UPDATE=1`, system config `disable_update: true`, build tag `no_self_update`, and internal release mirror resolution ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). Air-gapped mirrors additionally require an offline Sigstore trust root ([ADR-063](../adr/063-offline-release-signature-verification.md)). | `bb update` on managed machine | — |
 | **T-6** | Unfederated static token lifecycle management | CIS Controls v8 5.4 / 6.1, NIST SP 800-63B | **Medium** | Accepted, and mitigated via scoped TTL PATs. Bitbucket Data Center offers no browser login that lasts ([ADR-022](../adr/022-auth-mode-priority-and-oauth-optionality.md)). | `bb auth token list` | — |
 | **T-7** | Use of `bb`, or of its MCP server, that the organisation has not approved | ISO 27001:2022 A.8.19, NIST SP 800-53 CM-7 | **Low** | Mitigated for every released build via `disable_bb` and `disable_mcp_server` in system configuration or registry policy, which no user setting lifts ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)). Residual: a build from modified source ignores them; the operating system's application control is the control that holds. | `bb doctor` on a managed machine | — |
 
@@ -329,5 +329,5 @@ bb auth token list
 ## 7. Security Invariants Summary
 
 - **Prompts only where a person can answer ([ADR-073](../adr/073-interactive-when-a-person-is-there-explicit-when-not.md))**: with no terminal, or under `--json`, `bb` never blocks on stdin; it fails fast naming what it needed, so automation and CI/CD pipelines cannot hang.
-- **Zero External Telemetry ([SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md))**: `bb` sends no telemetry, metrics, or usage statistics to any third-party server.
+- **No External Telemetry ([SECURITY.md](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/SECURITY.md))**: `bb` sends no telemetry, metrics, or usage statistics to any third-party server.
 - **Structured Error Taxonomy ([ADR-011](../adr/011-error-taxonomy-and-cli-exit-contract.md), [ADR-046](../adr/046-json-error-envelope-on-the-failure-path.md))**: Fatal failures emit a predictable JSON error envelope with categorized error taxonomy (`validation`, `authentication`, `authorization`, `not_found`, `conflict`, `transient`, `permanent`, `cancelled`, `unknown_outcome`, `not_implemented`, `unsupported`, `internal`).
