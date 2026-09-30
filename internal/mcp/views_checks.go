@@ -70,12 +70,13 @@ const (
 // requiredChecksForView reads the required-build conditions of the target
 // repository, keeps those that apply to the pull request, and says for each
 // required key where the builds of the latest source commit stand, the ones
-// that need attention first. Nothing required is known and empty. known is
-// false when Bitbucket cannot answer, or bb cannot tell as Bitbucket would: a
-// condition it cannot decide, a release without the listing it reads, a pull
-// request that moved on while it read. The card then says nothing about
-// requirements rather than something wrong.
-func requiredChecksForView(ctx context.Context, c Clients, project, repo string, pr pullrequestservice.PullRequest) ([]viewRequiredCheck, bool) {
+// that need attention first. listing is the pull request's builds, as
+// pullRequestBuilds reads them, and nil where they could not be read. Nothing
+// required is known and empty. known is false when Bitbucket cannot answer, or
+// bb cannot tell as Bitbucket would: a condition it cannot decide, a release
+// without the listing, a pull request that moved on while it read. The card
+// then says nothing about requirements rather than something wrong.
+func requiredChecksForView(ctx context.Context, c Clients, project, repo string, pr pullrequestservice.PullRequest, listing *pullRequestBuildList) ([]viewRequiredCheck, bool) {
 	if pr.SourceCommit == "" {
 		return nil, false
 	}
@@ -88,16 +89,14 @@ func requiredChecksForView(ctx context.Context, c Clients, project, repo string,
 	if len(conditions) == 0 {
 		return nil, true
 	}
-
-	target, source, builds, err := requiredBuildsOf(ctx, c, project, repo, pr)
-	if err != nil {
+	if listing == nil {
 		return nil, false
 	}
-	keys, known := requiredKeys(conditions, target, source, readMatchFacts(ctx, c, project, repo, conditions))
+	keys, known := requiredKeys(conditions, listing.target, listing.source, readMatchFacts(ctx, c, project, repo, conditions))
 	if !known {
 		return nil, false
 	}
-	return requiredChecks(keys, builds), true
+	return requiredChecks(keys, listing.builds), true
 }
 
 // requiredCondition is a required-build condition as a card matches it.
@@ -163,7 +162,7 @@ type requiredBuild struct {
 	UpdatedDate int64  `json:"updatedDate"`
 }
 
-// pullRequestBuildsPage is a page of the listing requiredBuildsOf reads, with
+// pullRequestBuildsPage is a page of the listing pullRequestBuilds reads, with
 // the pull request it lists the builds of.
 type pullRequestBuildsPage struct {
 	Page struct {
@@ -180,19 +179,27 @@ type pullRequestBuildsPage struct {
 	} `json:"pullRequest"`
 }
 
-// requiredBuildsOf reads what the required-builds check reads: the builds of
-// the pull request's latest source commit that count for it, each with its
-// parent, and the refs its conditions are matched against, the target's and
-// then the source's.
+// pullRequestBuildList is a pull request's builds as Bitbucket's own pull
+// request page lists them, and the refs its required-build conditions are
+// matched against.
+type pullRequestBuildList struct {
+	target, source requiredRef
+	builds         []requiredBuild
+}
+
+// pullRequestBuilds reads the builds of the pull request's latest source
+// commit that belong to it, as Bitbucket's pull request page lists and counts
+// them and as its required-builds check reads them: those posted for the
+// source branch or for no branch, each with its parent. The refs come with
+// them, the target's and the source's.
 //
-// It is the listing Bitbucket's own pull request page reads, under /rest/ui as
-// the code owners are (ADR-080): the repository's builds endpoint answers one
-// key at a time, and the commit listing buildsForView reads drops the parent
-// and lists the builds of other branches too. The listing answers for the
-// commit it is asked about, so a pull request that has moved on since it was
-// read fails the read: its builds would describe a commit the card does not
-// show.
-func requiredBuildsOf(ctx context.Context, c Clients, project, repo string, pr pullrequestservice.PullRequest) (requiredRef, requiredRef, []requiredBuild, error) {
+// It is the listing the page reads, under /rest/ui as the code owners are
+// (ADR-080): the repository's builds endpoint answers one key at a time, and
+// the commit listing buildsForView reads drops the parent and lists the builds
+// of other branches too. The listing answers for the commit it is asked about,
+// so a pull request that has moved on since it was read fails the read: its
+// builds would describe a commit the card does not show.
+func pullRequestBuilds(ctx context.Context, c Clients, project, repo string, pr pullrequestservice.PullRequest) (pullRequestBuildList, error) {
 	path := fmt.Sprintf("/rest/ui/latest/projects/%s/repos/%s/pull-requests/%d/builds",
 		url.PathEscape(project), url.PathEscape(repo), pr.ID)
 	var builds []requiredBuild
@@ -204,20 +211,59 @@ func requiredBuildsOf(ctx context.Context, c Clients, project, repo string, pr p
 			"limit":    strconv.Itoa(requiredBuildsPage),
 		}
 		if err := c.HTTP.GetJSON(ctx, path, query, &page); err != nil {
-			return requiredRef{}, requiredRef{}, nil, err
+			return pullRequestBuildList{}, err
 		}
 		from, to := page.PullRequest.FromRef, page.PullRequest.ToRef
 		if from.LatestCommit != pr.SourceCommit || from.ID == "" || to.ID == "" {
-			return requiredRef{}, requiredRef{}, nil, errors.New("the listing is not of the pull request's latest commit")
+			return pullRequestBuildList{}, errors.New("the listing is not of the pull request's latest commit")
 		}
 		builds = append(builds, page.Page.Values...)
 		if page.Page.IsLastPage || page.Page.NextPageStart == nil {
-			return to, from.requiredRef, builds, nil
+			return pullRequestBuildList{target: to, source: from.requiredRef, builds: builds}, nil
 		}
 		if len(builds) >= maxRequiredBuilds || *page.Page.NextPageStart <= start {
-			return requiredRef{}, requiredRef{}, nil, errors.New("the commit has more builds than a card reads")
+			return pullRequestBuildList{}, errors.New("the commit has more builds than a card reads")
 		}
 		start = *page.Page.NextPageStart
+	}
+}
+
+// checksFromListing is a card's builds as Bitbucket's pull request page counts
+// and lists them: every build of the listing counted by state, and the ones
+// that need attention first, at most maxViewChecks of them. The last result
+// says the card lists fewer than it counts.
+func checksFromListing(builds []requiredBuild) (*viewCheckCounts, []viewCheck, bool) {
+	checks := make([]viewCheck, 0, len(builds))
+	for _, build := range builds {
+		checks = append(checks, viewCheck{Name: build.Name, Key: build.Key, State: strings.ToUpper(build.State), URL: build.URL})
+	}
+	counts := countChecks(checks)
+	sort.SliceStable(checks, func(i, j int) bool {
+		if a, b := buildRank(checks[i].State), buildRank(checks[j].State); a != b {
+			return a < b
+		}
+		return strings.ToLower(checks[i].Name) < strings.ToLower(checks[j].Name)
+	})
+	if len(checks) > maxViewChecks {
+		return &counts, checks[:maxViewChecks], true
+	}
+	return &counts, checks, false
+}
+
+// buildRank orders a card's builds as it counts them, what needs the person
+// first: failed, running, canceled, unknown, then passed.
+func buildRank(state string) int {
+	switch state {
+	case "FAILED":
+		return 0
+	case "INPROGRESS":
+		return 1
+	case "CANCELLED":
+		return 2
+	case "SUCCESSFUL":
+		return 4
+	default:
+		return 3
 	}
 }
 
@@ -333,25 +379,24 @@ func (condition requiredCondition) appliesTo(target, source requiredRef, facts m
 //   - DEFAULT_BRANCH matches the repository's default branch. Bitbucket
 //     accepts it though its REST documentation lists only the other five.
 //
-// BRANCH and PATTERN ignore case, as Bitbucket does unless an administrator
-// sets plugin.bitbucket-ref-restriction.case.insensitive=false, which bb cannot
-// see: an answer that case decides is not certain. Nor is one from a kind bb
+// BRANCH and PATTERN ignore case, as Bitbucket does by default. An
+// administrator can set plugin.bitbucket-ref-restriction.case.insensitive to
+// false, which bb cannot see; bb reads a match as the default decides it, as
+// the web interface's users expect. An answer is not certain from a kind bb
 // does not know, or one that needs a fact it could not read.
 func (matcher refMatcher) matches(ref requiredRef, facts matchFacts) (matches, certain bool) {
 	switch matcher.kind {
 	case "ANY_REF":
 		return true, true
 	case "BRANCH":
-		folded := branchMatches(matcher.id, ref.ID, true)
-		return folded, folded == branchMatches(matcher.id, ref.ID, false)
+		return branchMatches(matcher.id, ref.ID), true
 	case "PATTERN":
 		// Braces are Spring's template variables, which may carry a regular
 		// expression of Java's; bb matches no pattern that has them.
 		if strings.ContainsAny(matcher.id, "{}") {
 			return false, false
 		}
-		folded := patternMatches(strings.ToLower(matcher.id), strings.ToLower(ref.ID))
-		return folded, folded == patternMatches(matcher.id, ref.ID)
+		return patternMatches(strings.ToLower(matcher.id), strings.ToLower(ref.ID)), true
 	case "MODEL_BRANCH":
 		if facts.model == nil {
 			return false, false
@@ -383,16 +428,11 @@ func (matcher refMatcher) matches(ref requiredRef, facts matchFacts) (matches, c
 	return false, false
 }
 
-// branchMatches is Bitbucket's BRANCH matcher: the id names the ref as given,
-// or qualified with refs/heads/ as Bitbucket qualifies a branch name.
-func branchMatches(id, ref string, ignoreCase bool) bool {
-	same := func(a, b string) bool {
-		if ignoreCase {
-			return strings.EqualFold(a, b)
-		}
-		return a == b
-	}
-	return same(id, ref) || same(qualifiedBranch(id), ref)
+// branchMatches is Bitbucket's BRANCH matcher, ignoring case: the id names the
+// ref as given, or qualified with refs/heads/ as Bitbucket qualifies a branch
+// name.
+func branchMatches(id, ref string) bool {
+	return strings.EqualFold(id, ref) || strings.EqualFold(qualifiedBranch(id), ref)
 }
 
 // qualifiedBranch is a branch name as a full ref id. A name that already
