@@ -83,6 +83,18 @@ versioned names.
 Per-archive signatures, build provenance and SBOMs are covered in
 [Release Verification](advanced/enterprise-hardening.md#1-release-verification-pre-deployment).
 
+## Keep bb up to date
+
+Installed through WinGet, Scoop, Homebrew or a `.deb` or `.rpm`, `bb` is updated
+the way it was installed: `winget upgrade vriesdemichael.bb`,
+`scoop update vriesdemichael/bb`, `brew upgrade vriesdemichael/tap/bb`, or the
+newer package from GitHub Releases. Those builds leave self-update out, and
+`bb update` says so. A binary from a release archive updates itself:
+
+```bash
+bb update
+```
+
 ## Authenticate to Bitbucket
 
 ```bash
