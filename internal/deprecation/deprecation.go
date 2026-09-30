@@ -9,6 +9,7 @@ package deprecation
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -101,6 +102,81 @@ var Entries = []Entry{
 		Reason:       "every tool is exposed without --yolo, so it is always SAFE",
 		Advice:       "Read asks for whether a tool asks first, and writes for whether it changes anything.",
 	},
+
+	// Flags that mirrored a Bitbucket request parameter and changed nothing a
+	// caller could see.
+	//
+	// Bitbucket derives a matcher's display name from its id and type: main
+	// for refs/heads/main, the pattern for a pattern, Release for the RELEASE
+	// category. A display name sent with the restriction is dropped, in every
+	// release bb serves.
+	{
+		Name:         "bb branch restriction create --matcher-display",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "Bitbucket works out a matcher's display name itself and ignores the one it is sent",
+		Advice:       "Remove it.",
+	},
+	{
+		Name:         "bb branch restriction update --matcher-display",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "Bitbucket works out a matcher's display name itself and ignores the one it is sent",
+		Advice:       "Remove it.",
+	},
+	{
+		Name:         "bb project branch-restriction create --matcher-display",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "Bitbucket works out a matcher's display name itself and ignores the one it is sent",
+		Advice:       "Remove it.",
+	},
+	{
+		Name:         "bb project branch-restriction update --matcher-display",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "Bitbucket works out a matcher's display name itself and ignores the one it is sent",
+		Advice:       "Remove it.",
+	},
+
+	// --include-unique asked Bitbucket to name the build when only one had
+	// failed, was running or had passed. bb printed the five counts either
+	// way, and bb build status get and set, which inherited the flag, never
+	// sent it.
+	{
+		Name:         "bb build status stats --include-unique",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "bb prints the same counts with it and without it",
+		Advice:       "Remove it. bb build status get lists each build with its state.",
+	},
+	{
+		Name:         "bb build status get --include-unique",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "the command never read it",
+		Advice:       "Remove it.",
+	},
+	{
+		Name:         "bb build status set --include-unique",
+		DeprecatedIn: "v5.0.0",
+		Reason:       "the command never read it",
+		Advice:       "Remove it.",
+	},
+}
+
+// WarnFlags writes the registered warning for each of a command's deprecated
+// flags that the invocation passed, one line each.
+//
+// command is the command as a person types it, bb included, and passed reports
+// whether a flag was given: a Cobra command's Flags().Changed. The warnings go
+// to the command's stderr, so a --json document on stdout is unchanged
+// (ADR-084), and they are read from the registry, so they say what the reports
+// listing outstanding deprecations say. A flag with no entry is skipped: the
+// registry is what makes a flag deprecated, not the call that mentions it.
+func WarnFlags(stderr io.Writer, passed func(flag string) bool, command string, flags ...string) {
+	for _, flag := range flags {
+		if !passed(flag) {
+			continue
+		}
+		if entry, ok := Named(command + " --" + flag); ok {
+			fmt.Fprintln(stderr, entry.Warning())
+		}
+	}
 }
 
 // Named returns the registered entry called name.

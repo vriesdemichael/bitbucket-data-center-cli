@@ -13,6 +13,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -142,6 +143,8 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
     --matcher-type MODEL_BRANCH --matcher-id development`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb project branch-restriction create", "matcher-display")
+
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -221,7 +224,9 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	enumflag.Register(createCmd.Flags(), &createType, "type", "", result.RestrictionTypes, "Restriction type")
 	createCmd.Flags().StringVar(&createMatcherID, "matcher-id", "", "Matcher id value")
 	enumflag.Register(createCmd.Flags(), &createMatcherType, "matcher-type", "BRANCH", openapi.RestrictionMatcherTypes, "Matcher type")
-	createCmd.Flags().StringVar(&createMatcherDisplay, "matcher-display", "", "Matcher display value")
+	// Accepted, and inert: Bitbucket derives the display name (ADR-084).
+	createCmd.Flags().StringVar(&createMatcherDisplay, "matcher-display", "", "Deprecated: has no effect")
+	_ = createCmd.Flags().MarkHidden("matcher-display")
 	createCmd.Flags().StringSliceVar(&createUsers, "user", nil, "Allowed user slugs")
 	createCmd.Flags().StringSliceVar(&createGroups, "group", nil, "Allowed group names")
 	createCmd.Flags().IntSliceVar(&createAccessKeyIDs, "access-key-id", nil, "Allowed SSH access key IDs")
@@ -245,6 +250,8 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
     --matcher-type BRANCH --matcher-id refs/heads/main --user alice`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb project branch-restriction update", "matcher-display")
+
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -320,7 +327,9 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	_ = updateCmd.MarkFlagRequired("type")
 	_ = updateCmd.MarkFlagRequired("matcher-id")
 	_ = updateCmd.MarkFlagRequired("matcher-type")
-	updateCmd.Flags().StringVar(&updateMatcherDisplay, "matcher-display", "", "Matcher display value")
+	// Accepted, and inert: Bitbucket derives the display name (ADR-084).
+	updateCmd.Flags().StringVar(&updateMatcherDisplay, "matcher-display", "", "Deprecated: has no effect")
+	_ = updateCmd.Flags().MarkHidden("matcher-display")
 	updateCmd.Flags().StringSliceVar(&updateUsers, "user", nil, "Allowed user slugs")
 	updateCmd.Flags().StringSliceVar(&updateGroups, "group", nil, "Allowed group names")
 	updateCmd.Flags().IntSliceVar(&updateAccessKeyIDs, "access-key-id", nil, "Allowed SSH access key IDs")

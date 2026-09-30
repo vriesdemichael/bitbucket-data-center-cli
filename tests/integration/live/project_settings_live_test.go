@@ -226,14 +226,16 @@ func TestLiveProjectBranchRestrictionLifecycle(t *testing.T) {
 	}
 	configureLiveCLIEnv(t, harness, seeded.Key, seeded.Repos[0].Slug)
 
-	// --matcher-display is sent and Bitbucket ignores it: it derives a
-	// matcher's display id itself, and for a project pattern that is the id.
-	createOutput, err := executeLiveCLI(t, "--json", "project", "branch-restriction", "create", seeded.Key,
+	// --matcher-display is deprecated for what this shows: it is sent and
+	// Bitbucket ignores it, deriving a matcher's display id itself, which for a
+	// project pattern is the id. The flag is still taken, and says so on stderr.
+	createOutput, createWarning, err := executeLiveCLISplit(t, "", "--json", "project", "branch-restriction", "create", seeded.Key,
 		"--type", "no-deletes", "--matcher-type", "PATTERN", "--matcher-id", "refs/heads/release/*",
 		"--matcher-display", "release/*")
 	if err != nil {
 		t.Fatalf("project branch-restriction create failed: %v\noutput: %s", err, createOutput)
 	}
+	assertDeprecationWarned(t, createWarning, "bb project branch-restriction create --matcher-display")
 	createData := decodeJSONMap(t, createOutput)
 	restriction, ok := createData["restriction"].(map[string]any)
 	if !ok {
@@ -277,12 +279,13 @@ func TestLiveProjectBranchRestrictionLifecycle(t *testing.T) {
 		t.Errorf("the listing holds restriction %s on release/*, the create answered with %s", id, restrictionID)
 	}
 
-	updateOutput, err := executeLiveCLI(t, "--json", "project", "branch-restriction", "update", seeded.Key, restrictionID,
+	updateOutput, updateWarning, err := executeLiveCLISplit(t, "", "--json", "project", "branch-restriction", "update", seeded.Key, restrictionID,
 		"--type", "no-deletes", "--matcher-type", "PATTERN", "--matcher-id", "refs/heads/hotfix/*",
 		"--matcher-display", "hotfix/*")
 	if err != nil {
 		t.Fatalf("project branch-restriction update failed: %v\noutput: %s", err, updateOutput)
 	}
+	assertDeprecationWarned(t, updateWarning, "bb project branch-restriction update --matcher-display")
 	if !strings.Contains(updateOutput, "refs/heads/hotfix/*") {
 		t.Fatalf("expected the updated matcher in the output, got: %s", updateOutput)
 	}

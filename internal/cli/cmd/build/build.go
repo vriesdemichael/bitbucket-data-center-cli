@@ -19,6 +19,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -157,6 +158,8 @@ func New(deps Dependencies) *cobra.Command {
     --name "Unit tests" --description "3 of 412 tests failed"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb build status set", "include-unique")
+
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -238,6 +241,8 @@ func New(deps Dependencies) *cobra.Command {
   bb build status get a1b2c3d --repo PROJ/repo --order-by NEWEST`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb build status get", "include-unique")
+
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -287,6 +292,8 @@ func New(deps Dependencies) *cobra.Command {
   bb build status stats a1b2c3d e4f5a6b`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb build status stats", "include-unique")
+
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -356,7 +363,10 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	})
-	statusCmd.PersistentFlags().BoolVar(&includeUnique, "include-unique", false, "Include unique result details when available")
+	// Accepted, and inert: bb prints the counts whether or not Bitbucket names
+	// the one build (ADR-084).
+	statusCmd.PersistentFlags().BoolVar(&includeUnique, "include-unique", false, "Deprecated: has no effect")
+	_ = statusCmd.PersistentFlags().MarkHidden("include-unique")
 
 	requiredCmd := &cobra.Command{
 		Use:   "required",

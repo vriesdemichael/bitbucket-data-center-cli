@@ -363,6 +363,18 @@ func TestLiveCLIBuildAndTagLifecycle(t *testing.T) {
 	commandCoverageAssertFields(t, "the build stats", statsPayload,
 		map[string]any{"successful": float64(1), "failed": float64(0), "inProgress": float64(0), "unknown": float64(0), "cancelled": float64(0)})
 
+	// --include-unique is deprecated for what this shows: with one successful
+	// build, which is when Bitbucket answers it with more, bb prints the same
+	// document. The flag is still taken, and says so on stderr.
+	withUnique, uniqueWarning, err := executeLiveCLISplit(t, "", "--json", "build", "status", "stats", commitID, "--include-unique")
+	if err != nil {
+		t.Fatalf("build status stats --include-unique failed: %v\noutput: %s", err, withUnique)
+	}
+	if withUnique != statsBuildOutput {
+		t.Errorf("--include-unique changed the output.\nwith:\n%s\nwithout:\n%s", withUnique, statsBuildOutput)
+	}
+	assertDeprecationWarned(t, uniqueWarning, "bb build status stats --include-unique")
+
 	// Two tags besides the one under test give the listing's flags something to
 	// decide, and tag dates have one-second resolution, hence the pauses. This
 	// one matches the filter, is older and sorts first, so it heads a filtered

@@ -148,3 +148,40 @@ func TestWarningFallsBackWhenTheVersionIsUnusable(t *testing.T) {
 		t.Fatalf("warning omits the removal release: %q", sound.Warning())
 	}
 }
+
+// A flag is deprecated by its entry in the registry. WarnFlags warns for the
+// ones an invocation passed, and only for those.
+func TestWarnFlagsWarnsForEachDeprecatedFlagThatWasPassed(t *testing.T) {
+	t.Parallel()
+
+	passed := func(given ...string) func(string) bool {
+		return func(flag string) bool { return slices.Contains(given, flag) }
+	}
+	yolo, _ := Named("bb ai mcp serve --yolo")
+	allowWrites, _ := Named("bb ai mcp serve --allow-writes")
+
+	testCases := []struct {
+		name   string
+		passed func(string) bool
+		flags  []string
+		want   []string
+	}{
+		{name: "none passed", passed: passed(), flags: []string{"yolo", "allow-writes"}},
+		{name: "one passed", passed: passed("yolo"), flags: []string{"yolo", "allow-writes"}, want: []string{yolo.Warning()}},
+		{name: "both passed", passed: passed("yolo", "allow-writes"), flags: []string{"yolo", "allow-writes"}, want: []string{yolo.Warning(), allowWrites.Warning()}},
+		{name: "passed, and not in the registry", passed: passed("host"), flags: []string{"host"}},
+	}
+
+	for _, testCase := range testCases {
+		stderr := &strings.Builder{}
+		WarnFlags(stderr, testCase.passed, "bb ai mcp serve", testCase.flags...)
+
+		want := ""
+		for _, line := range testCase.want {
+			want += line + "\n"
+		}
+		if stderr.String() != want {
+			t.Errorf("%s: wrote %q, want %q", testCase.name, stderr.String(), want)
+		}
+	}
+}
