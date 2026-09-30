@@ -8,9 +8,30 @@ A formal security architecture, trust boundary analysis, and threat model for Ch
 
 | Field | Value |
 |---|---|
+| **Document Version** | 1.2.0 |
 | **Target System** | `bb` (Bitbucket Data Center CLI) |
 | **Classification** | Public Security & Threat Analysis Whitepaper |
 | **Methodology** | STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) |
+| **Analysis Performed** | August 2026, against `bb` v2.10 |
+| **Effective Date** | September 2026 |
+| **Review Cadence** | Annual, or upon major architectural revision |
+
+### Since the Analysis
+
+The threat analysis was carried out against `bb` v2.10 and has not been repeated
+since. The domains below have been revised as `bb` changed, and a gap that a later
+release closed is marked resolved in its domain. These are the changes since the
+analysis that bear on it:
+
+| Release | Change |
+|---|---|
+| v3.1 | System-wide configuration and policy that user settings cannot override, including `require_keyring` and the update controls ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md), [ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)) |
+| v3.2 | Mutual TLS client certificates ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)) |
+| v3.4 | The MCP server confined to a project or repository, and an audit trail of its tool calls ([ADR-062](../adr/062-mcp-workspace-scoping-and-agent-audit-trail.md)) |
+| v3.5 | Releases verified offline, with update trust set by policy ([ADR-063](../adr/063-offline-release-signature-verification.md)) |
+| v4.0 | No flag takes a credential: tokens and passwords come from stdin or the environment ([ADR-083](../adr/083-no-flag-carries-a-secret.md)) |
+| v4.1 | A stored credential is bound to the host it was stored for, and kept off git's command line; each release archive carries an SBOM of the binary in it |
+| v5.0 | MCP tools that decide a merge ask the person in the client ([ADR-098](../adr/098-mcp-tools-that-decide-a-merge-ask-the-person.md)); administrators can switch `bb` or its MCP server off, or make it read-only ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)); `bb api` refuses a credential in a header or URL and, like a clone of another host, sends a stored credential only to its own host; a project key or repository slug cannot carry a path to another endpoint |
 
 ### Scope & System Boundaries
 
@@ -164,7 +185,7 @@ bb auth status --json
 *Audit Assertion*: Verify that `.data.credentialStorage` equals `keyring` (on workstations) or `environment` (in CI runners), and never `config-file-plaintext`.
 
 #### 4. Residual Gap & Tracking
-- **Plaintext storage: closable by policy.** `require_keyring: true` in system-wide configuration (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`) or Windows Registry policy (`HKLM\Software\Policies\bb`) refuses plaintext fallback ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md)). Where it is not set, a machine without a keyring falls back to the configuration file.
+- **Resolution**: Fully resolved via system-wide configuration (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`) and Windows Registry policy (`HKLM\Software\Policies\bb`) with `require_keyring: true` ([ADR-058](../adr/058-system-wide-configuration-and-policy-enforcement.md), [Issue #420](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/420)). Plaintext fallback cannot occur when mandated by machine policy.
 
 ---
 
@@ -213,7 +234,7 @@ bb --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.
 *Audit Assertion*: Verify that the connection succeeds over TLS 1.2+ with client certificate authentication and routes through the designated `HTTPS_PROXY`.
 
 #### 4. Residual Gap & Tracking
-- **mTLS: supported.** Client certificate support is native to the transport layer (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and per-host stored profiles), so authenticating to an ingress reverse proxy needs no wrapper ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)).
+- **mTLS: resolved.** Client certificate support is native to the transport layer (`--client-cert`, `--client-key`, `BB_CLIENT_CERT`, `BB_CLIENT_KEY`, and per-host stored profiles), so authenticating to an ingress reverse proxy needs no wrapper ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)).
 - **The verification bypass is closable, not closed by default.** `--insecure-skip-verify` exists and works until an administrator sets `allow_insecure_skip_verify: false`. On a fleet where that policy has not been deployed, a developer who hits a certificate error can still turn verification off for themselves, and nothing outside the local machine records that they did. Deploying the policy is the control; treat an undeployed fleet as carrying this gap rather than as covered by the paragraph above.
 
 ---
@@ -266,7 +287,7 @@ The signature, provenance and SBOM checks are one procedure, written once in
 Run it against the artifact under audit.
 
 #### 4. Residual Gap & Tracking
-- **Update bypass: closable by policy.** Administrative killswitches (`BB_DISABLE_UPDATE=1`, `disable_update: true` in system configuration), compile-time removal (`-tags no_self_update`), and custom release mirrors (`--base-url`, `BB_UPDATE_BASE_URL`, `update_base_url`) each stop `bb update` from going around a package manager ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). On a host with no internet access a mirror also needs an offline Sigstore trust root (`update_trusted_root`), without which signature verification cannot complete ([ADR-063](../adr/063-offline-release-signature-verification.md)).
+- **Update bypass: resolved.** Administrative killswitches (`BB_DISABLE_UPDATE=1`, `disable_update: true` in system configuration), compile-time removal (`-tags no_self_update`), and custom release mirrors (`--base-url`, `BB_UPDATE_BASE_URL`, `update_base_url`) each stop `bb update` from going around a package manager ([ADR-059](../adr/059-enterprise-update-controls-and-release-mirrors.md)). On a host with no internet access a mirror also needs an offline Sigstore trust root (`update_trusted_root`), without which signature verification cannot complete ([ADR-063](../adr/063-offline-release-signature-verification.md)).
 - **Signature verification can be switched off by policy.** `allow_unverified_update: true` skips it entirely; the SHA256 checksum is still enforced, so the release is protected against corruption but not against tampering by whoever controls the mirror. It is deliberately policy-only — no flag, no environment variable — and every run warns on stderr and reports `trust.signatureSkipped: true` under `--json`. An estate that has set it has traded this domain's main guarantee for reachability, and should treat the mirror as part of its trusted computing base. An offline trust root is the option that does not make that trade.
 
 ---
