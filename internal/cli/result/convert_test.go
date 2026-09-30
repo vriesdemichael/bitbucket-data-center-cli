@@ -3,6 +3,7 @@ package result
 import (
 	"encoding/json"
 	"reflect"
+	"slices"
 	"testing"
 
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -443,8 +444,38 @@ func TestRepositorySummariesFromNamesTheRepositoryPlainly(t *testing.T) {
 func TestOKIsTheOutcomeEveryCommandReports(t *testing.T) {
 	t.Parallel()
 
-	if OK() != (Status{Status: "ok"}) {
+	if OK() != (Status{Outcome: "ok"}) {
 		t.Fatalf("OK() = %+v", OK())
+	}
+}
+
+// TestAnEmbeddedStatusIsDeclared is the schema saying what the output prints.
+// Embedding Status once hid its field from the schema, so 43 payloads printed
+// "status" under a schema that allowed no such property.
+func TestAnEmbeddedStatusIsDeclared(t *testing.T) {
+	t.Parallel()
+
+	type deletion struct {
+		Status
+		Tag string `json:"tag"`
+	}
+
+	schema := For[deletion](nil).Schema()
+	encoded, err := json.Marshal(deletion{Status: OK(), Tag: "v1"})
+	if err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	var printed map[string]any
+	if err := json.Unmarshal(encoded, &printed); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	for key := range printed {
+		if _, declared := schema.Properties[key]; !declared {
+			t.Errorf("the output prints %q and the schema does not declare it: %v", key, schema.Properties)
+		}
+	}
+	if !slices.Contains(schema.Required, "status") {
+		t.Errorf("status is printed on every run and the schema does not require it: %v", schema.Required)
 	}
 }
 

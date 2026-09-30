@@ -164,6 +164,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status         string  Outcome of the command.
   project        string  Project key the restriction was on.
   restrictionId  string  Identifier of the restriction that was deleted, as it was given on the command line.
 </code></pre>
@@ -500,6 +501,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status   string  Outcome of the command.
   project  string  Project key the task was on.
   id       string  Identifier of the task that was deleted, as it was given on the command line.
 </code></pre>
@@ -623,6 +625,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status   string  Outcome of the command.
   project  string  Key of the project that was deleted.
 </code></pre>
 </details>
@@ -768,6 +771,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status      string                                    Outcome of the command.
   project     string                                    Project key the permission was granted on.
   subject     user|group                                user or group, matching what name refers to.
   name        string                                    Username or group name that was granted the permission.
@@ -801,6 +805,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status      string                                    Outcome of the command.
   project     string                                    Project key the permission was granted on.
   subject     user|group                                user or group, matching what name refers to.
   name        string                                    Username or group name that was granted the permission.
@@ -870,6 +875,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status   string      Outcome of the command.
   project  string      Project key the permission was revoked on.
   subject  user|group  user or group, matching what name refers to.
   name     string      Username or group name the permission was revoked from.
@@ -954,6 +960,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status   string      Outcome of the command.
   project  string      Project key the permission was revoked on.
   subject  user|group  user or group, matching what name refers to.
   name     string      Username or group name the permission was revoked from.
@@ -1014,6 +1021,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status      string                                    Outcome of the command.
   project     string                                    Project key the permission was granted on.
   subject     user|group                                user or group, matching what name refers to.
   name        string                                    Username or group name that was granted the permission.
@@ -1083,6 +1091,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status   string      Outcome of the command.
   project  string      Project key the permission was revoked on.
   subject  user|group  user or group, matching what name refers to.
   name     string      Username or group name the permission was revoked from.
@@ -1190,6 +1199,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status                      string          Outcome of the command.
   project                     string          Project key the webhook is on.
   webhook                     object
     id?                       integer         Webhook identifier, which get, update and delete address.
@@ -1228,6 +1238,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status     string  Outcome of the command.
   project    string  Project key the webhook was on.
   webhookId  string  Identifier of the webhook that was deleted, as it was given on the command line.
 </code></pre>
@@ -1391,6 +1402,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status                      string          Outcome of the command.
   project                     string          Project key the webhook is on.
   webhook                     object
     id?                       integer         Webhook identifier, which get, update and delete address.

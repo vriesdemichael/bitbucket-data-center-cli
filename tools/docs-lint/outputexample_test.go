@@ -42,14 +42,14 @@ func TestOutputExampleAcceptsAPayloadThatMatchesTheSchema(t *testing.T) {
 func TestOutputExampleCatchesAFieldTheCommandDoesNotEmit(t *testing.T) {
 	t.Parallel()
 
-	// The defect this check exists for. bb auth server use declares exactly one
-	// property and forbids the rest, but its documented payload carried a
-	// "status" field the command has never emitted -- invisible because nobody
-	// runs a documented example.
+	// The defect this check exists for: a documented payload carrying a field
+	// the command does not emit, invisible because nobody runs a documented
+	// example. bb auth server use reports the new default as defaultHost and
+	// forbids anything else.
 	document := "<!-- docs-lint: output-of bb auth server use -->\n" +
 		"```json\n" +
 		"{\n" +
-		"  \"data\": { \"status\": \"ok\", \"defaultHost\": \"https://bitbucket.example.com\" },\n" +
+		"  \"data\": { \"status\": \"ok\", \"defaultHost\": \"https://bitbucket.example.com\", \"host\": \"https://bitbucket.example.com\" },\n" +
 		"  \"meta\": " + bbVersionMeta + "\n" +
 		"}\n" +
 		"```\n"
@@ -59,7 +59,7 @@ func TestOutputExampleCatchesAFieldTheCommandDoesNotEmit(t *testing.T) {
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %+v", findings)
 	}
-	if !strings.Contains(findings[0].Problem, "status") {
+	if !strings.Contains(findings[0].Problem, "'host'") {
 		t.Fatalf("expected the extra field to be named, got %q", findings[0].Problem)
 	}
 }

@@ -61,7 +61,8 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
-  count  integer  How many annotations were added.
+  status  string   Outcome of the command.
+  count   integer  How many annotations were added.
 </code></pre>
 </details>
 
@@ -96,6 +97,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status       string  Outcome of the command.
   externalId?  string  Annotation that was deleted, when a single one was named.
 </code></pre>
 </details>
@@ -245,6 +247,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status  string  Outcome of the command.
   commit  string  Commit the report was attached to.
   key     string  Report key.
 </code></pre>

@@ -112,7 +112,8 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
-  id  string  Identifier of the group that was deleted.
+  status  string  Outcome of the command.
+  id      string  Identifier of the group that was deleted.
 </code></pre>
 </details>
 
