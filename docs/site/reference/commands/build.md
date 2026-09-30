@@ -47,7 +47,7 @@ bb build delete a1b2c3d --key ci --repo PROJ/repo
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -83,7 +83,7 @@ bb build get a1b2c3d --key ci --repo PROJ/repo
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -151,7 +151,7 @@ bb build required create --repo PROJ/repo \
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -212,7 +212,7 @@ bb build required delete 5 --repo PROJ/repo
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -250,7 +250,7 @@ bb build required list --repo PROJ/repo
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -306,7 +306,7 @@ bb build required update 5 --repo PROJ/repo \
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -392,7 +392,7 @@ bb build set "$GIT_COMMIT" --repo PROJ/repo --key ci-unit --parent ci \
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -450,7 +450,7 @@ bb build status get a1b2c3d --repo PROJ/repo --order-by NEWEST
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -527,7 +527,7 @@ bb build status set a1b2c3d --key ci --state FAILED --url https://ci.example.com
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -557,7 +557,7 @@ bb build status stats a1b2c3d e4f5a6b
 Inherited from [`bb build`](#bb-build):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 

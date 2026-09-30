@@ -80,7 +80,7 @@ func newRepoGetCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug")
+	cmd.Flags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	cmd.Flags().BoolVar(&includeReadme, "readme", true, "Include the README; --readme=false leaves it out")
 
 	return cmd

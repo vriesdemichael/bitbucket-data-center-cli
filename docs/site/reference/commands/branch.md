@@ -47,7 +47,7 @@ bb branch create feature/x --start-point main --repo PROJ/repo
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -96,7 +96,7 @@ bb branch default get --repo PROJ/repo
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -134,7 +134,7 @@ bb branch default set develop --repo PROJ/repo
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -178,7 +178,7 @@ bb branch delete feature/x --repo PROJ/repo --end-point a1b2c3d --yes
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -244,7 +244,7 @@ bb branch list --repo PROJ/repo --base release/2.4
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -330,7 +330,7 @@ bb branch model inspect a1b2c3d --repo PROJ/repo
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -369,7 +369,7 @@ bb branch model update develop --repo PROJ/repo
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -451,7 +451,7 @@ bb branch restriction create --repo PROJ/repo --type fast-forward-only \
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -525,7 +525,7 @@ bb branch restriction delete 7 --repo PROJ/repo
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -560,7 +560,7 @@ bb branch restriction get 7 --repo PROJ/repo
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -647,7 +647,7 @@ bb branch restriction list --repo PROJ/repo --type pull-request-only
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations
@@ -737,7 +737,7 @@ bb branch restriction update 7 --repo PROJ/repo --type no-deletes \
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 `--start int`
 :   Start offset for list operations

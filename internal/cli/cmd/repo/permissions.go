@@ -457,7 +457,7 @@ func newRepoPermissionsCommand(deps Dependencies) *cobra.Command {
 		Use:   "permissions",
 		Short: "Grant, list and revoke repository permissions",
 	}
-	permissionsCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	permissionsCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	showCmd := &cobra.Command{
 		Use:   "show",

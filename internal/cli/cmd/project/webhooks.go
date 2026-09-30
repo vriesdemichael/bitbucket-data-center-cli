@@ -79,7 +79,7 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 		},
 	}
 	listPaging.Register(listCmd, 25)
-	listCmd.Flags().IntVar(&start, "start", 0, "Start index for webhooks listing")
+	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	webhookCmd.AddCommand(listCmd)
 
 	var createEvents []string

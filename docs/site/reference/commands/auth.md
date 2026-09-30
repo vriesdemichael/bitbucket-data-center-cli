@@ -374,7 +374,7 @@ bb auth identity --host https://bitbucket.example.com
 ```
 
 `--host string`
-:   Override host for this identity check
+:   Bitbucket host URL (defaults to the configured host)
 
 Also takes the [global flags](global-flags.md).
 
@@ -484,7 +484,7 @@ bb auth logout --host https://bitbucket.example.com
 ```
 
 `--host string`
-:   Bitbucket host URL (defaults to stored default host)
+:   Bitbucket host URL (defaults to the configured host)
 
 Also takes the [global flags](global-flags.md).
 
@@ -639,7 +639,7 @@ bb auth status --check
 :   Exit non-zero when a check fails (for CI)
 
 `--host string`
-:   Override host for this status check
+:   Bitbucket host URL (defaults to the configured host)
 
 Also takes the [global flags](global-flags.md).
 
@@ -924,7 +924,7 @@ bb auth token-url --host https://bitbucket.example.com
 ```
 
 `--host string`
-:   Bitbucket host URL
+:   Bitbucket host URL (defaults to the configured host)
 
 Also takes the [global flags](global-flags.md).
 

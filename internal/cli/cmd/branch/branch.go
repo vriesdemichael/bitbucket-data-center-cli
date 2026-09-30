@@ -234,7 +234,7 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "Create, list and delete branches, and set the default branch and restrictions",
 	}
 
-	branchCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	branchCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 	branchCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var orderBy string

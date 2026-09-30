@@ -52,7 +52,7 @@ bb insights annotation add a1b2c3d lint --repo PROJ/repo --body \
 Inherited from [`bb insights`](#bb-insights):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -87,7 +87,7 @@ bb insights annotation delete a1b2c3d lint --external-id lint-1 --repo PROJ/repo
 Inherited from [`bb insights`](#bb-insights):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -125,7 +125,7 @@ bb insights annotation list a1b2c3d --repo PROJ/repo
 Inherited from [`bb insights`](#bb-insights):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -181,7 +181,7 @@ bb insights annotation set a1b2c3d lint lint-2 --repo PROJ/repo \
 Inherited from [`bb insights`](#bb-insights):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -236,7 +236,7 @@ bb insights report delete a1b2c3d lint --repo PROJ/repo
 Inherited from [`bb insights`](#bb-insights):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -266,7 +266,7 @@ bb insights report get a1b2c3d lint --repo PROJ/repo
 Inherited from [`bb insights`](#bb-insights):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -312,7 +312,7 @@ bb insights report list a1b2c3d --repo PROJ/repo
 Inherited from [`bb insights`](#bb-insights):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 
@@ -356,7 +356,7 @@ bb insights report set a1b2c3d lint --repo PROJ/repo \
 Inherited from [`bb insights`](#bb-insights):
 
 `--repo string`
-:   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
 Also takes the [global flags](global-flags.md).
 

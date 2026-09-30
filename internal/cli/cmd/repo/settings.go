@@ -93,7 +93,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 		Use:   "settings",
 		Short: "Read and change a repository's pull request, security and webhook settings",
 	}
-	settingsCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	settingsCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	securityCmd := &cobra.Command{Use: "security", Short: "Grant, list and revoke repository permissions"}
 	permissionsCmd := &cobra.Command{Use: "permissions", Short: "Grant, list and revoke repository permissions of users and groups"}
@@ -688,7 +688,7 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 		Use:   "auto-merge",
 		Short: "Read, set or remove whether the repository allows auto-merge",
 	}
-	autoMergeCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	autoMergeCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	getCmd := &cobra.Command{
 		Use:   "get",
@@ -819,7 +819,7 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 		Use:   "auto-decline",
 		Short: "Read, set or remove when inactive pull requests are declined",
 	}
-	autoDeclineCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
+	autoDeclineCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	getCmd := &cobra.Command{
 		Use:   "get",

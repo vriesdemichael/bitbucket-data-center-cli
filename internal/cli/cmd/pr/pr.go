@@ -117,7 +117,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "pr",
 		Short: "Create, review, merge and inspect pull requests",
 	}
-	prCmd.PersistentFlags().StringVar(&repository, "repo", "", "Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG)")
+	prCmd.PersistentFlags().StringVar(&repository, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	prCmd.AddCommand(newPullRequestDiffAlias(deps, &repository))
 	prCmd.AddCommand(newPullRequestStatusCommand(deps, &repository))
@@ -226,7 +226,7 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd.Flags().BoolVar(&listWithReviewStatus, "with-review-status", false, "Resolve unresolved comment threads per pull request (walks each activity timeline; slower)")
 	enumflag.Register(listCmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Pull request state filter")
 	listPaging.Register(listCmd, 25)
-	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for Bitbucket pull request list operations")
+	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
 	listCmd.Flags().StringVar(&sourceBranch, "source-branch", "", "Optional source branch filter")
 	listCmd.Flags().StringVar(&targetBranch, "target-branch", "", "Optional target branch filter")
 	prCmd.AddCommand(listCmd)
@@ -359,7 +359,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	commitsPaging.Register(commitsCmd, 25)
-	commitsCmd.Flags().IntVar(&commitsStart, "start", 0, "Start offset for the pull request commit listing")
+	commitsCmd.Flags().IntVar(&commitsStart, "start", 0, "Start offset for list operations")
 	prCmd.AddCommand(commitsCmd)
 
 	var filesPaging paging.Options
@@ -413,7 +413,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	filesPaging.Register(filesCmd, 25)
-	filesCmd.Flags().IntVar(&filesStart, "start", 0, "Start offset for the pull request change listing")
+	filesCmd.Flags().IntVar(&filesStart, "start", 0, "Start offset for list operations")
 	prCmd.AddCommand(filesCmd)
 
 	mergeBaseCmd := &cobra.Command{

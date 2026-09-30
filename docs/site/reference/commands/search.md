@@ -57,7 +57,7 @@ bb search commits --repo PROJ/repo --path src/main.go
 :   Commit ID or ref to search after (exclusive)
 
 `--start int`
-:   Pagination start index
+:   Start offset for list operations
 
 `--until string`
 :   Commit ID or ref to search before (inclusive)
@@ -138,7 +138,7 @@ bb search prs --repo PROJ/repo --state merged --date-field closed --since 2026-0
 :   Only pull requests dated on or after this ISO 8601 date, such as 2026-07-20 or 2026-07-20T09:00; lists the whole period unless --limit is given
 
 `--start int`
-:   Pagination start index
+:   Start offset for list operations
 
 `--state string`
 :   Filter by state; closed is merged and declined together (one of: open, merged, declined, closed, all) (default "open")
@@ -226,7 +226,7 @@ bb search repos billing --project PROJ
 :   Filter by project key
 
 `--start int`
-:   Pagination start index
+:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 
