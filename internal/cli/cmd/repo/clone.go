@@ -524,10 +524,33 @@ func isExplicitHTTPCloneURL(rawInput string) bool {
 	return strings.HasPrefix(trimmed, "http://") || strings.HasPrefix(trimmed, "https://")
 }
 
-func sameCloneHost(left string, right string) bool {
-	leftNormalized := normalizeHostEndpointLoose(left)
-	rightNormalized := normalizeHostEndpointLoose(right)
-	return leftNormalized != "" && leftNormalized == rightNormalized
+// sameCloneHost reports whether the clone host is the configured host, so its
+// credential can go with the clone.
+//
+// The scheme matters in one direction. A clone link over plain http for a host
+// configured over https would carry the credential across the network in the
+// clear, so it is a different host here, as it is to the stored credentials
+// (#730). The reverse adds TLS and is the same host.
+func sameCloneHost(configured string, cloneHost string) bool {
+	configuredNormalized := normalizeHostEndpointLoose(configured)
+	cloneNormalized := normalizeHostEndpointLoose(cloneHost)
+	if configuredNormalized == "" || configuredNormalized != cloneNormalized {
+		return false
+	}
+
+	return !(endpointScheme(configured) == "https" && endpointScheme(cloneHost) == "http")
+}
+
+// endpointScheme is the scheme normalizeHostEndpointLoose assumes: https for a
+// bare host.
+func endpointScheme(value string) string {
+	trimmed := strings.TrimSpace(value)
+	scheme, _, found := strings.Cut(trimmed, "://")
+	if !found {
+		return "https"
+	}
+
+	return strings.ToLower(scheme)
 }
 
 func normalizeHostEndpointLoose(value string) string {

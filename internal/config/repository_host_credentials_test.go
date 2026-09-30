@@ -163,4 +163,77 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 			t.Fatalf("a workspace file naming the stored host lost its credential: %q", cfg.BitbucketToken)
 		}
 	})
+
+	t.Run("a .env naming the stored host over plain http gets no credential", func(t *testing.T) {
+		// #730. The destination is the user's own host, so the host check
+		// passes; the scheme is what the file changed. A credential stored
+		// for https://host sent to http://host crosses the network in the
+		// clear, for anyone on the path to read.
+		working := t.TempDir()
+		dotenv := "BITBUCKET_URL=http://trusted.example.com\n"
+		if err := os.WriteFile(filepath.Join(working, ".env"), []byte(dotenv), 0o600); err != nil {
+			t.Fatalf("write .env: %v", err)
+		}
+
+		t.Setenv("BB_CONFIG_PATH", storedWithDefaultHostCredential(t, storedToken))
+		t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
+		t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
+		t.Setenv("BITBUCKET_URL", "")
+		t.Setenv("BITBUCKET_TOKEN", "")
+		os.Unsetenv("BITBUCKET_URL")
+		os.Unsetenv("BITBUCKET_TOKEN")
+		t.Chdir(working)
+
+		cfg, err := LoadFromEnv()
+		if err != nil {
+			t.Fatalf("LoadFromEnv: %v", err)
+		}
+
+		if cfg.BitbucketURL != "http://trusted.example.com" {
+			t.Fatalf("the .env host is not the host bb talks to: %s", cfg.BitbucketURL)
+		}
+		if cfg.BitbucketToken == storedToken {
+			t.Fatal("the token stored for https was handed to plain http")
+		}
+		if cfg.BitbucketUsername == "alice" {
+			t.Errorf("the stored username followed it too: %q", cfg.BitbucketUsername)
+		}
+	})
+
+	t.Run("a credential stored for http is sent over https", func(t *testing.T) {
+		// The other direction adds TLS rather than removing it: a login made
+		// before the server had a certificate keeps working after.
+		path := filepath.Join(t.TempDir(), "config.yaml")
+		stored := strings.Join([]string{
+			"default_host: http://trusted.example.com",
+			"hosts:",
+			"  http://trusted.example.com:",
+			"    url: http://trusted.example.com",
+			"    username: alice",
+			"insecure_secrets:",
+			"  http://trusted.example.com:",
+			"    token: " + storedToken,
+			"",
+		}, "\n")
+		if err := os.WriteFile(path, []byte(stored), 0o600); err != nil {
+			t.Fatalf("write stored config: %v", err)
+		}
+
+		t.Setenv("BB_CONFIG_PATH", path)
+		t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
+		t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
+		t.Setenv("BITBUCKET_TOKEN", "")
+		os.Unsetenv("BITBUCKET_TOKEN")
+		t.Setenv("BITBUCKET_URL", "https://trusted.example.com")
+		t.Chdir(t.TempDir())
+
+		cfg, err := LoadFromEnv()
+		if err != nil {
+			t.Fatalf("LoadFromEnv: %v", err)
+		}
+
+		if cfg.BitbucketToken != storedToken {
+			t.Fatalf("the token stored for http was not sent over https: %q", cfg.BitbucketToken)
+		}
+	})
 }

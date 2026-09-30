@@ -505,8 +505,9 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		//
 		// bb auth git-credential already answers a host it has nothing for with
 		// silence; this is the same rule on the path every other command takes.
-		// Aliases and the http/https pair still match, because matchStoredHost
-		// resolves those before the fallback was ever reached.
+		// Aliases, and a host stored over http asked for over https, still
+		// match, because matchStoredHost resolves those before the fallback
+		// was ever reached.
 		stored, foundStored := resolveStoredCredentialsStrict(storedConfig, config.BitbucketURL)
 		if !foundStored && len(workspaceConfig.Hosts) > 0 {
 			stored, foundStored = resolveStoredCredentialsStrict(StoredConfig{Hosts: workspaceConfig.Hosts}, config.BitbucketURL)
@@ -1883,7 +1884,7 @@ func policyOriginDescription(platformValue *bool, platformDescription, systemCon
 
 // matchStoredHost finds the stored profile that genuinely corresponds to
 // runtimeURL: an exact host match, a configured alias of that host, or the same
-// host under the other scheme. It never guesses.
+// host stored over http and asked for over https. It never guesses.
 //
 // This is deliberately separate from the default-host fallback below. Callers
 // that hand credentials to another program must be able to ask "do I have
@@ -1901,11 +1902,16 @@ func matchStoredHost(stored StoredConfig, runtimeURL string) (string, StoredProf
 		}
 	}
 
-	// Cross-scheme fallback: try alternate scheme (http↔https) for same host.
-	// This lets tokens configured for https://host match http://host and vice versa.
-	if altKey := hostKeyAltScheme(runtimeURL); altKey != key {
-		if profile, ok := stored.Hosts[altKey]; ok {
-			return altKey, profile, true
+	// A login made before the server had a certificate still answers for it
+	// once it has one: http stored, https asked for. Never the other way. A
+	// credential stored for https://host sent to http://host crosses the
+	// network in the clear, and the scheme is set by the same inputs an
+	// attacker reaches -- a .env in a parent directory, a cloned repository's
+	// .bb/config.yaml -- so matching it would make any of them a way to read
+	// the user's token off the wire (#730).
+	if upgraded := hostKeyOverHTTP(runtimeURL); upgraded != "" {
+		if profile, ok := stored.Hosts[upgraded]; ok {
+			return upgraded, profile, true
 		}
 	}
 
@@ -2110,8 +2116,8 @@ func keyringUnavailableError(cause error) error {
 // to the configured default host used to exist for bb's own commands, and it
 // answered for whichever host the caller had been pointed at: one named by a
 // cloned repository's .env or .bb/config.yaml, by a URL given to `bb api`, or
-// by --host. Aliases and the http/https pair are matches, not fallbacks, and
-// still resolve.
+// by --host. Aliases, and a host stored over http asked for over https, are
+// matches, not fallbacks, and still resolve.
 func LoadStoredAuthForHostStrict(runtimeURL string) (AppConfig, bool, error) {
 	stored, err := LoadStoredConfig()
 	if err != nil {
@@ -2380,20 +2386,16 @@ func hostKey(hostURL string) string {
 	return strings.ToLower(parsed.Scheme + "://" + parsed.Host)
 }
 
-// hostKeyAltScheme returns the hostKey with the opposite scheme (http↔https).
-// Returns an empty string when the URL is not parseable.
-func hostKeyAltScheme(hostURL string) string {
+// hostKeyOverHTTP returns the hostKey an https URL's host has over plain http,
+// the one a credential stored before the server had TLS is kept under. It is
+// empty for any URL that is not https, and for one that does not parse.
+func hostKeyOverHTTP(hostURL string) string {
 	parsed, err := url.Parse(normalizeURL(hostURL))
-	if err != nil || parsed.Host == "" {
+	if err != nil || parsed.Host == "" || !strings.EqualFold(parsed.Scheme, "https") {
 		return ""
 	}
 
-	altScheme := "https"
-	if strings.ToLower(parsed.Scheme) == "https" {
-		altScheme = "http"
-	}
-
-	return altScheme + "://" + strings.ToLower(parsed.Host)
+	return "http://" + strings.ToLower(parsed.Host)
 }
 
 func envBoolOrDefault(key string, fallback bool) (bool, error) {

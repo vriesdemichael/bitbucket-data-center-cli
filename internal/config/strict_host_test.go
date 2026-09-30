@@ -62,14 +62,14 @@ func TestResolveStoredCredentialsStrictMatchesConfiguredAlias(t *testing.T) {
 	}
 }
 
-// Bitbucket is frequently reached over http in local and internal deployments
-// while the token was stored against https, so the same host under the other
-// scheme is also a genuine match.
-func TestResolveStoredCredentialsStrictMatchesAlternateScheme(t *testing.T) {
+// A token stored against https is not sent to the same host over http: it
+// would cross the network in the clear, and the scheme is as easily set by a
+// .env in a parent directory as the host is (#730).
+func TestResolveStoredCredentialsStrictRefusesADowngradeToHTTP(t *testing.T) {
 	t.Parallel()
 
-	if _, ok := resolveStoredCredentialsStrict(storedFixture(), "http://bitbucket.example.com"); !ok {
-		t.Fatal("expected the same host under the alternate scheme to resolve")
+	if _, ok := resolveStoredCredentialsStrict(storedFixture(), "http://bitbucket.example.com"); ok {
+		t.Fatal("a credential stored for https resolved for the same host over plain http")
 	}
 }
 

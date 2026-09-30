@@ -806,9 +806,18 @@ func TestSameCloneHostEdgeCasesAdditional(t *testing.T) {
 		t.Fatal("expected false when left has no host")
 	}
 
-	// Cross-scheme same host → true (scheme is ignored for credential matching)
+	// Configured over http, cloned over https: TLS is added, same host.
 	if !sameCloneHost("http://bitbucket.example.com", "https://bitbucket.example.com") {
-		t.Fatal("expected true when same host with different schemes")
+		t.Fatal("expected true for a clone that upgrades the configured host to https")
+	}
+
+	// Configured over https, cloned over http: the credential would cross the
+	// network in the clear, so it does not go with the clone (#730).
+	if sameCloneHost("https://bitbucket.example.com", "http://bitbucket.example.com") {
+		t.Fatal("expected false for a clone link that downgrades the configured host to http")
+	}
+	if sameCloneHost("bitbucket.example.com", "http://bitbucket.example.com") {
+		t.Fatal("expected false for http beside a bare host, which is https")
 	}
 }
 
