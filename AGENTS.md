@@ -149,7 +149,7 @@ Uncovered changed lines (108):
   internal/config/config.go:754-756
 ```
 
-Fix the gap by adding tests. Lowering `COVERAGE_MIN_PATCH` in
+Fix the gap by adding tests. Lowering `CI_COVERAGE_MIN_PATCH` in
 `.github/coverage-thresholds.env` is not the remedy, and a reviewer will treat it as one to justify.
 
 **`git add` new files before measuring.** The gate diffs against the merge base with `git diff`,
@@ -375,7 +375,7 @@ If the rebase brought in API changes from `next` (e.g. a command's flag changed 
 ## Development Tips & Gotchas
 
 ### Stateful Dry-Run Interceptor
-Bitbucket server-mutating CLI commands (ending in words like `create`, `update`, `delete`, `add`, etc.) are intercepted by the global dry-run interceptor (`internal/cli/dryrun.go`). Any new mutating command must be registered in the `dryRunProfiles` map as `Stateful: true` (or `Stateful: false` if it has stateless behaviour). A command that changes this machine instead (stored credentials, git configuration, a file, a working copy) goes in `clientLocalMutatingCommands`, naming what it writes, so the flag previews it rather than running it; `clientLocalCommands` is only for a command that changes nothing or honours `--dry-run` itself. A command for which `--dry-run` has no meaning (such as `ai mcp serve`, which starts a live server) goes in `dryRunRefusedCommands` with the reason, so the flag is refused rather than silently ignored. Failing to register a mutating command will cause the unit test `TestAllCommandsExhaustivelyClassifiedForDryRun` in `internal/cli/dryrun_test.go` to fail.
+Bitbucket server-mutating CLI commands (ending in words like `create`, `update`, `delete`, `add`, etc.) are intercepted by the global dry-run interceptor (`internal/cli/dryrun.go`). Any new mutating command must be registered in the `dryRunProfiles` map as `Stateful: true`, with the `Tier` its preview reaches (or `Stateful: false` if it has stateless behaviour). A command that changes this machine instead (stored credentials, git configuration, a file, a working copy) goes in `clientLocalMutatingCommands`, naming what it writes, so the flag previews it rather than running it; `clientLocalCommands` is only for a command that changes nothing or honours `--dry-run` itself. A command for which `--dry-run` has no meaning (such as `ai mcp serve`, which starts a live server) goes in `commandsWithoutDryRun` with the reason, so passing the flag is an invalid invocation rather than silently ignored. Failing to register a mutating command will cause the unit test `TestAllCommandsExhaustivelyClassifiedForDryRun` in `internal/cli/dryrun_test.go` to fail.
 
 ### Generating CLI Reference Documentation
 The CLI command reference documentation (`docs/site/reference/commands/`, an index and a page per top-level command) is generated from Cobra command definitions. A new top-level command gets a page of its own, which also needs an entry under "All Commands" in the `mkdocs.yml` navigation; a test in `tools/cli-docs-export` fails until it has one. When adding commands, modifying flags, or changing help descriptions, always regenerate the documentation using:

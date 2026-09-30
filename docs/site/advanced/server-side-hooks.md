@@ -56,11 +56,9 @@ bb project webhook create PROJECT ci https://ci.example.com/hook --event pr:open
 the UI is where it belongs.
 
 **Raw API access.** If you have a case that genuinely needs these endpoints —
-a migration, an audit, something one-off — a raw REST passthrough is planned
-([#330](https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/330))
-and is the intended escape hatch. That is deliberate: the endpoints stay
-reachable, they just do not get first-class commands that imply they are a good
-idea.
+a migration, an audit, something one-off — `bb api` reaches them. The endpoints
+stay reachable; they just do not get first-class commands that imply they are a
+good idea.
 
 ## If you disagree
 

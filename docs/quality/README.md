@@ -14,8 +14,10 @@ exists.
 |---|---|---|---|
 | `command-reach.json` | which CLI commands the live suite proves work against a real Bitbucket | `task quality:command-reach:update` | `task quality:command-reach:verify` |
 | `spec-coverage.json` | which `(method, path)` operations from the Bitbucket spec the CLI reaches | `task quality:spec-coverage:update` | `task quality:spec-coverage:verify` |
-| `unit-test-mock-inventory.json` | every mocked Bitbucket server left in the unit suite, and what each one assumes | `go run ./tools/mock-inventory -write` | `go run ./tools/mock-inventory -verify` |
+| `unit-test-mock-inventory.json` | every mocked Bitbucket server left in the unit suite, and what each one assumes | `task quality:mock-inventory:update` | `task quality:mock-inventory:verify` |
 | `bitbucket-releases.json` | which Bitbucket Data Center releases bb serves and runs the live suite against | `task quality:bitbucket-releases:update` | `task quality:bitbucket-releases:verify` |
+| `generated-operation-paths.json` | which endpoint each generated operation bb calls targets | `task openapi:operation-paths` | `task openapi:operation-paths:verify` |
+| `bitbucket-error-registry.json` | every error answer a full live run provoked, and the kind bb decides from it; see below | a harvested live run | none: it is a record, not a gate |
 
 Every verify command is static analysis: they read the Cobra command tree, the live test sources,
 the OpenAPI spec, the services source, internal/compat and the versions page. None starts Bitbucket,
@@ -32,7 +34,7 @@ takes hours.
 
 | | |
 |---|---|
-| Gate | CI, on every pull request including from forks, in the live-tests job |
+| Gate | CI, on every pull request including from forks, in the Coverage Gates job |
 | Thresholds | `.github/coverage-thresholds.env` |
 | Trend history | Codecov |
 | Raw profiles | workflow artifacts on each CI run, retained 14 days |
@@ -53,7 +55,7 @@ Uncovered changed lines (47):
 ```
 
 Iterating on that does not need another suite run. `task quality:coverage:replay` recomputes the
-diff against `origin/main` and re-applies every threshold using the profiles already in `.tmp/`, so
+diff against `origin/next` and re-applies every threshold using the profiles already in `.tmp/`, so
 the loop is: add tests → `task test:unit:coverage` → replay. Re-run `task test:live:coverage` only
 when the change affects behaviour the live suite exercises.
 
@@ -148,12 +150,16 @@ many there are.
 To see what a release would publish, without releasing anything:
 
 ```bash
-awk '/Generate changelog from Conventional Commits/,/^      - name: Create and push/' .github/workflows/release.yml \
-  | sed -n "/python - <<'PY'/,/^          PY$/p" | sed '1d;$d' | sed 's/^          //' > /tmp/gen_changelog.py
-VERSION=v4.0.0 PREVIOUS_TAG=v3.5.2 \
+VERSION=v5.0.0 PREVIOUS_TAG=v4.1.0 \
   REPOSITORY_URL="https://github.com/vriesdemichael/bitbucket-data-center-cli" \
-  python /tmp/gen_changelog.py && cat RELEASE_NOTES.md
+  go run ./tools/release-notes && cat RELEASE_NOTES.md
 ```
+
+It writes `RELEASE_NOTES.md` and `changelog.json` into the working directory;
+delete both afterwards. `scripts/render_docs_changelog.py` turns the published
+releases into the docs changelog page, with each heading in a release's notes
+turned into a bold line.
+
 ## what Bitbucket answers (`bitbucket-error-registry.json`)
 
 Every non-2xx response, and every 204, that a full live run provoked: status,
