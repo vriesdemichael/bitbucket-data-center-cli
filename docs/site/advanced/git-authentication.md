@@ -64,8 +64,8 @@ bb repo clone PROJECT/repo
 grep -i 'extraheader\|password' repo/.git/config    # no matches
 ```
 
-If you have clones made by an older version of `bb`, they may contain an
-`http.extraHeader` entry holding a live token. Check with:
+A clone's configuration can hold an `http.extraHeader` entry with a live token
+in it. Check with:
 
 ```bash
 git config --local --get http.extraHeader

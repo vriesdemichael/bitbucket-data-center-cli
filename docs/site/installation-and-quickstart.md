@@ -170,8 +170,8 @@ revoking one takes effect immediately.
 Run this once; it applies to every clone of that host. If you clone over SSH you
 do not need it — SSH authenticates with your key.
 
-See [Git Authentication](advanced/git-authentication.md) for how it works and how
-to clean up clones made by older versions of `bb`.
+See [Git Authentication](advanced/git-authentication.md) for how it works, and how
+to take a stored token out of a clone's configuration.
 
 ## Turn on tab completion
 

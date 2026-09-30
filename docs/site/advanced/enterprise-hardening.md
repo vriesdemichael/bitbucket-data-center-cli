@@ -200,8 +200,8 @@ bb_linux_amd64_noupdate.tar.gz
    cat /run/secrets/bitbucket_token | bb auth login https://bitbucket.example.com --token-stdin
    ```
 
-2. **Clean Up Legacy Clones**:
-   Existing clones made before `bb auth setup-git` may contain plaintext tokens in their local `.git/config`:
+2. **Remove Tokens from Existing Clones**:
+   A clone's local `.git/config` can hold a plaintext token in `http.extraHeader`:
    ```bash
    git config --local --unset-all http.extraHeader
    ```

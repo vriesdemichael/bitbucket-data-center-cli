@@ -40,7 +40,7 @@ Repository selection precedence for repo-scoped commands:
 2. Git remote discovery (if exactly one matching remote context exists)
 3. `BITBUCKET_PROJECT_KEY` + `BITBUCKET_REPO_SLUG`
 
-Host and auth source precedence remains:
+Host and auth source precedence:
 
 1. CLI flags
 2. Environment variables / `.env`
