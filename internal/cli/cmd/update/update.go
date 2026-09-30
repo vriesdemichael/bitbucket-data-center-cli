@@ -225,6 +225,14 @@ func New(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Check for and install the latest bb release",
+		Example: `  # Install the latest release
+  bb update
+
+  # Check the latest release and its signature, and install nothing
+  bb update --dry-run
+
+  # From a mirror inside your network
+  bb update --base-url https://mirror.example.com/bb`,
 		Long: `Check for and install the latest bb release.
 
 bb installs a release only after verifying it: the signature on its checksum

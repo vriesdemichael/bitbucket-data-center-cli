@@ -243,6 +243,11 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository branches",
+		Example: `  # The first 25 branches
+  bb branch list --repo PROJ/repo
+
+  # Release branches, most recently changed first
+  bb branch list --repo PROJ/repo --filter release/ --order-by MODIFICATION`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -307,7 +312,9 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create <name>",
 		Short: "Create repository branch",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Branch off main
+  bb branch create feature/x --start-point main --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -384,7 +391,12 @@ func New(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <branch>",
 		Short: "Delete repository branch",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Delete a branch without being asked
+  bb branch delete feature/x --repo PROJ/repo --yes
+
+  # Only if its tip is still the commit you expect
+  bb branch delete feature/x --repo PROJ/repo --end-point a1b2c3d --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -440,6 +452,8 @@ func New(deps Dependencies) *cobra.Command {
 	defaultGetCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get repository default branch",
+		Example: `  # The branch new pull requests target
+  bb branch default get --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -470,7 +484,9 @@ func New(deps Dependencies) *cobra.Command {
 	defaultSetCmd := &cobra.Command{
 		Use:   "set <branch>",
 		Short: "Set repository default branch",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Make develop the default branch
+  bb branch default set develop --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -535,6 +551,8 @@ func New(deps Dependencies) *cobra.Command {
 	modelInspectCmd := &cobra.Command{
 		Use:   "inspect <commit>",
 		Short: "Show the branch a commit belongs to",
+		Example: `  # The branch Bitbucket counts a commit as belonging to
+  bb branch model inspect a1b2c3d --repo PROJ/repo`,
 		// Not "the branches that contain it", which is what this said and what
 		// the endpoint's name suggests. Bitbucket answers with one ref -- the
 		// branch it considers the commit's home -- however many branches point
@@ -582,7 +600,9 @@ func New(deps Dependencies) *cobra.Command {
 	modelUpdateCmd := &cobra.Command{
 		Use:   "update <branch>",
 		Short: "Update repository default branch used by branch model settings",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Set the default branch of the branch model
+  bb branch model update develop --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -650,6 +670,11 @@ func New(deps Dependencies) *cobra.Command {
 	restrictionListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List branch restrictions",
+		Example: `  # The repository's restrictions, and those it inherits from its project
+  bb branch restriction list --repo PROJ/repo
+
+  # Only the ones that stop pushes without a pull request
+  bb branch restriction list --repo PROJ/repo --type pull-request-only`,
 		Long: `List the repository's branch restrictions, and those it inherits from its
 project, which are marked as inherited. bb project branch-restriction changes
 an inherited one.`,
@@ -717,7 +742,9 @@ an inherited one.`,
 	restrictionGetCmd := &cobra.Command{
 		Use:   "get <restriction-id>",
 		Short: "Get branch restriction by id",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # One restriction, by id
+  bb branch restriction get 7 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -759,6 +786,12 @@ an inherited one.`,
 	restrictionCreateCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create branch restriction",
+		Example: `  # Nobody deletes main
+  bb branch restriction create --repo PROJ/repo --type no-deletes --matcher-id refs/heads/main
+
+  # Only pull requests change release branches, except for one group
+  bb branch restriction create --repo PROJ/repo --type pull-request-only \
+    --matcher-type PATTERN --matcher-id 'release/*' --group release-managers`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -866,6 +899,9 @@ an inherited one.`,
 	restrictionUpdateCmd := &cobra.Command{
 		Use:   "update <restriction-id>",
 		Short: "Update branch restriction",
+		Example: `  # Replace a restriction: what it restricts, where, and who is exempt
+  bb branch restriction update 7 --repo PROJ/repo --type no-deletes \
+    --matcher-type BRANCH --matcher-id refs/heads/main --user alice`,
 		Long: `Update one of the repository's branch restrictions.
 
 A restriction the repository inherits from its project is refused; bb project
@@ -964,6 +1000,8 @@ project.`,
 	restrictionDeleteCmd := &cobra.Command{
 		Use:   "delete <restriction-id>",
 		Short: "Delete branch restriction",
+		Example: `  # By the id bb branch restriction list prints
+  bb branch restriction delete 7 --repo PROJ/repo --yes`,
 		Long: `Delete one of the repository's branch restrictions.
 
 A restriction the repository inherits from its project is refused: deleted

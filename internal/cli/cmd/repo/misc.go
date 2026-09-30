@@ -45,6 +45,8 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository labels",
+		Example: `  # A repository's labels
+  bb repo label list --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -76,7 +78,9 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <label>",
 		Short: "Add a repository label",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Label a repository
+  bb repo label add backend --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -115,7 +119,9 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove <label>",
 		Short: "Remove a repository label",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Take a label off a repository
+  bb repo label remove backend --repo PROJ/repo --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -163,6 +169,8 @@ func newRepoWatchCommand(deps Dependencies) *cobra.Command {
 	watchCmd := &cobra.Command{
 		Use:   "watch",
 		Short: "Watch repository",
+		Example: `  # Get notified of changes to a repository
+  bb repo watch --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -207,6 +215,8 @@ func newRepoUnwatchCommand(deps Dependencies) *cobra.Command {
 	unwatchCmd := &cobra.Command{
 		Use:   "unwatch",
 		Short: "Unwatch repository",
+		Example: `  # Stop notifications for a repository
+  bb repo unwatch --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -257,6 +267,8 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List default checklist tasks",
+		Example: `  # The repository's own tasks, and those it inherits from its project
+  bb repo default-task list --repo PROJ/repo`,
 		Long: `List the repository's default checklist tasks, and those it inherits from its
 project, which are marked as inherited. bb project default-task changes an
 inherited one.`,
@@ -315,7 +327,12 @@ inherited one.`,
 	addCmd := &cobra.Command{
 		Use:   "add <description>",
 		Short: "Add a default checklist task",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # A task every new pull request in the repository starts with
+  bb repo default-task add "Update the changelog" --repo PROJ/repo
+
+  # Only for pull requests into main
+  bb repo default-task add "Update the changelog" --repo PROJ/repo --target-ref main`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -370,6 +387,8 @@ inherited one.`,
 	updateCmd := &cobra.Command{
 		Use:   "update <task-id>",
 		Short: "Update a default checklist task",
+		Example: `  # Reword a task
+  bb repo default-task update 3 --repo PROJ/repo --description "Update CHANGELOG.md"`,
 		Long: `Update one of the repository's default checklist tasks.
 
 A task the repository inherits from its project is refused; bb project
@@ -442,6 +461,8 @@ default-task update changes it there, for every repository in the project.`,
 	deleteCmd := &cobra.Command{
 		Use:   "delete <task-id>",
 		Short: "Delete a default checklist task",
+		Example: `  # By the id bb repo default-task list prints
+  bb repo default-task delete 3 --repo PROJ/repo --yes`,
 		Long: `Delete one of the repository's default checklist tasks.
 
 A task the repository inherits from its project is refused; bb project
@@ -551,6 +572,11 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 	syncCmd := &cobra.Command{
 		Use:   "sync",
 		Short: "Manage repository fork synchronization",
+		Example: `  # Bring a fork's default branch up to date with the repository it was forked from
+  bb repo sync --repo SANDBOX/repo-experiment
+
+  # One branch, throwing away what the fork has that upstream lacks
+  bb repo sync --repo SANDBOX/repo-experiment --ref release/1.2 --action DISCARD`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -610,6 +636,8 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:   "status",
 		Short: "Query synchronization status, divergence, and settings",
+		Example: `  # Whether a fork is kept up to date, and how far it has diverged
+  bb repo sync status --repo SANDBOX/repo-experiment`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -647,6 +675,8 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 	enableCmd := &cobra.Command{
 		Use:   "enable",
 		Short: "Enable automatic background synchronization",
+		Example: `  # Keep a fork up to date with its upstream automatically
+  bb repo sync enable --repo SANDBOX/repo-experiment`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -689,6 +719,8 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 	disableCmd := &cobra.Command{
 		Use:   "disable",
 		Short: "Disable automatic background synchronization",
+		Example: `  # Stop keeping a fork up to date automatically
+  bb repo sync disable --repo SANDBOX/repo-experiment`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -741,8 +773,13 @@ func newRepoCatCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cat <path>",
 		Short: "Output the raw content of a file over REST",
-		Long:  rawFileHelp("Output the raw content of a file over REST."),
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Print a file without cloning the repository
+  bb repo cat README.md --repo PROJ/repo
+
+  # As it was at a tag
+  bb repo cat README.md --repo PROJ/repo --at v1.2.0`,
+		Long: rawFileHelp("Output the raw content of a file over REST."),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -826,7 +863,14 @@ func newRepoEditCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "edit <path>",
 		Short: "Edit a file's content over REST",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Change a file on a branch in one commit, naming the commit you read it at
+  bb repo edit VERSION --repo PROJ/repo --branch main --source-commit a1b2c3d \
+    --content "1.2.1" --message "Bump the version to 1.2.1"
+
+  # Add a file on a new branch cut from main, with its content from stdin
+  bb repo edit docs/notes.md --repo PROJ/repo --branch feature/notes \
+    --source-branch main --content - --message "Add notes" < notes.md`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -918,6 +962,11 @@ func newRepoCompareCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "compare <from> <to>",
 		Short: "Compare commits or branches",
+		Example: `  # The commits feature/x adds to main
+  bb repo compare feature/x main --repo PROJ/repo
+
+  # As a diff
+  bb repo compare feature/x main --repo PROJ/repo --diff`,
 		Long: `Compare commits or branches: what is reachable from <from> but not from
 <to>. Pass the ref you are asking about first; git log's range puts it last.
 
@@ -1014,6 +1063,12 @@ func newRepoArchiveCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "archive",
 		Short: "Download repository archive",
+		Example: `  # Download the repository as repo.zip
+  bb repo archive --repo PROJ/repo
+
+  # One directory of a tagged release, as a tarball
+  bb repo archive --repo PROJ/repo --at v1.2.0 --path docs --format tar.gz \
+    --output docs-1.2.0.tar.gz`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Refused rather than ignored. The archive and the envelope both
 			// want stdout and only one can have it, so this used to resolve
@@ -1174,6 +1229,11 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List project or repository SSH access keys",
+		Example: `  # The access keys of a repository
+  bb repo ssh-key list --repo PROJ/repo
+
+  # Of a project
+  bb repo ssh-key list --project PROJ`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1242,7 +1302,12 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <key-file-or-text>",
 		Short: "Add a project or repository SSH access key",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Give a deploy key read access to one repository
+  bb repo ssh-key add deploy-key.pub --repo PROJ/repo --label "CI deploy key"
+
+  # Read and write access to every repository of a project
+  bb repo ssh-key add deploy-key.pub --project PROJ --permission read-write`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1329,7 +1394,9 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove <access-key-id>",
 		Short: "Remove a project or repository SSH access key by ID",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # By the id bb repo ssh-key list prints
+  bb repo ssh-key remove 31 --repo PROJ/repo --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {

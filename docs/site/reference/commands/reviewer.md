@@ -43,6 +43,15 @@ bb reviewer condition create [json-config]
 
 Create a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)
 
+```bash
+# One approval from a named user on every pull request into main
+bb reviewer condition create --repo PROJ/repo \
+  '{"sourceMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},"targetMatcher":{"id":"refs/heads/main","type":{"id":"BRANCH"}},"reviewers":[{"id":101}],"requiredApprovals":1}'
+
+# The same for a whole project, from a file
+bb reviewer condition create --project PROJ --config-file condition.json
+```
+
 Inherited from [`bb reviewer`](#bb-reviewer):
 
 `--config-file string`
@@ -101,6 +110,11 @@ Delete a default reviewer condition of a project, or with --repo of a repository
 
 With --repo, a condition the repository inherits from its project is refused: deleted through the repository, it would be deleted from every repository in the project. --project deletes it there.
 
+```bash
+# By the id bb reviewer condition list prints
+bb reviewer condition delete 9 --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -135,6 +149,14 @@ bb reviewer condition list
 ```
 
 List the default reviewer conditions of a project, or with --repo of a repository: its own, and those it inherits from its project, which are marked as inherited.
+
+```bash
+# A repository's conditions, and those it inherits from its project
+bb reviewer condition list --repo PROJ/repo
+
+# A project's
+bb reviewer condition list --project PROJ
+```
 
 Inherited from [`bb reviewer`](#bb-reviewer):
 
@@ -198,6 +220,11 @@ bb reviewer condition update <condition-id> [json-config]
 Update a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)
 
 With --repo, a condition the repository inherits from its project is refused; --project changes it there, for every repository in the project.
+
+```bash
+# Replace a condition with the one in a file
+bb reviewer condition update 9 --repo PROJ/repo --config-file condition.json
+```
 
 Inherited from [`bb reviewer`](#bb-reviewer):
 

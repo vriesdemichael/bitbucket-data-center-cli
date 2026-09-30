@@ -21,7 +21,9 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list <project-key>",
 		Short: "List all default checklist tasks for the project",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The tasks every new pull request in the project starts with
+  bb project default-task list PROJ`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -74,7 +76,12 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <project-key> <description>",
 		Short: "Add a default checklist task",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # A task every new pull request in the project starts with
+  bb project default-task add PROJ "Update the changelog"
+
+  # Only for pull requests into main
+  bb project default-task add PROJ "Update the changelog" --target-ref main`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -131,7 +138,9 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update <project-key> <task-id>",
 		Short: "Update a default checklist task",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Reword a task
+  bb project default-task update PROJ 3 --description "Update CHANGELOG.md"`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -185,7 +194,9 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <project-key> <task-id>",
 		Short: "Delete a default checklist task",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # By the id bb project default-task list prints
+  bb project default-task delete PROJ 3 --yes`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {

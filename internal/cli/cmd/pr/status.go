@@ -22,6 +22,8 @@ func newPullRequestStatusCommand(deps Dependencies, repositorySelector *string) 
 	command := &cobra.Command{
 		Use:   "status",
 		Short: "Show pull requests waiting on you",
+		Example: `  # The pull requests of the current branch, the ones you opened and the ones waiting on your review
+  bb pr status`,
 		Long: "Show pull requests waiting on you, in three sections: the pull requests for the current " +
 			"branch, the ones you opened, and the ones asking for your review.\n\n" +
 			"The last two are cross-repository and need no repository context. The current-branch section " +

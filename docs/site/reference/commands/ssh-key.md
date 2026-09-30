@@ -27,6 +27,11 @@ Add a personal SSH key
 bb ssh-key add <key-file-or-text> [flags]
 ```
 
+```bash
+# Add your public key
+bb ssh-key add ~/.ssh/id_ed25519.pub --label "Work laptop"
+```
+
 `--label string`
 :   Label/comment for the SSH key
 
@@ -56,6 +61,11 @@ List personal SSH keys
 
 ```text
 bb ssh-key list [flags]
+```
+
+```bash
+# Your SSH keys
+bb ssh-key list
 ```
 
 `--all`
@@ -94,6 +104,11 @@ Remove a personal SSH key by ID
 
 ```text
 bb ssh-key remove <ssh-key-id> [flags]
+```
+
+```bash
+# By the id bb ssh-key list prints
+bb ssh-key remove 31 --yes
 ```
 
 `-y, --yes`

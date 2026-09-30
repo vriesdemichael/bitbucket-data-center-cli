@@ -96,6 +96,8 @@ func newGitCredentialCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "git-credential <get|store|erase>",
 		Short: "Git credential helper (invoked by git, not run directly)",
+		Example: `  # What git runs to ask for a credential; run it yourself to debug a failed push
+  printf 'protocol=https\nhost=bitbucket.example.com\n\n' | bb auth git-credential get`,
 		Long: `Supply stored Bitbucket credentials to git on demand.
 
 git invokes this; you do not normally run it yourself. Configure it with:
@@ -214,6 +216,11 @@ func newSetupGitCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup-git",
 		Short: "Configure git to authenticate to Bitbucket through bb",
+		Example: `  # Let git push and pull authenticate through bb, in every repository
+  bb auth setup-git
+
+  # In the current repository only
+  bb auth setup-git --global=false`,
 		Long: `Configure git to ask bb for Bitbucket credentials.
 
 This replaces the need to embed credentials in a repository or in a remote URL.

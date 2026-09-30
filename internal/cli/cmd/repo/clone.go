@@ -26,10 +26,12 @@ var gitBackendFactory = func() git.Backend {
 }
 
 func newRepoCloneCommand(deps Dependencies) *cobra.Command {
-	return newCloneCommand(deps)
+	return newCloneCommand(deps, "bb repo clone")
 }
 
-func newCloneCommand(deps Dependencies) *cobra.Command {
+// newCloneCommand builds the clone command for one of the two paths it is
+// registered under; path is the one its examples spell.
+func newCloneCommand(deps Dependencies, path string) *cobra.Command {
 	var noUpstream bool
 	var upstreamRemoteName string
 	var forceSSH bool
@@ -38,7 +40,11 @@ func newCloneCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clone <repository> [directory] [-- <gitflags>...]",
 		Short: "Clone a repository to the local filesystem",
-		Args:  cobra.MinimumNArgs(1),
+		Example: "  # Clone into a directory named after the repository\n" +
+			"  " + path + " PROJ/repo\n\n" +
+			"  # Into a directory of your choice, over HTTPS, passing flags on to git\n" +
+			"  " + path + " PROJ/repo work/repo --https -- --depth 1",
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {

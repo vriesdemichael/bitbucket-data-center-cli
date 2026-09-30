@@ -43,6 +43,8 @@ func New(deps Dependencies) *cobra.Command {
 	adminCmd.AddCommand(&cobra.Command{
 		Use:   "health",
 		Short: "Probe the configured Bitbucket for reachability and authentication",
+		Example: `  # Check that the configured Bitbucket answers and accepts your credentials
+  bb admin health`,
 		Long: "Probe the configured Bitbucket for reachability and authentication.\n\n" +
 			"This was previously described as checking \"local stack health\", which it never did: " +
 			"it probes whichever host BITBUCKET_URL resolves to, wherever that is. The description " +

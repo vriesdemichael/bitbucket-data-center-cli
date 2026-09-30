@@ -33,6 +33,15 @@ Create a reviewer group
 bb reviewer-group create <name> [flags]
 ```
 
+```bash
+# A group of reviewers for one repository
+bb reviewer-group create backend-team --repo PROJ/repo --users alice,bob
+
+# For every repository of a project
+bb reviewer-group create backend-team --project PROJ --users alice,bob \
+  --description "Owners of the backend services"
+```
+
 `--description string`
 :   Description of the reviewer group
 
@@ -80,6 +89,11 @@ Delete a reviewer group
 bb reviewer-group delete <reviewer-group-id> [flags]
 ```
 
+```bash
+# By the id bb reviewer-group list prints
+bb reviewer-group delete 4 --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -108,6 +122,14 @@ List reviewer groups
 
 ```text
 bb reviewer-group list
+```
+
+```bash
+# A repository's reviewer groups and their members
+bb reviewer-group list --repo PROJ/repo
+
+# A project's
+bb reviewer-group list --project PROJ
 ```
 
 Inherited from [`bb reviewer-group`](#bb-reviewer-group):
@@ -150,6 +172,14 @@ Update a reviewer group
 
 ```text
 bb reviewer-group update <reviewer-group-id> [flags]
+```
+
+```bash
+# Replace the members of a group
+bb reviewer-group update 4 --repo PROJ/repo --users alice,bob,carol
+
+# Rename it, keeping the members
+bb reviewer-group update 4 --repo PROJ/repo --name platform-team
 ```
 
 `--description string`
@@ -203,6 +233,11 @@ bb reviewer-group users <reviewer-group-id>
 ```
 
 Bitbucket leaves out a member without access to the repository, whom it still keeps in the group. bb reviewer-group list names every member.
+
+```bash
+# The members of a group who can see the repository
+bb reviewer-group users 4 --repo PROJ/repo
+```
 
 Inherited from [`bb reviewer-group`](#bb-reviewer-group):
 

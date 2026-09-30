@@ -104,7 +104,12 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create <commit>",
 		Short: "Create or update a repository-scoped deployment for a commit",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Record that a commit went to production
+  bb deployment create a1b2c3d --repo PROJ/repo --key deploy-128 \
+    --display-name "Deploy 128" --deployment-sequence-number 128 \
+    --env-key prod --env-name Production --env-type PRODUCTION \
+    --state SUCCESSFUL --url https://ci.example.com/deploys/128`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
@@ -202,7 +207,10 @@ func New(deps Dependencies) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get <commit>",
 		Short: "Get repository-scoped deployment details for a commit",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Where a commit was deployed
+  bb deployment get a1b2c3d --repo PROJ/repo --key deploy-128 --env-key prod \
+    --deployment-sequence-number 128`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, _, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
@@ -258,7 +266,10 @@ func New(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <commit>",
 		Short: "Delete repository-scoped deployment for a commit",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Remove one deployment of a commit
+  bb deployment delete a1b2c3d --repo PROJ/repo --key deploy-128 --env-key prod \
+    --deployment-sequence-number 128 --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {

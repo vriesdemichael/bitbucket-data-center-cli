@@ -24,6 +24,14 @@ List repository refs (branches and tags)
 bb ref list [flags]
 ```
 
+```bash
+# The branches and tags of a repository
+bb ref list --repo PROJ/repo
+
+# The ones whose name matches
+bb ref list --repo PROJ/repo --filter release
+```
+
 `--filter string`
 :   Filter refs by name
 
@@ -55,6 +63,11 @@ Resolve a ref by name to its full ref and commit if applicable
 
 ```text
 bb ref resolve <ref>
+```
+
+```bash
+# The full ref and commit a name stands for
+bb ref resolve main --repo PROJ/repo
 ```
 
 Inherited from [`bb ref`](#bb-ref):

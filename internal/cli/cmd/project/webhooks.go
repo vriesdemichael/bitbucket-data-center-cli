@@ -30,7 +30,9 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list <project-key>",
 		Short: "List all webhooks configured for the project",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The webhooks every repository of the project has
+  bb project webhook list PROJ`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -86,7 +88,13 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create <project-key> <name> <url>",
 		Short: "Create a new project-level webhook",
-		Args:  cobra.ExactArgs(3),
+		Example: `  # Call an endpoint when anything is pushed to a repository of the project
+  bb project webhook create PROJ ci https://ci.example.com/hooks/bitbucket
+
+  # On pull request events, signed with a shared secret read from stdin
+  printf '%s' "$WEBHOOK_SECRET" | bb project webhook create PROJ reviews \
+    https://ci.example.com/hooks/reviews --event pr:opened --event pr:merged --secret-stdin`,
+		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -149,7 +157,12 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update <project-key> <webhook-id>",
 		Short: "Update a project webhook",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Point a webhook at a new endpoint
+  bb project webhook update PROJ 12 --url https://ci.example.com/hooks/new
+
+  # Switch it off without deleting it
+  bb project webhook update PROJ 12 --active false`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -217,7 +230,9 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <project-key> <webhook-id>",
 		Short: "Delete a project webhook",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # By the id bb project webhook list prints
+  bb project webhook delete PROJ 12 --yes`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -271,7 +286,12 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	testCmd := &cobra.Command{
 		Use:   "test <project-key> <webhook-id>",
 		Short: "Trigger a connection test ping",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Send a test ping to a webhook's endpoint
+  bb project webhook test PROJ 12
+
+  # To another URL, before pointing the webhook at it
+  bb project webhook test PROJ 12 --url https://ci.example.com/hooks/new`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -328,7 +348,12 @@ func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	statsCmd := &cobra.Command{
 		Use:   "stats <project-key> <webhook-id>",
 		Short: "Retrieve execution statistics",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # The delivery statistics of a webhook
+  bb project webhook stats PROJ 12
+
+  # The summary only
+  bb project webhook stats PROJ 12 --summary`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {

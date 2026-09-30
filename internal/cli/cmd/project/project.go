@@ -90,6 +90,11 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List projects",
+		Example: `  # The projects you can see
+  bb project list
+
+  # The ones whose name matches
+  bb project list --name pay`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -135,7 +140,9 @@ func New(deps Dependencies) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get <project-key>",
 		Short: "Get project details",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # A project's name, description and visibility
+  bb project get PROJ`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -165,7 +172,9 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create <project-key>",
 		Short: "Create a new project",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Create a project
+  bb project create PROJ --name "Payments" --description "Payment services"`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -250,7 +259,9 @@ func New(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update <project-key>",
 		Short: "Update project details",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Rename a project
+  bb project update PROJ --name "Payments platform"`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -312,7 +323,9 @@ func New(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <project-key>",
 		Short: "Delete a project",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Delete a project
+  bb project delete PROJ --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {

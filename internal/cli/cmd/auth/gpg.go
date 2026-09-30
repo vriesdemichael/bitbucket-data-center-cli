@@ -33,6 +33,8 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List personal GPG keys",
+		Example: `  # Your GPG keys, with the id and fingerprint of each
+  bb auth gpg-key list`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -90,7 +92,9 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <key-file-or-text>",
 		Short: "Add a personal GPG key",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Add the public key in a file
+  bb auth gpg-key add public-key.asc`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -133,7 +137,9 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove <id-or-fingerprint>",
 		Short: "Remove a personal GPG key",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # By the id or fingerprint bb auth gpg-key list prints
+  bb auth gpg-key remove 3AA5C34371567BD2 --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -163,6 +169,8 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 	clearCmd := &cobra.Command{
 		Use:   "clear",
 		Short: "Clear all personal GPG keys",
+		Example: `  # Remove every GPG key of yours
+  bb auth gpg-key clear --yes`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// This used to be a bare fmt.Scanln with no guard at all: it read
 			// the process's real stdin rather than the command's, so it hung on

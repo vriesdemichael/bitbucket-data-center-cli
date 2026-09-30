@@ -27,6 +27,14 @@ Create or update a repository-scoped deployment for a commit
 bb deployment create <commit> [flags]
 ```
 
+```bash
+# Record that a commit went to production
+bb deployment create a1b2c3d --repo PROJ/repo --key deploy-128 \
+  --display-name "Deploy 128" --deployment-sequence-number 128 \
+  --env-key prod --env-name Production --env-type PRODUCTION \
+  --state SUCCESSFUL --url https://ci.example.com/deploys/128
+```
+
 `--deployment-sequence-number int`
 :   Sequence number of the deployment
 
@@ -111,6 +119,12 @@ Delete repository-scoped deployment for a commit
 bb deployment delete <commit> [flags]
 ```
 
+```bash
+# Remove one deployment of a commit
+bb deployment delete a1b2c3d --repo PROJ/repo --key deploy-128 --env-key prod \
+  --deployment-sequence-number 128 --yes
+```
+
 `--deployment-sequence-number string`
 :   Identify by deployment sequence number
 
@@ -149,6 +163,12 @@ Get repository-scoped deployment details for a commit
 
 ```text
 bb deployment get <commit> [flags]
+```
+
+```bash
+# Where a commit was deployed
+bb deployment get a1b2c3d --repo PROJ/repo --key deploy-128 --env-key prod \
+  --deployment-sequence-number 128
 ```
 
 `--deployment-sequence-number string`

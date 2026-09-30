@@ -36,6 +36,11 @@ Create repository branch
 bb branch create <name> [flags]
 ```
 
+```bash
+# Branch off main
+bb branch create feature/x --start-point main --repo PROJ/repo
+```
+
 `--start-point string`
 :   Commit ID or ref to branch from
 
@@ -83,6 +88,11 @@ Get repository default branch
 bb branch default get
 ```
 
+```bash
+# The branch new pull requests target
+bb branch default get --repo PROJ/repo
+```
+
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
@@ -116,6 +126,11 @@ Set repository default branch
 bb branch default set <branch>
 ```
 
+```bash
+# Make develop the default branch
+bb branch default set develop --repo PROJ/repo
+```
+
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
@@ -144,6 +159,14 @@ Delete repository branch
 
 ```text
 bb branch delete <branch> [flags]
+```
+
+```bash
+# Delete a branch without being asked
+bb branch delete feature/x --repo PROJ/repo --yes
+
+# Only if its tip is still the commit you expect
+bb branch delete feature/x --repo PROJ/repo --end-point a1b2c3d --yes
 ```
 
 `--end-point string`
@@ -180,6 +203,14 @@ List repository branches
 
 ```text
 bb branch list [flags]
+```
+
+```bash
+# The first 25 branches
+bb branch list --repo PROJ/repo
+
+# Release branches, most recently changed first
+bb branch list --repo PROJ/repo --filter release/ --order-by MODIFICATION
 ```
 
 `--all`
@@ -244,6 +275,11 @@ Show the branch a commit belongs to
 bb branch model inspect <commit> [flags]
 ```
 
+```bash
+# The branch Bitbucket counts a commit as belonging to
+bb branch model inspect a1b2c3d --repo PROJ/repo
+```
+
 `--all`
 :   Return every result rather than the first --limit
 
@@ -282,6 +318,11 @@ Update repository default branch used by branch model settings
 
 ```text
 bb branch model update <branch>
+```
+
+```bash
+# Set the default branch of the branch model
+bb branch model update develop --repo PROJ/repo
 ```
 
 Inherited from [`bb branch`](#bb-branch):
@@ -331,6 +372,15 @@ Create branch restriction
 
 ```text
 bb branch restriction create [flags]
+```
+
+```bash
+# Nobody deletes main
+bb branch restriction create --repo PROJ/repo --type no-deletes --matcher-id refs/heads/main
+
+# Only pull requests change release branches, except for one group
+bb branch restriction create --repo PROJ/repo --type pull-request-only \
+  --matcher-type PATTERN --matcher-id 'release/*' --group release-managers
 ```
 
 `--access-key-id ints`
@@ -420,6 +470,11 @@ Delete one of the repository's branch restrictions.
 
 A restriction the repository inherits from its project is refused: deleted through the repository, it would be deleted from every repository in the project. bb project branch-restriction delete deletes it there.
 
+```bash
+# By the id bb branch restriction list prints
+bb branch restriction delete 7 --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -451,6 +506,11 @@ Get branch restriction by id
 
 ```text
 bb branch restriction get <restriction-id>
+```
+
+```bash
+# One restriction, by id
+bb branch restriction get 7 --repo PROJ/repo
 ```
 
 Inherited from [`bb branch`](#bb-branch):
@@ -516,6 +576,14 @@ bb branch restriction list [flags]
 ```
 
 List the repository's branch restrictions, and those it inherits from its project, which are marked as inherited. bb project branch-restriction changes an inherited one.
+
+```bash
+# The repository's restrictions, and those it inherits from its project
+bb branch restriction list --repo PROJ/repo
+
+# Only the ones that stop pushes without a pull request
+bb branch restriction list --repo PROJ/repo --type pull-request-only
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -597,6 +665,12 @@ bb branch restriction update <restriction-id> [flags]
 Update one of the repository's branch restrictions.
 
 A restriction the repository inherits from its project is refused; bb project branch-restriction update changes it there, for every repository in the project.
+
+```bash
+# Replace a restriction: what it restricts, where, and who is exempt
+bb branch restriction update 7 --repo PROJ/repo --type no-deletes \
+  --matcher-type BRANCH --matcher-id refs/heads/main --user alice
+```
 
 `--access-key-id ints`
 :   SSH access key id allowed by restriction (repeatable)

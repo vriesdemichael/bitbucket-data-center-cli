@@ -76,6 +76,11 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository refs (branches and tags)",
+		Example: `  # The branches and tags of a repository
+  bb ref list --repo PROJ/repo
+
+  # The ones whose name matches
+  bb ref list --repo PROJ/repo --filter release`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -123,7 +128,9 @@ func New(deps Dependencies) *cobra.Command {
 	resolveCmd := &cobra.Command{
 		Use:   "resolve <ref>",
 		Short: "Resolve a ref by name to its full ref and commit if applicable",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The full ref and commit a name stands for
+  bb ref resolve main --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {

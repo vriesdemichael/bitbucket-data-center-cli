@@ -27,6 +27,14 @@ Diff a commit against its parent
 bb diff commit <commit> [flags]
 ```
 
+```bash
+# What one commit changed
+bb diff commit a1b2c3d --repo PROJ/repo
+
+# In one file
+bb diff commit a1b2c3d --repo PROJ/repo --path src/main.go
+```
+
 `--path string`
 :   Optional file path for file-scoped diff
 
@@ -61,6 +69,14 @@ bb diff pr <pr-id> [flags]
 ```
 
 Also available as bb pr diff, which is the gh spelling.
+
+```bash
+# The diff of a pull request
+bb diff pr 42 --repo PROJ/repo
+
+# Only the names of the files it changes
+bb diff pr 42 --repo PROJ/repo --name-only
+```
 
 `--name-only`
 :   Output only changed file names
@@ -99,6 +115,14 @@ Diff two refs or commits
 
 ```text
 bb diff refs <from> <to> [flags]
+```
+
+```bash
+# What feature/x changes relative to main
+bb diff refs main feature/x --repo PROJ/repo
+
+# As added and removed line counts per file
+bb diff refs main feature/x --repo PROJ/repo --stat
 ```
 
 `--name-only`

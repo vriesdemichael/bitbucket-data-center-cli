@@ -89,6 +89,11 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List reviewer groups",
+		Example: `  # A repository's reviewer groups and their members
+  bb reviewer-group list --repo PROJ/repo
+
+  # A project's
+  bb reviewer-group list --project PROJ`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" && repositorySelector != "" {
 				return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
@@ -140,7 +145,13 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create <name>",
 		Short: "Create a reviewer group",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # A group of reviewers for one repository
+  bb reviewer-group create backend-team --repo PROJ/repo --users alice,bob
+
+  # For every repository of a project
+  bb reviewer-group create backend-team --project PROJ --users alice,bob \
+    --description "Owners of the backend services"`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" && repositorySelector != "" {
 				return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
@@ -273,7 +284,12 @@ func New(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update <reviewer-group-id>",
 		Short: "Update a reviewer group",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Replace the members of a group
+  bb reviewer-group update 4 --repo PROJ/repo --users alice,bob,carol
+
+  # Rename it, keeping the members
+  bb reviewer-group update 4 --repo PROJ/repo --name platform-team`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" && repositorySelector != "" {
 				return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
@@ -432,7 +448,9 @@ func New(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <reviewer-group-id>",
 		Short: "Delete a reviewer group",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # By the id bb reviewer-group list prints
+  bb reviewer-group delete 4 --repo PROJ/repo --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" && repositorySelector != "" {
 				return apperrors.New(apperrors.KindValidation, "cannot specify both --project and --repo", nil)
@@ -565,6 +583,8 @@ func New(deps Dependencies) *cobra.Command {
 	usersCmd := &cobra.Command{
 		Use:   "users <reviewer-group-id>",
 		Short: "List the members of a repository reviewer group who can see the repository",
+		Example: `  # The members of a group who can see the repository
+  bb reviewer-group users 4 --repo PROJ/repo`,
 		Long: "List the members of a repository reviewer group who can see the repository.\n\n" +
 			"Bitbucket leaves out a member without access to the repository, whom it still keeps in the group. " +
 			"bb reviewer-group list names every member.",

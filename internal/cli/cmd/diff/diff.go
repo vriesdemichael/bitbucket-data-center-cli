@@ -79,7 +79,12 @@ func New(deps Dependencies) *cobra.Command {
 	refsCmd := &cobra.Command{
 		Use:   "refs <from> <to>",
 		Short: "Diff two refs or commits",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # What feature/x changes relative to main
+  bb diff refs main feature/x --repo PROJ/repo
+
+  # As added and removed line counts per file
+  bb diff refs main feature/x --repo PROJ/repo --stat`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -123,7 +128,12 @@ func New(deps Dependencies) *cobra.Command {
 	commitCmd := &cobra.Command{
 		Use:   "commit <commit>",
 		Short: "Diff a commit against its parent",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # What one commit changed
+  bb diff commit a1b2c3d --repo PROJ/repo
+
+  # In one file
+  bb diff commit a1b2c3d --repo PROJ/repo --path src/main.go`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -164,8 +174,13 @@ func NewDiffPullRequestCommand(deps Dependencies, repositorySelector *string) *c
 	command := &cobra.Command{
 		Use:   "pr <pr-id>",
 		Short: "Diff a pull request",
-		Long:  "Diff a pull request.\n\nAlso available as bb pr diff, which is the gh spelling.",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The diff of a pull request
+  bb diff pr 42 --repo PROJ/repo
+
+  # Only the names of the files it changes
+  bb diff pr 42 --repo PROJ/repo --name-only`,
+		Long: "Diff a pull request.\n\nAlso available as bb pr diff, which is the gh spelling.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {

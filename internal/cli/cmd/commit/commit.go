@@ -88,6 +88,11 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository commits",
+		Example: `  # The latest commits
+  bb commit list --repo PROJ/repo
+
+  # The ones that touched a file
+  bb commit list --repo PROJ/repo --path src/main.go --limit 10`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -146,7 +151,9 @@ func New(deps Dependencies) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get <commit>",
 		Short: "Get a specific commit",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # One commit: author, message and parents
+  bb commit get a1b2c3d --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -183,6 +190,8 @@ func New(deps Dependencies) *cobra.Command {
 	compareCmd := &cobra.Command{
 		Use:   "compare <from> <to>",
 		Short: "Compare two commits or refs",
+		Example: `  # The commits feature/x adds to main
+  bb commit compare feature/x main --repo PROJ/repo`,
 		Long: `List the commits reachable from <from> but not from <to>: what <from> has
 that <to> lacks. Pass the ref you are asking about first; git log's range puts
 it last.
@@ -241,7 +250,9 @@ it last.
 	prsCmd := &cobra.Command{
 		Use:   "prs <commit>",
 		Short: "List pull requests containing a commit",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The pull requests a commit is part of
+  bb commit prs a1b2c3d --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := d.LoadConfigAndClient()
 			if err != nil {

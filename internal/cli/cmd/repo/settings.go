@@ -108,6 +108,8 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	webhooksListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository webhooks",
+		Example: `  # A repository's webhooks
+  bb repo settings workflow webhooks list --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -159,7 +161,10 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	webhooksCreateCmd := &cobra.Command{
 		Use:   "create <name> <url>",
 		Short: "Create a repository webhook",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Call an endpoint when anything is pushed to the repository
+  bb repo settings workflow webhooks create ci https://ci.example.com/hooks/bitbucket \
+    --repo PROJ/repo`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -235,7 +240,9 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	webhooksDeleteCmd := &cobra.Command{
 		Use:   "delete <webhook-id>",
 		Short: "Delete a repository webhook",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # By the id bb repo settings workflow webhooks list prints
+  bb repo settings workflow webhooks delete 12 --repo PROJ/repo --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -300,6 +307,8 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	pullRequestsGetCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get repository pull-request settings",
+		Example: `  # A repository's merge strategies and the checks a merge must pass
+  bb repo settings pull-requests get --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -371,6 +380,8 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	mergeChecksListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List configured merge checks",
+		Example: `  # The checks a pull request must pass before it merges
+  bb repo settings pull-requests merge-checks list --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -420,6 +431,8 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	pullRequestsUpdateCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update repository pull-request settings",
+		Example: `  # Refuse a merge while a task is open
+  bb repo settings pull-requests update --required-all-tasks-complete --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -482,6 +495,8 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	pullRequestsUpdateApproversCmd := &cobra.Command{
 		Use:   "update-approvers",
 		Short: "Update required approvers count",
+		Example: `  # Require two approvals before a merge
+  bb repo settings pull-requests update-approvers --count 2 --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -557,7 +572,9 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	pullRequestsSetStrategyCmd := &cobra.Command{
 		Use:   "set-strategy <strategy-id>",
 		Short: "Set default merge strategy",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Squash by default when a pull request merges
+  bb repo settings pull-requests set-strategy squash --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -671,6 +688,8 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get repository auto-merge settings",
+		Example: `  # Whether pull requests may be set to merge on their own
+  bb repo settings auto-merge get --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -702,6 +721,8 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 	setCmd := &cobra.Command{
 		Use:   "set",
 		Short: "Set repository auto-merge settings",
+		Example: `  # Let pull requests be set to merge once their checks pass
+  bb repo settings auto-merge set --enabled --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -743,6 +764,8 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete repository auto-merge settings",
+		Example: `  # Remove the repository's own auto-merge setting
+  bb repo settings auto-merge delete --repo PROJ/repo --yes`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -796,6 +819,8 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get repository auto-decline settings",
+		Example: `  # Whether inactive pull requests are declined, and after how long
+  bb repo settings auto-decline get --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -837,6 +862,11 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 	setCmd := &cobra.Command{
 		Use:   "set",
 		Short: "Set repository auto-decline settings",
+		Example: `  # Decline pull requests nobody has touched for four weeks
+  bb repo settings auto-decline set --enabled --inactivity-weeks 4 --repo PROJ/repo
+
+  # Switch it off
+  bb repo settings auto-decline set --enabled=false --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -882,6 +912,8 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete repository auto-decline settings",
+		Example: `  # Remove the repository's own auto-decline setting
+  bb repo settings auto-decline delete --repo PROJ/repo --yes`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

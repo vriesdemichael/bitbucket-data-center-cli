@@ -24,6 +24,11 @@ It needs no configured host, never contacts Bitbucket, and never prints a secret
 
 Exit status is 0 only when there is nothing to fix. Any issue the report shows -- an invalid file, a key its file never reads, a setting a command would refuse, a required keyring that cannot be reached, completion set up where its shell will not run it, a saved script that has fallen behind this bb, a skill an earlier bb installed or somebody edited, a skill this bb no longer carries -- exits 1. Under --json a run with issues writes the failure envelope instead of the report: its message summarises the issues, and error.details names each one under its own key, file/&lt;file&gt;, violation/&lt;file&gt;/&lt;key path&gt;, ignored/&lt;file&gt;/&lt;key&gt;, setting/&lt;name&gt;, keyring, completion/&lt;shell&gt;/&lt;scope&gt;, completion/powershell/&lt;edition&gt; or skill/&lt;skill&gt;/&lt;scope&gt;/&lt;location&gt;, with the key path written as a JSON Pointer.
 
+```bash
+# Check every configuration file bb would load, and where each setting comes from
+bb doctor
+```
+
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Runs as usual: this command changes nothing, so there is nothing to hold back

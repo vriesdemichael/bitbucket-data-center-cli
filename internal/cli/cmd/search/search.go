@@ -88,7 +88,12 @@ func newSearchReposCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "repos [name]",
 		Short: "Search for repositories",
-		Args:  cobra.MaximumNArgs(1),
+		Example: `  # Repositories whose name matches
+  bb search repos billing
+
+  # Within one project
+  bb search repos billing --project PROJ`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -156,6 +161,14 @@ func newSearchCommitsCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "commits",
 		Short: "Search for commits within a repository",
+		Example: `  # The latest commits of a repository
+  bb search commits --repo PROJ/repo
+
+  # What main has that the last release lacks, without merge commits
+  bb search commits --repo PROJ/repo --since v1.2.0 --until main --merges exclude
+
+  # The commits that touched a file
+  bb search commits --repo PROJ/repo --path src/main.go`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

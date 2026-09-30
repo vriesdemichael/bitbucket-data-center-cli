@@ -39,6 +39,16 @@ Create a repository webhook
 bb webhook create <name> <url> [flags]
 ```
 
+```bash
+# Call an endpoint when anything is pushed to the repository
+bb webhook create ci https://ci.example.com/hooks/bitbucket --repo PROJ/repo
+
+# On pull request events, signed with a shared secret read from stdin
+printf '%s' "$WEBHOOK_SECRET" | bb webhook create reviews \
+  https://ci.example.com/hooks/reviews --repo PROJ/repo \
+  --event pr:opened --event pr:merged --secret-stdin
+```
+
 `--active`
 :   Whether the new webhook is active (default true)
 
@@ -94,6 +104,11 @@ Delete a repository webhook
 bb webhook delete <webhook-id> [flags]
 ```
 
+```bash
+# By the id bb webhook list prints
+bb webhook delete 12 --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -122,6 +137,11 @@ Get a repository webhook by ID
 
 ```text
 bb webhook get <webhook-id> [flags]
+```
+
+```bash
+# One webhook, with its secret redacted
+bb webhook get 12 --repo PROJ/repo
 ```
 
 `--reveal-secret`
@@ -159,6 +179,11 @@ List repository webhooks
 
 ```text
 bb webhook list [flags]
+```
+
+```bash
+# A repository's webhooks
+bb webhook list --repo PROJ/repo
 ```
 
 `--all`
@@ -205,6 +230,14 @@ Get repository webhook statistics
 bb webhook stats <webhook-id> [flags]
 ```
 
+```bash
+# The delivery statistics of a webhook
+bb webhook stats 12 --repo PROJ/repo
+
+# The summary only
+bb webhook stats 12 --repo PROJ/repo --summary
+```
+
 `--summary`
 :   Get statistics summary instead of detailed stats
 
@@ -225,6 +258,14 @@ Test connection to repository webhook URL by sending a ping event
 
 ```text
 bb webhook test <webhook-id> [flags]
+```
+
+```bash
+# Send a test ping to a webhook's endpoint
+bb webhook test 12 --repo PROJ/repo
+
+# To another URL, before pointing the webhook at it
+bb webhook test 12 --repo PROJ/repo --url https://ci.example.com/hooks/new
 ```
 
 `--reveal-secret`
@@ -250,6 +291,17 @@ Update a repository webhook
 
 ```text
 bb webhook update <webhook-id> [flags]
+```
+
+```bash
+# Point a webhook at a new endpoint
+bb webhook update 12 --repo PROJ/repo --url https://ci.example.com/hooks/new
+
+# Switch it off without deleting it
+bb webhook update 12 --repo PROJ/repo --active false
+
+# Remove its shared secret
+bb webhook update 12 --repo PROJ/repo --no-secret
 ```
 
 `--active string`

@@ -33,6 +33,11 @@ Delete repository-scoped build status by key
 bb build delete <commit> [flags]
 ```
 
+```bash
+# Remove one build status from a commit
+bb build delete a1b2c3d --key ci --repo PROJ/repo --yes
+```
+
 `--key string`
 :   Build status key
 
@@ -65,6 +70,11 @@ Get repository-scoped build status by key
 
 ```text
 bb build get <commit> [flags]
+```
+
+```bash
+# One build status of a commit, by key
+bb build get a1b2c3d --key ci --repo PROJ/repo
 ```
 
 `--key string`
@@ -129,6 +139,12 @@ Create required build merge check
 bb build required create [flags]
 ```
 
+```bash
+# Require the build with key ci before anything merges into main
+bb build required create --repo PROJ/repo \
+  --body '{"buildParentKeys":["ci"],"refMatcher":{"id":"refs/heads/main","type":{"id":"BRANCH"}}}'
+```
+
 `--body string`
 :   Raw JSON payload for required build merge check
 
@@ -179,6 +195,11 @@ Delete required build merge check
 bb build required delete <required-build-id> [flags]
 ```
 
+```bash
+# By the id bb build required list prints
+bb build required delete 5 --repo PROJ/repo --yes
+```
+
 `--all`
 :   Return every result rather than the first --limit
 
@@ -213,6 +234,11 @@ List required build merge checks
 
 ```text
 bb build required list [flags]
+```
+
+```bash
+# The builds a pull request needs before it can merge
+bb build required list --repo PROJ/repo
 ```
 
 `--all`
@@ -268,6 +294,12 @@ Update required build merge check
 bb build required update <required-build-id> [flags]
 ```
 
+```bash
+# Replace a required build: which keys, and for which branches
+bb build required update 5 --repo PROJ/repo \
+  --body '{"buildParentKeys":["ci","lint"],"refMatcher":{"id":"refs/heads/main","type":{"id":"BRANCH"}}}'
+```
+
 `--body string`
 :   Raw JSON payload for required build merge check
 
@@ -316,6 +348,12 @@ Set repository-scoped build status for a commit
 
 ```text
 bb build set <commit> [flags]
+```
+
+```bash
+# Report a passing build on a commit of this repository
+bb build set a1b2c3d --repo PROJ/repo --key ci --state SUCCESSFUL \
+  --url https://ci.example.com/builds/128
 ```
 
 `--build-number string`
@@ -386,6 +424,14 @@ Get build statuses for a commit
 bb build status get <commit> [flags]
 ```
 
+```bash
+# The builds reported for a commit
+bb build status get a1b2c3d --repo PROJ/repo
+
+# Newest first
+bb build status get a1b2c3d --repo PROJ/repo --order-by NEWEST
+```
+
 `--all`
 :   Return every result rather than the first --limit
 
@@ -443,6 +489,13 @@ Set build status for a commit
 bb build status set <commit> [flags]
 ```
 
+```bash
+# Report a build in progress, then its result
+bb build status set a1b2c3d --key ci --state INPROGRESS --url https://ci.example.com/builds/128
+bb build status set a1b2c3d --key ci --state FAILED --url https://ci.example.com/builds/128 \
+  --name "Unit tests" --description "3 of 412 tests failed"
+```
+
 `--build-number string`
 :   Build number
 
@@ -498,6 +551,11 @@ Get build status summary counts for one or more commits
 
 ```text
 bb build status stats <commit>...
+```
+
+```bash
+# How many builds passed, failed and are running, for each of two commits
+bb build status stats a1b2c3d e4f5a6b
 ```
 
 Inherited from [`bb build status`](#bb-build-status):
