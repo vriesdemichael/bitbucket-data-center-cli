@@ -21,8 +21,8 @@ import (
 // halves rather than passing on the positive ones.
 
 // TestLiveCompletionIdsInsideARepository covers the kinds that exist at one
-// level only: a pull request's comments, a commit's comments, the required
-// build checks and the labels of one repository.
+// level only: a pull request's comments, a commit's comments and the required
+// build checks of one repository. Labels have a test of their own below.
 func TestLiveCompletionIdsInsideARepository(t *testing.T) {
 	t.Parallel()
 
@@ -209,31 +209,49 @@ func TestLiveCompletionIdsInsideARepository(t *testing.T) {
 			t.Errorf("expected the build key beside the id, got %q", description)
 		}
 	})
+}
 
-	t.Run("removing a label offers the labels the repository has", func(t *testing.T) {
-		label := strings.ToLower(testsupport.UniqueName("lt-completion-label-"))
-		if _, err := harness.liveJSON(ctx, http.MethodPost,
-			fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/labels", seeded.Key, repo.Slug),
-			map[string]any{"name": label}); err != nil {
-			t.Fatalf("add repository label failed: %v", err)
-		}
+// TestLiveCompletionOffersTheRepositoryLabels: removing a label offers the
+// labels the repository has, and adding one offers none.
+//
+// Not parallel, for the reason TestLiveRepoLabelAndWatchLifecycle gives: with
+// the parallel tests running, Bitbucket has answered a label add with 500 "A
+// database error has occurred", here as well as there.
+func TestLiveCompletionOffersTheRepositoryLabels(t *testing.T) {
+	harness := newLiveHarness(t)
 
-		candidates, directive := completeLive(t, "repo", "label", "remove", "--repo", selector, "")
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
 
-		if _, offered := candidates[label]; !offered {
-			t.Fatalf("label %s was not offered to `bb repo label remove`; got %v", label, candidates)
-		}
-		if !forbidsFileNames(directive) {
-			t.Errorf("expected the no-file-completion bit to be set, got directive %d", directive)
-		}
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	selector := seeded.Key + "/" + repo.Slug
 
-		// Adding one names a label that need not exist yet, so it is declared
-		// free and must not be handed the ones that already do.
-		adding, _ := completeLive(t, "repo", "label", "add", "--repo", selector, "")
-		if _, offered := adding[label]; offered {
-			t.Errorf("`bb repo label add` was offered an existing label: %v", adding)
-		}
-	})
+	label := strings.ToLower(testsupport.UniqueName("lt-completion-label-"))
+	if _, err := harness.liveJSON(ctx, http.MethodPost,
+		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/labels", seeded.Key, repo.Slug),
+		map[string]any{"name": label}); err != nil {
+		t.Fatalf("add repository label failed: %v", err)
+	}
+
+	candidates, directive := completeLive(t, "repo", "label", "remove", "--repo", selector, "")
+
+	if _, offered := candidates[label]; !offered {
+		t.Fatalf("label %s was not offered to `bb repo label remove`; got %v", label, candidates)
+	}
+	if !forbidsFileNames(directive) {
+		t.Errorf("expected the no-file-completion bit to be set, got directive %d", directive)
+	}
+
+	// Adding one names a label that need not exist yet, so it is declared
+	// free and must not be handed the ones that already do.
+	adding, _ := completeLive(t, "repo", "label", "add", "--repo", selector, "")
+	if _, offered := adding[label]; offered {
+		t.Errorf("`bb repo label add` was offered an existing label: %v", adding)
+	}
 }
 
 // TestLiveCompletionIdsChooseTheScopeTheCommandNames is the half that cannot
