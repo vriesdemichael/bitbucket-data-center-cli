@@ -63,6 +63,8 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BITBUCKET_TOKEN", "")
 		os.Unsetenv("BITBUCKET_URL")
 		os.Unsetenv("BITBUCKET_TOKEN")
+		// Away from any .env above the package: LoadFromEnv reads the nearest.
+		t.Chdir(t.TempDir())
 
 		cfg, err := LoadFromEnv()
 		if err != nil {
@@ -121,6 +123,7 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BITBUCKET_TOKEN", "")
 		os.Unsetenv("BITBUCKET_TOKEN")
 		t.Setenv("BITBUCKET_URL", "https://other.example.com")
+		t.Chdir(t.TempDir())
 
 		cfg, err := LoadFromEnv()
 		if err != nil {
@@ -149,6 +152,7 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BITBUCKET_TOKEN", "")
 		os.Unsetenv("BITBUCKET_URL")
 		os.Unsetenv("BITBUCKET_TOKEN")
+		t.Chdir(t.TempDir())
 
 		cfg, err := LoadFromEnv()
 		if err != nil {
