@@ -1,9 +1,12 @@
 package mcp
 
 import (
+	"fmt"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/highlight"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
@@ -204,6 +207,46 @@ func namesOf(value any) []string {
 func stringOf(value any) string {
 	text, _ := value.(string)
 	return text
+}
+
+// highlightActivity colours the lines of the diff each comment in the
+// activity is shown among, as the diff colours its own, as far as it gets by
+// the deadline.
+func highlightActivity(activity *viewActivity, options highlight.Options) {
+	for _, item := range activity.Items {
+		thread := item.Thread
+		if thread == nil || thread.Anchor == nil || len(thread.Context) == 0 {
+			continue
+		}
+		if time.Now().After(options.Deadline) {
+			return
+		}
+		spans := highlight.Patch(snippetPatch(thread.Anchor.Path, thread.Context), options)[0]
+		for i := range thread.Context {
+			if i < len(spans) {
+				thread.Context[i].Spans = spans[i]
+			}
+		}
+	}
+}
+
+// snippetPatch is the lines an activity shows a comment among, as a patch of
+// one hunk the highlighter reads: the file named, each line marked as added,
+// removed or on both sides.
+func snippetPatch(path string, lines []viewContextLine) string {
+	var patch strings.Builder
+	fmt.Fprintf(&patch, "diff --git a/%s b/%s\n--- a/%s\n+++ b/%s\n@@ -1 +1 @@\n", path, path, path, path)
+	for _, line := range lines {
+		mark := " "
+		switch line.Type {
+		case "add":
+			mark = "+"
+		case "del":
+			mark = "-"
+		}
+		patch.WriteString(mark + line.Text + "\n")
+	}
+	return patch.String()
 }
 
 // contextFromActivity is the lines of the diff Bitbucket's overview shows a
