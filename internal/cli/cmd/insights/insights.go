@@ -100,13 +100,13 @@ func New(deps Dependencies) *cobra.Command {
 
 	insightsCmd := &cobra.Command{
 		Use:   "insights",
-		Short: "Code Insights report and annotation commands",
+		Short: "Publish and read Code Insights reports and annotations",
 	}
 	insightsCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	reportCmd := &cobra.Command{
 		Use:   "report",
-		Short: "Code Insights report commands",
+		Short: "Publish, read, list and delete Code Insights reports",
 	}
 
 	var reportBody string
@@ -287,7 +287,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	annotationCmd := &cobra.Command{
 		Use:   "annotation",
-		Short: "Code Insights annotation commands",
+		Short: "Add, list, replace and delete Code Insights annotations",
 	}
 
 	var annotationBody string

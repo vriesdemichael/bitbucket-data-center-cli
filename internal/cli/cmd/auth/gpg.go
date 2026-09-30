@@ -19,7 +19,7 @@ import (
 func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 	gpgCmd := &cobra.Command{
 		Use:   "gpg-key",
-		Short: "Manage personal GPG keys",
+		Short: "Add, list and remove your GPG keys",
 	}
 
 	isJSON := func() bool {

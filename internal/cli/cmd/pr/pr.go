@@ -115,7 +115,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	prCmd := &cobra.Command{
 		Use:   "pr",
-		Short: "Pull request commands",
+		Short: "Create, review, merge and inspect pull requests",
 	}
 	prCmd.PersistentFlags().StringVar(&repository, "repo", "", "Repository as PROJECT/slug (defaults to inferred repository context; otherwise requires BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG)")
 
@@ -1138,7 +1138,7 @@ func New(deps Dependencies) *cobra.Command {
 	reopenCmd.Flags().IntVar(&transitionVersion, "version", 0, "Expected pull request version; omit to act on whatever version is current")
 	prCmd.AddCommand(reopenCmd)
 
-	reviewCmd := &cobra.Command{Use: "review", Short: "Pull request review commands"}
+	reviewCmd := &cobra.Command{Use: "review", Short: "Approve or request changes, and publish or discard a review"}
 
 	reviewApproveCmd := &cobra.Command{
 		Use:   "approve <pr-id>",
@@ -1376,7 +1376,7 @@ changes as readily as an approval, which its name does not suggest.`,
 	}
 	reviewCmd.AddCommand(reviewSetStatusCmd)
 
-	reviewerCmd := &cobra.Command{Use: "reviewer", Short: "Manage pull request reviewers"}
+	reviewerCmd := &cobra.Command{Use: "reviewer", Short: "Add or remove a pull request's reviewers"}
 	var reviewerUsers []string
 	var reviewerGroups []string
 	var reviewerDefaultReviewers bool
@@ -1956,7 +1956,7 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 	}
 	prCmd.AddCommand(jiraCmd)
 
-	commentCmd := &cobra.Command{Use: "comment", Short: "Pull request comment commands"}
+	commentCmd := &cobra.Command{Use: "comment", Short: "Add, list, resolve and react to pull request comments"}
 
 	var commentPath string
 	var commentPaging paging.Options
@@ -2524,7 +2524,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 
 	activityCmd := &cobra.Command{
 		Use:   "activity",
-		Short: "Pull request activity commands",
+		Short: "List what happened on a pull request",
 		Long:  "Pull request activity commands. This is an explicit exception to the stable versioned API and is intended only for AI ingestion and debugging.",
 	}
 
@@ -2659,7 +2659,7 @@ state is in the output.`,
 
 	buildCmd := &cobra.Command{
 		Use:   "build",
-		Short: "Pull request build status commands",
+		Short: "Show the builds of a pull request",
 	}
 	// Each half names the other (ADR-050): a reader who found one has no way to
 	// learn the other exists, and `bb pr checks` is the spelling a gh user
@@ -2670,7 +2670,7 @@ state is in the output.`,
 
 	autoMergeCmd := &cobra.Command{
 		Use:   "auto-merge",
-		Short: "Pull request auto-merge commands",
+		Short: "Turn a pull request's auto-merge on or off, or read it",
 	}
 
 	autoMergeGetCmd := &cobra.Command{

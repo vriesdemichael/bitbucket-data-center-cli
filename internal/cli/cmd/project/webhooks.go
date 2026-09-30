@@ -22,7 +22,7 @@ import (
 func newProjectWebhookCommand(deps Dependencies) *cobra.Command {
 	webhookCmd := &cobra.Command{
 		Use:   "webhook",
-		Short: "Manage project webhooks",
+		Short: "Create, list, test and change a project's webhooks",
 	}
 
 	var listPaging paging.Options

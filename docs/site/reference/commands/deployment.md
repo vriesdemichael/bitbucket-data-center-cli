@@ -6,7 +6,7 @@ search:
 
 # bb deployment
 
-Manage repository-scoped deployments for commits
+Record, read and delete the deployments of a commit
 
 3 commands.
 

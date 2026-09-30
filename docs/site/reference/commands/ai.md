@@ -6,19 +6,19 @@ search:
 
 # bb ai
 
-AI-first tooling: MCP server and agent skill distribution
+Run bb's MCP server, and install its agent skill
 
 5 commands.
 
 [`bb ai mcp`](#bb-ai-mcp)
-:   MCP server commands (2 commands)
+:   Run the MCP server, and list the tools it offers (2 commands)
 
 [`bb ai skill`](#bb-ai-skill)
-:   Agent skill distribution commands (3 commands)
+:   Install, remove or print the agent skill (3 commands)
 
 ## `bb ai mcp`
 
-MCP server commands
+Run the MCP server, and list the tools it offers
 
 [`serve`](#bb-ai-mcp-serve)
 :   Start the MCP server (stdio transport)
@@ -178,7 +178,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb ai skill`
 
-Agent skill distribution commands
+Install, remove or print the agent skill
 
 [`install`](#bb-ai-skill-install)
 :   Write an agent skill to the agent skills directories

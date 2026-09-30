@@ -6,7 +6,7 @@ search:
 
 # bb reviewer
 
-Manage default reviewers
+Choose who is added to a pull request as a reviewer by default
 
 Manage default reviewer conditions.
 
@@ -15,11 +15,11 @@ Note on CODEOWNERS: .bitbucket/CODEOWNERS is a git-tracked file rather than a RE
 4 commands.
 
 [`bb reviewer condition`](#bb-reviewer-condition)
-:   Manage default reviewer conditions (4 commands)
+:   Create, list, update and delete default reviewer conditions (4 commands)
 
 ## `bb reviewer condition`
 
-Manage default reviewer conditions
+Create, list, update and delete default reviewer conditions
 
 [`create`](#bb-reviewer-condition-create)
 :   Create a default reviewer condition

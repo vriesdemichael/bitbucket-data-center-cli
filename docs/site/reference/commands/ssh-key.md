@@ -6,7 +6,7 @@ search:
 
 # bb ssh-key
 
-Manage personal SSH keys
+Add, list and remove your SSH keys
 
 3 commands.
 

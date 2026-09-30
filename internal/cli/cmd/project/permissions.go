@@ -346,7 +346,7 @@ func newProjectPermissionSubjectCommand(deps Dependencies, subject projectPermis
 
 	group := &cobra.Command{
 		Use:   subject.noun + "s",
-		Short: strings.ToUpper(subject.noun[:1]) + subject.noun[1:] + " permissions",
+		Short: "Grant, list and revoke the project permissions of a " + subject.noun,
 	}
 
 	deep := fmt.Sprintf("bb project permissions %ss", subject.noun)
@@ -442,7 +442,7 @@ func alsoAvailableAs(shallowPath string, noun string) string {
 }
 
 func newProjectPermissionsCommand(deps Dependencies) *cobra.Command {
-	permissionsCmd := &cobra.Command{Use: "permissions", Short: "Project permissions"}
+	permissionsCmd := &cobra.Command{Use: "permissions", Short: "Grant, list and revoke project permissions"}
 	permissionsCmd.AddCommand(newProjectPermissionSubjectCommand(deps, userProjectPermissionSubject()))
 	permissionsCmd.AddCommand(newProjectPermissionSubjectCommand(deps, groupProjectPermissionSubject()))
 	addProjectPermissionAliases(permissionsCmd, deps)

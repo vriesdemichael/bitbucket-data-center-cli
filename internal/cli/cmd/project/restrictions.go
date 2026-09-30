@@ -23,7 +23,7 @@ import (
 func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	restrictionCmd := &cobra.Command{
 		Use:   "branch-restriction",
-		Short: "Manage project branch restrictions",
+		Short: "Create, list, update and delete the branch restrictions of a project",
 	}
 
 	var listType string

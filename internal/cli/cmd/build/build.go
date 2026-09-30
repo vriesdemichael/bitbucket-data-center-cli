@@ -131,13 +131,13 @@ func New(deps Dependencies) *cobra.Command {
 
 	buildCmd := &cobra.Command{
 		Use:   "build",
-		Short: "Build status and required merge-check commands",
+		Short: "Report and read build statuses, and require builds before a merge",
 	}
 	buildCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
 	statusCmd := &cobra.Command{
 		Use:   "status",
-		Short: "Build status commands by commit",
+		Short: "Report and read the build statuses of a commit",
 	}
 
 	var setKey string
@@ -370,7 +370,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	requiredCmd := &cobra.Command{
 		Use:   "required",
-		Short: "Required build merge-check management",
+		Short: "Create, list, update and delete the builds a merge requires",
 	}
 
 	var requiredPaging paging.Options

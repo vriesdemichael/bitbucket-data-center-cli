@@ -83,7 +83,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	projectCmd := &cobra.Command{
 		Use:   "project",
-		Short: "Project administration commands",
+		Short: "Create and change projects, and the settings their repositories inherit",
 	}
 
 	var listName string

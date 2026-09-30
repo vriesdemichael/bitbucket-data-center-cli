@@ -19,7 +19,7 @@ import (
 func newMCPCommand(deps Dependencies) *cobra.Command {
 	mcpCmd := &cobra.Command{
 		Use:   "mcp",
-		Short: "MCP server commands",
+		Short: "Run the MCP server, and list the tools it offers",
 	}
 
 	mcpCmd.AddCommand(newMCPServeCommand(deps))

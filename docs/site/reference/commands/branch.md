@@ -6,7 +6,7 @@ search:
 
 # bb branch
 
-Repository branch and branch restriction commands
+Create, list and delete branches, and set the default branch and restrictions
 
 12 commands.
 
@@ -14,7 +14,7 @@ Repository branch and branch restriction commands
 :   Create repository branch
 
 [`bb branch default`](#bb-branch-default)
-:   Get or set repository default branch (2 commands)
+:   Show or set the repository's default branch (2 commands)
 
 [`bb branch delete`](#bb-branch-delete)
 :   Delete repository branch
@@ -23,10 +23,10 @@ Repository branch and branch restriction commands
 :   List repository branches
 
 [`bb branch model`](#bb-branch-model)
-:   Inspect and update branch model-related settings (2 commands)
+:   Show the branch a commit belongs to, and set the model's default branch (2 commands)
 
 [`bb branch restriction`](#bb-branch-restriction)
-:   Manage repository branch restrictions (5 commands)
+:   Create, list, update and delete a repository's branch restrictions (5 commands)
 
 ## `bb branch create`
 
@@ -72,7 +72,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb branch default`
 
-Get or set repository default branch
+Show or set the repository's default branch
 
 [`get`](#bb-branch-default-get)
 :   Get repository default branch
@@ -302,7 +302,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb branch model`
 
-Inspect and update branch model-related settings
+Show the branch a commit belongs to, and set the model's default branch
 
 [`inspect`](#bb-branch-model-inspect)
 :   Show the branch a commit belongs to
@@ -393,7 +393,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb branch restriction`
 
-Manage repository branch restrictions
+Create, list, update and delete a repository's branch restrictions
 
 [`create`](#bb-branch-restriction-create)
 :   Create branch restriction

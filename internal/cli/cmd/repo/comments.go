@@ -71,7 +71,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 
 	commentCmd := &cobra.Command{
 		Use:   "comment",
-		Short: "Comment commands for commits and pull requests",
+		Short: "Add, list, update and delete comments on commits and pull requests",
 	}
 
 	commentCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")

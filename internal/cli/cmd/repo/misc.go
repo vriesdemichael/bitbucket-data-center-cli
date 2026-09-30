@@ -39,7 +39,7 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 
 	labelCmd := &cobra.Command{
 		Use:   "label",
-		Short: "Manage repository labels",
+		Short: "Add, list and remove a repository's labels",
 	}
 	labelCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
@@ -261,7 +261,7 @@ func newRepoDefaultTaskCommand(deps Dependencies) *cobra.Command {
 
 	defaultTaskCmd := &cobra.Command{
 		Use:   "default-task",
-		Short: "Manage repository default checklist tasks",
+		Short: "Add, list, update and delete the tasks each pull request in a repository starts with",
 	}
 	defaultTaskCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
@@ -573,7 +573,7 @@ func newRepoSyncCommand(deps Dependencies) *cobra.Command {
 
 	syncCmd := &cobra.Command{
 		Use:   "sync",
-		Short: "Manage repository fork synchronization",
+		Short: "Bring a fork up to date with its origin, and turn automatic syncing on or off",
 		Example: `  # Bring a fork's default branch up to date with the repository it was forked from
   bb repo sync --repo SANDBOX/repo-experiment
 
@@ -1218,7 +1218,7 @@ func resolveRepoSshKeyScope(projectFlag, repoFlag string) (string, string, bool,
 func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 	repoSshCmd := &cobra.Command{
 		Use:   "ssh-key",
-		Short: "Manage project or repository SSH access keys",
+		Short: "Add, list and remove the SSH access keys of a project or repository",
 	}
 
 	var projectFlag string

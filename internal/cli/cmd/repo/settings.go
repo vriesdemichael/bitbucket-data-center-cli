@@ -77,20 +77,20 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 
 	settingsCmd := &cobra.Command{
 		Use:   "settings",
-		Short: "Repository settings commands",
+		Short: "Read and change a repository's pull request, security and webhook settings",
 	}
 	settingsCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
-	securityCmd := &cobra.Command{Use: "security", Short: "Security settings"}
-	permissionsCmd := &cobra.Command{Use: "permissions", Short: "Repository permissions"}
+	securityCmd := &cobra.Command{Use: "security", Short: "Grant, list and revoke repository permissions"}
+	permissionsCmd := &cobra.Command{Use: "permissions", Short: "Grant, list and revoke repository permissions of users and groups"}
 	permissionsCmd.AddCommand(newRepoPermissionSubjectCommand(deps, &repositorySelector, userPermissionSubject()))
 	permissionsCmd.AddCommand(newRepoPermissionSubjectCommand(deps, &repositorySelector, groupPermissionSubject()))
 
 	securityCmd.AddCommand(permissionsCmd)
 	settingsCmd.AddCommand(securityCmd)
 
-	workflowCmd := &cobra.Command{Use: "workflow", Short: "Workflow settings"}
-	webhooksCmd := &cobra.Command{Use: "webhooks", Short: "Repository webhooks"}
+	workflowCmd := &cobra.Command{Use: "workflow", Short: "Create, list and delete repository webhooks"}
+	webhooksCmd := &cobra.Command{Use: "webhooks", Short: "Create, list and delete repository webhooks"}
 	webhooksListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository webhooks",
@@ -287,7 +287,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 	workflowCmd.AddCommand(webhooksCmd)
 	settingsCmd.AddCommand(workflowCmd)
 
-	pullRequestsCmd := &cobra.Command{Use: "pull-requests", Short: "Pull request settings"}
+	pullRequestsCmd := &cobra.Command{Use: "pull-requests", Short: "Read and change merge strategies, merge checks and required approvers"}
 	pullRequestsGetCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get repository pull-request settings",
@@ -359,7 +359,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 
 	mergeChecksCmd := &cobra.Command{
 		Use:   "merge-checks",
-		Short: "Manage repository merge checks",
+		Short: "List a repository's merge checks",
 	}
 	mergeChecksListCmd := &cobra.Command{
 		Use:   "list",
@@ -665,7 +665,7 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 
 	autoMergeCmd := &cobra.Command{
 		Use:   "auto-merge",
-		Short: "Manage repository auto-merge settings",
+		Short: "Read, set or remove whether the repository allows auto-merge",
 	}
 	autoMergeCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
@@ -796,7 +796,7 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 
 	autoDeclineCmd := &cobra.Command{
 		Use:   "auto-decline",
-		Short: "Manage repository auto-decline settings",
+		Short: "Read, set or remove when inactive pull requests are declined",
 	}
 	autoDeclineCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 

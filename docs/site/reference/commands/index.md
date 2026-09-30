@@ -9,40 +9,40 @@ search:
 237 commands, on a page per top-level command. <a id="global-flags"></a>Each also takes the [global flags](global-flags.md).
 
 [`bb admin`](admin.md)
-:   Administrative and connectivity checks (1 command)
+:   Check that the configured Bitbucket answers and accepts your credentials (1 command)
 
 [`bb ai`](ai.md)
-:   AI-first tooling: MCP server and agent skill distribution (5 commands)
+:   Run bb's MCP server, and install its agent skill (5 commands)
 
 <a id="bb-api"></a>[`bb api`](api.md)
 :   Send a raw HTTP request to the Bitbucket REST API
 
 [`bb auth`](auth.md)
-:   Authentication commands (22 commands)
+:   Log in, check the setup, and manage tokens, keys and git credentials (22 commands)
 
 [`bb branch`](branch.md)
-:   Repository branch and branch restriction commands (12 commands)
+:   Create, list and delete branches, and set the default branch and restrictions (12 commands)
 
 <a id="bb-browse"></a>[`bb browse`](browse.md)
 :   Open repository pages in a web browser
 
 [`bb build`](build.md)
-:   Build status and required merge-check commands (10 commands)
+:   Report and read build statuses, and require builds before a merge (10 commands)
 
 <a id="bb-clone"></a>[`bb clone`](clone.md)
 :   Clone a repository to the local filesystem
 
 [`bb commit`](commit.md)
-:   Commit inspection and compare commands (4 commands)
+:   List, show and compare commits, and find a commit's pull requests (4 commands)
 
 [`bb completion`](completion.md)
 :   Set shell completion up, or print the script for a shell (2 commands)
 
 [`bb deployment`](deployment.md)
-:   Manage repository-scoped deployments for commits (3 commands)
+:   Record, read and delete the deployments of a commit (3 commands)
 
 [`bb diff`](diff.md)
-:   Diff and patch commands (3 commands)
+:   Print the diff of a pull request, a commit or two refs (3 commands)
 
 <a id="bb-doctor"></a>[`bb doctor`](doctor.md)
 :   Check the configuration bb would load
@@ -51,40 +51,40 @@ search:
 :   What --dry-run answers, and how far to trust it
 
 [`bb insights`](insights.md)
-:   Code Insights report and annotation commands (8 commands)
+:   Publish and read Code Insights reports and annotations (8 commands)
 
 [`bb pr`](pr.md)
-:   Pull request commands (41 commands)
+:   Create, review, merge and inspect pull requests (41 commands)
 
 [`bb project`](project.md)
-:   Project administration commands (30 commands)
+:   Create and change projects, and the settings their repositories inherit (30 commands)
 
 [`bb ref`](ref.md)
-:   Repository ref resolution and listing commands (2 commands)
+:   List a repository's branches and tags, and resolve a ref to its commit (2 commands)
 
 [`bb repo`](repo.md)
-:   Repository commands (63 commands)
+:   Create, clone, browse and configure repositories (63 commands)
 
 [`bb reviewer`](reviewer.md)
-:   Manage default reviewers (4 commands)
+:   Choose who is added to a pull request as a reviewer by default (4 commands)
 
 [`bb reviewer-group`](reviewer-group.md)
-:   Manage reviewer groups (5 commands)
+:   Create, list and change reviewer groups and their members (5 commands)
 
 [`bb search`](search.md)
 :   Search for repositories, commits, and pull requests (3 commands)
 
 [`bb ssh-key`](ssh-key.md)
-:   Manage personal SSH keys (3 commands)
+:   Add, list and remove your SSH keys (3 commands)
 
 [`bb tag`](tag.md)
-:   Repository tag lifecycle commands (4 commands)
+:   Create, list, view and delete tags (4 commands)
 
 <a id="bb-update"></a>[`bb update`](update.md)
 :   Check for and install the latest bb release
 
 [`bb webhook`](webhook.md)
-:   Manage repository webhooks (7 commands)
+:   Create, list, test and change a repository's webhooks (7 commands)
 
 ## Every command
 
@@ -717,7 +717,7 @@ search:
 :   Remove a project or repository SSH access key by ID
 
 <a id="bb-repo-sync"></a>[`repo sync`](repo.md#bb-repo-sync)
-:   Manage repository fork synchronization
+:   Bring a fork up to date with its origin, and turn automatic syncing on or off
 
 <a id="bb-repo-sync-disable"></a>[`repo sync disable`](repo.md#bb-repo-sync-disable)
 :   Disable automatic background synchronization

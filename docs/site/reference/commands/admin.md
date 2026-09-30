@@ -6,7 +6,7 @@ search:
 
 # bb admin
 
-Administrative and connectivity checks
+Check that the configured Bitbucket answers and accepts your credentials
 
 1 command.
 
