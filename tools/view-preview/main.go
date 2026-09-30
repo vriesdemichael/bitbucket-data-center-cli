@@ -211,6 +211,7 @@ func run(project, repo, id, state, theme, from, kinds string, height int, sameOr
 			"kind": "pull_request_form", "project": project, "repo": repo, "from_ref": from,
 			"title":       "Retry transient payment failures",
 			"description": "Retries a charge the provider refused with a transient error, **twice**, with backoff.\n\n- Caps the time a charge spends retrying\n- Leaves declined cards alone",
+			"reviewers":   "bob,carol",
 		}})
 	}
 	if kinds != "" {
