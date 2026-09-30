@@ -15,10 +15,9 @@
 //
 //	go run ./tools/view-preview -project PAY -repo ledger -id 1 -screenshots out -bare -theme dark
 //
-// -from adds the pull request form for a new pull request from that branch,
-// and -file the file viewer on that path. -kinds draws only the kinds it
-// names, and -height draws each fullscreen frame that tall, to see a long
-// view whole. The stand-in host passes tool
+// -from adds the pull request form for a new pull request from that branch.
+// -kinds draws only the kinds it names, and -height draws each fullscreen
+// frame that tall, to see a long view whole. The stand-in host passes tool
 // calls, so the views offer what they do in a client; a view the person
 // clicks in does nothing here.
 package main
@@ -53,16 +52,16 @@ func main() {
 	bare := flag.Bool("bare", false, "capture each view alone, without its frame's title and the host's log")
 	theme := flag.String("theme", "", "light or dark for every frame; empty draws each in its own")
 	from := flag.String("from", "", "a branch to draft a new pull request from, in the pull request form")
-	file := flag.String("file", "", "a file to show in the file viewer, at the pull request's source branch")
-	kinds := flag.String("kinds", "", "comma-separated kinds to draw, such as diff,threads; empty draws every kind")
+	kinds := flag.String("kinds", "", "comma-separated kinds to draw, such as pull_request,diff; empty draws every kind")
 	height := flag.Int("height", 0, "how tall to draw each fullscreen frame, in pixels; zero is the stand-in host's default")
+	sameOrigin := flag.Bool("same-origin", false, "let the page reach into its frames, to drive the views from a script")
 	flag.Parse()
 
 	if *theme != "" && *theme != "light" && *theme != "dark" {
 		fmt.Fprintln(os.Stderr, "view-preview: -theme is light or dark")
 		os.Exit(2)
 	}
-	count, err := run(*project, *repo, *id, *state, *theme, *from, *file, *kinds, *height, *out)
+	count, err := run(*project, *repo, *id, *state, *theme, *from, *kinds, *height, *sameOrigin, *out)
 	if err == nil && *screenshots != "" {
 		err = capture(*out, *screenshots, count, *bare)
 	}
@@ -106,7 +105,7 @@ func capture(page, dir string, count int, bare bool) error {
 	}
 	// Tall frames make a page longer than the viewport: it grows to hold them.
 	if pageHeight > viewportHeight {
-		viewportHeight = pageHeight
+		viewportHeight = pageHeight + 400
 		if err := chromedp.Run(ctx,
 			chromedp.EmulateViewport(1400, int64(viewportHeight), chromedp.EmulateScale(2)),
 			chromedp.Sleep(2*time.Second),
@@ -149,7 +148,7 @@ func capture(page, dir string, count int, bare bool) error {
 	return nil
 }
 
-func run(project, repo, id, state, theme, from, file, kinds string, height int, out string) (int, error) {
+func run(project, repo, id, state, theme, from, kinds string, height int, sameOrigin bool, out string) (int, error) {
 	if project == "" || repo == "" || id == "" {
 		return 0, fmt.Errorf("-project, -repo and -id are required")
 	}
@@ -190,7 +189,6 @@ func run(project, repo, id, state, theme, from, file, kinds string, height int, 
 	card := map[string]any{"kind": "pull_request", "project": project, "repo": repo, "id": id}
 	list := map[string]any{"kind": "pull_requests", "project": project, "repo": repo, "state": state}
 	diff := map[string]any{"kind": "diff", "project": project, "repo": repo, "id": id}
-	threads := map[string]any{"kind": "threads", "project": project, "repo": repo, "id": id}
 
 	type frame struct {
 		title      string
@@ -206,8 +204,7 @@ func run(project, repo, id, state, theme, from, file, kinds string, height int, 
 		{"Diff, inline in a host without fullscreen", "light", "inline", false, diff},
 		{"Pull request, fullscreen", "light", "fullscreen", true, card},
 		{"Diff, fullscreen", "dark", "fullscreen", true, diff},
-		{"Comment threads, inline", "light", "inline", true, threads},
-		{"Comment threads, fullscreen", "light", "fullscreen", true, threads},
+		{"Pull request in a host without fullscreen", "light", "inline", false, card},
 	}
 	if from != "" {
 		wanted = append(wanted, frame{"Pull request form", "light", "inline", true, map[string]any{
@@ -216,12 +213,6 @@ func run(project, repo, id, state, theme, from, file, kinds string, height int, 
 			"description": "Retries a charge the provider refused with a transient error, **twice**, with backoff.\n\n- Caps the time a charge spends retrying\n- Leaves declined cards alone",
 		}})
 	}
-	if file != "" {
-		wanted = append(wanted, frame{"File, fullscreen", "light", "fullscreen", true, map[string]any{
-			"kind": "file", "project": project, "repo": repo, "path": file,
-		}})
-	}
-
 	if kinds != "" {
 		drawn := strings.Split(kinds, ",")
 		wanted = slices.DeleteFunc(wanted, func(want frame) bool { return !slices.Contains(drawn, want.arguments["kind"].(string)) })
@@ -267,7 +258,7 @@ func run(project, repo, id, state, theme, from, file, kinds string, height int, 
 		})
 	}
 
-	html, err := viewhost.Page(page.Contents[0].Text, frames, viewhost.Options{Heading: "bb views: " + project + "/" + repo + " #" + id})
+	html, err := viewhost.Page(page.Contents[0].Text, frames, viewhost.Options{Heading: "bb views: " + project + "/" + repo + " #" + id, SameOrigin: sameOrigin})
 	if err != nil {
 		return 0, err
 	}
