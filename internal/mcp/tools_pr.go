@@ -194,7 +194,7 @@ type CreatePullRequestInput struct {
 	ToRef       string `json:"to_ref,omitempty" jsonschema:"Target branch name; defaults to repository default branch"`
 	Description string `json:"description,omitempty" jsonschema:"Pull request description (optional)"`
 	Reviewers   string `json:"reviewers,omitempty" jsonschema:"Comma-separated reviewer usernames to add (e.g. alice,bob)"`
-	Draft       bool   `json:"draft,omitempty" jsonschema:"Create as a draft pull request (Bitbucket DC 8.0+; default false)"`
+	Draft       bool   `json:"draft,omitempty" jsonschema:"Create as a draft pull request (default false)"`
 }
 
 func specCreatePullRequest() Spec {
@@ -488,7 +488,7 @@ type AutoMergeOutput struct {
 func specEnableAutoMerge() Spec {
 	tool := &mcp.Tool{
 		Name: "enable_auto_merge",
-		Description: "Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. Requires Bitbucket DC 8.0+. " +
+		Description: "Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. " +
 			"Asks the person to confirm in the client before it runs.",
 		Annotations: writes("Enable auto-merge", true, true),
 		InputSchema: enumInputSchema[EnableAutoMergeInput](map[string][]string{
@@ -619,7 +619,7 @@ type UpdatePullRequestInput struct {
 	Version     int    `json:"version" jsonschema:"Current pull request version, from get_pull_request"`
 	Title       string `json:"title,omitempty" jsonschema:"New title; omit to leave unchanged"`
 	Description string `json:"description,omitempty" jsonschema:"New description; omit to leave unchanged"`
-	Draft       *bool  `json:"draft,omitempty" jsonschema:"Set or clear the draft flag; omit to leave unchanged (Bitbucket DC 8.0+)"`
+	Draft       *bool  `json:"draft,omitempty" jsonschema:"Set or clear the draft flag; omit to leave unchanged"`
 }
 
 // specUpdatePullRequest completes the draft workflow the agent skill documents:

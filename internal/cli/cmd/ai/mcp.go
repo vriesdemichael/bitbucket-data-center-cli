@@ -86,9 +86,9 @@ codex mcp add --env), and Antigravity (mcp_config.json):
 The ${VAR} form is worth using deliberately: it keeps the agent on a different
 PAT from your own, so the token you use interactively can carry write rights
 while the one the agent gets is read-only, and neither is written into the
-config file. Scoping the server this way replaces the old --token flag, which
-put the credential in the process argument list for as long as the server ran
--- world-readable on Linux, unlike the process environment.
+config file. No flag takes the token: a flag's value sits in the process
+argument list for as long as the server runs, world-readable on Linux, unlike
+the process environment.
 
 Tools that change whether or when a pull request merges ask the person to
 confirm each call in the MCP client before they run: merging, enabling or

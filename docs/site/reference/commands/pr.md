@@ -14,7 +14,7 @@ Pull request commands
 :   Pull request activity commands (1 command)
 
 [`bb pr auto-merge`](#bb-pr-auto-merge)
-:   Pull request auto-merge commands (Bitbucket DC 8.0+) (3 commands)
+:   Pull request auto-merge commands (3 commands)
 
 [`bb pr build`](#bb-pr-build)
 :   Pull request build status commands (1 command)
@@ -180,7 +180,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb pr auto-merge`
 
-Pull request auto-merge commands (Bitbucket DC 8.0+)
+Pull request auto-merge commands
 
 [`disable`](#bb-pr-auto-merge-disable)
 :   Disable auto-merge on a pull request
@@ -1117,7 +1117,7 @@ bb pr create
 bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" \
   --description "Why it is needed, and how to test it."
 
-# Create a draft pull request (Bitbucket DC 8.0+)
+# Create a draft pull request
 bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --draft
 
 # Create a pull request with reviewers and reviewer groups (repeatable or comma-separated)
@@ -1143,7 +1143,7 @@ bb pr create --repo PROJ/repo --from-repo SANDBOX/repo-experiment --from-ref fea
 :   Pull request description
 
 `--draft`
-:   Create as a draft pull request (Bitbucket DC 8.0+)
+:   Create as a draft pull request
 
 `--from-ref string`
 :   Source branch (name or refs/heads/name); in a checkout, the checked-out branch
