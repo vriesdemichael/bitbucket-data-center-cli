@@ -96,15 +96,23 @@ func governanceMiddleware(scope Scope, audit *AuditLogger, onFailure AuditFailur
 			ctx, recorder := withConfirmationRecorder(ctx)
 			result, err := next(ctx, method, req)
 
+			record.DurationMS = time.Since(started).Milliseconds()
+
 			// A call answered with a confirmation to show has not happened
-			// yet. A 2026-07-28 client sends the answer as a second call, and
-			// that one is audited, so there is one record per decision rather
-			// than one per round trip.
+			// yet, but it has read Bitbucket to find out what to ask about,
+			// and an agent that never answers leaves it there. So the question
+			// is a record of its own (#732). A 2026-07-28 client sends the
+			// answer as a second call, and that one is the record of the
+			// decision. An older client is asked inside the one call, which
+			// ends only with the answer, so it has the one record.
 			if asksForInput(result) {
+				record.Status = auditStatusAsked
+				if auditErr := writeAudit(audit, record, onFailure, warn); auditErr != nil {
+					return nil, auditErr
+				}
 				return result, err
 			}
 
-			record.DurationMS = time.Since(started).Milliseconds()
 			record.Confirmation = recorder.get()
 			switch {
 			case recorder.denied():
