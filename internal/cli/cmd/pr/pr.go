@@ -116,6 +116,12 @@ func New(deps Dependencies) *cobra.Command {
 	prCmd := &cobra.Command{
 		Use:   "pr",
 		Short: "Create, review, merge and inspect pull requests",
+		Long: `Create, review, merge and inspect pull requests.
+
+A command that takes <pr-id> takes a pull request in any of three forms: its
+number, as 42 or #42; the branch it comes from, which picks that branch's open
+pull request when it has one; or its URL, which names the repository too, so
+--repo is not needed with it.`,
 	}
 	prCmd.PersistentFlags().StringVar(&repository, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 
