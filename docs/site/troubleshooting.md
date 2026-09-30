@@ -79,14 +79,9 @@ The same message names a workspace's `.bb/config.yaml`. For the system file it
 says to ask your administrator instead: that file carries policy, and bb stops
 rather than run without it.
 
-| Platform | User | System |
-|---|---|---|
-| Linux | `~/.config/bb/config.yaml` | `/etc/bb/config.yaml` |
-| macOS | `~/Library/Application Support/bb/config.yaml` | `/etc/bb/config.yaml` |
-| Windows | `%APPDATA%\bb\config.yaml` | `%ProgramData%\bb\config.yaml` |
-
-`BB_CONFIG_PATH` overrides the user file. In CI, `BB_DISABLE_STORED_CONFIG=1`
-skips it entirely, so a stray file on a shared runner cannot fail the run.
+[Configuration](reference/configuration.md#the-files) says where each file is. In
+CI, `BB_DISABLE_STORED_CONFIG=1` skips your own file entirely, so a stray one on
+a shared runner cannot fail the run.
 
 ### Checking the configuration
 
@@ -165,9 +160,11 @@ password=<your token>
 for it. The silence is deliberate: it lets git fall through to another helper
 instead of failing outright.
 
-If another credential manager answers first, re-run `bb auth setup-git --force`,
-which replaces the helper configured for that host with `bb`. Without `--force`
-it refuses rather than overwrite somebody else's helper. See
+**Another credential manager answers first.** `bb auth setup-git` empties the
+helper list for your Bitbucket host before it adds `bb`, so a helper configured
+for every host, such as Git Credential Manager, is no longer asked for that one.
+A helper already configured for that exact host is another matter: setup-git
+refuses to replace it unless you pass `--force`. How the helper works is in
 [Git Authentication](advanced/git-authentication.md).
 
 <!-- docs-lint: message-of crypto/x509 -->
