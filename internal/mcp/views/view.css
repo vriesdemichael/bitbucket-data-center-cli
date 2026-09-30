@@ -170,25 +170,103 @@ button {
 .hl-a { color: light-dark(#986801, #d19a66); }
 .hl-o { color: light-dark(#0184bc, #56b6c2); }
 
-/* The pull request form. */
-.pr-form { display: grid; gap: 12px; }
+/* The pull request form, laid out as Bitbucket's create page. */
+.pr-form { display: grid; gap: 14px; }
 .pr-form.page-form { max-width: 880px; margin: 0 auto; padding: 16px 20px 28px; }
 .pr-form .pr-title { margin: 0; }
+.form-lead { margin: -8px 0 0; }
 .form-field { display: grid; gap: 4px; min-width: 0; }
 .form-label { color: var(--bb-text-muted); font-size: var(--bb-text-xs); font-weight: var(--font-weight-semibold, 600); }
+.form-label .required { margin-left: 2px; color: var(--bb-danger); }
 .form-label-row { display: flex; align-items: center; gap: 6px; }
-.form-hint-line { font-size: var(--bb-text-xs); }
+.form-hint-line, .form-note { font-size: var(--bb-text-xs); }
+.form-note.warning { color: var(--bb-warning); }
 .form-field textarea { min-height: 140px; resize: vertical; }
 .form-preview { min-height: 140px; padding: 8px 10px; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-sm); overflow-wrap: anywhere; }
-.form-branches { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
-.form-branches > .icon { margin-bottom: 9px; color: var(--bb-text-faint); }
-.branch-field { flex: 1 1 200px; }
+.preview-toggle { min-height: 28px; padding: 2px 10px; }
+.form-branches { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .form-check { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.chips input[type="text"] { flex: 1 1 160px; width: auto; min-width: 120px; }
-.reviewer-chip { display: inline-flex; align-items: center; gap: 4px; }
-.chip-remove { padding: 0 2px; border: 0; background: transparent; color: var(--bb-text-muted); cursor: pointer; font: inherit; line-height: 1; }
-.chip-remove:hover { color: var(--bb-danger); }
+
+/* The source over the destination, each a repository and a branch picker of
+   one height, joined by a bracket from a dot at the source to an arrow at
+   the destination, with the swap button beside it. The bracket's ends are
+   at the middle of each picker: a label of 18px, a gap of 4px, half of 36px. */
+.branch-rows { position: relative; display: grid; gap: 12px; padding-left: 64px; }
+.branch-row { display: grid; gap: 4px; min-width: 0; }
+.branch-row > .form-label { height: 18px; line-height: 18px; }
+.branch-controls { display: flex; gap: 8px; height: 36px; min-width: 0; }
+.button.swap-button { position: absolute; left: 0; top: 59px; width: 32px; min-height: 32px; height: 32px; padding: 0; justify-content: center; color: var(--bb-text-muted); }
+.branch-bracket { position: absolute; left: 42px; top: 39px; width: 14px; height: 72px; border: 2px solid var(--bb-border-strong); border-right: 0; border-radius: 7px 0 0 7px; pointer-events: none; }
+.branch-bracket::before { content: ""; position: absolute; right: -9px; top: -6px; width: 10px; height: 10px; border: 2px solid var(--bb-border-strong); border-radius: var(--bb-radius-full); background: var(--bb-bg); }
+.branch-bracket::after { content: ""; position: absolute; right: -4px; bottom: -5px; width: 8px; height: 8px; border-top: 2px solid var(--bb-border-strong); border-right: 2px solid var(--bb-border-strong); transform: rotate(45deg); }
+.repository-box { display: inline-flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; max-width: 40%; padding: 0 10px; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-sm); background: var(--bb-bg-subtle); color: var(--bb-text-muted); }
+.repository-icon { color: var(--bb-info); }
+.picker { position: relative; flex: 1 1 auto; min-width: 0; }
+.picker-button { display: flex; align-items: center; gap: 6px; width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--bb-border-strong); border-radius: var(--bb-radius-sm); background: var(--bb-bg); color: var(--bb-text); cursor: pointer; font: inherit; text-align: left; }
+.picker-button .picker-value { flex: 1 1 auto; }
+.picker-button:hover:not(:disabled) { background: var(--bb-bg-subtle); }
+.picker-button:focus-visible { outline: 2px solid var(--bb-info); outline-offset: 1px; }
+.picker-button[aria-expanded="true"] { border-color: var(--bb-info); }
+.picker-button:disabled { cursor: default; opacity: 0.75; }
+.picker-popup {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  min-width: 220px;
+  padding: 8px 0 4px;
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-sm);
+  background: var(--bb-bg);
+  box-shadow: 0 4px 14px light-dark(rgba(9, 30, 66, 0.18), rgba(0, 0, 0, 0.5));
+}
+.picker-search-row { display: flex; align-items: center; gap: 6px; height: 36px; margin: 0 8px 6px; padding: 0 8px; border: 1px solid var(--bb-border-strong); border-radius: var(--bb-radius-sm); background: var(--bb-bg); cursor: text; }
+.picker-search-row:focus-within { outline: 2px solid var(--bb-info); outline-offset: 1px; }
+.picker-search-row input { flex: 1 1 auto; min-width: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--bb-text); font: inherit; }
+.picker-list { position: relative; list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
+.picker-option { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 12px 6px 10px; border-left: 2px solid transparent; cursor: pointer; }
+.picker-option.active { background: var(--bb-bg-subtle); }
+.picker-option.current { border-left-color: var(--bb-info); color: var(--bb-info); }
+.picker-option.current:not(.active) { background: var(--bb-info-bg); }
+.picker-option .option-detail { flex: 0 1 auto; margin-left: auto; font-size: var(--bb-text-xs); }
+.picker-note { padding: 6px 12px; color: var(--bb-text-faint); }
+
+/* Reviewers: a chip for each, with the search after them, and the people
+   who match it in a list over what follows. */
+.reviewer-anchor { position: relative; min-width: 0; }
+.reviewer-box { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; min-height: 36px; padding: 3px 6px; border: 1px solid var(--bb-border-strong); border-radius: var(--bb-radius-sm); background: var(--bb-bg); cursor: text; }
+.reviewer-box:focus-within { outline: 2px solid var(--bb-info); outline-offset: 1px; }
+.reviewer-box.disabled, .reviewer-box.read-only { cursor: default; }
+.reviewer-box.read-only { border-color: var(--bb-border); background: var(--bb-bg-subtle); }
+.reviewers-field input.reviewer-search[type="text"] { flex: 1 1 64px; width: auto; min-width: 64px; padding: 4px 2px; border: 0; background: transparent; }
+.reviewers-field input.reviewer-search[type="text"]:focus-visible { outline: none; }
+.reviewer-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; padding: 2px 2px 2px 3px; border: 1px solid var(--bb-border); border-radius: var(--bb-radius-sm); background: var(--bb-bg-subtle); font-weight: var(--font-weight-medium, 500); }
+.reviewer-box.read-only .reviewer-chip { padding-right: 8px; background: var(--bb-bg); }
+.chip-remove { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--bb-text-muted); cursor: pointer; font: inherit; line-height: 1; }
+.chip-remove:hover:not(:disabled) { background: var(--bb-danger-bg); color: var(--bb-danger); }
+.chip-remove:focus-visible { outline: 2px solid var(--bb-info); outline-offset: 1px; }
+.reviewer-list {
+  position: absolute;
+  z-index: 4;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  padding: 4px 0;
+  border: 1px solid var(--bb-border);
+  border-radius: var(--bb-radius-sm);
+  background: var(--bb-bg);
+  box-shadow: 0 4px 14px light-dark(rgba(9, 30, 66, 0.18), rgba(0, 0, 0, 0.5));
+}
+.quick-add { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.button.quick-add-button { min-height: 28px; padding: 2px 10px 2px 8px; }
+
+/* A phone has no room for the repository beside each branch; the view names
+   it at its top. */
+@media (max-width: 560px) {
+  .repository-box { display: none; }
+}
 
 /* The checks board: the builds the target branch requires. */
 .required-list .required-check { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
