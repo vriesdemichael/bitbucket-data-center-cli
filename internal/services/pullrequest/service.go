@@ -65,12 +65,18 @@ type PullRequest struct {
 	// AuthorSlug is the author's URL slug, which Bitbucket addresses a user's
 	// avatar by. It is not part of any output: an MCP view fetches avatars
 	// through bb with it (ADR-101).
-	AuthorSlug   string        `json:"-"`
-	SourceBranch string        `json:"source_branch,omitempty"`
-	TargetBranch string        `json:"target_branch,omitempty"`
-	SourceCommit string        `json:"source_commit,omitempty"`
-	CreatedDate  int64         `json:"created_date,omitempty"`
-	UpdatedDate  int64         `json:"updated_date,omitempty"`
+	AuthorSlug   string `json:"-"`
+	SourceBranch string `json:"source_branch,omitempty"`
+	TargetBranch string `json:"target_branch,omitempty"`
+	SourceCommit string `json:"source_commit,omitempty"`
+	CreatedDate  int64  `json:"created_date,omitempty"`
+	UpdatedDate  int64  `json:"updated_date,omitempty"`
+	// ClosedDate is when it was merged or declined, and zero while it is open.
+	ClosedDate int64 `json:"closed_date,omitempty"`
+	// URL is where Bitbucket says the pull request is, from the payload's own
+	// links. The server knows its base URL and any context path; bb would be
+	// putting one together from the URL it was configured with.
+	URL          string        `json:"url,omitempty"`
 	Reviewers    []Reviewer    `json:"reviewers,omitempty"`
 	Mergeability *Mergeability `json:"mergeability,omitempty"`
 
@@ -479,15 +485,71 @@ func (service *Service) Update(ctx context.Context, repository RepositoryRef, pu
 }
 
 func (service *Service) Merge(ctx context.Context, repository RepositoryRef, pullRequestID string, version *int) (PullRequest, error) {
-	return service.transition(ctx, repository, pullRequestID, "merge", version)
+	return service.MergeWith(ctx, repository, pullRequestID, MergeOptions{Version: version})
+}
+
+// MergeOptions are what a merge may be told beyond which pull request.
+type MergeOptions struct {
+	// Version is the version the caller last saw; nil reads the current one.
+	Version *int
+	// StrategyID is how the branches are joined, one of
+	// openapi.MergeStrategies. Empty leaves it to the repository's default.
+	// Bitbucket refuses one the repository has not enabled, naming those it
+	// has.
+	StrategyID string
+}
+
+// MergeWith merges a pull request, with the strategy the caller chose.
+//
+// The strategy is RestPullRequestMergeRequest.strategyId on POST .../merge, the
+// body auto-merge is armed through.
+func (service *Service) MergeWith(ctx context.Context, repository RepositoryRef, pullRequestID string, options MergeOptions) (PullRequest, error) {
+	body := map[string]any{}
+	if strategy := strings.TrimSpace(options.StrategyID); strategy != "" {
+		body["strategyId"] = strategy
+	}
+
+	return service.transition(ctx, repository, pullRequestID, "merge", options.Version, body)
+}
+
+// EnabledMergeStrategies are the merge strategies a repository lets a pull
+// request be merged with, as its pull request settings report them. Anyone who
+// can read the repository can read them.
+func (service *Service) EnabledMergeStrategies(ctx context.Context, repository RepositoryRef) ([]string, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return nil, err
+	}
+
+	var settings struct {
+		MergeConfig struct {
+			Strategies []struct {
+				ID      string `json:"id"`
+				Enabled bool   `json:"enabled"`
+			} `json:"strategies"`
+		} `json:"mergeConfig"`
+	}
+	path := fmt.Sprintf("/rest/api/1.0/projects/%s/repos/%s/settings/pull-requests",
+		url.PathEscape(repository.ProjectKey), url.PathEscape(repository.Slug))
+	if err := service.client.GetJSON(ctx, path, nil, &settings); err != nil {
+		return nil, err
+	}
+
+	enabled := []string{}
+	for _, strategy := range settings.MergeConfig.Strategies {
+		if strategy.Enabled {
+			enabled = append(enabled, strategy.ID)
+		}
+	}
+
+	return enabled, nil
 }
 
 func (service *Service) Decline(ctx context.Context, repository RepositoryRef, pullRequestID string, version *int) (PullRequest, error) {
-	return service.transition(ctx, repository, pullRequestID, "decline", version)
+	return service.transition(ctx, repository, pullRequestID, "decline", version, map[string]any{})
 }
 
 func (service *Service) Reopen(ctx context.Context, repository RepositoryRef, pullRequestID string, version *int) (PullRequest, error) {
-	return service.transition(ctx, repository, pullRequestID, "reopen", version)
+	return service.transition(ctx, repository, pullRequestID, "reopen", version, map[string]any{})
 }
 
 func (service *Service) Approve(ctx context.Context, repository RepositoryRef, pullRequestID string) (PullRequest, error) {
@@ -1045,6 +1107,8 @@ func mapPullRequest(raw pullRequestValue) PullRequest {
 		SourceCommit:   sourceCommit(raw.FromRef),
 		CreatedDate:    raw.CreatedDate,
 		UpdatedDate:    raw.UpdatedDate,
+		ClosedDate:     raw.ClosedDate,
+		URL:            raw.Links.href(),
 		Reviewers:      mapReviewers(raw.Participants, raw.Reviewers),
 	}
 
@@ -1298,7 +1362,7 @@ func normalizeBranchRef(branch string) string {
 	return "refs/heads/" + trimmed
 }
 
-func (service *Service) transition(ctx context.Context, repository RepositoryRef, pullRequestID string, action string, version *int) (PullRequest, error) {
+func (service *Service) transition(ctx context.Context, repository RepositoryRef, pullRequestID string, action string, version *int, body map[string]any) (PullRequest, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return PullRequest{}, err
 	}
@@ -1329,7 +1393,7 @@ func (service *Service) transition(ctx context.Context, repository RepositoryRef
 	query := map[string]string{"version": strconv.Itoa(*resolvedVersion)}
 
 	var response pullRequestValue
-	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/%s", pullRequestPath(repository), resolvedID, action), query, map[string]any{}, &response); err != nil {
+	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/%s", pullRequestPath(repository), resolvedID, action), query, body, &response); err != nil {
 		return PullRequest{}, err
 	}
 
@@ -1425,12 +1489,31 @@ type pullRequestValue struct {
 	Version      int                      `json:"version"`
 	CreatedDate  int64                    `json:"createdDate"`
 	UpdatedDate  int64                    `json:"updatedDate"`
+	ClosedDate   int64                    `json:"closedDate"`
+	Links        *pullRequestLinks        `json:"links"`
 	Author       *pullRequestUser         `json:"author"`
 	Participants []pullRequestParticipant `json:"participants"`
 	Reviewers    []pullRequestParticipant `json:"reviewers"`
 	FromRef      *pullRequestRef          `json:"fromRef"`
 	ToRef        *pullRequestRef          `json:"toRef"`
 	Properties   *pullRequestProperties   `json:"properties"`
+}
+
+// pullRequestLinks is the links object of a pull request payload. self is a
+// list, of which Bitbucket sends one.
+type pullRequestLinks struct {
+	Self []struct {
+		Href string `json:"href"`
+	} `json:"self"`
+}
+
+// href is the first self link, or nothing when the payload carries none.
+func (links *pullRequestLinks) href() string {
+	if links == nil || len(links.Self) == 0 {
+		return ""
+	}
+
+	return strings.TrimSpace(links.Self[0].Href)
 }
 
 // pullRequestProperties carries the comment and task counters Bitbucket attaches
