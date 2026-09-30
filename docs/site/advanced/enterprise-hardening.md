@@ -151,7 +151,7 @@ Distinguish between **enforceable technical controls** (which systems engineers 
    ```bash
    export BB_DISABLE_STORED_CONFIG=1
    ```
-   Ensures that ephemeral CI/CD runners read authentication strictly from `BITBUCKET_TOKEN`, guaranteeing that no stored credential profile is read and no desktop keyring daemon is contacted.
+   An ephemeral CI/CD runner then reads its credential from `BITBUCKET_TOKEN` only: no stored credential is read, and no desktop keyring is contacted.
 
 ### Builds With Self-Update Compiled Out
 
@@ -374,7 +374,7 @@ COPY corp-root-ca.pem /etc/ssl/certs/corp-root-ca.pem
 ENV BB_CA_FILE=/etc/ssl/certs/corp-root-ca.pem
 ENV BB_DISABLE_STORED_CONFIG=1
 
-# Execution in CI: pass token via environment, zero disk persistence
+# Execution in CI: pass the token through the environment, so nothing is written to disk
 # docker run --rm -e BITBUCKET_TOKEN=$SECRET -e BITBUCKET_URL=https://bitbucket.example.com my-image bb repo list
 ```
 
