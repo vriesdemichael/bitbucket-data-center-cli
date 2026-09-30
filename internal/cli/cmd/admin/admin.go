@@ -45,13 +45,11 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "Probe the configured Bitbucket for reachability and authentication",
 		Example: `  # Check that the configured Bitbucket answers and accepts your credentials
   bb admin health`,
-		Long: "Probe the configured Bitbucket for reachability and authentication.\n\n" +
-			"This was previously described as checking \"local stack health\", which it never did: " +
-			"it probes whichever host BITBUCKET_URL resolves to, wherever that is. The description " +
-			"was wrong, not the command.\n\n" +
-			"bb auth status now reports the same thing and more — identity, credential storage, and " +
+		Long: "Probe the configured Bitbucket for reachability and authentication: the host " +
+			"every other command would reach, resolved the same way.\n\n" +
+			"bb auth status reports the same thing and more — identity, credential storage, and " +
 			"whether git is set up to authenticate through bb — so prefer that. This stays for " +
-			"scripts that already call it.",
+			"scripts that call it.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := d.LoadConfig()
 			if err != nil {

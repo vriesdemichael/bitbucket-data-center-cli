@@ -6,7 +6,7 @@ search:
 
 # All Commands
 
-235 commands, on a page per top-level command. <a id="global-flags"></a>Each also takes the [global flags](global-flags.md).
+237 commands, on a page per top-level command. <a id="global-flags"></a>Each also takes the [global flags](global-flags.md).
 
 [`bb admin`](admin.md)
 :   Administrative and connectivity checks (1 command)
@@ -34,6 +34,9 @@ search:
 
 [`bb commit`](commit.md)
 :   Commit inspection and compare commands (4 commands)
+
+[`bb completion`](completion.md)
+:   Set shell completion up, or print the script for a shell (2 commands)
 
 [`bb deployment`](deployment.md)
 :   Manage repository-scoped deployments for commits (3 commands)
@@ -258,6 +261,14 @@ search:
 
 <a id="bb-commit-prs"></a>[`commit prs`](commit.md#bb-commit-prs)
 :   List pull requests containing a commit
+
+### `bb completion`
+
+<a id="bb-completion-install"></a>[`completion install`](completion.md#bb-completion-install)
+:   Set completion up so every new shell completes bb
+
+<a id="bb-completion-remove"></a>[`completion remove`](completion.md#bb-completion-remove)
+:   Take out what bb completion install set up
 
 ### `bb deployment`
 

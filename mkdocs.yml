@@ -103,6 +103,7 @@ nav:
           - bb build: reference/commands/build.md
           - bb clone: reference/commands/clone.md
           - bb commit: reference/commands/commit.md
+          - bb completion: reference/commands/completion.md
           - bb deployment: reference/commands/deployment.md
           - bb diff: reference/commands/diff.md
           - bb doctor: reference/commands/doctor.md

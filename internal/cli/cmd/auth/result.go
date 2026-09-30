@@ -28,9 +28,9 @@ type Check struct {
 type Status struct {
 	OK                     bool    `json:"ok" jsonschema:"Whether every non-advisory check passed."`
 	BitbucketURL           string  `json:"bitbucketUrl" jsonschema:"The configured Bitbucket base URL."`
-	BitbucketVersionTarget string  `json:"bitbucketVersionTarget" jsonschema:"Version the operator pinned, empty when none was."`
+	BitbucketVersionTarget string  `json:"bitbucketVersionTarget" jsonschema:"The version BITBUCKET_VERSION_TARGET records, empty when it is not set. bb does not act on it."`
 	AuthMode               string  `json:"authMode" jsonschema:"How bb authenticates: token, basic, or none."`
-	AuthSource             string  `json:"authSource" jsonschema:"Where that credential came from: env, keyring, or config."`
+	AuthSource             string  `json:"authSource" jsonschema:"Where that credential came from: stored (a configuration file or the keyring), env (BITBUCKET_TOKEN or the basic-auth variables), or env/default when neither supplied one."`
 	CredentialStorage      string  `json:"credentialStorage" jsonschema:"How the credential is held. Reported here as well as at login so an operator auditing a machine does not have to read the config file."`
 	Checks                 []Check `json:"checks" jsonschema:"What was verified, in the order it was checked."`
 }
