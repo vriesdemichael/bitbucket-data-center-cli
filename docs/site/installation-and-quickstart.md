@@ -109,6 +109,37 @@ bb auth status
     it in Task Manager details, and where process-auditing and EDR tooling records it -- and your
     shell keeps it in history. Use `--token-stdin` or `--password-stdin`, or set `BITBUCKET_TOKEN`.
 
+### What the token lets bb do
+
+`bb` does nothing the token does not allow. A personal access token carries the
+permission it was created with, for projects and for repositories: read, write or
+admin. It never has more rights than you, and it can have fewer: a token created
+to read cannot write, even where you can in the web interface.
+
+With the permission it needs, `bb` does from the command line what you do in the
+web interface, up to the level of a whole project:
+
+| To | The token needs |
+|---|---|
+| Read repositories, pull requests, builds and settings | read |
+| Change what is in a repository: branches, tags, pull requests | write |
+| Change a repository's settings, permissions, webhooks and restrictions | admin |
+| The same for every repository in a project at once, and the project's own permissions | project admin |
+
+Creating a project, and administering Bitbucket itself, are beyond a personal
+access token.
+
+A request the token does not allow is refused by Bitbucket, and `bb` reports it as
+`authorization` with Bitbucket's own words:
+
+```text
+authorization: bitbucket API returned 401: You are not permitted to access this resource
+```
+
+If you can do the same thing in the web interface, the token is what stops it.
+Create one with the permission you need, at the page `bb auth token-url` prints,
+and log in with it.
+
 ### Where credentials are stored
 
 `bb auth login` stores the secret in your operating system's keyring — Credential Manager on
@@ -144,8 +175,7 @@ In CI, `--check` makes it exit non-zero when a non-advisory check fails:
 bb auth status --check
 ```
 
-Without it the exit status stays zero whatever the findings, so existing scripts
-are unaffected. Under `--json` the exit status is always zero and the verdict is
+Without it the exit status is zero whatever the findings. Under `--json` the exit status is always zero and the verdict is
 the `ok` field.
 
 To refuse the plaintext fallback, pass `--require-keyring` at login, or set `BB_REQUIRE_KEYRING=1`
