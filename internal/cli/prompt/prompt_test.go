@@ -436,6 +436,113 @@ func TestFillMissingRefusesAnEmptyAnswer(t *testing.T) {
 	}
 }
 
+// A person is shown an inferred value and may accept it with an empty answer or
+// replace it. An inference is made after the values before it are settled, so
+// the title here is worked out from the branch the person chose, not from the
+// one that was offered.
+func TestFillMissingOffersWhatItInferredToAPerson(t *testing.T) {
+	allowPrompting(t)
+
+	var fromRef, toRef, title string
+	out := &bytes.Buffer{}
+
+	err := FillMissing(Request{
+		In:  strings.NewReader("\nrelease\n\n"),
+		Out: out,
+	}, []Missing{
+		{Flag: "--from-ref", Question: "Source branch", Value: &fromRef, Infer: func() Inferred {
+			return Inferred{Value: "feature", Source: "the checked-out branch"}
+		}},
+		{Flag: "--to-ref", Question: "Target branch", Value: &toRef, Infer: func() Inferred {
+			return Inferred{Value: "main", Source: "the repository's default branch", Unattended: true}
+		}},
+		{Flag: "--title", Question: "Title", Value: &title, Infer: func() Inferred {
+			return Inferred{Value: "from " + fromRef + " to " + toRef}
+		}},
+	})
+	if err != nil {
+		t.Fatalf("filling failed: %v", err)
+	}
+
+	for _, got := range []struct{ name, value, want string }{
+		{"from-ref", fromRef, "feature"},
+		{"to-ref", toRef, "release"},
+		{"title", title, "from feature to release"},
+	} {
+		if got.value != got.want {
+			t.Errorf("%s = %q, want %q", got.name, got.value, got.want)
+		}
+	}
+	for _, offered := range []string{"Source branch [feature]: ", "Target branch [main]: ", "Title [from feature to release]: "} {
+		if !strings.Contains(out.String(), offered) {
+			t.Errorf("the prompt did not offer %q: %q", offered, out.String())
+		}
+	}
+}
+
+// With nobody there, an inference stands in only where the command said it
+// may. What is left is refused by name, all at once, and what was decided is
+// said on Notice -- but not under machine output, whose document says it.
+func TestFillMissingUnattendedTakesOnlyTheInferencesThatMayStandIn(t *testing.T) {
+	t.Parallel()
+
+	inferences := func(fromRef, toRef, title *string, titleUnattended bool) []Missing {
+		return []Missing{
+			{Flag: "--from-ref", Question: "Source branch", Value: fromRef, Infer: func() Inferred {
+				return Inferred{Value: "feature", Source: "the checked-out branch", Unattended: true}
+			}},
+			{Flag: "--to-ref", Question: "Target branch", Value: toRef, Infer: func() Inferred {
+				return Inferred{Value: "main", Source: "the repository's default branch", Unattended: true}
+			}},
+			{Flag: "--title", Question: "Title", Value: title, Infer: func() Inferred {
+				return Inferred{Value: "from " + *fromRef, Source: "the branch's only commit", Unattended: titleUnattended}
+			}},
+		}
+	}
+	unattended := func(notice io.Writer, machineOutput bool) Request {
+		return Request{
+			In:            iotest.ErrReader(errors.New("stdin must not be read with nobody there")),
+			Out:           &bytes.Buffer{},
+			Notice:        notice,
+			Disabled:      true,
+			MachineOutput: machineOutput,
+			Lookup:        noEnvironment,
+		}
+	}
+
+	var fromRef, toRef, title string
+	notice := &bytes.Buffer{}
+	if err := FillMissing(unattended(notice, false), inferences(&fromRef, &toRef, &title, true)); err != nil {
+		t.Fatalf("every value could be inferred, and the run was refused: %v", err)
+	}
+	if fromRef != "feature" || toRef != "main" || title != "from feature" {
+		t.Errorf("inferred %q, %q, %q", fromRef, toRef, title)
+	}
+	for _, said := range []string{"Using --from-ref feature (the checked-out branch)", "Using --title from feature (the branch's only commit)"} {
+		if !strings.Contains(notice.String(), said) {
+			t.Errorf("the notice does not say %q: %q", said, notice.String())
+		}
+	}
+
+	fromRef, toRef, title = "", "", ""
+	err := FillMissing(unattended(notice, false), inferences(&fromRef, &toRef, &title, false))
+	if err == nil || !strings.Contains(err.Error(), "required flag(s) --title not set") {
+		t.Fatalf("an inference that may not stand in was used, or the refusal names more than --title: %v", err)
+	}
+	if title != "" {
+		t.Errorf("title = %q, want it left for the caller to give", title)
+	}
+
+	fromRef, toRef, title = "", "", ""
+	quiet := &bytes.Buffer{}
+	if err := FillMissing(unattended(quiet, true), inferences(&fromRef, &toRef, &title, true)); err != nil {
+		t.Fatalf("filling under machine output failed: %v", err)
+	}
+	if quiet.Len() != 0 {
+		t.Errorf("machine output got a notice: %q", quiet.String())
+	}
+}
+
 // TestFillMissingWithNothingAbsentAsksNothing covers the early return.
 func TestFillMissingWithNothingAbsentAsksNothing(t *testing.T) {
 	t.Parallel()

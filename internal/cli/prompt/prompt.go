@@ -29,6 +29,11 @@ type Request struct {
 	In  io.Reader
 	Out io.Writer
 
+	// Notice is where FillMissing says which values it inferred when nobody
+	// was there to be asked: the error stream, so a command's output stays
+	// what the command wrote. Nil says nothing.
+	Notice io.Writer
+
 	// Disabled is the --no-input flag: an explicit per-invocation refusal.
 	Disabled bool
 
@@ -258,6 +263,7 @@ func RequestFor(cmd *cobra.Command, machineOutput bool) Request {
 	return Request{
 		In:            cmd.InOrStdin(),
 		Out:           cmd.OutOrStdout(),
+		Notice:        cmd.ErrOrStderr(),
 		Disabled:      disabled,
 		MachineOutput: machineOutput,
 	}
@@ -271,9 +277,38 @@ type Missing struct {
 	Question string
 	// Value receives the answer.
 	Value *string
+	// Infer works out the value from where the command is run, when the flag
+	// was not passed. It is called after the values before it are settled, so
+	// one inference can rest on another. Nil infers nothing.
+	Infer func() Inferred
 }
 
-// FillMissing asks for each absent value, or refuses naming every flag at once.
+// Inferred is a value worked out rather than given.
+type Inferred struct {
+	Value string
+	// Source says where it came from, as "the checked-out branch".
+	Source string
+	// Unattended is whether the value may stand in for the flag when nobody is
+	// there to see it. A person is always shown an inferred value and can
+	// change it; without one it is used only where the command says the
+	// inference leaves nothing to choose.
+	Unattended bool
+}
+
+func (missing Missing) infer() Inferred {
+	if missing.Infer == nil {
+		return Inferred{}
+	}
+
+	inferred := missing.Infer()
+	inferred.Value = strings.TrimSpace(inferred.Value)
+
+	return inferred
+}
+
+// FillMissing settles each absent value: by asking, with an inferred value
+// offered as the answer, or without a person by taking the inferences that may
+// stand in unattended and refusing the rest, naming every flag at once.
 //
 // Naming them all matters: a caller told about --title, corrected, and then
 // told about --to-ref has spent two round trips learning what one message
@@ -297,20 +332,17 @@ func FillMissing(request Request, missing []Missing) error {
 		Lookup:        request.Lookup,
 	})
 	if !decision.Allowed {
-		flags := make([]string, 0, len(absent))
-		for _, item := range absent {
-			flags = append(flags, item.Flag)
-		}
-		return apperrors.New(
-			apperrors.KindValidation,
-			fmt.Sprintf("required flag(s) %s not set (%s, so there is nobody to ask)", strings.Join(flags, ", "), decision.Reason),
-			nil,
-		)
+		return fillUnattended(request, absent, decision.Reason)
 	}
 
 	reader := bufio.NewReader(request.In)
 	for _, item := range absent {
-		fmt.Fprintf(request.Out, "%s: ", item.Question)
+		inferred := item.infer()
+		if inferred.Value == "" {
+			fmt.Fprintf(request.Out, "%s: ", item.Question)
+		} else {
+			fmt.Fprintf(request.Out, "%s [%s]: ", item.Question, inferred.Value)
+		}
 
 		line, err := reader.ReadString('\n')
 		if err != nil && !(err == io.EOF && line != "") {
@@ -319,9 +351,13 @@ func FillMissing(request Request, missing []Missing) error {
 
 		answer := strings.TrimSpace(line)
 		if answer == "" {
-			// An empty answer is not a value. Substituting a default here is
-			// the "refusing to ask is not permission to guess" failure with an
+			// Accepting what was shown is an answer. With nothing shown, an
+			// empty one is not a value, and substituting a default here is the
+			// "refusing to ask is not permission to guess" failure with an
 			// extra step.
+			answer = inferred.Value
+		}
+		if answer == "" {
 			return apperrors.New(
 				apperrors.KindValidation,
 				fmt.Sprintf("%s cannot be empty; pass %s or answer the question", item.Question, item.Flag),
@@ -331,6 +367,35 @@ func FillMissing(request Request, missing []Missing) error {
 		*item.Value = answer
 	}
 	return nil
+}
+
+// fillUnattended settles what it can with nobody there. An inference that may
+// stand in unattended does, and is reported on Notice so that a person reading
+// the run afterwards can see what was decided for them; every value left
+// without one is named in the refusal.
+func fillUnattended(request Request, absent []Missing, reason string) error {
+	unfilled := []string{}
+	for _, item := range absent {
+		inferred := item.infer()
+		if inferred.Value == "" || !inferred.Unattended {
+			unfilled = append(unfilled, item.Flag)
+			continue
+		}
+
+		*item.Value = inferred.Value
+		if request.Notice != nil && !request.MachineOutput {
+			fmt.Fprintf(request.Notice, "Using %s %s (%s)\n", item.Flag, inferred.Value, inferred.Source)
+		}
+	}
+	if len(unfilled) == 0 {
+		return nil
+	}
+
+	return apperrors.New(
+		apperrors.KindValidation,
+		fmt.Sprintf("required flag(s) %s not set (%s, so there is nobody to ask)", strings.Join(unfilled, ", "), reason),
+		nil,
+	)
 }
 
 // ConfirmDeleteOf is ADR-073 for a command whose target is one named resource.

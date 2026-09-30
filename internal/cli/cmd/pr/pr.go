@@ -59,6 +59,11 @@ type Dependencies struct {
 	WriteJSONList       func(io.Writer, any, bool) error
 	GitBackend          func() git.Backend
 	PermissionChecker   func(*openapigenerated.ClientWithResponses) PermissionChecker
+	// RepositoryWasInferred reports that --repo was filled in from the git
+	// remote of the checkout rather than named by the caller. pr create takes
+	// the checked-out branch as its source unattended only then. Optional: nil
+	// reads as not inferred.
+	RepositoryWasInferred func() bool
 }
 
 func New(deps Dependencies) *cobra.Command {
@@ -438,7 +443,15 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a pull request",
-		Example: "  # Create a pull request (automatically includes default reviewers and CODEOWNERS)\n" +
+		Long: "Create a pull request.\n\n" +
+			"Run inside a checkout, bb works out what it is not told: --from-ref is the branch that is checked out, " +
+			"--to-ref is the repository's default branch, and --title is the subject of the branch's commit when it " +
+			"holds exactly one. At a terminal each is offered for you to accept or change. With nobody to ask they are " +
+			"used as they are, and --title is still required for a branch that holds several commits. The checked-out " +
+			"branch is only taken unasked when the repository itself came from the checkout rather than from --repo.",
+		Example: "  # Inside a checkout: from the checked-out branch into the repository's default branch\n" +
+			"  bb pr create\n\n" +
+			"  # Create a pull request (automatically includes default reviewers and CODEOWNERS)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\"\n\n" +
 			"  # Create a draft pull request (Bitbucket DC 8.0+)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --draft\n\n" +
@@ -453,11 +466,16 @@ func New(deps Dependencies) *cobra.Command {
 			// before RunE and this replaces it. Loading first would report "no
 			// Bitbucket host configured" to someone whose real problem is a
 			// missing --title, which is the round trip this is meant to remove.
-			// FillMissing needs nothing from the config.
+			// FillMissing needs nothing from the config, and an inference that
+			// does loads it for itself.
+			inference := &createInference{
+				ctx: cmd.Context(), deps: deps, repository: repository,
+				fromRepo: createFromRepo, fromRef: &createFromRef, toRef: &createToRef,
+			}
 			if err := prompt.FillMissing(prompt.RequestFor(cmd, deps.JSONEnabled()), []prompt.Missing{
-				{Flag: "--from-ref", Question: "Source branch", Value: &createFromRef},
-				{Flag: "--to-ref", Question: "Target branch", Value: &createToRef},
-				{Flag: "--title", Question: "Title", Value: &createTitle},
+				{Flag: "--from-ref", Question: "Source branch", Value: &createFromRef, Infer: inference.sourceBranch},
+				{Flag: "--to-ref", Question: "Target branch", Value: &createToRef, Infer: inference.targetBranch},
+				{Flag: "--title", Question: "Title", Value: &createTitle, Infer: inference.title},
 			}); err != nil {
 				return err
 			}
@@ -645,10 +663,10 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	createCmd.Flags().StringVar(&createFromRef, "from-ref", "", "Source branch (name or refs/heads/name)")
+	createCmd.Flags().StringVar(&createFromRef, "from-ref", "", "Source branch (name or refs/heads/name); in a checkout, the checked-out branch")
 	createCmd.Flags().StringVar(&createFromRepo, "from-repo", "", "Repository holding --from-ref as PROJECT/slug, for a fork to upstream pull request (defaults to --repo)")
-	createCmd.Flags().StringVar(&createToRef, "to-ref", "", "Target branch (name or refs/heads/name)")
-	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title")
+	createCmd.Flags().StringVar(&createToRef, "to-ref", "", "Target branch (name or refs/heads/name); the repository's default branch when left out")
+	createCmd.Flags().StringVar(&createTitle, "title", "", "Pull request title; the commit subject when the branch holds exactly one commit")
 	createCmd.Flags().StringVar(&createDescription, "description", "", "Pull request description")
 	createCmd.Flags().StringSliceVar(&createReviewers, "reviewers", nil, "Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)")
 	createCmd.Flags().StringSliceVar(&createReviewerGroups, "reviewer-group", nil, "Reviewer group name(s) to expand and add (repeatable or comma-separated; a leading @ and a reviewer-group/ prefix are both accepted; alias --reviewer-groups)")

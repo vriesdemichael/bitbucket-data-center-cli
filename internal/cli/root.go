@@ -290,6 +290,7 @@ your behalf using the link above.`,
 		PermissionChecker: func(client *openapigenerated.ClientWithResponses) prcmd.PermissionChecker {
 			return options.permissionCheckerFor(client)
 		},
+		RepositoryWasInferred: func() bool { return options.repositoryInferred },
 	}))
 	rootCmd.AddCommand(admincmd.New(admincmd.Dependencies{
 		JSONEnabled: options.machineOutput,

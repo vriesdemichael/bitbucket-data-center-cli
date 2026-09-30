@@ -1,11 +1,10 @@
 package prcmd
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestPrCreateNamesEveryMissingFlagAtOnce is the half of ADR-073 that is easy
@@ -13,12 +12,21 @@ import (
 //
 // bb pr create used MarkFlagRequired, so Cobra refused before RunE and a person
 // at a terminal could never be asked. Removing that must not weaken the
-// non-interactive contract: with nobody to ask, the command still refuses, and
-// it names every absent flag in one message rather than one per round trip.
+// non-interactive contract: with nobody to ask and nothing to infer a value
+// from, the command still refuses, and it names every absent flag in one
+// message rather than one per round trip.
+//
+// mock-inventory: unreached-guard — a write fails the test, and a read is answered with nothing, so that no value is inferred; the subject is the refusal.
 func TestPrCreateNamesEveryMissingFlagAtOnce(t *testing.T) {
-	// A listener that fails the test if it is reached, which is the
-	// assertion: every case here is refused before a request exists.
-	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
+	// bb may ask what it could infer a value from, and this listener has
+	// nothing to tell it. Anything else reaching it fails the test, which is
+	// the assertion: every case here is refused before a pull request exists.
+	guard := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodGet {
+			t.Errorf("a request was made where none should have been: %s %s", request.Method, request.URL.Path)
+		}
+		http.NotFound(w, request)
+	}))
 	t.Cleanup(guard.Close)
 	serverURL := guard.URL
 
