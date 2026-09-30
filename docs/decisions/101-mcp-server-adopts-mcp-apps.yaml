@@ -28,10 +28,12 @@ decision: >
   metaphors, and the host's theme.
 
   A count in a view is Bitbucket's count of the whole, and a view that lists fewer says so. What
-  needs the person is never behind a click. A card lists the builds its target branch requires as
-  Bitbucket's merge check decides them, from the builds listing Bitbucket's own pull request page
-  reads, since the public build endpoints do not say which required key a build reports under;
-  where bb cannot tell as the check would, the card says nothing about requirements. A pull
+  needs the person is never behind a click. A card counts and lists its builds as Bitbucket's pull
+  request page does, from the listing that page reads: the source commit's builds for the pull
+  request's branch or for none, each with the required key it reports under, which the public build
+  endpoints do not say. From it the card lists the builds its target branch requires as Bitbucket's
+  merge check decides them, reading letter case in a matcher as Bitbucket's default does; where bb
+  cannot tell as the check would, the card says nothing about requirements. A pull
   request's comments are where Bitbucket has them: in its overview's activity, newest first, and on
   their lines in its diff, each where Bitbucket's diff with comments draws it; fullscreen, the diff
   is Bitbucket's diff page, one file at a time. Inline, a view keeps one shape and grows a step at a
@@ -98,6 +100,10 @@ rejected_alternatives:
     reason: Every refresh would carry the whole payload, changed or not, and show is the model's tool.
   - alternative: Draw everything a result carries, inline
     reason: A list or a diff of a thousand rows buries the conversation, and a host scrolls a view it caps inside the chat.
+  - alternative: Say nothing about requirements when only letter case decides a match
+    reason: >
+      Bitbucket ignores case by default, and its users see its verdict; a card that goes quiet
+      where the web interface does not tells them less than Bitbucket does.
   - alternative: A view of a pull request's comments of its own
     reason: >
       Bitbucket has none, and a person reads a comment where it was written: gathered in one view
