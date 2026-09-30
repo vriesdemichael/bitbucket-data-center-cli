@@ -114,42 +114,32 @@ func New(deps Dependencies) *cobra.Command {
   bb doctor`,
 		Long: `Check the configuration bb would load, and report everything wrong with it at once.
 
-A command that loads the configuration stops at the first file it cannot use.
-bb doctor reads the stored, workspace and system configuration files on their
-own and reports, for each, where it is, whether it parses, and every key the
-configuration schema rejects, with its line. It lists keys that are valid but
-not read from the file they are in: policy set in your own file mandates
-nothing.
+A command stops at the first file it cannot use. bb doctor reads the stored,
+workspace and system files each on its own and reports, for each, where it is,
+whether it parses, every key the configuration schema rejects, with its line,
+and every valid key its file does not read: policy set in your own file
+mandates nothing.
 
 It then shows where each effective setting comes from -- a flag, an environment
 variable, a .env file, a configuration file, the Windows registry or the
-built-in default -- and what it overrides. When keyring-backed storage is
-required, it checks that the OS keyring can be reached.
+built-in default -- and what it overrides, and checks that the OS keyring
+answers when keyring-backed storage is required.
 
-For each shell installed, it shows where completion is set up: by bb completion
-install, for you or for every user; by a package; as a script saved from bb
-completion <shell>; or by hand, in a startup file. Like bb completion install,
-it asks each PowerShell where its profiles are. For each agent skill, it shows
-where the skill is installed -- .agents/skills, which most agents read, or
-.claude/skills, which Claude Code reads, under the working directory or your
-home directory -- and whether each copy is what bb ai skill install writes now
-or the repository's copy. A copy of a skill this bb no longer carries is
-reported with the directory to delete.
+It also shows where shell completion is set up for each shell installed, and
+where the agent skill is installed, in .agents/skills or .claude/skills, and
+whether each copy is the one bb ai skill install writes now. A copy of a skill
+this bb no longer carries is reported with the directory to delete.
 
 It needs no configured host, never contacts Bitbucket, and never prints a
 secret: a token or password is reported as configured, with where it is held.
 
-Exit status is 0 only when there is nothing to fix. Any issue the report shows
--- an invalid file, a key its file never reads, a setting a command would
-refuse, a required keyring that cannot be reached, completion set up where its
-shell will not run it, a saved script that has fallen behind this bb, a skill
-an earlier bb installed or somebody edited, a skill this bb no longer carries --
-exits 1. Under --json a run with
-issues writes the failure envelope instead of the report: its message
-summarises the issues, and error.details names each one under its own key,
-file/<file>, violation/<file>/<key path>, ignored/<file>/<key>, setting/<name>,
-keyring, completion/<shell>/<scope>, completion/powershell/<edition> or
-skill/<skill>/<scope>/<location>, with the key path written as a JSON Pointer.`,
+Exit status is 0 only when there is nothing to fix, and 1 for any issue the
+report shows. Under --json a run with issues writes the failure envelope
+instead: its message summarises the issues, and error.details names each one
+under its own key: file/<file>, violation/<file>/<key path>, ignored/<file>/<key>,
+setting/<name>, keyring, completion/<shell>/<scope>,
+completion/powershell/<edition> or skill/<skill>/<scope>/<location>, with the
+key path written as a JSON Pointer.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			diagnosis := d.Diagnose(config.DiagnoseInput{
 				Overrides:    d.RuntimeOverrides(),
