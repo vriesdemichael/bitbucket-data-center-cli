@@ -73,6 +73,14 @@ func (options Options) ServiceLimit() int {
 	return options.effectiveLimit()
 }
 
+// All is the options as though --all had been passed, for a command whose
+// other flags bound the listing by themselves.
+func (options Options) All() Options {
+	options.all = true
+
+	return options
+}
+
 func (options Options) effectiveLimit() int {
 	if options.limit <= 0 {
 		return DefaultLimit

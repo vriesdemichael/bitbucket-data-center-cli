@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -37,6 +38,8 @@ type ListOptions struct {
 	Start        int    `json:"start"`
 	SourceBranch string `json:"source_branch,omitempty"`
 	TargetBranch string `json:"target_branch,omitempty"`
+	// Period bounds the listing by one of a pull request's dates.
+	Period Period `json:"-"`
 	// No Role. The repository listing has no role parameter -- Bitbucket
 	// declares none and drops the one we used to send, so the caller got every
 	// open pull request while believing it had asked for its own. Role belongs
@@ -192,6 +195,8 @@ type DashboardListOptions struct {
 	RepoSlug   string
 	MaxResults int
 	Start      int
+	// Period bounds the listing by one of a pull request's dates.
+	Period Period
 }
 
 func (service *Service) ListDashboard(ctx context.Context, options DashboardListOptions) ([]PullRequest, error) {
@@ -221,8 +226,14 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 				"limit": strconv.Itoa(limit),
 				"start": strconv.Itoa(start),
 			}
-			if normalizedState != "" {
-				query["state"] = bitbucketState(normalizedState)
+			// The dashboard has no state for "all", and answers 400 when sent
+			// one: every state is what it lists when none is named.
+			if state := dashboardState(normalizedState); state != "" {
+				query["state"] = state
+			}
+			if options.Period.Since > 0 {
+				// Named, because the early stop below rests on it.
+				query["order"] = "NEWEST"
 			}
 			if options.Role != "" {
 				query["role"] = strings.ToUpper(options.Role)
@@ -236,16 +247,16 @@ func (service *Service) ListDashboard(ctx context.Context, options DashboardList
 				return openapi.Page[PullRequest]{}, err
 			}
 
-			mapped := make([]PullRequest, 0, len(response.Values))
+			listed := make([]PullRequest, 0, len(response.Values))
 			for _, value := range response.Values {
-				pullRequest := mapPullRequest(value)
-				if !inProject(pullRequest, options.ProjectKey) || !inRepository(pullRequest, options.RepoSlug) {
-					continue
-				}
-				mapped = append(mapped, pullRequest)
+				listed = append(listed, mapPullRequest(value))
 			}
+			kept, ended := options.Period.within(listed, func(pullRequest PullRequest) bool {
+				return inProject(pullRequest, options.ProjectKey) && inRepository(pullRequest, options.RepoSlug) &&
+					matchesFilters(pullRequest, normalizedState, "", "")
+			})
 
-			return pullRequestPage(response, mapped), nil
+			return periodPage(response, kept, ended), nil
 		})
 }
 
@@ -321,21 +332,25 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 				"start": strconv.Itoa(start),
 				"state": bitbucketState(normalizedState),
 			}
+			if options.Period.Since > 0 {
+				// Named, because the early stop below rests on it.
+				query["order"] = "NEWEST"
+			}
 
 			var response pagedPullRequestResponse
 			if err := service.client.GetJSON(ctx, path, query, &response); err != nil {
 				return openapi.Page[PullRequest]{}, err
 			}
 
-			matched := make([]PullRequest, 0, len(response.Values))
+			listed := make([]PullRequest, 0, len(response.Values))
 			for _, value := range response.Values {
-				mapped := mapPullRequest(value)
-				if matchesFilters(mapped, normalizedState, options.SourceBranch, options.TargetBranch) {
-					matched = append(matched, mapped)
-				}
+				listed = append(listed, mapPullRequest(value))
 			}
+			kept, ended := options.Period.within(listed, func(pullRequest PullRequest) bool {
+				return matchesFilters(pullRequest, normalizedState, options.SourceBranch, options.TargetBranch)
+			})
 
-			return pullRequestPage(response, matched), nil
+			return periodPage(response, kept, ended), nil
 		})
 }
 
@@ -1070,14 +1085,30 @@ func (service *Service) DisableAutoMerge(ctx context.Context, repository Reposit
 // narrows the answer. It already did that; the state was being sent as well,
 // which made `bb pr list --state closed` fail outright on a value the CLI's own
 // help offers.
+// bitbucketState is the state a repository's pull request listing is asked
+// for. It has no "closed": merged and declined are asked for together as ALL,
+// and the open ones are dropped as the pages arrive.
 func bitbucketState(normalized string) string {
 	switch normalized {
 	case "open":
 		return "OPEN"
-	case "closed":
-		return "ALL"
+	case "merged":
+		return "MERGED"
+	case "declined":
+		return "DECLINED"
 	default:
 		return "ALL"
+	}
+}
+
+// dashboardState is the state the dashboard is asked for, and empty for every
+// state: it has no ALL, and refuses one.
+func dashboardState(normalized string) string {
+	switch normalized {
+	case "open", "merged", "declined":
+		return bitbucketState(normalized)
+	default:
+		return ""
 	}
 }
 
@@ -1087,12 +1118,12 @@ func normalizeState(state string) (string, error) {
 		return "open", nil
 	}
 
-	switch resolved {
-	case "open", "closed", "all":
+	if slices.Contains(openapi.PullRequestStateFilters, resolved) {
 		return resolved, nil
-	default:
-		return "", apperrors.New(apperrors.KindValidation, "--state must be one of: open, closed, all", nil)
 	}
+
+	return "", apperrors.New(apperrors.KindValidation,
+		"--state must be one of: "+strings.Join(openapi.PullRequestStateFilters, ", "), nil)
 }
 
 func matchesFilters(pullRequest PullRequest, state string, sourceBranch string, targetBranch string) bool {
@@ -1103,6 +1134,10 @@ func matchesFilters(pullRequest PullRequest, state string, sourceBranch string, 
 		}
 	case "closed":
 		if pullRequest.Open && !pullRequest.Closed {
+			return false
+		}
+	case "merged", "declined":
+		if !strings.EqualFold(pullRequest.State, state) {
 			return false
 		}
 	}

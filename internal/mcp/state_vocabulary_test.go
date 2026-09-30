@@ -12,9 +12,12 @@ import (
 // TestListPullRequestsAdvertisesTheStatesItAccepts is #577 on the MCP server.
 //
 // list_pull_requests described its state as "OPEN (default), MERGED, DECLINED,
-// ALL". The service accepts open, closed and all, so an agent that followed the
-// description and asked for merged pull requests was refused, with an error
-// naming a CLI flag it never used -- and closed, which works, was not mentioned.
+// ALL" when the service accepted open, closed and all, so an agent that
+// followed the description and asked for merged pull requests was refused, with
+// an error naming a CLI flag it never used -- and closed, which worked, was not
+// mentioned. The service takes merged and declined now (#697); what holds is
+// that the description is made from the states the service accepts, and names
+// every one.
 func TestListPullRequestsAdvertisesTheStatesItAccepts(t *testing.T) {
 	t.Parallel()
 
@@ -47,9 +50,11 @@ func TestListPullRequestsAdvertisesTheStatesItAccepts(t *testing.T) {
 			t.Errorf("the state description does not name %q, which the service accepts: %q", accepted, description)
 		}
 	}
-	for _, rejected := range []string{"merged", "declined"} {
-		if words[rejected] {
-			t.Errorf("the state description names %q, which the service rejects: %q", rejected, description)
+	// And nothing else that reads as a state: "all" is bb's own word, and the
+	// dashboard refuses Bitbucket's ALL.
+	for _, word := range []string{"reopened", "superseded"} {
+		if words[word] {
+			t.Errorf("the state description names %q, which the service rejects: %q", word, description)
 		}
 	}
 }
