@@ -15,35 +15,121 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
 
 `refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them. A click in a view is a call of a tool, through the client, never a connection to Bitbucket ([how views work](../advanced/mcp-governance.md#views-stay-inside-the-mcp-server)).
 
-| Tool | Access | Asks | What it does |
+| Tool | What it does | Access | Asks |
 |---|---|---|---|
-| `add_pr_comment` | writes | never | Add a comment to a pull request. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment. |
-| `compare_refs` | read-only | never | List the commits reachable from 'from' but not from 'to': what one ref has that the other lacks. For the commits a feature branch adds, pass from=feature and to=main. |
-| `create_pull_request` | writes | never | Create a new pull request. When the person asks for one, create it, filling in what they left to you. |
-| `create_tag` | writes | always | Create a tag on a specific commit or ref. Use for release tagging after a PR is merged. Asks the person to confirm in the client before it runs. |
-| `disable_auto_merge` | writes | always | Disable auto-merge on a pull request. The PR will no longer be merged automatically. Asks the person to confirm in the client before it runs. |
-| `enable_auto_merge` | writes | always | Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. Asks the person to confirm in the client before it runs. |
-| `get_build_status` | read-only | never | Get build/CI statuses for a specific commit. Use this to check whether CI passed before declaring a PR ready to merge. |
-| `get_commit` | read-only | never | Get details of a specific commit including author, message, and timestamp. |
-| `get_file_content` | read-only | never | Read a file in a repository. Text comes back as a window of numbered lines: start_line and line_count choose it, and each answer says which lines it holds and where the next window starts. A Word, PowerPoint or Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz, tar.bz2) as a listing of its entries, both in the same windows. An image (PNG, JPEG, GIF, WebP, BMP, TIFF) comes back as an image, converted to PNG or JPEG when clients do not take its format, turned upright when its metadata says it was stored turned, and scaled down when it is large, with a note saying which. Audio and video come back as themselves beside a description when they are small, and as the description alone when not. A PDF or any other file is described by its type and size rather than shown, and a file over 64 MiB is described without being read. |
-| `get_pr_diff` | read-only | never | Get the diff of a pull request as unified diff text. |
-| `get_pull_request` | read-only | never | Get pull request details including title, state, reviewer approvals, and merge status. The review_summary field reports unresolved comment threads, open tasks and reviewers who requested changes; action_required is true when the pull request is waiting on the author, and is absent when the counts it rests on were not all measured -- read counts_source to see which were. |
-| `get_repository_clone_info` | read-only | never | Get HTTPS and SSH clone URLs for a repository. Use these URLs with git clone to check out the repository locally. |
-| `list_branches` | read-only | never | List branches in a repository. Use to discover existing branches before creating a new one or a pull request. |
-| `list_commits` | read-only | never | List commits in a repository branch. Use to walk history to find a good base or diagnose what changed. |
-| `list_pr_comments` | read-only | never | List review comment threads on a pull request, unresolved first. Bitbucket models a task as a blocker comment, so this returns reviewer comments and tasks together, each with its resolution state, file anchor and reply count. Use state=open to see only what is still waiting on the author. Without path this returns the aggregate pull request comment view derived from activities. |
-| `list_pull_requests` | read-only | never | List pull requests. With project and repo, lists that repository's. Without repo, lists your own pull requests across every repository (the dashboard), narrowed to project when one is given. |
-| `list_required_builds` | read-only | never | List required build checks that must pass before a pull request can be merged. Check this before attempting a merge to understand what CI must succeed. |
-| `list_tags` | read-only | never | List tags in a repository. Use to find the latest release baseline or versioning information. |
-| `merge_pull_request` | writes | always | Merge a pull request. All required build checks must pass and all reviewers must have approved. Asks the person to confirm in the client before it runs. |
-| `refresh_view` | read-only | never | Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs. |
-| `resolve_ref` | read-only | never | Resolve a branch or tag name to its tip commit SHA. Use as a cheap existence check before cloning or creating a pull request. |
-| `search_repositories` | read-only | never | Search for repositories by name, optionally filtered by project. Returns project key, slug, and display name. |
-| `set_build_status` | writes | always | Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views. Asks the person to confirm in the client before it runs. |
-| `show` | read-only | never | Show the person a pull request, a list of pull requests or a pull request's diff as an interactive view, in clients that display MCP Apps views, or a pull request form for them to finish and submit. It is for the person, not for you: its answer says what was shown, not the data, so read with the other tools. Call it only when a person is there to see it, never when you work on your own, as in a scheduled, background or batch task; and once, after you have what you need and before your answer. Kind pull_request, for a pull request the person asked about or should watch, takes project, repo and id; its view keeps its builds and reviews current, and its overview has its comments and activity. Kind diff takes the same, for changes the person cannot open in their own editor, such as another repository's, and draws the comments on their lines. Kind pull_requests, for what needs the person, takes the filters list_pull_requests takes. Kind pull_request_form is for a person who wants a say in a pull request before it exists, being particular about its description or reviewers or asking to see the draft; for a clear request to open one, call create_pull_request instead. It takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), or an id to edit that pull request; nothing is created or changed until the person submits it. In a client that displays no views, it shows nothing and says so. |
-| `submit_pr_review` | writes | always | Set review status on a pull request: approve, unapprove, or request changes (needs_work). Asks the person to confirm in the client before it runs. |
-| `suggest_form_values` | read-only | never | Called by bb's pull request form, not by the model: suggests the repository's branches, or the people who can read it as reviewers, matching what the person typed, and names the default reviewers and code owners for the branches they picked. |
-| `update_pull_request` | writes | when-setting-draft | Update a pull request's title, description, or draft state. Use draft=false to mark a draft pull request ready for review. Requires the current version from get_pull_request for optimistic locking; a stale version is rejected rather than overwriting someone else's edit. Setting draft asks the person to confirm in the client first. |
+| `add_pr_comment` | Comment on pull request | writes | never |
+| `compare_refs` | Compare refs | read-only | never |
+| `create_pull_request` | Create pull request | writes | never |
+| `create_tag` | Create tag | writes | always |
+| `disable_auto_merge` | Disable auto-merge | writes | always |
+| `enable_auto_merge` | Enable auto-merge | writes | always |
+| `get_build_status` | Get build status | read-only | never |
+| `get_commit` | Get commit | read-only | never |
+| `get_file_content` | Read file | read-only | never |
+| `get_pr_diff` | Get pull request diff | read-only | never |
+| `get_pull_request` | Get pull request | read-only | never |
+| `get_repository_clone_info` | Get clone URLs | read-only | never |
+| `list_branches` | List branches | read-only | never |
+| `list_commits` | List commits | read-only | never |
+| `list_pr_comments` | List pull request comments | read-only | never |
+| `list_pull_requests` | List pull requests | read-only | never |
+| `list_required_builds` | List required builds | read-only | never |
+| `list_tags` | List tags | read-only | never |
+| `merge_pull_request` | Merge pull request | writes | always |
+| `refresh_view` | Refresh a view | read-only | never |
+| `resolve_ref` | Resolve ref | read-only | never |
+| `search_repositories` | Search repositories | read-only | never |
+| `set_build_status` | Set build status | writes | always |
+| `show` | Show a view | read-only | never |
+| `submit_pr_review` | Review pull request | writes | always |
+| `suggest_form_values` | Suggest form values | read-only | never |
+| `update_pull_request` | Update pull request | writes | when-setting-draft |
+
+??? note "What each tool tells the model"
+
+    The description a client hands the model with each tool, as the server sends it.
+
+    `add_pr_comment`
+    :   Add a comment to a pull request. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment.
+
+    `compare_refs`
+    :   List the commits reachable from 'from' but not from 'to': what one ref has that the other lacks. For the commits a feature branch adds, pass from=feature and to=main.
+
+    `create_pull_request`
+    :   Create a new pull request. When the person asks for one, create it, filling in what they left to you.
+
+    `create_tag`
+    :   Create a tag on a specific commit or ref. Use for release tagging after a PR is merged. Asks the person to confirm in the client before it runs.
+
+    `disable_auto_merge`
+    :   Disable auto-merge on a pull request. The PR will no longer be merged automatically. Asks the person to confirm in the client before it runs.
+
+    `enable_auto_merge`
+    :   Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. Asks the person to confirm in the client before it runs.
+
+    `get_build_status`
+    :   Get build/CI statuses for a specific commit. Use this to check whether CI passed before declaring a PR ready to merge.
+
+    `get_commit`
+    :   Get details of a specific commit including author, message, and timestamp.
+
+    `get_file_content`
+    :   Read a file in a repository. Text comes back as a window of numbered lines: start_line and line_count choose it, and each answer says which lines it holds and where the next window starts. A Word, PowerPoint or Excel file comes back as the text extracted from it, and an archive (zip, jar, tar, tar.gz, tar.bz2) as a listing of its entries, both in the same windows. An image (PNG, JPEG, GIF, WebP, BMP, TIFF) comes back as an image, converted to PNG or JPEG when clients do not take its format, turned upright when its metadata says it was stored turned, and scaled down when it is large, with a note saying which. Audio and video come back as themselves beside a description when they are small, and as the description alone when not. A PDF or any other file is described by its type and size rather than shown, and a file over 64 MiB is described without being read.
+
+    `get_pr_diff`
+    :   Get the diff of a pull request as unified diff text.
+
+    `get_pull_request`
+    :   Get pull request details including title, state, reviewer approvals, and merge status. The review_summary field reports unresolved comment threads, open tasks and reviewers who requested changes; action_required is true when the pull request is waiting on the author, and is absent when the counts it rests on were not all measured -- read counts_source to see which were.
+
+    `get_repository_clone_info`
+    :   Get HTTPS and SSH clone URLs for a repository. Use these URLs with git clone to check out the repository locally.
+
+    `list_branches`
+    :   List branches in a repository. Use to discover existing branches before creating a new one or a pull request.
+
+    `list_commits`
+    :   List commits in a repository branch. Use to walk history to find a good base or diagnose what changed.
+
+    `list_pr_comments`
+    :   List review comment threads on a pull request, unresolved first. Bitbucket models a task as a blocker comment, so this returns reviewer comments and tasks together, each with its resolution state, file anchor and reply count. Use state=open to see only what is still waiting on the author. Without path this returns the aggregate pull request comment view derived from activities.
+
+    `list_pull_requests`
+    :   List pull requests. With project and repo, lists that repository's. Without repo, lists your own pull requests across every repository (the dashboard), narrowed to project when one is given.
+
+    `list_required_builds`
+    :   List required build checks that must pass before a pull request can be merged. Check this before attempting a merge to understand what CI must succeed.
+
+    `list_tags`
+    :   List tags in a repository. Use to find the latest release baseline or versioning information.
+
+    `merge_pull_request`
+    :   Merge a pull request. All required build checks must pass and all reviewers must have approved. Asks the person to confirm in the client before it runs.
+
+    `refresh_view`
+    :   Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.
+
+    `resolve_ref`
+    :   Resolve a branch or tag name to its tip commit SHA. Use as a cheap existence check before cloning or creating a pull request.
+
+    `search_repositories`
+    :   Search for repositories by name, optionally filtered by project. Returns project key, slug, and display name.
+
+    `set_build_status`
+    :   Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views. Asks the person to confirm in the client before it runs.
+
+    `show`
+    :   Show the person a pull request, a list of pull requests or a pull request's diff as an interactive view, in clients that display MCP Apps views, or a pull request form for them to finish and submit. It is for the person, not for you: its answer says what was shown, not the data, so read with the other tools. Call it only when a person is there to see it, never when you work on your own, as in a scheduled, background or batch task; and once, after you have what you need and before your answer. Kind pull_request, for a pull request the person asked about or should watch, takes project, repo and id; its view keeps its builds and reviews current, and its overview has its comments and activity. Kind diff takes the same, for changes the person cannot open in their own editor, such as another repository's, and draws the comments on their lines. Kind pull_requests, for what needs the person, takes the filters list_pull_requests takes. Kind pull_request_form is for a person who wants a say in a pull request before it exists, being particular about its description or reviewers or asking to see the draft; for a clear request to open one, call create_pull_request instead. It takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), or an id to edit that pull request; nothing is created or changed until the person submits it. In a client that displays no views, it shows nothing and says so.
+
+    `submit_pr_review`
+    :   Set review status on a pull request: approve, unapprove, or request changes (needs_work). Asks the person to confirm in the client before it runs.
+
+    `suggest_form_values`
+    :   Called by bb's pull request form, not by the model: suggests the repository's branches, or the people who can read it as reviewers, matching what the person typed, and names the default reviewers and code owners for the branches they picked.
+
+    `update_pull_request`
+    :   Update a pull request's title, description, or draft state. Use draft=false to mark a draft pull request ready for review. Requires the current version from get_pull_request for optimistic locking; a stale version is rejected rather than overwriting someone else's edit. Setting draft asks the person to confirm in the client first.
+
 
 ## Tools that ask
 
