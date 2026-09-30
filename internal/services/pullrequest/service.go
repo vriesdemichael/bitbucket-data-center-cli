@@ -512,6 +512,62 @@ func (service *Service) MergeWith(ctx context.Context, repository RepositoryRef,
 	return service.transition(ctx, repository, pullRequestID, "merge", options.Version, body)
 }
 
+// DefaultBranch is the name of the branch a repository's pull requests target
+// unless told otherwise, as the repository reports it.
+func (service *Service) DefaultBranch(ctx context.Context, repository RepositoryRef) (string, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return "", err
+	}
+
+	var branch struct {
+		DisplayID string `json:"displayId"`
+	}
+	path := fmt.Sprintf("/rest/api/1.0/projects/%s/repos/%s/default-branch",
+		url.PathEscape(repository.ProjectKey), url.PathEscape(repository.Slug))
+	if err := service.client.GetJSON(ctx, path, nil, &branch); err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(branch.DisplayID), nil
+}
+
+// OnlyCommitSubject is the subject line of the one commit a pull request from
+// fromRef to toRef would carry, and false when it would carry none or several.
+//
+// A branch with one commit has one thing to say, and its subject is the title
+// a person would type. With several there is a choice to make, which is not
+// bb's. fromRepository names the repository fromRef is in when that is a fork
+// of target, and nil when it is target itself.
+func (service *Service) OnlyCommitSubject(ctx context.Context, target RepositoryRef, fromRepository *RepositoryRef, fromRef, toRef string) (string, bool, error) {
+	if err := validateRepositoryRef(target); err != nil {
+		return "", false, err
+	}
+
+	query := map[string]string{"from": fromRef, "to": toRef, "limit": "2"}
+	if fromRepository != nil {
+		query["fromRepo"] = fromRepository.ProjectKey + "/" + fromRepository.Slug
+	}
+
+	var commits struct {
+		Values []struct {
+			Message string `json:"message"`
+		} `json:"values"`
+	}
+	path := fmt.Sprintf("/rest/api/1.0/projects/%s/repos/%s/compare/commits",
+		url.PathEscape(target.ProjectKey), url.PathEscape(target.Slug))
+	if err := service.client.GetJSON(ctx, path, query, &commits); err != nil {
+		return "", false, err
+	}
+	if len(commits.Values) != 1 {
+		return "", false, nil
+	}
+
+	subject, _, _ := strings.Cut(strings.TrimSpace(commits.Values[0].Message), "\n")
+	subject = strings.TrimSpace(subject)
+
+	return subject, subject != "", nil
+}
+
 // EnabledMergeStrategies are the merge strategies a repository lets a pull
 // request be merged with, as its pull request settings report them. Anyone who
 // can read the repository can read them.

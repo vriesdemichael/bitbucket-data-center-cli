@@ -5197,12 +5197,17 @@ Dry run:
 Create a pull request
 
 ```text
-Create a pull request
+Create a pull request.
+
+Run inside a checkout, bb works out what it is not told: --from-ref is the branch that is checked out, --to-ref is the repository's default branch, and --title is the subject of the branch's commit when it holds exactly one. At a terminal each is offered for you to accept or change. With nobody to ask they are used as they are, and --title is still required for a branch that holds several commits. The checked-out branch is only taken unasked when the repository itself came from the checkout rather than from --repo.
 
 Usage:
   bb pr create [flags]
 
 Examples:
+  # Inside a checkout: from the checked-out branch into the repository's default branch
+  bb pr create
+
   # Create a pull request (automatically includes default reviewers and CODEOWNERS)
   bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change"
 
@@ -5223,14 +5228,14 @@ Flags:
       --default-reviewers        Include default reviewers configured on repository/project; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal (default true)
       --description string       Pull request description
       --draft                    Create as a draft pull request (Bitbucket DC 8.0+)
-      --from-ref string          Source branch (name or refs/heads/name)
+      --from-ref string          Source branch (name or refs/heads/name); in a checkout, the checked-out branch
       --from-repo string         Repository holding --from-ref as PROJECT/slug, for a fork to upstream pull request (defaults to --repo)
       --no-codeowners            Do not assign code owners
       --no-default-reviewers     Do not include default reviewers
       --reviewer-group strings   Reviewer group name(s) to expand and add (repeatable or comma-separated; a leading @ and a reviewer-group/ prefix are both accepted; alias --reviewer-groups)
       --reviewers strings        Reviewer usernames to add (repeatable or comma-separated, accepts @group syntax, e.g. --reviewers alice,@backend-team)
-      --title string             Pull request title
-      --to-ref string            Target branch (name or refs/heads/name)
+      --title string             Pull request title; the commit subject when the branch holds exactly one commit
+      --to-ref string            Target branch (name or refs/heads/name); the repository's default branch when left out
 
 Dry run:
   Predicts the outcome from what it can read, without changing anything (predicted)

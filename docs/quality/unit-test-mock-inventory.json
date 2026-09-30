@@ -224,15 +224,16 @@
     },
     {
       "file": "internal/cli/cmd/pr/create_interactive_test.go",
-      "line": 21,
+      "line": 24,
       "function": "TestPrCreateNamesEveryMissingFlagAtOnce",
       "class": "unreached-guard",
       "signals": [
-        "handler-supplied-by-the-caller",
-        "fails-if-the-server-is-reached"
+        "asserts-http-method",
+        "inspects-the-request-path"
       ],
       "action": "keep",
-      "reason": "asserts that no request is made, which needs no server to be true"
+      "reason": "a write fails the test, and a read is answered with nothing, so that no value is inferred; the subject is the refusal.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/pr/permission_contract_test.go",
