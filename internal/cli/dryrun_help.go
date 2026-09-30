@@ -59,6 +59,16 @@ func dryRunHelpLine(cmd *cobra.Command) string {
 	}
 }
 
+// DryRunHelp is the line a command's help prints under "Dry run", or "" for a
+// command group.
+//
+// Exported for tools/cli-docs-export, which builds a command's reference entry
+// from the command rather than from its help text, and so has no page to read
+// the line off.
+func DryRunHelp(cmd *cobra.Command) string {
+	return dryRunHelpLine(cmd)
+}
+
 // firstSentence is text up to its first full stop.
 func firstSentence(text string) string {
 	if index := strings.Index(text, ". "); index >= 0 {

@@ -50,12 +50,13 @@ import (
 // `bb` line out of a JSON string would find the fragment rather than the
 // invocation.
 //
-// Text blocks stay out of scope entirely, which is what excludes the generated
-// command reference, by far the largest source of `bb ...` lines in the tree:
-// its blocks are tagged text because they are Cobra help output. Those lines are
-// usage strings carrying placeholders like [flags], so parsing them would report
-// failures for documentation that is correct by construction — it is generated
-// from the same command tree this linter validates against.
+// Text blocks stay out of scope entirely, which is what excludes the usage lines
+// of the generated command reference, by far the largest source of `bb ...`
+// lines in the tree. Those lines are usage strings carrying placeholders like
+// [flags], so parsing them would report failures for documentation that is
+// correct by construction — it is generated from the same command tree this
+// linter validates against. The reference sets a command's examples in shell
+// blocks instead: those are written by hand, and so are checked here.
 var shellLanguages = map[string]bool{
 	"bash":    true,
 	"sh":      true,

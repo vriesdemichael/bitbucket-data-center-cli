@@ -212,6 +212,51 @@ body::before {
   box-shadow: var(--bb-shadow);
 }
 
+/* Definition lists: the command reference lists commands and flags with them.
+   Stacked on a narrow screen, a term above its definition; two columns where
+   there is room, like a table without the sideways scroll. */
+.md-typeset dl {
+  margin: 0.6em 0 1em;
+}
+
+.md-typeset dl dt {
+  margin-top: 0.7em;
+}
+
+.md-typeset dl dt code {
+  white-space: nowrap;
+}
+
+.md-typeset dl dd {
+  margin: 0.15em 0 0 1.2em;
+}
+
+.md-typeset dl dd > p {
+  margin: 0;
+}
+
+@media screen and (min-width: 60em) {
+  .md-typeset dl {
+    display: grid;
+    /* A floor on the first column, so that the short lists of one entry -- its
+       own flags, then each group's -- line up with one another. */
+    grid-template-columns: minmax(13em, max-content) 1fr;
+    column-gap: 1.4em;
+    row-gap: 0.45em;
+    align-items: baseline;
+  }
+
+  .md-typeset dl dt {
+    grid-column: 1;
+    margin: 0;
+  }
+
+  .md-typeset dl dd {
+    grid-column: 2;
+    margin: 0;
+  }
+}
+
 .md-typeset blockquote {
   border-left: 4px solid var(--bb-accent);
   background: rgba(255, 255, 255, 0.36);

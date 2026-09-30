@@ -21,8 +21,10 @@ decision: >
   rather than one command's payload with `<!-- docs-lint: envelope-shape -->`; an illustration is
   still held to the envelope rules. A machine-output block carrying neither directive fails, so a
   new example is checked by default rather than when somebody remembers.
-  Text blocks remain out of scope, which is what excludes the generated command reference, whose
-  `bb ...` lines are Cobra usage strings and are correct by construction.
+  Text blocks remain out of scope, which is what excludes the usage lines of the generated command
+  reference: they are Cobra usage strings and are correct by construction. The examples a command
+  declares are written by hand, so the reference sets them in shell blocks and they are checked
+  like any other.
 agent_instructions: >
   Run `task docs:lint` after changing documentation or the command tree. It is part of
   `task quality:verify`, so the pre-push hook covers it.
