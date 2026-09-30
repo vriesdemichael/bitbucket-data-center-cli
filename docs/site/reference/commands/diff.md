@@ -76,6 +76,9 @@ bb diff pr 42 --repo PROJ/repo
 
 # Only the names of the files it changes
 bb diff pr 42 --repo PROJ/repo --name-only
+
+# As a patch, saved to a file
+bb diff pr 42 --repo PROJ/repo --patch > pr-42.patch
 ```
 
 `--name-only`

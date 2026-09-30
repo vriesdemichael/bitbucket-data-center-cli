@@ -42,8 +42,10 @@ func newCloneCommand(deps Dependencies, path string) *cobra.Command {
 		Short: "Clone a repository to the local filesystem",
 		Example: "  # Clone into a directory named after the repository\n" +
 			"  " + path + " PROJ/repo\n\n" +
-			"  # Into a directory of your choice, over HTTPS, passing flags on to git\n" +
-			"  " + path + " PROJ/repo work/repo --https -- --depth 1",
+			"  # By the address the browser shows, into a directory of your choice\n" +
+			"  " + path + " https://bitbucket.example.com/projects/PROJ/repos/repo work/repo\n\n" +
+			"  # Over HTTPS only, passing flags on to git\n" +
+			"  " + path + " PROJ/repo --https -- --depth 1",
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()

@@ -192,7 +192,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "delete <commit> <report-key>",
 		Short: "Delete a Code Insights report",
 		Example: `  # Remove a report and its findings from a commit
-  bb insights report delete a1b2c3d lint --repo PROJ/repo --yes`,
+  bb insights report delete a1b2c3d lint --repo PROJ/repo`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
@@ -491,7 +491,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "delete <commit> <report-key>",
 		Short: "Delete annotation(s) by external id for a report",
 		Example: `  # Remove one finding, by the id it was reported with
-  bb insights annotation delete a1b2c3d lint --external-id lint-1 --repo PROJ/repo --yes`,
+  bb insights annotation delete a1b2c3d lint --external-id lint-1 --repo PROJ/repo`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)

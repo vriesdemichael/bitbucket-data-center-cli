@@ -366,7 +366,7 @@ func newProjectPermissionSubjectCommand(deps Dependencies, subject projectPermis
 	revokeCommand.Use = fmt.Sprintf("revoke <project-key> <%s>", subject.argPlaceholder())
 	revokeCommand.Short = fmt.Sprintf("Revoke a project permission from a %s", subject.noun)
 	revokeCommand.Long = fmt.Sprintf("Revoke a project permission from a %s.\n\n%s", subject.noun, alsoAvailableAs(shallow+" revoke", subject.noun))
-	revokeCommand.Example = fmt.Sprintf("  # Take a %s's permission on a project away\n  %s revoke PROJ %s --yes", subject.noun, deep, subject.exampleName())
+	revokeCommand.Example = fmt.Sprintf("  # Take a %s's permission on a project away\n  %s revoke PROJ %s", subject.noun, deep, subject.exampleName())
 
 	group.AddCommand(listCommand)
 	group.AddCommand(grantCommand)
@@ -421,10 +421,10 @@ func addProjectPermissionAliases(parent *cobra.Command, deps Dependencies) {
 	revokeCommand.Long = "Revoke a project permission from a user, or from a group with --group.\n\n" +
 		"Shallow alias for " + deep + " revoke."
 	revokeCommand.Example = `  # Take a user's permission on a project away
-  bb project permissions revoke PROJ alice --yes
+  bb project permissions revoke PROJ alice
 
   # A group's
-  bb project permissions revoke PROJ backend-team --group --yes`
+  bb project permissions revoke PROJ backend-team --group`
 	revokeCommand.Flags().BoolVar(&revokeGroup, "group", false, "Treat the argument as a group rather than a user")
 
 	parent.AddCommand(listCommand)

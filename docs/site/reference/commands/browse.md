@@ -16,12 +16,16 @@ bb browse [<number> | <path> | <commit-sha>] [flags]
 # Open the repository of the current checkout
 bb browse
 
-# A pull request, or a file on the current branch
+# A pull request, a commit, or a file at a line on the current branch
 bb browse 42
-bb browse src/main.go
+bb browse a1b2c3d
+bb browse src/main.go:120
 
-# Print the URL instead of opening it
-bb browse 42 --repo PROJ/repo --no-browser
+# A file on another branch, with who changed each line
+bb browse src/main.go --branch release/1.2 --blame
+
+# Print the URL instead of opening it, here of the repository's settings
+bb browse --settings --repo PROJ/repo --no-browser
 ```
 
 `--blame`

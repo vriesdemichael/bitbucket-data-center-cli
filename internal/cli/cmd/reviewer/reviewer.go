@@ -154,7 +154,7 @@ as inherited.`,
 		Use:   "delete <condition-id>",
 		Short: "Delete a default reviewer condition",
 		Example: `  # By the id bb reviewer condition list prints
-  bb reviewer condition delete 9 --repo PROJ/repo --yes`,
+  bb reviewer condition delete 9 --repo PROJ/repo`,
 		Long: `Delete a default reviewer condition of a project, or with --repo of a
 repository.
 

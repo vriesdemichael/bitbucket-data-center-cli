@@ -35,7 +35,7 @@ bb build delete <commit> [flags]
 
 ```bash
 # Remove one build status from a commit
-bb build delete a1b2c3d --key ci --repo PROJ/repo --yes
+bb build delete a1b2c3d --key ci --repo PROJ/repo
 ```
 
 `--key string`
@@ -197,7 +197,7 @@ bb build required delete <required-build-id> [flags]
 
 ```bash
 # By the id bb build required list prints
-bb build required delete 5 --repo PROJ/repo --yes
+bb build required delete 5 --repo PROJ/repo
 ```
 
 `--all`
@@ -353,6 +353,12 @@ bb build set <commit> [flags]
 ```bash
 # Report a passing build on a commit of this repository
 bb build set a1b2c3d --repo PROJ/repo --key ci --state SUCCESSFUL \
+  --url https://ci.example.com/builds/128
+
+# From a CI job: one step of a larger build, with what Bitbucket shows beside it
+bb build set "$GIT_COMMIT" --repo PROJ/repo --key ci-unit --parent ci \
+  --state FAILED --name "Unit tests" --description "3 of 412 tests failed" \
+  --build-number 128 --duration-ms 93000 --ref refs/heads/feature/x \
   --url https://ci.example.com/builds/128
 ```
 

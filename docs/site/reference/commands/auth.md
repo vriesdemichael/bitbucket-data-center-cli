@@ -274,7 +274,7 @@ bb auth gpg-key clear [flags]
 
 ```bash
 # Remove every GPG key of yours
-bb auth gpg-key clear --yes
+bb auth gpg-key clear
 ```
 
 `-y, --yes`
@@ -338,7 +338,7 @@ bb auth gpg-key remove <id-or-fingerprint> [flags]
 
 ```bash
 # By the id or fingerprint bb auth gpg-key list prints
-bb auth gpg-key remove 3AA5C34371567BD2 --yes
+bb auth gpg-key remove 3AA5C34371567BD2
 ```
 
 `-y, --yes`
@@ -418,6 +418,10 @@ printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --t
 # A username and password instead of a token
 printf '%s' "$BITBUCKET_PASSWORD" | bb auth login https://bitbucket.example.com \
   --username alice --password-stdin
+
+# A second host, leaving the default where it is
+printf '%s' "$STAGING_TOKEN" | bb auth login https://bitbucket-staging.example.com \
+  --token-stdin --set-default=false
 
 # Fail rather than store the credential in plaintext when there is no keyring
 printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com \
@@ -577,6 +581,9 @@ bb auth setup-git
 
 # In the current repository only
 bb auth setup-git --global=false
+
+# Take over from a credential helper git already has for the host
+bb auth setup-git --force
 ```
 
 `--force`
@@ -780,8 +787,10 @@ bb auth token list [flags]
 # Your own tokens
 bb auth token list
 
-# The tokens of a project
+# The tokens of a project, of a repository, or of another user
 bb auth token list --project PROJ
+bb auth token list --repo PROJ/repo
+bb auth token list --user alice
 ```
 
 `--all`
@@ -824,7 +833,7 @@ bb auth token revoke <token-id> [flags]
 
 ```bash
 # Revoke one of your own tokens
-bb auth token revoke 1827364510 --yes
+bb auth token revoke 1827364510
 ```
 
 `-y, --yes`

@@ -79,8 +79,9 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 		Example: `  # A task every new pull request in the project starts with
   bb project default-task add PROJ "Update the changelog"
 
-  # Only for pull requests into main
-  bb project default-task add PROJ "Update the changelog" --target-ref main`,
+  # Only for pull requests from a feature branch into main
+  bb project default-task add PROJ "Update the changelog" \
+    --source-ref 'feature/*' --target-ref main`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
@@ -195,7 +196,7 @@ func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 		Use:   "delete <project-key> <task-id>",
 		Short: "Delete a default checklist task",
 		Example: `  # By the id bb project default-task list prints
-  bb project default-task delete PROJ 3 --yes`,
+  bb project default-task delete PROJ 3`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()

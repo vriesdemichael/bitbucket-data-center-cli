@@ -220,7 +220,10 @@ func newSetupGitCommand(deps Dependencies) *cobra.Command {
   bb auth setup-git
 
   # In the current repository only
-  bb auth setup-git --global=false`,
+  bb auth setup-git --global=false
+
+  # Take over from a credential helper git already has for the host
+  bb auth setup-git --force`,
 		Long: `Configure git to ask bb for Bitbucket credentials.
 
 This replaces the need to embed credentials in a repository or in a remote URL.

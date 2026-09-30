@@ -528,7 +528,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "delete <required-build-id>",
 		Short: "Delete required build merge check",
 		Example: `  # By the id bb build required list prints
-  bb build required delete 5 --repo PROJ/repo --yes`,
+  bb build required delete 5 --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
@@ -612,6 +612,12 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "Set repository-scoped build status for a commit",
 		Example: `  # Report a passing build on a commit of this repository
   bb build set a1b2c3d --repo PROJ/repo --key ci --state SUCCESSFUL \
+    --url https://ci.example.com/builds/128
+
+  # From a CI job: one step of a larger build, with what Bitbucket shows beside it
+  bb build set "$GIT_COMMIT" --repo PROJ/repo --key ci-unit --parent ci \
+    --state FAILED --name "Unit tests" --description "3 of 412 tests failed" \
+    --build-number 128 --duration-ms 93000 --ref refs/heads/feature/x \
     --url https://ci.example.com/builds/128`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -721,7 +727,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "delete <commit>",
 		Short: "Delete repository-scoped build status by key",
 		Example: `  # Remove one build status from a commit
-  bb build delete a1b2c3d --key ci --repo PROJ/repo --yes`,
+  bb build delete a1b2c3d --key ci --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)

@@ -96,7 +96,7 @@ func New(deps Dependencies) *cobra.Command {
 	listTagsCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository tags",
-		Example: `  # The first 25 tags
+		Example: `  # A repository's tags
   bb tag list --repo PROJ/repo
 
   # The 1.x releases, most recently changed first
@@ -266,7 +266,10 @@ func New(deps Dependencies) *cobra.Command {
 	tagCmd.AddCommand(&cobra.Command{
 		Use:   "delete <tag>",
 		Short: "Delete repository tag",
-		Example: `  # Delete a tag without being asked
+		Example: `  # Delete a tag; at a terminal bb asks first
+  bb tag delete v1.2.0 --repo PROJ/repo
+
+  # In a script, where nobody can be asked
   bb tag delete v1.2.0 --repo PROJ/repo --yes`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

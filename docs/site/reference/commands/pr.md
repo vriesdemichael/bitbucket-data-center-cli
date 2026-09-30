@@ -514,6 +514,12 @@ bb pr comment add 49 --repo PROJ/repo --path app/core/runner.py --line 88 \
 
 # Reply to an existing comment
 bb pr comment add 49 --repo PROJ/repo --parent-id 1389396 --text "Agreed, fixed."
+
+# A task: Bitbucket models one as a blocker comment
+bb pr comment add 49 --repo PROJ/repo --blocker --text "Add a test for the empty case."
+
+# A draft, which bb pr review complete publishes with the rest of your review
+bb pr comment add 49 --repo PROJ/repo --pending --text "Naming: prefer retryCount."
 ```
 
 `--blocker`
@@ -608,8 +614,8 @@ bb pr comment apply-suggestion <pr-id> <comment-id> [flags]
 # Commit the change a reviewer suggested in a comment
 bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo
 
-# With a commit message of your own
-bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo \
+# The second suggestion in the comment, with a commit message of your own
+bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo --index 1 \
   --commit-message "Use the shared retry helper"
 ```
 
@@ -733,6 +739,9 @@ bb pr comment list 42 --repo PROJ/repo
 
 # Only what is still waiting on someone
 bb pr comment list 42 --repo PROJ/repo --unresolved
+
+# The open tasks
+bb pr comment list 42 --repo PROJ/repo --tasks-only --state open
 
 # The comments on one file, with every reply
 bb pr comment list 42 --repo PROJ/repo --path src/main.go --with-replies
@@ -1105,22 +1114,23 @@ Run inside a checkout, bb works out what it is not told: --from-ref is the branc
 bb pr create
 
 # Create a pull request (automatically includes default reviewers and CODEOWNERS)
-bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change"
+bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" \
+  --description "Why it is needed, and how to test it."
 
 # Create a draft pull request (Bitbucket DC 8.0+)
 bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --draft
 
-# Create a pull request and assign explicit reviewers (repeatable or comma-separated)
-bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" \
-  --reviewers alice,bob
-
-# Create a pull request with reviewers and reviewer groups
+# Create a pull request with reviewers and reviewer groups (repeatable or comma-separated)
 bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" \
   --reviewers alice,@backend-team --reviewer-group qa-team
 
 # Create a pull request without default reviewers or CODEOWNERS
 bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" \
   --no-default-reviewers --no-codeowners
+
+# Create a pull request from a branch of a fork into the repository it was forked from
+bb pr create --repo PROJ/repo --from-repo SANDBOX/repo-experiment --from-ref feature/x \
+  --to-ref main --title "My change"
 ```
 
 `--codeowners`
@@ -1313,7 +1323,8 @@ bb pr default-reviewers [flags]
 ```
 
 ```bash
-# Who Bitbucket would add as reviewers to a pull request from feature/x into main
+# Who Bitbucket would add as reviewers to a pull request from feature/x into main.
+# The ids are the repository's own, which bb repo get --json prints.
 bb pr default-reviewers --repo PROJ/repo \
   --source-ref refs/heads/feature/x --target-ref refs/heads/main \
   --source-repo-id 128 --target-repo-id 128
@@ -1395,6 +1406,9 @@ bb pr diff 42 --repo PROJ/repo
 
 # Only the names of the files it changes
 bb pr diff 42 --repo PROJ/repo --name-only
+
+# As a patch, saved to a file
+bb pr diff 42 --repo PROJ/repo --patch > pr-42.patch
 ```
 
 `--name-only`
@@ -1638,6 +1652,9 @@ bb pr list --repo PROJ/repo
 
 # Merged into main
 bb pr list --repo PROJ/repo --state merged --target-branch main
+
+# Whatever was opened from a branch, open or not
+bb pr list --repo PROJ/repo --source-branch feature/x --state all
 
 # Open ones, with the unresolved threads of each counted
 bb pr list --repo PROJ/repo --with-review-status
@@ -2502,7 +2519,7 @@ bb pr review reviewer remove <pr-id> [flags]
 
 ```bash
 # Take someone off a pull request's reviewers
-bb pr review reviewer remove 42 --user alice --repo PROJ/repo --yes
+bb pr review reviewer remove 42 --user alice --repo PROJ/repo
 ```
 
 `--user string`
@@ -2964,7 +2981,11 @@ To mark a draft ready for review, or turn a pull request back into a draft, use 
 
 ```bash
 # Update title and description
-bb pr update 42 --repo PROJ/repo --title "New title"
+bb pr update 42 --repo PROJ/repo --title "New title" \
+  --description "What changed since the first review."
+
+# Replace the reviewers with two people and a reviewer group
+bb pr update 42 --repo PROJ/repo --reviewers alice,bob,@backend-team
 
 # Mark a draft PR as ready for review
 bb pr update 42 --repo PROJ/repo --draft=false

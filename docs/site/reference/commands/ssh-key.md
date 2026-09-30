@@ -108,7 +108,7 @@ bb ssh-key remove <ssh-key-id> [flags]
 
 ```bash
 # By the id bb ssh-key list prints
-bb ssh-key remove 31 --yes
+bb ssh-key remove 31
 ```
 
 `-y, --yes`

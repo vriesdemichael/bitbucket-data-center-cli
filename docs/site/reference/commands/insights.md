@@ -75,7 +75,7 @@ bb insights annotation delete <commit> <report-key> [flags]
 
 ```bash
 # Remove one finding, by the id it was reported with
-bb insights annotation delete a1b2c3d lint --external-id lint-1 --repo PROJ/repo --yes
+bb insights annotation delete a1b2c3d lint --external-id lint-1 --repo PROJ/repo
 ```
 
 `--external-id string`
@@ -227,7 +227,7 @@ bb insights report delete <commit> <report-key> [flags]
 
 ```bash
 # Remove a report and its findings from a commit
-bb insights report delete a1b2c3d lint --repo PROJ/repo --yes
+bb insights report delete a1b2c3d lint --repo PROJ/repo
 ```
 
 `-y, --yes`

@@ -85,8 +85,10 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 		Example: `  # Your own tokens
   bb auth token list
 
-  # The tokens of a project
-  bb auth token list --project PROJ`,
+  # The tokens of a project, of a repository, or of another user
+  bb auth token list --project PROJ
+  bb auth token list --repo PROJ/repo
+  bb auth token list --user alice`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -310,7 +312,7 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 		Use:   "revoke <token-id>",
 		Short: "Revoke an HTTP access token by ID",
 		Example: `  # Revoke one of your own tokens
-  bb auth token revoke 1827364510 --yes`,
+  bb auth token revoke 1827364510`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()

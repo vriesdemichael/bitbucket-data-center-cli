@@ -302,7 +302,7 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 		Use:   "delete",
 		Short: "Delete a comment",
 		Example: `  # Delete a comment on a commit
-  bb repo comment delete --commit a1b2c3d --id 1389396 --repo PROJ/repo --yes`,
+  bb repo comment delete --commit a1b2c3d --id 1389396 --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

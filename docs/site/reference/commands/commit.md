@@ -145,8 +145,11 @@ bb commit list [flags]
 # The latest commits
 bb commit list --repo PROJ/repo
 
-# The ones that touched a file
+# The last ten that touched a file
 bb commit list --repo PROJ/repo --path src/main.go --limit 10
+
+# The ones Bitbucket links to a Jira issue
+bb commit list --repo PROJ/repo --jira PAY-128
 ```
 
 `--all`

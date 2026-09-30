@@ -133,6 +133,9 @@ func New(deps Dependencies) *cobra.Command {
   # Merged into main
   bb pr list --repo PROJ/repo --state merged --target-branch main
 
+  # Whatever was opened from a branch, open or not
+  bb pr list --repo PROJ/repo --source-branch feature/x --state all
+
   # Open ones, with the unresolved threads of each counted
   bb pr list --repo PROJ/repo --with-review-status`,
 		Long: "List pull requests. Each entry carries the open task and comment counters Bitbucket reports " +
@@ -471,18 +474,19 @@ func New(deps Dependencies) *cobra.Command {
 		Example: "  # Inside a checkout: from the checked-out branch into the repository's default branch\n" +
 			"  bb pr create\n\n" +
 			"  # Create a pull request (automatically includes default reviewers and CODEOWNERS)\n" +
-			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\"\n\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" \\\n" +
+			"    --description \"Why it is needed, and how to test it.\"\n\n" +
 			"  # Create a draft pull request (Bitbucket DC 8.0+)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --draft\n\n" +
-			"  # Create a pull request and assign explicit reviewers (repeatable or comma-separated)\n" +
-			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" \\\n" +
-			"    --reviewers alice,bob\n\n" +
-			"  # Create a pull request with reviewers and reviewer groups\n" +
+			"  # Create a pull request with reviewers and reviewer groups (repeatable or comma-separated)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" \\\n" +
 			"    --reviewers alice,@backend-team --reviewer-group qa-team\n\n" +
 			"  # Create a pull request without default reviewers or CODEOWNERS\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" \\\n" +
-			"    --no-default-reviewers --no-codeowners",
+			"    --no-default-reviewers --no-codeowners\n\n" +
+			"  # Create a pull request from a branch of a fork into the repository it was forked from\n" +
+			"  bb pr create --repo PROJ/repo --from-repo SANDBOX/repo-experiment --from-ref feature/x \\\n" +
+			"    --to-ref main --title \"My change\"",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Before the configuration is loaded, because MarkFlagRequired ran
 			// before RunE and this replaces it. Loading first would report "no
@@ -719,7 +723,10 @@ func New(deps Dependencies) *cobra.Command {
 			"particular one: pass it and a pull request that has changed since is reported instead of updated.\n\n" +
 			"To mark a draft ready for review, or turn a pull request back into a draft, use bb pr ready.",
 		Example: "  # Update title and description\n" +
-			"  bb pr update 42 --repo PROJ/repo --title \"New title\"\n\n" +
+			"  bb pr update 42 --repo PROJ/repo --title \"New title\" \\\n" +
+			"    --description \"What changed since the first review.\"\n\n" +
+			"  # Replace the reviewers with two people and a reviewer group\n" +
+			"  bb pr update 42 --repo PROJ/repo --reviewers alice,bob,@backend-team\n\n" +
 			"  # Mark a draft PR as ready for review\n" +
 			"  bb pr update 42 --repo PROJ/repo --draft=false\n\n" +
 			"  # Refuse the update if the pull request has changed since version 1\n" +
@@ -1604,7 +1611,7 @@ changes as readily as an approval, which its name does not suggest.`,
 		Use:   "remove <pr-id>",
 		Short: "Remove a reviewer",
 		Example: `  # Take someone off a pull request's reviewers
-  bb pr review reviewer remove 42 --user alice --repo PROJ/repo --yes`,
+  bb pr review reviewer remove 42 --user alice --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
@@ -1968,6 +1975,9 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
   # Only what is still waiting on someone
   bb pr comment list 42 --repo PROJ/repo --unresolved
 
+  # The open tasks
+  bb pr comment list 42 --repo PROJ/repo --tasks-only --state open
+
   # The comments on one file, with every reply
   bb pr comment list 42 --repo PROJ/repo --path src/main.go --with-replies`,
 		Long: "List pull request comment threads. Bitbucket models a task as a blocker comment, so this " +
@@ -2216,7 +2226,13 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
     --line-type REMOVED --text "Why was this dropped?"
 
   # Reply to an existing comment
-  bb pr comment add 49 --repo PROJ/repo --parent-id 1389396 --text "Agreed, fixed."`,
+  bb pr comment add 49 --repo PROJ/repo --parent-id 1389396 --text "Agreed, fixed."
+
+  # A task: Bitbucket models one as a blocker comment
+  bb pr comment add 49 --repo PROJ/repo --blocker --text "Add a test for the empty case."
+
+  # A draft, which bb pr review complete publishes with the rest of your review
+  bb pr comment add 49 --repo PROJ/repo --pending --text "Naming: prefer retryCount."`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Validated up front, in terms of the flags the caller typed, so a
@@ -2434,8 +2450,8 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 		Example: `  # Commit the change a reviewer suggested in a comment
   bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo
 
-  # With a commit message of your own
-  bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo \
+  # The second suggestion in the comment, with a commit message of your own
+  bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo --index 1 \
     --commit-message "Use the shared retry helper"`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -3124,7 +3140,8 @@ state is in the output.`,
 	defaultReviewersCmd := &cobra.Command{
 		Use:   "default-reviewers",
 		Short: "List default reviewers and matching conditions for repository",
-		Example: `  # Who Bitbucket would add as reviewers to a pull request from feature/x into main
+		Example: `  # Who Bitbucket would add as reviewers to a pull request from feature/x into main.
+  # The ids are the repository's own, which bb repo get --json prints.
   bb pr default-reviewers --repo PROJ/repo \
     --source-ref refs/heads/feature/x --target-ref refs/heads/main \
     --source-repo-id 128 --target-repo-id 128`,
@@ -3195,7 +3212,10 @@ func newPullRequestDiffAlias(deps Dependencies, repositorySelector *string) *cob
   bb pr diff 42 --repo PROJ/repo
 
   # Only the names of the files it changes
-  bb pr diff 42 --repo PROJ/repo --name-only`,
+  bb pr diff 42 --repo PROJ/repo --name-only
+
+  # As a patch, saved to a file
+  bb pr diff 42 --repo PROJ/repo --patch > pr-42.patch`,
 		Long: "Diff a pull request.\n\nAlias for bb diff pr, which is where the command reference documents it.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

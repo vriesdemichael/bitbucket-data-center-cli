@@ -16,8 +16,11 @@ bb clone <repository> [directory] [-- <gitflags>...] [flags]
 # Clone into a directory named after the repository
 bb clone PROJ/repo
 
-# Into a directory of your choice, over HTTPS, passing flags on to git
-bb clone PROJ/repo work/repo --https -- --depth 1
+# By the address the browser shows, into a directory of your choice
+bb clone https://bitbucket.example.com/projects/PROJ/repos/repo work/repo
+
+# Over HTTPS only, passing flags on to git
+bb clone PROJ/repo --https -- --depth 1
 ```
 
 `--https`

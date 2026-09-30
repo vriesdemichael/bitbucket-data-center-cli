@@ -120,7 +120,7 @@ func newRepoLabelCommand(deps Dependencies) *cobra.Command {
 		Use:   "remove <label>",
 		Short: "Remove a repository label",
 		Example: `  # Take a label off a repository
-  bb repo label remove backend --repo PROJ/repo --yes`,
+  bb repo label remove backend --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
@@ -330,8 +330,9 @@ inherited one.`,
 		Example: `  # A task every new pull request in the repository starts with
   bb repo default-task add "Update the changelog" --repo PROJ/repo
 
-  # Only for pull requests into main
-  bb repo default-task add "Update the changelog" --repo PROJ/repo --target-ref main`,
+  # Only for pull requests from a feature branch into main
+  bb repo default-task add "Update the changelog" --repo PROJ/repo \
+    --source-ref 'feature/*' --target-ref main`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
@@ -462,7 +463,7 @@ default-task update changes it there, for every repository in the project.`,
 		Use:   "delete <task-id>",
 		Short: "Delete a default checklist task",
 		Example: `  # By the id bb repo default-task list prints
-  bb repo default-task delete 3 --repo PROJ/repo --yes`,
+  bb repo default-task delete 3 --repo PROJ/repo`,
 		Long: `Delete one of the repository's default checklist tasks.
 
 A task the repository inherits from its project is refused; bb project
@@ -1395,7 +1396,7 @@ func newRepoSshKeyCommand(deps Dependencies) *cobra.Command {
 		Use:   "remove <access-key-id>",
 		Short: "Remove a project or repository SSH access key by ID",
 		Example: `  # By the id bb repo ssh-key list prints
-  bb repo ssh-key remove 31 --repo PROJ/repo --yes`,
+  bb repo ssh-key remove 31 --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
