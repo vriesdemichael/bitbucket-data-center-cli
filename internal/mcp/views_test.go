@@ -230,6 +230,22 @@ func TestTheModelIsToldToCreateAClearPullRequest(t *testing.T) {
 	}
 }
 
+// show's answer tells the model how to go on if the client drew no view, and
+// a form's answer to say what it drafted, so the person can go on in words.
+func TestShowsAnswerSaysHowToGoOnWithoutAView(t *testing.T) {
+	t.Parallel()
+
+	card := summarizePullRequest(viewPullRequest{PullRequest: pullrequestservice.PullRequest{ID: 7, Title: "Retry payments", State: "OPEN"}})
+	if got := card.shown(); !strings.Contains(got, "If the person says they see no view") || !strings.Contains(got, "in your own words") {
+		t.Errorf("the card's answer reads %q, want how to go on without the view", got)
+	}
+	form := viewSummary{subject: "a new pull request in PAY/ledger", form: "a form they can edit and submit",
+		state: "from feature/x into master, titled \"Retry\". Nothing is created until they submit it."}
+	if !strings.Contains(form.shown(), "If the person says they see no view") {
+		t.Errorf("the form's answer reads %q, want how to go on without the view", form.shown())
+	}
+}
+
 // Without show there is no view page and no extension to announce.
 func TestNoViewsWithoutShow(t *testing.T) {
 	t.Parallel()

@@ -114,7 +114,8 @@ func formForView(ctx context.Context, c Clients, in ShowInput) (viewForm, *viewP
 		return form, nil, avatarSlugs(people), viewSummary{
 			subject: "a new pull request in " + repository,
 			form:    "a form they can edit and submit",
-			state: fmt.Sprintf("from %s into %s, titled %q%s. Nothing is created until they submit it.",
+			state: fmt.Sprintf("from %s into %s, titled %q%s. Nothing is created until they submit it. Say in your answer what you "+
+				"drafted, and that you can create it as it is when they say so, so they can go on in words too.",
 				form.FromRef, orUnset(form.ToRef), form.Title, reviewersNote(form.Reviewers)),
 		}, nil
 	}

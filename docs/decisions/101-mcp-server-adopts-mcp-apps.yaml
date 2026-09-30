@@ -16,6 +16,9 @@ decision: >
   is for the person: for someone who is there to see it, once an answer is ready, and never for an
   agent working on its own. A kind is offered while the tool whose answer it shows is exposed,
   and a client that renders no views is told nothing was shown, and nothing is fetched for it. A
+  client that says it renders views is taken at its word: it draws a view from show's answer, so
+  nothing can confirm the view before show answers. The answer tells the model to answer in words
+  if the person sees no view, and a view whose result does not come says so rather than wait. A
   diff is for what the person cannot open in their own editor.
 
   One page, ui://bb/view, draws every view: plain JavaScript and CSS embedded in the binary. It holds
