@@ -43,6 +43,14 @@ func TestRedactTextCatchesTheShapesACredentialArrivesIn(t *testing.T) {
 		"a passphrase field":                            `{"passphrase":"` + secret + `"}`,
 		"a private key field":                           `{"private_key":"` + secret + `"}`,
 		"an XML element":                                "<credentials><password>" + secret + "</password></credentials>",
+		// #731. Bitbucket quotes the ref it could not find, a variable name
+		// ends in the key, and a value can itself be an assignment.
+		"an assignment Bitbucket quotes back": `404: Object "token=` + secret + `" does not exist in repository 'repo'`,
+		"an environment variable":             "BITBUCKET_TOKEN=" + secret,
+		"an assignment as a query value":      "files/README.md?at=token=" + secret,
+		// Bitbucket cleans a path it echoes, and https://user:pass@host
+		// comes back with one slash.
+		"a URL with one slash": `404: The path "https:/bob:` + secret + `@example.com/x" does not exist`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -76,6 +84,8 @@ func TestRedactTextLeavesTheRestOfADocumentAlone(t *testing.T) {
 		"Authors may not update their status.",
 		"Repository https://bitbucket.example/projects/P/repos/r does not exist.",
 		"the token list is empty",
+		"pagetoken=abc is a parameter of another name",
+		"see docs:/guide/setup for the rest",
 	} {
 		if got := RedactText(text); got != text {
 			t.Errorf("ordinary text was changed:\n%s\n%s", text, got)

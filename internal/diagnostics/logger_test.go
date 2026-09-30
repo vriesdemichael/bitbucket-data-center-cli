@@ -112,3 +112,20 @@ func TestEnabledWriter(t *testing.T) {
 		t.Fatalf("expected discard writer when disabled, got %T", writer)
 	}
 }
+
+// A redacted URL keeps its shape: the marker stays readable, and the query
+// keeps its order and its other values as written. Re-encoding it through
+// url.Values printed %5BREDACTED%5D, which a search for the marker misses, and
+// sorted the parameters.
+func TestRedactFieldsLeavesARedactedURLReadable(t *testing.T) {
+	t.Parallel()
+
+	sanitized := RedactFields(map[string]any{
+		"endpoint": "https://bob:hunter2@example.test/rest?zeta=1&access_token=abc&alpha=a%20b",
+	})
+
+	want := "https://bob:[REDACTED]@example.test/rest?zeta=1&access_token=[REDACTED]&alpha=a%20b"
+	if got := sanitized["endpoint"]; got != want {
+		t.Fatalf("got  %v\nwant %s", got, want)
+	}
+}
