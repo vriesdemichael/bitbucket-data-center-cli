@@ -35,13 +35,20 @@ type Repository struct {
 // saying "deleted" instead. Both are kept rather than unified here, because
 // changing what a command reports is a contract change and this type exists to
 // stop shapes drifting, not to quietly re-spell them.
+//
+// The field is not called Status. Embedded, the type is a field named Status
+// itself, and it hides a promoted field of the same name from
+// reflect.VisibleFields, which is how the output schemas are derived: every
+// payload embedding it printed "status" and declared a schema that forbade it.
+// encoding/json looks past the embedding by the tag, so the output never
+// changed; the schema did not say what it was.
 type Status struct {
-	Status string `json:"status" jsonschema:"Outcome of the command. A failure reports an error envelope instead of this payload."`
+	Outcome string `json:"status" jsonschema:"Outcome of the command. A failure reports an error envelope instead of this payload."`
 }
 
 // OK is the common case: the command did what it was asked.
 func OK() Status {
-	return Status{Status: "ok"}
+	return Status{Outcome: "ok"}
 }
 
 // RepositorySummary is a repository in a listing: the reference plus what a

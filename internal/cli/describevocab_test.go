@@ -18,6 +18,11 @@ var echoAliases = map[string]string{
 	"pr comment list --state unresolved": "a synonym for open, and echoed as open",
 }
 
+// notEchoes are properties that share a flag's name without echoing it.
+var notEchoes = map[string]string{
+	"pr review complete --status": "status is the outcome every write reports, ok; the review's own status is not in the payload",
+}
+
 // TestAnEchoedFlagPublishesTheValuesItAccepts is #577.
 //
 // --describe is the surface agents are told to rely on, and on pr list it named
@@ -67,6 +72,10 @@ func TestAnEchoedFlagPublishesTheValuesItAccepts(t *testing.T) {
 		cmd.LocalFlags().VisitAll(func(flag *pflag.Flag) {
 			accepted, isEnum := enumflag.Allowed(flag)
 			if !isEnum {
+				return
+			}
+
+			if notEchoes[path+" --"+flag.Name] != "" {
 				return
 			}
 

@@ -128,6 +128,7 @@ Expected JSON output (example):
 ```json
 {
   "data": {
+    "status": "ok",
     "defaultHost": "https://bitbucket.acme.corp"
   },
   "meta": {

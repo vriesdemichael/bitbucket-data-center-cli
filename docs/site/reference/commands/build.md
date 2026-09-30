@@ -56,6 +56,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status        string  Outcome of the command.
   repository    object
     projectKey  string  Project key the repository belongs to.
     slug        string  Repository slug.
@@ -221,6 +222,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status        string   Outcome of the command.
   repository    object
     projectKey  string   Project key the repository belongs to.
     slug        string   Repository slug.
@@ -401,6 +403,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status        string  Outcome of the command.
   repository    object
     projectKey  string  Project key the repository belongs to.
     slug        string  Repository slug.
@@ -536,6 +539,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status  string  Outcome of the command.
   commit  string  Commit the build status was set on.
   key     string  Build key that was set.
 </code></pre>

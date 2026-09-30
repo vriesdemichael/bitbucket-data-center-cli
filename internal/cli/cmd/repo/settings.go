@@ -799,7 +799,7 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), SettingsDeletion{Status: result.Status{Status: "deleted"}, Repository: settingsRepositoryOf(repo), Setting: "autoMerge"})
+				return deps.WriteJSON(cmd.OutOrStdout(), SettingsDeletion{Status: result.Status{Outcome: "deleted"}, Repository: settingsRepositoryOf(repo), Setting: "autoMerge"})
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "Deleted auto-merge settings")
 			return nil
@@ -947,7 +947,7 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 				return err
 			}
 			if deps.JSONEnabled() {
-				return deps.WriteJSON(cmd.OutOrStdout(), SettingsDeletion{Status: result.Status{Status: "deleted"}, Repository: settingsRepositoryOf(repo), Setting: "autoDecline"})
+				return deps.WriteJSON(cmd.OutOrStdout(), SettingsDeletion{Status: result.Status{Outcome: "deleted"}, Repository: settingsRepositoryOf(repo), Setting: "autoDecline"})
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "Deleted auto-decline settings")
 			return nil

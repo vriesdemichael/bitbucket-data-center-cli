@@ -351,6 +351,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status   string  Outcome of the command.
   removed  string  The id or fingerprint that was removed, as it was given on the command line.
 </code></pre>
 </details>
@@ -559,6 +560,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
+  status       string  Outcome of the command.
   defaultHost  string  Host bb will now use when no other is named.
 </code></pre>
 </details>

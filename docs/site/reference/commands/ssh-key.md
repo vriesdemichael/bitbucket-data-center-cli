@@ -121,6 +121,7 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
-  key  string  Identifier of the key that was removed.
+  status  string  Outcome of the command.
+  key     string  Identifier of the key that was removed.
 </code></pre>
 </details>
