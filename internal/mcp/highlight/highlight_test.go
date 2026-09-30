@@ -100,7 +100,7 @@ const goSource = "package greet\n" +
 func TestLinesClassifiesGo(t *testing.T) {
 	t.Parallel()
 
-	spans, ok := Lines("greet.go", goSource, later())
+	spans, ok := Lines("greet.go", goSource, Options{Deadline: later()})
 	if !ok {
 		t.Fatal("greet.go was not highlighted")
 	}
@@ -143,7 +143,7 @@ func TestLinesCountsUTF16Units(t *testing.T) {
 	t.Parallel()
 
 	text := "s := \"é😀\" // café 😀\n"
-	spans, ok := Lines("a.go", text, later())
+	spans, ok := Lines("a.go", text, Options{Deadline: later()})
 	if !ok {
 		t.Fatal("a.go was not highlighted")
 	}
@@ -191,7 +191,7 @@ func TestLinesCoverEveryLine(t *testing.T) {
 		texts[name] = strings.ReplaceAll(string(source), "\r\n", "\n")
 	}
 	for name, text := range texts {
-		spans, ok := Lines(name, text, later())
+		spans, ok := Lines(name, text, Options{Deadline: later()})
 		if !ok {
 			t.Errorf("%s was not highlighted", name)
 			continue
@@ -219,7 +219,7 @@ func TestLinesSplitsAtNewlines(t *testing.T) {
 		{"x\r\r\n", []string{"x\r"}},
 		{"a\rb\n", []string{"a\rb"}},
 	} {
-		spans, ok := Lines("a.go", test.text, later())
+		spans, ok := Lines("a.go", test.text, Options{Deadline: later()})
 		if !ok {
 			t.Errorf("%q was not highlighted", test.text)
 			continue
@@ -233,7 +233,7 @@ func TestLinesSplitsAtNewlines(t *testing.T) {
 func TestLinesMeasuresInvalidUTF8AsJSONDoes(t *testing.T) {
 	t.Parallel()
 
-	spans, ok := Lines("a.go", "s := \"\xff\xfe\" // \xe2\x82\n", later())
+	spans, ok := Lines("a.go", "s := \"\xff\xfe\" // \xe2\x82\n", Options{Deadline: later()})
 	if !ok {
 		t.Fatal("a.go was not highlighted")
 	}
@@ -256,11 +256,11 @@ func TestLinesDeclines(t *testing.T) {
 		{"larger than MaxBytes", "a.go", strings.Repeat("x", MaxBytes+1), later()},
 		{"deadline passed", "a.go", "x\n", time.Now().Add(-time.Second)},
 	} {
-		if lines, ok := Lines(test.path, test.text, test.deadline); ok || lines != nil {
+		if lines, ok := Lines(test.path, test.text, Options{Deadline: test.deadline}); ok || lines != nil {
 			t.Errorf("%s: got %q, %v; want nil, false", test.name, lines, ok)
 		}
 	}
-	if _, ok := Lines("a.go", strings.Repeat("x", MaxBytes), later()); !ok {
+	if _, ok := Lines("a.go", strings.Repeat("x", MaxBytes), Options{Deadline: later()}); !ok {
 		t.Error("a text of MaxBytes was not highlighted")
 	}
 }
@@ -322,7 +322,7 @@ func TestTokenizeDeclinesWhatItCannotTrust(t *testing.T) {
 			t.Errorf("a lexer that %s: got %q, %v; want nil, false", name, lines, ok)
 		}
 	}
-	if lines, ok := Lines("README.md", "```go\nx\ry\n```\n", later()); ok || lines != nil {
+	if lines, ok := Lines("README.md", "```go\nx\ry\n```\n", Options{Deadline: later()}); ok || lines != nil {
 		t.Errorf("a Markdown code block holding a \\r: got %q, %v; want nil, false", lines, ok)
 	}
 }

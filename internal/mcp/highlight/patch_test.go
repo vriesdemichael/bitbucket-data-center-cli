@@ -73,7 +73,7 @@ var greetPatch = patchOf(
 func TestPatchHighlightsEachCodeLine(t *testing.T) {
 	t.Parallel()
 
-	spans := Patch(greetPatch, later())
+	spans := Patch(greetPatch, Options{Deadline: later()})
 	file, ok := spans[0]
 	if !ok || len(spans) != 1 {
 		t.Fatalf("Patch = %v, want spans for file 0 alone", spans)
@@ -145,7 +145,7 @@ func TestPatchReadsBothHeaderStyles(t *testing.T) {
 		"-let a = 1;",
 		"+const a = 2;",
 	)
-	spans := Patch(patch, later())
+	spans := Patch(patch, Options{Deadline: later()})
 	if _, ok := spans[0]; ok {
 		t.Errorf("file 0, of no known language, has spans %q", spans[0])
 	}
@@ -182,7 +182,7 @@ func TestPatchSkipsWhatIsNotCode(t *testing.T) {
 		"\\ No newline at end of file",
 		"",
 	)
-	spans := Patch(patch, later())
+	spans := Patch(patch, Options{Deadline: later()})
 	if len(spans[0]) != 3 {
 		t.Fatalf("Patch = %v, want 3 lines of spans", spans)
 	}
@@ -233,7 +233,7 @@ func TestPatchReadsEachKindOfFile(t *testing.T) {
 		"old mode 100644",
 		"new mode 100755",
 	)
-	spans := Patch(patch, later())
+	spans := Patch(patch, Options{Deadline: later()})
 	for file, want := range map[int]int{0: 2, 1: 1, 2: 2} {
 		if len(spans[file]) != want {
 			t.Errorf("file %d has %d lines of spans, want %d", file, len(spans[file]), want)
@@ -286,7 +286,7 @@ func TestPatchReadsQuotedAndSpacedNames(t *testing.T) {
 		"@@ -1 +0,0 @@",
 		"-puts :gone",
 	)
-	spans := Patch(patch, later())
+	spans := Patch(patch, Options{Deadline: later()})
 	for file, want := range map[int]int{0: 2, 1: 2, 2: 1, 3: 1} {
 		if len(spans[file]) != want {
 			t.Errorf("file %d has %d lines of spans, want %d", file, len(spans[file]), want)
@@ -309,7 +309,7 @@ func TestPatchReadsCRLFLines(t *testing.T) {
 		"+var x = 2",
 	), " a\n", " a\r\n")
 	patch = strings.ReplaceAll(patch, "= 1\n", "= 1\r\n")
-	spans := Patch(patch, later())
+	spans := Patch(patch, Options{Deadline: later()})
 	if len(spans[0]) != 3 {
 		t.Fatalf("Patch = %v, want 3 lines of spans", spans)
 	}
@@ -327,7 +327,7 @@ func TestPatchReadsHeadersAsTheViewDoes(t *testing.T) {
 
 	for _, header := range []string{"@@ -1 +1 @@ func x", "@@ -1 +1 @@\r"} {
 		patch := patchOf("diff --git a/a.go b/a.go", header, "-var x = 1", "+var x = 2")
-		if spans := Patch(patch, later()); len(spans) != 0 {
+		if spans := Patch(patch, Options{Deadline: later()}); len(spans) != 0 {
 			t.Errorf("header %q: Patch = %v, want nothing", header, spans)
 		}
 	}
@@ -359,7 +359,7 @@ func TestPatchDeclines(t *testing.T) {
 		)
 	}
 	patch := large + untrusted("-") + untrusted("+") + greetPatch
-	spans := Patch(patch, later())
+	spans := Patch(patch, Options{Deadline: later()})
 	for _, file := range []int{0, 1, 2} {
 		if _, ok := spans[file]; ok {
 			t.Errorf("file %d has spans %q, want none", file, spans[file])
@@ -368,10 +368,10 @@ func TestPatchDeclines(t *testing.T) {
 	if len(spans[3]) != 16 {
 		t.Errorf("the file after them has %d lines of spans, want 16", len(spans[3]))
 	}
-	if spans := Patch(greetPatch, time.Now().Add(-time.Second)); len(spans) != 0 {
+	if spans := Patch(greetPatch, Options{Deadline: time.Now().Add(-time.Second)}); len(spans) != 0 {
 		t.Errorf("Patch past its deadline = %v, want nothing", spans)
 	}
-	if spans := Patch("", later()); len(spans) != 0 {
+	if spans := Patch("", Options{Deadline: later()}); len(spans) != 0 {
 		t.Errorf("Patch of nothing = %v, want nothing", spans)
 	}
 }
@@ -408,7 +408,7 @@ func TestPatchCoversALargerPatch(t *testing.T) {
 		}
 		files += 2
 	}
-	spans := Patch(patch.String(), later())
+	spans := Patch(patch.String(), Options{Deadline: later()})
 	if len(spans) != files {
 		t.Fatalf("%d of %d files have spans", len(spans), files)
 	}

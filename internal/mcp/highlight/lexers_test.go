@@ -136,19 +136,19 @@ func TestTemplatesHaveStandIns(t *testing.T) {
 	}
 
 	// An ordinary Svelte file has its markup and its script highlighted.
-	svelte, ok := Lines("App.svelte", "<script>\n  let total = 0;\n</script>\n<p class=\"total\">{total}</p>\n", time.Now().Add(time.Second))
+	svelte, ok := Lines("App.svelte", "<script>\n  let total = 0;\n</script>\n<p class=\"total\">{total}</p>\n", Options{Deadline: time.Now().Add(time.Second)})
 	if !ok || !strings.Contains(svelte[1], string(ClassKeyword)) || !strings.Contains(svelte[3], string(ClassTag)) {
 		t.Errorf("an ordinary Svelte file is highlighted as %q, ok %v; want its script's keyword and its tags", svelte, ok)
 	}
 	// A crafted one slows the markup's lexer too, which stops at the deadline.
 	started := time.Now()
-	Lines("App.svelte", craftedSvelte(), started.Add(100*time.Millisecond))
+	Lines("App.svelte", craftedSvelte(), Options{Deadline: started.Add(100 * time.Millisecond)})
 	if waited := time.Since(started); waited > 500*time.Millisecond {
 		t.Errorf("a crafted Svelte file held the answer %v, past its 100ms deadline", waited)
 	}
 
 	block := "```svelte\n<div class=\"total\">{total}</div>\n```\n"
-	spans, ok := Lines("README.md", block, time.Now().Add(time.Second))
+	spans, ok := Lines("README.md", block, Options{Deadline: time.Now().Add(time.Second)})
 	if !ok {
 		t.Fatal("a Markdown file with a Svelte block was not highlighted within a second")
 	}
@@ -167,14 +167,14 @@ func TestTemplatesOwnLexerOnRequestDoesNotHoldTheAnswer(t *testing.T) {
 	if reflect.TypeOf(own) != reflect.TypeOf(chroma.DelegatingLexer(nil, nil)) {
 		t.Fatalf("asked for chroma's own lexer, App.svelte has %T", own)
 	}
-	spans, ok := LinesWith("App.svelte", "<script>\nlet total = 1;\n</script>\n", Options{Deadline: time.Now().Add(time.Second), Templates: true})
+	spans, ok := Lines("App.svelte", "<script>\nlet total = 1;\n</script>\n", Options{Deadline: time.Now().Add(time.Second), Templates: true})
 	if !ok || !strings.HasPrefix(spans[1], "k3") {
 		t.Errorf("chroma's own lexer highlighted the script as %q, ok %v; want let a keyword", spans, ok)
 	}
 
 	crafted := craftedSvelte()
 	started := time.Now()
-	if _, ok := LinesWith("App.svelte", crafted, Options{Deadline: started.Add(100 * time.Millisecond), Templates: true}); ok {
+	if _, ok := Lines("App.svelte", crafted, Options{Deadline: started.Add(100 * time.Millisecond), Templates: true}); ok {
 		t.Error("a crafted Svelte file was highlighted by chroma's own lexer within its deadline; the test no longer shows what it means to")
 	}
 	if waited := time.Since(started); waited > 500*time.Millisecond {

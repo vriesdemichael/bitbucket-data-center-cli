@@ -24,7 +24,7 @@ function pullRequestCard(pr, payload, view) {
     el("h1", { class: "pr-title held", title: pr.title }, pr.title),
     byline(pr, avatars),
     el("div", { class: "status" },
-      attentionLine(pr, avatars),
+      attentionLine(pr, payload, view),
       quietLine(pr)),
     el("div", { class: "actions quiet" },
       el("button", {
@@ -77,9 +77,11 @@ function branchPair(pr) {
 
 // attentionLine is what on the pull request asks something of someone, most
 // pressing first, each in its own color: requests for changes, with who made
-// them; a conflict; builds that failed or still run; open tasks. A pull
-// request that asks nothing has no such line.
-function attentionLine(pr, avatars) {
+// them; a conflict; builds that failed or still run; open tasks, which open
+// the overview at the newest of them. A pull request that asks nothing has no
+// such line.
+function attentionLine(pr, payload, view) {
+  const avatars = payload.avatars || {};
   const items = [];
   const requested = sortReviewers(pr.reviewers || []).filter((reviewer) => voteOf(reviewer) === "changes-requested");
   if (requested.length > 0) {
@@ -110,9 +112,24 @@ function attentionLine(pr, avatars) {
   }
   const summary = pr.review_summary || {};
   const tasks = summary.open_tasks !== undefined ? summary.open_tasks : pr.open_task_count;
-  if (tasks > 0) items.push(el("span", { class: "attention-item" }, icon("task"), plural(tasks, "open task")));
+  if (tasks > 0) {
+    const task = firstOpenTask(payload);
+    items.push(task
+      ? el("button", { type: "button", class: "attention-item attention-link", title: "Show the open tasks in the overview", onclick: () => showThread(task, view) },
+        icon("task"), plural(tasks, "open task"))
+      : el("span", { class: "attention-item" }, icon("task"), plural(tasks, "open task")));
+  }
   if (items.length === 0) return null;
   return el("div", { class: "attention" }, items);
+}
+
+// showThread opens the overview at a thread in its activity: in fullscreen
+// where the host has it, and opened out in place where it does not.
+function showThread(thread, view) {
+  view.focusThread = thread.id;
+  if (thread.resolved) view.unclamped.add("thread-" + thread.id);
+  if (view.fullscreen || view.expanded) render();
+  else view.expand();
 }
 
 // missingRequired are the builds the target branch requires that have not
@@ -201,7 +218,8 @@ function pullRequestOverview(pr, payload, view) {
   return el("div", { class: view.fullscreen ? "details" : "details inline" },
     el("section", { class: "details-main" },
       el("h2", { class: "section-title" }, "Description"),
-      descriptionOf(pr, view)),
+      descriptionOf(pr, view),
+      activitySection(pr, payload, view)),
     el("aside", { class: "details-side" },
       reviewActions(pr, payload, view),
       reviewersSection(pr.reviewers || [], avatars, view),

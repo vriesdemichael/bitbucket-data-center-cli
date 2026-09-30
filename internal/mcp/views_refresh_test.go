@@ -200,15 +200,19 @@ func TestTheModelIsToldWhenAViewChanges(t *testing.T) {
 }
 
 // A view is offered what the server exposes, and nothing more: the kinds it
-// can open, and the model's tools it can call for the person.
+// can open, the model's tools it can call for the person, and a pull
+// request's comments only while the tool whose answer they are is exposed.
 func TestAViewIsOfferedWhatTheServerExposes(t *testing.T) {
 	t.Parallel()
 
 	offers := offersFor(ServerOptions{}, map[string]bool{
 		"get_pull_request": true, "list_pr_comments": true, "add_pr_comment": true, "show": true, "get_commit": true,
 	})
-	if !slices.Equal(offers.Kinds, []string{showKindPullRequest, showKindThreads}) {
-		t.Errorf("kinds = %v, want pull_request and threads", offers.Kinds)
+	if !slices.Equal(offers.Kinds, []string{showKindPullRequest}) || !offers.comments {
+		t.Errorf("kinds = %v, comments %v; want pull_request, with its comments", offers.Kinds, offers.comments)
+	}
+	if without := offersFor(ServerOptions{}, map[string]bool{"get_pull_request": true, "get_pr_diff": true}); without.comments {
+		t.Error("a server without list_pr_comments puts comments in its views")
 	}
 	if !slices.Equal(offers.Tools, []string{"add_pr_comment"}) {
 		t.Errorf("tools = %v, want add_pr_comment alone", offers.Tools)

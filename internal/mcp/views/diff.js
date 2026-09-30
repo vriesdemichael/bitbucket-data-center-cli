@@ -1,9 +1,8 @@
-// The diff view: the files inline, and the whole diff with a file tree in
-// fullscreen, where a file picked inline opens. In a host without
-// fullscreen, a file opens in place and the list grows a step at a time.
-// Lines can be selected and handed to the model, asked about, or commented
-// on, and the pull request's comments are drawn where they are, as
-// Bitbucket's diff draws them.
+// The diff view: its files inline, and in fullscreen Bitbucket's diff page:
+// the file tree beside one file, the one picked in the tree. In a host
+// without fullscreen, a file opens in place and the list grows a step at a
+// time. Lines can be selected and handed to the model, asked about, or
+// commented on, and each comment is drawn where Bitbucket's diff draws it.
 
 const INLINE_FILES = 8;
 
@@ -109,6 +108,7 @@ function renderDiff(payload, view) {
   const files = view.diffFiles;
   const comments = threadPlaces(payload);
   const avatars = payload.avatars || {};
+  focusPathOf(files, view);
   if (view.fullscreen) return diffPage(pr, files, payload, view, comments);
 
   const shown = files.slice(0, shownCount("files", INLINE_FILES, view));
@@ -144,11 +144,22 @@ function renderDiff(payload, view) {
     view.canFullscreen ? null : selectionBar(pr, view));
 }
 
-// openFile shows a file's changes: in fullscreen, at that file, where the
+// focusPathOf turns a file the view was opened at, by its path, into the file
+// it shows: in fullscreen, the one beside the tree, and in place, one opened.
+function focusPathOf(files, view) {
+  if (!view.focusPath) return;
+  const index = files.findIndex((file) => filePath(file) === view.focusPath || file.oldPath === view.focusPath);
+  view.focusPath = null;
+  if (index < 0) return;
+  if (view.fullscreen || view.canFullscreen) view.diffFile = index;
+  else view.openFiles.add(index);
+}
+
+// openFile shows a file's changes: in fullscreen, beside the tree, where the
 // host has it, and in place where it does not.
 function openFile(index, view) {
   if (view.canFullscreen) {
-    view.focusFile = index;
+    view.diffFile = index;
     view.expand();
     return;
   }
@@ -194,9 +205,9 @@ function omittedNotice(files, pr, view) {
 }
 
 // fileLink is a file in a list: its change as a colored dot, its path, or its
-// name alone in the tree under its directory, where a renamed file came from,
+// name alone in the tree under its folder, where a renamed file came from,
 // whether it is too large to show, its open comments and its counts.
-function fileLink(file, index, view, onclick, compact, openComments) {
+function fileLink(file, index, view, onclick, compact, openComments, current) {
   const path = filePath(file);
   const slash = path.lastIndexOf("/");
   const renamed = renamedFrom(file);
@@ -205,8 +216,8 @@ function fileLink(file, index, view, onclick, compact, openComments) {
     compact ? el("span", { class: "ellipsis" }, slash >= 0 ? path.slice(slash + 1) : path) : pathLabel(path),
     second ? el("span", { class: "ellipsis faint" + (file.omitted ? " omitted-mark" : "") }, second) : null);
   const title = [path, renamed, file.omitted ? "too large to show here" : ""].filter(Boolean).join(" · ");
-  return el("button", { type: "button", class: "file-link", title, onclick },
-    changeDot(file.status),
+  return el("button", { type: "button", class: "file-link", title, onclick, "aria-current": current ? "true" : null },
+    compact ? changeIcon(file.status) : changeDot(file.status),
     label,
     el("span", { class: "spacer" }),
     openComments > 0
@@ -225,6 +236,15 @@ function changeDot(status) {
   return el("span", { class: "change-dot " + type.tone, title: type.label, role: "img", "aria-label": type.label });
 }
 
+// changeIcon is a file's change as Bitbucket's tree draws it: a small square
+// in the change's colour, marked with what happened to the file.
+const CHANGE_ICONS = { added: "fileAdded", deleted: "fileDeleted", renamed: "fileRenamed", moved: "fileRenamed", copied: "fileAdded" };
+
+function changeIcon(status) {
+  const type = CHANGE_TYPES[status] || CHANGE_TYPES.modified;
+  return icon(CHANGE_ICONS[status] || "fileModified", type.label, "change-icon " + type.tone);
+}
+
 // changeBar draws a file's added and removed lines as counts and five blocks,
 // as Bitbucket's file tree does; the narrow tree gets the counts alone.
 function changeBar(file, compact) {
@@ -240,14 +260,19 @@ function changeBar(file, compact) {
     compact ? null : [" ", el("span", { class: "bar", "aria-hidden": "true" }, blocks)]);
 }
 
+// diffPage is the diff in fullscreen, as Bitbucket's diff page is: the tree,
+// and beside it one file, the one picked in it; the first in the tree to begin
+// with.
 function diffPage(pr, files, payload, view, comments) {
   const avatars = payload.avatars || {};
+  const order = treeOrder(files);
+  if (view.diffFile === null || !files[view.diffFile]) view.diffFile = order.length > 0 ? order[0] : null;
+  const current = view.diffFile;
   const main = el("div", { class: "diff-main", id: "diff-main" },
     selectionBar(pr, view),
     refreshNotice(view),
-    pullRequestComments(comments, pr, avatars, view),
     omittedNotice(files, pr, view),
-    files.length === 0 ? el("p", { class: "faint" }, "No changes.") : files.map((file, index) => diffFile(file, index, pr, view, true, comments, avatars)));
+    current === null ? el("p", { class: "faint" }, "No changes.") : diffFile(files[current], current, pr, view, true, comments, avatars));
 
   return el("div", { class: "page" },
     el("header", { class: "fullscreen-header" },
@@ -267,23 +292,71 @@ function diffPage(pr, files, payload, view, comments) {
       main));
 }
 
-// fileTree lists the files under their directories, in the diff's order, as
-// Bitbucket's file tree does: a directory heads the files in it.
+// treeOf puts the files under their folders, each file by its place in the
+// diff.
+function treeOf(files) {
+  const root = { name: "", dirs: new Map(), files: [] };
+  files.forEach((file, index) => {
+    const parts = filePath(file).split("/");
+    let node = root;
+    for (const part of parts.slice(0, -1)) {
+      if (!node.dirs.has(part)) node.dirs.set(part, { name: part, dirs: new Map(), files: [] });
+      node = node.dirs.get(part);
+    }
+    node.files.push({ name: parts[parts.length - 1], index });
+  });
+  return root;
+}
+
+// byName orders names as Bitbucket's tree does, and as the person's language
+// sorts them.
+function byName(a, b) {
+  return a.name.localeCompare(b.name) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+}
+
+// treeWalk visits a folder as Bitbucket's tree draws it: its folders first,
+// then its files, each by name. A folder that holds nothing but one folder is
+// drawn joined to it, as "internal/payments".
+function treeWalk(node, depth, visit) {
+  for (const dir of [...node.dirs.values()].sort(byName)) {
+    let joined = dir;
+    let name = dir.name;
+    while (joined.files.length === 0 && joined.dirs.size === 1) {
+      joined = [...joined.dirs.values()][0];
+      name += "/" + joined.name;
+    }
+    visit({ dir: name, depth });
+    treeWalk(joined, depth + 1, visit);
+  }
+  for (const file of node.files.slice().sort(byName)) visit({ file: file.index, depth });
+}
+
+// treeOrder is the files' indexes in the order the tree lists them.
+function treeOrder(files) {
+  const order = [];
+  treeWalk(treeOf(files), 0, (entry) => { if (entry.file !== undefined) order.push(entry.file); });
+  return order;
+}
+
+// fileTree lists the files under their folders, as Bitbucket's file tree
+// does; a file opens beside it.
 function fileTree(files, view, comments) {
   const rows = [];
-  let directory = null;
-  files.forEach((file, index) => {
-    const path = filePath(file);
-    const slash = path.lastIndexOf("/");
-    const here = slash >= 0 ? path.slice(0, slash) : "";
-    if (here !== directory) {
-      directory = here;
-      if (here) rows.push(el("li", { class: "tree-dir", title: here }, icon("folder", null, "icon-sm"), el("span", { class: "ellipsis" }, here)));
+  treeWalk(treeOf(files), 0, (entry) => {
+    if (entry.dir !== undefined) {
+      rows.push(el("li", { class: "tree-dir", title: entry.dir, dataset: { depth: String(entry.depth) } },
+        icon("folder", null, "icon-sm"), el("span", { class: "ellipsis" }, entry.dir)));
+      return;
     }
-    rows.push(el("li", {}, fileLink(file, index, view, () => {
-      const target = document.getElementById("diff-file-" + index);
-      if (target) target.scrollIntoView({ block: "start" });
-    }, true, openCommentsOn(comments, file))));
+    const file = files[entry.file];
+    rows.push(el("li", { class: "tree-file", dataset: { depth: String(entry.depth) } },
+      fileLink(file, entry.file, view, () => {
+        view.diffFile = entry.file;
+        view.selection = null;
+        render();
+        const main = document.getElementById("diff-main");
+        if (main) main.scrollTop = 0;
+      }, true, openCommentsOn(comments, file), entry.file === view.diffFile)));
   });
   return el("ul", { class: "file-list tree" }, rows);
 }
@@ -291,48 +364,37 @@ function fileTree(files, view, comments) {
 function diffFile(file, index, pr, view, withHeader, comments, avatars) {
   const path = filePath(file);
   const place = (comments && comments.files.get(path)) || { onFile: [], lines: new Map() };
-  const section = el("section", { class: "diff-file", id: "diff-file-" + index, dataset: { collapsed: "false" } });
+  const section = el("section", { class: "diff-file", id: "diff-file-" + index });
   if (withHeader) {
-    const head = el("div", { class: "diff-file-head" });
-    section.append(head);
-    head.append(el("button", {
-      type: "button",
-      class: "diff-file-header",
-      "aria-expanded": "true",
-      onclick: (event) => {
-        const collapsed = section.dataset.collapsed === "true";
-        section.dataset.collapsed = collapsed ? "false" : "true";
-        event.currentTarget.setAttribute("aria-expanded", collapsed ? "true" : "false");
-      },
-    },
-    icon("chevronDown"),
-    changeLozenge(file.status),
-    el("span", { class: "file-name" }, pathLabel(path), renamedFrom(file) ? el("span", { class: "ellipsis faint" }, renamedFrom(file)) : null),
-    el("span", { class: "spacer" }),
-    file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file)),
-    fileButton(file, pr, view));
+    section.append(el("div", { class: "diff-file-head" },
+      el("div", { class: "diff-file-header" },
+        pathCrumbs(path),
+        changeLozenge(file.status),
+        renamedFrom(file) ? el("span", { class: "ellipsis faint" }, renamedFrom(file)) : null,
+        el("span", { class: "spacer" }),
+        file.binary ? el("span", { class: "faint" }, "binary") : changeBar(file)),
+      viewFileButton(file, pr, view)));
   }
 
-  // The file's own comments, and those on lines the diff does not draw,
-  // come first, as Bitbucket puts a file's comments at its top.
-  const lineKeys = new Set(file.hunks.flatMap((hunk) => hunk.lines).filter((line) => line.type !== "meta").map(keyOfLine));
-  const elsewhere = place.onFile.concat(...[...place.lines.entries()].filter(([key]) => !lineKeys.has(key)).map(([, threads]) => threads));
-  if (elsewhere.length > 0) {
-    section.append(el("div", { class: "file-threads" }, elsewhere.map((thread) => threadArticle(thread, pr, avatars, view))));
+  // The file's own comments come first, as Bitbucket puts them at its top.
+  if (place.onFile.length > 0) {
+    section.append(el("div", { class: "file-threads" }, place.onFile.map((thread) => commentThread(thread, pr, avatars, view, { place: "file" }))));
   }
 
-  if (file.omitted) {
-    section.append(el("div", { class: "diff-note" },
-      el("p", {}, "This file's changes are too large to show here."),
-      linkButton("View its diff in Bitbucket", fileURL(pr, file), view.bridge)));
-    return section;
-  }
-  if (file.binary) {
-    section.append(el("p", { class: "diff-note" }, "Binary file. Open it in Bitbucket to see the change."));
-    return section;
-  }
-  if (file.hunks.length === 0) {
-    section.append(el("p", { class: "diff-note" }, file.status === "renamed" ? "Renamed without changes." : "No changes to show."));
+  if (file.omitted || file.binary || file.hunks.length === 0) {
+    section.append(file.omitted
+      ? el("div", { class: "diff-note" },
+        el("p", {}, "This file's changes are too large to show here."),
+        linkButton("View its diff in Bitbucket", fileURL(pr, file), view.bridge))
+      : el("p", { class: "diff-note" }, file.binary
+        ? "Binary file. Open it in Bitbucket to see the change."
+        : file.status === "renamed" ? "Renamed without changes." : "No changes to show."));
+    // Comments on lines a view cannot draw are listed, with the line each
+    // is on, rather than lost.
+    const lineThreads = [...place.lines.values()].flat();
+    if (lineThreads.length > 0) {
+      section.append(el("div", { class: "file-threads" }, lineThreads.map((thread) => commentThread(thread, pr, avatars, view, { place: "file", label: placeLabel(thread.place) }))));
+    }
     return section;
   }
 
@@ -357,16 +419,16 @@ function diffFile(file, index, pr, view, withHeader, comments, avatars) {
       if (line.type === "meta") continue;
       drawnKeys.add(keyOfLine(line));
       for (const thread of place.lines.get(keyOfLine(line)) || []) {
-        body.append(el("tr", { class: "diff-thread" }, el("td", { colspan: 3 }, threadArticle(thread, pr, avatars, view))));
+        body.append(threadRow(line, commentThread(thread, pr, avatars, view, { place: "line", label: lineLabelOf(line) })));
       }
       if (view.drafts.has(lineDraftKey(file, line))) {
-        body.append(el("tr", { class: "diff-draft" }, el("td", { colspan: 3 }, lineCommentForm(file, line, pr, view))));
+        body.append(threadRow(line, lineCommentForm(file, line, pr, view), true));
       }
     }
   }
   if (drawn < total) {
     // Comments on lines still folded away are counted where the file goes on.
-    const further = [...place.lines.entries()].filter(([lineKey]) => lineKeys.has(lineKey) && !drawnKeys.has(lineKey))
+    const further = [...place.lines.entries()].filter(([lineKey]) => !drawnKeys.has(lineKey))
       .reduce((sum, [, threads]) => sum + threads.length, 0);
     body.append(el("tr", { class: "more" }, el("td", { colspan: 3 },
       moreButton(key, total - drawn, FILE_LINE_STEP, "lines", view),
@@ -374,6 +436,51 @@ function diffFile(file, index, pr, view, withHeader, comments, avatars) {
   }
   section.append(el("table", { class: "diff-table", role: "grid", "aria-label": path }, body));
   return section;
+}
+
+// threadRow is a row under a line that holds a thread, or a comment being
+// written on the line: the line's colour carries on beside it, so it reads as
+// the line's, as in Bitbucket's diff.
+function threadRow(line, content, draft) {
+  return el("tr", { class: "diff-thread " + (draft ? "diff-draft " : "") + line.type },
+    el("td", { class: "line-number" }),
+    el("td", { class: "line-number" }),
+    el("td", { class: "thread-cell" }, content));
+}
+
+// placeLabel is Bitbucket's name for the line a place is on, for a comment
+// listed apart from its line.
+function placeLabel(place) {
+  const match = /^(old|new):(\d+)$/.exec(place || "");
+  if (!match) return "";
+  return "Line " + (match[1] === "old" ? "-" : "") + match[2];
+}
+
+// pathCrumbs is a file's path as Bitbucket heads a file: its folders, then
+// its name in bold.
+function pathCrumbs(path) {
+  const parts = path.split("/");
+  const name = parts.pop();
+  return el("span", { class: "path-crumbs", title: path },
+    parts.map((part) => [el("span", { class: "crumb" }, part), el("span", { class: "crumb-slash" }, " / ")]),
+    el("span", { class: "crumb name" }, name));
+}
+
+// viewFileButton opens the file as the pull request has it, in Bitbucket.
+function viewFileButton(file, pr, view) {
+  const url = sourceURL(pr, file);
+  if (!url) return null;
+  return el("button", { type: "button", class: "button ghost view-file", title: "View " + filePath(file) + " as the pull request has it, in Bitbucket", onclick: () => openLink(view.bridge, url) },
+    icon("external"), "View file");
+}
+
+// sourceURL is a file's page in Bitbucket at the pull request's source
+// commit; a deleted file has none.
+function sourceURL(pr, file) {
+  if (file.status === "deleted" || !pr.url) return "";
+  const repository = String(pr.url).replace(/\/pull-requests\/.*$/, "");
+  const at = pr.source_commit || (pr.source_branch ? "refs/heads/" + pr.source_branch : "");
+  return repository + "/browse/" + encodeURI(filePath(file)) + (at ? "?at=" + encodeURIComponent(at) : "");
 }
 
 // codeText is a line of code as a view draws it: whole, or its first
@@ -530,30 +637,29 @@ function diffURL(pr) {
   return pr.url ? String(pr.url).replace(/\/overview$/, "/diff") : "";
 }
 
-// threadPlaces sorts the threads a diff carries by where they are: on the pull
-// request, on a file, or on a line of a file, by the side it is numbered on.
+// threadPlaces sorts the threads a diff carries by where Bitbucket's diff
+// draws them: at the top of a file, or under a line of it, by the side it is
+// numbered on. A thread on the pull request, or one Bitbucket's diff no
+// longer draws, is in the overview's activity and not here.
 function threadPlaces(payload) {
-  const index = { onPullRequest: [], files: new Map() };
+  const index = { files: new Map() };
   for (const thread of (payload.threads && payload.threads.threads) || []) {
-    const anchor = thread.anchor;
-    if (!anchor || !anchor.path) {
-      index.onPullRequest.push(thread);
-      continue;
-    }
-    if (!index.files.has(anchor.path)) index.files.set(anchor.path, { onFile: [], lines: new Map() });
-    const place = index.files.get(anchor.path);
-    if (!anchor.line || anchor.orphaned) {
+    const path = thread.anchor && thread.anchor.path;
+    if (!path || !thread.place) continue;
+    if (!index.files.has(path)) index.files.set(path, { onFile: [], lines: new Map() });
+    const place = index.files.get(path);
+    if (thread.place === "file") {
       place.onFile.push(thread);
       continue;
     }
-    // A removed line is numbered as the file was, anything else as it is.
-    const key = (anchor.line_type === "REMOVED" ? "old:" : "new:") + anchor.line;
-    if (!place.lines.has(key)) place.lines.set(key, []);
-    place.lines.get(key).push(thread);
+    if (!place.lines.has(thread.place)) place.lines.set(thread.place, []);
+    place.lines.get(thread.place).push(thread);
   }
   return index;
 }
 
+// keyOfLine is a line's place, as a thread's place names it: a removed line
+// by its number as the file was, any other by its number as it is.
 function keyOfLine(line) {
   return line.type === "del" ? "old:" + line.oldNo : "new:" + line.newNo;
 }
@@ -564,23 +670,6 @@ function openCommentsOn(comments, file) {
   if (!place) return 0;
   const all = place.onFile.concat(...place.lines.values());
   return all.filter((thread) => !thread.resolved).length;
-}
-
-// pullRequestComments are the pull request's own comments, over the files,
-// folded to their count, and a box to add one.
-function pullRequestComments(comments, pr, avatars, view) {
-  const threads = comments.onPullRequest.slice().sort(byPlace);
-  if (threads.length === 0 && !canCall(view, "add_pr_comment")) return null;
-  const key = "pr-comments";
-  const open = threads.filter((thread) => !thread.resolved).length;
-  const title = threads.length === 0
-    ? "Comment on the pull request"
-    : plural(threads.length, "comment") + " on the pull request" + (open > 0 ? " · " + formatNumber(open) + " open" : "");
-  return el("section", { class: "diff-pr-comments" },
-    foldButton(key, title, view),
-    view.unclamped.has(key)
-      ? el("div", { class: "diff-pr-threads" }, newCommentArea(pr, view), threads.map((thread) => threadArticle(thread, pr, avatars, view)))
-      : null);
 }
 
 // lineDraftKey is where a comment on a line is written: the line, by its

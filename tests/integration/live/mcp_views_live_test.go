@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -240,12 +242,14 @@ func TestLiveMCPShowCountsEveryBuild(t *testing.T) {
 	}, "ai", "mcp", "serve")
 }
 
-// TestLiveMCPShowThreadsCarriesEveryThreadWhereItIs: show's threads view
-// carries a pull request's threads as Bitbucket has them: a comment on a
-// changed line with the lines of the diff that lead to it and its reply, a
-// task, and a thread resolved as Bitbucket's UI resolves one, counted as a
-// whole, with the avatars of the people who wrote them.
-func TestLiveMCPShowThreadsCarriesEveryThreadWhereItIs(t *testing.T) {
+// TestLiveMCPShowPutsCommentsWhereBitbucketDoes: a pull request's comments
+// are where Bitbucket's web interface has them. In its diff, each is on the
+// line Bitbucket's own diff with comments draws it on, a line far from any
+// change and a comment moved by a later push included, and the diff has that
+// line; in its overview, the activity lists them newest first, a comment on a
+// line with the lines Bitbucket's activity shows it among, beside who opened
+// and updated the pull request.
+func TestLiveMCPShowPutsCommentsWhereBitbucketDoes(t *testing.T) {
 	t.Parallel()
 
 	harness := newLiveHarness(t)
@@ -259,12 +263,26 @@ func TestLiveMCPShowThreadsCarriesEveryThreadWhereItIs(t *testing.T) {
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
-	branch := testsupport.UniqueName("feature/threads-")
-	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, "threads.txt", "one\ntwo\nthree\nfour\nfive\n"); err != nil {
+	// ledger.txt has forty lines on master. The pull request changes line 20
+	// and adds notes.txt.
+	lines := make([]string, 40)
+	for i := range lines {
+		lines[i] = fmt.Sprintf("line %d", i+1)
+	}
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", "ledger.txt", strings.Join(lines, "\n")+"\n"); err != nil {
+		t.Fatalf("push ledger.txt to master failed: %v", err)
+	}
+	branch := testsupport.UniqueName("feature/comments-")
+	changed := append([]string(nil), lines...)
+	changed[19] = "line twenty"
+	if err := harness.pushFilesOnBranch(seeded.Key, repo.Slug, branch, map[string][]byte{
+		"ledger.txt": []byte(strings.Join(changed, "\n") + "\n"),
+		"notes.txt":  []byte("one\ntwo\nthree\nfour\nfive\n"),
+	}); err != nil {
 		t.Fatalf("push failed: %v", err)
 	}
 	created := extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "create",
-		"--from-ref", branch, "--to-ref", "refs/heads/master", "--title", testsupport.UniqueName("Threads "),
+		"--from-ref", branch, "--to-ref", "refs/heads/master", "--title", testsupport.UniqueName("Comments "),
 		"--no-default-reviewers", "--no-codeowners")))
 	id := fmt.Sprint(created["id"])
 	comments := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/comments", seeded.Key, repo.Slug, id)
@@ -276,109 +294,287 @@ func TestLiveMCPShowThreadsCarriesEveryThreadWhereItIs(t *testing.T) {
 		}
 		return out
 	}
-
-	inline := post(map[string]any{"text": "on line four",
-		"anchor": map[string]any{"path": "threads.txt", "line": 4, "lineType": "ADDED", "fileType": "TO", "diffType": "EFFECTIVE"}})
-	post(map[string]any{"text": "a reply", "parent": map[string]any{"id": inline["id"]}})
+	anchor := func(path string, line int, lineType, fileType string) map[string]any {
+		return map[string]any{"path": path, "line": line, "lineType": lineType, "fileType": fileType, "diffType": "EFFECTIVE"}
+	}
+	onAdded := post(map[string]any{"text": "on notes line four", "anchor": anchor("notes.txt", 4, "ADDED", "TO")})
+	post(map[string]any{"text": "a reply", "parent": map[string]any{"id": onAdded["id"]}})
+	post(map[string]any{"text": "on the removed line twenty", "anchor": anchor("ledger.txt", 20, "REMOVED", "FROM")})
+	farAway := post(map[string]any{"text": "far from the change", "anchor": anchor("ledger.txt", 2, "CONTEXT", "TO")})
+	moved := post(map[string]any{"text": "on the new line twenty", "anchor": anchor("ledger.txt", 20, "ADDED", "TO")})
+	post(map[string]any{"text": "on the file", "anchor": map[string]any{"path": "notes.txt", "diffType": "EFFECTIVE"}})
 	post(map[string]any{"text": "a task", "severity": "BLOCKER"})
-	resolved := post(map[string]any{"text": "resolved"})
-	if _, err := harness.liveJSON(ctx, http.MethodPut, fmt.Sprintf("%s/%v", comments, resolved["id"]),
-		map[string]any{"version": resolved["version"], "threadResolved": true}); err != nil {
-		t.Fatalf("resolve the thread failed: %v", err)
+
+	// A later push puts three lines above line twenty, which Bitbucket follows
+	// the comment on it to.
+	shifted := append(append(append([]string(nil), changed[:19]...), "new a", "new b", "new c"), changed[19:]...)
+	if err := pushOnTop(t, harness, seeded.Key, repo.Slug, branch, "ledger.txt", strings.Join(shifted, "\n")+"\n"); err != nil {
+		t.Fatalf("second push failed: %v", err)
+	}
+	// An unchanged line commented on as the file was, as the left side of
+	// Bitbucket's side-by-side diff does: line 25 then is line 28 now, and its
+	// anchor names 25.
+	fromSide := post(map[string]any{"text": "on line 25 as it was", "anchor": anchor("ledger.txt", 25, "CONTEXT", "FROM")})
+
+	// Where Bitbucket's own diff with comments draws each comment, read
+	// straight from Bitbucket, by the comment's ID.
+	bitbucketPlaces := func(path string) map[string]string {
+		t.Helper()
+		out, err := harness.liveJSON(ctx, http.MethodGet, fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/diff/%s?withComments=true",
+			seeded.Key, repo.Slug, id, path), nil)
+		if err != nil {
+			t.Fatalf("read Bitbucket's diff of %s failed: %v", path, err)
+		}
+		places := map[string]string{}
+		diffs, _ := out["diffs"].([]any)
+		for _, entry := range diffs {
+			diff, _ := entry.(map[string]any)
+			fileComments, _ := diff["fileComments"].([]any)
+			for _, comment := range fileComments {
+				places[fmt.Sprint(comment.(map[string]any)["id"])] = "file"
+			}
+			hunks, _ := diff["hunks"].([]any)
+			for _, entry := range hunks {
+				segments, _ := entry.(map[string]any)["segments"].([]any)
+				for _, entry := range segments {
+					segment, _ := entry.(map[string]any)
+					rows, _ := segment["lines"].([]any)
+					for _, entry := range rows {
+						row, _ := entry.(map[string]any)
+						ids, _ := row["commentIds"].([]any)
+						for _, commentID := range ids {
+							if segment["type"] == "REMOVED" {
+								places[fmt.Sprint(commentID)] = fmt.Sprintf("old:%v", row["source"])
+							} else {
+								places[fmt.Sprintf("%v", commentID)] = fmt.Sprintf("new:%v", row["destination"])
+							}
+						}
+					}
+				}
+			}
+		}
+		return places
+	}
+	// Bitbucket follows a comment through a push as it reads the diff; it is
+	// waited for, so the check below sees where Bitbucket put it.
+	movedID := fmt.Sprint(moved["id"])
+	var want map[string]string
+	deadline := time.Now().Add(time.Minute)
+	for {
+		want = bitbucketPlaces("ledger.txt")
+		for commentID, place := range bitbucketPlaces("notes.txt") {
+			want[commentID] = place
+		}
+		if want[movedID] == "new:23" || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(2 * time.Second)
+	}
+	if want[movedID] != "new:23" {
+		t.Fatalf("Bitbucket draws the comment on the new line twenty at %q after the push, want new:23; places: %v", want[movedID], want)
+	}
+	if fromID := fmt.Sprint(fromSide["id"]); want[fromID] != "new:28" {
+		t.Fatalf("Bitbucket draws the comment on line 25 as it was at %q, want new:28, the line it is now; places: %v", want[fromID], want)
 	}
 
 	capabilities := &mcp.ClientCapabilities{}
 	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
 	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
-		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "show",
-			Arguments: map[string]any{"kind": "threads", "project": seeded.Key, "repo": repo.Slug, "id": id}})
-		if err != nil || result.IsError {
-			t.Fatalf("show threads: %v %s", err, mcpResultText(result))
-		}
-		payload, _ := result.Meta[viewPayloadKey].(map[string]any)
-		threads, _ := payload["threads"].(map[string]any)
-		if threads == nil {
-			t.Fatalf("show threads carries no threads: %v", result.Meta)
+		show := func(kind string) (*mcp.CallToolResult, map[string]any) {
+			t.Helper()
+			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show",
+				Arguments: map[string]any{"kind": kind, "project": seeded.Key, "repo": repo.Slug, "id": id}})
+			if err != nil || result.IsError {
+				t.Fatalf("show %s: %v %s", kind, err, mcpResultText(result))
+			}
+			payload, _ := result.Meta[viewPayloadKey].(map[string]any)
+			return result, payload
 		}
 
-		summary, _ := threads["summary"].(map[string]any)
-		for field, want := range map[string]float64{"total_threads": 3, "unresolved": 2, "resolved": 1, "open_tasks": 1} {
-			if summary[field] != want {
-				t.Errorf("the summary counts %s %v, want %v: %v", field, summary[field], want, summary)
+		// The diff: each thread where Bitbucket's diff draws it, and the line
+		// it is on in the patch the view draws.
+		_, diff := show("diff")
+		carried, _ := diff["threads"].(map[string]any)
+		threads, _ := carried["threads"].([]any)
+		got := map[string]string{}
+		for _, entry := range threads {
+			thread, _ := entry.(map[string]any)
+			got[fmt.Sprint(thread["id"])] = asString(thread["place"])
+		}
+		for commentID, place := range want {
+			if got[commentID] != place {
+				t.Errorf("comment %s is placed at %q, where Bitbucket's diff draws it at %q", commentID, got[commentID], place)
 			}
 		}
-		if text := mcpResultText(result); !strings.Contains(text, "2 unresolved (1 of them open tasks), 1 resolved") {
-			t.Errorf("the model reads %q, want the counts", text)
+		// A comment on a line outside the diff's hunks is not in Bitbucket's
+		// diff, and not in the view's: it is in the activity.
+		farID := fmt.Sprint(farAway["id"])
+		if _, drawnThere := want[farID]; drawnThere || got[farID] != "" {
+			t.Errorf("the comment far from the change is drawn at %q by Bitbucket and %q by the view, want neither", want[farID], got[farID])
+		}
+		drawn := patchLineKeys(asString(diff["diff"].(map[string]any)["patch"]))
+		for _, entry := range threads {
+			thread, _ := entry.(map[string]any)
+			place := asString(thread["place"])
+			anchor, _ := thread["anchor"].(map[string]any)
+			path := asString(anchor["path"])
+			if strings.Contains(place, ":") && !drawn[path+"|"+place] {
+				t.Errorf("comment %v is placed at %s of %s, a line the view's patch does not have", thread["id"], place, path)
+			}
 		}
 
-		byText := map[string]map[string]any{}
-		listed, _ := threads["threads"].([]any)
-		for _, item := range listed {
-			thread, _ := item.(map[string]any)
-			byText[asString(thread["text"])] = thread
+		// The overview: the activity, newest first, from Bitbucket's timeline.
+		result, card := show("pull_request")
+		activity, _ := card["activity"].(map[string]any)
+		items, _ := activity["items"].([]any)
+		var actions []string
+		var previous float64
+		for i, entry := range items {
+			item, _ := entry.(map[string]any)
+			actions = append(actions, asString(item["action"]))
+			date, _ := item["date"].(float64)
+			if i > 0 && date > previous {
+				t.Errorf("item %d is newer than the one before it: %v", i, items)
+			}
+			previous = date
 		}
-		if len(byText) != 3 {
-			t.Fatalf("the view carries threads %v, want the three", listed)
+		counted := map[string]int{}
+		for _, action := range actions {
+			counted[action]++
+		}
+		if counted["COMMENTED"] != 7 || counted["RESCOPED"] != 1 || counted["OPENED"] != 1 || activity["total"] != float64(len(items)) {
+			t.Errorf("the activity is %v of %v, want the seven threads, the push and the opening, all carried", actions, activity["total"])
 		}
 
-		onLine := byText["on line four"]
-		anchor, _ := onLine["anchor"].(map[string]any)
-		if anchor["path"] != "threads.txt" || anchor["line"] != float64(4) {
-			t.Errorf("the comment on line four is anchored at %v", anchor)
+		// The comment on notes.txt's line four comes with the lines
+		// Bitbucket's activity shows it among, that line marked, and its
+		// reply.
+		timeline, err := harness.liveJSON(ctx, http.MethodGet, fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/activities?limit=100", seeded.Key, repo.Slug, id), nil)
+		if err != nil {
+			t.Fatalf("read the activities failed: %v", err)
+		}
+		var bitbucketLines []string
+		values, _ := timeline["values"].([]any)
+		for _, entry := range values {
+			value, _ := entry.(map[string]any)
+			comment, _ := value["comment"].(map[string]any)
+			if value["action"] != "COMMENTED" || fmt.Sprint(comment["id"]) != fmt.Sprint(onAdded["id"]) {
+				continue
+			}
+			hunks, _ := value["diff"].(map[string]any)["hunks"].([]any)
+			for _, entry := range hunks {
+				segments, _ := entry.(map[string]any)["segments"].([]any)
+				for _, entry := range segments {
+					rows, _ := entry.(map[string]any)["lines"].([]any)
+					for _, row := range rows {
+						bitbucketLines = append(bitbucketLines, asString(row.(map[string]any)["line"]))
+					}
+				}
+			}
+		}
+		var onLine map[string]any
+		for _, entry := range items {
+			thread, _ := entry.(map[string]any)["thread"].(map[string]any)
+			if fmt.Sprint(thread["id"]) == fmt.Sprint(onAdded["id"]) {
+				onLine = thread
+			}
+		}
+		if onLine == nil {
+			t.Fatalf("the activity has no comment on notes.txt's line four: %v", items)
 		}
 		context, _ := onLine["context"].([]any)
-		if len(context) == 0 {
-			t.Fatalf("the comment on line four carries no diff: %v", onLine)
-		}
-		last, _ := context[len(context)-1].(map[string]any)
-		if last["text"] != "four" || last["type"] != "add" || last["new"] != float64(4) || last["anchor"] != true {
-			t.Errorf("the diff leading to line four ends %v, want the added line four, marked", last)
-		}
-		replies, _ := onLine["replies"].([]any)
-		if len(replies) != 1 || asString(replies[0].(map[string]any)["text"]) != "a reply" {
-			t.Errorf("the comment on line four carries replies %v, want the one", replies)
-		}
-		if onLine["author_username"] != harness.username() {
-			t.Errorf("the comment on line four is by %v, want %s", onLine["author_username"], harness.username())
-		}
-		if task := byText["a task"]; task["task"] != true || task["resolved"] == true {
-			t.Errorf("the task reads %v, want an open task", task)
-		}
-		if byText["resolved"]["resolved"] != true {
-			t.Errorf("the resolved thread reads %v, want it resolved", byText["resolved"])
-		}
-
-		avatars, _ := payload["avatars"].(map[string]any)
-		if !strings.HasPrefix(asString(avatars[harness.username()]), "data:image/") {
-			t.Errorf("the threads view has no avatar image for %s: %.40q", harness.username(), asString(avatars[harness.username()]))
-		}
-
-		// The diff carries the same threads, to draw each on its line, and
-		// none of the lines leading to it: it draws the diff itself.
-		shown, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show",
-			Arguments: map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": id}})
-		if err != nil || shown.IsError {
-			t.Fatalf("show diff: %v %s", err, mcpResultText(shown))
-		}
-		diff, _ := shown.Meta[viewPayloadKey].(map[string]any)
-		diffThreads, _ := diff["threads"].(map[string]any)
-		carried, _ := diffThreads["threads"].([]any)
-		var inDiff map[string]any
-		for _, item := range carried {
-			if thread, _ := item.(map[string]any); asString(thread["text"]) == "on line four" {
-				inDiff = thread
+		var ours, marked []string
+		for _, entry := range context {
+			line, _ := entry.(map[string]any)
+			ours = append(ours, asString(line["text"]))
+			if line["anchor"] == true {
+				marked = append(marked, fmt.Sprintf("%v %v %v", line["type"], line["new"], line["text"]))
 			}
 		}
-		if len(carried) != 3 || inDiff == nil {
-			t.Fatalf("the diff carries threads %v, want the three with the one on line four", carried)
+		if len(bitbucketLines) == 0 || strings.Join(ours, "|") != strings.Join(bitbucketLines, "|") {
+			t.Errorf("the comment is shown among %q, where Bitbucket's activity shows %q", ours, bitbucketLines)
 		}
-		if anchor, _ := inDiff["anchor"].(map[string]any); anchor["path"] != "threads.txt" || anchor["line"] != float64(4) || anchor["line_type"] != "ADDED" {
-			t.Errorf("in the diff the comment on line four is anchored at %v", inDiff["anchor"])
+		if strings.Join(marked, "|") != "add 4 four" {
+			t.Errorf("the lines mark %q, want the added line four alone", marked)
 		}
-		if inDiff["context"] != nil {
-			t.Errorf("the diff's comment carries the lines leading to it: %v", inDiff["context"])
+		if replies, _ := onLine["replies"].([]any); len(replies) != 1 || asString(replies[0].(map[string]any)["text"]) != "a reply" {
+			t.Errorf("the comment carries replies %v, want the one", onLine["replies"])
+		}
+
+		avatars, _ := card["avatars"].(map[string]any)
+		if !strings.HasPrefix(asString(avatars[harness.username()]), "data:image/") {
+			t.Errorf("the overview has no avatar image for %s: %.40q", harness.username(), asString(avatars[harness.username()]))
+		}
+		if text := mcpResultText(result); !strings.Contains(text, "Comments: 7 unresolved (1 of them open tasks), 0 resolved.") {
+			t.Errorf("the model reads %q, want the comments counted", text)
 		}
 	}, "ai", "mcp", "serve")
+}
+
+// pushOnTop commits content to a file on top of a branch as it is, as a
+// second push to a pull request does.
+func pushOnTop(t *testing.T, h *liveHarness, projectKey, repositorySlug, branch, fileName, content string) error {
+	t.Helper()
+	directory := t.TempDir()
+	pushURL, err := repositoryPushURL(h.config, projectKey, repositorySlug)
+	if err != nil {
+		return err
+	}
+	for _, args := range [][]string{
+		{"init"},
+		{"config", "user.name", "bb-live-test"},
+		{"config", "user.email", "bb-live-test@example.local"},
+		{"config", "core.autocrlf", "false"},
+		{"remote", "add", "origin", pushURL},
+		{"fetch", "origin", branch},
+		{"checkout", "-b", branch, "FETCH_HEAD"},
+	} {
+		if err := runGit(directory, args...); err != nil {
+			return err
+		}
+	}
+	if err := os.WriteFile(filepath.Join(directory, fileName), []byte(content), 0o644); err != nil {
+		return err
+	}
+	for _, args := range [][]string{{"add", fileName}, {"commit", "-m", "push on top of " + branch}, {"push", "origin", branch}} {
+		if err := runGit(directory, args...); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// patchLineKeys is each line a patch draws, as path|old:N for a removed line
+// and path|new:N for any other, as a thread's place names it.
+func patchLineKeys(patch string) map[string]bool {
+	keys := map[string]bool{}
+	path, oldLine, newLine := "", 0, 0
+	for _, line := range strings.Split(patch, "\n") {
+		switch {
+		case strings.HasPrefix(line, "diff --git "):
+			if fields := strings.Fields(line); len(fields) == 4 {
+				path = strings.TrimPrefix(strings.TrimPrefix(fields[3], "b/"), "dst://")
+			}
+			oldLine, newLine = 0, 0
+		case strings.HasPrefix(line, "@@ "):
+			fmt.Sscanf(line, "@@ -%d", &oldLine)
+			if plus := strings.Index(line, " +"); plus >= 0 {
+				fmt.Sscanf(line[plus+2:], "%d", &newLine)
+			}
+		case strings.HasPrefix(line, "+++ "), strings.HasPrefix(line, "--- "):
+		case strings.HasPrefix(line, "+") && newLine > 0:
+			keys[fmt.Sprintf("%s|new:%d", path, newLine)] = true
+			newLine++
+		case strings.HasPrefix(line, "-") && oldLine > 0:
+			keys[fmt.Sprintf("%s|old:%d", path, oldLine)] = true
+			oldLine++
+		case strings.HasPrefix(line, " ") && newLine > 0:
+			keys[fmt.Sprintf("%s|new:%d", path, newLine)] = true
+			oldLine++
+			newLine++
+		}
+	}
+	return keys
 }
 
 // TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged: a view that asks again
@@ -442,7 +638,6 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 			{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": id},
 			{"kind": "pull_requests", "project": seeded.Key, "repo": repo.Slug},
 			{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": id},
-			{"kind": "threads", "project": seeded.Key, "repo": repo.Slug, "id": id},
 		} {
 			payload := show(arguments)
 			fingerprint := asString(payload["fingerprint"])
@@ -456,14 +651,14 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 			}
 		}
 
-		threads := show(map[string]any{"kind": "threads", "project": seeded.Key, "repo": repo.Slug, "id": id})
-		before := asString(threads["fingerprint"])
+		card := show(map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": id})
+		before := asString(card["fingerprint"])
 		comments := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/comments", seeded.Key, repo.Slug, id)
 		if _, err := harness.liveJSON(ctx, http.MethodPost, comments, map[string]any{"text": "a comment after the view was drawn"}); err != nil {
 			t.Fatalf("post a comment failed: %v", err)
 		}
 
-		result, answer := refresh(threads, before)
+		result, answer := refresh(card, before)
 		payload, _ := result.Meta[viewPayloadKey].(map[string]any)
 		if answer["changed"] != true || payload == nil {
 			t.Fatalf("after a comment refresh_view answered changed=%v with data %v, want the data", answer["changed"], payload != nil)
@@ -471,12 +666,14 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 		if after := asString(payload["fingerprint"]); after == before || after != answer["fingerprint"] {
 			t.Errorf("the new data has fingerprint %q, the answer %v, the view had %q; want a new one, the same in both", after, answer["fingerprint"], before)
 		}
-		carried, _ := payload["threads"].(map[string]any)
-		listed, _ := carried["threads"].([]any)
-		if len(listed) != 1 || asString(listed[0].(map[string]any)["text"]) != "a comment after the view was drawn" {
-			t.Errorf("the new data carries threads %v, want the comment", listed)
+		activity, _ := payload["activity"].(map[string]any)
+		items, _ := activity["items"].([]any)
+		newest, _ := valueOf(items, 0).(map[string]any)
+		thread, _ := newest["thread"].(map[string]any)
+		if newest["action"] != "COMMENTED" || asString(thread["text"]) != "a comment after the view was drawn" {
+			t.Errorf("the new data's activity starts %v, want the comment", newest)
 		}
-		if text := mcpResultText(result); !strings.Contains(text, "has changed") || !strings.Contains(text, "1 unresolved") {
+		if text := mcpResultText(result); !strings.Contains(text, "has changed") || !strings.Contains(text, "Comments: 1 unresolved") {
 			t.Errorf("the model would be told %q, want the change and the count", text)
 		}
 
@@ -499,13 +696,20 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 		kinds, _ := offers["kinds"].([]any)
 		tools, _ := offers["tools"].([]any)
 		everyKind := true
-		for _, kind := range []string{"pull_request", "pull_requests", "diff", "threads", "pull_request_form", "file"} {
+		for _, kind := range []string{"pull_request", "pull_requests", "diff", "pull_request_form"} {
 			everyKind = everyKind && containsAny(kinds, kind)
 		}
 		if !everyKind || !containsAny(tools, "add_pr_comment") || !containsAny(tools, "submit_pr_review") {
 			t.Errorf("a server with every tool offers its views %v, want every kind and the actions", offers)
 		}
 	}, "ai", "mcp", "serve")
+}
+
+func valueOf(values []any, index int) any {
+	if index < len(values) {
+		return values[index]
+	}
+	return nil
 }
 
 func containsAny(values []any, want string) bool {
@@ -636,10 +840,9 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 	}, "ai", "mcp", "serve")
 }
 
-// TestLiveMCPShowsAFileAsWhatItIs: the file viewer reads a text file as a
-// window of its lines, the next window where the view asks for it, and a
-// picture as the picture, through bb.
-func TestLiveMCPShowsAFileAsWhatItIs(t *testing.T) {
+// TestLiveMCPShowsADiffHighlighted: code in a diff comes highlighted, keyed by
+// the file's place in the patch: ledger.go, and not the picture beside it.
+func TestLiveMCPShowsADiffHighlighted(t *testing.T) {
 	t.Parallel()
 
 	harness := newLiveHarness(t)
@@ -662,71 +865,12 @@ func TestLiveMCPShowsAFileAsWhatItIs(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("push failed: %v", err)
 	}
-
-	capabilities := &mcp.ClientCapabilities{}
-	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
-	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
-		show := func(arguments map[string]any) (map[string]any, string) {
-			t.Helper()
-			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show", Arguments: arguments})
-			if err != nil || result.IsError {
-				t.Fatalf("show %v: %v %s", arguments, err, mcpResultText(result))
-			}
-			payload, _ := result.Meta[viewPayloadKey].(map[string]any)
-			file, _ := payload["file"].(map[string]any)
-			if file == nil {
-				t.Fatalf("show %v carries no file: %v", arguments, payload)
-			}
-			return file, mcpResultText(result)
-		}
-
-		code, text := show(map[string]any{"kind": "file", "project": seeded.Key, "repo": repo.Slug, "path": "ledger.go", "at": branch})
-		for key, want := range map[string]any{
-			"kind": "text", "lines": "package ledger\n\n// Refund reverses an entry.\nfunc Refund() {}\n",
-			"start_line": float64(1), "end_line": float64(4), "total_lines": float64(4), "at": branch,
-		} {
-			if code[key] != want {
-				t.Errorf("the file carries %s = %v, want %v", key, code[key], want)
-			}
-		}
-		if next, ok := code["next_line"]; ok && next != float64(0) {
-			t.Errorf("a file read whole says it goes on at line %v", next)
-		}
-		if !strings.Contains(asString(code["url"]), "/browse/ledger.go") {
-			t.Errorf("the file links to %v, want its page in Bitbucket", code["url"])
-		}
-		if !strings.Contains(text, "lines 1 to 4 of 4.") {
-			t.Errorf("the model reads %q, want which lines it shows", text)
-		}
-
-		window, _ := show(map[string]any{"kind": "file", "project": seeded.Key, "repo": repo.Slug, "path": "ledger.go", "at": branch, "start_line": 3})
-		if window["start_line"] != float64(3) || window["lines"] != "// Refund reverses an entry.\nfunc Refund() {}\n" {
-			t.Errorf("the window from line 3 carries %v from line %v, want the last two lines", window["lines"], window["start_line"])
-		}
-
-		picture, _ := show(map[string]any{"kind": "file", "project": seeded.Key, "repo": repo.Slug, "path": "logo.png", "at": branch})
-		if picture["kind"] != "image" || picture["data"] != "data:image/png;base64,"+base64.StdEncoding.EncodeToString(png) || picture["width"] != float64(1) {
-			t.Errorf("the picture is carried as %v, %.60v, %v wide; want the PNG itself, one pixel wide", picture["kind"], picture["data"], picture["width"])
-		}
-
-		// Code comes highlighted, a span list for each line: the whole file,
-		// and a window's lines taken from it.
-		if lines, _ := code["highlight"].([]any); len(lines) != 4 || !strings.HasPrefix(asString(lines[0]), "k7") || !strings.HasPrefix(asString(lines[2]), "c") {
-			t.Errorf("ledger.go is highlighted as %v, want four lines, package a keyword and the comment a comment", code["highlight"])
-		}
-		if lines, _ := window["highlight"].([]any); len(lines) != 2 || !strings.HasPrefix(asString(lines[0]), "c") {
-			t.Errorf("the window from line 3 is highlighted as %v, want its two lines, the comment first", window["highlight"])
-		}
-		if picture["highlight"] != nil {
-			t.Errorf("the picture carries highlighting: %v", picture["highlight"])
-		}
-	}, "ai", "mcp", "serve")
-
-	// A diff of the same branch comes highlighted too, keyed by the file's
-	// place in the patch: ledger.go, not the picture.
 	created := extractPRData(decodeJSONMap(t, mustLiveCLI(t, "pr", "create",
 		"--from-ref", branch, "--to-ref", "refs/heads/master", "--title", testsupport.UniqueName("Files "),
 		"--no-default-reviewers", "--no-codeowners")))
+
+	capabilities := &mcp.ClientCapabilities{}
+	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
 	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
 		result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show",
 			Arguments: map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": fmt.Sprint(created["id"])}})

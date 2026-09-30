@@ -12,10 +12,6 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 // network, and a source that is anything else is dropped.
 const EMBEDDED_IMAGE = /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
 
-// Audio or a video a view plays is a file bb embedded as data, and only an
-// audio or video element takes it.
-const EMBEDDED_MEDIA = /^data:(?:(?:audio|video)\/[a-z0-9.+-]+|application\/ogg);base64,[A-Za-z0-9+/]+=*$/;
-
 function el(tag, props, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props || {})) {
@@ -30,8 +26,7 @@ function el(tag, props, ...children) {
       if (typeof value !== "function") throw new Error("an event handler must be a function");
       node.addEventListener(key.slice(2), value);
     } else if (key === "src") {
-      const media = tag === "audio" || tag === "video";
-      if (media ? EMBEDDED_MEDIA.test(value) : EMBEDDED_IMAGE.test(value)) node.setAttribute("src", value);
+      if (tag === "img" && EMBEDDED_IMAGE.test(value)) node.setAttribute("src", value);
     } else if (key === "href" || key === "srcdoc" || key === "style") {
       // Links open through the host, and nothing styles itself from data.
       throw new Error("el does not set " + key);
@@ -80,6 +75,12 @@ const ICON_SHAPES = {
   folder: [["path", "M2 4.2a1 1 0 0 1 1-1h3l1.5 1.6H13a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"]],
   autoMerge: [["circle", 4.5, 3.5, 1.6], ["circle", 4.5, 12.5, 1.6], ["path", "M4.5 5.1v5.8M4.5 5.2c0 3.5 5 2.8 6.5 5.3"], ["path", "M12.8 1.8l-2 3h2.4l-2 3"]],
   refresh: [["path", "M13 8a5 5 0 1 1-1.5-3.6"], ["path", "M11.8 1.7v2.9H8.9"]],
+  // A file's change in the tree: a square in its colour, marked with a plus,
+  // a bar, a pencil stroke or an arrow.
+  fileAdded: [["box", 2, 2, 12, 12, 2.5], ["cut", "M8 5v6M5 8h6"]],
+  fileDeleted: [["box", 2, 2, 12, 12, 2.5], ["cut", "M5 8h6"]],
+  fileModified: [["box", 2, 2, 12, 12, 2.5], ["cut", "M5.5 10.5l4.5-4.5"]],
+  fileRenamed: [["box", 2, 2, 12, 12, 2.5], ["cut", "M5 8h5.5M8.5 5.5L11 8l-2.5 2.5"]],
 };
 
 function icon(name, label, extraClass) {

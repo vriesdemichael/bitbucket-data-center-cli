@@ -145,22 +145,6 @@ async function submitReview(pr, action, view) {
   }
 }
 
-// replyArea replies to a thread, where the server lets a view comment.
-function replyArea(thread, pr, view) {
-  if (!pr.repository || !canCall(view, "add_pr_comment")) return null;
-  const key = "reply-" + thread.id;
-  if (!view.drafts.has(key)) {
-    return el("div", { class: "reply-row" },
-      el("button", { type: "button", class: "button ghost", onclick: () => openDraft(view, key) }, icon("comment"), "Reply"));
-  }
-  return commentForm(view, key, {
-    placeholder: "Reply to " + (thread.author || "this thread"),
-    submitLabel: "Reply",
-    busyLabel: "Replying…",
-    send: (text) => callForPerson(view, "add_pr_comment", Object.assign(pullRequestArgs(pr), { text, parent_id: thread.id })),
-  });
-}
-
 // newCommentArea comments on the pull request itself.
 function newCommentArea(pr, view) {
   if (!pr.repository || !canCall(view, "add_pr_comment")) return null;

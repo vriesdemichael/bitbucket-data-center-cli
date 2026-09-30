@@ -186,20 +186,28 @@ func buildThreads(comments []openapigenerated.RestComment, orphaned map[int64]bo
 // is a different number wearing the same name, and both callers were passing a
 // value that happened to be a page size and so happened to be right.
 func (service *Service) TrySummarize(ctx context.Context, repository RepositoryRef, pullRequestID string) (*Summary, error) {
-	activities, err := service.List(ctx, repository, pullRequestID, ListOptions{MaxResults: AllResults})
-	if err != nil {
-		if ctx.Err() != nil {
-			return nil, err
-		}
-		if timelineUnavailable(err) {
-			return nil, nil
-		}
+	activities, available, err := service.TryList(ctx, repository, pullRequestID)
+	if err != nil || !available {
 		return nil, err
 	}
 
 	_, summary := ExtractThreads(activities, ThreadOptions{})
 
 	return &summary, nil
+}
+
+// TryList reads the whole activity timeline, for a caller that can do without
+// it: available is false, with no error, when the timeline cannot be read
+// here, as TrySummarize has it. Every other failure is reported.
+func (service *Service) TryList(ctx context.Context, repository RepositoryRef, pullRequestID string) (activities []Activity, available bool, err error) {
+	activities, err = service.List(ctx, repository, pullRequestID, ListOptions{MaxResults: AllResults})
+	if err != nil {
+		if ctx.Err() == nil && timelineUnavailable(err) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	return activities, true, nil
 }
 
 // timelineUnavailable reports whether err means the activity timeline cannot be

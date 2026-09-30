@@ -12,7 +12,7 @@ import (
 )
 
 // everyKind is what a server that shows every kind offers its views.
-var everyKind = &viewOffers{Kinds: []string{showKindPullRequest, showKindPullRequests, showKindDiff, showKindThreads}}
+var everyKind = &viewOffers{Kinds: []string{showKindPullRequest, showKindPullRequests, showKindDiff}}
 
 // A card opens its diff in the same view: the view asks bb for it, shows it,
 // tells the model, and goes back to the card when the person asks.
@@ -126,9 +126,9 @@ func TestAViewOffersToOpenOnlyWhatWorksHere(t *testing.T) {
 
 	for frame := range 2 {
 		var tabs bool
-		inFrame(t, ctx, frame, `return [...d.querySelectorAll("button")].some((b) => ["Diff", "Comments"].includes(b.textContent.trim()));`, &tabs)
+		inFrame(t, ctx, frame, `return [...d.querySelectorAll("button")].some((b) => b.textContent.trim() === "Diff");`, &tabs)
 		if tabs {
-			t.Errorf("frame %d offers to open the diff or the comments where it cannot", frame)
+			t.Errorf("frame %d offers to open the diff where it cannot", frame)
 		}
 		var card bool
 		inFrame(t, ctx, frame, `return Boolean(d.querySelector(".pr-card"));`, &card)

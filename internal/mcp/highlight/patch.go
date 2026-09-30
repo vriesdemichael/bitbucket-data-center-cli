@@ -19,12 +19,7 @@ import (
 // lines) and the new (context and added lines), so that a comment or string
 // spanning lines colours every line of it. A removed line takes its spans
 // from the old side, an added or context line from the new.
-func Patch(patch string, deadline time.Time) map[int][]string {
-	return PatchWith(patch, Options{Deadline: deadline})
-}
-
-// PatchWith is Patch, with the options Options describes.
-func PatchWith(patch string, options Options) map[int][]string {
+func Patch(patch string, options Options) map[int][]string {
 	highlighted := map[int][]string{}
 	for index, file := range parsePatch(patch) {
 		if time.Now().After(options.Deadline) {
