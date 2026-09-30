@@ -57,7 +57,7 @@ cat body.json | bb api /rest/api/1.0/projects/PROJ/repos/repo/branches -X POST -
 :   Automatically fetch all pages for paginated endpoints
 
 `-f, --raw-field stringArray`
-:   Add a string parameter (key=value)
+:   Add a string parameter, key=value: a query parameter for GET, a JSON body field otherwise
 
 Also takes the [global flags](global-flags.md).
 
