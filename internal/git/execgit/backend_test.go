@@ -491,10 +491,13 @@ func TestCloneScopesAuthHeaderToTheRemoteHost(t *testing.T) {
 		t.Fatalf("expected port to be preserved in scope, got %q", got)
 	}
 
-	// A path that git cannot resolve to a host falls back to an unscoped
-	// header rather than silently dropping authentication.
+	// A path gives no host to scope to, and the header is then not sent at
+	// all: unscoped, git would attach it to every host it contacts.
 	if got := httpConfigScope("/local/path/repo.git"); got != "" {
 		t.Fatalf("expected empty scope for a non-URL remote, got %q", got)
+	}
+	if args, env := credentialConfig("/local/path/repo.git", "Authorization: Bearer tok", true); len(args) != 0 || len(env) != 0 {
+		t.Fatalf("a remote with no host was handed the credential unscoped: %v %v", args, env)
 	}
 }
 
