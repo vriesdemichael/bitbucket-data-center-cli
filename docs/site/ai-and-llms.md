@@ -103,13 +103,16 @@ A file too large to carry is named, with a link to its diff in Bitbucket.
 ![A pull request's diff: the file tree with each file's open comments counted, beside one file's highlighted changes, a task on the line it was written on and a resolved thread folded to a line](assets/views/diff-dark.webp#only-dark)
 
 Ask for a pull request to be opened, and the agent can hand you its draft as a
-form: the branches, the title and description it wrote, the reviewers it
-suggests. Edit what you like, with branches and reviewers completed as you
-type, and create it; nothing is created until you do. An existing pull
-request's title, description and draft state are edited the same way.
+form that works like Bitbucket's create page: the branches, picked from the
+repository's and swapped with one click; the title and description it wrote;
+the reviewers it suggests, with the default reviewers and code owners filled in
+as Bitbucket fills them in, and offered back if you remove them. Find more
+reviewers by name, and create it, or create it as a draft; nothing is created
+until you do. An existing pull request's title, description and draft state are
+edited the same way.
 
-![A pull request form: the source and target branches, the title and the description the agent drafted, a reviewer field, the draft box, and Create pull request](assets/views/form-light.webp#only-light)
-![A pull request form: the source and target branches, the title and the description the agent drafted, a reviewer field, the draft box, and Create pull request](assets/views/form-dark.webp#only-dark)
+![A pull request form: the source and destination branches with a swap button, the title and the description the agent drafted, two reviewers with their avatars, and Create and Create as draft](assets/views/form-light.webp#only-light)
+![A pull request form: the source and destination branches with a swap button, the title and the description the agent drafted, two reviewers with their avatars, and Create and Create as draft](assets/views/form-dark.webp#only-dark)
 
 - A view carries what it draws. It renders again when you come back to the
   conversation, even without bb running, and it says when it was read.
