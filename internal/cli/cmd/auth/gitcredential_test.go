@@ -3,6 +3,8 @@ package auth
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -131,6 +133,49 @@ func TestGitCredentialWithoutHostStaysSilent(t *testing.T) {
 	}
 	if out.Len() != 0 {
 		t.Fatalf("expected no output, got %q", out.String())
+	}
+}
+
+// TestGitCredentialDoesNotAnswerHTTPForAnHTTPSLogin is #730 on git's side. A
+// remote over plain http for a host logged in to over https would send the
+// credential across the network in the clear; git asks with protocol=http, and
+// the answer is the silence it gets for a host bb knows nothing about.
+func TestGitCredentialDoesNotAnswerHTTPForAnHTTPSLogin(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	stored := strings.Join([]string{
+		"default_host: https://bitbucket.example.com",
+		"hosts:",
+		"  https://bitbucket.example.com:",
+		"    url: https://bitbucket.example.com",
+		"    username: alice",
+		"insecure_secrets:",
+		"  https://bitbucket.example.com:",
+		"    token: https-only-token",
+		"",
+	}, "\n")
+	if err := os.WriteFile(configPath, []byte(stored), 0o600); err != nil {
+		t.Fatalf("write stored config: %v", err)
+	}
+	t.Setenv("BB_CONFIG_PATH", configPath)
+
+	answer := func(protocol string) string {
+		cmd := newGitCredentialCommand()
+		var out bytes.Buffer
+		cmd.SetOut(&out)
+		cmd.SetErr(&out)
+		cmd.SetIn(strings.NewReader("protocol=" + protocol + "\nhost=bitbucket.example.com\n\n"))
+		cmd.SetArgs([]string{"get"})
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("git-credential get over %s: %v", protocol, err)
+		}
+		return out.String()
+	}
+
+	if got := answer("https"); !strings.Contains(got, "password=https-only-token") {
+		t.Fatalf("the login does not answer its own host over https, so the check below proves nothing: %q", got)
+	}
+	if got := answer("http"); got != "" {
+		t.Fatalf("a credential stored for https was handed to git for plain http: %q", got)
 	}
 }
 

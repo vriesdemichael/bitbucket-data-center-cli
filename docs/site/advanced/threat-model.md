@@ -184,8 +184,8 @@ bb auth status --json
   	helper = !"/usr/local/bin/bb" auth git-credential
   ```
 - **Zero Repository Footprint**: Cloned repositories contain zero credentials or tokens in their local `.git/config`.
-- **A Credential Is Bound To Its Host**: a stored credential is released only for the host it was stored for. A host named by repository configuration, by `--host`, or by a URL passed to `bb api` therefore gets no credential unless one is stored for that exact host, whatever the default host is.
-- **Nothing Sensitive On The Command Line**: the header a clone needs is passed to git in its environment, which only the owner of the process can read, rather than in its arguments, which any local account can read while the clone runs.
+- **A Credential Is Bound To Its Host**: a stored credential is released only for the host it was stored for. A host named by repository configuration, by `--host`, or by a URL passed to `bb api` therefore gets no credential unless one is stored for that exact host, whatever the default host is. A credential stored for `https://` is never sent to the same host over plain `http://`, so a `.env` cannot downgrade the scheme to read it off the wire; one stored for `http://` still answers over `https://`.
+- **Nothing Sensitive On The Command Line**: the header a clone or a pull request checkout needs is passed to git in its environment, which only the owner of the process can read, rather than in its arguments, which any local account can read while git runs.
 - **Instant Revocation**: If a token is revoked in Bitbucket or removed via `bb auth logout`, all local clones immediately lose access without requiring manual git cleanup.
 
 #### 3. Audit Test Procedure

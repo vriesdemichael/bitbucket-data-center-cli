@@ -941,9 +941,10 @@ func TestLoadFromEnvUsesStoredTokenBranch(t *testing.T) {
 	}
 }
 
-// TestResolveStoredCredentialsCrossScheme verifies that credentials stored
-// under https://host are found when the runtime URL uses http://host and vice
-// versa (issue #92).
+// TestResolveStoredCredentialsCrossScheme is the scheme half of matching a
+// stored host. A login stored over http answers the same host over https
+// (#92), where TLS is added. A login stored over https does not answer it over
+// http, where the credential would cross the network in the clear (#730).
 func TestResolveStoredCredentialsCrossScheme(t *testing.T) {
 	t.Parallel()
 
@@ -957,12 +958,8 @@ func TestResolveStoredCredentialsCrossScheme(t *testing.T) {
 			},
 		}
 
-		resolved, ok := resolveStoredCredentialsStrict(stored, "http://bitbucket.corp")
-		if !ok {
-			t.Fatal("expected the same host under the other scheme to find credentials")
-		}
-		if resolved.BitbucketToken != "secret-token" {
-			t.Fatalf("expected token secret-token, got %q", resolved.BitbucketToken)
+		if resolved, ok := resolveStoredCredentialsStrict(stored, "http://bitbucket.corp"); ok {
+			t.Fatalf("a credential stored for https was released to plain http: %q", resolved.BitbucketToken)
 		}
 	})
 
@@ -1007,17 +1004,19 @@ func TestResolveStoredCredentialsCrossScheme(t *testing.T) {
 	})
 }
 
-func TestHostKeyAltScheme(t *testing.T) {
+func TestHostKeyOverHTTP(t *testing.T) {
 	t.Parallel()
 
-	if got := hostKeyAltScheme("http://bitbucket.corp"); got != "https://bitbucket.corp" {
-		t.Fatalf("expected https alt, got %q", got)
-	}
-	if got := hostKeyAltScheme("https://bitbucket.corp:7990"); got != "http://bitbucket.corp:7990" {
-		t.Fatalf("expected http alt with port, got %q", got)
-	}
-	if got := hostKeyAltScheme("://bad"); got != "" {
-		t.Fatalf("expected empty string for invalid URL, got %q", got)
+	for input, want := range map[string]string{
+		"https://bitbucket.corp:7990": "http://bitbucket.corp:7990",
+		"HTTPS://Bitbucket.Corp":      "http://bitbucket.corp",
+		// Only https has a plain-http form to fall back to.
+		"http://bitbucket.corp": "",
+		"://bad":                "",
+	} {
+		if got := hostKeyOverHTTP(input); got != want {
+			t.Errorf("hostKeyOverHTTP(%q) = %q, want %q", input, got, want)
+		}
 	}
 }
 
