@@ -21,6 +21,12 @@ type Written struct {
 	Webhook any
 	// Unread is why the webhook was not read back, and nil when it was.
 	Unread error
+	// Existing says a create found its webhook already in the scope and made
+	// nothing: Webhook is the one that was there, as the listing read it.
+	Existing bool
+	// PasswordUncompared says, for an Existing webhook, that the create named
+	// an endpoint password, which no read returns to compare.
+	PasswordUncompared bool
 }
 
 // errNoID is why a write whose answer names no webhook is not read back.

@@ -68,6 +68,20 @@ func (service *Service) CreateProjectWebhook(ctx context.Context, projectKey str
 		})
 }
 
+// FindProjectWebhook looks among a project's webhooks for the one a create of
+// input would make (see webhookfields.FindExisting), for a preview to say what
+// the create would come to.
+func (service *Service) FindProjectWebhook(ctx context.Context, projectKey string, input WebhookCreateInput) (webhookfields.Existing, bool, error) {
+	trimmedProject := strings.TrimSpace(projectKey)
+	if trimmedProject == "" {
+		return webhookfields.Existing{}, false, apperrors.New(apperrors.KindValidation, "project key is required", nil)
+	}
+
+	return webhookfields.FindInScope(ctx, input, func(ctx context.Context, start, limit int) (openapi.Page[json.RawMessage], error) {
+		return service.projectWebhookPage(ctx, trimmedProject, start, limit)
+	})
+}
+
 // projectWebhookPage reads one page of a project's webhooks.
 func (service *Service) projectWebhookPage(ctx context.Context, projectKey string, start, limit int) (openapi.Page[json.RawMessage], error) {
 	response, err := service.client.FindWebhooksWithResponse(ctx, projectKey, nil, openapi.PageQuery(start, limit))

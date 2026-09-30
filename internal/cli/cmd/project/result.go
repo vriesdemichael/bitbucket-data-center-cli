@@ -135,6 +135,15 @@ type WebhookChange struct {
 	Webhook result.Webhook `json:"webhook"`
 }
 
+// WebhookCreation is what `bb project webhook create` reports: the change,
+// and whether it made the webhook or found it already there.
+type WebhookCreation struct {
+	result.Status
+	Project string         `json:"project" jsonschema:"Project key the webhook is on."`
+	Webhook result.Webhook `json:"webhook"`
+	Created bool           `json:"created" jsonschema:"Whether a webhook was created. False when one with this name, URL and settings was already there: that is the webhook reported, and nothing was sent."`
+}
+
 // WebhookDeletion is what `bb project webhook delete` reports.
 type WebhookDeletion struct {
 	result.Status
@@ -209,7 +218,7 @@ func init() {
 	result.Declare("project default-task delete", result.For[DefaultTaskDeletion](nil))
 
 	result.Declare("project webhook list", result.For[Webhooks](nil))
-	result.Declare("project webhook create", result.For[WebhookChange](nil))
+	result.Declare("project webhook create", result.For[WebhookCreation](nil))
 	result.Declare("project webhook update", result.For[WebhookChange](nil))
 	result.Declare("project webhook delete", result.For[WebhookDeletion](nil))
 

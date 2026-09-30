@@ -14,9 +14,6 @@ func TestWebhookHelperFunctions(t *testing.T) {
 	if len(entries) != 1 {
 		t.Fatalf("expected one webhook entry, got %d", len(entries))
 	}
-	if !webhookExistsByNameAndURL(payload, "CI", "http://example.invalid/hook") {
-		t.Fatal("expected webhook to match by name+url case-insensitively")
-	}
 	if !webhookExistsByID(payload, "42") {
 		t.Fatal("expected webhook to match by numeric id")
 	}

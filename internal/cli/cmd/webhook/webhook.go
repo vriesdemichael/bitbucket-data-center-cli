@@ -427,14 +427,16 @@ func New(deps Dependencies) *cobra.Command {
 
 				target := map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "name": args[0], "url": args[1], "events": createEvents, "active": createActive}
 				webhookflags.DescribeCreate(target, input, createFields.Origins())
-				preview := dryrunpreview.New(dryrunpreview.Item{
-					Intent:          "repo.webhook.create",
-					Target:          target,
-					Action:          "create",
-					PredictedAction: "create",
-					Reason:          "webhook will be created",
-				})
-				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), preview)
+				existing, found, findErr := service.FindRepositoryWebhook(cmd.Context(), repo, input)
+				item, err := webhookoutput.PreviewCreate(dryrunpreview.Item{
+					Intent: "repo.webhook.create",
+					Target: target,
+					Action: "create",
+				}, existing, found, findErr)
+				if err != nil {
+					return err
+				}
+				return dryrunpreview.Write(cmd.OutOrStdout(), d.JSONEnabled(), dryrunpreview.New(item))
 			}
 
 			written, err := service.CreateRepositoryWebhook(cmd.Context(), repo, input)
@@ -445,20 +447,25 @@ func New(deps Dependencies) *cobra.Command {
 			// The webhook as read back after the create, in both renderings.
 			// Bitbucket's answer to the create is not a reliable source for
 			// the shared secret, and publishing it reported a secret that was
-			// set as not configured.
+			// set as not configured. Or the one that was there already, which
+			// the create found and left alone (#729).
 			hook := webhookoutput.Published(cmd.ErrOrStderr(), written, "create")
+			webhookoutput.NoteExisting(cmd.ErrOrStderr(), written, hook)
 			if d.JSONEnabled() {
-				return d.WriteJSON(cmd.OutOrStdout(), Change{
+				return d.WriteJSON(cmd.OutOrStdout(), Creation{
 					Status:     result.OK(),
 					Repository: result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
 					Webhook:    hook,
+					Created:    !written.Existing,
 				})
 			}
 
 			// Report the name when the server did not send an id back, rather
 			// than printing the name where an id belongs: `bb webhook delete`
 			// takes the id, so a name shown in its place reads as one.
-			if hook.ID != 0 {
+			if written.Existing {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Webhook already exists:"), style.Secondary.Render(strconv.Itoa(hook.ID)))
+			} else if hook.ID != 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook:"), style.Secondary.Render(strconv.Itoa(hook.ID)))
 			} else {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", style.Success.Render("Created webhook"), style.Secondary.Render(args[0]))

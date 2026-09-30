@@ -16,13 +16,18 @@ type ListPage func(ctx context.Context, start, limit int) (openapi.Page[json.Raw
 // Create sends a webhook create and returns the webhook Bitbucket answered with.
 type Create func(ctx context.Context, body openapigenerated.RestWebhook) (any, error)
 
-// scopeLimit is how many of a scope's webhooks a check reads. A create beyond
-// it is not found, which leaves the outcome unknown rather than inventing one.
+// scopeLimit is how many of a scope's webhooks a check reads. A webhook beyond
+// it is not found: a create is then made as though it were not there, and an
+// unknown outcome stays unknown rather than being invented.
 const scopeLimit = 1000
 
 // CreateChecked creates a webhook, and when the create ends with an unknown
 // outcome finds out whether the webhook is there instead of passing the doubt
 // on. The webhook it made is then read back by id with get (see ReadBack).
+//
+// The scope's webhooks are read first, and a create whose webhook is already
+// among them makes nothing and reports that one, while one whose name and URL
+// are taken by a webhook with other settings is refused (see FindExisting).
 //
 // A timeout, a lost connection, a gateway's 502 or 504, and the 400 Bitbucket
 // sends when writing its answer failed all leave a create unconfirmed; the last
@@ -45,6 +50,14 @@ func CreateChecked(ctx context.Context, input CreateInput, list ListPage, create
 	before, err := openapi.PageThrough(ctx, 0, scopeLimit, list)
 	if err != nil {
 		return Written{}, err
+	}
+
+	existing, found, err := FindExisting(before, input)
+	if err != nil {
+		return Written{}, err
+	}
+	if found {
+		return Written{Webhook: existing.Webhook, Existing: true, PasswordUncompared: existing.PasswordUncompared}, nil
 	}
 
 	created, err := create(ctx, body)
