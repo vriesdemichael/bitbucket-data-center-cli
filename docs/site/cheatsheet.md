@@ -30,6 +30,8 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Clone via browser URL | `bb repo clone https://bitbucket.example.com/projects/PROJ/repos/my-repo` | Paste web URL directly from address bar |
 | Fork a repository | `bb repo fork --name my-fork --repo PROJ/my-repo` | Creates personal fork under your account |
 | Search repositories | `bb search repos "payment"` | Searches across projects |
+| List my pull requests | `bb search prs --role author --state all` | Across every repository; also `reviewer` and `participant` |
+| What I worked on in a period | `bb search prs --role author --state all --since 2026-07-20 --until 2026-09-27 --group-by week` | By created date; `--date-field` picks updated or closed |
 | Open repo in browser | `bb browse` | Standing in local git clone |
 | Open file in browser | `bb browse src/main.go` | Resolves current branch and file path |
 | Open PR in browser | `bb browse 42` | Opens pull request in browser |
@@ -61,7 +63,8 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Target via hash shorthand | `bb pr checkout '#42'` | Convenient hash notation |
 | View PR diff in terminal | `bb pr diff 42` | Unified patch against target branch |
 | View PR status & blockers | `bb pr get 42` | Summary of approvals, tasks, and CI checks |
-| Create a pull request | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "Add retries"` | Opens new pull request |
+| Create a pull request | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "Add retries"` | Opens new pull request and prints its link |
+| Create from the checkout | `bb pr create` | From the checked-out branch into the default branch; the title is the commit subject when there is one commit |
 | Create as draft | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "WIP" --draft` | Bitbucket DC 8.0+ |
 | Assign reviewers | `bb pr create ... --reviewers alice,bob` | Comma-separated or repeatable |
 
@@ -98,6 +101,7 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Enable auto-merge | `bb pr auto-merge enable 42 --repo PROJ/my-repo --strategy rebase-ff-only` | Merges automatically once checks pass and approvals arrive |
 | Cancel auto-merge | `bb pr auto-merge disable 42 --repo PROJ/my-repo` | Disables pending auto-merge |
 | Merge immediately | `bb pr merge 42 --repo PROJ/my-repo` | Executes merge if checks pass |
+| Merge with a strategy | `bb pr merge 42 --repo PROJ/my-repo --strategy squash` | Any strategy the repository enables; its default when left out |
 
 ### 7. Releases & Tags
 

@@ -3,6 +3,7 @@ title: Interactive when a person is there, explicit when not
 category: architecture
 status: accepted
 supersedes: 54
+amended_by: 102
 decision: >
   bb may prompt, and never guesses whether it should. interactive.Detect (ADR-072) decides; a command
   never asks that question itself.

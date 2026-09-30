@@ -1,0 +1,34 @@
+---
+search:
+  boost: 0.3
+---
+
+# ADR 102: A value read from where a command runs may stand in for its flag
+
+This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
+
+- Number: `102`
+- Title: `A value read from where a command runs may stand in for its flag`
+- Category: `architecture`
+- Status: `accepted`
+- Amends: `73`
+- Provenance: `guided-ai`
+- Source: `docs/decisions/102-a-value-read-from-where-a-command-runs-may-stand-in-for-its-flag.yaml`
+
+## Decision
+
+A required value a command was not given may be inferred from where it is run. The inference is made where the value is asked for, in prompt.Missing, and never by a flag that asks for it. A person is shown the inferred value as the answer on offer and may change it. With nobody there it stands in for the flag only where it leaves no choice to make. bb pr create takes the repository's default branch as the target, the checked-out branch as the source when the repository itself came from the checkout, and the subject of the branch's commit as the title when it holds exactly one. What would be a choice is still refused by name: a title for a branch of several commits, a source branch for a repository named with --repo. What was inferred is said on stderr. ADR-073 stands otherwise. A default is not an inference, and nothing is inferred for what a destructive command acts on.
+
+## Agent Instructions
+
+Infer through Missing.Infer. Do not add a --fill flag, and do not fill a value in before FillMissing is called. Mark an inference Unattended only when somebody else standing in the same place could not reasonably want another value. Give it a Source, so the notice can say where it came from. Never infer the target of a destructive command.
+
+## Rationale
+
+ADR-073 forbids falling back to a default because a default is a value nobody chose. The checked-out branch and the repository's default branch are not that: they are read from where the person put themselves, as --repo already is from the git remote. Refusing them made bb pr create fail with nobody to ask while it held every answer, and the way out on offer was a --fill flag, a second mechanism beside the prompt that already existed.
+
+## Rejected Alternatives
+
+- `A --fill flag, as gh has`: gh needs one because it prompts by default. Here the prompt path exists, and the flag would be a second way of asking for what the prompt would have offered.
+- `Infer only for a person, and refuse as before when nobody is there`: Leaves a pipeline or an agent naming three flags whose values are in the checkout and at the server, which is the round trip the refusal was meant to make unnecessary.
+- `Infer a title from the branch name, or the newest commit, when there are several`: That is a choice, and the pull request it names is created, not previewed.
