@@ -389,35 +389,8 @@ read CA bundle: open /etc/ssl/certs/corp-root-ca.pem: no such file or directory
 ```
 Ensure provisioning scripts place the CA certificate on disk **before** exporting `BB_CA_FILE`.
 
-### Additive Trust Pool
-`bb` appends your corporate CA bundle to the system's root certificate pool (`x509.SystemCertPool()`). It does not replace public roots, allowing connections to public services (e.g. GitHub release verification) to succeed alongside internal Bitbucket calls.
-
-### Mutual TLS (mTLS) Client Authentication
-In zero-trust or defense networks requiring hardware- or PKI-backed mutual TLS at ingress gateways (Envoy, NGINX, F5, Cloudflare Access), configure client certificates and private keys ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)):
-
-```bash
-bb --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key repo list
-```
-
-In CI/CD runners or shell environments:
-```bash
-export BB_CLIENT_CERT=/etc/ssl/certs/client.pem
-export BB_CLIENT_KEY=/etc/ssl/private/client.key
-```
-
-Or persist client certificate paths per host in stored profiles:
-```bash
-printf '%s' "$abc" | bb auth login https://bitbucket.corp.example --token-stdin --client-cert /etc/ssl/certs/client.pem --client-key /etc/ssl/private/client.key
-```
-
-Private keys are loaded directly in-memory via Go's standard `crypto/tls` package and are never logged, serialized into machine JSON envelopes, or written to configuration files.
-
-### Corporate Forward Proxies
-Configure standard proxy environment variables:
-```bash
-export HTTPS_PROXY=http://proxy.corp.example:3128
-export NO_PROXY=.corp.internal,localhost,127.0.0.1
-```
+### Trust, Client Certificates and Proxies
+[Networks, Proxies and TLS](networks-proxies-and-tls.md) covers each setting: a CA bundle is added to the system's trust store rather than replacing it, a client certificate and key for mutual TLS at an ingress gateway can be set per host or per runner ([ADR-060](../adr/060-mutual-tls-client-certificate-authentication.md)), and `HTTPS_PROXY` and `NO_PROXY` are honoured for every request. For a fleet, set the CA bundle through system policy (`ca_file`) so that no user can replace it.
 
 ### Multi-Server Estates (Avoid Blanket `BITBUCKET_URL`)
 !!! warning "Do Not Pin `BITBUCKET_URL` Fleet-Wide in Multi-Server Estates"

@@ -95,27 +95,10 @@ SSH key, and git never asks for a username or password. Manage those keys with
 
 ## Troubleshooting
 
-**Git still prompts for a password.** Check the helper is configured for the
-exact host git is contacting, including scheme and port:
-
-```bash
-git config --get-all credential.https://bitbucket.example.com.helper
-```
-
-**Check what the helper returns.** It speaks git's protocol on stdin:
-
-```bash
-printf 'protocol=https\nhost=bitbucket.example.com\n\n' | bb auth git-credential get
-```
-
-Credentials mean it is working. **No output means `bb` has nothing stored for
-that host** — run `bb auth login` for it. That silence is deliberate: it lets git
-fall through to another helper or prompt you, rather than failing outright.
-
-**Another credential manager answers first.** `bb auth setup-git` resets the
-helper list for your Bitbucket host before adding `bb`, so an inherited helper
-such as Git Credential Manager no longer answers for it. If you configured
-things by hand, make sure `bb` is the only helper for that host.
+When git still prompts,
+[Troubleshooting](../troubleshooting.md#git-asks-for-a-password-on-push-or-pull)
+checks the host the helper is set up for, asks the helper what it would answer,
+and deals with another credential manager answering first.
 
 ## See also
 

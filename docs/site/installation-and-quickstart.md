@@ -188,11 +188,9 @@ set it up for every user of a machine.
 
 ## When something is wrong
 
-`bb doctor` is the first thing to run. It reads the stored, workspace and system
-configuration files each on its own and reports every problem in every one of
-them — an unparseable file, a misspelled key with its line, a key set in a file
-that never reads it — then shows where each effective setting comes from. It
-needs no host and no network, so it answers when nothing else does:
+`bb doctor` is the first thing to run. It needs no host and no network, and
+reports every problem in every configuration file and where each setting comes
+from:
 
 ```bash
 bb doctor

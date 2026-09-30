@@ -214,48 +214,29 @@ With no terminal, or under `--json`, no command blocks on standard input: it fai
 
 See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and contract details.
 
-## Machine mode (`--json`)
+## Machine output (`--json`, `--yaml`)
 
-- Machine responses are wrapped in a standard envelope:
+`--json` prints one document, and `--yaml` the same document as YAML. The
+command's result is under `data`, and `meta` says which command and which `bb`
+produced it:
 
 <!-- docs-lint: envelope-shape -->
 ```json
 {
   "data": {},
   "meta": {
+    "command": "auth status",
     "bbVersion": "[[ bb_version_tag ]]"
   }
 }
 ```
 
-- `data` contains the command-specific payload shape.
-- Adding a field to `data` is additive. Removing or renaming one, changing its type, or changing
-  whether it can be null is a breaking change and cuts a new major release, because the binary
-  version is the contract version ([ADR-064](adr/064-machine-output-carries-no-contract-version.md)).
-  `meta.bbVersion` reports which binary produced the document.
-
-Example machine output (`bb --json auth status`):
-
-<!-- docs-lint: output-of bb auth status -->
-```json
-{
-  "data": {
-    "ok": true,
-    "bitbucketUrl": "https://bitbucket.acme.corp",
-    "bitbucketVersionTarget": "",
-    "authMode": "token",
-    "authSource": "stored",
-    "credentialStorage": "keyring",
-    "checks": [
-      { "name": "authentication", "ok": true, "advisory": false },
-      { "name": "git credential helper", "ok": true, "advisory": true }
-    ]
-  },
-  "meta": {
-    "bbVersion": "[[ bb_version_tag ]]"
-  }
-}
-```
+A field added to `data` is additive. Removing or renaming one, changing its type,
+or changing whether it can be null is a breaking change and cuts a major release
+([ADR-064](adr/064-machine-output-carries-no-contract-version.md)).
+`bb <command> --describe` lists the fields a command returns, and
+[Machine Mode and Diagnostics](advanced/machine-mode-diagnostics.md) covers the
+failure document, dry runs, exit codes and diagnostics.
 
 ## Configuration and authentication
 
@@ -275,32 +256,17 @@ are never written into a repository — see
 
 ```bash
 bb --json auth status
-bb repo clone TEST/my-repo
-bb repo create --project TEST --name my-service
-bb repo fork --repo TEST/my-service --name my-service-fork
-bb pr get https://bitbucket.acme.corp/projects/TEST/repos/my-service/pull-requests/42
+bb repo clone PROJ/my-repo
+bb repo create --project PROJ --name my-service
+bb repo fork --repo PROJ/my-service --name my-service-fork
+bb pr get https://bitbucket.acme.corp/projects/PROJ/repos/my-service/pull-requests/42
 bb pr checkout '#42'
 bb pr diff feature/payments
-bb browse --repo TEST/my-repo src/main.go
+bb browse --repo PROJ/my-repo src/main.go
 bb search repos demo --limit 20
-bb tag list --repo TEST/my-repo --limit 50
+bb tag list --repo PROJ/my-repo --limit 50
 bb --dry-run project create DEMO --name "Demo Project"
 ```
-
-Example human output (`bb auth status`):
-
-```text
-Target Bitbucket: https://bitbucket.acme.corp (auth=token, source=stored)
-```
-
-`authSource` says where the credential came from: `stored` from a configuration
-file or the keyring, `env` from `BITBUCKET_TOKEN` or the basic-auth variables,
-and `env/default` when neither supplied one.
-
-`bitbucketVersionTarget` is empty unless an operator pinned a version by setting
-`BITBUCKET_VERSION_TARGET`, and the human rendering leaves the version out
-entirely when it is. It records a version for your own environment; `bb` does
-not pin one, and nothing branches on it.
 
 ## When a command does not do what you expected
 
