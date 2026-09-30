@@ -1472,23 +1472,37 @@ func (service *Service) transition(ctx context.Context, repository RepositoryRef
 	// that moved since the caller last looked, and a caller who omitted the
 	// flag was never making that claim. One who wants the guard still passes
 	// --version and still gets the conflict.
-	resolvedVersion := version
-	if resolvedVersion == nil {
-		current, err := service.Get(ctx, repository, resolvedID)
-		if err != nil {
+	send := func(version int) (PullRequest, error) {
+		query := map[string]string{"version": strconv.Itoa(version)}
+
+		var response pullRequestValue
+		if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/%s", pullRequestPath(repository), resolvedID, action), query, body, &response); err != nil {
 			return PullRequest{}, err
 		}
-		resolvedVersion = &current.Version
+
+		return mapPullRequest(response), nil
+	}
+	if version != nil {
+		return send(*version)
 	}
 
-	query := map[string]string{"version": strconv.Itoa(*resolvedVersion)}
+	// A version read a moment ago can already be stale: another pull request
+	// merging into the same target makes Bitbucket rescope this one and bump
+	// its version a moment later, so declining one straight after merging its
+	// neighbour was refused as out of date. The version is bb's own here, so it
+	// is read again and the change sent once more, as an update is.
+	var changed PullRequest
+	err = service.writeAtCurrentVersion(ctx, repository, resolvedID, func(current PullRequest) error {
+		sent, err := send(current.Version)
+		changed = sent
 
-	var response pullRequestValue
-	if err := service.client.PostJSON(ctx, fmt.Sprintf("%s/%s/%s", pullRequestPath(repository), resolvedID, action), query, body, &response); err != nil {
+		return err
+	})
+	if err != nil {
 		return PullRequest{}, err
 	}
 
-	return mapPullRequest(response), nil
+	return changed, nil
 }
 
 func (service *Service) updateReviewer(ctx context.Context, repository RepositoryRef, pullRequestID string, username string, add bool) (PullRequest, error) {

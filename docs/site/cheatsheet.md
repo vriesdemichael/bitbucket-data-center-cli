@@ -30,7 +30,8 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | Clone via browser URL | `bb repo clone https://bitbucket.example.com/projects/PROJ/repos/my-repo` | Paste web URL directly from address bar |
 | Fork a repository | `bb repo fork --name my-fork --repo PROJ/my-repo` | Creates personal fork under your account |
 | Search repositories | `bb search repos "payment"` | Searches across projects |
-| List my pull requests | `bb search prs --role author --state all` | Across every repository; also `reviewer` and `participant` |
+| List pull requests I am involved in | `bb search prs` | Open ones across every repository: written, reviewing or taking part |
+| Only the ones I wrote | `bb search prs --role author --state all` | `--role` also takes `reviewer` and `participant` |
 | What I worked on in a period | `bb search prs --role author --state all --since 2026-07-20 --until 2026-09-27 --group-by week` | By created date; `--date-field` picks updated or closed |
 | Open repo in browser | `bb browse` | Standing in local git clone |
 | Open file in browser | `bb browse src/main.go` | Resolves current branch and file path |
