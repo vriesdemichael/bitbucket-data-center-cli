@@ -81,7 +81,7 @@ release, swap `latest/download` for `download/[[ bb_version_tag ]]` and use the
 versioned names.
 
 Per-archive signatures, build provenance and SBOMs are covered in
-[Release Verification](advanced/enterprise-hardening.md#1-release-verification-pre-deployment).
+[Release Verification](advanced/release-verification.md).
 
 ## Keep bb up to date
 

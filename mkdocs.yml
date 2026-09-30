@@ -44,7 +44,7 @@ plugins:
   - macros:
       module_name: docs/main
       # The default {{ }} would eat the Ansible and Taskfile snippets the docs
-      # show verbatim -- enterprise-hardening.md already contains a literal
+      # show verbatim -- fleet-deployment.md already contains a literal
       # {{ bb_version }} that belongs to the reader's Ansible run, not to us.
       j2_variable_start_string: "[["
       j2_variable_end_string: "]]"
@@ -128,7 +128,12 @@ nav:
       - MCP Reference: reference/mcp-tools.md
   - Advanced Topics:
       - Overview: advanced/index.md
-      - Enterprise Hardening: advanced/enterprise-hardening.md
+      - Enterprise Hardening:
+          - Overview: advanced/enterprise-hardening.md
+          - Release Verification: advanced/release-verification.md
+          - Fleet Controls: advanced/fleet-controls.md
+          - Fleet Deployment: advanced/fleet-deployment.md
+          - MCP Server Governance: advanced/mcp-governance.md
       - Security Architecture & Threat Model: advanced/threat-model.md
       - Repository Discovery and Server Switching: advanced/repository-discovery-and-server-switching.md
       - Dry-Run Planning: advanced/dry-run-planning.md

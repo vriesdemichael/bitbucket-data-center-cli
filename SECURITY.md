@@ -90,7 +90,7 @@ metadata.
 
 The full procedure — per-archive signatures, build provenance attestations, and
 verifying an SBOM against the artifact it describes — is written once, in
-[Release Verification](docs/site/advanced/enterprise-hardening.md#1-release-verification-pre-deployment).
+[Release Verification](docs/site/advanced/release-verification.md).
 
 ## Credential handling
 
