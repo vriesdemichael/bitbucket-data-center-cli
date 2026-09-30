@@ -369,23 +369,18 @@ func TestLiveDryRunPredictsWhatBitbucketAccepts(t *testing.T) {
 		const name = "twice"
 		const url = "http://example.invalid/twice"
 
+		// Bitbucket would store a second webhook beside the first; bb finds
+		// the first and reports it (#729), and the preview says as much.
 		mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "create", name, url)
-		liveGoesThroughAsPredicted(t, jsonoutput.OutcomeWouldApply, "already exists",
+		liveGoesThroughAsPredicted(t, jsonoutput.OutcomeNoOp, "already exists",
 			"repo", "settings", "workflow", "webhooks", "create", name, url)
 
 		hooks := repoCLIWebhooksIn(t, mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list"))
-		if len(hooks) != 2 {
-			t.Fatalf("want the two webhooks created, got %d: %v", len(hooks), hooks)
+		if len(hooks) != 1 {
+			t.Fatalf("want the one webhook the first create made, got %d: %v", len(hooks), hooks)
 		}
-		ids := map[any]bool{}
-		for _, entry := range hooks {
-			hook, _ := entry.(map[string]any)
-			repoCLIAssertWebhook(t, hook, name, url, true, "repo:refs_changed")
-			ids[hook["id"]] = true
-		}
-		if len(ids) != 2 {
-			t.Fatalf("the two webhooks share an id: %v", hooks)
-		}
+		hook, _ := hooks[0].(map[string]any)
+		repoCLIAssertWebhook(t, hook, name, url, true, "repo:refs_changed")
 	})
 
 	t.Run("a repository reviewer group named like its project's", func(t *testing.T) {
