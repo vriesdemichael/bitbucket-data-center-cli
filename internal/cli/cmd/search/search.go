@@ -237,14 +237,17 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 		Use:   "prs",
 		Short: "Search for pull requests globally or within a repository",
 		Long: "Search for pull requests globally or within a repository.\n\n" +
-			"Without --repo this is your own pull requests across every repository, as Bitbucket's dashboard lists " +
-			"them: --role says which, those you wrote, review or take part in.\n\n" +
+			"Without --repo this is every pull request you are involved in, across every repository, as Bitbucket's " +
+			"dashboard lists them: the ones you wrote, the ones you are a reviewer on, and the ones you took part " +
+			"in, by commenting for one. --role narrows it to one of the three.\n\n" +
 			"--since and --until bound the listing to a period, on the date --date-field names. Each takes an " +
 			"ISO 8601 date: a day (2026-07-20), a time on it (2026-07-20T09:00), or either with an offset " +
 			"(2026-07-20T09:00:00+02:00). Without an offset it is local time, and a day given to --until runs to " +
 			"its end. With --since the listing holds the whole period rather than the first --limit.",
-		Example: "  # The pull requests you wrote that are still open\n" +
-			"  bb search prs --role author\n\n" +
+		Example: "  # Every open pull request you are involved in\n" +
+			"  bb search prs\n\n" +
+			"  # The ones you are a reviewer on\n" +
+			"  bb search prs --role reviewer\n\n" +
 			"  # What you wrote in a period, whatever became of it, week by week\n" +
 			"  bb search prs --role author --state all --since 2026-07-20 --until 2026-09-27 --group-by week\n\n" +
 			"  # What was merged in one repository this month\n" +
@@ -360,7 +363,7 @@ func newSearchPRsCommand(deps Dependencies) *cobra.Command {
 	listPaging.Register(cmd, 25)
 	cmd.Flags().IntVar(&start, "start", 0, "Pagination start index")
 	enumflag.Register(cmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Filter by state; closed is merged and declined together")
-	enumflag.Register(cmd.Flags(), &role, "role", "", participantRoles, "Filter by role; dashboard only, so it cannot be combined with --repo")
+	enumflag.Register(cmd.Flags(), &role, "role", "", participantRoles, "Only the pull requests you wrote (author), are a reviewer on, or took part in (participant); all three when left out. Dashboard only, so it cannot be combined with --repo")
 	cmd.Flags().StringVar(&since, "since", "", "Only pull requests dated on or after this ISO 8601 date, such as 2026-07-20 or 2026-07-20T09:00; lists the whole period unless --limit is given")
 	cmd.Flags().StringVar(&until, "until", "", "Only pull requests dated on or before this ISO 8601 date, such as 2026-09-27; a day runs to its end")
 	enumflag.Register(cmd.Flags(), &dateField, "date-field", pullrequestservice.DateCreated, dateFields, "Which date --since and --until apply to")
