@@ -355,6 +355,10 @@ The governance guards, so the set is knowable:
 | `TestEveryHookRunnableGateRunsOnBothSides` | every gate needing no Bitbucket runs locally and in CI |
 | `TestEveryCompletionSlotIsDeclared` | every argument and every flag that takes a value declares what it accepts |
 | `TestEveryDeclaredArgumentCanBeCompleted` | a command that declares an argument leaves the tree with something completing it |
+| `TestEveryExampleIsAnInvocationBBAccepts`, `TestEveryCommandHasAnExample` | every command has an example, and bb accepts each one |
+| `TestEveryDeprecatedFlagIsStillTakenAndSaysSo` | a deprecated flag is still taken, hidden, and warns on stderr until the major that removes it |
+| `TestConfigurationPageSaysWhichFileReadsWhichKey`, `TestSystemPolicyPageListsEveryPolicyKey`, `TestEnvironmentPageNamesEveryVariableBBReads` | the hand-written configuration, policy and environment tables name what the code reads |
+| `TestMachineModePageStatesEachKindsExitCode`, `TestTroubleshootingPageStatesEachKindsExitCode` | both exit-code tables give every error kind its real code |
 
 ### When running tests also uncovers a broken test
 
