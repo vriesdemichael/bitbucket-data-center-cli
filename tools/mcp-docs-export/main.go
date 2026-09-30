@@ -66,7 +66,7 @@ func exportToolReference(outputPath string) error {
 		len(rows), asking)
 	out.WriteString("The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.\n\n")
 	out.WriteString("The tools answer the agent, and `show` is for the person: an agent uses the tools to find, read and change things, and `show` for someone who is there to see the result, never when it works on its own. [Tools and views](../ai-and-llms.md#tools-and-views) says which for what.\n\n")
-	out.WriteString("`refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them. A click in a view is a call of a tool, through the client, never a connection to Bitbucket ([how views work](../advanced/enterprise-hardening.md#principle-6-views-stay-inside-the-mcp-server)).\n\n")
+	out.WriteString("`refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them. A click in a view is a call of a tool, through the client, never a connection to Bitbucket ([how views work](../advanced/mcp-governance.md#views-stay-inside-the-mcp-server)).\n\n")
 
 	out.WriteString("| Tool | Access | Asks | What it does |\n|---|---|---|---|\n")
 	for _, row := range rows {
@@ -84,7 +84,7 @@ func exportToolReference(outputPath string) error {
 	out.WriteString("`bb ai mcp serve --read-only` exposes only the read-only tools. It is for a client you do not trust with the tool annotations and the confirmations: a client that cannot be trusted with them should not make changes in Bitbucket, so make them yourself.\n\n")
 	writeResources(&out)
 	writePrompts(&out)
-	out.WriteString("See [Enterprise Hardening](../advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve) for scoping a server to a project or repository, restricting it with a read-only token, and mandating an audit trail by policy.\n")
+	out.WriteString("See [MCP Server Governance](../advanced/mcp-governance.md) for scoping a server to a project or repository, restricting it with a read-only token, and mandating an audit trail by policy.\n")
 
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
 		return fmt.Errorf("create output directory: %w", err)

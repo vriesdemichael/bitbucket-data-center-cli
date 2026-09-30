@@ -283,7 +283,7 @@ bb ai mcp serve --project PAYMENTS --audit-file /var/log/bb/mcp-audit.jsonl
 
 #### 3. Audit Test Procedure
 The signature, provenance and SBOM checks are one procedure, written once in
-[Release Verification](enterprise-hardening.md#1-release-verification-pre-deployment).
+[Release Verification](release-verification.md).
 Run it against the artifact under audit.
 
 #### 4. Residual Gap & Tracking

@@ -7,7 +7,7 @@ search:
 
 Symptoms a person hits while using `bb`, and what to check first. Fleet-wide
 policy failures have their own table in
-[Enterprise Hardening](advanced/enterprise-hardening.md#helpdesk-troubleshooting-guide).
+[Enterprise Hardening](advanced/fleet-deployment.md#helpdesk-troubleshooting-guide).
 
 ## Start here
 
@@ -346,7 +346,7 @@ Not policy — the binary itself. Installs from WinGet, Scoop and Homebrew are
 your package manager would still believe the old version was installed, and the
 next upgrade or uninstall would act on that stale record. Update through the
 package manager instead. See
-[Builds With Self-Update Compiled Out](advanced/enterprise-hardening.md#builds-with-self-update-compiled-out).
+[Builds With Self-Update Compiled Out](advanced/fleet-controls.md#builds-with-self-update-compiled-out).
 
 ## `bb update` refuses a plain-HTTP mirror
 

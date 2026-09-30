@@ -166,7 +166,7 @@ credential in play.
 ## See also
 
 - [Environment Variables](../reference/environment.md)
-- [Enterprise Hardening](enterprise-hardening.md)
+- [Fleet Controls](fleet-controls.md)
 - [Threat Model](threat-model.md)
 - [Git authentication](git-authentication.md) — how `bb` supplies credentials to git
 - [Machine Mode and Diagnostics](machine-mode-diagnostics.md)
