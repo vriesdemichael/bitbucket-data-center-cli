@@ -24,8 +24,9 @@ decision: >
   pull request: `main` allows only rebase-merge, which replays every commit with a new sha while
   `next` keeps the originals, leaving two copies of one history. Two consequences belong to the
   decision rather than to the accident of it. The push is made by an administrator bypassing
-  `main`'s protection, because that protection gates pull requests and this is not one, so
-  `task release:promote:check` asks for the `CI Complete` conclusion the push would otherwise skip.
+  `main`'s protection, because that protection gates pull requests and this is not one, so the
+  release workflow refuses a commit that reached `main` without a pull request unless it carries a
+  successful `CI Complete`, and `task release:promote:check` asks the same before the push.
   And rebasing `next` rewrites a branch other work sits on, which ADR-025 otherwise reserves for
   pull request branches: open pull requests into `next` are rebased after a promotion.
 
