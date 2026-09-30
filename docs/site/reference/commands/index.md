@@ -12120,7 +12120,7 @@ Search for pull requests globally or within a repository
 ```text
 Search for pull requests globally or within a repository.
 
-Without --repo this is your own pull requests across every repository, as Bitbucket's dashboard lists them: --role says which, those you wrote, review or take part in.
+Without --repo this is every pull request you are involved in, across every repository, as Bitbucket's dashboard lists them: the ones you wrote, the ones you are a reviewer on, and the ones you took part in, by commenting for one. --role narrows it to one of the three.
 
 --since and --until bound the listing to a period, on the date --date-field names. Each takes an ISO 8601 date: a day (2026-07-20), a time on it (2026-07-20T09:00), or either with an offset (2026-07-20T09:00:00+02:00). Without an offset it is local time, and a day given to --until runs to its end. With --since the listing holds the whole period rather than the first --limit.
 
@@ -12128,8 +12128,11 @@ Usage:
   bb search prs [flags]
 
 Examples:
-  # The pull requests you wrote that are still open
-  bb search prs --role author
+  # Every open pull request you are involved in
+  bb search prs
+
+  # The ones you are a reviewer on
+  bb search prs --role reviewer
 
   # What you wrote in a period, whatever became of it, week by week
   bb search prs --role author --state all --since 2026-07-20 --until 2026-09-27 --group-by week
@@ -12143,7 +12146,7 @@ Flags:
       --group-by string     Group the text output by the week of the date, or by repository (one of: week, repo)
       --limit int           Maximum number of results to return (default 25)
       --repo string         Optional repository as PROJECT/slug to scope search
-      --role string         Filter by role; dashboard only, so it cannot be combined with --repo (one of: author, reviewer, participant)
+      --role string         Only the pull requests you wrote (author), are a reviewer on, or took part in (participant); all three when left out. Dashboard only, so it cannot be combined with --repo (one of: author, reviewer, participant)
       --since string        Only pull requests dated on or after this ISO 8601 date, such as 2026-07-20 or 2026-07-20T09:00; lists the whole period unless --limit is given
       --start int           Pagination start index
       --state string        Filter by state; closed is merged and declined together (one of: open, merged, declined, closed, all) (default "open")

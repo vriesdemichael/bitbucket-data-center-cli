@@ -11,10 +11,11 @@ import (
 	"time"
 )
 
-// bb search prs lists your own pull requests across repositories, by state and
-// by period (#697). The dashboard it reads has no "all" state and answered 400
-// to one, so --state all and --state closed both failed; it takes merged and
-// declined, which bb did not offer; and nothing bounded a listing by date.
+// bb search prs lists the pull requests you are involved in across
+// repositories, by state and by period (#697). The dashboard it reads has no
+// "all" state and answered 400 to one, so --state all and --state closed both
+// failed; it takes merged and declined, which bb did not offer; and nothing
+// bounded a listing by date.
 //
 // Every listing here is the whole instance's, since the suite runs as one
 // user, so each is narrowed to this test's own project before it is read.
@@ -62,7 +63,8 @@ func TestLiveSearchPullRequestsByStateAndPeriod(t *testing.T) {
 			ProjectKey string `json:"projectKey"`
 		} `json:"repository"`
 	}
-	search := func(args ...string) []listed {
+	// searchAs runs the search as whoever t's calls authenticate as.
+	searchAs := func(t *testing.T, args ...string) []listed {
 		t.Helper()
 		var found struct {
 			PullRequests []listed `json:"pullRequests"`
@@ -76,6 +78,10 @@ func TestLiveSearchPullRequestsByStateAndPeriod(t *testing.T) {
 			}
 		}
 		return own
+	}
+	search := func(args ...string) []listed {
+		t.Helper()
+		return searchAs(t, args...)
 	}
 	ids := func(pullRequests []listed) []int64 {
 		found := []int64{}
@@ -138,4 +144,39 @@ func TestLiveSearchPullRequestsByStateAndPeriod(t *testing.T) {
 	if !strings.Contains(output, scoped+"\n") || !strings.Contains(output, "LIVE-42: stays open") {
 		t.Errorf("the grouped output has no heading for %s, or not its pull requests:\n%s", scoped, output)
 	}
+
+	// Without --role the listing is every pull request the caller is involved
+	// in, not only the ones they wrote: somebody asked to review one sees it,
+	// and --role says which of those they mean.
+	reviewer, err := harness.createLicensedUser(ctx)
+	if err != nil {
+		t.Fatalf("create the reviewer failed: %v", err)
+	}
+	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, reviewer.Username, "REPO_READ"); err != nil {
+		t.Fatalf("grant the reviewer read access failed: %v", err)
+	}
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, "asks-review", "asks-review.txt"); err != nil {
+		t.Fatalf("push asks-review failed: %v", err)
+	}
+	var asked livePullRequest
+	decodeJSONData(t, mustLiveCLI(t, "pr", "create", "--from-ref", "asks-review", "--to-ref", "master",
+		"--title", "Asks for a review", "--reviewers", reviewer.Username), &asked)
+
+	t.Run("as the reviewer", func(t *testing.T) {
+		setLiveCredentials(t, reviewer)
+
+		for _, testCase := range []struct {
+			what string
+			args []string
+			want []int64
+		}{
+			{"no role", []string{"--since", before}, []int64{asked.PullRequest.ID}},
+			{"--role reviewer", []string{"--role", "reviewer", "--since", before}, []int64{asked.PullRequest.ID}},
+			{"--role author", []string{"--role", "author", "--since", before}, []int64{}},
+		} {
+			if got := ids(searchAs(t, testCase.args...)); !slices.Equal(got, testCase.want) {
+				t.Errorf("with %s the reviewer is listed %v, want %v", testCase.what, got, testCase.want)
+			}
+		}
+	})
 }
