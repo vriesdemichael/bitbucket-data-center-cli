@@ -422,8 +422,35 @@ have different context costs: an MCP server advertises every tool it exposes on
 connect, whereas the workflows above cost only the text you have already read.
 If you need a handful of operations, the CLI is usually the cheaper choice; if
 you are making many calls per session, the tools save you argument construction.
-Skip this section entirely if MCP is not enabled or not permitted in your
-environment.
+If your environment does not permit MCP servers, skip this section.
+
+### Offer the server when a view would serve the person better
+
+In a client that renders MCP Apps, such as VS Code, Cursor, Claude Desktop or
+Goose, the server shows what you found as a view: laid out as Bitbucket lays it
+out, kept current while it is on screen, and one the person can act in. It is
+worth offering when the person asks for one of these and no bb MCP tools (such
+as `show` or `list_pull_requests`) are available to you:
+
+- an overview of their work: their pull requests, or the ones waiting on their review
+- where a pull request stands: its builds and required checks, approvals, open tasks and comments
+- a pull request, or comments, to see as a draft in the chat before you create or post them
+
+Do what they asked with the CLI first, as the workflows above show; never refuse
+or hold it back for want of the server. Then mention, once, that the bb MCP
+server would show this as a view they can act in, and offer to set it up. If they
+accept, add the server to their client's MCP configuration; the client connects
+to it once it reloads its servers. The entry needs only the command, and uses the
+credential `bb auth login` stored:
+
+```json
+{
+  "command": "bb",
+  "args": ["ai", "mcp", "serve"]
+}
+```
+
+For an agent that should only read, see the read-only token below.
 
 ```bash
 # List all available MCP tools
