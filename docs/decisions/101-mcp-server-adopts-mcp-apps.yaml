@@ -14,7 +14,7 @@ decision: >
   Views are kinds of one tool, show, which the model calls once it has what the person asked about.
   The data tools carry no view. A kind is offered while the tool whose answer it shows is exposed,
   and a client that renders no views is told nothing was shown, and nothing is fetched for it. A
-  diff or a file is for what the person cannot open in their own editor.
+  diff is for what the person cannot open in their own editor.
 
   One page, ui://bb/view, draws every view: plain JavaScript and CSS embedded in the binary. It holds
   no Bitbucket data, stays out of resources/list, may be cached by anyone, and declares no network
@@ -31,7 +31,10 @@ decision: >
   needs the person is never behind a click. A card lists the builds its target branch requires as
   Bitbucket's merge check decides them, from the builds listing Bitbucket's own pull request page
   reads, since the public build endpoints do not say which required key a build reports under;
-  where bb cannot tell as the check would, the card says nothing about requirements. Inline, a view keeps one shape and grows a step at a
+  where bb cannot tell as the check would, the card says nothing about requirements. A pull
+  request's comments are where Bitbucket has them: in its overview's activity, newest first, and on
+  their lines in its diff, each where Bitbucket's diff with comments draws it; fullscreen, the diff
+  is Bitbucket's diff page, one file at a time. Inline, a view keeps one shape and grows a step at a
   time when the person asks; fullscreen shows everything the result carries. A view says when its
   data was read.
 
@@ -42,7 +45,7 @@ decision: >
   changes, never off screen or after teardown, and not again once a pull request is closed and
   still. Status changes in place; a changed diff is offered rather than swapped under the person's
   reading. A view that changed tells the model, through ui/update-model-context. A form, which holds
-  what the person writes, and a file, read a window at a time, are not read again by themselves.
+  what the person writes, is not read again by itself.
 
   A view opens what else the person asks for in place, through refresh_view: a pull request's
   other views, a list's pull requests, a list in another state; it goes back, and tells the model
@@ -95,4 +98,17 @@ rejected_alternatives:
     reason: Every refresh would carry the whole payload, changed or not, and show is the model's tool.
   - alternative: Draw everything a result carries, inline
     reason: A list or a diff of a thousand rows buries the conversation, and a host scrolls a view it caps inside the chat.
+  - alternative: A view of a pull request's comments of its own
+    reason: >
+      Bitbucket has none, and a person reads a comment where it was written: gathered in one view
+      apart from the diff and the activity, every thread at once read as a mess.
+  - alternative: Place a diff's comments by their anchors
+    reason: >
+      A comment written on the left of a side-by-side diff names its line as the file was, so on an
+      unchanged line it lands on another line when read as the file is.
+  - alternative: A file viewer
+    reason: >
+      In a coding harness the model quotes the code that matters, highlighted, and the person has an
+      editor; another repository's file is a click away in Bitbucket. Pictures and media were left,
+      too rarely asked for to earn a kind of view.
 provenance: guided-ai

@@ -64,47 +64,43 @@ nothing to turn on: the model calls the `show` tool once it has found what you
 asked about. A terminal client, such as Claude Code, shows the plain answer, and
 `--exclude show` turns views off.
 
-![A pull request card: its title, author and branches, who requested changes, a failed and a running build, an open task, and how many approvals and builds passed](assets/views/card-light.webp#only-light)
-![A pull request card: its title, author and branches, who requested changes, a failed and a running build, an open task, and how many approvals and builds passed](assets/views/card-dark.webp#only-dark)
+![A pull request card: its title, author and branches, who requested changes, a failed and a running build, a required build missing, two open tasks, and how many approvals and builds passed](assets/views/card-light.webp#only-light)
+![A pull request card: its title, author and branches, who requested changes, a failed and a running build, a required build missing, two open tasks, and how many approvals and builds passed](assets/views/card-dark.webp#only-dark)
 
 The card puts what asks something of someone on one line: who requested
 changes, a conflict, failed and running builds, required builds that have not
-run, open tasks. The counts under it
-are Bitbucket's, however many reviewers and builds there are. **Overview** opens
-the rest, fullscreen where the client has it and opened out in place where it
-does not: the description as Bitbucket formats it, the reviewers by their
-decision, the builds the target branch requires before it merges, every build
-by its state, and the comments and tasks. **Diff** and
-**Comments** open those in the same view, and **Back** returns to the card.
+run, open tasks. The counts under it are Bitbucket's, however many reviewers and
+builds there are. **Overview** opens the rest, fullscreen where the client has
+it and opened out in place where it does not: the description as Bitbucket
+formats it, and under it the activity as Bitbucket's overview lists it, newest
+first: who approved or requested changes, pushed or merged, and every comment,
+one on a line with the lines of the diff it is on. Beside them are the
+reviewers by their decision, the builds the target branch requires before it
+merges, and every build by its state. Reply to a comment, or comment on the pull
+request, where it is; the count of open tasks opens the overview at them.
 **Approve** and **Request changes**, in the overview and over the diff, review
 the pull request once you confirm it in your client.
 
-![A pull request's overview: its description beside Approve and Request changes, the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-light.webp#only-light)
-![A pull request's overview: its description beside Approve and Request changes, the reviewers grouped by decision, and its builds grouped by state](assets/views/overview-dark.webp#only-dark)
+![A pull request's overview: its description and activity, a comment on a line shown among the lines of the diff it is on, beside Approve and Request changes, the reviewers by decision and the builds by state](assets/views/overview-light.webp#only-light)
+![A pull request's overview: its description and activity, a comment on a line shown among the lines of the diff it is on, beside Approve and Request changes, the reviewers by decision and the builds by state](assets/views/overview-dark.webp#only-dark)
 
 A list flags only what needs attention in each pull request: a request for
 changes, a draft, failed builds. A row opens its card in the same view.
 Fullscreen adds Bitbucket's dashboard columns and filters, and asks for the
 pull requests in another state or role.
 
-![A list of four pull requests, two of them with changes requested and a failed build, one a draft](assets/views/list-light.webp#only-light)
-![A list of four pull requests, two of them with changes requested and a failed build, one a draft](assets/views/list-dark.webp#only-dark)
+![A list of six pull requests: two with changes requested and a failed build, one declined, one merged, one a draft](assets/views/list-light.webp#only-light)
+![A list of six pull requests: two with changes requested and a failed build, one declined, one merged, one a draft](assets/views/list-dark.webp#only-dark)
 
-A diff comes file by file, with Bitbucket's change lozenges and the files in
-their directories, the code highlighted, and each comment on the line it was
-written on. Select lines
-to add them to the chat, to ask about them, or to comment on them. A file too
-large to carry is named, with a link to its diff in Bitbucket.
+**Diff** opens the pull request's diff as Bitbucket's diff page has it: the
+file tree, and beside it one file at a time, the code highlighted and each
+comment on the line Bitbucket draws it on, a resolved one folded to a line.
+Select lines to add them to the chat, to ask about them, or to comment on them.
+A file too large to carry is named, with a link to its diff in Bitbucket.
+**Back** returns to where you were.
 
-![A pull request's diff: the changed files by directory, each with its open comments counted, beside the highlighted changes, a comment on the line it was written on, and Approve and Request changes over it](assets/views/diff-light.webp#only-light)
-![A pull request's diff: the changed files by directory, each with its open comments counted, beside the highlighted changes, a comment on the line it was written on, and Approve and Request changes over it](assets/views/diff-dark.webp#only-dark)
-
-The comment threads come where they are: those on the pull request first, then
-each file's, the open ones out and the resolved folded to their count. A thread
-on a changed line comes with the lines of the diff that lead to it, and a long
-discussion folds its earlier replies. The card lists what is still open in
-the same order, under a heading for each place. Reply to a thread, or comment
-on the pull request, from the view itself.
+![A pull request's diff: the file tree with each file's open comments counted, beside one file's highlighted changes, a task on the line it was written on and a resolved thread folded to a line](assets/views/diff-light.webp#only-light)
+![A pull request's diff: the file tree with each file's open comments counted, beside one file's highlighted changes, a task on the line it was written on and a resolved thread folded to a line](assets/views/diff-dark.webp#only-dark)
 
 Ask for a pull request to be opened, and the agent can hand you its draft as a
 form: the branches, the title and description it wrote, the reviewers it
@@ -114,17 +110,6 @@ request's title, description and draft state are edited the same way.
 
 ![A pull request form: the source and target branches, the title and the description the agent drafted, a reviewer field, the draft box, and Create pull request](assets/views/form-light.webp#only-light)
 ![A pull request form: the source and target branches, the title and the description the agent drafted, a reviewer field, the draft box, and Create pull request](assets/views/form-dark.webp#only-dark)
-
-A file you have no copy of, such as another repository's, is shown as what it
-is: highlighted code with line numbers, a picture fitted to the view or at its size, audio
-and video that play, an archive's listing. A long file comes a window at a
-time. In a diff, **View file** opens a changed file as the pull request has it.
-
-![A Go file shown as highlighted code with line numbers](assets/views/file-light.webp#only-light)
-![A Go file shown as highlighted code with line numbers](assets/views/file-dark.webp#only-dark)
-
-![A pull request's comment threads: tasks and comments on the pull request and on a file, each with Reply, under Add a comment](assets/views/threads-light.webp#only-light)
-![A pull request's comment threads: tasks and comments on the pull request and on a file, each with Reply, under Add a comment](assets/views/threads-dark.webp#only-dark)
 
 - A view carries what it draws. It renders again when you come back to the
   conversation, even without bb running, and it says when it was read.
