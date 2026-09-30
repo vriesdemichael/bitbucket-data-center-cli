@@ -80,6 +80,18 @@ Use --audit-file to record every tool call as JSON Lines for SIEM collection. Pa
 
 The audit trail covers this server only. An agent that can run shell commands can invoke bb directly and bypass it, along with every other control here; the control that survives that is the token itself, which binds at the Bitbucket server -- give this server a narrower PAT than your own through env.
 
+```bash
+# Serve every tool over stdio, for an MCP client to launch
+bb ai mcp serve
+
+# Only the tools that read, confined to one repository
+bb ai mcp serve --read-only --repo PROJ/repo
+
+# Name the tools to expose, and record every call
+bb ai mcp serve --tools get_pull_request,list_pull_requests,get_pr_diff \
+  --audit-file /var/log/bb/mcp-audit.jsonl
+```
+
 `--audit-failure string`
 :   What to do when an audit record cannot be written (one of: deny, warn) (default "deny")
 
@@ -134,6 +146,14 @@ never                the tool runs when called
 ```
 
 A client that cannot show a confirmation gets error -32021 for a call that asks. Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.
+
+```bash
+# Every tool, with whether it changes anything and whether it asks first
+bb ai mcp tools
+
+# The tools a read-only server exposes
+bb ai mcp tools --read-only
+```
 
 `--read-only`
 :   List only the tools 'bb ai mcp serve --read-only' exposes
@@ -195,6 +215,14 @@ Global scope (--global), for every project of yours:
 
 The skill is embedded in this binary, so no network connection is required. Re-run after upgrading bb to keep the skill files current.
 
+```bash
+# Install the bb skill for this project
+bb ai skill install
+
+# Install it for every project of yours
+bb ai skill install --global
+```
+
 `--global`
 :   Install for every project of yours (~/.agents/skills and ~/.claude/skills)
 
@@ -221,6 +249,14 @@ Remove an installed agent skill file
 
 ```text
 bb ai skill remove [skill] [flags]
+```
+
+```bash
+# Remove the bb skill from this project
+bb ai skill remove
+
+# Remove it from every project of yours, without being asked
+bb ai skill remove --global --yes
 ```
 
 `--global`
@@ -273,6 +309,14 @@ npx skills add vriesdemichael/bitbucket-data-center-cli
 ```
 
 The npx-installed files are snapshots from the repository. Use this command to get a skill that always matches your installed bb version.
+
+```bash
+# Print the skill that matches this bb
+bb ai skill show
+
+# Save it for an agent that reads a path of its own
+bb ai skill show > .agents/skills/bb/SKILL.md
+```
 
 Also takes the [global flags](global-flags.md).
 

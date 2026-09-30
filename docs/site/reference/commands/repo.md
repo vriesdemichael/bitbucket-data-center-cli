@@ -99,6 +99,15 @@ bb repo admin create [flags]
 
 Alias for bb repo create.
 
+```bash
+# Create a repository in a project
+bb repo admin create --project PROJ --name billing-service
+
+# With a description and a default branch
+bb repo admin create --project PROJ --name billing-service \
+  --description "Billing API" --default-branch main
+```
+
 `--default-branch string`
 :   Repository default branch
 
@@ -158,6 +167,11 @@ bb repo admin delete [PROJECT/slug] [flags]
 
 Alias for bb repo delete.
 
+```bash
+# Delete a repository, naming it so the confirmation can be skipped
+bb repo admin delete PROJ/repo --yes
+```
+
 `--yes`
 :   Skip the confirmation. Only applies when the repository is named explicitly.
 
@@ -188,6 +202,14 @@ bb repo admin fork [flags]
 ```
 
 Alias for bb repo fork.
+
+```bash
+# Fork a repository
+bb repo admin fork --repo PROJ/repo
+
+# Into another project, under another name
+bb repo admin fork --repo PROJ/repo --project SANDBOX --name repo-experiment
+```
 
 `--name string`
 :   Name of the new fork
@@ -235,6 +257,11 @@ Update repository metadata
 
 ```text
 bb repo admin update [flags]
+```
+
+```bash
+# Change a repository's description and default branch
+bb repo admin update --repo PROJ/repo --description "Billing API" --default-branch main
 ```
 
 `--default-branch string`
@@ -286,6 +313,15 @@ Download repository archive
 
 ```text
 bb repo archive [flags]
+```
+
+```bash
+# Download the repository as repo.zip
+bb repo archive --repo PROJ/repo
+
+# One directory of a tagged release, as a tarball
+bb repo archive --repo PROJ/repo --at v1.2.0 --path docs --format tar.gz \
+  --output docs-1.2.0.tar.gz
 ```
 
 `--at string`
@@ -347,6 +383,11 @@ Get file blame
 bb repo browse blame <path> [flags]
 ```
 
+```bash
+# Who last changed each line of a file
+bb repo browse blame src/main.go --repo PROJ/repo
+```
+
 `--at string`
 :   Commit ID or ref
 
@@ -383,6 +424,11 @@ Get structured file content
 bb repo browse file <path> [flags]
 ```
 
+```bash
+# A file's content line by line, on a branch of your choice
+bb repo browse file src/main.go --repo PROJ/repo --at feature/x
+```
+
 `--at string`
 :   Commit ID or ref
 
@@ -417,6 +463,11 @@ List commit history for a file
 
 ```text
 bb repo browse history <path> [flags]
+```
+
+```bash
+# The commits that changed a file
+bb repo browse history src/main.go --repo PROJ/repo
 ```
 
 `--all`
@@ -469,6 +520,11 @@ bb repo browse raw <path> [flags]
 
 The file is written to stdout as it arrives, byte for byte, whatever its size. With --json it is returned inside the document instead -- as text, or as base64 when it is not text -- which holds it in memory, so a file larger than 64 MiB is refused under --json.
 
+```bash
+# A file's bytes, saved locally
+bb repo browse raw docs/logo.png --repo PROJ/repo > logo.png
+```
+
 `--at string`
 :   Commit ID or ref
 
@@ -500,6 +556,14 @@ List repository files in a directory
 
 ```text
 bb repo browse tree [path] [flags]
+```
+
+```bash
+# The files at the top of a repository
+bb repo browse tree --repo PROJ/repo
+
+# In a directory, at a tag
+bb repo browse tree src --repo PROJ/repo --at v1.2.0
 ```
 
 `--all`
@@ -541,6 +605,14 @@ bb repo cat <path> [flags]
 
 The file is written to stdout as it arrives, byte for byte, whatever its size. With --json it is returned inside the document instead -- as text, or as base64 when it is not text -- which holds it in memory, so a file larger than 64 MiB is refused under --json.
 
+```bash
+# Print a file without cloning the repository
+bb repo cat README.md --repo PROJ/repo
+
+# As it was at a tag
+bb repo cat README.md --repo PROJ/repo --at v1.2.0
+```
+
 `--at string`
 :   Commit ID or ref to cat
 
@@ -570,6 +642,14 @@ Clone a repository to the local filesystem
 
 ```text
 bb repo clone <repository> [directory] [-- <gitflags>...] [flags]
+```
+
+```bash
+# Clone into a directory named after the repository
+bb repo clone PROJ/repo
+
+# Into a directory of your choice, over HTTPS, passing flags on to git
+bb repo clone PROJ/repo work/repo --https -- --depth 1
 ```
 
 `--https`
@@ -634,6 +714,15 @@ bb repo comment create [flags]
 Create a comment on a commit or a pull request.
 
 Pass --parent to reply to an existing comment rather than start a new thread. The id to pass is the one `bb repo comment list` reports; a reply carries reply and parentId in that listing, so a thread can be walked back to its root.
+
+```bash
+# Comment on a line of a file in a commit
+bb repo comment create --commit a1b2c3d --repo PROJ/repo \
+  --path src/main.go --line 41 --text "This swallows the error."
+
+# Reply to a comment on a pull request
+bb repo comment create --pr 42 --repo PROJ/repo --parent 1389396 --text "Fixed."
+```
 
 `--line int`
 :   Line within --path to anchor the comment to
@@ -719,6 +808,11 @@ Delete a comment
 bb repo comment delete [flags]
 ```
 
+```bash
+# Delete a comment on a commit
+bb repo comment delete --commit a1b2c3d --id 1389396 --repo PROJ/repo --yes
+```
+
 `--id string`
 :   Comment ID
 
@@ -764,6 +858,14 @@ List comments
 
 ```text
 bb repo comment list [flags]
+```
+
+```bash
+# The comments on one file of a commit
+bb repo comment list --commit a1b2c3d --path src/main.go --repo PROJ/repo
+
+# Of a pull request
+bb repo comment list --pr 42 --path src/main.go --repo PROJ/repo
 ```
 
 `--all`
@@ -843,6 +945,11 @@ Update a comment
 
 ```text
 bb repo comment update [flags]
+```
+
+```bash
+# Reword a comment on a pull request
+bb repo comment update --pr 42 --id 1389396 --repo PROJ/repo --text "Fixed in a1b2c3d."
 ```
 
 `--id string`
@@ -930,6 +1037,14 @@ bb repo compare feature/x main        # what feature/x adds
 bb repo compare main feature/x        # nothing, unless main has moved
 ```
 
+```bash
+# The commits feature/x adds to main
+bb repo compare feature/x main --repo PROJ/repo
+
+# As a diff
+bb repo compare feature/x main --repo PROJ/repo --diff
+```
+
 `--diff`
 :   Show the unified diff of the changes
 
@@ -967,6 +1082,15 @@ bb repo create [flags]
 ```
 
 Also available as bb repo admin create.
+
+```bash
+# Create a repository in a project
+bb repo create --project PROJ --name billing-service
+
+# With a description and a default branch
+bb repo create --project PROJ --name billing-service \
+  --description "Billing API" --default-branch main
+```
 
 `--default-branch string`
 :   Repository default branch
@@ -1036,6 +1160,14 @@ Add a default checklist task
 bb repo default-task add <description> [flags]
 ```
 
+```bash
+# A task every new pull request in the repository starts with
+bb repo default-task add "Update the changelog" --repo PROJ/repo
+
+# Only for pull requests into main
+bb repo default-task add "Update the changelog" --repo PROJ/repo --target-ref main
+```
+
 `--source-ref string`
 :   Source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
@@ -1094,6 +1226,11 @@ Delete one of the repository's default checklist tasks.
 
 A task the repository inherits from its project is refused; bb project default-task delete deletes it there, for every repository in the project.
 
+```bash
+# By the id bb repo default-task list prints
+bb repo default-task delete 3 --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -1125,6 +1262,11 @@ bb repo default-task list
 ```
 
 List the repository's default checklist tasks, and those it inherits from its project, which are marked as inherited. bb project default-task changes an inherited one.
+
+```bash
+# The repository's own tasks, and those it inherits from its project
+bb repo default-task list --repo PROJ/repo
+```
 
 Inherited from [`bb repo default-task`](#bb-repo-default-task):
 
@@ -1177,6 +1319,11 @@ bb repo default-task update <task-id> [flags]
 Update one of the repository's default checklist tasks.
 
 A task the repository inherits from its project is refused; bb project default-task update changes it there, for every repository in the project.
+
+```bash
+# Reword a task
+bb repo default-task update 3 --repo PROJ/repo --description "Update CHANGELOG.md"
+```
 
 `--description string`
 :   New task description
@@ -1239,6 +1386,11 @@ Name the repository as a PROJECT/slug argument or with --repo. Without one it is
 
 Also available as bb repo admin delete.
 
+```bash
+# Delete a repository, naming it so the confirmation can be skipped
+bb repo delete PROJ/repo --yes
+```
+
 `--repo string`
 :   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
@@ -1264,6 +1416,16 @@ Edit a file's content over REST
 
 ```text
 bb repo edit <path> [flags]
+```
+
+```bash
+# Change a file on a branch in one commit, naming the commit you read it at
+bb repo edit VERSION --repo PROJ/repo --branch main --source-commit a1b2c3d \
+  --content "1.2.1" --message "Bump the version to 1.2.1"
+
+# Add a file on a new branch cut from main, with its content from stdin
+bb repo edit docs/notes.md --repo PROJ/repo --branch feature/notes \
+  --source-branch main --content - --message "Add notes" < notes.md
 ```
 
 `--branch string`
@@ -1323,6 +1485,14 @@ bb repo fork [flags]
 ```
 
 Also available as bb repo admin fork.
+
+```bash
+# Fork a repository
+bb repo fork --repo PROJ/repo
+
+# Into another project, under another name
+bb repo fork --repo PROJ/repo --project SANDBOX --name repo-experiment
+```
 
 `--name string`
 :   Name of the new fork
@@ -1450,6 +1620,11 @@ Add a repository label
 bb repo label add <label>
 ```
 
+```bash
+# Label a repository
+bb repo label add backend --repo PROJ/repo
+```
+
 Inherited from [`bb repo label`](#bb-repo-label):
 
 `--repo string`
@@ -1477,6 +1652,11 @@ List repository labels
 bb repo label list
 ```
 
+```bash
+# A repository's labels
+bb repo label list --repo PROJ/repo
+```
+
 Inherited from [`bb repo label`](#bb-repo-label):
 
 `--repo string`
@@ -1502,6 +1682,11 @@ Remove a repository label
 
 ```text
 bb repo label remove <label> [flags]
+```
+
+```bash
+# Take a label off a repository
+bb repo label remove backend --repo PROJ/repo --yes
 ```
 
 `-y, --yes`
@@ -1532,6 +1717,14 @@ List repositories
 
 ```text
 bb repo list [flags]
+```
+
+```bash
+# The repositories you can see
+bb repo list
+
+# Every repository of one project
+bb repo list --project PROJ --all
 ```
 
 `--all`
@@ -1588,6 +1781,14 @@ Grant a repository permission to a user, or to a group with --group.
 
 Shallow alias for bb repo settings security permissions {users,groups} grant.
 
+```bash
+# Let a user push to a repository
+bb repo permissions grant alice REPO_WRITE --repo PROJ/repo
+
+# A group instead
+bb repo permissions grant backend-team REPO_WRITE --group --repo PROJ/repo
+```
+
 `--group`
 :   Treat the argument as a group rather than a user
 
@@ -1623,6 +1824,14 @@ bb repo permissions list [flags]
 List users with repository permissions, or groups with --group.
 
 Shallow alias for bb repo settings security permissions {users,groups} list.
+
+```bash
+# The users with a permission on a repository
+bb repo permissions list --repo PROJ/repo
+
+# The groups
+bb repo permissions list --group --repo PROJ/repo
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -1668,6 +1877,14 @@ Revoke a repository permission from a user, or from a group with --group.
 
 Shallow alias for bb repo settings security permissions {users,groups} revoke.
 
+```bash
+# Take a user's permission on a repository away
+bb repo permissions revoke alice --repo PROJ/repo --yes
+
+# A group's
+bb repo permissions revoke backend-team --group --repo PROJ/repo --yes
+```
+
 `--group`
 :   Treat the argument as a group rather than a user
 
@@ -1700,6 +1917,11 @@ Show the caller's effective permissions on a repository
 
 ```text
 bb repo permissions show
+```
+
+```bash
+# What you yourself may do in a repository
+bb repo permissions show --repo PROJ/repo
 ```
 
 Inherited from [`bb repo permissions`](#bb-repo-permissions):
@@ -1799,6 +2021,11 @@ Delete repository auto-decline settings
 bb repo settings auto-decline delete [flags]
 ```
 
+```bash
+# Remove the repository's own auto-decline setting
+bb repo settings auto-decline delete --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -1829,6 +2056,11 @@ Get repository auto-decline settings
 bb repo settings auto-decline get
 ```
 
+```bash
+# Whether inactive pull requests are declined, and after how long
+bb repo settings auto-decline get --repo PROJ/repo
+```
+
 Inherited from [`bb repo settings auto-decline`](#bb-repo-settings-auto-decline):
 
 `--repo string`
@@ -1855,6 +2087,14 @@ Set repository auto-decline settings
 
 ```text
 bb repo settings auto-decline set [flags]
+```
+
+```bash
+# Decline pull requests nobody has touched for four weeks
+bb repo settings auto-decline set --enabled --inactivity-weeks 4 --repo PROJ/repo
+
+# Switch it off
+bb repo settings auto-decline set --enabled=false --repo PROJ/repo
 ```
 
 `--enabled`
@@ -1895,6 +2135,11 @@ Delete repository auto-merge settings
 bb repo settings auto-merge delete [flags]
 ```
 
+```bash
+# Remove the repository's own auto-merge setting
+bb repo settings auto-merge delete --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -1925,6 +2170,11 @@ Get repository auto-merge settings
 bb repo settings auto-merge get
 ```
 
+```bash
+# Whether pull requests may be set to merge on their own
+bb repo settings auto-merge get --repo PROJ/repo
+```
+
 Inherited from [`bb repo settings auto-merge`](#bb-repo-settings-auto-merge):
 
 `--repo string`
@@ -1952,6 +2202,11 @@ Set repository auto-merge settings
 
 ```text
 bb repo settings auto-merge set [flags]
+```
+
+```bash
+# Let pull requests be set to merge once their checks pass
+bb repo settings auto-merge set --enabled --repo PROJ/repo
 ```
 
 `--enabled`
@@ -1988,6 +2243,11 @@ Get repository pull-request settings
 
 ```text
 bb repo settings pull-requests get
+```
+
+```bash
+# A repository's merge strategies and the checks a merge must pass
+bb repo settings pull-requests get --repo PROJ/repo
 ```
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
@@ -2027,6 +2287,11 @@ List configured merge checks
 
 ```text
 bb repo settings pull-requests merge-checks list
+```
+
+```bash
+# The checks a pull request must pass before it merges
+bb repo settings pull-requests merge-checks list --repo PROJ/repo
 ```
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
@@ -2081,6 +2346,11 @@ Set default merge strategy
 bb repo settings pull-requests set-strategy <strategy-id>
 ```
 
+```bash
+# Squash by default when a pull request merges
+bb repo settings pull-requests set-strategy squash --repo PROJ/repo
+```
+
 Inherited from [`bb repo settings`](#bb-repo-settings):
 
 `--repo string`
@@ -2114,6 +2384,11 @@ Update repository pull-request settings
 
 ```text
 bb repo settings pull-requests update [flags]
+```
+
+```bash
+# Refuse a merge while a task is open
+bb repo settings pull-requests update --required-all-tasks-complete --repo PROJ/repo
 ```
 
 `--required-all-tasks-complete`
@@ -2152,6 +2427,11 @@ Update required approvers count
 
 ```text
 bb repo settings pull-requests update-approvers [flags]
+```
+
+```bash
+# Require two approvals before a merge
+bb repo settings pull-requests update-approvers --count 2 --repo PROJ/repo
 ```
 
 `--count int`
@@ -2206,6 +2486,11 @@ bb repo settings security permissions groups grant <group> <permission>
 
 Also available as bb repo permissions grant --group, one level shallower.
 
+```bash
+# Let a group push to a repository
+bb repo settings security permissions groups grant backend-team REPO_WRITE --repo PROJ/repo
+```
+
 Inherited from [`bb repo settings`](#bb-repo-settings):
 
 `--repo string`
@@ -2236,6 +2521,11 @@ bb repo settings security permissions groups list [flags]
 ```
 
 Also available as bb repo permissions list --group, one level shallower.
+
+```bash
+# The groups with a permission on a repository
+bb repo settings security permissions groups list --repo PROJ/repo
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -2276,6 +2566,11 @@ bb repo settings security permissions groups revoke <group> [flags]
 
 Also available as bb repo permissions revoke --group, one level shallower.
 
+```bash
+# Take a group's permission on a repository away
+bb repo settings security permissions groups revoke backend-team --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -2313,6 +2608,11 @@ bb repo settings security permissions users grant <username> <permission>
 
 Also available as bb repo permissions grant, one level shallower.
 
+```bash
+# Let a user push to a repository
+bb repo settings security permissions users grant alice REPO_WRITE --repo PROJ/repo
+```
+
 Inherited from [`bb repo settings`](#bb-repo-settings):
 
 `--repo string`
@@ -2343,6 +2643,11 @@ bb repo settings security permissions users list [flags]
 ```
 
 Also available as bb repo permissions list, one level shallower.
+
+```bash
+# The users with a permission on a repository
+bb repo settings security permissions users list --repo PROJ/repo
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -2383,6 +2688,11 @@ bb repo settings security permissions users revoke <username> [flags]
 
 Also available as bb repo permissions revoke, one level shallower.
 
+```bash
+# Take a user's permission on a repository away
+bb repo settings security permissions users revoke alice --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -2420,6 +2730,12 @@ Create a repository webhook
 
 ```text
 bb repo settings workflow webhooks create <name> <url> [flags]
+```
+
+```bash
+# Call an endpoint when anything is pushed to the repository
+bb repo settings workflow webhooks create ci https://ci.example.com/hooks/bitbucket \
+  --repo PROJ/repo
 ```
 
 `--active`
@@ -2477,6 +2793,11 @@ Delete a repository webhook
 bb repo settings workflow webhooks delete <webhook-id> [flags]
 ```
 
+```bash
+# By the id bb repo settings workflow webhooks list prints
+bb repo settings workflow webhooks delete 12 --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -2505,6 +2826,11 @@ List repository webhooks
 
 ```text
 bb repo settings workflow webhooks list
+```
+
+```bash
+# A repository's webhooks
+bb repo settings workflow webhooks list --repo PROJ/repo
 ```
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
@@ -2559,6 +2885,14 @@ Add a project or repository SSH access key
 bb repo ssh-key add <key-file-or-text> [flags]
 ```
 
+```bash
+# Give a deploy key read access to one repository
+bb repo ssh-key add deploy-key.pub --repo PROJ/repo --label "CI deploy key"
+
+# Read and write access to every repository of a project
+bb repo ssh-key add deploy-key.pub --project PROJ --permission read-write
+```
+
 `--label string`
 :   Label/comment for the SSH key
 
@@ -2603,6 +2937,14 @@ List project or repository SSH access keys
 bb repo ssh-key list [flags]
 ```
 
+```bash
+# The access keys of a repository
+bb repo ssh-key list --repo PROJ/repo
+
+# Of a project
+bb repo ssh-key list --project PROJ
+```
+
 `--all`
 :   Return every result rather than the first --limit
 
@@ -2641,6 +2983,11 @@ Remove a project or repository SSH access key by ID
 bb repo ssh-key remove <access-key-id> [flags]
 ```
 
+```bash
+# By the id bb repo ssh-key list prints
+bb repo ssh-key remove 31 --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -2669,6 +3016,14 @@ Manage repository fork synchronization
 
 ```text
 bb repo sync [flags]
+```
+
+```bash
+# Bring a fork's default branch up to date with the repository it was forked from
+bb repo sync --repo SANDBOX/repo-experiment
+
+# One branch, throwing away what the fork has that upstream lacks
+bb repo sync --repo SANDBOX/repo-experiment --ref release/1.2 --action DISCARD
 ```
 
 `--action string`
@@ -2711,6 +3066,11 @@ Disable automatic background synchronization
 
 ```text
 bb repo sync disable
+```
+
+```bash
+# Stop keeping a fork up to date automatically
+bb repo sync disable --repo SANDBOX/repo-experiment
 ```
 
 Inherited from [`bb repo sync`](#bb-repo-sync):
@@ -2757,6 +3117,11 @@ Enable automatic background synchronization
 bb repo sync enable
 ```
 
+```bash
+# Keep a fork up to date with its upstream automatically
+bb repo sync enable --repo SANDBOX/repo-experiment
+```
+
 Inherited from [`bb repo sync`](#bb-repo-sync):
 
 `--repo string`
@@ -2799,6 +3164,11 @@ Query synchronization status, divergence, and settings
 
 ```text
 bb repo sync status
+```
+
+```bash
+# Whether a fork is kept up to date, and how far it has diverged
+bb repo sync status --repo SANDBOX/repo-experiment
 ```
 
 Inherited from [`bb repo sync`](#bb-repo-sync):
@@ -2845,6 +3215,11 @@ Unwatch repository
 bb repo unwatch [flags]
 ```
 
+```bash
+# Stop notifications for a repository
+bb repo unwatch --repo PROJ/repo
+```
+
 `--repo string`
 :   Repository as PROJECT/slug (defaults to BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
@@ -2868,6 +3243,11 @@ Watch repository
 
 ```text
 bb repo watch [flags]
+```
+
+```bash
+# Get notified of changes to a repository
+bb repo watch --repo PROJ/repo
 ```
 
 `--repo string`

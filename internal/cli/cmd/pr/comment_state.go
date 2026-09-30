@@ -17,6 +17,7 @@ func newPullRequestCommentStateCommands(deps Dependencies, repository *string) [
 	type stateCommand struct {
 		use      string
 		short    string
+		example  string
 		intent   string
 		reason   string
 		state    commentservice.CommentState
@@ -25,16 +26,20 @@ func newPullRequestCommentStateCommands(deps Dependencies, repository *string) [
 
 	specs := []stateCommand{
 		{
-			use:      "resolve <pr-id> <comment-id>",
-			short:    "Resolve a pull request comment, closing it as a task",
+			use:   "resolve <pr-id> <comment-id>",
+			short: "Resolve a pull request comment, closing it as a task",
+			example: "  # Mark a comment or task as dealt with\n" +
+				"  bb pr comment resolve 42 1389396 --repo PROJ/repo",
 			intent:   "pr.comment.resolve",
 			reason:   "comment will be resolved",
 			state:    commentservice.CommentStateResolved,
 			doneWord: "Resolved",
 		},
 		{
-			use:      "reopen <pr-id> <comment-id>",
-			short:    "Reopen a resolved pull request comment",
+			use:   "reopen <pr-id> <comment-id>",
+			short: "Reopen a resolved pull request comment",
+			example: "  # Reopen a comment that was resolved\n" +
+				"  bb pr comment reopen 42 1389396 --repo PROJ/repo",
 			intent:   "pr.comment.reopen",
 			reason:   "comment will be reopened",
 			state:    commentservice.CommentStateOpen,
@@ -44,7 +49,7 @@ func newPullRequestCommentStateCommands(deps Dependencies, repository *string) [
 
 	commands := make([]*cobra.Command, 0, len(specs))
 	for _, spec := range specs {
-		commands = append(commands, newCommentStateCommand(deps, repository, spec.use, spec.short, spec.intent, spec.reason, spec.state, spec.doneWord))
+		commands = append(commands, newCommentStateCommand(deps, repository, spec.use, spec.short, spec.example, spec.intent, spec.reason, spec.state, spec.doneWord))
 	}
 
 	return commands
@@ -55,15 +60,17 @@ func newCommentStateCommand(
 	repository *string,
 	use string,
 	short string,
+	example string,
 	intent string,
 	reason string,
 	state commentservice.CommentState,
 	doneWord string,
 ) *cobra.Command {
 	command := &cobra.Command{
-		Use:   use,
-		Short: short,
-		Args:  cobra.ExactArgs(2),
+		Use:     use,
+		Short:   short,
+		Example: example,
+		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

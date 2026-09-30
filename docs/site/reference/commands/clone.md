@@ -12,6 +12,14 @@ Clone a repository to the local filesystem
 bb clone <repository> [directory] [-- <gitflags>...] [flags]
 ```
 
+```bash
+# Clone into a directory named after the repository
+bb clone PROJ/repo
+
+# Into a directory of your choice, over HTTPS, passing flags on to git
+bb clone PROJ/repo work/repo --https -- --depth 1
+```
+
 `--https`
 :   Use HTTPS only and skip the SSH clone attempt
 

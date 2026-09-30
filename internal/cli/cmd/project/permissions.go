@@ -94,6 +94,15 @@ func fixedProjectPermissionSubject(subject projectPermissionSubject) projectPerm
 	return func() projectPermissionSubject { return subject }
 }
 
+// exampleName is the name a command's examples give the subject.
+func (subject projectPermissionSubject) exampleName() string {
+	if subject.noun == "user" {
+		return "alice"
+	}
+
+	return "backend-team"
+}
+
 func (subject projectPermissionSubject) argPlaceholder() string {
 	if subject.noun == "user" {
 		return "username"
@@ -340,19 +349,24 @@ func newProjectPermissionSubjectCommand(deps Dependencies, subject projectPermis
 		Short: strings.ToUpper(subject.noun[:1]) + subject.noun[1:] + " permissions",
 	}
 
+	deep := fmt.Sprintf("bb project permissions %ss", subject.noun)
+
 	listCommand := newProjectPermissionListCommand(deps, resolver)
 	listCommand.Short = fmt.Sprintf("List %ss with project permissions", subject.noun)
 	listCommand.Long = fmt.Sprintf("List %ss with project permissions.\n\n%s", subject.noun, alsoAvailableAs(shallow+" list", subject.noun))
+	listCommand.Example = fmt.Sprintf("  # The %ss with a permission on a project\n  %s list PROJ", subject.noun, deep)
 
 	grantCommand := newProjectPermissionGrantCommand(deps, resolver)
 	grantCommand.Use = fmt.Sprintf("grant <project-key> <%s> <permission>", subject.argPlaceholder())
 	grantCommand.Short = fmt.Sprintf("Grant a project permission to a %s", subject.noun)
 	grantCommand.Long = fmt.Sprintf("Grant a project permission to a %s.\n\n%s", subject.noun, alsoAvailableAs(shallow+" grant", subject.noun))
+	grantCommand.Example = fmt.Sprintf("  # Let a %s write to every repository of a project\n  %s grant PROJ %s PROJECT_WRITE", subject.noun, deep, subject.exampleName())
 
 	revokeCommand := newProjectPermissionRevokeCommand(deps, resolver)
 	revokeCommand.Use = fmt.Sprintf("revoke <project-key> <%s>", subject.argPlaceholder())
 	revokeCommand.Short = fmt.Sprintf("Revoke a project permission from a %s", subject.noun)
 	revokeCommand.Long = fmt.Sprintf("Revoke a project permission from a %s.\n\n%s", subject.noun, alsoAvailableAs(shallow+" revoke", subject.noun))
+	revokeCommand.Example = fmt.Sprintf("  # Take a %s's permission on a project away\n  %s revoke PROJ %s --yes", subject.noun, deep, subject.exampleName())
 
 	group.AddCommand(listCommand)
 	group.AddCommand(grantCommand)
@@ -382,6 +396,11 @@ func addProjectPermissionAliases(parent *cobra.Command, deps Dependencies) {
 	listCommand.Short = "List users or groups with project permissions"
 	listCommand.Long = "List users with project permissions, or groups with --group.\n\n" +
 		"Shallow alias for " + deep + " list."
+	listCommand.Example = `  # The users with a permission on a project
+  bb project permissions list PROJ
+
+  # The groups
+  bb project permissions list PROJ --group`
 	listCommand.Flags().BoolVar(&listGroups, "group", false, "List groups instead of users")
 
 	grantCommand := newProjectPermissionGrantCommand(deps, subjectFrom(&grantGroup))
@@ -389,6 +408,11 @@ func addProjectPermissionAliases(parent *cobra.Command, deps Dependencies) {
 	grantCommand.Short = "Grant a project permission to a user or group"
 	grantCommand.Long = "Grant a project permission to a user, or to a group with --group.\n\n" +
 		"Shallow alias for " + deep + " grant."
+	grantCommand.Example = `  # Let a user write to every repository of a project
+  bb project permissions grant PROJ alice PROJECT_WRITE
+
+  # A group instead
+  bb project permissions grant PROJ backend-team PROJECT_WRITE --group`
 	grantCommand.Flags().BoolVar(&grantGroup, "group", false, "Treat the argument as a group rather than a user")
 
 	revokeCommand := newProjectPermissionRevokeCommand(deps, subjectFrom(&revokeGroup))
@@ -396,6 +420,11 @@ func addProjectPermissionAliases(parent *cobra.Command, deps Dependencies) {
 	revokeCommand.Short = "Revoke a project permission from a user or group"
 	revokeCommand.Long = "Revoke a project permission from a user, or from a group with --group.\n\n" +
 		"Shallow alias for " + deep + " revoke."
+	revokeCommand.Example = `  # Take a user's permission on a project away
+  bb project permissions revoke PROJ alice --yes
+
+  # A group's
+  bb project permissions revoke PROJ backend-team --group --yes`
 	revokeCommand.Flags().BoolVar(&revokeGroup, "group", false, "Treat the argument as a group rather than a user")
 
 	parent.AddCommand(listCommand)
@@ -421,7 +450,9 @@ func newProjectPermissionsCommand(deps Dependencies) *cobra.Command {
 	permissionsShowCmd := &cobra.Command{
 		Use:   "show <project-key>",
 		Short: "Show the caller's effective permissions on a project",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # What you yourself may do in a project
+  bb project permissions show PROJ`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {

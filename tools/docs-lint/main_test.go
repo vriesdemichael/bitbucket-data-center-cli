@@ -449,6 +449,29 @@ func TestLintMarkdownPositionalArityOnZeroArgCommands(t *testing.T) {
 	}
 }
 
+// An invocation that parses can still be one bb refuses: Cobra checks a
+// required flag when it runs the command, not when it parses it.
+func TestLintMarkdownCatchesAMissingRequiredFlag(t *testing.T) {
+	t.Parallel()
+
+	findings, _ := lintFixture("test.md", "```bash\nbb tag create v1.2.0 --repo PROJ/repo\n```\n")
+	if len(findings) != 1 || !strings.Contains(findings[0].Problem, `required flag(s) "start-point" not set`) {
+		t.Fatalf("expected the missing --start-point to be reported, got: %+v", findings)
+	}
+
+	for _, accepted := range []string{
+		"```bash\nbb tag create v1.2.0 --start-point main --repo PROJ/repo\n```\n",
+		// Asking for help runs nothing, so nothing is required of it.
+		"```bash\nbb tag create --help\n```\n",
+		// Prose names a command to talk about it, not to run it.
+		"Run `bb tag create` first.\n",
+	} {
+		if findings, _ := lintFixture("test.md", accepted); len(findings) != 0 {
+			t.Fatalf("expected %q to pass, got: %+v", accepted, findings)
+		}
+	}
+}
+
 func TestShellRedirectionAndPlaceholders(t *testing.T) {
 	t.Parallel()
 

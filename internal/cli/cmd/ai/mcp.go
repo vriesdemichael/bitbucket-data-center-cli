@@ -43,6 +43,15 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Start the MCP server (stdio transport)",
+		Example: `  # Serve every tool over stdio, for an MCP client to launch
+  bb ai mcp serve
+
+  # Only the tools that read, confined to one repository
+  bb ai mcp serve --read-only --repo PROJ/repo
+
+  # Name the tools to expose, and record every call
+  bb ai mcp serve --tools get_pull_request,list_pull_requests,get_pr_diff \
+    --audit-file /var/log/bb/mcp-audit.jsonl`,
 		// The literal matches cli.annotationNoAmbientRepoInference (this package
 		// cannot import internal/cli); the test of that name pins them together.
 		// Ambient inference fills --repo from the git remote of the working
@@ -296,6 +305,11 @@ func newMCPToolsCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tools",
 		Short: "List MCP tools with what they change and whether they ask",
+		Example: `  # Every tool, with whether it changes anything and whether it asks first
+  bb ai mcp tools
+
+  # The tools a read-only server exposes
+  bb ai mcp tools --read-only`,
 		Long: `Print every MCP tool the serve command exposes.
 
 Use this output to build --tools and --exclude allowlists and denylists.

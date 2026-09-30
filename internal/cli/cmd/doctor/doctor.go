@@ -110,6 +110,8 @@ func New(deps Dependencies) *cobra.Command {
 	return &cobra.Command{
 		Use:   "doctor",
 		Short: "Check the configuration bb would load",
+		Example: `  # Check every configuration file bb would load, and where each setting comes from
+  bb doctor`,
 		Long: `Check the configuration bb would load, and report everything wrong with it at once.
 
 A command that loads the configuration stops at the first file it cannot use.

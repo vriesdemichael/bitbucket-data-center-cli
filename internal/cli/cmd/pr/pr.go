@@ -127,6 +127,14 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List pull requests",
+		Example: `  # The open pull requests of a repository
+  bb pr list --repo PROJ/repo
+
+  # Merged into main
+  bb pr list --repo PROJ/repo --state merged --target-branch main
+
+  # Open ones, with the unresolved threads of each counted
+  bb pr list --repo PROJ/repo --with-review-status`,
 		Long: "List pull requests. Each entry carries the open task and comment counters Bitbucket reports " +
 			"with the pull request, so pull requests with outstanding feedback stand out. Pass --with-review-status " +
 			"to additionally resolve unresolved comment threads per pull request. That walks each pull request activity " +
@@ -224,6 +232,11 @@ func New(deps Dependencies) *cobra.Command {
 		Use:     "get <pr-id>",
 		Aliases: []string{"view"},
 		Short:   "Get pull request details, including outstanding review feedback",
+		Example: `  # A pull request, with what is still outstanding on it
+  bb pr get 42 --repo PROJ/repo
+
+  # Without counting the unresolved threads, which is quicker
+  bb pr get 42 --repo PROJ/repo --no-review-summary`,
 		Long: "Get pull request details. The output carries a review summary describing unresolved comment " +
 			"threads, open tasks and reviewers who requested changes, so outstanding feedback is visible without " +
 			"a separate lookup.\n\n" +
@@ -306,7 +319,9 @@ func New(deps Dependencies) *cobra.Command {
 	commitsCmd := &cobra.Command{
 		Use:   "commits <pr-id>",
 		Short: "List the commits in a pull request",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The commits a pull request would merge
+  bb pr commits 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -350,7 +365,9 @@ func New(deps Dependencies) *cobra.Command {
 		Use:     "files <pr-id>",
 		Aliases: []string{"changes"},
 		Short:   "List the files changed in a pull request",
-		Args:    cobra.ExactArgs(1),
+		Example: `  # The files a pull request changes
+  bb pr files 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -399,7 +416,9 @@ func New(deps Dependencies) *cobra.Command {
 	mergeBaseCmd := &cobra.Command{
 		Use:   "merge-base <pr-id>",
 		Short: "Show the common ancestor commit of a pull request's source and target branches",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The commit a pull request's branches last had in common
+  bb pr merge-base 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -456,11 +475,14 @@ func New(deps Dependencies) *cobra.Command {
 			"  # Create a draft pull request (Bitbucket DC 8.0+)\n" +
 			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --draft\n\n" +
 			"  # Create a pull request and assign explicit reviewers (repeatable or comma-separated)\n" +
-			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,bob\n\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" \\\n" +
+			"    --reviewers alice,bob\n\n" +
 			"  # Create a pull request with reviewers and reviewer groups\n" +
-			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --reviewers alice,@backend-team --reviewer-group qa-team\n\n" +
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" \\\n" +
+			"    --reviewers alice,@backend-team --reviewer-group qa-team\n\n" +
 			"  # Create a pull request without default reviewers or CODEOWNERS\n" +
-			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" --no-default-reviewers --no-codeowners",
+			"  bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title \"My change\" \\\n" +
+			"    --no-default-reviewers --no-codeowners",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Before the configuration is loaded, because MarkFlagRequired ran
 			// before RunE and this replaces it. Loading first would report "no
@@ -834,7 +856,12 @@ func New(deps Dependencies) *cobra.Command {
 	mergeCmd := &cobra.Command{
 		Use:   "merge <pr-id>",
 		Short: "Merge a pull request",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Merge with the repository's default strategy
+  bb pr merge 42 --repo PROJ/repo
+
+  # Squash, and only if nobody changed it since the version you read
+  bb pr merge 42 --repo PROJ/repo --strategy squash --version 3`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -963,7 +990,12 @@ func New(deps Dependencies) *cobra.Command {
 		Use:     "decline <pr-id>",
 		Aliases: []string{"close"},
 		Short:   "Decline a pull request",
-		Args:    cobra.ExactArgs(1),
+		Example: `  # Decline a pull request
+  bb pr decline 42 --repo PROJ/repo
+
+  # Only if nobody changed it since the version you read
+  bb pr decline 42 --repo PROJ/repo --version 3`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1032,7 +1064,9 @@ func New(deps Dependencies) *cobra.Command {
 	reopenCmd := &cobra.Command{
 		Use:   "reopen <pr-id>",
 		Short: "Reopen a pull request",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Reopen a declined pull request
+  bb pr reopen 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1102,6 +1136,8 @@ func New(deps Dependencies) *cobra.Command {
 	reviewApproveCmd := &cobra.Command{
 		Use:   "approve <pr-id>",
 		Short: "Approve a pull request",
+		Example: `  # Approve a pull request
+  bb pr review approve 42 --repo PROJ/repo`,
 		Long: `Approve a pull request.
 
 Shorthand for ` + "`bb pr review set <pr-id> APPROVED`" + `. A participant holds one
@@ -1166,6 +1202,8 @@ status, so approving replaces a request for changes rather than joining it.`,
 	reviewUnapproveCmd := &cobra.Command{
 		Use:   "unapprove <pr-id>",
 		Short: "Clear your review status on a pull request",
+		Example: `  # Withdraw your approval, or your request for changes
+  bb pr review unapprove 42 --repo PROJ/repo`,
 		Long: `Clear your review status on a pull request.
 
 Shorthand for ` + "`bb pr review set <pr-id> UNAPPROVED`" + `, and it does more than the
@@ -1249,13 +1287,13 @@ a no-op.
 ` + "`unapprove`" + ` clears whichever status you hold, so it withdraws a request for
 changes as readily as an approval, which its name does not suggest.`,
 		Example: `  # Request changes
-  bb pr review set 42 NEEDS_WORK
+  bb pr review set 42 NEEDS_WORK --repo PROJ/repo
 
   # Approve
-  bb pr review set 42 APPROVED
+  bb pr review set 42 APPROVED --repo PROJ/repo
 
   # Withdraw whichever status you hold
-  bb pr review set 42 UNAPPROVED`,
+  bb pr review set 42 UNAPPROVED --repo PROJ/repo`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Validated before anything is loaded or resolved, so a bad value
@@ -1565,7 +1603,9 @@ changes as readily as an approval, which its name does not suggest.`,
 	reviewerRemoveCmd := &cobra.Command{
 		Use:   "remove <pr-id>",
 		Short: "Remove a reviewer",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Take someone off a pull request's reviewers
+  bb pr review reviewer remove 42 --user alice --repo PROJ/repo --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1648,7 +1688,9 @@ changes as readily as an approval, which its name does not suggest.`,
 	reviewGetCmd := &cobra.Command{
 		Use:   "get <pr-id>",
 		Short: "Retrieve current draft review details",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The draft comments of a review you have not published yet
+  bb pr review get 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1709,10 +1751,10 @@ Bitbucket completes only a review that was started, so this needs at least one
 draft comment. Without one it fails and changes nothing. To set a status on its
 own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`bb pr comment add`" + `.`,
 		Example: `  # Publish your draft comments
-  bb pr review complete 42
+  bb pr review complete 42 --repo PROJ/repo
 
   # Publish them with a request for changes and a summary comment
-  bb pr review complete 42 --status NEEDS_WORK --comment "Unit tests fail"`,
+  bb pr review complete 42 --repo PROJ/repo --status NEEDS_WORK --comment "Unit tests fail"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
@@ -1798,7 +1840,9 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 	reviewDiscardCmd := &cobra.Command{
 		Use:   "discard <pr-id>",
 		Short: "Discard all draft comments and cancel review",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Throw away the draft comments of a review you have not published
+  bb pr review discard 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -1849,7 +1893,9 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 	jiraCmd := &cobra.Command{
 		Use:   "jira <pr-id>",
 		Short: "List Jira issues associated with a pull request",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The Jira issues a pull request refers to
+  bb pr jira 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -1916,6 +1962,14 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 	commentListCmd := &cobra.Command{
 		Use:   "list <pr-id>",
 		Short: "List comment threads for a pull request, unresolved first",
+		Example: `  # Every comment thread and task, unresolved first
+  bb pr comment list 42 --repo PROJ/repo
+
+  # Only what is still waiting on someone
+  bb pr comment list 42 --repo PROJ/repo --unresolved
+
+  # The comments on one file, with every reply
+  bb pr comment list 42 --repo PROJ/repo --path src/main.go --with-replies`,
 		Long: "List pull request comment threads. Bitbucket models a task as a blocker comment, so this " +
 			"returns reviewer comments and tasks in one view, each with its resolution state, anchor and reply count.\n\n" +
 			"Without --path this uses the pull request activity timeline to return the aggregate comment view. " +
@@ -2099,8 +2153,10 @@ own, use ` + "`bb pr review set`" + `; to post a comment on its own, use ` + "`b
 	commentGetCmd := &cobra.Command{
 		Use:   "get <pr-id> <comment-id>",
 		Short: "Get a pull request comment",
-		Long:  "Get a single pull request comment by id. This is the authoritative single-comment view and is better suited than list output when you need the full rendered comment payload.",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # One comment in full, by the id bb pr comment list prints
+  bb pr comment get 42 1389396 --repo PROJ/repo`,
+		Long: "Get a single pull request comment by id. This is the authoritative single-comment view and is better suited than list output when you need the full rendered comment payload.",
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -2283,7 +2339,12 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	commentReactCmd := &cobra.Command{
 		Use:   "react <pr-id> <comment-id> <emoji>",
 		Short: "Add or remove a reaction on a pull request comment",
-		Args:  cobra.ExactArgs(3),
+		Example: `  # Add a thumbs-up to a comment
+  bb pr comment react 42 1389396 thumbsup --repo PROJ/repo
+
+  # Take it back
+  bb pr comment react 42 1389396 thumbsup --repo PROJ/repo --remove`,
+		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -2370,7 +2431,13 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	commentApplySuggestionCmd := &cobra.Command{
 		Use:   "apply-suggestion <pr-id> <comment-id>",
 		Short: "Apply a suggested change from a comment",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Commit the change a reviewer suggested in a comment
+  bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo
+
+  # With a commit message of your own
+  bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo \
+    --commit-message "Use the shared retry helper"`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -2449,8 +2516,10 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	activityListCmd := &cobra.Command{
 		Use:   "list <pr-id>",
 		Short: "List raw pull request activity items",
-		Long:  "List raw pull request activity items. This output is an explicit exception to the stable versioned API and is intended only for AI ingestion and debugging.",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Everything that happened on a pull request, as Bitbucket records it
+  bb pr activity list 42 --repo PROJ/repo --all`,
+		Long: "List raw pull request activity items. This output is an explicit exception to the stable versioned API and is intended only for AI ingestion and debugging.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -2499,11 +2568,15 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	// spelling a reader arrives with (ADR-050). Built from a constructor rather
 	// than by adding one *cobra.Command to two parents, so each registration
 	// gets its own paging flags and resolves --repo from the tree it sits in.
-	newBuildStatusCmd := func(use string, short string) *cobra.Command {
+	newBuildStatusCmd := func(use string, short string, path string) *cobra.Command {
 		var statusPaging paging.Options
 		cmd := &cobra.Command{
 			Use:   use,
 			Short: short,
+			Example: "  # The builds of a pull request's latest commit\n" +
+				"  " + path + " 42 --repo PROJ/repo\n\n" +
+				"  # Merge only when none failed and none is still running\n" +
+				"  " + path + " 42 --repo PROJ/repo && bb pr merge 42 --repo PROJ/repo",
 			Long: short + `.
 
 Without --json, the exit status reports the builds, as gh pr checks does: 1
@@ -2575,9 +2648,9 @@ state is in the output.`,
 	// Each half names the other (ADR-050): a reader who found one has no way to
 	// learn the other exists, and `bb pr checks` is the spelling a gh user
 	// reaches for.
-	buildCmd.AddCommand(newBuildStatusCmd("status <pr-id>", "Show build statuses for a pull request's source commit (also available as bb pr checks)"))
+	buildCmd.AddCommand(newBuildStatusCmd("status <pr-id>", "Show build statuses for a pull request's source commit (also available as bb pr checks)", "bb pr build status"))
 	prCmd.AddCommand(buildCmd)
-	prCmd.AddCommand(newBuildStatusCmd("checks <pr-id>", "Show build statuses for a pull request's source commit (alias for bb pr build status)"))
+	prCmd.AddCommand(newBuildStatusCmd("checks <pr-id>", "Show build statuses for a pull request's source commit (alias for bb pr build status)", "bb pr checks"))
 
 	autoMergeCmd := &cobra.Command{
 		Use:   "auto-merge",
@@ -2587,7 +2660,9 @@ state is in the output.`,
 	autoMergeGetCmd := &cobra.Command{
 		Use:   "get <pr-id>",
 		Short: "Get auto-merge configuration for a pull request",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Whether a pull request merges on its own, and how
+  bb pr auto-merge get 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -2695,7 +2770,9 @@ state is in the output.`,
 	autoMergeDisableCmd := &cobra.Command{
 		Use:   "disable <pr-id>",
 		Short: "Disable auto-merge on a pull request",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Stop a pull request from merging on its own
+  bb pr auto-merge disable 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -2756,7 +2833,9 @@ state is in the output.`,
 	watchCmd := &cobra.Command{
 		Use:   "watch <pr-id>",
 		Short: "Watch a pull request",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Get notified of changes to a pull request
+  bb pr watch 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -2809,7 +2888,9 @@ state is in the output.`,
 	unwatchCmd := &cobra.Command{
 		Use:   "unwatch <pr-id>",
 		Short: "Unwatch a pull request",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Stop notifications for a pull request
+  bb pr unwatch 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -2861,7 +2942,9 @@ state is in the output.`,
 	rebaseCmd := &cobra.Command{
 		Use:   "rebase <pr-id>",
 		Short: "Rebase a pull request",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Rebase a pull request's branch onto its target
+  bb pr rebase 42 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -2989,6 +3072,8 @@ state is in the output.`,
 	participantsCmd := &cobra.Command{
 		Use:   "participants",
 		Short: "Search pull request participants across a repository",
+		Example: `  # People who took part in the repository's pull requests, by name
+  bb pr participants --search alice --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, apiClient, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -3039,6 +3124,10 @@ state is in the output.`,
 	defaultReviewersCmd := &cobra.Command{
 		Use:   "default-reviewers",
 		Short: "List default reviewers and matching conditions for repository",
+		Example: `  # Who Bitbucket would add as reviewers to a pull request from feature/x into main
+  bb pr default-reviewers --repo PROJ/repo \
+    --source-ref refs/heads/feature/x --target-ref refs/heads/main \
+    --source-repo-id 128 --target-repo-id 128`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -3102,8 +3191,13 @@ func newPullRequestDiffAlias(deps Dependencies, repositorySelector *string) *cob
 	command := &cobra.Command{
 		Use:   "diff <pr-id>",
 		Short: "Diff a pull request (alias for bb diff pr)",
-		Long:  "Diff a pull request.\n\nAlias for bb diff pr, which is where the command reference documents it.",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The diff of a pull request
+  bb pr diff 42 --repo PROJ/repo
+
+  # Only the names of the files it changes
+  bb pr diff 42 --repo PROJ/repo --name-only`,
+		Long: "Diff a pull request.\n\nAlias for bb diff pr, which is where the command reference documents it.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

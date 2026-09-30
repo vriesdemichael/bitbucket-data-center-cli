@@ -107,6 +107,11 @@ bb pr activity list <pr-id> [flags]
 
 List raw pull request activity items. This output is an explicit exception to the stable versioned API and is intended only for AI ingestion and debugging.
 
+```bash
+# Everything that happened on a pull request, as Bitbucket records it
+bb pr activity list 42 --repo PROJ/repo --all
+```
+
 `--all`
 :   Return every result rather than the first --limit
 
@@ -194,6 +199,11 @@ Disable auto-merge on a pull request
 bb pr auto-merge disable <pr-id>
 ```
 
+```bash
+# Stop a pull request from merging on its own
+bb pr auto-merge disable 42 --repo PROJ/repo
+```
+
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
@@ -264,6 +274,11 @@ Get auto-merge configuration for a pull request
 bb pr auto-merge get <pr-id>
 ```
 
+```bash
+# Whether a pull request merges on its own, and how
+bb pr auto-merge get 42 --repo PROJ/repo
+```
+
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
@@ -304,6 +319,14 @@ bb pr build status <pr-id> [flags]
 ```
 
 Without --json, the exit status reports the builds, as gh pr checks does: 1 when one failed, 8 when none failed and one is still in progress or has no result, and 0 otherwise, a cancelled build included. It counts every build, not only the --limit shown. With --json the exit status is 0 and each build's state is in the output.
+
+```bash
+# The builds of a pull request's latest commit
+bb pr build status 42 --repo PROJ/repo
+
+# Merge only when none failed and none is still running
+bb pr build status 42 --repo PROJ/repo && bb pr merge 42 --repo PROJ/repo
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -349,6 +372,17 @@ Same-repository pull requests are checked out from the remote that already point
 
 The fetch uses the credentials bb is already authenticated with, so no git credential setup is needed first. Pushing afterwards is plain git and does need one: run bb auth setup-git once.
 
+```bash
+# Check out a pull request's branch in the current repository
+bb pr checkout 42
+
+# Under a local name of your choice
+bb pr checkout 42 --branch review/42
+
+# Look at its commit without creating a branch
+bb pr checkout 42 --detach
+```
+
 `--branch string`
 :   Local branch name to use (defaults to the pull request source branch)
 
@@ -392,6 +426,14 @@ bb pr checks <pr-id> [flags]
 ```
 
 Without --json, the exit status reports the builds, as gh pr checks does: 1 when one failed, 8 when none failed and one is still in progress or has no result, and 0 otherwise, a cancelled build included. It counts every build, not only the --limit shown. With --json the exit status is 0 and each build's state is in the output.
+
+```bash
+# The builds of a pull request's latest commit
+bb pr checks 42 --repo PROJ/repo
+
+# Merge only when none failed and none is still running
+bb pr checks 42 --repo PROJ/repo && bb pr merge 42 --repo PROJ/repo
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -562,6 +604,15 @@ Apply a suggested change from a comment
 bb pr comment apply-suggestion <pr-id> <comment-id> [flags]
 ```
 
+```bash
+# Commit the change a reviewer suggested in a comment
+bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo
+
+# With a commit message of your own
+bb pr comment apply-suggestion 42 1389396 --repo PROJ/repo \
+  --commit-message "Use the shared retry helper"
+```
+
 `--comment-version int32`
 :   Optional expected version of the comment
 
@@ -603,6 +654,11 @@ bb pr comment get <pr-id> <comment-id>
 ```
 
 Get a single pull request comment by id. This is the authoritative single-comment view and is better suited than list output when you need the full rendered comment payload.
+
+```bash
+# One comment in full, by the id bb pr comment list prints
+bb pr comment get 42 1389396 --repo PROJ/repo
+```
 
 Inherited from [`bb pr`](#bb-pr):
 
@@ -670,6 +726,17 @@ List pull request comment threads. Bitbucket models a task as a blocker comment,
 Without --path this uses the pull request activity timeline to return the aggregate comment view. With --path it uses the path-scoped comments endpoint. With --blocker it lists blocker comments.
 
 Use --unresolved to show only threads still waiting on someone. Use --full to add every comment ungrouped, alongside the thread view rather than in place of it.
+
+```bash
+# Every comment thread and task, unresolved first
+bb pr comment list 42 --repo PROJ/repo
+
+# Only what is still waiting on someone
+bb pr comment list 42 --repo PROJ/repo --unresolved
+
+# The comments on one file, with every reply
+bb pr comment list 42 --repo PROJ/repo --path src/main.go --with-replies
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -802,6 +869,14 @@ Add or remove a reaction on a pull request comment
 bb pr comment react <pr-id> <comment-id> <emoji> [flags]
 ```
 
+```bash
+# Add a thumbs-up to a comment
+bb pr comment react 42 1389396 thumbsup --repo PROJ/repo
+
+# Take it back
+bb pr comment react 42 1389396 thumbsup --repo PROJ/repo --remove
+```
+
 `--remove`
 :   Remove the reaction instead of adding it
 
@@ -833,6 +908,11 @@ Reopen a resolved pull request comment
 
 ```text
 bb pr comment reopen <pr-id> <comment-id>
+```
+
+```bash
+# Reopen a comment that was resolved
+bb pr comment reopen 42 1389396 --repo PROJ/repo
 ```
 
 Inherited from [`bb pr`](#bb-pr):
@@ -896,6 +976,11 @@ Resolve a pull request comment, closing it as a task
 bb pr comment resolve <pr-id> <comment-id>
 ```
 
+```bash
+# Mark a comment or task as dealt with
+bb pr comment resolve 42 1389396 --repo PROJ/repo
+```
+
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
@@ -955,6 +1040,11 @@ List the commits in a pull request
 
 ```text
 bb pr commits <pr-id> [flags]
+```
+
+```bash
+# The commits a pull request would merge
+bb pr commits 42 --repo PROJ/repo
 ```
 
 `--all`
@@ -1021,13 +1111,16 @@ bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My cha
 bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --draft
 
 # Create a pull request and assign explicit reviewers (repeatable or comma-separated)
-bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --reviewers alice,bob
+bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" \
+  --reviewers alice,bob
 
 # Create a pull request with reviewers and reviewer groups
-bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --reviewers alice,@backend-team --reviewer-group qa-team
+bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" \
+  --reviewers alice,@backend-team --reviewer-group qa-team
 
 # Create a pull request without default reviewers or CODEOWNERS
-bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" --no-default-reviewers --no-codeowners
+bb pr create --repo PROJ/repo --from-ref feature/x --to-ref main --title "My change" \
+  --no-default-reviewers --no-codeowners
 ```
 
 `--codeowners`
@@ -1138,6 +1231,14 @@ Aliases: `bb pr close`
 bb pr decline <pr-id> [flags]
 ```
 
+```bash
+# Decline a pull request
+bb pr decline 42 --repo PROJ/repo
+
+# Only if nobody changed it since the version you read
+bb pr decline 42 --repo PROJ/repo --version 3
+```
+
 `--version int`
 :   Expected pull request version; omit to act on whatever version is current
 
@@ -1211,6 +1312,13 @@ List default reviewers and matching conditions for repository
 bb pr default-reviewers [flags]
 ```
 
+```bash
+# Who Bitbucket would add as reviewers to a pull request from feature/x into main
+bb pr default-reviewers --repo PROJ/repo \
+  --source-ref refs/heads/feature/x --target-ref refs/heads/main \
+  --source-repo-id 128 --target-repo-id 128
+```
+
 `--source-ref string`
 :   The ID of the source ref (e.g. refs/heads/feature)
 
@@ -1281,6 +1389,14 @@ Diff a pull request.
 
 Alias for bb diff pr, which is where the command reference documents it.
 
+```bash
+# The diff of a pull request
+bb pr diff 42 --repo PROJ/repo
+
+# Only the names of the files it changes
+bb pr diff 42 --repo PROJ/repo --name-only
+```
+
 `--name-only`
 :   Output only changed file names
 
@@ -1320,6 +1436,11 @@ Aliases: `bb pr changes`
 
 ```text
 bb pr files <pr-id> [flags]
+```
+
+```bash
+# The files a pull request changes
+bb pr files 42 --repo PROJ/repo
 ```
 
 `--all`
@@ -1369,6 +1490,14 @@ bb pr get <pr-id> [flags]
 Get pull request details. The output carries a review summary describing unresolved comment threads, open tasks and reviewers who requested changes, so outstanding feedback is visible without a separate lookup.
 
 The unresolved thread counts come from the activity timeline, which is paged through; pass --no-review-summary to skip it. When the timeline is unavailable the summary falls back to the blocker-comment tally, then to the counters Bitbucket ships with the pull request. reviewSummary.countsSource reports which was used.
+
+```bash
+# A pull request, with what is still outstanding on it
+bb pr get 42 --repo PROJ/repo
+
+# Without counting the unresolved threads, which is quicker
+bb pr get 42 --repo PROJ/repo --no-review-summary
+```
 
 `--no-review-summary`
 :   Skip the paged activity timeline walk; the summary still carries the open task tally, which costs one request
@@ -1466,6 +1595,11 @@ List Jira issues associated with a pull request
 bb pr jira <pr-id>
 ```
 
+```bash
+# The Jira issues a pull request refers to
+bb pr jira 42 --repo PROJ/repo
+```
+
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
@@ -1497,6 +1631,17 @@ bb pr list [flags]
 ```
 
 List pull requests. Each entry carries the open task and comment counters Bitbucket reports with the pull request, so pull requests with outstanding feedback stand out. Pass --with-review-status to additionally resolve unresolved comment threads per pull request. That walks each pull request activity timeline, so it is markedly slower on a long listing.
+
+```bash
+# The open pull requests of a repository
+bb pr list --repo PROJ/repo
+
+# Merged into main
+bb pr list --repo PROJ/repo --state merged --target-branch main
+
+# Open ones, with the unresolved threads of each counted
+bb pr list --repo PROJ/repo --with-review-status
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -1617,6 +1762,14 @@ Merge a pull request
 bb pr merge <pr-id> [flags]
 ```
 
+```bash
+# Merge with the repository's default strategy
+bb pr merge 42 --repo PROJ/repo
+
+# Squash, and only if nobody changed it since the version you read
+bb pr merge 42 --repo PROJ/repo --strategy squash --version 3
+```
+
 `--strategy string`
 :   How to merge; omit for the repository's default. Bitbucket refuses one the repository has not enabled (one of: no-ff, ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only)
 
@@ -1693,6 +1846,11 @@ Show the common ancestor commit of a pull request's source and target branches
 bb pr merge-base <pr-id>
 ```
 
+```bash
+# The commit a pull request's branches last had in common
+bb pr merge-base 42 --repo PROJ/repo
+```
+
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
@@ -1733,6 +1891,11 @@ Search pull request participants across a repository
 
 ```text
 bb pr participants [flags]
+```
+
+```bash
+# People who took part in the repository's pull requests, by name
+bb pr participants --search alice --repo PROJ/repo
 ```
 
 `--search string`
@@ -1859,6 +2022,11 @@ Rebase a pull request
 bb pr rebase <pr-id> [flags]
 ```
 
+```bash
+# Rebase a pull request's branch onto its target
+bb pr rebase 42 --repo PROJ/repo
+```
+
 `--version int`
 :   Expected pull request version
 
@@ -1892,6 +2060,11 @@ Reopen a pull request
 
 ```text
 bb pr reopen <pr-id> [flags]
+```
+
+```bash
+# Reopen a declined pull request
+bb pr reopen 42 --repo PROJ/repo
 ```
 
 `--version int`
@@ -1997,6 +2170,11 @@ bb pr review approve <pr-id>
 
 Shorthand for `bb pr review set <pr-id> APPROVED`. A participant holds one status, so approving replaces a request for changes rather than joining it.
 
+```bash
+# Approve a pull request
+bb pr review approve 42 --repo PROJ/repo
+```
+
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
@@ -2073,10 +2251,10 @@ Bitbucket completes only a review that was started, so this needs at least one d
 
 ```bash
 # Publish your draft comments
-bb pr review complete 42
+bb pr review complete 42 --repo PROJ/repo
 
 # Publish them with a request for changes and a summary comment
-bb pr review complete 42 --status NEEDS_WORK --comment "Unit tests fail"
+bb pr review complete 42 --repo PROJ/repo --status NEEDS_WORK --comment "Unit tests fail"
 ```
 
 `--comment string`
@@ -2113,6 +2291,11 @@ Discard all draft comments and cancel review
 bb pr review discard <pr-id>
 ```
 
+```bash
+# Throw away the draft comments of a review you have not published
+bb pr review discard 42 --repo PROJ/repo
+```
+
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
@@ -2139,6 +2322,11 @@ Retrieve current draft review details
 
 ```text
 bb pr review get <pr-id>
+```
+
+```bash
+# The draft comments of a review you have not published yet
+bb pr review get 42 --repo PROJ/repo
 ```
 
 Inherited from [`bb pr`](#bb-pr):
@@ -2312,6 +2500,11 @@ Remove a reviewer
 bb pr review reviewer remove <pr-id> [flags]
 ```
 
+```bash
+# Take someone off a pull request's reviewers
+bb pr review reviewer remove 42 --user alice --repo PROJ/repo --yes
+```
+
 `--user string`
 :   Reviewer username
 
@@ -2394,13 +2587,13 @@ A participant holds exactly one status. APPROVED and NEEDS\_WORK are mutually ex
 
 ```bash
 # Request changes
-bb pr review set 42 NEEDS_WORK
+bb pr review set 42 NEEDS_WORK --repo PROJ/repo
 
 # Approve
-bb pr review set 42 APPROVED
+bb pr review set 42 APPROVED --repo PROJ/repo
 
 # Withdraw whichever status you hold
-bb pr review set 42 UNAPPROVED
+bb pr review set 42 UNAPPROVED --repo PROJ/repo
 ```
 
 Inherited from [`bb pr`](#bb-pr):
@@ -2475,6 +2668,11 @@ bb pr review unapprove <pr-id>
 
 Shorthand for `bb pr review set <pr-id> UNAPPROVED`, and it does more than the name suggests: a participant holds one status, so this clears a request for changes as readily as an approval. There is no separate verb for withdrawing NEEDS\_WORK.
 
+```bash
+# Withdraw your approval, or your request for changes
+bb pr review unapprove 42 --repo PROJ/repo
+```
+
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
@@ -2548,6 +2746,11 @@ bb pr status [flags]
 Show pull requests waiting on you, in three sections: the pull requests for the current branch, the ones you opened, and the ones asking for your review.
 
 The last two are cross-repository and need no repository context. The current-branch section needs a git checkout with a Bitbucket remote, and is reported as unavailable rather than as an error when there is not one.
+
+```bash
+# The pull requests of the current branch, the ones you opened and the ones waiting on your review
+bb pr status
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -2718,6 +2921,11 @@ Unwatch a pull request
 bb pr unwatch <pr-id>
 ```
 
+```bash
+# Stop notifications for a pull request
+bb pr unwatch 42 --repo PROJ/repo
+```
+
 Inherited from [`bb pr`](#bb-pr):
 
 `--repo string`
@@ -2848,6 +3056,11 @@ Watch a pull request
 
 ```text
 bb pr watch <pr-id>
+```
+
+```bash
+# Get notified of changes to a pull request
+bb pr watch 42 --repo PROJ/repo
 ```
 
 Inherited from [`bb pr`](#bb-pr):

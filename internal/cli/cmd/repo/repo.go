@@ -131,6 +131,11 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repositories",
+		Example: `  # The repositories you can see
+  bb repo list
+
+  # Every repository of one project
+  bb repo list --project PROJ --all`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := d.LoadConfig()
 			if err != nil {
@@ -203,5 +208,5 @@ func New(deps Dependencies) *cobra.Command {
 }
 
 func NewClone(deps Dependencies) *cobra.Command {
-	return newCloneCommand(deps.withDefaults())
+	return newCloneCommand(deps.withDefaults(), "bb clone")
 }

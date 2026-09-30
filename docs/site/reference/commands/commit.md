@@ -37,6 +37,11 @@ bb commit compare feature/x main        # commits feature/x adds
 bb commit compare <failing> <green>     # commits since the last green build
 ```
 
+```bash
+# The commits feature/x adds to main
+bb commit compare feature/x main --repo PROJ/repo
+```
+
 `--all`
 :   Return every result rather than the first --limit
 
@@ -87,6 +92,11 @@ Get a specific commit
 bb commit get <commit>
 ```
 
+```bash
+# One commit: author, message and parents
+bb commit get a1b2c3d --repo PROJ/repo
+```
+
 Inherited from [`bb commit`](#bb-commit):
 
 `--repo string`
@@ -129,6 +139,14 @@ List repository commits
 
 ```text
 bb commit list [flags]
+```
+
+```bash
+# The latest commits
+bb commit list --repo PROJ/repo
+
+# The ones that touched a file
+bb commit list --repo PROJ/repo --path src/main.go --limit 10
 ```
 
 `--all`
@@ -185,6 +203,11 @@ List pull requests containing a commit
 
 ```text
 bb commit prs <commit>
+```
+
+```bash
+# The pull requests a commit is part of
+bb commit prs a1b2c3d --repo PROJ/repo
 ```
 
 Inherited from [`bb commit`](#bb-commit):

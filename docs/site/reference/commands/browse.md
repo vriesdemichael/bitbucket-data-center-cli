@@ -12,6 +12,18 @@ Open repository pages in a web browser
 bb browse [<number> | <path> | <commit-sha>] [flags]
 ```
 
+```bash
+# Open the repository of the current checkout
+bb browse
+
+# A pull request, or a file on the current branch
+bb browse 42
+bb browse src/main.go
+
+# Print the URL instead of opening it
+bb browse 42 --repo PROJ/repo --no-browser
+```
+
 `--blame`
 :   Open blame view for a file
 

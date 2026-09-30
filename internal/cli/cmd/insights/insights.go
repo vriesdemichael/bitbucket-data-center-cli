@@ -113,7 +113,10 @@ func New(deps Dependencies) *cobra.Command {
 	setReportCmd := &cobra.Command{
 		Use:   "set <commit> <report-key>",
 		Short: "Create or update a Code Insights report",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Publish a report on a commit, or replace it
+  bb insights report set a1b2c3d lint --repo PROJ/repo \
+    --body '{"title":"Lint","result":"PASS","details":"412 files checked"}'`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
@@ -167,7 +170,9 @@ func New(deps Dependencies) *cobra.Command {
 	reportCmd.AddCommand(&cobra.Command{
 		Use:   "get <commit> <report-key>",
 		Short: "Get a Code Insights report",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # One report on a commit
+  bb insights report get a1b2c3d lint --repo PROJ/repo`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, _, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
@@ -186,7 +191,9 @@ func New(deps Dependencies) *cobra.Command {
 	reportCmd.AddCommand(&cobra.Command{
 		Use:   "delete <commit> <report-key>",
 		Short: "Delete a Code Insights report",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Remove a report and its findings from a commit
+  bb insights report delete a1b2c3d lint --repo PROJ/repo --yes`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
@@ -238,7 +245,9 @@ func New(deps Dependencies) *cobra.Command {
 	listReportsCmd := &cobra.Command{
 		Use:   "list <commit>",
 		Short: "List Code Insights reports for a commit",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Every report on a commit
+  bb insights report list a1b2c3d --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, _, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
@@ -285,7 +294,10 @@ func New(deps Dependencies) *cobra.Command {
 	addAnnotationCmd := &cobra.Command{
 		Use:   "add <commit> <report-key>",
 		Short: "Add annotations to a Code Insights report",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Attach a finding to a report; the body is a list, so it takes several
+  bb insights annotation add a1b2c3d lint --repo PROJ/repo --body \
+    '[{"externalId":"lint-1","message":"Unused import","severity":"LOW","path":"src/main.go","line":3}]'`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
@@ -331,7 +343,12 @@ func New(deps Dependencies) *cobra.Command {
 	listAnnotationsCmd := &cobra.Command{
 		Use:   "list <commit> [report-key]",
 		Short: "List annotations for a Code Insights report or commit",
-		Args:  cobra.RangeArgs(1, 2),
+		Example: `  # The findings of one report
+  bb insights annotation list a1b2c3d lint --repo PROJ/repo
+
+  # Of every report on the commit
+  bb insights annotation list a1b2c3d --repo PROJ/repo`,
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, _, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
@@ -383,7 +400,11 @@ func New(deps Dependencies) *cobra.Command {
 	setAnnotationCmd := &cobra.Command{
 		Use:   "set <commit> <report-key> <external-id>",
 		Short: "Create or replace a Code Insights report annotation",
-		Args:  cobra.ExactArgs(3),
+		Example: `  # Report one finding, or replace it
+  bb insights annotation set a1b2c3d lint lint-2 --repo PROJ/repo \
+    --message "SQL built from input" --severity HIGH --type VULNERABILITY \
+    --path src/db.go --line 41`,
+		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
@@ -469,7 +490,9 @@ func New(deps Dependencies) *cobra.Command {
 	deleteAnnotationCmd := &cobra.Command{
 		Use:   "delete <commit> <report-key>",
 		Short: "Delete annotation(s) by external id for a report",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Remove one finding, by the id it was reported with
+  bb insights annotation delete a1b2c3d lint --external-id lint-1 --repo PROJ/repo --yes`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {

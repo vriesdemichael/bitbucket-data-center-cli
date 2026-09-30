@@ -118,6 +118,11 @@ func New(deps Dependencies) *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:   "status",
 		Short: "Show the configured target and verify it works",
+		Example: `  # Show the host, how the credential is stored and whether it still works
+  bb auth status
+
+  # In CI: exit non-zero when a check fails
+  bb auth status --check`,
 		Long: `Show the configured target and verify it works.
 
 Reports the resolved host, how the credential is stored, whether that credential
@@ -229,6 +234,16 @@ for.`,
 	loginCmd := &cobra.Command{
 		Use:   "login <host>",
 		Short: "Store credentials for a Bitbucket host",
+		Example: `  # Store a personal access token, read from stdin
+  printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+
+  # A username and password instead of a token
+  printf '%s' "$BITBUCKET_PASSWORD" | bb auth login https://bitbucket.example.com \
+    --username alice --password-stdin
+
+  # Fail rather than store the credential in plaintext when there is no keyring
+  printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com \
+    --token-stdin --require-keyring`,
 		Long: `Store credentials for a Bitbucket host.
 
 Prefer the stdin forms. A secret passed as a flag value appears in the process
@@ -340,6 +355,11 @@ to fail instead of falling back.`,
 		Use:     "identity",
 		Aliases: []string{"whoami"},
 		Short:   "Show authenticated user identity",
+		Example: `  # Who the stored credential authenticates as
+  bb auth identity
+
+  # On a host other than the default
+  bb auth identity --host https://bitbucket.example.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.loadWith(identityHost)
 			if err != nil {
@@ -366,6 +386,8 @@ to fail instead of falling back.`,
 	tokenCmd := &cobra.Command{
 		Use:   "token-url",
 		Short: "Show personal access token creation URL",
+		Example: `  # Where to create a personal access token on a host
+  bb auth token-url --host https://bitbucket.example.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// The configuration is resolved for the host --host names, as
 			// identity's is. Loaded without it, the command failed before any
@@ -412,6 +434,11 @@ to fail instead of falling back.`,
 	logoutCmd := &cobra.Command{
 		Use:   "logout",
 		Short: "Remove stored credentials for a Bitbucket host",
+		Example: `  # Remove the credentials of the default host
+  bb auth logout
+
+  # Of a named host
+  bb auth logout --host https://bitbucket.example.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := config.Logout(logoutHost); err != nil {
 				return err
@@ -436,6 +463,8 @@ to fail instead of falling back.`,
 	serverListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List stored server contexts",
+		Example: `  # Every host bb holds credentials for
+  bb auth server list`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			contexts, err := config.ListServerContexts()
 			if err != nil {
@@ -474,7 +503,9 @@ to fail instead of falling back.`,
 	serverUseCmd := &cobra.Command{
 		Use:   "use [host]",
 		Short: "Set the active default server context",
-		Args:  cobra.MaximumNArgs(1),
+		Example: `  # Make a stored host the default
+  bb auth server use https://bitbucket.example.com`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if strings.TrimSpace(serverUseHost) == "" && len(args) > 0 {
 				serverUseHost = args[0]
@@ -505,6 +536,8 @@ to fail instead of falling back.`,
 	aliasListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List aliases for a stored server context",
+		Example: `  # The aliases stored for a host
+  bb auth alias list --host https://bitbucket.example.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			aliases, host, err := config.ListHostAliases(aliasHost)
 			if err != nil {
@@ -533,7 +566,9 @@ to fail instead of falling back.`,
 	aliasAddCmd := &cobra.Command{
 		Use:   "add <alias> [alias...]",
 		Short: "Add aliases to a stored server context",
-		Args:  cobra.MinimumNArgs(1),
+		Example: `  # Teach bb that the SSH clone host belongs to this Bitbucket
+  bb auth alias add git.example.com:7999 --host https://bitbucket.example.com`,
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			aliases, host, err := config.AddHostAliases(aliasAddHost, args)
 			if err != nil {
@@ -553,7 +588,9 @@ to fail instead of falling back.`,
 	aliasRemoveCmd := &cobra.Command{
 		Use:   "remove <alias>",
 		Short: "Remove an alias from a stored server context",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Remove one alias
+  bb auth alias remove git.example.com:7999 --host https://bitbucket.example.com`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			aliases, host, err := config.RemoveHostAlias(aliasRemoveHost, args[0])
 			if err != nil {
@@ -578,6 +615,11 @@ to fail instead of falling back.`,
 	aliasDiscoverCmd := &cobra.Command{
 		Use:   "discover",
 		Short: "Discover aliases from the first accessible repository clone links",
+		Example: `  # Add the aliases found in a repository's clone links
+  bb auth alias discover --host https://bitbucket.example.com
+
+  # Store only what was discovered, dropping any added by hand
+  bb auth alias discover --host https://bitbucket.example.com --replace`,
 		Long: "Discover aliases from the first accessible repository clone links.\n\n" +
 			"Discovered aliases are added to the ones already stored. Aliases added by hand are " +
 			"kept, because discovery cannot find every alias -- an instance whose SSH clone host " +

@@ -30,6 +30,14 @@ Create repository tag
 bb tag create <name> [flags]
 ```
 
+```bash
+# Tag the tip of main
+bb tag create v1.2.0 --start-point main --repo PROJ/repo
+
+# An annotated tag on a commit
+bb tag create v1.2.0 --start-point a1b2c3d --message "Release 1.2.0" --repo PROJ/repo
+```
+
 `--message string`
 :   Optional annotated tag message
 
@@ -68,6 +76,11 @@ Delete repository tag
 bb tag delete <tag> [flags]
 ```
 
+```bash
+# Delete a tag without being asked
+bb tag delete v1.2.0 --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -97,6 +110,14 @@ List repository tags
 
 ```text
 bb tag list [flags]
+```
+
+```bash
+# The first 25 tags
+bb tag list --repo PROJ/repo
+
+# The 1.x releases, most recently changed first
+bb tag list --repo PROJ/repo --filter v1. --order-by MODIFICATION
 ```
 
 `--all`
@@ -141,6 +162,11 @@ View repository tag
 
 ```text
 bb tag view <tag>
+```
+
+```bash
+# The commit a tag points at
+bb tag view v1.2.0 --repo PROJ/repo
 ```
 
 Inherited from [`bb tag`](#bb-tag):

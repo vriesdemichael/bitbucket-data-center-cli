@@ -83,6 +83,11 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List comments",
+		Example: `  # The comments on one file of a commit
+  bb repo comment list --commit a1b2c3d --path src/main.go --repo PROJ/repo
+
+  # Of a pull request
+  bb repo comment list --pr 42 --path src/main.go --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -144,6 +149,12 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a comment",
+		Example: `  # Comment on a line of a file in a commit
+  bb repo comment create --commit a1b2c3d --repo PROJ/repo \
+    --path src/main.go --line 41 --text "This swallows the error."
+
+  # Reply to a comment on a pull request
+  bb repo comment create --pr 42 --repo PROJ/repo --parent 1389396 --text "Fixed."`,
 		Long: "Create a comment on a commit or a pull request.\n\n" +
 			"Pass --parent to reply to an existing comment rather than start a new thread. " +
 			"The id to pass is the one `bb repo comment list` reports; a reply carries reply and " +
@@ -206,6 +217,8 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update a comment",
+		Example: `  # Reword a comment on a pull request
+  bb repo comment update --pr 42 --id 1389396 --repo PROJ/repo --text "Fixed in a1b2c3d."`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -288,6 +301,8 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete a comment",
+		Example: `  # Delete a comment on a commit
+  bb repo comment delete --commit a1b2c3d --id 1389396 --repo PROJ/repo --yes`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

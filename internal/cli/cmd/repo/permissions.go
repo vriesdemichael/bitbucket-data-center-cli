@@ -343,26 +343,39 @@ func newRepoPermissionSubjectCommand(deps Dependencies, repositorySelector *stri
 	}
 
 	shallow := "bb repo permissions"
+	deep := fmt.Sprintf("bb repo settings security permissions %ss", subject.noun)
 
 	listCommand := newRepoPermissionListCommand(deps, repositorySelector, resolver)
 	listCommand.Short = fmt.Sprintf("List %ss with repository permissions", subject.noun)
 	listCommand.Long = fmt.Sprintf("List %ss with repository permissions.\n\n%s", subject.noun, alsoAvailableAs(shallow+" list", subject.noun))
+	listCommand.Example = fmt.Sprintf("  # The %ss with a permission on a repository\n  %s list --repo PROJ/repo", subject.noun, deep)
 
 	grantCommand := newRepoPermissionGrantCommand(deps, repositorySelector, resolver)
 	grantCommand.Use = fmt.Sprintf("grant <%s> <permission>", subject.argPlaceholder())
 	grantCommand.Short = fmt.Sprintf("Grant a repository permission to a %s", subject.noun)
 	grantCommand.Long = fmt.Sprintf("Grant a repository permission to a %s.\n\n%s", subject.noun, alsoAvailableAs(shallow+" grant", subject.noun))
+	grantCommand.Example = fmt.Sprintf("  # Let a %s push to a repository\n  %s grant %s REPO_WRITE --repo PROJ/repo", subject.noun, deep, subject.exampleName())
 
 	revokeCommand := newRepoPermissionRevokeCommand(deps, repositorySelector, resolver)
 	revokeCommand.Use = fmt.Sprintf("revoke <%s>", subject.argPlaceholder())
 	revokeCommand.Short = fmt.Sprintf("Revoke a repository permission from a %s", subject.noun)
 	revokeCommand.Long = fmt.Sprintf("Revoke a repository permission from a %s.\n\n%s", subject.noun, alsoAvailableAs(shallow+" revoke", subject.noun))
+	revokeCommand.Example = fmt.Sprintf("  # Take a %s's permission on a repository away\n  %s revoke %s --repo PROJ/repo --yes", subject.noun, deep, subject.exampleName())
 
 	group.AddCommand(listCommand)
 	group.AddCommand(grantCommand)
 	group.AddCommand(revokeCommand)
 
 	return group
+}
+
+// exampleName is the name a command's examples give the subject.
+func (subject permissionSubject) exampleName() string {
+	if subject.noun == "user" {
+		return "alice"
+	}
+
+	return "backend-team"
 }
 
 func (subject permissionSubject) argPlaceholder() string {
@@ -401,6 +414,11 @@ func addRepoPermissionAliases(parent *cobra.Command, deps Dependencies, reposito
 	listCommand.Short = "List users or groups with repository permissions"
 	listCommand.Long = "List users with repository permissions, or groups with --group.\n\n" +
 		"Shallow alias for bb repo settings security permissions {users,groups} list."
+	listCommand.Example = `  # The users with a permission on a repository
+  bb repo permissions list --repo PROJ/repo
+
+  # The groups
+  bb repo permissions list --group --repo PROJ/repo`
 	listCommand.Flags().BoolVar(&listGroups, "group", false, "List groups instead of users")
 
 	grantCommand := newRepoPermissionGrantCommand(deps, repositorySelector, subjectFrom(&grantGroup))
@@ -408,6 +426,11 @@ func addRepoPermissionAliases(parent *cobra.Command, deps Dependencies, reposito
 	grantCommand.Short = "Grant a repository permission to a user or group"
 	grantCommand.Long = "Grant a repository permission to a user, or to a group with --group.\n\n" +
 		"Shallow alias for bb repo settings security permissions {users,groups} grant."
+	grantCommand.Example = `  # Let a user push to a repository
+  bb repo permissions grant alice REPO_WRITE --repo PROJ/repo
+
+  # A group instead
+  bb repo permissions grant backend-team REPO_WRITE --group --repo PROJ/repo`
 	grantCommand.Flags().BoolVar(&grantGroup, "group", false, "Treat the argument as a group rather than a user")
 
 	revokeCommand := newRepoPermissionRevokeCommand(deps, repositorySelector, subjectFrom(&revokeGroup))
@@ -415,6 +438,11 @@ func addRepoPermissionAliases(parent *cobra.Command, deps Dependencies, reposito
 	revokeCommand.Short = "Revoke a repository permission from a user or group"
 	revokeCommand.Long = "Revoke a repository permission from a user, or from a group with --group.\n\n" +
 		"Shallow alias for bb repo settings security permissions {users,groups} revoke."
+	revokeCommand.Example = `  # Take a user's permission on a repository away
+  bb repo permissions revoke alice --repo PROJ/repo --yes
+
+  # A group's
+  bb repo permissions revoke backend-team --group --repo PROJ/repo --yes`
 	revokeCommand.Flags().BoolVar(&revokeGroup, "group", false, "Treat the argument as a group rather than a user")
 
 	parent.AddCommand(listCommand)
@@ -434,6 +462,8 @@ func newRepoPermissionsCommand(deps Dependencies) *cobra.Command {
 	showCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show the caller's effective permissions on a repository",
+		Example: `  # What you yourself may do in a repository
+  bb repo permissions show --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

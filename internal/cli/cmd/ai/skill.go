@@ -160,6 +160,11 @@ func newSkillShowCommand(deps Dependencies) *cobra.Command {
 	return &cobra.Command{
 		Use:   "show [skill]",
 		Short: "Print an agent skill to stdout",
+		Example: `  # Print the skill that matches this bb
+  bb ai skill show
+
+  # Save it for an agent that reads a path of its own
+  bb ai skill show > .agents/skills/bb/SKILL.md`,
 		Long: `Print an agent skill to stdout (defaults to "bb").
 
 The skill is embedded in this binary at compile time, so it works with no
@@ -204,6 +209,11 @@ func newSkillInstallCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install [skill]",
 		Short: "Write an agent skill to the agent skills directories",
+		Example: `  # Install the bb skill for this project
+  bb ai skill install
+
+  # Install it for every project of yours
+  bb ai skill install --global`,
 		Long: `Write an agent skill file (defaults to "bb") where coding agents read
 it: .agents/skills, which most agents read, and .claude/skills, which Claude
 Code reads instead.
@@ -273,7 +283,12 @@ func newSkillRemoveCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "remove [skill]",
 		Short: "Remove an installed agent skill file",
-		Args:  cobra.MaximumNArgs(1),
+		Example: `  # Remove the bb skill from this project
+  bb ai skill remove
+
+  # Remove it from every project of yours, without being asked
+  bb ai skill remove --global --yes`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			skillName := ""
 			if len(args) > 0 {

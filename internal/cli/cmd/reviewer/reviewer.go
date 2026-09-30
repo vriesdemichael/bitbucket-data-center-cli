@@ -98,6 +98,11 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List default reviewer conditions",
+		Example: `  # A repository's conditions, and those it inherits from its project
+  bb reviewer condition list --repo PROJ/repo
+
+  # A project's
+  bb reviewer condition list --project PROJ`,
 		Long: `List the default reviewer conditions of a project, or with --repo of a
 repository: its own, and those it inherits from its project, which are marked
 as inherited.`,
@@ -148,6 +153,8 @@ as inherited.`,
 	deleteCmd := &cobra.Command{
 		Use:   "delete <condition-id>",
 		Short: "Delete a default reviewer condition",
+		Example: `  # By the id bb reviewer condition list prints
+  bb reviewer condition delete 9 --repo PROJ/repo --yes`,
 		Long: `Delete a default reviewer condition of a project, or with --repo of a
 repository.
 
@@ -266,8 +273,14 @@ the project. --project deletes it there.`,
 	createCmd := &cobra.Command{
 		Use:   "create [json-config]",
 		Short: "Create a default reviewer condition",
-		Long:  "Create a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)",
-		Args:  cobra.MaximumNArgs(1),
+		Example: `  # One approval from a named user on every pull request into main
+  bb reviewer condition create --repo PROJ/repo \
+    '{"sourceMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},"targetMatcher":{"id":"refs/heads/main","type":{"id":"BRANCH"}},"reviewers":[{"id":101}],"requiredApprovals":1}'
+
+  # The same for a whole project, from a file
+  bb reviewer condition create --project PROJ --config-file condition.json`,
+		Long: "Create a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)",
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -395,6 +408,8 @@ the project. --project deletes it there.`,
 	updateCmd := &cobra.Command{
 		Use:   "update <condition-id> [json-config]",
 		Short: "Update a default reviewer condition",
+		Example: `  # Replace a condition with the one in a file
+  bb reviewer condition update 9 --repo PROJ/repo --config-file condition.json`,
 		Long: `Update a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)
 
 With --repo, a condition the repository inherits from its project is refused;

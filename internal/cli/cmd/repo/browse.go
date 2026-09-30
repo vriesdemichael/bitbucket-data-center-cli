@@ -29,7 +29,12 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 	treeCmd := &cobra.Command{
 		Use:   "tree [path]",
 		Short: "List repository files in a directory",
-		Args:  cobra.MaximumNArgs(1),
+		Example: `  # The files at the top of a repository
+  bb repo browse tree --repo PROJ/repo
+
+  # In a directory, at a tag
+  bb repo browse tree src --repo PROJ/repo --at v1.2.0`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -82,8 +87,10 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 	rawCmd := &cobra.Command{
 		Use:   "raw <path>",
 		Short: "Get raw file content",
-		Long:  rawFileHelp("Get raw file content."),
-		Args:  cobra.ExactArgs(1),
+		Example: `  # A file's bytes, saved locally
+  bb repo browse raw docs/logo.png --repo PROJ/repo > logo.png`,
+		Long: rawFileHelp("Get raw file content."),
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -112,7 +119,9 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 	fileCmd := &cobra.Command{
 		Use:   "file <path>",
 		Short: "Get structured file content",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # A file's content line by line, on a branch of your choice
+  bb repo browse file src/main.go --repo PROJ/repo --at feature/x`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -169,7 +178,9 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 	blameCmd := &cobra.Command{
 		Use:   "blame <path>",
 		Short: "Get file blame",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Who last changed each line of a file
+  bb repo browse blame src/main.go --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -230,7 +241,9 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 	historyCmd := &cobra.Command{
 		Use:   "history <path>",
 		Short: "List commit history for a file",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The commits that changed a file
+  bb repo browse history src/main.go --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

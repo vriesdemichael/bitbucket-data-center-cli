@@ -73,6 +73,8 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List personal SSH keys",
+		Example: `  # Your SSH keys
+  bb ssh-key list`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -112,7 +114,9 @@ func New(deps Dependencies) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <key-file-or-text>",
 		Short: "Add a personal SSH key",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Add your public key
+  bb ssh-key add ~/.ssh/id_ed25519.pub --label "Work laptop"`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -146,7 +150,9 @@ func New(deps Dependencies) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove <ssh-key-id>",
 		Short: "Remove a personal SSH key by ID",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # By the id bb ssh-key list prints
+  bb ssh-key remove 31 --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {

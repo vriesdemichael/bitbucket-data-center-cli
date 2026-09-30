@@ -82,6 +82,11 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List HTTP access tokens",
+		Example: `  # Your own tokens
+  bb auth token list
+
+  # The tokens of a project
+  bb auth token list --project PROJ`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -138,7 +143,12 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get <token-id>",
 		Short: "Get an HTTP access token by ID",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # One of your own tokens, by the id bb auth token list prints
+  bb auth token get 1827364510
+
+  # A repository's token
+  bb auth token get 1827364510 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -190,7 +200,15 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create [name]",
 		Short: "Create an HTTP access token",
-		Args:  cobra.MaximumNArgs(1),
+		Example: `  # A token of your own that expires in 90 days
+  bb auth token create "CI token" --permission REPO_READ --expiry-days 90
+
+  # A token for one project
+  bb auth token create "Release bot" --project PROJ --permission PROJECT_WRITE
+
+  # A token for one repository
+  bb auth token create "Deploy" --repo PROJ/repo --permission REPO_READ`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := createName
 			if len(args) > 0 {
@@ -249,7 +267,12 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update <token-id>",
 		Short: "Update an HTTP access token name or permissions",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Rename a token
+  bb auth token update 1827364510 --name "CI token (read-only)"
+
+  # Replace the permissions of a project's token
+  bb auth token update 1827364510 --project PROJ --permission PROJECT_READ`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {
@@ -286,7 +309,9 @@ func newTokenCommand(deps Dependencies) *cobra.Command {
 	revokeCmd := &cobra.Command{
 		Use:   "revoke <token-id>",
 		Short: "Revoke an HTTP access token by ID",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Revoke one of your own tokens
+  bb auth token revoke 1827364510 --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
 			if err != nil {

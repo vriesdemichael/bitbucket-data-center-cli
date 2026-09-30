@@ -40,6 +40,12 @@ Add annotations to a Code Insights report
 bb insights annotation add <commit> <report-key> [flags]
 ```
 
+```bash
+# Attach a finding to a report; the body is a list, so it takes several
+bb insights annotation add a1b2c3d lint --repo PROJ/repo --body \
+  '[{"externalId":"lint-1","message":"Unused import","severity":"LOW","path":"src/main.go","line":3}]'
+```
+
 `--body string`
 :   Raw JSON array payload for annotations
 
@@ -65,6 +71,11 @@ Delete annotation(s) by external id for a report
 
 ```text
 bb insights annotation delete <commit> <report-key> [flags]
+```
+
+```bash
+# Remove one finding, by the id it was reported with
+bb insights annotation delete a1b2c3d lint --external-id lint-1 --repo PROJ/repo --yes
 ```
 
 `--external-id string`
@@ -95,6 +106,14 @@ List annotations for a Code Insights report or commit
 
 ```text
 bb insights annotation list <commit> [report-key] [flags]
+```
+
+```bash
+# The findings of one report
+bb insights annotation list a1b2c3d lint --repo PROJ/repo
+
+# Of every report on the commit
+bb insights annotation list a1b2c3d --repo PROJ/repo
 ```
 
 `--all`
@@ -132,6 +151,13 @@ Create or replace a Code Insights report annotation
 
 ```text
 bb insights annotation set <commit> <report-key> <external-id> [flags]
+```
+
+```bash
+# Report one finding, or replace it
+bb insights annotation set a1b2c3d lint lint-2 --repo PROJ/repo \
+  --message "SQL built from input" --severity HIGH --type VULNERABILITY \
+  --path src/db.go --line 41
 ```
 
 `--line int32`
@@ -199,6 +225,11 @@ Delete a Code Insights report
 bb insights report delete <commit> <report-key> [flags]
 ```
 
+```bash
+# Remove a report and its findings from a commit
+bb insights report delete a1b2c3d lint --repo PROJ/repo --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -225,6 +256,11 @@ Get a Code Insights report
 
 ```text
 bb insights report get <commit> <report-key>
+```
+
+```bash
+# One report on a commit
+bb insights report get a1b2c3d lint --repo PROJ/repo
 ```
 
 Inherited from [`bb insights`](#bb-insights):
@@ -260,6 +296,11 @@ List Code Insights reports for a commit
 
 ```text
 bb insights report list <commit> [flags]
+```
+
+```bash
+# Every report on a commit
+bb insights report list a1b2c3d --repo PROJ/repo
 ```
 
 `--all`
@@ -301,6 +342,12 @@ Create or update a Code Insights report
 
 ```text
 bb insights report set <commit> <report-key> [flags]
+```
+
+```bash
+# Publish a report on a commit, or replace it
+bb insights report set a1b2c3d lint --repo PROJ/repo \
+  --body '{"title":"Lint","result":"PASS","details":"412 files checked"}'
 ```
 
 `--body string`

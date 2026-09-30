@@ -91,7 +91,9 @@ func New(deps Dependencies) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get <webhook-id>",
 		Short: "Get a repository webhook by ID",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # One webhook, with its secret redacted
+  bb webhook get 12 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -135,7 +137,15 @@ func New(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update <webhook-id>",
 		Short: "Update a repository webhook",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Point a webhook at a new endpoint
+  bb webhook update 12 --repo PROJ/repo --url https://ci.example.com/hooks/new
+
+  # Switch it off without deleting it
+  bb webhook update 12 --repo PROJ/repo --active false
+
+  # Remove its shared secret
+  bb webhook update 12 --repo PROJ/repo --no-secret`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -212,7 +222,12 @@ func New(deps Dependencies) *cobra.Command {
 	testCmd := &cobra.Command{
 		Use:   "test <webhook-id>",
 		Short: "Test connection to repository webhook URL by sending a ping event",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Send a test ping to a webhook's endpoint
+  bb webhook test 12 --repo PROJ/repo
+
+  # To another URL, before pointing the webhook at it
+  bb webhook test 12 --repo PROJ/repo --url https://ci.example.com/hooks/new`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -266,7 +281,12 @@ func New(deps Dependencies) *cobra.Command {
 	statsCmd := &cobra.Command{
 		Use:   "stats <webhook-id>",
 		Short: "Get repository webhook statistics",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The delivery statistics of a webhook
+  bb webhook stats 12 --repo PROJ/repo
+
+  # The summary only
+  bb webhook stats 12 --repo PROJ/repo --summary`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -307,6 +327,8 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository webhooks",
+		Example: `  # A repository's webhooks
+  bb webhook list --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -366,7 +388,14 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create <name> <url>",
 		Short: "Create a repository webhook",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Call an endpoint when anything is pushed to the repository
+  bb webhook create ci https://ci.example.com/hooks/bitbucket --repo PROJ/repo
+
+  # On pull request events, signed with a shared secret read from stdin
+  printf '%s' "$WEBHOOK_SECRET" | bb webhook create reviews \
+    https://ci.example.com/hooks/reviews --repo PROJ/repo \
+    --event pr:opened --event pr:merged --secret-stdin`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -441,7 +470,9 @@ func New(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <webhook-id>",
 		Short: "Delete a repository webhook",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # By the id bb webhook list prints
+  bb webhook delete 12 --repo PROJ/repo --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {

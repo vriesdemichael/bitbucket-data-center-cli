@@ -25,6 +25,11 @@ This was previously described as checking "local stack health", which it never d
 
 bb auth status now reports the same thing and more — identity, credential storage, and whether git is set up to authenticate through bb — so prefer that. This stays for scripts that already call it.
 
+```bash
+# Check that the configured Bitbucket answers and accepts your credentials
+bb admin health
+```
+
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Runs as usual: this command changes nothing, so there is nothing to hold back

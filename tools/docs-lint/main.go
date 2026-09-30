@@ -1186,9 +1186,31 @@ func validate(args []string, requirePositionals bool) string {
 		if err := validatePositionals(target, target.Flags().Args()); err != nil {
 			return err.Error()
 		}
+		if err := validateRequiredFlags(target); err != nil {
+			return err.Error()
+		}
 	}
 
 	return ""
+}
+
+// validateRequiredFlags applies what the command declares about its flags: the
+// ones it requires, and the ones that must or must not be passed together.
+//
+// Cobra checks these when it runs the command, after parsing, so an invocation
+// that parses can still be one bb refuses. An example missing a required flag
+// reads as complete and fails on the first copy.
+//
+// Skipped when help was requested, as the positionals are.
+func validateRequiredFlags(target *cobra.Command) error {
+	if helpRequested(target) {
+		return nil
+	}
+	if err := target.ValidateRequiredFlags(); err != nil {
+		return err
+	}
+
+	return target.ValidateFlagGroups()
 }
 
 // validateCompletionRequest checks `bb __complete <words>`, the request a shell

@@ -27,6 +27,17 @@ Search for commits within a repository
 bb search commits [flags]
 ```
 
+```bash
+# The latest commits of a repository
+bb search commits --repo PROJ/repo
+
+# What main has that the last release lacks, without merge commits
+bb search commits --repo PROJ/repo --since v1.2.0 --until main --merges exclude
+
+# The commits that touched a file
+bb search commits --repo PROJ/repo --path src/main.go
+```
+
 `--all`
 :   Return every result rather than the first --limit
 
@@ -195,6 +206,14 @@ Search for repositories
 
 ```text
 bb search repos [name] [flags]
+```
+
+```bash
+# Repositories whose name matches
+bb search repos billing
+
+# Within one project
+bb search repos billing --project PROJ
 ```
 
 `--all`

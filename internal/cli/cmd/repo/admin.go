@@ -30,10 +30,20 @@ func newRepoCreateCommand(deps Dependencies, isAlias bool) *cobra.Command {
 		longDesc = "Create a new repository.\n\nAlias for bb repo create."
 	}
 
+	path := "bb repo create"
+	if isAlias {
+		path = "bb repo admin create"
+	}
+
 	createCmd := &cobra.Command{
 		Use:   "create",
 		Short: shortDesc,
 		Long:  longDesc,
+		Example: "  # Create a repository in a project\n" +
+			"  " + path + " --project PROJ --name billing-service\n\n" +
+			"  # With a description and a default branch\n" +
+			"  " + path + " --project PROJ --name billing-service \\\n" +
+			"    --description \"Billing API\" --default-branch main",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -143,10 +153,19 @@ func newRepoForkCommand(deps Dependencies, repositorySelector *string, isAlias b
 		longDesc = "Fork a repository.\n\nAlias for bb repo fork."
 	}
 
+	path := "bb repo fork"
+	if isAlias {
+		path = "bb repo admin fork"
+	}
+
 	forkCmd := &cobra.Command{
 		Use:   "fork",
 		Short: shortDesc,
 		Long:  longDesc,
+		Example: "  # Fork a repository\n" +
+			"  " + path + " --repo PROJ/repo\n\n" +
+			"  # Into another project, under another name\n" +
+			"  " + path + " --repo PROJ/repo --project SANDBOX --name repo-experiment",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -234,11 +253,18 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 		longDesc = "Delete a repository.\n\nAlias for bb repo delete."
 	}
 
+	path := "bb repo delete"
+	if isAlias {
+		path = "bb repo admin delete"
+	}
+
 	deleteCmd := &cobra.Command{
 		Use:   "delete [PROJECT/slug]",
 		Short: shortDesc,
 		Long:  longDesc,
-		Args:  cobra.MaximumNArgs(1),
+		Example: "  # Delete a repository, naming it so the confirmation can be skipped\n" +
+			"  " + path + " PROJ/repo --yes",
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -353,6 +379,8 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update repository metadata",
+		Example: `  # Change a repository's description and default branch
+  bb repo admin update --repo PROJ/repo --description "Billing API" --default-branch main`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

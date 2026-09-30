@@ -67,6 +67,11 @@ Add aliases to a stored server context
 bb auth alias add <alias> [alias...] [flags]
 ```
 
+```bash
+# Teach bb that the SSH clone host belongs to this Bitbucket
+bb auth alias add git.example.com:7999 --host https://bitbucket.example.com
+```
+
 `--host string`
 :   Bitbucket host URL
 
@@ -93,6 +98,14 @@ bb auth alias discover [flags]
 Discovered aliases are added to the ones already stored. Aliases added by hand are kept, because discovery cannot find every alias -- an instance whose SSH clone host differs from its web URL is the documented case for adding one manually, and it would be undone by every later discovery run.
 
 Pass --replace to store only what was discovered. Anything dropped is named in the output.
+
+```bash
+# Add the aliases found in a repository's clone links
+bb auth alias discover --host https://bitbucket.example.com
+
+# Store only what was discovered, dropping any added by hand
+bb auth alias discover --host https://bitbucket.example.com --replace
+```
 
 `--host string`
 :   Bitbucket host URL
@@ -124,6 +137,11 @@ List aliases for a stored server context
 bb auth alias list [flags]
 ```
 
+```bash
+# The aliases stored for a host
+bb auth alias list --host https://bitbucket.example.com
+```
+
 `--host string`
 :   Bitbucket host URL
 
@@ -145,6 +163,11 @@ Remove an alias from a stored server context
 
 ```text
 bb auth alias remove <alias> [flags]
+```
+
+```bash
+# Remove one alias
+bb auth alias remove git.example.com:7999 --host https://bitbucket.example.com
 ```
 
 `--host string`
@@ -183,6 +206,11 @@ bb auth setup-git
 
 Credentials are read from the same place `bb auth login` stores them, so git and bb stay in agreement and no token is ever written into a repository.
 
+```bash
+# What git runs to ask for a credential; run it yourself to debug a failed push
+printf 'protocol=https\nhost=bitbucket.example.com\n\n' | bb auth git-credential get
+```
+
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Runs as usual: this command changes nothing, so there is nothing to hold back
@@ -213,6 +241,11 @@ Add a personal GPG key
 bb auth gpg-key add <key-file-or-text>
 ```
 
+```bash
+# Add the public key in a file
+bb auth gpg-key add public-key.asc
+```
+
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Shows the change it would make, without making it; nothing is checked first (predicted)
@@ -239,6 +272,11 @@ Clear all personal GPG keys
 bb auth gpg-key clear [flags]
 ```
 
+```bash
+# Remove every GPG key of yours
+bb auth gpg-key clear --yes
+```
+
 `-y, --yes`
 :   Confirm clearing of all GPG keys
 
@@ -259,6 +297,11 @@ List personal GPG keys
 
 ```text
 bb auth gpg-key list [flags]
+```
+
+```bash
+# Your GPG keys, with the id and fingerprint of each
+bb auth gpg-key list
 ```
 
 `--all`
@@ -293,6 +336,11 @@ Remove a personal GPG key
 bb auth gpg-key remove <id-or-fingerprint> [flags]
 ```
 
+```bash
+# By the id or fingerprint bb auth gpg-key list prints
+bb auth gpg-key remove 3AA5C34371567BD2 --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -315,6 +363,14 @@ Aliases: `bb auth whoami`
 
 ```text
 bb auth identity [flags]
+```
+
+```bash
+# Who the stored credential authenticates as
+bb auth identity
+
+# On a host other than the default
+bb auth identity --host https://bitbucket.example.com
 ```
 
 `--host string`
@@ -354,6 +410,19 @@ printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --t
 ```
 
 Credentials are stored in the OS keyring. Where no keyring is available — headless servers, most containers, WSL without gnome-keyring — bb falls back to the config file in plaintext and says so. Pass --require-keyring (or set BB\_REQUIRE\_KEYRING=1) to fail instead of falling back.
+
+```bash
+# Store a personal access token, read from stdin
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
+
+# A username and password instead of a token
+printf '%s' "$BITBUCKET_PASSWORD" | bb auth login https://bitbucket.example.com \
+  --username alice --password-stdin
+
+# Fail rather than store the credential in plaintext when there is no keyring
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com \
+  --token-stdin --require-keyring
+```
 
 `--client-cert string`
 :   Path to PEM client certificate for mTLS
@@ -402,6 +471,14 @@ Remove stored credentials for a Bitbucket host
 bb auth logout [flags]
 ```
 
+```bash
+# Remove the credentials of the default host
+bb auth logout
+
+# Of a named host
+bb auth logout --host https://bitbucket.example.com
+```
+
 `--host string`
 :   Bitbucket host URL (defaults to stored default host)
 
@@ -434,6 +511,11 @@ List stored server contexts
 bb auth server list
 ```
 
+```bash
+# Every host bb holds credentials for
+bb auth server list
+```
+
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Runs as usual: this command changes nothing, so there is nothing to hold back
@@ -456,6 +538,11 @@ Set the active default server context
 
 ```text
 bb auth server use [host] [flags]
+```
+
+```bash
+# Make a stored host the default
+bb auth server use https://bitbucket.example.com
 ```
 
 `--host string`
@@ -483,6 +570,14 @@ bb auth setup-git [flags]
 Configure git to ask bb for Bitbucket credentials.
 
 This replaces the need to embed credentials in a repository or in a remote URL. The configuration is scoped to the Bitbucket host, so git never offers these credentials to any other remote.
+
+```bash
+# Let git push and pull authenticate through bb, in every repository
+bb auth setup-git
+
+# In the current repository only
+bb auth setup-git --global=false
+```
 
 `--force`
 :   Overwrite an existing credential helper for this host
@@ -524,6 +619,14 @@ Lines marked ! are advisory: they report something worth knowing that does not m
 Exit status is unchanged by default, so existing scripts keep working. Pass --check to exit non-zero when a non-advisory check fails, which is the form worth putting in CI.
 
 Under --json the exit status is always zero and the verdict is the "ok" field. Machine output is a single document on stdout, so a failing exit would replace the findings with an error envelope — losing exactly the detail that was asked for.
+
+```bash
+# Show the host, how the credential is stored and whether it still works
+bb auth status
+
+# In CI: exit non-zero when a check fails
+bb auth status --check
+```
 
 `--check`
 :   Exit non-zero when a check fails (for CI)
@@ -580,6 +683,17 @@ Create an HTTP access token
 bb auth token create [name] [flags]
 ```
 
+```bash
+# A token of your own that expires in 90 days
+bb auth token create "CI token" --permission REPO_READ --expiry-days 90
+
+# A token for one project
+bb auth token create "Release bot" --project PROJ --permission PROJECT_WRITE
+
+# A token for one repository
+bb auth token create "Deploy" --repo PROJ/repo --permission REPO_READ
+```
+
 `--expiry-days int`
 :   Number of days before the token expires (0 for never)
 
@@ -622,6 +736,14 @@ Get an HTTP access token by ID
 bb auth token get <token-id>
 ```
 
+```bash
+# One of your own tokens, by the id bb auth token list prints
+bb auth token get 1827364510
+
+# A repository's token
+bb auth token get 1827364510 --repo PROJ/repo
+```
+
 Inherited from [`bb auth token`](#bb-auth-token):
 
 `--project string`
@@ -652,6 +774,14 @@ List HTTP access tokens
 
 ```text
 bb auth token list [flags]
+```
+
+```bash
+# Your own tokens
+bb auth token list
+
+# The tokens of a project
+bb auth token list --project PROJ
 ```
 
 `--all`
@@ -692,6 +822,11 @@ Revoke an HTTP access token by ID
 bb auth token revoke <token-id> [flags]
 ```
 
+```bash
+# Revoke one of your own tokens
+bb auth token revoke 1827364510 --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -723,6 +858,14 @@ Update an HTTP access token name or permissions
 
 ```text
 bb auth token update <token-id> [flags]
+```
+
+```bash
+# Rename a token
+bb auth token update 1827364510 --name "CI token (read-only)"
+
+# Replace the permissions of a project's token
+bb auth token update 1827364510 --project PROJ --permission PROJECT_READ
 ```
 
 `--name string`
@@ -761,6 +904,11 @@ Show personal access token creation URL
 
 ```text
 bb auth token-url [flags]
+```
+
+```bash
+# Where to create a personal access token on a host
+bb auth token-url --host https://bitbucket.example.com
 ```
 
 `--host string`

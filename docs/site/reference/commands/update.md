@@ -18,6 +18,17 @@ It puts the new binary in place before it exits. When bb runs through a symbolic
 
 With --dry-run, bb update makes the same checks and installs nothing. It checks the latest release even when that is the version already installed, which makes it the way to verify a release mirror, and it fails with exit status 5 (conflict) when the latest release is older than the installed one.
 
+```bash
+# Install the latest release
+bb update
+
+# Check the latest release and its signature, and install nothing
+bb update --dry-run
+
+# From a mirror inside your network
+bb update --base-url https://mirror.example.com/bb
+```
+
 `--allow-http`
 :   Permit a plain-HTTP release mirror; refused when administrative policy sets allow\_http\_update: false
 

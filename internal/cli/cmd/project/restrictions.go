@@ -32,7 +32,12 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list <project-key>",
 		Short: "List all project branch restrictions",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The restrictions every repository of the project inherits
+  bb project branch-restriction list PROJ
+
+  # Only the ones that stop pushes without a pull request
+  bb project branch-restriction list PROJ --type pull-request-only`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -87,7 +92,9 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get <project-key> <restriction-id>",
 		Short: "Get details of a single branch restriction",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # One restriction, by id
+  bb project branch-restriction get PROJ 7`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -121,7 +128,13 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create <project-key>",
 		Short: "Create a new project-level restriction",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Nobody deletes main, in any repository of the project
+  bb project branch-restriction create PROJ --type no-deletes --matcher-id refs/heads/main
+
+  # Only pull requests change release branches, except for one group
+  bb project branch-restriction create PROJ --type pull-request-only \
+    --matcher-type PATTERN --matcher-id 'release/*' --group release-managers`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -221,7 +234,10 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	updateCmd := &cobra.Command{
 		Use:   "update <project-key> <restriction-id>",
 		Short: "Update an existing restriction",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # Replace a restriction: what it restricts, where, and who is exempt
+  bb project branch-restriction update PROJ 7 --type no-deletes \
+    --matcher-type BRANCH --matcher-id refs/heads/main --user alice`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -307,7 +323,9 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <project-key> <restriction-id>",
 		Short: "Delete a project restriction",
-		Args:  cobra.ExactArgs(2),
+		Example: `  # By the id bb project branch-restriction list prints
+  bb project branch-restriction delete PROJ 7 --yes`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {

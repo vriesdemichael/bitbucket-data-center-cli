@@ -39,6 +39,14 @@ func newPullRequestCheckoutCommand(deps Dependencies, repositorySelector *string
 	command := &cobra.Command{
 		Use:   "checkout <pr-id>",
 		Short: "Check out a pull request branch locally",
+		Example: `  # Check out a pull request's branch in the current repository
+  bb pr checkout 42
+
+  # Under a local name of your choice
+  bb pr checkout 42 --branch review/42
+
+  # Look at its commit without creating a branch
+  bb pr checkout 42 --detach`,
 		Long: "Check out the source branch of a pull request in the current git repository.\n\n" +
 			"Same-repository pull requests are checked out from the remote that already points at the " +
 			"repository. Pull requests from a fork fetch from the fork, adding a remote for it when one " +

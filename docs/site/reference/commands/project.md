@@ -64,6 +64,15 @@ Create a new project-level restriction
 bb project branch-restriction create <project-key> [flags]
 ```
 
+```bash
+# Nobody deletes main, in any repository of the project
+bb project branch-restriction create PROJ --type no-deletes --matcher-id refs/heads/main
+
+# Only pull requests change release branches, except for one group
+bb project branch-restriction create PROJ --type pull-request-only \
+  --matcher-type PATTERN --matcher-id 'release/*' --group release-managers
+```
+
 `--access-key-id ints`
 :   Allowed SSH access key IDs
 
@@ -137,6 +146,11 @@ Delete a project restriction
 bb project branch-restriction delete <project-key> <restriction-id> [flags]
 ```
 
+```bash
+# By the id bb project branch-restriction list prints
+bb project branch-restriction delete PROJ 7 --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -158,6 +172,11 @@ Get details of a single branch restriction
 
 ```text
 bb project branch-restriction get <project-key> <restriction-id>
+```
+
+```bash
+# One restriction, by id
+bb project branch-restriction get PROJ 7
 ```
 
 Also takes the [global flags](global-flags.md).
@@ -210,6 +229,14 @@ List all project branch restrictions
 
 ```text
 bb project branch-restriction list <project-key> [flags]
+```
+
+```bash
+# The restrictions every repository of the project inherits
+bb project branch-restriction list PROJ
+
+# Only the ones that stop pushes without a pull request
+bb project branch-restriction list PROJ --type pull-request-only
 ```
 
 `--matcher-id string`
@@ -271,6 +298,12 @@ Update an existing restriction
 
 ```text
 bb project branch-restriction update <project-key> <restriction-id> [flags]
+```
+
+```bash
+# Replace a restriction: what it restricts, where, and who is exempt
+bb project branch-restriction update PROJ 7 --type no-deletes \
+  --matcher-type BRANCH --matcher-id refs/heads/main --user alice
 ```
 
 `--access-key-id ints`
@@ -346,6 +379,11 @@ Create a new project
 bb project create <project-key> [flags]
 ```
 
+```bash
+# Create a project
+bb project create PROJ --name "Payments" --description "Payment services"
+```
+
 `--description string`
 :   Project description
 
@@ -394,6 +432,14 @@ Add a default checklist task
 bb project default-task add <project-key> <description> [flags]
 ```
 
+```bash
+# A task every new pull request in the project starts with
+bb project default-task add PROJ "Update the changelog"
+
+# Only for pull requests into main
+bb project default-task add PROJ "Update the changelog" --target-ref main
+```
+
 `--source-ref string`
 :   Source ref to match; a glob matches as a pattern, anything else as a branch (default: any ref)
 
@@ -438,6 +484,11 @@ Delete a default checklist task
 bb project default-task delete <project-key> <task-id> [flags]
 ```
 
+```bash
+# By the id bb project default-task list prints
+bb project default-task delete PROJ 3 --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -459,6 +510,11 @@ List all default checklist tasks for the project
 
 ```text
 bb project default-task list <project-key>
+```
+
+```bash
+# The tasks every new pull request in the project starts with
+bb project default-task list PROJ
 ```
 
 Also takes the [global flags](global-flags.md).
@@ -497,6 +553,11 @@ Update a default checklist task
 
 ```text
 bb project default-task update <project-key> <task-id> [flags]
+```
+
+```bash
+# Reword a task
+bb project default-task update PROJ 3 --description "Update CHANGELOG.md"
 ```
 
 `--description string`
@@ -546,6 +607,11 @@ Delete a project
 bb project delete <project-key> [flags]
 ```
 
+```bash
+# Delete a project
+bb project delete PROJ --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -566,6 +632,11 @@ Get project details
 
 ```text
 bb project get <project-key>
+```
+
+```bash
+# A project's name, description and visibility
+bb project get PROJ
 ```
 
 Also takes the [global flags](global-flags.md).
@@ -592,6 +663,14 @@ List projects
 
 ```text
 bb project list [flags]
+```
+
+```bash
+# The projects you can see
+bb project list
+
+# The ones whose name matches
+bb project list --name pay
 ```
 
 `--all`
@@ -670,6 +749,14 @@ Grant a project permission to a user, or to a group with --group.
 
 Shallow alias for bb project permissions {users,groups} grant.
 
+```bash
+# Let a user write to every repository of a project
+bb project permissions grant PROJ alice PROJECT_WRITE
+
+# A group instead
+bb project permissions grant PROJ backend-team PROJECT_WRITE --group
+```
+
 `--group`
 :   Treat the argument as a group rather than a user
 
@@ -701,6 +788,11 @@ bb project permissions groups grant <project-key> <group> <permission>
 
 Also available as bb project permissions grant --group, one level shallower.
 
+```bash
+# Let a group write to every repository of a project
+bb project permissions groups grant PROJ backend-team PROJECT_WRITE
+```
+
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Predicts the outcome from what it can read, without changing anything (predicted)
@@ -724,6 +816,11 @@ bb project permissions groups list <project-key> [flags]
 ```
 
 Also available as bb project permissions list --group, one level shallower.
+
+```bash
+# The groups with a permission on a project
+bb project permissions groups list PROJ
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -757,6 +854,11 @@ bb project permissions groups revoke <project-key> <group> [flags]
 
 Also available as bb project permissions revoke --group, one level shallower.
 
+```bash
+# Take a group's permission on a project away
+bb project permissions groups revoke PROJ backend-team --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -784,6 +886,14 @@ bb project permissions list <project-key> [flags]
 List users with project permissions, or groups with --group.
 
 Shallow alias for bb project permissions {users,groups} list.
+
+```bash
+# The users with a permission on a project
+bb project permissions list PROJ
+
+# The groups
+bb project permissions list PROJ --group
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -822,6 +932,14 @@ Revoke a project permission from a user, or from a group with --group.
 
 Shallow alias for bb project permissions {users,groups} revoke.
 
+```bash
+# Take a user's permission on a project away
+bb project permissions revoke PROJ alice --yes
+
+# A group's
+bb project permissions revoke PROJ backend-team --group --yes
+```
+
 `--group`
 :   Treat the argument as a group rather than a user
 
@@ -847,6 +965,11 @@ Show the caller's effective permissions on a project
 
 ```text
 bb project permissions show <project-key>
+```
+
+```bash
+# What you yourself may do in a project
+bb project permissions show PROJ
 ```
 
 Also takes the [global flags](global-flags.md).
@@ -878,6 +1001,11 @@ bb project permissions users grant <project-key> <username> <permission>
 
 Also available as bb project permissions grant, one level shallower.
 
+```bash
+# Let a user write to every repository of a project
+bb project permissions users grant PROJ alice PROJECT_WRITE
+```
+
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Predicts the outcome from what it can read, without changing anything (predicted)
@@ -901,6 +1029,11 @@ bb project permissions users list <project-key> [flags]
 ```
 
 Also available as bb project permissions list, one level shallower.
+
+```bash
+# The users with a permission on a project
+bb project permissions users list PROJ
+```
 
 `--all`
 :   Return every result rather than the first --limit
@@ -934,6 +1067,11 @@ bb project permissions users revoke <project-key> <username> [flags]
 
 Also available as bb project permissions revoke, one level shallower.
 
+```bash
+# Take a user's permission on a project away
+bb project permissions users revoke PROJ alice --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -956,6 +1094,11 @@ Update project details
 
 ```text
 bb project update <project-key> [flags]
+```
+
+```bash
+# Rename a project
+bb project update PROJ --name "Payments platform"
 ```
 
 `--description string`
@@ -1012,6 +1155,15 @@ Create a new project-level webhook
 bb project webhook create <project-key> <name> <url> [flags]
 ```
 
+```bash
+# Call an endpoint when anything is pushed to a repository of the project
+bb project webhook create PROJ ci https://ci.example.com/hooks/bitbucket
+
+# On pull request events, signed with a shared secret read from stdin
+printf '%s' "$WEBHOOK_SECRET" | bb project webhook create PROJ reviews \
+  https://ci.example.com/hooks/reviews --event pr:opened --event pr:merged --secret-stdin
+```
+
 `--active`
 :   Whether the webhook is active (default true)
 
@@ -1060,6 +1212,11 @@ Delete a project webhook
 bb project webhook delete <project-key> <webhook-id> [flags]
 ```
 
+```bash
+# By the id bb project webhook list prints
+bb project webhook delete PROJ 12 --yes
+```
+
 `-y, --yes`
 :   Confirm without being asked
 
@@ -1081,6 +1238,11 @@ List all webhooks configured for the project
 
 ```text
 bb project webhook list <project-key> [flags]
+```
+
+```bash
+# The webhooks every repository of the project has
+bb project webhook list PROJ
 ```
 
 `--all`
@@ -1123,6 +1285,14 @@ Retrieve execution statistics
 bb project webhook stats <project-key> <webhook-id> [flags]
 ```
 
+```bash
+# The delivery statistics of a webhook
+bb project webhook stats PROJ 12
+
+# The summary only
+bb project webhook stats PROJ 12 --summary
+```
+
 `--summary`
 :   Get statistics summary instead of detailed logs
 
@@ -1138,6 +1308,14 @@ Trigger a connection test ping
 
 ```text
 bb project webhook test <project-key> <webhook-id> [flags]
+```
+
+```bash
+# Send a test ping to a webhook's endpoint
+bb project webhook test PROJ 12
+
+# To another URL, before pointing the webhook at it
+bb project webhook test PROJ 12 --url https://ci.example.com/hooks/new
 ```
 
 `--reveal-secret`
@@ -1158,6 +1336,14 @@ Update a project webhook
 
 ```text
 bb project webhook update <project-key> <webhook-id> [flags]
+```
+
+```bash
+# Point a webhook at a new endpoint
+bb project webhook update PROJ 12 --url https://ci.example.com/hooks/new
+
+# Switch it off without deleting it
+bb project webhook update PROJ 12 --active false
 ```
 
 `--active string`

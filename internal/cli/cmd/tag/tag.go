@@ -96,6 +96,11 @@ func New(deps Dependencies) *cobra.Command {
 	listTagsCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository tags",
+		Example: `  # The first 25 tags
+  bb tag list --repo PROJ/repo
+
+  # The 1.x releases, most recently changed first
+  bb tag list --repo PROJ/repo --filter v1. --order-by MODIFICATION`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -146,7 +151,12 @@ func New(deps Dependencies) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create <name>",
 		Short: "Create repository tag",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Tag the tip of main
+  bb tag create v1.2.0 --start-point main --repo PROJ/repo
+
+  # An annotated tag on a commit
+  bb tag create v1.2.0 --start-point a1b2c3d --message "Release 1.2.0" --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -220,7 +230,9 @@ func New(deps Dependencies) *cobra.Command {
 	tagCmd.AddCommand(&cobra.Command{
 		Use:   "view <tag>",
 		Short: "View repository tag",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # The commit a tag points at
+  bb tag view v1.2.0 --repo PROJ/repo`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -254,7 +266,9 @@ func New(deps Dependencies) *cobra.Command {
 	tagCmd.AddCommand(&cobra.Command{
 		Use:   "delete <tag>",
 		Short: "Delete repository tag",
-		Args:  cobra.ExactArgs(1),
+		Example: `  # Delete a tag without being asked
+  bb tag delete v1.2.0 --repo PROJ/repo --yes`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
