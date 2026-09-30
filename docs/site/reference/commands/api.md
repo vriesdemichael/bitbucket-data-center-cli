@@ -16,17 +16,6 @@ Send a raw HTTP request to the Bitbucket REST API as an escape hatch for uncover
 
 Reuses stored authentication, host aliases, TLS options, retries, and pagination. A request is authenticated as every other command's is. A credential given on the command line -- an Authorization, Proxy-Authorization or Cookie header, or a user and password in a URL -- is refused, since it would be readable in the process list and shell history.
 
-Field arguments:
-
-```text
--f, --raw-field k=v    Pass a string parameter (query parameter for GET, JSON field for POST/PUT/DELETE)
--F, --field k=v        Pass a typed parameter (parses booleans, numbers, null, JSON, or @file)
--H, --header k:v       Pass a custom HTTP header
---input file           Pass a request body from a file (or '-' for stdin)
---paginate             Automatically fetch all pages for paginated endpoints
---host url             Target a specific Bitbucket host URL
-```
-
 A JSON response is printed indented and other text trimmed; anything else -- a file's raw bytes, an archive -- is written byte for byte as it arrives. Text is held to be formatted, up to 256 MiB. Under --json the response goes into the document's data as JSON or as a string. A body that is not text goes in as base64, up to 64 MiB, with meta.encoding set to base64 and meta.contentType to its type; an empty one is null.
 
 Note: On Windows Git Bash (MSYS2), set MSYS\_NO\_PATHCONV=1 or omit the leading slash (e.g. rest/api/1.0/...) to prevent shell path mangling.

@@ -79,14 +79,6 @@ the command line -- an Authorization, Proxy-Authorization or Cookie header, or
 a user and password in a URL -- is refused, since it would be readable in the
 process list and shell history.
 
-Field arguments:
-  -f, --raw-field k=v    Pass a string parameter (query parameter for GET, JSON field for POST/PUT/DELETE)
-  -F, --field k=v        Pass a typed parameter (parses booleans, numbers, null, JSON, or @file)
-  -H, --header k:v       Pass a custom HTTP header
-  --input file           Pass a request body from a file (or '-' for stdin)
-  --paginate             Automatically fetch all pages for paginated endpoints
-  --host url             Target a specific Bitbucket host URL
-
 A JSON response is printed indented and other text trimmed; anything else -- a
 file's raw bytes, an archive -- is written byte for byte as it arrives. Text is
 held to be formatted, up to 256 MiB. Under --json the response goes into the
