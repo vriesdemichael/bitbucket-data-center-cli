@@ -3,22 +3,12 @@ search:
   boost: 0.3
 ---
 
-# ADR 042: Track the newest containerisable Bitbucket version
+# ADR-042: Track the newest containerisable Bitbucket version
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `042`
-- Title: `Track the newest containerisable Bitbucket version`
-- Category: `architecture`
-- Status: `accepted`
-- Supersedes: `018`
-- Amended By: `088`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/042-track-newest-containerisable-bitbucket-version.yaml`
-
-## Decision
+> Replaces [ADR-018](018-supported-bitbucket-version-policy.md). Changed in part by [ADR-088](088-every-bitbucket-release-atlassian-supports-is-served.md).
 
 Target the newest Bitbucket Data Center version that runs in this project's container stack and passes the live integration suite, rather than a version pinned in advance. A release that cannot run in the stack, or that runs but fails the suite, is not a target however recent it is.
+
 1. Where the version lives:
    - The base image tag in docker/harness/Dockerfile, and nowhere else. No other surface states a
      supported version.
@@ -50,21 +40,17 @@ Target the newest Bitbucket Data Center version that runs in this project's cont
    - A Dependabot pull request is therefore evidence that a version is adoptable. It is not the
      act of adopting it.
 
-## Agent Instructions
-
 Do not state or assume a specific supported Bitbucket version in code, CLI output, or documentation, and do not reintroduce a default version target in configuration. To find the version under test, read the base image tag in docker/harness/Dockerfile. Documentation may name the version through the `[[ bitbucket_version ]]` macro, which renders that same tag: a reader asking whether their instance is covered needs a number, and one derived from the tag cannot drift away from it. Do not open a version-bump pull request by hand. Dependabot proposes every published release against docker/harness/Dockerfile, so a hand-written bump duplicates one that already exists or is about to. Editing the tag locally is still the right move for reproducing or bisecting a version-specific bug; opening a pull request for it is not. Do not add an ignore for atlassian/bitbucket to .github/dependabot.yml. An ignore suppresses the proposal, so nobody learns a release exists and the suite never runs against it. The hold in dependabot-automerge.yml keeps the same human decision while keeping the evidence. When adopting a release, carry task openapi:refresh in the same change. The vendored OpenAPI reference is derived from the tag, so a tag bump on its own fails openapi:verify. Where behavior differs between versions, record the version it was observed on next to the workaround and cover it with a live test.
-
-## Rationale
 
 The previous 9.4.16 pin drifted. The stack moved on while the configuration default, the auth status output, and the README still advertised 9.4.16, so the documented target described a version nothing was testing against. The intent was never to freeze on one release but to run the newest one that works, and keeping that in the stack definition leaves one place to change on upgrade with no copies to drift.
 What has changed since is which half of that sentence is enforced. "The newest version that works" was originally an assertion made in advance, and its upper bound was real: newer releases had failed to run in this containerised stack, so the newest published release and the newest supportable one were not the same thing. Two changes turned the assertion into a check. ADR-043 removed the licence secret, so the live suite runs on every pull request including a Dependabot one. And the ignore holding atlassian/bitbucket back was removed once the licence stopped capping the version the stack could provision, so a proposal now arrives for every release. A release that cannot be exercised fails visibly on a pull request instead of being excluded by a judgement nobody wrote down.
 Recording that mechanism is overdue, because this record described only the manual half of it and was read accordingly. Its agent_instructions said to bump the tag and let the live suite decide, which reads as an instruction to open a bump pull request -- work Dependabot has already done. The automation was acknowledged nowhere in the accepted records except inside the reasoning of a rejected alternative in ADR-043, which is not a place anyone looks for current practice.
 The adoption step stayed manual for a reason easily mistaken for caution. Two independent things stop an unattended upgrade, and only one of them is a policy. The hold in dependabot-automerge.yml is the policy. The other is arithmetic: since the vendored OpenAPI reference became derived from the image tag, a bump with nothing else in it fails openapi:verify in the quality gate, so it cannot go green even if the hold were removed by mistake. That redundancy is worth knowing about before anyone tries to "simplify" either side of it.
 
-## Rejected Alternatives
+## Not chosen
 
-- `Bump the pinned target to the current stack version`: Drifts again at the next upgrade and recreates the duplicated copies this removes, without making the claim any better verified.
-- `Always track the newest published Bitbucket release, merging the bump unattended`: The reason this record originally gave -- that newer releases have broken the stack, so tracking the newest would claim support for versions the suite cannot exercise -- has expired. The suite now runs against every proposal, and a release it cannot exercise cannot go green, so the claim is checked rather than asserted. What still rejects it is narrower than what was written: adopting a release changes a user-facing claim, and a tag bump alone does not build because the vendored OpenAPI reference is derived from the tag. Every published release is proposed and tested unattended; only the last step is a person's.
-- `Keep the Dependabot ignore on atlassian/bitbucket and bump the tag by hand`: That was the arrangement until the SDK licence removed its premise, and it hid information rather than deferring a decision. An ignore suppresses the proposal, so a new release produced no pull request, the suite never ran against it, and whether the project could move was unknown until somebody went looking. Holding the merge instead preserves the same human decision and pays for the evidence behind it.
-- `Declare a supported version range`: Implies every version in the range is verified, which nothing in this project establishes, and the upper bound is whatever still runs in the container rather than a version chosen up front.
-- `Remove the bitbucket_version_target field from machine output`: It is a required field of the machine envelope, so removing it breaks consumers. Leaving it settable lets operators record a version for their own environment without the project asserting one.
+- **Bump the pinned target to the current stack version**: Drifts again at the next upgrade and recreates the duplicated copies this removes, without making the claim any better verified.
+- **Always track the newest published Bitbucket release, merging the bump unattended**: The reason this record originally gave -- that newer releases have broken the stack, so tracking the newest would claim support for versions the suite cannot exercise -- has expired. The suite now runs against every proposal, and a release it cannot exercise cannot go green, so the claim is checked rather than asserted. What still rejects it is narrower than what was written: adopting a release changes a user-facing claim, and a tag bump alone does not build because the vendored OpenAPI reference is derived from the tag. Every published release is proposed and tested unattended; only the last step is a person's.
+- **Keep the Dependabot ignore on atlassian/bitbucket and bump the tag by hand**: That was the arrangement until the SDK licence removed its premise, and it hid information rather than deferring a decision. An ignore suppresses the proposal, so a new release produced no pull request, the suite never ran against it, and whether the project could move was unknown until somebody went looking. Holding the merge instead preserves the same human decision and pays for the evidence behind it.
+- **Declare a supported version range**: Implies every version in the range is verified, which nothing in this project establishes, and the upper bound is whatever still runs in the container rather than a version chosen up front.
+- **Remove the bitbucket_version_target field from machine output**: It is a required field of the machine envelope, so removing it breaks consumers. Leaving it settable lets operators record a version for their own environment without the project asserting one.

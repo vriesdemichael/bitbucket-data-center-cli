@@ -637,11 +637,10 @@ func lintMarkdownWithVersion(file, contents, targetVer string) ([]finding, int) 
 // isRecord reports whether a file records what was true when it was written,
 // which today's command tree has no say over.
 //
-// The ADR pages are rendered from decision records, and quote rejected
-// alternatives — `bb repo list --name foo` (ADR-031), `bb ai skill install
-// --target` (ADR-040) — which are invocations that deliberately do not exist.
-// Reporting them would mean editing generated output to satisfy a linter, and
-// the record is the source of truth.
+// A decision record quotes the alternatives it did not choose — `bb repo list
+// --name foo` (ADR-031), `bb ai skill install --target` (ADR-040) — which are
+// invocations that deliberately do not exist. Flags a record names as the rule
+// are checked against the tree by TestADRDoesNotNameFlagsThatDoNotExist.
 //
 // A release's notes name the commands of that release. A later major removes
 // some of them, and the notes that announced the removal name them too; both

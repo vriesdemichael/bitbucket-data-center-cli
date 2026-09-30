@@ -3,19 +3,9 @@ search:
   boost: 0.3
 ---
 
-# ADR 011: Error taxonomy and CLI exit contract
+# ADR-011: Error taxonomy and CLI exit contract
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `011`
-- Title: `Error taxonomy and CLI exit contract`
-- Category: `architecture`
-- Status: `accepted`
-- Amended By: `091`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/011-error-taxonomy-and-cli-exit-contract.yaml`
-
-## Decision
+> Changed in part by [ADR-091](091-a-command-may-report-the-state-it-read-through-its-exit-status.md).
 
 Define a stable error taxonomy and map it to deterministic CLI exit codes and structured JSON error payloads. The kinds are authentication, authorization, validation, not_found, conflict, transient, permanent, not_implemented, cancelled, unknown_outcome, unsupported and internal; internal is what an unclassified error becomes, so every error has a kind.
 unsupported is exit 14 and means the Bitbucket instance's release cannot do what was asked and bb cannot make up for it (ADR-088). It is not not_implemented, which is bb lacking something: the remedy is a newer Bitbucket, not a newer bb.
@@ -23,15 +13,11 @@ unknown_outcome is exit 13 and means the request reached the server and no usabl
 A status that arrived says whether the work was refused, not that it landed. A reply cut short after a 4xx is reported as refused rather than unknown: nothing was applied, and sending it again will be refused again. A 2xx settles nothing, because behind SSO or a proxy a login page can answer 200 to a write nobody authenticated, so a mutation whose body was lost stays unknown_outcome.
 A command may resolve an unknown outcome by reading the state back, and one does: a webhook create lists the scope's webhooks before and after, and one new webhook matching the request is reported as created; anything else stays unknown_outcome. The mutation is never sent again. This is worth doing where a listing identifies what was made; it is not required of every mutation, and most of them report exit 13 and leave the check to the caller.
 
-## Agent Instructions
-
 Map transport and service errors into canonical categories before returning from workflows. Do not report a failed mutation as transient when its outcome is unknown: exit 10 tells a caller's wrapper to replay a request the retry policy itself refuses to replay. Keep human output and JSON output consistent with the same underlying error classification. Avoid leaking raw upstream errors directly to users.
-
-## Rationale
 
 Deterministic error behavior is required for both scriptability and operator trust. A consistent taxonomy simplifies retries, diagnostics, and support workflows.
 
-## Rejected Alternatives
+## Not chosen
 
-- `Free-form error strings and ad-hoc exit codes`: Breaks machine consumption and makes behavior unpredictable.
-- `Send the mutation again when the check does not find what it made`: A request that timed out can still be in progress, so not finding its result is not proof it will not land, and a second send then duplicates it: the failure #454 removed from the retry policy.
+- **Free-form error strings and ad-hoc exit codes**: Breaks machine consumption and makes behavior unpredictable.
+- **Send the mutation again when the check does not find what it made**: A request that timed out can still be in progress, so not finding its result is not proof it will not land, and a second send then duplicates it: the failure #454 removed from the retry policy.

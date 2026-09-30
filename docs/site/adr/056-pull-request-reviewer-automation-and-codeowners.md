@@ -3,21 +3,12 @@ search:
   boost: 0.3
 ---
 
-# ADR 056: Pull request reviewer automation, default reviewers, and CODEOWNERS
+# ADR-056: Pull request reviewer automation, default reviewers, and CODEOWNERS
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `056`
-- Title: `Pull request reviewer automation, default reviewers, and CODEOWNERS`
-- Category: `architecture`
-- Status: `accepted`
-- Amended By: `080`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/056-pull-request-reviewer-automation-and-codeowners.yaml`
-
-## Decision
+> Changed in part by [ADR-080](080-bitbucket-resolves-codeowners-not-bb.md).
 
 `bb pr create` and `bb pr review reviewer add` automate pull request reviewer assignment to achieve full behavioral parity with the Bitbucket Data Center web interface:
+
 1. Default Reviewers by Default on Creation: `bb pr create` automatically queries repository and
    project default-reviewer conditions for the source and target branch pair and populates matching
    reviewers and expanded reviewer groups (`--default-reviewers` defaults to true). Users can opt out
@@ -47,15 +38,11 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
    `--default-reviewers` explicitly makes the same failure fatal. A reviewer group whose membership
    cannot be read is an error, never an empty group and never a username invented from the group name.
 
-## Agent Instructions
-
 When adding pull request reviewer functionality or modifying reviewer commands, preserve the default automatic evaluation of default reviewers and CODEOWNERS on PR creation. Ensure group expansion handles both repository-level and project-level scopes, and strictly filters out the PR author. Never parse CODEOWNERS: ADR-080 says who answers that question. Register flag aliases with a flag set normalization function, never as a second flag bound to the same slice: pflag tracks "has this flag been set" per flag, so a second binding silently discards values supplied under the other spelling.
-
-## Rationale
 
 In the Bitbucket Data Center web interface, opening a pull request automatically pre-fills both configured default reviewers and matching code owners from `.bitbucket/CODEOWNERS`. `POST /pull-requests` evaluates neither: it expects explicit reviewer usernames. So bb resolves them before creating, with opt-out flags, and a pull request opened from the CLI arrives with the reviewers it would have had from the browser. Code owners are resolved by asking Bitbucket rather than by reading the file, which ADR-080 explains.
 
-## Rejected Alternatives
+## Not chosen
 
-- `Opt-in only CODEOWNERS and default reviewers requiring explicit flags on pr create`: Forces users to remember multiple flags (`--default-reviewers --codeowners`) to match the web UI, leading to unassigned pull requests and broken review workflows when migrating from the browser to the CLI.
-- `Defer CODEOWNERS evaluation entirely to server-side third-party marketplace apps`: Bitbucket Data Center 8.14+ natively introduced `.bitbucket/CODEOWNERS` for web UI reviewer suggestions. Relying on marketplace apps introduces external dependencies and fails in environments without those apps installed.
+- **Opt-in only CODEOWNERS and default reviewers requiring explicit flags on pr create**: Forces users to remember multiple flags (`--default-reviewers --codeowners`) to match the web UI, leading to unassigned pull requests and broken review workflows when migrating from the browser to the CLI.
+- **Defer CODEOWNERS evaluation entirely to server-side third-party marketplace apps**: Bitbucket Data Center 8.14+ natively introduced `.bitbucket/CODEOWNERS` for web UI reviewer suggestions. Relying on marketplace apps introduces external dependencies and fails in environments without those apps installed.

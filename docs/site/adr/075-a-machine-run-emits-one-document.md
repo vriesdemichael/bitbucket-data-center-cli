@@ -3,33 +3,19 @@ search:
   boost: 0.3
 ---
 
-# ADR 075: A machine-mode command emits one document, and a failed run is named by its id
+# ADR-075: A machine-mode command emits one document, and a failed run is named by its id
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `075`
-- Title: `A machine-mode command emits one document, and a failed run is named by its id`
-- Category: `architecture`
-- Status: `accepted`
-- Amended By: `096`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/075-a-machine-run-emits-one-document.yaml`
-
-## Decision
+> Changed in part by [ADR-096](096-the-flags-choose-the-member-and-dry-run-answers-with-a-verdict.md).
 
 Under --json a command writes exactly one JSON document to stdout. When a command both produced data and failed, the failure envelope wins: ADR-046 distinguishes the two by which key is present, so a run cannot report both. A handle the caller needs to act on the failure goes in error.details, a string map inside the error object, not in the message. bb bulk apply sets operationId there, and bb bulk status <id> --json returns the full artifact. Human output is unaffected. The status goes to stdout and the error line to stderr, so the two do not collide and no handle is needed to recover the detail. A cancelled run exits 12 (kind cancelled), not 10 (transient). Cancellation is not a retry signal: re-running a bulk apply replays mutations across every repository in the plan.
 
-## Agent Instructions
-
 Do not print a payload and then return an error from the same command under --json. When a failure has an artifact behind it, put the identifier in error.details. Do not put it only in the message and expect the caller to find it there. Read handles from error.details, not by parsing error.message. Do not retry exit 12. Read the artifact and decide.
-
-## Rationale
 
 bb bulk apply wrote its status envelope and then returned an error, so cmd/bb wrote an error envelope after it. Two documents on stdout is what #474 was filed about, and it was already the behaviour of the ordinary partial-failure path -- the cancellation work only made it reachable a second way. The failure is quiet rather than loud. A strict decoder rejects the second document, but jq reads a value stream: it emits one result per document and exits 0, so a script taking the last line silently gets the error envelope's null. Keeping the payload and dropping the error loses the exit code, which is the part a script cannot reconstruct. Keeping the envelope loses nothing permanently, because the artifact is on disk and error.details says how to name it.
 
-## Rejected Alternatives
+## Not chosen
 
-- `Carry the status inside the failure envelope as data`: ADR-046 forbids data alongside error. The two documents are told apart by which key is present, and a null data would make a command whose payload is legitimately null ambiguous. error.details is inside the error object, so that discriminator is untouched.
-- `Name the id in the message only`: This was the first implementation. It makes every consumer scrape a sentence for an identifier no schema describes, which is the failure #474 was about.
-- `Write the status envelope and exit non-zero without an error envelope`: Special-cases one command out of the failure contract, so a consumer branching on error kind has to know which commands opt out.
-- `Reuse transient for cancellation`: Documented to agents as "retry later". For a mutating bulk run that is the one response that must not be automatic.
+- **Carry the status inside the failure envelope as data**: ADR-046 forbids data alongside error. The two documents are told apart by which key is present, and a null data would make a command whose payload is legitimately null ambiguous. error.details is inside the error object, so that discriminator is untouched.
+- **Name the id in the message only**: This was the first implementation. It makes every consumer scrape a sentence for an identifier no schema describes, which is the failure #474 was about.
+- **Write the status envelope and exit non-zero without an error envelope**: Special-cases one command out of the failure contract, so a consumer branching on error kind has to know which commands opt out.
+- **Reuse transient for cancellation**: Documented to agents as "retry later". For a mutating bulk run that is the one response that must not be automatic.

@@ -279,7 +279,7 @@ They are still expected, and a reviewer will ask:
 | Job | What it does |
 |---|---|
 | Release Flow | refuses a pull request into `main` from anything but a `dependabot/*` or `hotfix/*` branch; the rest goes to `next` (ADR-066) |
-| ADR Validation | validates `docs/decisions/*.yaml` |
+| ADR Validation | checks that every decision record in `docs/site/adr/` is well formed |
 | Unit Tests | formatting, line endings, `golangci-lint` against the pinned version, non-live tests, that the live-tagged tree compiles, that generated artifacts are current, and that every documented `bb ...` invocation parses |
 | Unit Tests (windows-latest), Unit Tests (macos-latest) | the non-live tests, natively on Windows and on macOS |
 | View Tests | draws the MCP views in headless Chrome (`task test:views`) |
@@ -328,7 +328,7 @@ Collected from actually doing this, not hypothetical:
 
 - [`AGENTS.md`](AGENTS.md) — repository-specific mechanics and gotchas. Written
   for AI agents, but the content applies to anyone.
-- [`docs/decisions/`](docs/decisions/) — architecture decision records. If you
+- [`docs/site/adr/`](docs/site/adr/) — architecture decision records. If you
   want to know *why* something works the way it does, it is usually there.
   Relevant here: ADR-065 (what the quality gates measure), ADR-006 (conventional commits),
   ADR-016 (test classification), ADR-025 (git discipline), ADR-026 (PR
@@ -357,9 +357,26 @@ whether they passed better than a ticked box does.
 
 What it does ask for is what no gate can work out on its own — what the change
 does, **why** the current behaviour was wrong, and whether the change is a
-*decision* that needs an ADR in `docs/decisions/`. Contracts, defaults, the
+*decision* that needs an ADR in `docs/site/adr/`. Contracts, defaults, the
 meaning of a flag and the shape of parsed output are all decisions; a bug fix
 that restores documented behaviour is not.
+
+## Writing a decision record
+
+A record states a rule as it holds now. It is `NNN-slug.md` in `docs/site/adr/`,
+opens with `# ADR-NNN: Title`, gives the rule first and then why it holds, in
+prose, and may end with a `## Not chosen` list of `- **Alternative**: why not`.
+
+- When the rule changes, change the record. How it came to change is in git,
+  not in the record.
+- When a rule no longer holds, delete the record and every mention of its number;
+  `TestEveryADRMentionHasARecord` fails on one left behind. A number is never
+  used again.
+- Some records still open with a standing line (`> Changed in part by …`,
+  `> Replaced by …`). They are being folded into the records they point at; do
+  not add a new one.
+- After adding or deleting a record, run `task docs:export-adr-index`, and
+  `task quality:validate-decisions` to check its shape.
 
 ## Code of conduct
 

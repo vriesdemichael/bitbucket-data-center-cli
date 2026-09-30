@@ -3,21 +3,12 @@ search:
   boost: 0.3
 ---
 
-# ADR 058: System-wide configuration and administrative policy enforcement
+# ADR-058: System-wide configuration and administrative policy enforcement
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `058`
-- Title: `System-wide configuration and administrative policy enforcement`
-- Category: `architecture`
-- Status: `accepted`
-- Amended By: `100`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/058-system-wide-configuration-and-policy-enforcement.yaml`
-
-## Decision
+> Changed in part by [ADR-100](100-administrators-can-switch-bb-off-or-make-it-read-only.md).
 
 Establish a multi-tiered configuration hierarchy and machine-level administrative policy enforcement for enterprise fleet management across Linux, macOS, and Windows.
+
 1. Multi-Tiered Precedence: CLI Flags > Environment Variables > Workspace Configuration
    (`.bb/config.yaml`) > User Configuration (`~/.config/bb/config.yaml` or `%APPDATA%\bb\config.yaml`) >
    System Configuration (`/etc/bb/config.yaml` or `%ProgramData%\bb\config.yaml`) > Built-in Defaults.
@@ -66,18 +57,14 @@ Establish a multi-tiered configuration hierarchy and machine-level administrativ
    parseRegistryPolicy has no branch for `mcp_audit_file`, which is therefore file-only, with point 5
    as the whole of what stands behind it.
 
-## Agent Instructions
-
 When evaluating configuration and options, always adhere to the 6-tier hierarchy (Flags > Env > Workspace > User > System > Defaults). Enforce administrative policies unconditionally before executing network or credential operations. Policy refusal errors must return KindAuthorization or KindPermanent with descriptive, actionable explanations. Do not add code that creates the system configuration directory. A convenience MkdirAll on the way to reading it would create that tier as whichever account ran bb first. When documenting a policy setting as one a user cannot change, name the deployment step that makes it true, and check the setting is readable from the channel you are recommending.
-
-## Rationale
 
 In enterprise deployments, IT security teams require authoritative control over CLI behavior across workstations and CI/CD agents. Previously, configuration was loaded strictly from the environment or the user's home directory (`~/.config/bb/config.yaml`), allowing operators to bypass corporate CA bundles, disable TLS verification via `BB_INSECURE_SKIP_VERIFY=true`, or store credentials insecurely when the OS keyring failed.
 By supporting system-wide configuration (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`) and Windows Group Policy (`HKLM\Software\Policies\bb`), organizations deploying via Ansible, Jamf, Intune, or GPO can enforce non-negotiable security postures without interfering with team-level workspace settings or user convenience profiles. Points 5 and 6 came from a report that bb trusts the policy file without checking its owner. The remedy was wrong -- an application does not audit who may write a machine-wide path, and none of /etc's other consumers do -- but it established that the directory does not exist until somebody creates it, and that on Windows that somebody need not be an administrator. The answer is a deployment step, not a check inside bb. The registry advice that came with it was wrong too, which is why point 6 states the parity rather than assuming it.
 
-## Rejected Alternatives
+## Not chosen
 
-- `Only support environment variables for policy overrides`: Environment variables can be easily overwritten or unset by unprivileged users in user-space shells, defeating fleet-wide security enforcement.
-- `Rely exclusively on system-level configuration files without Windows Registry support`: Windows enterprise fleet management relies heavily on Group Policy Objects (GPO) and Intune CSPs targeting HKLM\Software\Policies. Restricting policy to flat files would require custom scripting rather than standard GPO.
-- `Check the owner and mode of the policy file before trusting it`: Polices an OS administration problem from inside an application, and would have to decide what a correct owner is on Windows, where the answer is an ACL rather than a uid.
-- `Have bb create the system configuration directory on first run`: On Windows it would then be created by the first unprivileged account to run bb, which would own the tier that outranks its own configuration.
+- **Only support environment variables for policy overrides**: Environment variables can be easily overwritten or unset by unprivileged users in user-space shells, defeating fleet-wide security enforcement.
+- **Rely exclusively on system-level configuration files without Windows Registry support**: Windows enterprise fleet management relies heavily on Group Policy Objects (GPO) and Intune CSPs targeting HKLM\Software\Policies. Restricting policy to flat files would require custom scripting rather than standard GPO.
+- **Check the owner and mode of the policy file before trusting it**: Polices an OS administration problem from inside an application, and would have to decide what a correct owner is on Windows, where the answer is an ACL rather than a uid.
+- **Have bb create the system configuration directory on first run**: On Windows it would then be created by the first unprivileged account to run bb, which would own the tier that outranks its own configuration.
