@@ -31,6 +31,7 @@ func main() {
 
 type toolRow struct {
 	Name        string
+	Title       string
 	Description string
 	ReadOnly    bool
 	Asks        mcp.Asking
@@ -46,6 +47,7 @@ func exportToolReference(outputPath string) error {
 		}
 		rows = append(rows, toolRow{
 			Name:        spec.Tool.Name,
+			Title:       toolTitle(spec),
 			Description: collapse(spec.Tool.Description),
 			ReadOnly:    spec.ReadOnly(),
 			Asks:        spec.Asks,
@@ -68,13 +70,22 @@ func exportToolReference(outputPath string) error {
 	out.WriteString("The tools answer the agent, and `show` is for the person: an agent uses the tools to find, read and change things, and `show` for someone who is there to see the result, never when it works on its own. [Tools and views](../ai-and-llms.md#tools-and-views) says which for what.\n\n")
 	out.WriteString("`refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them. A click in a view is a call of a tool, through the client, never a connection to Bitbucket ([how views work](../advanced/mcp-governance.md#views-stay-inside-the-mcp-server)).\n\n")
 
-	out.WriteString("| Tool | Access | Asks | What it does |\n|---|---|---|---|\n")
+	// The title is the tool's name for people, as MCP defines it. The
+	// description is written for the model, which is the tool's main reader,
+	// so it is shown as it is and not rewritten for this page.
+	out.WriteString("| Tool | What it does | Access | Asks |\n|---|---|---|---|\n")
 	for _, row := range rows {
 		access := "writes"
 		if row.ReadOnly {
 			access = "read-only"
 		}
-		fmt.Fprintf(&out, "| `%s` | %s | %s | %s |\n", row.Name, access, row.Asks, row.Description)
+		fmt.Fprintf(&out, "| `%s` | %s | %s | %s |\n", row.Name, row.Title, access, row.Asks)
+	}
+
+	out.WriteString("\n??? note \"What each tool tells the model\"\n\n")
+	out.WriteString("    The description a client hands the model with each tool, as the server sends it.\n\n")
+	for _, row := range rows {
+		fmt.Fprintf(&out, "    `%s`\n    :   %s\n\n", row.Name, row.Description)
 	}
 
 	out.WriteString("\n## Tools that ask\n\n")
@@ -147,4 +158,14 @@ func writePrompts(out *strings.Builder) {
 // row early.
 func collapse(text string) string {
 	return strings.Join(strings.Fields(strings.ReplaceAll(text, "|", `\|`)), " ")
+}
+
+// toolTitle is the title a tool declares for people, which every tool has
+// (TestEveryToolDeclaresItsHintsAndTitle).
+func toolTitle(spec mcp.Spec) string {
+	if spec.Tool.Annotations != nil && spec.Tool.Annotations.Title != "" {
+		return spec.Tool.Annotations.Title
+	}
+
+	return spec.Tool.Title
 }
