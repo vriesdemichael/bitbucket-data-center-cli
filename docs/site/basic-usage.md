@@ -136,6 +136,29 @@ invocation and never written into the repository.
 Pushing afterwards is plain `git`, which does not go through `bb` — run `bb auth setup-git`
 once to let it authenticate. See [Git Authentication](advanced/git-authentication.md).
 
+## `bb pr create`
+
+Inside a checkout, `bb pr create` works out what it is not told:
+
+| Flag | Taken from |
+|---|---|
+| `--from-ref` | The branch that is checked out |
+| `--to-ref` | The repository's default branch |
+| `--title` | The subject of the branch's commit, when it holds exactly one |
+
+```bash
+git push -u origin feature/login
+bb pr create
+```
+
+At a terminal each is offered for you to accept or change. With nobody to ask, in
+CI or under `--no-input` or `--json`, they are used as they are and named on stderr,
+and `--title` is still required for a branch that holds several commits. The
+checked-out branch is only taken unasked when the repository itself came from the
+checkout: with `--repo` naming one, pass `--from-ref`.
+
+It prints the pull request's link, and `--json` carries it as `url`.
+
 ## Reviewers
 
 `bb pr create` fills in reviewers exactly as the web interface does: the default

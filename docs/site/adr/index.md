@@ -4,8 +4,8 @@ Published Architecture and Development Decision Records for this project.
 
 This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`.
 
-- Total ADRs: `101`
-- Accepted ADRs: `90`
+- Total ADRs: `102`
+- Accepted ADRs: `91`
 
 ## ADR List
 
@@ -110,4 +110,5 @@ This page and linked ADR pages are generated from `docs/decisions/*.yaml` by `ta
 - [ADR 099: The MCP server serves Bitbucket content as resources, prompts and completions](099-mcp-resources-prompts-and-completions.md) (`architecture`, `accepted`)
 - [ADR 100: Administrative policy can switch bb off, switch its MCP server off, or make it read-only](100-administrators-can-switch-bb-off-or-make-it-read-only.md) (`architecture`, `accepted`)
 - [ADR 101: The MCP server adopts MCP Apps, and shows its views through one tool](101-mcp-server-adopts-mcp-apps.md) (`architecture`, `accepted`)
+- [ADR 102: A value read from where a command runs may stand in for its flag](102-a-value-read-from-where-a-command-runs-may-stand-in-for-its-flag.md) (`architecture`, `accepted`)
 

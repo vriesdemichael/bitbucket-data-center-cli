@@ -12,6 +12,7 @@ This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-mar
 - Category: `architecture`
 - Status: `accepted`
 - Supersedes: `054`
+- Amended By: `102`
 - Provenance: `guided-ai`
 - Source: `docs/decisions/073-interactive-when-a-person-is-there-explicit-when-not.yaml`
 
