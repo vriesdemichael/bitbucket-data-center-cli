@@ -37,7 +37,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	adminCmd := &cobra.Command{
 		Use:   "admin",
-		Short: "Administrative and connectivity checks",
+		Short: "Check that the configured Bitbucket answers and accepts your credentials",
 	}
 
 	adminCmd.AddCommand(&cobra.Command{

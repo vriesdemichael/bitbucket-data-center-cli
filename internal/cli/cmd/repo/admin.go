@@ -367,7 +367,7 @@ func newRepoAdminCommand(deps Dependencies) *cobra.Command {
 
 	repoAdminCmd := &cobra.Command{
 		Use:   "admin",
-		Short: "Repository administration commands (create/fork/update/delete)",
+		Short: "Create, fork, update and delete repositories",
 	}
 
 	repoAdminCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")

@@ -6,18 +6,18 @@ search:
 
 # bb repo
 
-Repository commands
+Create, clone, browse and configure repositories
 
 63 commands.
 
 [`bb repo admin`](#bb-repo-admin)
-:   Repository administration commands (create/fork/update/delete) (4 commands)
+:   Create, fork, update and delete repositories (4 commands)
 
 [`bb repo archive`](#bb-repo-archive)
 :   Download repository archive
 
 [`bb repo browse`](#bb-repo-browse)
-:   Repository content browsing commands (5 commands)
+:   Read a file, a tree, its history or its blame at any ref (5 commands)
 
 [`bb repo cat`](#bb-repo-cat)
 :   Output the raw content of a file over REST
@@ -26,7 +26,7 @@ Repository commands
 :   Clone a repository to the local filesystem
 
 [`bb repo comment`](#bb-repo-comment)
-:   Comment commands for commits and pull requests (4 commands)
+:   Add, list, update and delete comments on commits and pull requests (4 commands)
 
 [`bb repo compare`](#bb-repo-compare)
 :   Compare commits or branches
@@ -35,7 +35,7 @@ Repository commands
 :   Create a new repository
 
 [`bb repo default-task`](#bb-repo-default-task)
-:   Manage repository default checklist tasks (4 commands)
+:   Add, list, update and delete the tasks each pull request in a repository starts with (4 commands)
 
 [`bb repo delete`](#bb-repo-delete)
 :   Delete a repository
@@ -50,22 +50,22 @@ Repository commands
 :   Show a repository's details and its README
 
 [`bb repo label`](#bb-repo-label)
-:   Manage repository labels (3 commands)
+:   Add, list and remove a repository's labels (3 commands)
 
 [`bb repo list`](#bb-repo-list)
 :   List repositories
 
 [`bb repo permissions`](#bb-repo-permissions)
-:   Repository permission inspection commands (4 commands)
+:   Grant, list and revoke repository permissions (4 commands)
 
 [`bb repo settings`](#bb-repo-settings)
-:   Repository settings commands (20 commands)
+:   Read and change a repository's pull request, security and webhook settings (20 commands)
 
 [`bb repo ssh-key`](#bb-repo-ssh-key)
-:   Manage project or repository SSH access keys (3 commands)
+:   Add, list and remove the SSH access keys of a project or repository (3 commands)
 
 [`bb repo sync`](#bb-repo-sync)
-:   Manage repository fork synchronization (3 commands)
+:   Bring a fork up to date with its origin, and turn automatic syncing on or off (3 commands)
 
 [`bb repo unwatch`](#bb-repo-unwatch)
 :   Unwatch repository
@@ -75,7 +75,7 @@ Repository commands
 
 ## `bb repo admin`
 
-Repository administration commands (create/fork/update/delete)
+Create, fork, update and delete repositories
 
 [`create`](#bb-repo-admin-create)
 :   Create a new repository
@@ -363,7 +363,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb repo browse`
 
-Repository content browsing commands
+Read a file, a tree, its history or its blame at any ref
 
 [`blame`](#bb-repo-browse-blame)
 :   Get file blame
@@ -698,7 +698,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb repo comment`
 
-Comment commands for commits and pull requests
+Add, list, update and delete comments on commits and pull requests
 
 [`create`](#bb-repo-comment-create)
 :   Create a comment
@@ -1148,7 +1148,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb repo default-task`
 
-Manage repository default checklist tasks
+Add, list, update and delete the tasks each pull request in a repository starts with
 
 [`add`](#bb-repo-default-task-add)
 :   Add a default checklist task
@@ -1617,7 +1617,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb repo label`
 
-Manage repository labels
+Add, list and remove a repository's labels
 
 [`add`](#bb-repo-label-add)
 :   Add a repository label
@@ -1773,7 +1773,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb repo permissions`
 
-Repository permission inspection commands
+Grant, list and revoke repository permissions
 
 [`grant`](#bb-repo-permissions-grant)
 :   Grant a repository permission to a user or group
@@ -1967,7 +1967,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb repo settings`
 
-Repository settings commands
+Read and change a repository's pull request, security and webhook settings
 
 [`auto-decline delete`](#bb-repo-settings-auto-decline-delete)
 :   Delete repository auto-decline settings
@@ -2031,7 +2031,7 @@ Repository settings commands
 
 ### `bb repo settings auto-decline`
 
-Manage repository auto-decline settings
+Read, set or remove when inactive pull requests are declined
 
 #### `bb repo settings auto-decline delete`
 
@@ -2146,7 +2146,7 @@ Also takes the [global flags](global-flags.md).
 
 ### `bb repo settings auto-merge`
 
-Manage repository auto-merge settings
+Read, set or remove whether the repository allows auto-merge
 
 #### `bb repo settings auto-merge delete`
 
@@ -2257,7 +2257,7 @@ Also takes the [global flags](global-flags.md).
 
 ### `bb repo settings pull-requests`
 
-Pull request settings
+Read and change merge strategies, merge checks and required approvers
 
 #### `bb repo settings pull-requests get`
 
@@ -2301,7 +2301,7 @@ Also takes the [global flags](global-flags.md).
 
 #### `bb repo settings pull-requests merge-checks`
 
-Manage repository merge checks
+List a repository's merge checks
 
 #### `bb repo settings pull-requests merge-checks list`
 
@@ -2488,15 +2488,15 @@ Also takes the [global flags](global-flags.md).
 
 ### `bb repo settings security`
 
-Security settings
+Grant, list and revoke repository permissions
 
 #### `bb repo settings security permissions`
 
-Repository permissions
+Grant, list and revoke repository permissions of users and groups
 
 #### `bb repo settings security permissions groups`
 
-Group permissions
+Grant, list and revoke the repository permissions of a group
 
 #### `bb repo settings security permissions groups grant`
 
@@ -2620,7 +2620,7 @@ Also takes the [global flags](global-flags.md).
 
 #### `bb repo settings security permissions users`
 
-User permissions
+Grant, list and revoke the repository permissions of a user
 
 #### `bb repo settings security permissions users grant`
 
@@ -2744,11 +2744,11 @@ Also takes the [global flags](global-flags.md).
 
 ### `bb repo settings workflow`
 
-Workflow settings
+Create, list and delete repository webhooks
 
 #### `bb repo settings workflow webhooks`
 
-Repository webhooks
+Create, list and delete repository webhooks
 
 #### `bb repo settings workflow webhooks create`
 
@@ -2900,7 +2900,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb repo ssh-key`
 
-Manage project or repository SSH access keys
+Add, list and remove the SSH access keys of a project or repository
 
 [`add`](#bb-repo-ssh-key-add)
 :   Add a project or repository SSH access key
@@ -3046,7 +3046,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb repo sync`
 
-Manage repository fork synchronization
+Bring a fork up to date with its origin, and turn automatic syncing on or off
 
 ```text
 bb repo sync [flags]

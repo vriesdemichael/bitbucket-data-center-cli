@@ -6,19 +6,19 @@ search:
 
 # bb insights
 
-Code Insights report and annotation commands
+Publish and read Code Insights reports and annotations
 
 8 commands.
 
 [`bb insights annotation`](#bb-insights-annotation)
-:   Code Insights annotation commands (4 commands)
+:   Add, list, replace and delete Code Insights annotations (4 commands)
 
 [`bb insights report`](#bb-insights-report)
-:   Code Insights report commands (4 commands)
+:   Publish, read, list and delete Code Insights reports (4 commands)
 
 ## `bb insights annotation`
 
-Code Insights annotation commands
+Add, list, replace and delete Code Insights annotations
 
 [`add`](#bb-insights-annotation-add)
 :   Add annotations to a Code Insights report
@@ -205,7 +205,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb insights report`
 
-Code Insights report commands
+Publish, read, list and delete Code Insights reports
 
 [`delete`](#bb-insights-report-delete)
 :   Delete a Code Insights report

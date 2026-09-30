@@ -6,7 +6,7 @@ search:
 
 # bb commit
 
-Commit inspection and compare commands
+List, show and compare commits, and find a commit's pull requests
 
 4 commands.
 

@@ -6,7 +6,7 @@ search:
 
 # bb ref
 
-Repository ref resolution and listing commands
+List a repository's branches and tags, and resolve a ref to its commit
 
 2 commands.
 

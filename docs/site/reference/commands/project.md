@@ -6,18 +6,18 @@ search:
 
 # bb project
 
-Project administration commands
+Create and change projects, and the settings their repositories inherit
 
 30 commands.
 
 [`bb project branch-restriction`](#bb-project-branch-restriction)
-:   Manage project branch restrictions (5 commands)
+:   Create, list, update and delete the branch restrictions of a project (5 commands)
 
 [`bb project create`](#bb-project-create)
 :   Create a new project
 
 [`bb project default-task`](#bb-project-default-task)
-:   Manage project default checklist tasks (4 commands)
+:   Add, list, update and delete the tasks each pull request in a project starts with (4 commands)
 
 [`bb project delete`](#bb-project-delete)
 :   Delete a project
@@ -29,17 +29,17 @@ Project administration commands
 :   List projects
 
 [`bb project permissions`](#bb-project-permissions)
-:   Project permissions (10 commands)
+:   Grant, list and revoke project permissions (10 commands)
 
 [`bb project update`](#bb-project-update)
 :   Update project details
 
 [`bb project webhook`](#bb-project-webhook)
-:   Manage project webhooks (6 commands)
+:   Create, list, test and change a project's webhooks (6 commands)
 
 ## `bb project branch-restriction`
 
-Manage project branch restrictions
+Create, list, update and delete the branch restrictions of a project
 
 [`create`](#bb-project-branch-restriction-create)
 :   Create a new project-level restriction
@@ -411,7 +411,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb project default-task`
 
-Manage project default checklist tasks
+Add, list, update and delete the tasks each pull request in a project starts with
 
 [`add`](#bb-project-default-task-add)
 :   Add a default checklist task
@@ -709,7 +709,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb project permissions`
 
-Project permissions
+Grant, list and revoke project permissions
 
 [`grant`](#bb-project-permissions-grant)
 :   Grant a project permission to a user or group
@@ -781,7 +781,7 @@ Also takes the [global flags](global-flags.md).
 
 ### `bb project permissions groups`
 
-Group permissions
+Grant, list and revoke the project permissions of a group
 
 #### `bb project permissions groups grant`
 
@@ -997,7 +997,7 @@ Also takes the [global flags](global-flags.md).
 
 ### `bb project permissions users`
 
-User permissions
+Grant, list and revoke the project permissions of a user
 
 #### `bb project permissions users grant`
 
@@ -1137,7 +1137,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb project webhook`
 
-Manage project webhooks
+Create, list, test and change a project's webhooks
 
 [`create`](#bb-project-webhook-create)
 :   Create a new project-level webhook

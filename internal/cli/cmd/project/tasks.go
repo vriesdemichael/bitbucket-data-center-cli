@@ -15,7 +15,7 @@ import (
 func newProjectDefaultTaskCommand(deps Dependencies) *cobra.Command {
 	defaultTaskCmd := &cobra.Command{
 		Use:   "default-task",
-		Short: "Manage project default checklist tasks",
+		Short: "Add, list, update and delete the tasks each pull request in a project starts with",
 	}
 
 	listCmd := &cobra.Command{

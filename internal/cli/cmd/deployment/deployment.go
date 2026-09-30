@@ -85,7 +85,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	depCmd := &cobra.Command{
 		Use:   "deployment",
-		Short: "Manage repository-scoped deployments for commits",
+		Short: "Record, read and delete the deployments of a commit",
 	}
 
 	depCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")

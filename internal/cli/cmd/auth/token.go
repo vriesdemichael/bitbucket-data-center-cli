@@ -63,7 +63,7 @@ func resolveTokenScope(ctx context.Context, cfg config.AppConfig, newUsersClient
 func newTokenCommand(deps Dependencies) *cobra.Command {
 	tokenCmd := &cobra.Command{
 		Use:   "token",
-		Short: "Manage HTTP access tokens",
+		Short: "Create, list, update and revoke HTTP access tokens",
 	}
 
 	isJSON := func() bool {

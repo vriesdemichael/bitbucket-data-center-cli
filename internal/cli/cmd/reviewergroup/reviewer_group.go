@@ -80,7 +80,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	reviewerGroupCmd := &cobra.Command{
 		Use:   "reviewer-group",
-		Short: "Manage reviewer groups",
+		Short: "Create, list and change reviewer groups and their members",
 	}
 
 	reviewerGroupCmd.PersistentFlags().StringVar(&projectKey, "project", "", "Project key")

@@ -40,7 +40,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	aiCmd := &cobra.Command{
 		Use:   "ai",
-		Short: "AI-first tooling: MCP server and agent skill distribution",
+		Short: "Run bb's MCP server, and install its agent skill",
 	}
 
 	aiCmd.AddCommand(newMCPCommand(deps))
