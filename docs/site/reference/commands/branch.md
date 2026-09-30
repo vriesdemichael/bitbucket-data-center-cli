@@ -214,16 +214,23 @@ bb branch list --repo PROJ/repo --filter release/ --order-by MODIFICATION
 
 # Every branch, however many there are
 bb branch list --repo PROJ/repo --all
+
+# With how far each is ahead of and behind the default branch, its last
+# commit, its builds and its pull requests
+bb branch list --repo PROJ/repo --details
+
+# The same, measured against another branch
+bb branch list --repo PROJ/repo --base release/2.4
 ```
 
 `--all`
 :   Return every result rather than the first --limit
 
 `--base string`
-:   Base ref filter
+:   Branch, tag or commit the ahead and behind counts are measured against (defaults to the default branch); implies --details
 
 `--details`
-:   Include branch details from Bitbucket
+:   Show what Bitbucket's branch list shows beside each branch: how far it is ahead of and behind --base, its last commit, its builds and its pull requests
 
 `--filter string`
 :   Filter text for branch names
@@ -249,14 +256,45 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
-  repository       object
-    projectKey     string                  Project key the repository belongs to.
-    slug           string                  Repository slug.
-  branches         list of object or null  Matching branches.
-    id?            string                  Full ref name, for example refs/heads/main.
-    displayId?     string                  Short branch name, for example main.
-    latestCommit?  string                  Commit the branch currently points at.
-    default        boolean                 Whether this is the repository default branch.
+  repository               object
+    projectKey             string                  Project key the repository belongs to.
+    slug                   string                  Repository slug.
+  branches                 list of object or null  Matching branches.
+    id?                    string                  Full ref name, for example refs/heads/main.
+    displayId?             string                  Short branch name, for example main.
+    latestCommit?          string                  Commit the branch currently points at.
+    default                boolean                 Whether this is the repository default branch.
+    ahead?                 integer                 With --details: commits the branch has that the base lacks.
+    behind?                integer                 With --details: commits the base has that the branch lacks.
+    lastCommit?            object                  With --details: the commit the branch points at.
+      id?                  string                  Full 40-character SHA1.
+      displayId?           string                  Abbreviated SHA1 as Bitbucket renders it.
+      message?             string                  Full commit message, including the body.
+      author?              object                  Who wrote the change.
+        name?              string                  Display name.
+        emailAddress?      string                  Email address, when the instance exposes it.
+        avatarUrl?         string                  URL of the avatar image, when one is configured.
+      authorTimestamp?     integer                 When the change was written, in milliseconds since the epoch.
+      committer?           object                  Who committed the change.
+        name?              string                  Display name.
+        emailAddress?      string                  Email address, when the instance exposes it.
+        avatarUrl?         string                  URL of the avatar image, when one is configured.
+      committerTimestamp?  integer                 When the change was committed, in milliseconds since the epoch.
+      parents?             list of string          Commit ids of the parents.
+    builds?                object                  With --details: the builds reported for that commit, by state.
+      successful           integer                 Builds reporting SUCCESSFUL.
+      failed               integer                 Builds reporting FAILED.
+      inProgress           integer                 Builds reporting INPROGRESS.
+      unknown              integer                 Builds reporting UNKNOWN.
+      cancelled            integer                 Builds reporting CANCELLED.
+    pullRequests?          object                  With --details: the pull requests opened from the branch.
+      open                 integer                 Pull requests from the branch that are open.
+      merged               integer                 Pull requests from the branch that were merged.
+      declined             integer                 Pull requests from the branch that were declined.
+      only?                object                  The pull request itself, when the branch has exactly one.
+        id                 integer                 Pull request number, unique within the repository.
+        title              string                  Pull request title.
+        state              string                  OPEN, MERGED or DECLINED.
 </code></pre>
 </details>
 

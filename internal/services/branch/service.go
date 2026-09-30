@@ -13,6 +13,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/compat"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 )
 
 type RepositoryRef struct {
@@ -67,26 +68,9 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 		options.MaxResults = 25
 	}
 
-	// Built once. normalizeBranchOrderBy ran on every page, so a walk that
-	// needed four requests validated the same flag four times and could fail
-	// halfway through one it had already started.
-	params := &openapigenerated.GetBranchesParams{}
-	if strings.TrimSpace(options.OrderBy) != "" {
-		orderBy, err := normalizeBranchOrderBy(options.OrderBy)
-		if err != nil {
-			return nil, err
-		}
-		params.OrderBy = &orderBy
-	}
-	if filterText := strings.TrimSpace(options.FilterText); filterText != "" {
-		params.FilterText = &filterText
-	}
-	if base := strings.TrimSpace(options.Base); base != "" {
-		params.Base = &base
-	}
-	if options.Details != nil {
-		details := *options.Details
-		params.Details = &details
+	params, err := branchListParams(options)
+	if err != nil {
+		return nil, err
 	}
 
 	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
@@ -115,6 +99,240 @@ func (service *Service) List(ctx context.Context, repo RepositoryRef, options Li
 				NextPageStart: openapi.Offset(page.NextPageStart),
 			}, nil
 		})
+}
+
+// branchListParams turns the options into the request's parameters.
+//
+// Built once per listing. normalizeBranchOrderBy ran on every page, so a walk
+// that needed four requests validated the same flag four times and could fail
+// halfway through one it had already started.
+func branchListParams(options ListOptions) (*openapigenerated.GetBranchesParams, error) {
+	params := &openapigenerated.GetBranchesParams{}
+	if strings.TrimSpace(options.OrderBy) != "" {
+		orderBy, err := normalizeBranchOrderBy(options.OrderBy)
+		if err != nil {
+			return nil, err
+		}
+		params.OrderBy = &orderBy
+	}
+	if filterText := strings.TrimSpace(options.FilterText); filterText != "" {
+		params.FilterText = &filterText
+	}
+	if base := strings.TrimSpace(options.Base); base != "" {
+		params.Base = &base
+	}
+	if options.Details != nil {
+		details := *options.Details
+		params.Details = &details
+	}
+
+	return params, nil
+}
+
+// DetailedBranch is a branch with what Bitbucket's own branch list shows
+// beside it.
+type DetailedBranch struct {
+	openapigenerated.RestBranch
+	Details BranchDetails
+}
+
+// BranchDetails is what Bitbucket attaches to a branch when details are asked
+// for.
+//
+// Each part comes from a provider of its own, and a provider with nothing to
+// say about a branch leaves its part out: the base branch has no ahead and
+// behind, a branch whose commit has no builds has no tally, and one nobody
+// opened a pull request from has no pull requests.
+type BranchDetails struct {
+	AheadBehind  *AheadBehind
+	LatestCommit *openapigenerated.RestCommit
+	Builds       *openapigenerated.RestBuildStats
+	PullRequests *BranchPullRequests
+}
+
+// AheadBehind is how far a branch has moved from the base: the commits it has
+// that the base lacks, and the commits the base has that it lacks.
+type AheadBehind struct {
+	Ahead  int32 `json:"ahead"`
+	Behind int32 `json:"behind"`
+}
+
+// BranchPullRequests is the pull requests opened from a branch.
+//
+// Bitbucket answers in one of two shapes. A branch with exactly one pull
+// request gets that pull request, whatever its state; a branch with more gets
+// a count by state and no pull request. Only says which it was, and the counts
+// are filled in either way, so a caller asking how many are open reads one
+// field.
+type BranchPullRequests struct {
+	Open     int32
+	Merged   int32
+	Declined int32
+	Only     *BranchPullRequest
+}
+
+// BranchPullRequest is the one pull request a branch has.
+type BranchPullRequest struct {
+	ID    int64  `json:"id"`
+	Title string `json:"title"`
+	State string `json:"state"`
+}
+
+// The providers whose answers bb reads, by the key Bitbucket files each under.
+// Bitbucket 9.2 and 10.4 file them under the same keys.
+const (
+	aheadBehindProvider  = "com.atlassian.bitbucket.server.bitbucket-branch:ahead-behind-metadata-provider"
+	latestCommitProvider = "com.atlassian.bitbucket.server.bitbucket-branch:latest-commit-metadata"
+	buildStatusProvider  = "com.atlassian.bitbucket.server.bitbucket-build:build-status-metadata"
+	pullRequestProvider  = "com.atlassian.bitbucket.server.bitbucket-ref-metadata:outgoing-pull-request-metadata"
+)
+
+// ListDetailed lists branches with what Bitbucket's own branch list shows
+// beside each: how far it is ahead of and behind options.Base, or the default
+// branch when none is named, its latest commit, the builds of that commit and
+// the pull requests opened from it.
+//
+// The details are not in the API's description of a branch, so the generated
+// client drops them. They are read from the same response, beside the branches
+// it did decode.
+func (service *Service) ListDetailed(ctx context.Context, repo RepositoryRef, options ListOptions) ([]DetailedBranch, error) {
+	if err := validateRepositoryRef(repo); err != nil {
+		return nil, err
+	}
+	if options.MaxResults <= 0 {
+		options.MaxResults = 25
+	}
+
+	details := true
+	options.Details = &details
+	params, err := branchListParams(options)
+	if err != nil {
+		return nil, err
+	}
+
+	return openapi.PageThrough(ctx, options.Start, options.MaxResults,
+		func(ctx context.Context, start, limit int) (openapi.Page[DetailedBranch], error) {
+			startValue, limitValue := float32(start), float32(limit)
+			pageParams := *params
+			pageParams.Start = &startValue
+			pageParams.Limit = &limitValue
+
+			response, err := service.client.GetBranchesWithResponse(ctx, repo.ProjectKey, repo.Slug, &pageParams)
+			if err != nil {
+				return openapi.Page[DetailedBranch]{}, apperrors.Transport("failed to list repository branches", err)
+			}
+			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+				return openapi.Page[DetailedBranch]{}, err
+			}
+
+			page := response.ApplicationjsonCharsetUTF8200
+			if page == nil || page.Values == nil {
+				return openapi.Page[DetailedBranch]{}, nil
+			}
+
+			values, err := detailedBranches(*page.Values, response.Body)
+			if err != nil {
+				return openapi.Page[DetailedBranch]{}, err
+			}
+
+			return openapi.Page[DetailedBranch]{
+				Values:        values,
+				IsLastPage:    page.IsLastPage,
+				NextPageStart: openapi.Offset(page.NextPageStart),
+			}, nil
+		})
+}
+
+// detailedBranches pairs each branch of a page with the details the same
+// response carries for it.
+func detailedBranches(branches []openapigenerated.RestBranch, body []byte) ([]DetailedBranch, error) {
+	var page struct {
+		Values []struct {
+			Metadata map[string]json.RawMessage `json:"metadata"`
+		} `json:"values"`
+	}
+	if err := json.Unmarshal(body, &page); err != nil {
+		return nil, apperrors.New(apperrors.KindPermanent, "failed to decode branch details", err)
+	}
+	if len(page.Values) != len(branches) {
+		return nil, apperrors.New(apperrors.KindPermanent,
+			fmt.Sprintf("failed to decode branch details: %d branches and details for %d", len(branches), len(page.Values)), nil)
+	}
+
+	detailed := make([]DetailedBranch, len(branches))
+	for index, branch := range branches {
+		details, err := branchDetails(page.Values[index].Metadata)
+		if err != nil {
+			return nil, apperrors.New(apperrors.KindPermanent,
+				fmt.Sprintf("failed to decode the details of branch %s", safederef.String(branch.DisplayId)), err)
+		}
+		detailed[index] = DetailedBranch{RestBranch: branch, Details: details}
+	}
+
+	return detailed, nil
+}
+
+// branchDetails reads the parts bb knows out of what the providers attached.
+// A part that does not decode is an error rather than a part left out: a
+// listing that silently lost its counts would read as a branch that has none.
+func branchDetails(metadata map[string]json.RawMessage) (BranchDetails, error) {
+	var details BranchDetails
+
+	if raw, present := metadata[aheadBehindProvider]; present {
+		details.AheadBehind = &AheadBehind{}
+		if err := json.Unmarshal(raw, details.AheadBehind); err != nil {
+			return BranchDetails{}, fmt.Errorf("ahead and behind: %w", err)
+		}
+	}
+	if raw, present := metadata[latestCommitProvider]; present {
+		details.LatestCommit = &openapigenerated.RestCommit{}
+		if err := json.Unmarshal(raw, details.LatestCommit); err != nil {
+			return BranchDetails{}, fmt.Errorf("latest commit: %w", err)
+		}
+	}
+	if raw, present := metadata[buildStatusProvider]; present {
+		details.Builds = &openapigenerated.RestBuildStats{}
+		if err := json.Unmarshal(raw, details.Builds); err != nil {
+			return BranchDetails{}, fmt.Errorf("builds: %w", err)
+		}
+	}
+	if raw, present := metadata[pullRequestProvider]; present {
+		pullRequests, err := branchPullRequests(raw)
+		if err != nil {
+			return BranchDetails{}, fmt.Errorf("pull requests: %w", err)
+		}
+		details.PullRequests = pullRequests
+	}
+
+	return details, nil
+}
+
+// branchPullRequests reads either shape Bitbucket answers in: the one pull
+// request, or a count by state.
+func branchPullRequests(raw json.RawMessage) (*BranchPullRequests, error) {
+	var answer struct {
+		PullRequest *BranchPullRequest `json:"pullRequest"`
+		Open        int32              `json:"open"`
+		Merged      int32              `json:"merged"`
+		Declined    int32              `json:"declined"`
+	}
+	if err := json.Unmarshal(raw, &answer); err != nil {
+		return nil, err
+	}
+
+	pullRequests := &BranchPullRequests{Open: answer.Open, Merged: answer.Merged, Declined: answer.Declined, Only: answer.PullRequest}
+	if only := answer.PullRequest; only != nil {
+		switch only.State {
+		case "OPEN":
+			pullRequests.Open = 1
+		case "MERGED":
+			pullRequests.Merged = 1
+		case "DECLINED":
+			pullRequests.Declined = 1
+		}
+	}
+
+	return pullRequests, nil
 }
 
 func (service *Service) Create(ctx context.Context, repo RepositoryRef, name string, startPoint string) (openapigenerated.RestBranch, error) {
