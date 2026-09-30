@@ -449,7 +449,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "delete <reviewer-group-id>",
 		Short: "Delete a reviewer group",
 		Example: `  # By the id bb reviewer-group list prints
-  bb reviewer-group delete 4 --repo PROJ/repo --yes`,
+  bb reviewer-group delete 4 --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectKey != "" && repositorySelector != "" {

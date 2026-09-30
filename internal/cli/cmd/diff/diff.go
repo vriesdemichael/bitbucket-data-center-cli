@@ -178,7 +178,10 @@ func NewDiffPullRequestCommand(deps Dependencies, repositorySelector *string) *c
   bb diff pr 42 --repo PROJ/repo
 
   # Only the names of the files it changes
-  bb diff pr 42 --repo PROJ/repo --name-only`,
+  bb diff pr 42 --repo PROJ/repo --name-only
+
+  # As a patch, saved to a file
+  bb diff pr 42 --repo PROJ/repo --patch > pr-42.patch`,
 		Long: "Diff a pull request.\n\nAlso available as bb pr diff, which is the gh spelling.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -163,7 +163,12 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 		Short: "Create a repository webhook",
 		Example: `  # Call an endpoint when anything is pushed to the repository
   bb repo settings workflow webhooks create ci https://ci.example.com/hooks/bitbucket \
-    --repo PROJ/repo`,
+    --repo PROJ/repo
+
+  # On pull request events, signed with a shared secret read from stdin
+  printf '%s' "$WEBHOOK_SECRET" | bb repo settings workflow webhooks create reviews \
+    https://ci.example.com/hooks/reviews --repo PROJ/repo \
+    --event pr:opened --event pr:merged --secret-stdin`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
@@ -241,7 +246,7 @@ func newRepoSettingsCommand(deps Dependencies) *cobra.Command {
 		Use:   "delete <webhook-id>",
 		Short: "Delete a repository webhook",
 		Example: `  # By the id bb repo settings workflow webhooks list prints
-  bb repo settings workflow webhooks delete 12 --repo PROJ/repo --yes`,
+  bb repo settings workflow webhooks delete 12 --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
@@ -765,7 +770,7 @@ func newRepoSettingsAutoMergeCommand(deps Dependencies) *cobra.Command {
 		Use:   "delete",
 		Short: "Delete repository auto-merge settings",
 		Example: `  # Remove the repository's own auto-merge setting
-  bb repo settings auto-merge delete --repo PROJ/repo --yes`,
+  bb repo settings auto-merge delete --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {
@@ -913,7 +918,7 @@ func newRepoSettingsAutoDeclineCommand(deps Dependencies) *cobra.Command {
 		Use:   "delete",
 		Short: "Delete repository auto-decline settings",
 		Example: `  # Remove the repository's own auto-decline setting
-  bb repo settings auto-decline delete --repo PROJ/repo --yes`,
+  bb repo settings auto-decline delete --repo PROJ/repo`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := deps.LoadConfigAndClient()
 			if err != nil {

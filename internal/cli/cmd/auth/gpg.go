@@ -138,7 +138,7 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 		Use:   "remove <id-or-fingerprint>",
 		Short: "Remove a personal GPG key",
 		Example: `  # By the id or fingerprint bb auth gpg-key list prints
-  bb auth gpg-key remove 3AA5C34371567BD2 --yes`,
+  bb auth gpg-key remove 3AA5C34371567BD2`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := deps.LoadConfig()
@@ -170,7 +170,7 @@ func newGpgKeyCommand(deps Dependencies) *cobra.Command {
 		Use:   "clear",
 		Short: "Clear all personal GPG keys",
 		Example: `  # Remove every GPG key of yours
-  bb auth gpg-key clear --yes`,
+  bb auth gpg-key clear`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// This used to be a bare fmt.Scanln with no guard at all: it read
 			// the process's real stdin rather than the command's, so it hung on

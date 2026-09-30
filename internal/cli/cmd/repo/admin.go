@@ -262,7 +262,9 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 		Use:   "delete [PROJECT/slug]",
 		Short: shortDesc,
 		Long:  longDesc,
-		Example: "  # Delete a repository, naming it so the confirmation can be skipped\n" +
+		Example: "  # Delete a repository; at a terminal bb asks first\n" +
+			"  " + path + " PROJ/repo\n\n" +
+			"  # In a script, where nobody can be asked; --yes counts only when the repository is named\n" +
 			"  " + path + " PROJ/repo --yes",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

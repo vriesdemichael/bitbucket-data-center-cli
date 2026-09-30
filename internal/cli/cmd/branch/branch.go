@@ -243,11 +243,14 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List repository branches",
-		Example: `  # The first 25 branches
+		Example: `  # A repository's branches
   bb branch list --repo PROJ/repo
 
   # Release branches, most recently changed first
-  bb branch list --repo PROJ/repo --filter release/ --order-by MODIFICATION`,
+  bb branch list --repo PROJ/repo --filter release/ --order-by MODIFICATION
+
+  # Every branch, however many there are
+  bb branch list --repo PROJ/repo --all`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -391,10 +394,10 @@ func New(deps Dependencies) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <branch>",
 		Short: "Delete repository branch",
-		Example: `  # Delete a branch without being asked
-  bb branch delete feature/x --repo PROJ/repo --yes
+		Example: `  # Delete a branch; at a terminal bb asks first
+  bb branch delete feature/x --repo PROJ/repo
 
-  # Only if its tip is still the commit you expect
+  # In a script, where nobody can be asked, and only if its tip is still the commit you expect
   bb branch delete feature/x --repo PROJ/repo --end-point a1b2c3d --yes`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -791,7 +794,13 @@ an inherited one.`,
 
   # Only pull requests change release branches, except for one group
   bb branch restriction create --repo PROJ/repo --type pull-request-only \
-    --matcher-type PATTERN --matcher-id 'release/*' --group release-managers`,
+    --matcher-type PATTERN --matcher-id 'release/*' --group release-managers
+
+  # The branches the branching model calls hotfixes, or its development branch
+  bb branch restriction create --repo PROJ/repo --type no-deletes \
+    --matcher-type MODEL_CATEGORY --matcher-id HOTFIX
+  bb branch restriction create --repo PROJ/repo --type fast-forward-only \
+    --matcher-type MODEL_BRANCH --matcher-id development`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
@@ -1001,7 +1010,7 @@ project.`,
 		Use:   "delete <restriction-id>",
 		Short: "Delete branch restriction",
 		Example: `  # By the id bb branch restriction list prints
-  bb branch restriction delete 7 --repo PROJ/repo --yes`,
+  bb branch restriction delete 7 --repo PROJ/repo`,
 		Long: `Delete one of the repository's branch restrictions.
 
 A restriction the repository inherits from its project is refused: deleted

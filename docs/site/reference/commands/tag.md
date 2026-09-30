@@ -77,7 +77,10 @@ bb tag delete <tag> [flags]
 ```
 
 ```bash
-# Delete a tag without being asked
+# Delete a tag; at a terminal bb asks first
+bb tag delete v1.2.0 --repo PROJ/repo
+
+# In a script, where nobody can be asked
 bb tag delete v1.2.0 --repo PROJ/repo --yes
 ```
 
@@ -113,7 +116,7 @@ bb tag list [flags]
 ```
 
 ```bash
-# The first 25 tags
+# A repository's tags
 bb tag list --repo PROJ/repo
 
 # The 1.x releases, most recently changed first

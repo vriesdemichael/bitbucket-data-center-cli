@@ -133,7 +133,13 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 
   # Only pull requests change release branches, except for one group
   bb project branch-restriction create PROJ --type pull-request-only \
-    --matcher-type PATTERN --matcher-id 'release/*' --group release-managers`,
+    --matcher-type PATTERN --matcher-id 'release/*' --group release-managers
+
+  # The branches the branching model calls hotfixes, or its development branch
+  bb project branch-restriction create PROJ --type no-deletes \
+    --matcher-type MODEL_CATEGORY --matcher-id HOTFIX
+  bb project branch-restriction create PROJ --type fast-forward-only \
+    --matcher-type MODEL_BRANCH --matcher-id development`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()
@@ -324,7 +330,7 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 		Use:   "delete <project-key> <restriction-id>",
 		Short: "Delete a project restriction",
 		Example: `  # By the id bb project branch-restriction list prints
-  bb project branch-restriction delete PROJ 7 --yes`,
+  bb project branch-restriction delete PROJ 7`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := deps.LoadConfigAndClient()

@@ -112,7 +112,7 @@ With --repo, a condition the repository inherits from its project is refused: de
 
 ```bash
 # By the id bb reviewer condition list prints
-bb reviewer condition delete 9 --repo PROJ/repo --yes
+bb reviewer condition delete 9 --repo PROJ/repo
 ```
 
 `-y, --yes`

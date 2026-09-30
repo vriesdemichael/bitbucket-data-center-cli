@@ -324,7 +324,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "delete <project-key>",
 		Short: "Delete a project",
 		Example: `  # Delete a project
-  bb project delete PROJ --yes`,
+  bb project delete PROJ`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, client, err := d.LoadConfigAndClient()

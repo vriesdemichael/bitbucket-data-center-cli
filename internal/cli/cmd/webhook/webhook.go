@@ -140,11 +140,15 @@ func New(deps Dependencies) *cobra.Command {
 		Example: `  # Point a webhook at a new endpoint
   bb webhook update 12 --repo PROJ/repo --url https://ci.example.com/hooks/new
 
+  # Replace the events it fires on
+  bb webhook update 12 --repo PROJ/repo --event pr:opened --event pr:merged
+
   # Switch it off without deleting it
   bb webhook update 12 --repo PROJ/repo --active false
 
-  # Remove its shared secret
-  bb webhook update 12 --repo PROJ/repo --no-secret`,
+  # Have Bitbucket sign in to the endpoint, with the password read from stdin
+  printf '%s' "$ENDPOINT_PASSWORD" | bb webhook update 12 --repo PROJ/repo \
+    --credentials-username bitbucket --credentials-password-stdin`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
@@ -471,7 +475,7 @@ func New(deps Dependencies) *cobra.Command {
 		Use:   "delete <webhook-id>",
 		Short: "Delete a repository webhook",
 		Example: `  # By the id bb webhook list prints
-  bb webhook delete 12 --repo PROJ/repo --yes`,
+  bb webhook delete 12 --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()

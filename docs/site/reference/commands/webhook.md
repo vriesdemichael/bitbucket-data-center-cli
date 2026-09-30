@@ -106,7 +106,7 @@ bb webhook delete <webhook-id> [flags]
 
 ```bash
 # By the id bb webhook list prints
-bb webhook delete 12 --repo PROJ/repo --yes
+bb webhook delete 12 --repo PROJ/repo
 ```
 
 `-y, --yes`
@@ -297,11 +297,15 @@ bb webhook update <webhook-id> [flags]
 # Point a webhook at a new endpoint
 bb webhook update 12 --repo PROJ/repo --url https://ci.example.com/hooks/new
 
+# Replace the events it fires on
+bb webhook update 12 --repo PROJ/repo --event pr:opened --event pr:merged
+
 # Switch it off without deleting it
 bb webhook update 12 --repo PROJ/repo --active false
 
-# Remove its shared secret
-bb webhook update 12 --repo PROJ/repo --no-secret
+# Have Bitbucket sign in to the endpoint, with the password read from stdin
+printf '%s' "$ENDPOINT_PASSWORD" | bb webhook update 12 --repo PROJ/repo \
+  --credentials-username bitbucket --credentials-password-stdin
 ```
 
 `--active string`

@@ -91,8 +91,11 @@ func New(deps Dependencies) *cobra.Command {
 		Example: `  # The latest commits
   bb commit list --repo PROJ/repo
 
-  # The ones that touched a file
-  bb commit list --repo PROJ/repo --path src/main.go --limit 10`,
+  # The last ten that touched a file
+  bb commit list --repo PROJ/repo --path src/main.go --limit 10
+
+  # The ones Bitbucket links to a Jira issue
+  bb commit list --repo PROJ/repo --jira PAY-128`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {

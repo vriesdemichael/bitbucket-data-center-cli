@@ -71,6 +71,12 @@ bb project branch-restriction create PROJ --type no-deletes --matcher-id refs/he
 # Only pull requests change release branches, except for one group
 bb project branch-restriction create PROJ --type pull-request-only \
   --matcher-type PATTERN --matcher-id 'release/*' --group release-managers
+
+# The branches the branching model calls hotfixes, or its development branch
+bb project branch-restriction create PROJ --type no-deletes \
+  --matcher-type MODEL_CATEGORY --matcher-id HOTFIX
+bb project branch-restriction create PROJ --type fast-forward-only \
+  --matcher-type MODEL_BRANCH --matcher-id development
 ```
 
 `--access-key-id ints`
@@ -148,7 +154,7 @@ bb project branch-restriction delete <project-key> <restriction-id> [flags]
 
 ```bash
 # By the id bb project branch-restriction list prints
-bb project branch-restriction delete PROJ 7 --yes
+bb project branch-restriction delete PROJ 7
 ```
 
 `-y, --yes`
@@ -436,8 +442,9 @@ bb project default-task add <project-key> <description> [flags]
 # A task every new pull request in the project starts with
 bb project default-task add PROJ "Update the changelog"
 
-# Only for pull requests into main
-bb project default-task add PROJ "Update the changelog" --target-ref main
+# Only for pull requests from a feature branch into main
+bb project default-task add PROJ "Update the changelog" \
+  --source-ref 'feature/*' --target-ref main
 ```
 
 `--source-ref string`
@@ -486,7 +493,7 @@ bb project default-task delete <project-key> <task-id> [flags]
 
 ```bash
 # By the id bb project default-task list prints
-bb project default-task delete PROJ 3 --yes
+bb project default-task delete PROJ 3
 ```
 
 `-y, --yes`
@@ -609,7 +616,7 @@ bb project delete <project-key> [flags]
 
 ```bash
 # Delete a project
-bb project delete PROJ --yes
+bb project delete PROJ
 ```
 
 `-y, --yes`
@@ -856,7 +863,7 @@ Also available as bb project permissions revoke --group, one level shallower.
 
 ```bash
 # Take a group's permission on a project away
-bb project permissions groups revoke PROJ backend-team --yes
+bb project permissions groups revoke PROJ backend-team
 ```
 
 `-y, --yes`
@@ -934,10 +941,10 @@ Shallow alias for bb project permissions {users,groups} revoke.
 
 ```bash
 # Take a user's permission on a project away
-bb project permissions revoke PROJ alice --yes
+bb project permissions revoke PROJ alice
 
 # A group's
-bb project permissions revoke PROJ backend-team --group --yes
+bb project permissions revoke PROJ backend-team --group
 ```
 
 `--group`
@@ -1069,7 +1076,7 @@ Also available as bb project permissions revoke, one level shallower.
 
 ```bash
 # Take a user's permission on a project away
-bb project permissions users revoke PROJ alice --yes
+bb project permissions users revoke PROJ alice
 ```
 
 `-y, --yes`
@@ -1214,7 +1221,7 @@ bb project webhook delete <project-key> <webhook-id> [flags]
 
 ```bash
 # By the id bb project webhook list prints
-bb project webhook delete PROJ 12 --yes
+bb project webhook delete PROJ 12
 ```
 
 `-y, --yes`
@@ -1342,8 +1349,15 @@ bb project webhook update <project-key> <webhook-id> [flags]
 # Point a webhook at a new endpoint
 bb project webhook update PROJ 12 --url https://ci.example.com/hooks/new
 
+# Replace the events it fires on
+bb project webhook update PROJ 12 --event pr:opened --event pr:merged
+
 # Switch it off without deleting it
 bb project webhook update PROJ 12 --active false
+
+# Have Bitbucket sign in to the endpoint, with the password read from stdin
+printf '%s' "$ENDPOINT_PASSWORD" | bb project webhook update PROJ 12 \
+  --credentials-username bitbucket --credentials-password-stdin
 ```
 
 `--active string`

@@ -268,7 +268,7 @@ func New(deps Dependencies) *cobra.Command {
 		Short: "Delete repository-scoped deployment for a commit",
 		Example: `  # Remove one deployment of a commit
   bb deployment delete a1b2c3d --repo PROJ/repo --key deploy-128 --env-key prod \
-    --deployment-sequence-number 128 --yes`,
+    --deployment-sequence-number 128`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)

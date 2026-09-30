@@ -168,7 +168,10 @@ bb repo admin delete [PROJECT/slug] [flags]
 Alias for bb repo delete.
 
 ```bash
-# Delete a repository, naming it so the confirmation can be skipped
+# Delete a repository; at a terminal bb asks first
+bb repo admin delete PROJ/repo
+
+# In a script, where nobody can be asked; --yes counts only when the repository is named
 bb repo admin delete PROJ/repo --yes
 ```
 
@@ -648,8 +651,11 @@ bb repo clone <repository> [directory] [-- <gitflags>...] [flags]
 # Clone into a directory named after the repository
 bb repo clone PROJ/repo
 
-# Into a directory of your choice, over HTTPS, passing flags on to git
-bb repo clone PROJ/repo work/repo --https -- --depth 1
+# By the address the browser shows, into a directory of your choice
+bb repo clone https://bitbucket.example.com/projects/PROJ/repos/repo work/repo
+
+# Over HTTPS only, passing flags on to git
+bb repo clone PROJ/repo --https -- --depth 1
 ```
 
 `--https`
@@ -810,7 +816,7 @@ bb repo comment delete [flags]
 
 ```bash
 # Delete a comment on a commit
-bb repo comment delete --commit a1b2c3d --id 1389396 --repo PROJ/repo --yes
+bb repo comment delete --commit a1b2c3d --id 1389396 --repo PROJ/repo
 ```
 
 `--id string`
@@ -1164,8 +1170,9 @@ bb repo default-task add <description> [flags]
 # A task every new pull request in the repository starts with
 bb repo default-task add "Update the changelog" --repo PROJ/repo
 
-# Only for pull requests into main
-bb repo default-task add "Update the changelog" --repo PROJ/repo --target-ref main
+# Only for pull requests from a feature branch into main
+bb repo default-task add "Update the changelog" --repo PROJ/repo \
+  --source-ref 'feature/*' --target-ref main
 ```
 
 `--source-ref string`
@@ -1228,7 +1235,7 @@ A task the repository inherits from its project is refused; bb project default-t
 
 ```bash
 # By the id bb repo default-task list prints
-bb repo default-task delete 3 --repo PROJ/repo --yes
+bb repo default-task delete 3 --repo PROJ/repo
 ```
 
 `-y, --yes`
@@ -1387,7 +1394,10 @@ Name the repository as a PROJECT/slug argument or with --repo. Without one it is
 Also available as bb repo admin delete.
 
 ```bash
-# Delete a repository, naming it so the confirmation can be skipped
+# Delete a repository; at a terminal bb asks first
+bb repo delete PROJ/repo
+
+# In a script, where nobody can be asked; --yes counts only when the repository is named
 bb repo delete PROJ/repo --yes
 ```
 
@@ -1686,7 +1696,7 @@ bb repo label remove <label> [flags]
 
 ```bash
 # Take a label off a repository
-bb repo label remove backend --repo PROJ/repo --yes
+bb repo label remove backend --repo PROJ/repo
 ```
 
 `-y, --yes`
@@ -1879,10 +1889,10 @@ Shallow alias for bb repo settings security permissions {users,groups} revoke.
 
 ```bash
 # Take a user's permission on a repository away
-bb repo permissions revoke alice --repo PROJ/repo --yes
+bb repo permissions revoke alice --repo PROJ/repo
 
 # A group's
-bb repo permissions revoke backend-team --group --repo PROJ/repo --yes
+bb repo permissions revoke backend-team --group --repo PROJ/repo
 ```
 
 `--group`
@@ -2023,7 +2033,7 @@ bb repo settings auto-decline delete [flags]
 
 ```bash
 # Remove the repository's own auto-decline setting
-bb repo settings auto-decline delete --repo PROJ/repo --yes
+bb repo settings auto-decline delete --repo PROJ/repo
 ```
 
 `-y, --yes`
@@ -2137,7 +2147,7 @@ bb repo settings auto-merge delete [flags]
 
 ```bash
 # Remove the repository's own auto-merge setting
-bb repo settings auto-merge delete --repo PROJ/repo --yes
+bb repo settings auto-merge delete --repo PROJ/repo
 ```
 
 `-y, --yes`
@@ -2568,7 +2578,7 @@ Also available as bb repo permissions revoke --group, one level shallower.
 
 ```bash
 # Take a group's permission on a repository away
-bb repo settings security permissions groups revoke backend-team --repo PROJ/repo --yes
+bb repo settings security permissions groups revoke backend-team --repo PROJ/repo
 ```
 
 `-y, --yes`
@@ -2690,7 +2700,7 @@ Also available as bb repo permissions revoke, one level shallower.
 
 ```bash
 # Take a user's permission on a repository away
-bb repo settings security permissions users revoke alice --repo PROJ/repo --yes
+bb repo settings security permissions users revoke alice --repo PROJ/repo
 ```
 
 `-y, --yes`
@@ -2736,6 +2746,11 @@ bb repo settings workflow webhooks create <name> <url> [flags]
 # Call an endpoint when anything is pushed to the repository
 bb repo settings workflow webhooks create ci https://ci.example.com/hooks/bitbucket \
   --repo PROJ/repo
+
+# On pull request events, signed with a shared secret read from stdin
+printf '%s' "$WEBHOOK_SECRET" | bb repo settings workflow webhooks create reviews \
+  https://ci.example.com/hooks/reviews --repo PROJ/repo \
+  --event pr:opened --event pr:merged --secret-stdin
 ```
 
 `--active`
@@ -2795,7 +2810,7 @@ bb repo settings workflow webhooks delete <webhook-id> [flags]
 
 ```bash
 # By the id bb repo settings workflow webhooks list prints
-bb repo settings workflow webhooks delete 12 --repo PROJ/repo --yes
+bb repo settings workflow webhooks delete 12 --repo PROJ/repo
 ```
 
 `-y, --yes`
@@ -2985,7 +3000,7 @@ bb repo ssh-key remove <access-key-id> [flags]
 
 ```bash
 # By the id bb repo ssh-key list prints
-bb repo ssh-key remove 31 --repo PROJ/repo --yes
+bb repo ssh-key remove 31 --repo PROJ/repo
 ```
 
 `-y, --yes`

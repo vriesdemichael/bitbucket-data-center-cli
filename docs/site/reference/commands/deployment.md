@@ -122,7 +122,7 @@ bb deployment delete <commit> [flags]
 ```bash
 # Remove one deployment of a commit
 bb deployment delete a1b2c3d --repo PROJ/repo --key deploy-128 --env-key prod \
-  --deployment-sequence-number 128 --yes
+  --deployment-sequence-number 128
 ```
 
 `--deployment-sequence-number string`

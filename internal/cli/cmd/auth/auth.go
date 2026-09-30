@@ -241,6 +241,10 @@ for.`,
   printf '%s' "$BITBUCKET_PASSWORD" | bb auth login https://bitbucket.example.com \
     --username alice --password-stdin
 
+  # A second host, leaving the default where it is
+  printf '%s' "$STAGING_TOKEN" | bb auth login https://bitbucket-staging.example.com \
+    --token-stdin --set-default=false
+
   # Fail rather than store the credential in plaintext when there is no keyring
   printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com \
     --token-stdin --require-keyring`,

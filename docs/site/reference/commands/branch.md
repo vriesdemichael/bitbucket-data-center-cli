@@ -162,10 +162,10 @@ bb branch delete <branch> [flags]
 ```
 
 ```bash
-# Delete a branch without being asked
-bb branch delete feature/x --repo PROJ/repo --yes
+# Delete a branch; at a terminal bb asks first
+bb branch delete feature/x --repo PROJ/repo
 
-# Only if its tip is still the commit you expect
+# In a script, where nobody can be asked, and only if its tip is still the commit you expect
 bb branch delete feature/x --repo PROJ/repo --end-point a1b2c3d --yes
 ```
 
@@ -206,11 +206,14 @@ bb branch list [flags]
 ```
 
 ```bash
-# The first 25 branches
+# A repository's branches
 bb branch list --repo PROJ/repo
 
 # Release branches, most recently changed first
 bb branch list --repo PROJ/repo --filter release/ --order-by MODIFICATION
+
+# Every branch, however many there are
+bb branch list --repo PROJ/repo --all
 ```
 
 `--all`
@@ -381,6 +384,12 @@ bb branch restriction create --repo PROJ/repo --type no-deletes --matcher-id ref
 # Only pull requests change release branches, except for one group
 bb branch restriction create --repo PROJ/repo --type pull-request-only \
   --matcher-type PATTERN --matcher-id 'release/*' --group release-managers
+
+# The branches the branching model calls hotfixes, or its development branch
+bb branch restriction create --repo PROJ/repo --type no-deletes \
+  --matcher-type MODEL_CATEGORY --matcher-id HOTFIX
+bb branch restriction create --repo PROJ/repo --type fast-forward-only \
+  --matcher-type MODEL_BRANCH --matcher-id development
 ```
 
 `--access-key-id ints`
@@ -472,7 +481,7 @@ A restriction the repository inherits from its project is refused: deleted throu
 
 ```bash
 # By the id bb branch restriction list prints
-bb branch restriction delete 7 --repo PROJ/repo --yes
+bb branch restriction delete 7 --repo PROJ/repo
 ```
 
 `-y, --yes`

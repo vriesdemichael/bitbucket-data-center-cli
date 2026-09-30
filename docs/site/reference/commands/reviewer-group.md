@@ -91,7 +91,7 @@ bb reviewer-group delete <reviewer-group-id> [flags]
 
 ```bash
 # By the id bb reviewer-group list prints
-bb reviewer-group delete 4 --repo PROJ/repo --yes
+bb reviewer-group delete 4 --repo PROJ/repo
 ```
 
 `-y, --yes`
