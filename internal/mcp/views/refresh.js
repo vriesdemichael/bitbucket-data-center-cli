@@ -39,8 +39,8 @@ function canRefresh(view) {
 }
 
 // STILL_KINDS are views that are not read again: a form holds what the person
-// writes, and a file is read a window at a time, as the person asks.
-const STILL_KINDS = ["pull_request_form", "file"];
+// writes.
+const STILL_KINDS = ["pull_request_form"];
 
 // inMotion is a view whose data is bound to change soon.
 function inMotion(payload) {
@@ -137,15 +137,18 @@ async function refreshView(view, byPerson) {
 }
 
 // showRefreshed puts changed data in front of the person, keeping what they
-// opened. A diff starts over, since its files and lines have moved. The model
-// is told, so it answers the person's next message from what they see.
+// opened. A diff starts over, since its files and lines have moved, at the
+// file it showed. The model is told, so it answers the person's next message
+// from what they see.
 function showRefreshed(view, payload, text) {
   if (payload.kind === "diff" && patchChanged(view.payload, payload)) {
+    const shown = view.diffFiles && view.diffFile !== null && view.diffFiles[view.diffFile];
+    view.focusPath = shown ? filePath(shown) : null;
     view.diffFiles = null;
+    view.diffFile = null;
     view.openFiles = new Set();
     view.selection = null;
     view.selectionNotice = "";
-    view.focusFile = null;
     for (const key of [...view.revealed.keys()]) {
       if (key.startsWith("file-")) view.revealed.delete(key);
     }

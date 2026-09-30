@@ -12,7 +12,7 @@ import (
 )
 
 // reviewing is what a server that lets views review offers them.
-var reviewing = &viewOffers{Kinds: []string{showKindPullRequest, showKindDiff, showKindThreads}, Tools: []string{"add_pr_comment", "submit_pr_review"}}
+var reviewing = &viewOffers{Kinds: []string{showKindPullRequest, showKindDiff}, Tools: []string{"add_pr_comment", "submit_pr_review"}}
 
 func reviewedCard(me *viewMe, state, fingerprint string) viewPayload {
 	card := refreshCardPayload("Round refunds", state, time.Now(), fingerprint)

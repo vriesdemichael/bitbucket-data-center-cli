@@ -305,6 +305,8 @@ func TestViewsDrawTextOthersWroteAsText(t *testing.T) {
 		}
 	}
 
+	// Fullscreen, the diff shows one file at a time: ledger.go has the line.
+	openTreeFile(t, ctx, 3, "ledger.go", 0)
 	var diff string
 	inFrame(t, ctx, 3, `return d.body.textContent;`, &diff)
 	if !strings.Contains(diff, hostileCode) {
@@ -420,6 +422,7 @@ func TestSelectedLinesGoToTheModelOnlyWhenAsked(t *testing.T) {
 	if sent := hostMessages(t, ctx, 3, "ui/update-model-context"); len(sent) != 0 {
 		t.Fatalf("the diff sent the model context unasked: %v", sent)
 	}
+	openTreeFile(t, ctx, 3, "ledger.go", 0)
 
 	inFrame(t, ctx, 3, `
 		const numbers = [...d.querySelectorAll("tr.del .line-number, tr.add .line-number")].filter((b) => b.textContent !== "");
@@ -863,14 +866,11 @@ func TestInlineViewsStayInBounds(t *testing.T) {
 		t.Errorf("a step draws %d lines, want 260", rows)
 	}
 
-	// In a host with fullscreen, a file picked inline opens there, at that
-	// file.
+	// In a host with fullscreen, a file picked inline opens there, beside
+	// the tree.
 	inFrame(t, ctx, stressDiff, `d.querySelectorAll(".file-link")[5].click(); return null;`, nil)
-	var at float64
-	if err := chromedp.Run(ctx, chromedp.Poll(`(() => { const d = window.bbHost.frames[`+fmt.Sprint(stressDiff)+`].iframe.contentDocument; const m = d.getElementById("diff-main"); const f = d.getElementById("diff-file-5"); return m && f ? Math.abs(f.getBoundingClientRect().top - m.getBoundingClientRect().top) : false; })()`, &at,
-		chromedp.WithPollingTimeout(5*time.Second))); err != nil || at > 20 {
-		t.Errorf("a file picked inline did not open in fullscreen at that file (%.0fpx off): %v", at, err)
-	}
+	waitInFrame(t, ctx, stressDiff, `d.getElementById("diff-main") && d.getElementById("diff-file-5") && d.querySelectorAll(".diff-file").length === 1`,
+		"a file picked inline did not open in fullscreen, alone beside the tree")
 }
 
 // A description as people write them in Bitbucket, with a link, an image and

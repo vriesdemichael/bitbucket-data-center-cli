@@ -27,6 +27,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
+	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 	qualityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/quality"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/download"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
@@ -65,24 +66,24 @@ const (
 	showKindPullRequest  = "pull_request"
 	showKindPullRequests = "pull_requests"
 	showKindDiff         = "diff"
-	showKindThreads      = "threads"
 	// showKindPullRequestForm is a pull request for the person to finish and
 	// submit, offered while the tool that creates one is.
 	showKindPullRequestForm = "pull_request_form"
-	showKindFile            = "file"
 )
 
 var showKindTools = map[string]string{
 	showKindPullRequest:     "get_pull_request",
 	showKindPullRequests:    "list_pull_requests",
 	showKindDiff:            "get_pr_diff",
-	showKindThreads:         "list_pr_comments",
 	showKindPullRequestForm: "create_pull_request",
-	showKindFile:            "get_file_content",
 }
 
 // showKinds is the order the kinds are described in.
-var showKinds = []string{showKindPullRequest, showKindPullRequests, showKindDiff, showKindThreads, showKindPullRequestForm, showKindFile}
+var showKinds = []string{showKindPullRequest, showKindPullRequests, showKindDiff, showKindPullRequestForm}
+
+// commentsTool is the tool whose answer a pull request's comments are. They
+// go with its overview and its diff, as in Bitbucket, while it is exposed.
+const commentsTool = "list_pr_comments"
 
 // viewActionTools are the model's tools a view calls for the person: what a
 // click in a view does goes through them, so the scope, the audit trail and
@@ -96,15 +97,18 @@ var viewActionTools = []string{"add_pr_comment", "submit_pr_review", "create_pul
 type viewOffers struct {
 	Kinds []string `json:"kinds"`
 	Tools []string `json:"tools,omitempty"`
-	// templates highlights the code inside templates (--highlight-templates).
-	// It decides what the view is sent, not what it may do, so it is not sent.
+	// templates highlights the code inside templates (--highlight-templates),
+	// and comments puts a pull request's comments in its overview and its
+	// diff. They decide what a view is sent, not what it may do, so they are
+	// not sent.
 	templates bool
+	comments  bool
 }
 
 // offersFor is what views may do on a server with these options that exposes
 // these tools.
 func offersFor(opts ServerOptions, exposed map[string]bool) viewOffers {
-	offers := viewOffers{Kinds: offeredShowKinds(exposed), templates: opts.HighlightTemplates}
+	offers := viewOffers{Kinds: offeredShowKinds(exposed), templates: opts.HighlightTemplates, comments: exposed[commentsTool]}
 	for _, tool := range append(slices.Clone(viewActionTools), viewHelperTools...) {
 		if exposed[tool] {
 			offers.Tools = append(offers.Tools, tool)
@@ -132,7 +136,7 @@ type ShowInput struct {
 	Kind    string `json:"kind"`
 	Project string `json:"project,omitempty" jsonschema:"Bitbucket project key"`
 	Repo    string `json:"repo,omitempty" jsonschema:"Repository slug"`
-	ID      string `json:"id,omitempty" jsonschema:"Pull request ID, for kind pull_request, diff and threads"`
+	ID      string `json:"id,omitempty" jsonschema:"Pull request ID, for kind pull_request and diff"`
 	// State's description is set in specShow, from the values the service
 	// accepts, as list_pull_requests does.
 	State string `json:"state,omitempty"`
@@ -146,10 +150,6 @@ type ShowInput struct {
 	Description string `json:"description,omitempty" jsonschema:"For kind pull_request_form: the description you drafted, in Markdown"`
 	Reviewers   string `json:"reviewers,omitempty" jsonschema:"For kind pull_request_form: comma-separated reviewer usernames"`
 	Draft       bool   `json:"draft,omitempty" jsonschema:"For kind pull_request_form: open it as a draft"`
-	// The file for kind file, named as get_file_content names it.
-	Path      string `json:"path,omitempty" jsonschema:"For kind file: the file's path in the repository"`
-	At        string `json:"at,omitempty" jsonschema:"For kind file: the branch, tag or commit to read it at; omit for the default branch"`
-	StartLine int    `json:"start_line,omitempty" jsonschema:"For kind file: the first line to show (default 1)"`
 }
 
 // ShowOutput says whether anything was shown, and what.
@@ -165,15 +165,14 @@ type ShowOutput struct {
 func specShow() Spec {
 	tool := &mcp.Tool{
 		Name: "show",
-		Description: "Show the person a pull request, a list of pull requests, a pull request's diff or its comment threads as an " +
-			"interactive view, in clients that display MCP Apps views, or a pull request form for them to finish and submit. Call it once, " +
-			"after you have what you need and before your answer, for what the person should see; use the other tools to find it. kinds " +
-			"pull_request, diff and threads take project, repo and id; kind pull_requests takes the filters list_pull_requests takes. " +
-			"Kind pull_request_form takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), " +
-			"or an id to edit that pull request; nothing is created or changed until the person submits it. Kind file takes project, " +
-			"repo, path and at, and shows code, a picture, audio, a video or an archive's listing. A diff or a file is for what the " +
-			"person cannot open in their own editor, such as another repository's. In a client that displays no views, it shows " +
-			"nothing and says so.",
+		Description: "Show the person a pull request, a list of pull requests or a pull request's diff as an interactive view, in " +
+			"clients that display MCP Apps views, or a pull request form for them to finish and submit. Call it once, after you have " +
+			"what you need and before your answer, for what the person should see; use the other tools to find it. Kinds pull_request " +
+			"and diff take project, repo and id; a pull request's overview has its comments and activity, and its diff the comments " +
+			"on its lines. Kind pull_requests takes the filters list_pull_requests takes. Kind pull_request_form takes project, repo, " +
+			"from_ref and what you drafted (title, description, to_ref, reviewers, draft), or an id to edit that pull request; nothing " +
+			"is created or changed until the person submits it. A diff is for changes the person cannot open in their own editor, " +
+			"such as another repository's. In a client that displays no views, it shows nothing and says so.",
 		Annotations: readOnly("Show a view"),
 		InputSchema: showInputSchema(showKinds),
 		Meta:        viewToolMeta(),
@@ -336,10 +335,6 @@ func showHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[ShowInput, Sho
 
 func checkShowInput(in ShowInput) error {
 	switch in.Kind {
-	case showKindFile:
-		if in.Project == "" || in.Repo == "" || strings.TrimSpace(in.Path) == "" {
-			return fmt.Errorf("kind file needs project, repo and path")
-		}
 	case showKindPullRequestForm:
 		if in.Project == "" || in.Repo == "" {
 			return fmt.Errorf("kind pull_request_form needs project and repo")
@@ -347,7 +342,7 @@ func checkShowInput(in ShowInput) error {
 		if in.ID == "" && strings.TrimSpace(in.FromRef) == "" {
 			return fmt.Errorf("kind pull_request_form needs from_ref for a new pull request, or id to edit one")
 		}
-	case showKindPullRequest, showKindDiff, showKindThreads:
+	case showKindPullRequest, showKindDiff:
 		if in.Project == "" || in.Repo == "" || in.ID == "" {
 			return fmt.Errorf("kind %s needs project, repo and id", in.Kind)
 		}
@@ -380,7 +375,10 @@ type viewPayload struct {
 	PullRequests []viewPullRequest `json:"pull_requests,omitempty"`
 	LimitReached bool              `json:"limit_reached,omitempty"`
 	Diff         *viewDiff         `json:"diff,omitempty"`
-	Threads      *viewThreads      `json:"threads,omitempty"`
+	// Threads are a diff's comments, each where Bitbucket's diff draws it.
+	Threads *viewThreads `json:"threads,omitempty"`
+	// Activity is a pull request's, for its overview.
+	Activity *viewActivity `json:"activity,omitempty"`
 	// Avatars maps a username to its avatar as a data: URI. A user missing
 	// from it is drawn with initials.
 	Avatars map[string]string `json:"avatars,omitempty"`
@@ -398,8 +396,6 @@ type viewPayload struct {
 	// Form is a pull request for the person to finish, for kind
 	// pull_request_form.
 	Form *viewForm `json:"form,omitempty"`
-	// File is a file, for kind file.
-	File *viewFile `json:"file,omitempty"`
 }
 
 // viewMe is the person bb acts for, on one pull request: whether they wrote
@@ -554,7 +550,7 @@ func withHighlights(payload *viewPayload, offers viewOffers) {
 	if payload.Diff == nil || payload.Diff.Patch == "" {
 		return
 	}
-	if spans := highlight.PatchWith(payload.Diff.Patch, offers.highlighting()); len(spans) > 0 {
+	if spans := highlight.Patch(payload.Diff.Patch, offers.highlighting()); len(spans) > 0 {
 		payload.Diff.Highlight = spans
 	}
 }
@@ -604,13 +600,19 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 
 	switch in.Kind {
 	case showKindPullRequest:
-		pr, err := pullRequestForView(ctx, c, in)
+		pr, activity, activityPeople, err := pullRequestForView(ctx, c, in, offers)
 		if err != nil {
 			return viewPayload{}, nil, viewSummary{}, err
 		}
 		payload.PullRequest = &pr
+		payload.Activity = activity
 		payload.Me = meFor(currentUsername(ctx, c), pr.PullRequest)
 		people = peopleOf(pr.PullRequest, maxViewPeople)
+		for username, slug := range activityPeople {
+			if len(people) < maxViewPeople {
+				people[username] = slug
+			}
+		}
 		summary = summarizePullRequest(pr)
 	case showKindPullRequests:
 		list, err := listPullRequests(ctx, c, ListPullRequestsInput{
@@ -650,16 +652,12 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 		if err != nil {
 			return viewPayload{}, nil, viewSummary{}, err
 		}
-		files, patch, truncated := splitPatch(result.Patch, maxViewFileBytes, maxViewPatchBytes)
-		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
-		payload.Diff = &viewDiff{Files: files, Patch: patch, Truncated: truncated}
-		payload.Me = meFor(currentUsername(ctx, c), pr)
 		people = map[string]string{pr.AuthorUsername: pr.AuthorSlug}
-		// The diff draws each comment on its line, as Bitbucket's diff does,
-		// where the server shows the threads at all. A Bitbucket that cannot
-		// answer for them leaves the diff without them.
-		if offers.kind(showKindThreads) {
-			if threads, threadPeople, err := threadsForView(ctx, c, in, false); err == nil {
+		// The diff draws each comment where Bitbucket's diff does, where the
+		// server shows comments at all. A Bitbucket that cannot answer for them
+		// leaves the diff without them.
+		if offers.comments {
+			if threads, threadPeople, err := threadsForDiff(ctx, c, in, result.Patch); err == nil {
 				payload.Threads = &threads
 				for username, slug := range threadPeople {
 					if len(people) < maxViewPeople {
@@ -668,20 +666,11 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 				}
 			}
 		}
-		summary = summarizeDiff(in, pr, result.Patch)
-	case showKindThreads:
-		pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
-		if err != nil {
-			return viewPayload{}, nil, viewSummary{}, err
-		}
-		threads, threadPeople, err := threadsForView(ctx, c, in, true)
-		if err != nil {
-			return viewPayload{}, nil, viewSummary{}, err
-		}
+		files, kept, truncated := splitPatch(result.Patch, maxViewFileBytes, maxViewPatchBytes)
 		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
-		payload.Threads = &threads
-		people = threadPeople
-		summary = summarizeThreads(in, pr.Title, threads)
+		payload.Diff = &viewDiff{Files: files, Patch: kept, Truncated: truncated}
+		payload.Me = meFor(currentUsername(ctx, c), pr)
+		summary = summarizeDiff(in, pr, result.Patch)
 	case showKindPullRequestForm:
 		form, pr, formSummary, err := formForView(ctx, c, in)
 		if err != nil {
@@ -690,13 +679,6 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 		payload.Form = &form
 		payload.PullRequest = pr
 		summary = formSummary
-	case showKindFile:
-		file, fileSummary, err := fileForView(ctx, c, in, offers)
-		if err != nil {
-			return viewPayload{}, nil, viewSummary{}, err
-		}
-		payload.File = &file
-		summary = fileSummary
 	default:
 		return viewPayload{}, nil, viewSummary{}, fmt.Errorf("unknown kind %q", in.Kind)
 	}
@@ -722,11 +704,6 @@ func fingerprintOf(payload viewPayload) string {
 		diff.Highlight = nil
 		payload.Diff = &diff
 	}
-	if payload.File != nil {
-		file := *payload.File
-		file.Highlight = nil
-		payload.File = &file
-	}
 	encoded, err := json.Marshal(payload)
 	if err != nil {
 		// Unreachable for a payload of plain data. An empty fingerprint
@@ -737,14 +714,26 @@ func fingerprintOf(payload viewPayload) string {
 	return hex.EncodeToString(sum[:16])
 }
 
-// pullRequestForView reads a pull request with everything its card shows:
-// the review summary, the checks on its source commit and auto-merge. The
-// checks and auto-merge are extras: a Bitbucket that cannot answer for them
-// leaves them out rather than failing the view.
-func pullRequestForView(ctx context.Context, c Clients, in ShowInput) (viewPullRequest, error) {
-	out, err := pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: in.Project, Repo: in.Repo, ID: in.ID})
+// pullRequestForView reads a pull request with everything its card and
+// overview show: the review summary, the checks on its source commit,
+// auto-merge and, where the server shows comments, its activity, with the
+// people whose avatars the activity draws. The checks and auto-merge are
+// extras: a Bitbucket that cannot answer for them leaves them out rather than
+// failing the view.
+func pullRequestForView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) (viewPullRequest, *viewActivity, map[string]string, error) {
+	var (
+		out      GetPullRequestOutput
+		activity *viewActivity
+		people   map[string]string
+		err      error
+	)
+	if offers.comments {
+		out, activity, people, err = pullRequestWithActivity(ctx, c, in)
+	} else {
+		out, err = pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: in.Project, Repo: in.Repo, ID: in.ID})
+	}
 	if err != nil {
-		return viewPullRequest{}, err
+		return viewPullRequest{}, nil, nil, err
 	}
 
 	view := viewPullRequest{
@@ -766,7 +755,39 @@ func pullRequestForView(ctx context.Context, c Clients, in ShowInput) (viewPullR
 		view.AutoMerge = &autoMerge
 	}
 
-	return view, nil
+	return view, activity, people, nil
+}
+
+// pullRequestWithActivity is pullRequestWithReviewSummary for a card, which
+// also lists the pull request's activity: the timeline is read once, for
+// both. A Bitbucket whose timeline cannot be read here gets the summary
+// get_pull_request falls back to, and no activity.
+func pullRequestWithActivity(ctx context.Context, c Clients, in ShowInput) (GetPullRequestOutput, *viewActivity, map[string]string, error) {
+	pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+	if err != nil {
+		return GetPullRequestOutput{}, nil, nil, err
+	}
+	activities, available, err := pullrequestactivityservice.NewService(c.OpenAPI).TryList(ctx,
+		pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+	if err != nil {
+		return GetPullRequestOutput{}, nil, nil, err
+	}
+	if !available {
+		out, err := pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: in.Project, Repo: in.Repo, ID: in.ID})
+		return out, nil, nil, err
+	}
+	threads, summary := pullrequestactivityservice.ExtractThreads(activities, pullrequestactivityservice.ThreadOptions{
+		WithReplies: true, BaseURL: c.BaseURL, ProjectKey: in.Project, Slug: in.Repo, PullRequestID: in.ID,
+	})
+	byID := make(map[int64]pullrequestactivityservice.Thread, len(threads))
+	for _, thread := range threads {
+		byID[thread.ID] = thread
+	}
+	activity, people := activityForView(activities, byID)
+	return GetPullRequestOutput{
+		PullRequest:   pr,
+		ReviewSummary: pullrequestservice.BuildReviewSummary(pr, pullrequestservice.ReviewCounts{Threads: &summary}),
+	}, &activity, people, nil
 }
 
 // buildsForView reads a commit's builds as a card shows them: Bitbucket's
@@ -1054,6 +1075,16 @@ func summarizePullRequest(pr viewPullRequest) viewSummary {
 	if missing, failed := requiredStanding(pr); missing+failed > 0 {
 		lines = append(lines, fmt.Sprintf("Required builds: %d missing, %d failed, of %d.", missing, failed, len(pr.RequiredChecks)))
 	}
+	if summary := pr.ReviewSummary; summary != nil && summary.UnresolvedThreads != nil {
+		comments := fmt.Sprintf("Comments: %d unresolved", *summary.UnresolvedThreads)
+		if summary.OpenTasks != nil && *summary.OpenTasks > 0 {
+			comments += fmt.Sprintf(" (%d of them open tasks)", *summary.OpenTasks)
+		}
+		if summary.ResolvedThreads != nil {
+			comments += fmt.Sprintf(", %d resolved", *summary.ResolvedThreads)
+		}
+		lines = append(lines, comments+".")
+	}
 	if pr.AutoMerge != nil {
 		lines = append(lines, "Auto-merge is on.")
 	}
@@ -1301,15 +1332,14 @@ var viewScripts = []string{
 	"dom.js",
 	"format.js",
 	"markdown.js",
+	"comments.js",
 	"pull_request.js",
 	"pull_requests.js",
 	"diff.js",
-	"threads.js",
 	"refresh.js",
 	"open.js",
 	"actions.js",
 	"form.js",
-	"file.js",
 	"main.js",
 }
 

@@ -15,16 +15,7 @@ import (
 )
 
 // commenting is what a server that lets views comment offers them.
-var commenting = &viewOffers{Kinds: []string{showKindPullRequest, showKindDiff, showKindThreads}, Tools: []string{"add_pr_comment"}}
-
-// threadsPayloadWith is the fixture's threads in a view that can be refreshed.
-func threadsPayloadWith(threads viewThreads, offers *viewOffers, fingerprint string) viewPayload {
-	pr := viewPullRequest{PullRequest: fixturePullRequest(), URL: threadsURL}
-	return viewPayload{
-		Kind: showKindThreads, GeneratedAt: time.Now().UTC().Format(time.RFC3339), PullRequest: &pr, Threads: &threads,
-		Show: &ShowInput{Kind: showKindThreads, Project: "PAY", Repo: "ledger", ID: "42"}, Fingerprint: fingerprint, Offers: offers,
-	}
-}
+var commenting = &viewOffers{Kinds: []string{showKindPullRequest, showKindDiff}, Tools: []string{"add_pr_comment"}}
 
 // toolAnswer is a tool's result as the host passes it back: text, and an
 // error when failed is set.
@@ -62,32 +53,31 @@ func typeInto(t *testing.T, ctx context.Context, frame int, selector, text strin
 	}
 }
 
-// A reply goes to Bitbucket through add_pr_comment, with the thread it
+// A reply goes to Bitbucket through add_pr_comment, with the comment it
 // answers, and the view reads itself again to show it. What the person wrote
 // survives a redraw, and stays where sending failed.
 func TestAReplyGoesThroughTheModelsToolAndShows(t *testing.T) {
-	threads := fixtureThreads()
-	replied := fixtureThreads()
-	replied.Threads[0].Replies = append(replied.Threads[0].Replies, viewReply{Author: "Alice Smith", AuthorUsername: "alice", Date: time.Now().UnixMilli(), Text: "Capped at thirty seconds."})
-	after := threadsPayloadWith(replied, commenting, "two")
+	replied := fixtureActivity()
+	replied.Items[3].Thread.Replies = append(replied.Items[3].Thread.Replies, viewReply{ID: 99, Author: "Alice Smith", AuthorUsername: "alice", Date: time.Now().UnixMilli(), Text: "Capped at thirty seconds."})
+	after := overviewPayload(replied, commenting, "two")
 	ctx := browser(t, []viewhost.Frame{
-		{Title: "threads fullscreen", Mode: "fullscreen", Fullscreen: true, Result: fixtureResult(t, threadsPayloadWith(threads, commenting, "one")),
+		{Title: "overview fullscreen", Mode: "fullscreen", Fullscreen: true, Result: fixtureResult(t, overviewPayload(fixtureActivity(), commenting, "one")),
 			ToolResults: map[string][]json.RawMessage{
 				"add_pr_comment": {toolAnswer(t, "Bitbucket refused the comment.", true), toolAnswer(t, `{"comment":{"id":99}}`, false)},
-				"refresh_view":   {refreshAnswer(t, &after, "The view of the comment threads you showed the person has changed: 4 unresolved.")},
+				"refresh_view":   {refreshAnswer(t, &after, "The view of the pull request you showed the person has changed.")},
 			}},
 	})
 
 	var clicked bool
-	inFrame(t, ctx, 0, `const b = d.querySelector("#thread-1 .reply-row button"); if (b) b.click(); return Boolean(b);`, &clicked)
+	inFrame(t, ctx, 0, `const b = d.querySelector("#thread-1 .text-action"); if (b) b.click(); return Boolean(b);`, &clicked)
 	if !clicked {
-		t.Fatal("the open task has no Reply button")
+		t.Fatal("the open task has no Reply")
 	}
 	waitInFrame(t, ctx, 0, `d.activeElement && d.activeElement.dataset.draft === "reply-1"`, "the reply box did not open with the caret in it")
 	typeInto(t, ctx, 0, `[data-draft="reply-1"]`, "Capped at thirty seconds.")
 
-	// A redraw, here the resolved comments folding open, keeps the draft.
-	clickButton(t, ctx, 0, "resolved comment")
+	// A redraw, here a resolved thread opening, keeps the draft.
+	inFrame(t, ctx, 0, `d.querySelector("#thread-3 .comment-folded").click(); return true;`, &clicked)
 	var kept string
 	inFrame(t, ctx, 0, `const i = d.querySelector('[data-draft="reply-1"]'); return i ? i.value : "";`, &kept)
 	if kept != "Capped at thirty seconds." {
@@ -119,11 +109,11 @@ func TestAReplyGoesThroughTheModelsToolAndShows(t *testing.T) {
 	}
 }
 
-// A comment on the pull request itself carries no thread to answer.
+// A comment on the pull request itself carries no comment to answer.
 func TestACommentOnThePullRequestGoesThroughTheModelsTool(t *testing.T) {
-	after := threadsPayloadWith(fixtureThreads(), commenting, "two")
+	after := overviewPayload(fixtureActivity(), commenting, "two")
 	ctx := browser(t, []viewhost.Frame{
-		{Title: "threads fullscreen", Mode: "fullscreen", Fullscreen: true, Result: fixtureResult(t, threadsPayloadWith(fixtureThreads(), commenting, "one")),
+		{Title: "overview fullscreen", Mode: "fullscreen", Fullscreen: true, Result: fixtureResult(t, overviewPayload(fixtureActivity(), commenting, "one")),
 			ToolResults: map[string][]json.RawMessage{
 				"add_pr_comment": {toolAnswer(t, `{"comment":{"id":100}}`, false)},
 				"refresh_view":   {refreshAnswer(t, &after, "changed")},
@@ -137,7 +127,7 @@ func TestACommentOnThePullRequestGoesThroughTheModelsTool(t *testing.T) {
 	waitInFrame(t, ctx, 0, `!d.querySelector('[data-draft="comment-pr"]')`, "the comment box did not close once sent")
 	calls := toolCalls(t, ctx, 0, "add_pr_comment")
 	if len(calls) != 1 || calls[0]["text"] != "Looks good to me." || calls[0]["parent_id"] != nil {
-		t.Errorf("the comment sent %v, want its text and no thread", calls)
+		t.Errorf("the comment sent %v, want its text and no comment it answers", calls)
 	}
 }
 
@@ -146,9 +136,9 @@ func TestACommentOnThePullRequestGoesThroughTheModelsTool(t *testing.T) {
 func TestAViewOffersToCommentOnlyWhereItCan(t *testing.T) {
 	ctx := browser(t, []viewhost.Frame{
 		{Title: "a server that keeps add_pr_comment from views", Mode: "fullscreen", Fullscreen: true,
-			Result: fixtureResult(t, threadsPayloadWith(fixtureThreads(), everyKind, "one")), ToolResults: answers(refreshAnswer(t, nil, "unchanged"))},
+			Result: fixtureResult(t, overviewPayload(fixtureActivity(), everyKind, "one")), ToolResults: answers(refreshAnswer(t, nil, "unchanged"))},
 		{Title: "a host that passes no tool calls", Mode: "fullscreen", Fullscreen: true,
-			Result: fixtureResult(t, threadsPayloadWith(fixtureThreads(), commenting, "one"))},
+			Result: fixtureResult(t, overviewPayload(fixtureActivity(), commenting, "one"))},
 	})
 	if err := chromedp.Run(ctx, chromedp.Sleep(200*time.Millisecond)); err != nil {
 		t.Fatal(err)
@@ -160,7 +150,7 @@ func TestAViewOffersToCommentOnlyWhereItCan(t *testing.T) {
 			t.Errorf("frame %d offers to write where it cannot: %s", frame, buttons)
 		}
 		if !strings.Contains(frameText(t, ctx, frame), "Cap the time a charge spends retrying.") {
-			t.Fatalf("frame %d drew no threads, so the check above proves nothing", frame)
+			t.Fatalf("frame %d drew no activity, so the check above proves nothing", frame)
 		}
 	}
 }

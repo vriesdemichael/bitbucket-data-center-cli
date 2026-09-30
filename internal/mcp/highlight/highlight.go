@@ -84,16 +84,11 @@ type Options struct {
 	Templates bool
 }
 
-// Lines is LinesWith, with the deadline alone.
-func Lines(path, text string, deadline time.Time) (lines []string, ok bool) {
-	return LinesWith(path, text, Options{Deadline: deadline})
-}
-
-// LinesWith returns the spans of each line of text, tokenized as the language
+// Lines returns the spans of each line of text, tokenized as the language
 // path names by its file name. ok is false when no lexer matches the name, the
 // text is larger than MaxBytes, or tokenizing fails or runs past the deadline.
 // A plain-text file has no lexer here: its every span would be ClassText.
-func LinesWith(path, text string, options Options) (lines []string, ok bool) {
+func Lines(path, text string, options Options) (lines []string, ok bool) {
 	if len(text) > MaxBytes {
 		return nil, false
 	}

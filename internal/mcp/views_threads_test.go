@@ -1,85 +1,150 @@
 package mcp
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
-// One file's diff, with two hunks: an added, a removed and an unchanged line
-// each to anchor a comment to. Its lines are quoted, because git writes a
-// blank unchanged line as a single space, which an editor strips from the end
-// of a line.
-var threadContextPatch = strings.Join([]string{
-	"diff --git a/client.go b/client.go",
-	"--- a/client.go",
-	"+++ b/client.go",
-	"@@ -1,5 +1,6 @@",
-	" package payments",
-	" ",
-	"-// Charge charges.",
-	"+// Charge charges an amount.",
-	"+// A transient failure is retried.",
-	" func Charge() {",
-	" \tcall()",
-	"@@ -20,4 +21,4 @@ func Refund() {",
-	" \tone()",
-	" \ttwo()",
-	"-\tthree()",
-	"+\tfour()",
-	"",
-}, "\n")
-
-func TestAThreadCarriesTheDiffLeadingToItsLine(t *testing.T) {
+// A file's diff with comments is read for where it draws each comment: a
+// comment on a removed line under that line as the file was, on an added or
+// unchanged one under it as the file is, and a file's own at its top. The
+// live suite proves Bitbucket answers in this shape.
+func TestAFilesCommentsArePlacedWhereItsDiffDrawsThem(t *testing.T) {
 	t.Parallel()
 
-	for _, tc := range []struct {
-		name     string
-		line     int
-		lineType string
-		want     []string
-	}{
-		// An added line is numbered in the new file.
-		{"added", 3, "ADDED", []string{"context:package payments", "context:", "del:// Charge charges.", "add:// Charge charges an amount."}},
-		// A removed line is numbered in the old file.
-		{"removed", 22, "REMOVED", []string{"context:one()", "context:two()", "del:three()"}},
-		// An unchanged line is numbered in the new file, and what leads to it
-		// stays within its hunk.
-		{"context in the second hunk", 22, "CONTEXT", []string{"context:one()", "context:two()"}},
-		{"unchanged, typed as nothing", 5, "", []string{"del:// Charge charges.", "add:// Charge charges an amount.", "add:// A transient failure is retried.", "context:func Charge() {"}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			context := contextAt(threadContextPatch, tc.line, tc.lineType)
-			got := make([]string, len(context))
-			for i, line := range context {
-				got[i] = line.Type + ":" + strings.TrimSpace(line.Text)
-			}
-			if strings.Join(got, "|") != strings.Join(tc.want, "|") {
-				t.Errorf("context = %v, want %v", got, tc.want)
-			}
-			if len(context) > 0 && !context[len(context)-1].Anchor {
-				t.Error("the anchored line is not marked")
-			}
-			for _, line := range context[:max(0, len(context)-1)] {
-				if line.Anchor {
-					t.Errorf("a line leading to the anchor is marked: %+v", line)
-				}
-			}
-		})
+	var answer fileDiff
+	if err := json.Unmarshal([]byte(`{"diffs":[{"hunks":[{"segments":[
+		{"type":"CONTEXT","lines":[{"source":1,"destination":1,"commentIds":[7]}]},
+		{"type":"REMOVED","lines":[{"source":2,"destination":2,"commentIds":[8]}]},
+		{"type":"ADDED","lines":[{"source":2,"destination":2,"commentIds":[9,10]}]},
+		{"type":"CONTEXT","lines":[{"source":25,"destination":28,"commentIds":[12]}]}]}],
+		"fileComments":[{"id":11}]}]}`), &answer); err != nil {
+		t.Fatal(err)
+	}
+	places := placesOf(answer)
+	want := map[int64]string{7: "new:1", 8: "old:2", 9: "new:2", 10: "new:2", 11: "file", 12: "new:28"}
+	for id, place := range want {
+		if places[id] != place {
+			t.Errorf("comment %d is placed at %q, want %q", id, places[id], place)
+		}
+	}
+	if len(places) != len(want) {
+		t.Errorf("places = %v, want %v", places, want)
 	}
 }
 
-func TestAThreadOnALineTheDiffLacksHasNoContext(t *testing.T) {
+// A thread on a file Bitbucket did not place goes by where it was written.
+func TestAThreadIsPlacedByItsAnchorWhereBitbucketDidNotSay(t *testing.T) {
 	t.Parallel()
 
-	if context := contextAt(threadContextPatch, 99, "ADDED"); context != nil {
-		t.Errorf("a line the diff does not have got context %v", context)
+	for _, tc := range []struct {
+		anchor pullrequestactivityservice.Anchor
+		want   string
+	}{
+		{pullrequestactivityservice.Anchor{Path: "a.go", Line: 3, LineType: "ADDED"}, "new:3"},
+		{pullrequestactivityservice.Anchor{Path: "a.go", Line: 4, LineType: "REMOVED"}, "old:4"},
+		{pullrequestactivityservice.Anchor{Path: "a.go", Line: 5, LineType: "CONTEXT"}, "new:5"},
+		{pullrequestactivityservice.Anchor{Path: "a.go"}, "file"},
+		{pullrequestactivityservice.Anchor{Path: "a.go", Line: 6, LineType: "ADDED", Orphaned: true}, ""},
+	} {
+		if got := placeByAnchor(tc.anchor); got != tc.want {
+			t.Errorf("%+v is placed at %q, want %q", tc.anchor, got, tc.want)
+		}
 	}
-	// Line 4 of the old file is unchanged, so no removed line has that number.
-	if context := contextAt(threadContextPatch, 4, "REMOVED"); context != nil {
-		t.Errorf("line 4 of the old file is not a removed line, got %v", context)
+}
+
+// The lines an activity shows a comment among mark the line it is on: a
+// removed line by its old number, an added one by its new number, and a line
+// on both sides by the side the comment was made on.
+func TestAnActivityMarksTheLineItsCommentIsOn(t *testing.T) {
+	t.Parallel()
+
+	diff := map[string]any{"hunks": []any{map[string]any{"segments": []any{
+		map[string]any{"type": "CONTEXT", "lines": []any{map[string]any{"source": 6.0, "destination": 9.0, "line": "keep"}}},
+		map[string]any{"type": "REMOVED", "lines": []any{map[string]any{"source": 7.0, "destination": 10.0, "line": "old"}}},
+		map[string]any{"type": "ADDED", "lines": []any{map[string]any{"source": 8.0, "destination": 10.0, "line": "new"}}},
+	}}}}
+	for _, tc := range []struct {
+		anchor map[string]any
+		want   string
+	}{
+		{map[string]any{"line": 7.0, "lineType": "REMOVED", "fileType": "FROM"}, "old"},
+		{map[string]any{"line": 10.0, "lineType": "ADDED", "fileType": "TO"}, "new"},
+		{map[string]any{"line": 9.0, "lineType": "CONTEXT", "fileType": "TO"}, "keep"},
+		{map[string]any{"line": 6.0, "lineType": "CONTEXT", "fileType": "FROM"}, "keep"},
+		{map[string]any{"line": 6.0, "lineType": "CONTEXT", "fileType": "TO"}, ""},
+	} {
+		lines := contextFromActivity(map[string]any{"diff": diff, "commentAnchor": tc.anchor})
+		marked := ""
+		for _, line := range lines {
+			if line.Anchor {
+				marked += line.Text
+			}
+		}
+		if marked != tc.want {
+			t.Errorf("anchor %v marks %q, want %q", tc.anchor, marked, tc.want)
+		}
+		if len(lines) != 3 || lines[1].Type != "del" || lines[1].Old != 7 || lines[2].Type != "add" || lines[2].New != 10 {
+			t.Errorf("lines = %+v, want the context, removed and added line numbered on their sides", lines)
+		}
+	}
+	if lines := contextFromActivity(map[string]any{"commentAnchor": map[string]any{"line": 1.0}}); lines != nil {
+		t.Errorf("an activity without a diff gave lines %v", lines)
+	}
+}
+
+// The activity lists what happened newest first: the actions an overview
+// draws, a thread once, by its first comment, and nothing it has no words for.
+func TestTheActivityListsWhatHappenedNewestFirst(t *testing.T) {
+	t.Parallel()
+
+	user := func(name string) map[string]any {
+		return map[string]any{"name": name, "slug": name, "displayName": strings.ToUpper(name[:1]) + name[1:]}
+	}
+	id := func(value int64) *int64 { return &value }
+	activities := []pullrequestactivityservice.Activity{
+		{ID: 1, Action: "OPENED", CreatedDate: 100, Raw: map[string]any{"user": user("alice")}},
+		{ID: 2, Action: "COMMENTED", CreatedDate: 200, Comment: &openapigenerated.RestComment{Id: id(5)}, Raw: map[string]any{"user": user("bob"), "commentAction": "ADDED"}},
+		{ID: 3, Action: "COMMENTED", CreatedDate: 250, Comment: &openapigenerated.RestComment{Id: id(6)}, Raw: map[string]any{"user": user("alice"), "commentAction": "REPLIED"}},
+		{ID: 4, Action: "APPROVED", CreatedDate: 300, Raw: map[string]any{"user": user("carol")}},
+		{ID: 5, Action: "RESCOPED", CreatedDate: 400, Raw: map[string]any{"user": user("alice"), "added": map[string]any{"total": 2.0}}},
+		{ID: 6, Action: "UPDATED", CreatedDate: 450, Raw: map[string]any{"user": user("alice")}},
+		{ID: 7, Action: "MERGED", CreatedDate: 500, Raw: map[string]any{"user": user("dave"), "commit": map[string]any{"displayId": "7723c86c3c1"}}},
+	}
+	threads := map[int64]pullrequestactivityservice.Thread{
+		5: {ID: 5, Author: "Bob", Text: "Should this retry?", AuthorAccount: pullrequestactivityservice.Account{Username: "bob", Slug: "bob"},
+			Replies: []pullrequestactivityservice.Reply{{ID: 6, Author: "Alice", Text: "Yes.", AuthorAccount: pullrequestactivityservice.Account{Username: "alice", Slug: "alice"}}}},
+	}
+	activity, people := activityForView(activities, threads)
+
+	var actions []string
+	for _, item := range activity.Items {
+		actions = append(actions, item.Action)
+	}
+	if got, want := strings.Join(actions, " "), "MERGED RESCOPED APPROVED COMMENTED OPENED"; got != want {
+		t.Errorf("actions = %s, want %s", got, want)
+	}
+	if activity.Total != 5 {
+		t.Errorf("total = %d, want the 5 items it lists", activity.Total)
+	}
+	merged, rescoped, commented := activity.Items[0], activity.Items[1], activity.Items[3]
+	if merged.Commit != "7723c86c3c1" || merged.User != "Dave" || merged.Username != "dave" {
+		t.Errorf("the merge is %+v, want Dave's, in commit 7723c86c3c1", merged)
+	}
+	if rescoped.Added != 2 {
+		t.Errorf("the push added %d commits, want 2", rescoped.Added)
+	}
+	if commented.Thread == nil || commented.Thread.ID != 5 || len(commented.Thread.Replies) != 1 || commented.Thread.Replies[0].ID != 6 {
+		t.Errorf("the comment's thread is %+v, want thread 5 with its reply 6", commented.Thread)
+	}
+	for _, username := range []string{"alice", "bob", "carol", "dave"} {
+		if people[username] == "" {
+			t.Errorf("the activity draws %s without an avatar: %v", username, people)
+		}
 	}
 }
 
@@ -100,21 +165,5 @@ func TestAViewSaysWhatItCutOfALongComment(t *testing.T) {
 	line := strings.Repeat("x", maxContextLineRunes) + strings.Repeat("é", 12)
 	if kept, more := cutLine(line); kept != strings.Repeat("x", maxContextLineRunes) || more != 12 {
 		t.Errorf("a long diff line kept %d bytes and counted %d more, want %d and 12", len(kept), more, maxContextLineRunes)
-	}
-}
-
-func TestTheThreadsSummaryCountsTheWhole(t *testing.T) {
-	t.Parallel()
-
-	in := ShowInput{Kind: showKindThreads, Project: "PAY", Repo: "ledger", ID: "7"}
-	threads := viewThreads{
-		Summary: pullrequestactivityservice.Summary{TotalThreads: 240, Unresolved: 12, Resolved: 226, Pending: 2, OpenTasks: 3},
-		Threads: make([]viewThread, 200),
-	}
-	got := summarizeThreads(in, "Retry payments", threads).shown()
-	for _, want := range []string{"PAY/ledger#7", `"Retry payments"`, "12 unresolved", "3 of them open tasks", "226 resolved", "2 pending", "the first 200 of the 240 threads"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("summary %q lacks %q", got, want)
-		}
 	}
 }

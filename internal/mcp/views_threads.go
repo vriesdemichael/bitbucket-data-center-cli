@@ -3,16 +3,15 @@ package mcp
 import (
 	"context"
 	"fmt"
-	"regexp"
+	"net/url"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
-	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
-// The threads a view carries. Its counts come from the whole timeline, so they
+// The threads a diff carries. Its counts come from the whole timeline, so they
 // hold for any number of threads; the threads past these are counted, and the
 // view says it lists fewer.
 const (
@@ -21,12 +20,13 @@ const (
 	// maxViewCommentBytes is the most of one comment a view carries. A comment
 	// cut there says so, and links to the rest in Bitbucket.
 	maxViewCommentBytes = 16 << 10
-	// threadContextLines is how many lines of the diff lead to an anchored
-	// line, as a review comment in Bitbucket shows them.
-	threadContextLines = 3
 	// maxContextLineRunes is the most of one diff line a view carries, as much
 	// as it draws of a line in the diff.
 	maxContextLineRunes = 500
+	// maxPlacedFiles is how many files a diff asks Bitbucket where it draws
+	// their comments, one request each. The threads on files past these are
+	// placed by their anchors.
+	maxPlacedFiles = 30
 )
 
 // viewThreads is a pull request's comment threads, as a view draws them.
@@ -37,8 +37,7 @@ type viewThreads struct {
 	Threads []viewThread                       `json:"threads"`
 }
 
-// viewThread is one thread: its opening comment, its replies, where it is
-// anchored and the diff that leads to that line.
+// viewThread is one thread: its opening comment, its replies, and where it is.
 type viewThread struct {
 	ID       int64  `json:"id"`
 	Task     bool   `json:"task,omitempty"`
@@ -54,12 +53,19 @@ type viewThread struct {
 	TextCut bool        `json:"text_cut,omitempty"`
 	Replies []viewReply `json:"replies,omitempty"`
 	URL     string      `json:"url,omitempty"`
-	// Context is the diff leading to the anchored line, the line itself last.
-	// It is absent when the diff no longer has the line.
+	// Place is where a diff draws the thread, as Bitbucket's own diff does:
+	// old:N under line N of the file as it was, new:N under line N as it is,
+	// file at the top of its file. It is empty for a thread on the pull
+	// request, and for one Bitbucket's diff no longer draws.
+	Place string `json:"place,omitempty"`
+	// Context is the lines of the diff an activity shows a comment on a line
+	// among, as Bitbucket's overview does, with that line marked.
 	Context []viewContextLine `json:"context,omitempty"`
 }
 
 type viewReply struct {
+	// ID is the reply's own, which a reply to it names as its parent.
+	ID             int64  `json:"id"`
 	Author         string `json:"author,omitempty"`
 	AuthorUsername string `json:"author_username,omitempty"`
 	Date           int64  `json:"date,omitempty"`
@@ -80,11 +86,11 @@ type viewContextLine struct {
 	Anchor bool `json:"anchor,omitempty"`
 }
 
-// threadsForView reads a pull request's threads with everything the view
-// draws, as list_pr_comments reads them, and the avatars of the people who
-// wrote them. withContext adds the lines of the diff leading to each
-// anchored line, which the diff view does without: it draws the diff.
-func threadsForView(ctx context.Context, c Clients, in ShowInput, withContext bool) (viewThreads, map[string]string, error) {
+// threadsForDiff reads a pull request's threads for its diff, as
+// list_pr_comments reads them, and the people whose avatars it draws. Each
+// thread gets the place Bitbucket's own diff draws it at (see placeThreads);
+// patch is the diff, whose files say which to ask about.
+func threadsForDiff(ctx context.Context, c Clients, in ShowInput, patch string) (viewThreads, map[string]string, error) {
 	out, err := pullRequestThreads(ctx, c, ListPRCommentsInput{
 		Project: in.Project, Repo: in.Repo, PRID: in.ID, State: "all", WithReplies: true, Limit: maxViewThreads,
 	})
@@ -103,9 +109,7 @@ func threadsForView(ctx context.Context, c Clients, in ShowInput, withContext bo
 		budget -= size
 		threads.Threads = append(threads.Threads, view)
 	}
-	if withContext {
-		withAnchorContext(ctx, c, in, threads.Threads)
-	}
+	placeThreads(ctx, c, in, patch, threads.Threads)
 
 	people := map[string]string{}
 	add := func(account pullrequestactivityservice.Account) {
@@ -140,14 +144,14 @@ func viewThreadOf(thread pullrequestactivityservice.Thread) viewThread {
 	for _, reply := range thread.Replies {
 		text, cut := cutComment(reply.Text)
 		view.Replies = append(view.Replies, viewReply{
-			Author: reply.Author, AuthorUsername: reply.AuthorAccount.Username, Date: reply.Date, Text: text, TextCut: cut,
+			ID: reply.ID, Author: reply.Author, AuthorUsername: reply.AuthorAccount.Username, Date: reply.Date, Text: text, TextCut: cut,
 		})
 	}
 	return view
 }
 
-// size is about how many bytes a thread adds to the payload: its text, and a
-// little for each of its parts.
+// size is about how many bytes a thread adds to the payload: its text, the
+// lines of the diff it carries, and a little for each of its parts.
 func (thread viewThread) size() int {
 	size := 200 + len(thread.Text)
 	if thread.Anchor != nil {
@@ -155,6 +159,9 @@ func (thread viewThread) size() int {
 	}
 	for _, reply := range thread.Replies {
 		size += 100 + len(reply.Text)
+	}
+	for _, line := range thread.Context {
+		size += 40 + len(line.Text)
 	}
 	return size
 }
@@ -172,97 +179,141 @@ func cutComment(text string) (string, bool) {
 	return text[:end], true
 }
 
-// withAnchorContext gives each thread anchored to a line the lines of the diff
-// that lead to it. The diff is an extra: a Bitbucket that cannot answer for it
-// leaves the threads without their context rather than failing the view.
-func withAnchorContext(ctx context.Context, c Clients, in ShowInput, threads []viewThread) {
-	anchored := false
+// placeThreads gives each thread the place Bitbucket's own diff draws it at,
+// as its diff with comments says. A thread's anchor names its line on the side
+// it was written on, so a comment on an unchanged line written on the left of
+// a side-by-side diff names the line as the file was, and lands elsewhere when
+// read as the file is; Bitbucket's diff says the line it draws it under.
+// Bitbucket's diff draws no comment on a line outside its hunks. The threads
+// on a file Bitbucket cannot answer for are placed by their anchors.
+func placeThreads(ctx context.Context, c Clients, in ShowInput, patch string, threads []viewThread) {
+	chunks := patchFiles(patch)
+	chunkOf := map[string]int{}
+	for index, chunk := range chunks {
+		chunkOf[describePatchFile(chunk).Path] = index
+	}
+
+	places := map[int64]string{}
+	asked := map[string]bool{}
+	placed := map[string]bool{}
 	for _, thread := range threads {
-		if thread.Anchor != nil && thread.Anchor.Line > 0 && !thread.Anchor.Orphaned {
-			anchored = true
-			break
-		}
-	}
-	if !anchored {
-		return
-	}
-	result, err := diffservice.NewService(c.OpenAPI).DiffPR(ctx, diffservice.DiffPRInput{
-		Repository:    diffservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-		PullRequestID: in.ID,
-		Output:        diffservice.OutputKindRaw,
-	})
-	if err != nil {
-		return
-	}
-	files := map[string]string{}
-	for _, chunk := range patchFiles(result.Patch) {
-		files[describePatchFile(chunk).Path] = chunk
-	}
-	for i := range threads {
-		anchor := threads[i].Anchor
-		if anchor == nil || anchor.Line <= 0 || anchor.Orphaned {
+		anchor := thread.Anchor
+		if anchor == nil || anchor.Path == "" || asked[anchor.Path] || len(asked) >= maxPlacedFiles {
 			continue
 		}
-		if chunk, ok := files[anchor.Path]; ok {
-			threads[i].Context = contextAt(chunk, anchor.Line, anchor.LineType)
+		// A file too large for the view is not drawn, so it is not asked
+		// for either: its diff with comments weighs more than its patch.
+		index, inPatch := chunkOf[anchor.Path]
+		if !inPatch || len(chunks[index]) > maxViewFileBytes {
+			continue
+		}
+		asked[anchor.Path] = true
+		file := describePatchFile(chunks[index])
+		answer, err := fileDiffWithComments(ctx, c, in, file)
+		if err != nil {
+			continue
+		}
+		placed[anchor.Path] = true
+		for id, place := range answer {
+			places[id] = place
+		}
+	}
+
+	for i := range threads {
+		anchor := threads[i].Anchor
+		switch {
+		case anchor == nil || anchor.Path == "":
+		case placed[anchor.Path]:
+			threads[i].Place = places[threads[i].ID]
+		default:
+			threads[i].Place = placeByAnchor(*anchor)
 		}
 	}
 }
 
-var hunkStart = regexp.MustCompile(`^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@`)
+// placeByAnchor is where a thread goes by where it was written, for a file
+// Bitbucket did not say where it draws its comments.
+func placeByAnchor(anchor pullrequestactivityservice.Anchor) string {
+	switch {
+	case anchor.Orphaned:
+		return ""
+	case anchor.Line <= 0:
+		return "file"
+	case strings.EqualFold(anchor.LineType, "REMOVED"):
+		return "old:" + strconv.Itoa(anchor.Line)
+	default:
+		return "new:" + strconv.Itoa(anchor.Line)
+	}
+}
 
-// contextAt is the line of one file's diff a comment is anchored to, with up
-// to threadContextLines lines leading to it from the same hunk. Bitbucket numbers a
-// removed line in the old file and any other in the new one. It is nil when
-// the diff does not have the line.
-func contextAt(chunk string, line int, lineType string) []viewContextLine {
-	var hunk []viewContextLine
-	oldNo, newNo, inHunk := 0, 0, false
-	for _, text := range strings.Split(chunk, "\n") {
-		if start := hunkStart.FindStringSubmatch(text); start != nil {
-			oldNo, _ = strconv.Atoi(start[1])
-			newNo, _ = strconv.Atoi(start[2])
-			hunk, inHunk = hunk[:0], true
-			continue
-		}
-		if !inHunk || text == "" {
-			continue
-		}
-		var entry viewContextLine
-		switch text[0] {
-		case '+':
-			entry = viewContextLine{Type: "add", New: newNo}
-			newNo++
-		case '-':
-			entry = viewContextLine{Type: "del", Old: oldNo}
-			oldNo++
-		case ' ':
-			entry = viewContextLine{Type: "context", Old: oldNo, New: newNo}
-			oldNo++
-			newNo++
-		default:
-			continue
-		}
-		entry.Text, entry.More = cutLine(text[1:])
-		hunk = append(hunk, entry)
+// fileDiff is one file of Bitbucket's diff with comments, as far as placing
+// its comments needs it.
+type fileDiff struct {
+	Diffs []struct {
+		Hunks []struct {
+			Segments []struct {
+				Type  string `json:"type"`
+				Lines []struct {
+					Source      int     `json:"source"`
+					Destination int     `json:"destination"`
+					CommentIDs  []int64 `json:"commentIds"`
+				} `json:"lines"`
+			} `json:"segments"`
+		} `json:"hunks"`
+		FileComments []struct {
+			ID int64 `json:"id"`
+		} `json:"fileComments"`
+	} `json:"diffs"`
+}
 
-		var here bool
-		switch strings.ToUpper(lineType) {
-		case "REMOVED":
-			here = entry.Type == "del" && entry.Old == line
-		case "ADDED":
-			here = entry.Type == "add" && entry.New == line
-		default:
-			here = entry.Type != "del" && entry.New == line
+// fileDiffWithComments asks Bitbucket where its diff of one file of the pull
+// request draws each comment on it, as its diff page does.
+func fileDiffWithComments(ctx context.Context, c Clients, in ShowInput, file viewDiffFile) (map[int64]string, error) {
+	if c.HTTP == nil {
+		return nil, fmt.Errorf("no Bitbucket client")
+	}
+	segments := strings.Split(file.Path, "/")
+	for i, segment := range segments {
+		segments[i] = url.PathEscape(segment)
+	}
+	path := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/diff/%s",
+		url.PathEscape(in.Project), url.PathEscape(in.Repo), url.PathEscape(in.ID), strings.Join(segments, "/"))
+	query := map[string]string{"withComments": "true"}
+	if file.OldPath != "" && file.OldPath != file.Path {
+		query["srcPath"] = file.OldPath
+	}
+	var answer fileDiff
+	if err := c.HTTP.GetJSON(ctx, path, query, &answer); err != nil {
+		return nil, err
+	}
+	return placesOf(answer), nil
+}
+
+// placesOf reads where a file's diff with comments draws each comment, by the
+// comment's ID. A comment on a removed line is drawn under that line of the
+// file as it was; on any other line, under that line as the file is.
+func placesOf(answer fileDiff) map[int64]string {
+	places := map[int64]string{}
+	for _, diff := range answer.Diffs {
+		for _, comment := range diff.FileComments {
+			places[comment.ID] = "file"
 		}
-		if here {
-			from := max(0, len(hunk)-1-threadContextLines)
-			context := append([]viewContextLine(nil), hunk[from:]...)
-			context[len(context)-1].Anchor = true
-			return context
+		for _, hunk := range diff.Hunks {
+			for _, segment := range hunk.Segments {
+				removed := strings.EqualFold(segment.Type, "REMOVED")
+				for _, line := range segment.Lines {
+					place := "new:" + strconv.Itoa(line.Destination)
+					if removed {
+						place = "old:" + strconv.Itoa(line.Source)
+					}
+					for _, id := range line.CommentIDs {
+						places[id] = place
+					}
+				}
+			}
 		}
 	}
-	return nil
+	return places
 }
 
 // cutLine is a diff line as a view carries it: whole, or its first
@@ -279,27 +330,4 @@ func cutLine(text string) (string, int) {
 		runes++
 	}
 	return text[:end], count - maxContextLineRunes
-}
-
-// summarizeThreads is what the model reads beside the threads view.
-func summarizeThreads(in ShowInput, title string, threads viewThreads) viewSummary {
-	summary := threads.Summary
-	var b strings.Builder
-	fmt.Fprintf(&b, "%d unresolved", summary.Unresolved)
-	if summary.OpenTasks > 0 {
-		fmt.Fprintf(&b, " (%d of them open tasks)", summary.OpenTasks)
-	}
-	fmt.Fprintf(&b, ", %d resolved", summary.Resolved)
-	if summary.Pending > 0 {
-		fmt.Fprintf(&b, ", %d pending", summary.Pending)
-	}
-	b.WriteString(".")
-	if len(threads.Threads) < summary.TotalThreads {
-		fmt.Fprintf(&b, " The view carries the first %d of the %d threads.", len(threads.Threads), summary.TotalThreads)
-	}
-	return viewSummary{
-		subject: fmt.Sprintf("the comment threads of %s/%s#%s %q", in.Project, in.Repo, in.ID, title),
-		form:    "an interactive view",
-		state:   b.String(),
-	}
 }

@@ -1,16 +1,16 @@
-// Opening something else in a view (ADR-101): a pull request's diff or
-// comments from its card, its card from a list, the list in another state.
+// Opening something else in a view (ADR-101): a pull request's diff from its
+// card or from a comment on a file, its card from a list, the list in another
+// state.
 // The view reads it through refresh_view, keeps what it showed to go back to,
 // and tells the model what the person now looks at.
 
 const OPEN_TIMEOUT_MS = 60 * 1000;
 
 // PULL_REQUEST_TABS are a pull request's views, named as Bitbucket's tabs
-// and its comments are.
+// are. Its comments are in both, as in Bitbucket.
 const PULL_REQUEST_TABS = [
   { kind: "pull_request", label: "Overview" },
   { kind: "diff", label: "Diff" },
-  { kind: "threads", label: "Comments" },
 ];
 
 // LIST_STATES and LIST_ROLES are what a list can be asked for again: the
@@ -48,7 +48,8 @@ function canCall(view, tool) {
 // in this view. replace is a list asked for again, or a pull request a form
 // made, which takes the place of what it was rather than one to go back to.
 // lead is what the model is told first, such as that the person made it.
-async function openInView(view, show, replace, lead) {
+// focus is where in a diff it opens: a file by its path, and a thread on it.
+async function openInView(view, show, replace, lead, focus) {
   if (view.opening) return;
   view.opening = show.kind;
   view.openFailure = null;
@@ -62,6 +63,7 @@ async function openInView(view, show, replace, lead) {
     const keep = replace ? { filter: view.filter } : null;
     showPayload(view, payload);
     if (keep) view.filter = keep.filter;
+    if (focus) focusOn(view, payload, focus);
     const told = lead ? lead + " " + textOf(result) : textOf(result);
     if (view.tellsModel) view.bridge.updateModelContext(told).catch(() => {});
   } catch (error) {
@@ -71,6 +73,18 @@ async function openInView(view, show, replace, lead) {
     render();
     scheduleRefresh(view);
   }
+}
+
+// focusOn opens a diff at a file and a thread on it: the file beside the
+// tree, in fullscreen where the host has it, and the thread open.
+function focusOn(view, payload, focus) {
+  view.focusPath = focus.path || null;
+  if (focus.thread) {
+    view.focusThread = focus.thread;
+    const thread = ((payload.threads && payload.threads.threads) || []).find((each) => each.id === focus.thread);
+    if (thread && thread.resolved) view.unclamped.add("thread-" + thread.id);
+  }
+  if (view.canFullscreen && !view.fullscreen) view.expand();
 }
 
 function snapshotOf(view) {
@@ -89,10 +103,11 @@ function showPayload(view, payload) {
   view.payload = payload;
   view.failure = null;
   view.diffFiles = null;
+  view.diffFile = null;
+  view.focusPath = null;
   view.openFiles = new Set();
   view.unclamped = new Set();
   view.revealed = new Map();
-  view.focusFile = null;
   view.focusThread = null;
   view.selection = null;
   view.selectionNotice = "";
@@ -137,7 +152,6 @@ function kindWords(kind) {
     case "pull_request": return "the pull request";
     case "pull_requests": return "the list";
     case "diff": return "the diff";
-    case "threads": return "the comments";
     default: return "the last view";
   }
 }
