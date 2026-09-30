@@ -76,15 +76,7 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 	// configured before the repository exists. The header is passed for this
 	// one command instead, and the persistent credential path is set up
 	// afterwards by `bb auth setup-git`.
-	var headerVal string
-	if options.AuthToken != "" {
-		headerVal = fmt.Sprintf("Authorization: Bearer %s", options.AuthToken)
-	} else if options.AuthUsername != "" && options.AuthPassword != "" {
-		auth := options.AuthUsername + ":" + options.AuthPassword
-		headerVal = fmt.Sprintf("Authorization: Basic %s", base64.StdEncoding.EncodeToString([]byte(auth)))
-	}
-
-	args, env := cloneCredentialConfig(repositoryURL, headerVal, backend.gitReadsConfigFromEnvironment(ctx))
+	args, env := backend.credentialConfig(ctx, repositoryURL, authorizationHeader(options.AuthToken, options.AuthUsername, options.AuthPassword))
 	args = append(args, "clone")
 	if options.Branch != "" {
 		args = append(args, "--branch", options.Branch)
@@ -107,27 +99,37 @@ func (backend *Backend) Clone(ctx context.Context, repositoryURL string, options
 	return nil
 }
 
-// cloneCredentialConfig decides how the credential reaches git: in the child's
+// credentialConfig hands git the credential for one clone or fetch, asking git
+// once whether it can take it from the environment. A call with no credential
+// asks nothing.
+func (backend *Backend) credentialConfig(ctx context.Context, repositoryURL, headerVal string) (args, env []string) {
+	if headerVal == "" || httpConfigScope(repositoryURL) == "" {
+		return nil, nil
+	}
+
+	return credentialConfig(repositoryURL, headerVal, backend.gitReadsConfigFromEnvironment(ctx))
+}
+
+// credentialConfig decides how the credential reaches git: in the child's
 // environment where git reads configuration from there, and on the command line
 // where it does not.
 //
 // A command line is not private. /proc/<pid>/cmdline can be read by any local
-// account for as long as the clone runs, and `ps` prints it, so the token was
-// visible to anyone else on the machine. /proc/<pid>/environ is readable only
-// by the owner of the process.
+// account for as long as the clone or fetch runs, and `ps` prints it, so the
+// token was visible to anyone else on the machine. /proc/<pid>/environ is
+// readable only by the owner of the process.
 //
-// The header stays scoped to the host being cloned from either way. An unscoped
-// http.extraHeader is attached to every host git contacts, including a redirect
-// target.
-func cloneCredentialConfig(repositoryURL, headerVal string, environmentConfig bool) (args, env []string) {
-	if headerVal == "" {
+// The header is scoped to the host it belongs to. An unscoped http.extraHeader
+// is attached to every host git contacts, including an unrelated remote and a
+// redirect target, so where the URL gives no host to scope to, nothing is sent
+// at all rather than sent to everything.
+func credentialConfig(repositoryURL, headerVal string, environmentConfig bool) (args, env []string) {
+	scope := httpConfigScope(repositoryURL)
+	if headerVal == "" || scope == "" {
 		return nil, nil
 	}
 
-	key := "http.extraHeader"
-	if scope := httpConfigScope(repositoryURL); scope != "" {
-		key = fmt.Sprintf("http.%s.extraHeader", scope)
-	}
+	key := fmt.Sprintf("http.%s.extraHeader", scope)
 
 	if environmentConfig {
 		return nil, []string{
@@ -196,36 +198,17 @@ func gitVersionAtLeast(version string, major, minor int) bool {
 	return foundMinor >= minor
 }
 
-// credentialArgs renders credentials as leading `git -c` arguments, scoped to
-// the host they belong to.
-//
-// Scoping is the whole point. An unscoped http.extraHeader is attached to every
-// request git makes from that repository, so a token for Bitbucket would also
-// be sent to any unrelated HTTP remote, and to a redirect target. Where the URL
-// gives no host to scope to, nothing is sent at all rather than sent to
-// everything.
-func credentialArgs(credentials *git.Credentials) []string {
-	if credentials == nil {
-		return nil
-	}
-
-	var header string
+// authorizationHeader renders a token as a Bearer header, or else a username
+// and password as a Basic one. With neither there is nothing to send.
+func authorizationHeader(token, username, password string) string {
 	switch {
-	case strings.TrimSpace(credentials.Token) != "":
-		header = "Authorization: Bearer " + credentials.Token
-	case strings.TrimSpace(credentials.Username) != "" && credentials.Password != "":
-		pair := credentials.Username + ":" + credentials.Password
-		header = "Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte(pair))
+	case strings.TrimSpace(token) != "":
+		return "Authorization: Bearer " + token
+	case strings.TrimSpace(username) != "" && password != "":
+		return "Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte(username+":"+password))
 	default:
-		return nil
+		return ""
 	}
-
-	scope := httpConfigScope(credentials.URL)
-	if scope == "" {
-		return nil
-	}
-
-	return []string{"-c", fmt.Sprintf("http.%s.extraHeader=%s", scope, header)}
 }
 
 // httpConfigScope returns the scheme://host[:port]/ prefix git uses to scope
@@ -244,11 +227,14 @@ func (backend *Backend) Fetch(ctx context.Context, repositoryDirectory string, o
 		return apperrors.New(apperrors.KindValidation, "repository directory cannot be empty", nil)
 	}
 
-	// Credentials go in front of the subcommand, as `git -c ... fetch`, and
-	// only for this invocation. A repository cloned by bb deliberately holds no
-	// credential, so a fetch that brought none would stop and prompt for a
-	// username — a hang in any non-interactive context.
-	args := credentialArgs(options.Credentials)
+	// Credentials are supplied for this invocation only, as the clone's are. A
+	// repository cloned by bb deliberately holds no credential, so a fetch that
+	// brought none would stop and prompt for a username — a hang in any
+	// non-interactive context.
+	var args, env []string
+	if credentials := options.Credentials; credentials != nil {
+		args, env = backend.credentialConfig(ctx, credentials.URL, authorizationHeader(credentials.Token, credentials.Username, credentials.Password))
+	}
 	args = append(args, "fetch", "--progress")
 	if strings.TrimSpace(options.Remote) != "" {
 		args = append(args, options.Remote)
@@ -259,7 +245,7 @@ func (backend *Backend) Fetch(ctx context.Context, repositoryDirectory string, o
 		}
 	}
 
-	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: args, transfer: true, changes: true})
+	_, err := backend.run(ctx, runOptions{cwd: repositoryDirectory, args: args, env: env, transfer: true, changes: true})
 	return err
 }
 
@@ -478,7 +464,7 @@ type runOptions struct {
 	cwd  string
 	args []string
 	// env carries configuration the child needs but the command line must not
-	// hold, such as a credential (see cloneCredentialConfig).
+	// hold, such as a credential (see credentialConfig).
 	env []string
 	// transfer is a clone or a fetch, run with --progress: it is stopped once
 	// it has reported no progress for Timeout, rather than once it has run

@@ -1,9 +1,15 @@
 package execgit
 
 import (
+	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
 
 // TestACloneCredentialStaysOutOfTheCommandLine is the disclosure a command line
@@ -18,7 +24,7 @@ func TestACloneCredentialStaysOutOfTheCommandLine(t *testing.T) {
 	t.Run("a git that reads its configuration from the environment", func(t *testing.T) {
 		t.Parallel()
 
-		args, env := cloneCredentialConfig("https://bitbucket.example.com/scm/p/r.git", header, true)
+		args, env := credentialConfig("https://bitbucket.example.com/scm/p/r.git", header, true)
 
 		if len(args) != 0 {
 			t.Fatalf("the credential reached the command line: %v", args)
@@ -39,7 +45,7 @@ func TestACloneCredentialStaysOutOfTheCommandLine(t *testing.T) {
 
 		// Before 2.31 the variables are ignored without a word, and a clone
 		// that needs the credential would fail as an authentication error.
-		args, env := cloneCredentialConfig("https://bitbucket.example.com/scm/p/r.git", header, false)
+		args, env := credentialConfig("https://bitbucket.example.com/scm/p/r.git", header, false)
 
 		if len(env) != 0 {
 			t.Fatalf("an old git was given configuration it cannot read: %v", env)
@@ -55,7 +61,7 @@ func TestACloneCredentialStaysOutOfTheCommandLine(t *testing.T) {
 	t.Run("no credential, no configuration", func(t *testing.T) {
 		t.Parallel()
 
-		args, env := cloneCredentialConfig("https://bitbucket.example.com/scm/p/r.git", "", true)
+		args, env := credentialConfig("https://bitbucket.example.com/scm/p/r.git", "", true)
 		if len(args) != 0 || len(env) != 0 {
 			t.Fatalf("a clone with no credential carries configuration: %v %v", args, env)
 		}
@@ -105,5 +111,86 @@ func TestGitVersionAtLeast(t *testing.T) {
 		if got := gitVersionAtLeast(version, 2, 31); got != want {
 			t.Errorf("%q: got %v, want %v", version, got, want)
 		}
+	}
+}
+
+// TestAFetchCredentialStaysOutOfTheCommandLine is #730: the fetch bb pr
+// checkout runs put the credential on the command line after the clone had
+// stopped doing so.
+//
+// It reads what git itself recorded rather than what bb meant to pass. Trace2
+// logs every git process's argv, and the configuration parameter named below
+// with the value git ended up holding, so the one run shows both that the
+// credential stayed off the command line and that git still received it.
+func TestAFetchCredentialStaysOutOfTheCommandLine(t *testing.T) {
+	const secret = "S3cr3tF3tchT0k3nValue"
+	const configParam = "http.https://bitbucket.example.com/.extraheader"
+
+	trace := filepath.Join(t.TempDir(), "trace2.json")
+	t.Setenv("GIT_TRACE2_EVENT", trace)
+	t.Setenv("GIT_TRACE2_CONFIG_PARAMS", configParam)
+
+	backend := New()
+	source := newCommittedRepository(t, backend)
+	target := newCommittedRepository(t, backend)
+	if err := backend.AddRemote(context.Background(), target, git.Remote{Name: "src", URL: source}); err != nil {
+		t.Fatalf("add remote failed: %v", err)
+	}
+
+	// The remote is a directory, so nothing is sent anywhere; the credential
+	// is scoped to the Bitbucket it belongs to, which is all git needs to
+	// hold it.
+	if err := backend.Fetch(context.Background(), target, git.FetchOptions{
+		Remote:      "src",
+		Credentials: &git.Credentials{URL: "https://bitbucket.example.com/scm/PRJ/repo.git", Token: secret},
+	}); err != nil {
+		t.Fatalf("fetch failed: %v", err)
+	}
+
+	events, err := os.ReadFile(trace)
+	if err != nil {
+		t.Fatalf("git wrote no trace: %v", err)
+	}
+
+	var onCommandLine, received bool
+	for _, line := range strings.Split(string(events), "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		// value is a string on def_param and a list on other events.
+		var event struct {
+			Event string          `json:"event"`
+			Argv  []string        `json:"argv"`
+			Param string          `json:"param"`
+			Value json.RawMessage `json:"value"`
+		}
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			t.Fatalf("unreadable trace event %q: %v", line, err)
+		}
+		switch event.Event {
+		case "start":
+			if strings.Contains(strings.Join(event.Argv, " "), secret) {
+				onCommandLine = true
+			}
+		case "def_param":
+			var value string
+			if event.Param == configParam && json.Unmarshal(event.Value, &value) == nil && value == "Authorization: Bearer "+secret {
+				received = true
+			}
+		}
+	}
+
+	if !received {
+		t.Fatalf("git never held the credential, so the fetch would have gone out unauthenticated:\n%s", events)
+	}
+
+	// A git before 2.31 does not read configuration from the environment, and
+	// the command line is the only way left to hand it the credential.
+	if backend.gitReadsConfigFromEnvironment(context.Background()) {
+		if onCommandLine {
+			t.Errorf("the credential was on git's command line, where any local account can read it")
+		}
+	} else if !onCommandLine {
+		t.Errorf("a git too old to read configuration from the environment was not given the credential on its command line")
 	}
 }

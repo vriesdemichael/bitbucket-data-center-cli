@@ -349,7 +349,12 @@ func TestCredentialArgsScopesToTheHost(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			args := credentialArgs(testCase.credentials)
+			// On the command line, the form a git before 2.31 is given, so the
+			// scope and the header can be read off the one argument.
+			var args []string
+			if credentials := testCase.credentials; credentials != nil {
+				args, _ = credentialConfig(credentials.URL, authorizationHeader(credentials.Token, credentials.Username, credentials.Password), false)
+			}
 
 			if !testCase.wantArgs {
 				if len(args) != 0 {
