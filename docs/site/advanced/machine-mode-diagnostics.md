@@ -101,8 +101,10 @@ be. `bb --json pr merge 42 --dry-run`, for a pull request that is already merged
 - `error` is present exactly when the real run would fail, and is what it would fail with.
 - A command that only reads runs as usual, and its data is in `preview.data`.
 
-A verdict exits `0`, whatever it says. A top-level `error` under `--dry-run` means no verdict
-was reached: `10` when Bitbucket did not answer, `12` when interrupted, `1` for a bug in bb.
+In machine mode a verdict exits `0`, whatever it says; without `--json` or `--yaml`, one that
+finds the run would fail exits with the code the real run would. A top-level `error` under
+`--dry-run` means no verdict was reached: `10` when Bitbucket did not answer, `12` when
+interrupted, `1` for a bug in bb.
 [Dry-Run Planning](dry-run-planning.md) says what each command checks.
 
 ### Describe envelope

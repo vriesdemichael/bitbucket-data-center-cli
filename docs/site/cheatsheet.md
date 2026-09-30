@@ -5,7 +5,7 @@ search:
 
 # Developer Cheatsheet & Cookbook
 
-A scannable reference and recipe collection for developers using `bb` with Bitbucket Server and Bitbucket Data Center.
+A scannable reference and recipe collection for developers using `bb` with Bitbucket Data Center.
 
 ---
 
@@ -66,7 +66,7 @@ A scannable reference and recipe collection for developers using `bb` with Bitbu
 | View PR status & blockers | `bb pr get 42` | Summary of approvals, tasks, and CI checks |
 | Create a pull request | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "Add retries"` | Opens new pull request and prints its link |
 | Create from the checkout | `bb pr create` | From the checked-out branch into the default branch; the title is the commit subject when there is one commit |
-| Create as draft | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "WIP" --draft` | Bitbucket DC 8.0+ |
+| Create as draft | `bb pr create --repo PROJ/my-repo --from-ref feature/my-work --to-ref main --title "WIP" --draft` | `bb pr ready 42` marks it ready for review |
 | Assign reviewers | `bb pr create ... --reviewers alice,bob` | Comma-separated or repeatable |
 
 !!! tip "Zero-Config Target & URL Resolution (`gh`-style ergonomics)"
@@ -316,8 +316,8 @@ from the one you use interactively:
 }
 ```
 
-The rights of that PAT are what bound the server: safe-by-default tool exposure is a
-second layer, not the boundary. There is no `--token` flag: a flag value sits in the
+The rights of that PAT are what bound the server. Tools that ask before they merge, and
+`--read-only`, are a second layer, not the boundary. There is no `--token` flag: a flag value sits in the
 process argument list for as long as the server runs.
 
 ---

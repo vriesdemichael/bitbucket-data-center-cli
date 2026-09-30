@@ -10,7 +10,7 @@ search:
 `bb` supports operational workflows across:
 
 - Authentication and server context (`auth`)
-- Repository settings and collaboration (`repo`, `reviewer`, `hook`, `branch`, `tag`, `commit`, `ref`)
+- Repository settings and collaboration (`repo`, `reviewer`, `branch`, `tag`, `commit`, `ref`)
 - Pull requests and quality controls (`pr`, `build`, `insights`)
 - Project-level administration (`project`, `admin`)
 - Cross-project discovery (`search`)
@@ -32,7 +32,7 @@ bb repo settings --help
 bb repo settings security --help
 ```
 
-The command reference page is generated from Cobra help output, so usage/flags match CLI behavior.
+The [command reference](reference/commands/index.md) is generated from the command tree, so its usage and flags match the binary.
 
 ## Shorter spellings and aliases
 
@@ -210,7 +210,7 @@ With no terminal, or under `--json`, no command blocks on standard input: it fai
 - A command that changes this machine (stored credentials, host aliases, git configuration, the skill file, shell completion, a clone or a local branch) is previewed and not run.
 - A command that changes nothing runs as usual.
 - `bb ai mcp serve` does not take the flag: it starts a live server, and a session cannot be previewed.
-- The answer is a verdict with the reasons for it, and a dry run that finds the run would fail exits with the code the real run would.
+- The answer is a verdict with the reasons for it. A dry run that finds the run would fail exits with the code the real run would; under `--json` or `--yaml` it exits `0`, with the verdict in the document.
 
 See [Advanced: Dry-Run Planning](advanced/dry-run-planning.md) for safety and contract details.
 
