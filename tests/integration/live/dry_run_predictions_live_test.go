@@ -346,10 +346,11 @@ func TestLiveGovernanceDryRunPredictionsReadRealState(t *testing.T) {
 		hook, _ := hooks[0].(map[string]any)
 		repoCLIAssertWebhook(t, hook, name, url, true, "repo:refs_changed")
 
-		// A second webhook with the same name and URL is one Bitbucket adds
-		// beside the first rather than refusing, so the verdict is a create
-		// that says so -- and the dry run adds nothing.
-		livePredictsSaying(t, "already exists", "repo", "settings", "workflow", "webhooks", "create", name, url)
+		// The same webhook again is the one already there, which the create
+		// reports rather than adding a second beside it (#729) -- and the dry
+		// run adds nothing either.
+		assertLivePreview(t, mustLiveCLI(t, "--dry-run", "repo", "settings", "workflow", "webhooks", "create", name, url),
+			jsonoutput.OutcomeNoOp, "already exists")
 		if after := mustLiveCLI(t, "repo", "settings", "workflow", "webhooks", "list"); after != listing {
 			t.Fatalf("the dry run changed the webhooks\nbefore: %s\nafter:  %s", listing, after)
 		}
