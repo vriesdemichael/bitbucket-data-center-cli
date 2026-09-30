@@ -13,7 +13,7 @@ The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client,
 
 The tools answer the agent, and `show` is for the person: an agent uses the tools to find, read and change things, and `show` for someone who is there to see the result, never when it works on its own. [Tools and views](../ai-and-llms.md#tools-and-views) says which for what.
 
-`refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them. A click in a view is a call of a tool, through the client, never a connection to Bitbucket ([how views work](../advanced/enterprise-hardening.md#principle-6-views-stay-inside-the-mcp-server)).
+`refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them. A click in a view is a call of a tool, through the client, never a connection to Bitbucket ([how views work](../advanced/mcp-governance.md#views-stay-inside-the-mcp-server)).
 
 | Tool | Access | Asks | What it does |
 |---|---|---|---|
@@ -82,4 +82,4 @@ A prompt is a request the person picks in the client, often as a slash command, 
 | `review_pull_request` | `project`, `repo`, `id` | `get_pull_request`, `get_pr_diff`, `list_pr_comments` | Review a pull request for defects, risky changes and missing tests, with its details, its diff and its open review threads attached. |
 | `explain_pull_request` | `project`, `repo`, `id` | `get_pull_request`, `get_pr_diff` | Explain what a pull request changes and why, for someone who has not seen it, with its details and its diff attached. |
 
-See [Enterprise Hardening](../advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve) for scoping a server to a project or repository, restricting it with a read-only token, and mandating an audit trail by policy.
+See [MCP Server Governance](../advanced/mcp-governance.md) for scoping a server to a project or repository, restricting it with a read-only token, and mandating an audit trail by policy.

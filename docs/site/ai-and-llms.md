@@ -53,7 +53,7 @@ Three flags decide what the server can reach:
 
 The strongest limit is not a flag: a read-only personal access token in
 `BITBUCKET_TOKEN` makes every write fail at the server regardless of which tools
-are exposed. [Enterprise Hardening](advanced/enterprise-hardening.md#5-ai-ide-mcp-server-governance-bb-ai-mcp-serve)
+are exposed. [Enterprise Hardening](advanced/mcp-governance.md)
 covers scoping, token restriction and mandating an audit trail by policy.
 
 ### Tools and views
@@ -85,7 +85,7 @@ request you ask for is opened; the form is for when you want a say in it first.
 A button in a view is not a link into Bitbucket but a call of the tools the
 agent uses, through your client: **Reply** calls `add_pr_comment`, **Approve**
 calls `submit_pr_review` and asks you to confirm, **Create** calls
-`create_pull_request`. [How views work](advanced/enterprise-hardening.md#principle-6-views-stay-inside-the-mcp-server)
+`create_pull_request`. [How views work](advanced/mcp-governance.md#views-stay-inside-the-mcp-server)
 shows the whole path.
 
 ### Views in your agent

@@ -211,8 +211,9 @@ variable into a shell would let that thing approve its own update.
 
 ## See also
 
-- [Enterprise Hardening](../advanced/enterprise-hardening.md) — the deployment
-  runbook these keys belong to, with worked examples.
+- [Fleet Controls](../advanced/fleet-controls.md) and
+  [Fleet Deployment](../advanced/fleet-deployment.md) — how to use these keys
+  across a fleet, with worked examples.
 - [Configuration](configuration.md) — where every setting comes from, and which
   file reads which key.
 - [Environment Variables](environment.md) — the per-user settings, and which of
