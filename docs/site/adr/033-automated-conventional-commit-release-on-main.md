@@ -3,33 +3,19 @@ search:
   boost: 0.3
 ---
 
-# ADR 033: Automated Conventional Commit release on main
+# ADR-033: Automated Conventional Commit release on main
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `033`
-- Title: `Automated Conventional Commit release on main`
-- Category: `development`
-- Status: `accepted`
-- Supersedes: `007`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/033-automated-conventional-commit-release-on-main.yaml`
-
-## Decision
+> Replaces [ADR-007](007-manual-github-release-workflow.md).
 
 Automate releases from GitHub Actions on push events to main (including PR merges) using deterministic Semantic Versioning derived from Conventional Commits. The release workflow computes the next version, skips publication when no releasable Conventional Commit exists, builds cross-platform artifacts, generates checksums, keyless Sigstore/cosign signatures with Rekor-backed bundles for every published artifact, provenance attestations, creates or updates the tag/release, and publishes both markdown release notes and a machine-readable changelog artifact.
 
-## Agent Instructions
-
 Treat .github/workflows/release.yml as an automated post-merge release pipeline for main. Version bump rules are: major for breaking changes ("!" or BREAKING CHANGE footer), minor for feat, patch for fix, perf and revert, and no release at all for every other Conventional Commit type (ci, chore, docs, style, refactor, test, build). Do not restore a patch bump for those types: shipping a version for changes no adopter can observe is the churn this rule exists to prevent. A pull request that only touches tooling, CI or documentation is expected to merge without cutting a release; its commits ship with the next feat or fix. Preserve deterministic behavior (no interactive/manual release decisions in normal flow), keep idempotent handling for existing tags/releases, maintain dual changelog outputs (human markdown plus machine-readable JSON), and keep the release signing identity pinned to refs/heads/main because self-update verifies the signed checksum manifest against that exact GitHub Actions workflow identity. Manual workflow_dispatch version input is allowed only as an explicit override for controlled backfills/hotfixes.
-
-## Rationale
 
 The project already enforces Conventional Commits and CI gates, making deterministic post-merge release automation predictable and auditable without introducing external release orchestration complexity. This reduces operator toil and release timing ambiguity while preserving safety through branch protection and required checks on PRs before merge. Publishing Rekor-backed keyless signatures for the checksum manifest and archives lets clients hard-fail self-update on publisher identity mismatches instead of trusting release metadata alone, while idempotent publication and explicit fallback override keep operations robust when retries or exceptional release corrections are needed.
 
-## Rejected Alternatives
+## Not chosen
 
-- `Keep release workflow manual-only via workflow_dispatch`: Adds avoidable operator overhead and inconsistent release timing after merge.
-- `Use external release orchestration tooling (for example release-please)`: Increased debugging complexity and lower operational predictability for this repository's preferred setup.
-- `Publish on every push regardless of commit semantics`: Violates Conventional Commit version intent and increases accidental/noise releases.
-- `Cut a patch release for every valid Conventional Commit type`: The original rule. It produced 95 releases in the first six months, roughly one every other day, largely for changes with no adopter-visible effect. Organisations running binaries through change approval cannot consume that rate, so they pin one version and stop updating, which defeats the security-patch pathway the automation is meant to provide. It also drained the version number of meaning: a bump no longer indicated that anything had changed for the user.
+- **Keep release workflow manual-only via workflow_dispatch**: Adds avoidable operator overhead and inconsistent release timing after merge.
+- **Use external release orchestration tooling (for example release-please)**: Increased debugging complexity and lower operational predictability for this repository's preferred setup.
+- **Publish on every push regardless of commit semantics**: Violates Conventional Commit version intent and increases accidental/noise releases.
+- **Cut a patch release for every valid Conventional Commit type**: The original rule. It produced 95 releases in the first six months, roughly one every other day, largely for changes with no adopter-visible effect. Organisations running binaries through change approval cannot consume that rate, so they pin one version and stop updating, which defeats the security-patch pathway the automation is meant to provide. It also drained the version number of meaning: a bump no longer indicated that anything had changed for the user.

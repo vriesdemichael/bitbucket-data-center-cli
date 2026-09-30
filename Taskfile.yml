@@ -80,9 +80,9 @@ tasks:
     desc: Export generated command reference markdown from Cobra command tree
     cmd: go run ./tools/cli-docs-export -out docs/site/reference/commands
 
-  docs:export-adr-markdown:
-    desc: Export ADR markdown pages from decision YAML records
-    cmd: go run ./tools/adr-markdown-export -in docs/decisions -out docs/site/adr
+  docs:export-adr-index:
+    desc: Write the index of the decision records in docs/site/adr
+    cmd: go run ./tools/adr-index
 
   docs:export-mcp-tools:
     desc: Export the MCP tool reference from the server's tool registry
@@ -112,7 +112,7 @@ tasks:
     desc: Generate all docs artifacts committed to repo
     cmds:
       - task: docs:export-command-reference
-      - task: docs:export-adr-markdown
+      - task: docs:export-adr-index
       - task: docs:export-mcp-tools
       - task: docs:export-config-schema
       - task: docs:export-output-schemas
@@ -139,7 +139,7 @@ tasks:
           exit 1
         fi
     vars:
-      GENERATED_DOCS: docs/site/reference/commands docs/site/reference/mcp-tools.md docs/site/adr docs/reference/schemas docs/site/reference/schemas
+      GENERATED_DOCS: docs/site/reference/commands docs/site/reference/mcp-tools.md docs/site/adr/index.md docs/reference/schemas docs/site/reference/schemas
 
   docs:sync-version:
     desc: Sync documented release versions across markdown files to match latest git tag (or VERSION)
@@ -217,7 +217,7 @@ tasks:
       - git diff --exit-code -- internal/openapi/generated/bitbucket_client.gen.go
 
   quality:validate-decisions:
-    desc: Validate ADR decision records with Go validator
+    desc: Check that every decision record is well formed
     cmd: go run ./tools/adr-validator --validate
 
   pr:rebase:

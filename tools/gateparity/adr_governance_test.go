@@ -9,7 +9,7 @@ import (
 )
 
 // governanceRecord is the decision record that lists the governance tests.
-const governanceRecord = "docs/decisions/067-governance-tests-are-verified-by-breaking-them.yaml"
+const governanceRecord = "docs/site/adr/067-governance-tests-are-verified-by-breaking-them.md"
 
 // TestGovernanceTestsNamedInThisRecordExist keeps ADR-067's list honest.
 //
@@ -56,7 +56,7 @@ func TestGovernanceTestsNamedInThisRecordExist(t *testing.T) {
 func governanceTestsNamedIn(t *testing.T, path string) []string {
 	t.Helper()
 
-	entry := regexp.MustCompile(`^\s+- (Test[A-Za-z0-9_]+):`)
+	entry := regexp.MustCompile(`^\s*- (Test[A-Za-z0-9_]+):`)
 
 	names := []string{}
 	for _, line := range readLines(t, path) {

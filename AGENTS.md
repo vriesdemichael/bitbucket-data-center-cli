@@ -344,7 +344,8 @@ The governance guards, so the set is knowable:
 | `TestEveryMCPToolIsAccountedFor`, `TestEveryMappedCLICommandExists` | the MCP and CLI surfaces stay in step |
 | `TestEveryToolHasAScopeRule` | no MCP tool escapes workspace scoping |
 | `TestEveryResourceTemplateNamesItsProjectAndRepository`, `TestEveryPromptTakesItsProjectAndRepository` | no MCP resource or prompt escapes workspace scoping |
-| `TestADRDoesNotNameToolsThatDoNotExist` | decision records do not name tools that were removed |
+| `TestADRDoesNotNameToolsThatDoNotExist`, `TestADRDoesNotNameFlagsThatDoNotExist` | decision records do not name tools or flags that were removed |
+| `TestEveryADRMentionHasARecord` | nothing in the repository names a decision record that does not exist |
 | `TestToolsThatAskAreTheOnesThatDecideAMerge` | the tools that ask the person before they run are exactly the ones that decide a merge, and `create_tag` |
 | `TestReadOnlyToolsDoNotAsk` | a tool annotated read-only asks nothing — either it writes after all, or there is nothing to confirm |
 | `TestEveryToolDeclaresItsHintsAndTitle` | every MCP tool states all four hints and a title, rather than leaving a hint to its default |
@@ -365,6 +366,22 @@ The governance guards, so the set is knowable:
 | `TestEveryDeprecatedFlagIsStillTakenAndSaysSo` | a deprecated flag is still taken, hidden, and warns on stderr until the major that removes it |
 | `TestConfigurationPageSaysWhichFileReadsWhichKey`, `TestSystemPolicyPageListsEveryPolicyKey`, `TestEnvironmentPageNamesEveryVariableBBReads` | the hand-written configuration, policy and environment tables name what the code reads |
 | `TestMachineModePageStatesEachKindsExitCode`, `TestTroubleshootingPageStatesEachKindsExitCode` | both exit-code tables give every error kind its real code |
+
+## Decision records
+
+A record in `docs/site/adr/` states a rule as it holds now. It is `NNN-slug.md`,
+opens with `# ADR-NNN: Title`, gives the rule first and then why it holds, in
+prose, and may end with a `## Not chosen` list of `- **Alternative**: why not`.
+
+- When the rule changes, change the record. How it came to change is in git,
+  not in the record.
+- When a rule no longer holds, delete the record and every mention of its number;
+  `TestEveryADRMentionHasARecord` fails on one left behind. A number is never
+  used again.
+- Some records still open with a standing line (`> Changed in part by …`,
+  `> Replaced by …`). They are being folded into the records they point at; do
+  not add a new one.
+- After adding or deleting a record, run `task docs:export-adr-index`.
 
 ## Development Tips & Gotchas
 

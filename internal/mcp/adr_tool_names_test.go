@@ -14,21 +14,14 @@ import (
 var toolNamePattern = regexp.MustCompile(`\b[a-z]+(?:_[a-z]+){1,3}\b`)
 
 // prosePermitted are identifiers that share the snake_case shape of a tool name
-// without being one: the YAML keys of the decision-record schema itself, and
-// the configuration keys an MCP decision record has reason to name exactly.
+// without being one: the configuration keys an MCP decision record has reason
+// to name exactly.
 //
 // A configuration key belongs here rather than being reworded around, because
 // the whole point of naming it in a record is that an administrator can copy it
 // into a policy file. The list is exhaustive on purpose — anything not on it is
 // still required to be a real tool.
 var prosePermitted = map[string]bool{
-	"agent_instructions":    true,
-	"rejected_alternatives": true,
-	"superseded_by":         true,
-	// The amendment half of the same schema. It was absent here only because no
-	// MCP record had been amended yet; ADR-083 amends ADR-039, and the key
-	// looked like a tool name the moment it appeared.
-	"amended_by":     true,
 	"mcp_audit_file": true,
 }
 
@@ -52,7 +45,7 @@ func TestADRDoesNotNameToolsThatDoNotExist(t *testing.T) {
 		implemented[spec.Tool.Name] = true
 	}
 
-	records, err := filepath.Glob(filepath.Join("..", "..", "docs", "decisions", "*mcp*.yaml"))
+	records, err := filepath.Glob(filepath.Join("..", "..", "docs", "site", "adr", "*mcp*.md"))
 	if err != nil {
 		t.Fatalf("glob decision records: %v", err)
 	}

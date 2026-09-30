@@ -3,33 +3,19 @@ search:
   boost: 0.3
 ---
 
-# ADR 039: Built-in MCP server with explicit host scoping and token capability restriction
+# ADR-039: Built-in MCP server with explicit host scoping and token capability restriction
 
-This page is generated from `docs/decisions/*.yaml` by `task docs:export-adr-markdown`. Do not edit manually.
-
-- Number: `039`
-- Title: `Built-in MCP server with explicit host scoping and token capability restriction`
-- Category: `architecture`
-- Status: `accepted`
-- Amended By: `83, 98`
-- Provenance: `guided-ai`
-- Source: `docs/decisions/039-built-in-mcp-server-with-host-scoping-and-token-restriction.yaml`
-
-## Decision
+> Changed in part by [ADR-083](083-no-flag-carries-a-secret.md), [ADR-098](098-mcp-tools-that-decide-a-merge-ask-the-person.md).
 
 Expose a curated set of high-value Bitbucket operations as MCP tools via bb ai mcp serve. The server uses stdio transport for IDE-native integration. When more than one Bitbucket server context is configured, --host is required and the server exits immediately with an actionable error if it is omitted. An optional --token flag scopes all API calls made by the server to the supplied PAT, restricting capabilities to that token's rights. An optional --tools allowlist and --exclude denylist allow further narrowing of the exposed tool surface. A companion bb ai mcp tools command lists all available tools with name, description and exposure to support allowlist/denylist construction. Tools are classified safe or unsafe, by consequence rather than by whether they write. A tool is unsafe when its effect cannot be undone, causes a merge, or feeds a check that decides whether a merge is allowed: merging, enabling auto-merge, submitting a review, reporting a build status. Unsafe tools are withheld unless --yolo (or its alias --allow-writes) is set. Every other tool is safe and exposed by default, including tools that write but change no branch and cause no merge, such as opening a pull request, tagging a commit or disabling auto-merge. --tools takes precedence over the classification, so an operator can expose one unsafe tool without enabling all of them. This record does not enumerate the tools. mcp.AllSpecs() is the catalogue, bb ai mcp tools prints it with an EXPOSURE column, and an MCP client receives it at connect time.
 
-## Agent Instructions
-
 The --token flag this record describes was removed in v4: ADR-083. Scope the server by giving it its own read-only PAT as BITBUCKET_TOKEN in the MCP client's env block, never as a flag. When generating MCP server configuration for an IDE (e.g. VS Code, Cursor), always emit bb ai mcp serve as the server command. If the user has multiple Bitbucket instances configured (detectable via bb auth server list), prompt for --host before generating the config snippet. Give the server its own read-only PAT through the client's env block, and say so when generating configuration; the flag that once did this is gone. Never silently pick one host when multiple are configured; always surface the ambiguity. Do not list tool names here or anywhere else that has to be maintained by hand. This record previously carried three tiers of them and drifted: it named a tool that has never existed, omitted five that do, and described two withheld-by-default tools as enabled by default. Read the catalogue from mcp.AllSpecs(), or run bb ai mcp tools. TestADRDoesNotNameToolsThatDoNotExist fails the build if a name appears here that the server does not implement, so the only names that may appear are real ones. Every tool is exposed. The tools that decide a merge ask the person through the client before they run, and --read-only exposes only the tools that read: ADR-098.
-
-## Rationale
 
 Stdio transport is the canonical IDE-native MCP transport; HTTP would require port management and is not supported out of the box by most IDE MCP clients. Explicit --host enforcement prevents silent use of the wrong Bitbucket instance in multi-tenant setups, which is a real failure mode in enterprise environments. Token-scoped servers allow teams to run a read-only instance alongside a write-enabled instance in the same IDE session without additional access-control logic inside the server itself. The tools/exclude flags put capability control in the hands of the user without requiring code changes.
 
-## Rejected Alternatives
+## Not chosen
 
-- `HTTP transport instead of stdio`: Requires port management, firewall considerations, and is not IDE-native. Stdio is the standard for local MCP servers.
-- `Implicitly select the active server context when multiple exist`: Silently targets the wrong instance in multi-tenant setups. The error is often discovered late and is hard to debug.
-- `Per-tool token scoping`: Adds significant complexity. Scoping the entire server to one token is sufficient for the two-instance (read/write) pattern and is easier to reason about.
-- `No tool filtering flags; users configure via separate config file`: Adds indirection. Flags at serve time are composable, scriptable, and don't require a config schema.
+- **HTTP transport instead of stdio**: Requires port management, firewall considerations, and is not IDE-native. Stdio is the standard for local MCP servers.
+- **Implicitly select the active server context when multiple exist**: Silently targets the wrong instance in multi-tenant setups. The error is often discovered late and is hard to debug.
+- **Per-tool token scoping**: Adds significant complexity. Scoping the entire server to one token is sufficient for the two-instance (read/write) pattern and is easier to reason about.
+- **No tool filtering flags; users configure via separate config file**: Adds indirection. Flags at serve time are composable, scriptable, and don't require a config schema.
