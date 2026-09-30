@@ -105,7 +105,10 @@ func formForView(ctx context.Context, c Clients, in ShowInput) (viewForm, *viewP
 			form.DefaultReviewers, form.DefaultReviewersUnread = found.defaults, found.defaultsErr != nil
 			form.CodeOwners, form.CodeOwnersUnread = found.owners, found.ownersErr != nil
 		}
-		form.Reviewers = joinPeople(parseCommaList(in.Reviewers), form.DefaultReviewers, form.CodeOwners)
+		// The author is no reviewer of their own pull request, whoever names
+		// them: Bitbucket refuses it, and its reviewer picker never offers
+		// them.
+		form.Reviewers = withoutPerson(joinPeople(parseCommaList(in.Reviewers), form.DefaultReviewers, form.CodeOwners), currentUsername(ctx, c))
 		people := peopleNamed(ctx, c, form.Reviewers)
 		form.People = displayNames(people)
 		return form, nil, avatarSlugs(people), viewSummary{
