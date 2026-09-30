@@ -24,6 +24,10 @@ const (
 	auditStatusSuccess = "success"
 	auditStatusDenied  = "denied"
 	auditStatusError   = "error"
+	// auditStatusAsked is a tool that asks the person putting the question.
+	// It has read Bitbucket to find out what to ask about, and the call may
+	// never be answered, so the question is a record before the decision is.
+	auditStatusAsked = "asked"
 )
 
 // AuditRecord is one line of the JSONL audit stream.
@@ -39,8 +43,10 @@ const (
 //
 // Confirmation says how the person answered a tool that asks: accepted,
 // declined, cancelled, or unavailable when the client could not show the
-// confirmation. It is absent for a call that did not ask. A refused
-// confirmation is also status denied, so a rule keyed on status still sees it.
+// confirmation. It is absent for a call that did not ask, and on the record of
+// the question itself, status asked, which is written before any answer. A
+// refused confirmation is also status denied, so a rule keyed on status still
+// sees it.
 type AuditRecord struct {
 	Timestamp    string         `json:"timestamp"`
 	Event        string         `json:"event"`

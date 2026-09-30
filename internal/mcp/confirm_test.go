@@ -483,8 +483,9 @@ func TestAStateFromAnotherProcessDoesNotVerify(t *testing.T) {
 }
 
 // The audit record says how the person answered, and a refused confirmation
-// is also status denied. A 2026-07-28 client makes two calls for one decision;
-// the trail holds one record for it.
+// is also status denied. Asking is a record of its own, status asked, written
+// before the person answers, and the answer is the one record of the decision
+// however many calls the client made for it.
 func TestTheAuditRecordSaysHowTheConfirmationWent(t *testing.T) {
 	t.Parallel()
 
@@ -494,13 +495,16 @@ func TestTheAuditRecordSaysHowTheConfirmationWent(t *testing.T) {
 		answer           func(*mcp.ElicitParams) *mcp.ElicitResult
 		wantStatus       string
 		wantConfirmation string
+		asked            bool
 	}{
 		// Accepted, then failed at the closed port.
-		{"accepted", "", accept, auditStatusError, confirmationAccepted},
-		{"accepted on a handshake-era client", "2025-11-25", accept, auditStatusError, confirmationAccepted},
-		{"declined", "", decline, auditStatusDenied, confirmationDeclined},
-		{"cancelled", "", func(*mcp.ElicitParams) *mcp.ElicitResult { return &mcp.ElicitResult{Action: "cancel"} }, auditStatusDenied, confirmationCancelled},
-		{"unavailable", "", nil, auditStatusDenied, confirmationUnavailable},
+		{"accepted", "", accept, auditStatusError, confirmationAccepted, true},
+		// Asked inside the one call, which ends with the answer.
+		{"accepted on a handshake-era client", "2025-11-25", accept, auditStatusError, confirmationAccepted, false},
+		{"declined", "", decline, auditStatusDenied, confirmationDeclined, true},
+		{"cancelled", "", func(*mcp.ElicitParams) *mcp.ElicitResult { return &mcp.ElicitResult{Action: "cancel"} }, auditStatusDenied, confirmationCancelled, true},
+		// Nothing is asked of a client that cannot show the question.
+		{"unavailable", "", nil, auditStatusDenied, confirmationUnavailable, false},
 	}
 
 	for _, tc := range cases {
@@ -525,14 +529,63 @@ func TestTheAuditRecordSaysHowTheConfirmationWent(t *testing.T) {
 			_ = audit.Close()
 
 			records := readAuditRecords(t, path)
-			if len(records) != 1 {
-				t.Fatalf("want one record for one decision, got %d: %+v", len(records), records)
+			want := 1
+			if tc.asked {
+				want = 2
 			}
-			if records[0].Status != tc.wantStatus || records[0].Confirmation != tc.wantConfirmation {
-				t.Errorf("record status %q confirmation %q, want %q and %q",
-					records[0].Status, records[0].Confirmation, tc.wantStatus, tc.wantConfirmation)
+			if len(records) != want {
+				t.Fatalf("want %d records, the question and the decision, got %d: %+v", want, len(records), records)
+			}
+			if tc.asked && (records[0].Status != auditStatusAsked || records[0].Confirmation != "") {
+				t.Errorf("first record status %q confirmation %q, want asked and no outcome yet",
+					records[0].Status, records[0].Confirmation)
+			}
+			decision := records[len(records)-1]
+			if decision.Status != tc.wantStatus || decision.Confirmation != tc.wantConfirmation {
+				t.Errorf("decision status %q confirmation %q, want %q and %q",
+					decision.Status, decision.Confirmation, tc.wantStatus, tc.wantConfirmation)
 			}
 		})
+	}
+}
+
+// TestAnUnansweredConfirmationIsAudited is #732. A tool that asks has read
+// Bitbucket to find out what to ask about by the time it asks, and an agent
+// that never answers leaves the call there. The trail recorded only the
+// answer, so a call nobody answered was recorded nowhere: not here, and in
+// Bitbucket only as an ordinary read by the shared user.
+func TestAnUnansweredConfirmationIsAudited(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "audit.jsonl")
+	audit, err := NewAuditLogger(path)
+	if err != nil {
+		t.Fatalf("NewAuditLogger: %v", err)
+	}
+	opts := testServer(t)
+	opts.Audit = audit
+
+	session := connectSelfAnswering(t, opts)
+	for range 3 {
+		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "create_tag", Arguments: tagArguments})
+		if err != nil || result == nil || result.InputRequests == nil {
+			t.Fatalf("want the question back, got %+v, %v", result, err)
+		}
+	}
+	_ = audit.Close()
+
+	records := readAuditRecords(t, path)
+	if len(records) != 3 {
+		t.Fatalf("want a record for each question nobody answered, got %d: %+v", len(records), records)
+	}
+	for _, record := range records {
+		if record.Tool != "create_tag" || record.Status != auditStatusAsked || record.Confirmation != "" {
+			t.Errorf("record tool %q status %q confirmation %q, want create_tag, asked and no outcome",
+				record.Tool, record.Status, record.Confirmation)
+		}
+		if record.Project != "PROJ" || record.Repo != "payments" || record.Arguments["name"] != "v1.2.3" {
+			t.Errorf("the record does not say what was asked about: %+v", record)
+		}
 	}
 }
 

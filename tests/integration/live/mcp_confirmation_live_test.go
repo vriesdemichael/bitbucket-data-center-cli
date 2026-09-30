@@ -566,3 +566,94 @@ func waitForVersionChange(ctx context.Context, harness *liveHarness, projectKey,
 
 	return fmt.Errorf("pull request %s stayed at version %d for 30s after the push", pullRequestID, version)
 }
+
+// TestLiveMCPAnUnansweredConfirmationIsAudited is #732 against a real server.
+//
+// merge_pull_request reads the pull request and the repository's merge
+// strategy before it asks, so a call nobody answers has already reached
+// Bitbucket. An agent can put the question and walk away as often as it
+// likes; each time is now a record, status asked, and the pull request is
+// still open afterwards.
+func TestLiveMCPAnUnansweredConfirmationIsAudited(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, "feature/mcp-unanswered", "mcp-unanswered.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, "feature/mcp-unanswered", "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+
+	// A client that can show a confirmation and never does: it takes the
+	// question and does not come back with an answer.
+	walksAway := &mcp.ClientOptions{
+		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+			return nil, errors.New("this client never answers")
+		},
+		MultiRoundTrip: &mcp.MultiRoundTripOptions{Disabled: true},
+	}
+
+	auditPath := filepath.Join(t.TempDir(), "mcp-audit.jsonl")
+	executeLiveMCPServerAs(t, walksAway, func(session *mcp.ClientSession) {
+		for range 3 {
+			result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+				Name:      "merge_pull_request",
+				Arguments: map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
+			})
+			if err != nil || result == nil || result.InputRequests == nil {
+				t.Fatalf("want merge_pull_request to ask, got %+v, %v", result, err)
+			}
+		}
+	}, "ai", "mcp", "serve", "--project", seeded.Key, "--audit-file", auditPath)
+
+	if state := mcpLivePullRequest(t, repoRef, pullRequestID)["state"]; state != "OPEN" {
+		t.Fatalf("pull request %s is %v after questions nobody answered, want OPEN", pullRequestID, state)
+	}
+
+	contents, err := os.ReadFile(auditPath)
+	if err != nil {
+		t.Fatalf("read audit log: %v", err)
+	}
+	var records []string
+	for _, line := range strings.Split(string(contents), "\n") {
+		if strings.TrimSpace(line) != "" {
+			records = append(records, line)
+		}
+	}
+	if len(records) != 3 {
+		t.Fatalf("want a record for each of the 3 questions, got %d:\n%s", len(records), contents)
+	}
+	for _, line := range records {
+		var record struct {
+			Tool         string         `json:"tool"`
+			Status       string         `json:"status"`
+			Confirmation string         `json:"confirmation"`
+			Project      string         `json:"project"`
+			Repo         string         `json:"repo"`
+			Arguments    map[string]any `json:"arguments"`
+		}
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("audit line is not valid JSON: %v\nline: %s", err, line)
+		}
+		if record.Tool != "merge_pull_request" || record.Status != "asked" || record.Confirmation != "" {
+			t.Errorf("want merge_pull_request, asked, and no outcome yet; got:\n%s", line)
+		}
+		if record.Project != seeded.Key || record.Repo != repo.Slug || record.Arguments["pr_id"] != pullRequestID {
+			t.Errorf("the record does not say which pull request was asked about:\n%s", line)
+		}
+	}
+}
