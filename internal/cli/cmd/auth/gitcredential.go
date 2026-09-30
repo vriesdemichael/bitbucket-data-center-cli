@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -92,8 +94,17 @@ func parseCredentialRequest(reader io.Reader) (credentialRequest, error) {
 //   - store and erase are accepted and ignored. bb owns its own storage through
 //     `bb auth login`; letting git write back would create a second source of
 //     truth that silently diverges from the keyring.
+//
+// --config names the configuration file to answer from, and bb auth setup-git
+// always writes it into the helper line. Without it the helper read whichever
+// BB_CONFIG_PATH was in git's environment when git ran it, so two logins for
+// one host -- a personal account and a service account, kept apart by their
+// configuration files since #587 -- could not be told apart by git: it pushed
+// as whichever the shell happened to export (#733).
 func newGitCredentialCommand() *cobra.Command {
-	return &cobra.Command{
+	var configPath string
+
+	cmd := &cobra.Command{
 		Use:   "git-credential <get|store|erase>",
 		Short: "Git credential helper (invoked by git, not run directly)",
 		Example: `  # What git runs to ask for a credential; run it yourself to debug a failed push
@@ -131,6 +142,24 @@ bb stay in agreement and no token is ever written into a repository.`,
 				return apperrors.New(apperrors.KindValidation, "failed to read credential request from stdin", err)
 			}
 
+			if pinned := strings.TrimSpace(configPath); pinned != "" {
+				// The helper line names the login it was set up with. A file
+				// that has gone away is said on stderr, which git shows, and
+				// answered with silence, so git falls through to a prompt
+				// rather than to whatever other login the environment names.
+				if _, err := os.Stat(pinned); err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "bb: this credential helper answers from %s, which cannot be read: %v. Run 'bb auth setup-git' again\n", pinned, err)
+					return nil
+				}
+
+				// The whole of the lookup reads the file through ConfigPath,
+				// the keyring entry's name included, and this process exists
+				// to answer this one request.
+				if err := os.Setenv("BB_CONFIG_PATH", pinned); err != nil {
+					return apperrors.New(apperrors.KindInternal, "failed to select the configuration file", err)
+				}
+			}
+
 			if strings.TrimSpace(request.Host) == "" {
 				// Nothing to look up. Stay silent so git moves on.
 				return nil
@@ -160,6 +189,10 @@ bb stay in agreement and no token is ever written into a repository.`,
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&configPath, "config", "", "Configuration file holding the login to answer with, in place of BB_CONFIG_PATH")
+
+	return cmd
 }
 
 // resolveGitCredential maps stored bb credentials onto the username/password
@@ -261,10 +294,19 @@ credentials to any other remote.`,
 				return apperrors.New(apperrors.KindInternal, "failed to resolve the bb executable path", err)
 			}
 
+			configPath, err := pinnedConfigPath()
+			if err != nil {
+				return err
+			}
+
 			// Absolute path rather than a bare "bb": git resolves the helper
 			// through a shell whose PATH may not match the user's, and a helper
 			// that silently fails to launch looks like missing credentials.
-			helper := fmt.Sprintf("!%q auth git-credential", executable)
+			//
+			// The configuration file is named too, so git authenticates as
+			// the login this was set up with and not as whichever file
+			// BB_CONFIG_PATH names when git runs it (#733).
+			helper := fmt.Sprintf("!%q auth git-credential --config %q", executable, configPath)
 			scope := parsed.Scheme + "://" + parsed.Host
 			key := fmt.Sprintf("credential.%s.helper", scope)
 
@@ -281,7 +323,7 @@ credentials to any other remote.`,
 				})
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Configured git to authenticate to %s through bb (%s).\n", scope, gitScopeName(setupGlobal))
+			fmt.Fprintf(cmd.OutOrStdout(), "Configured git to authenticate to %s through bb (%s), as the login in %s.\n", scope, gitScopeName(setupGlobal), configPath)
 			return nil
 		},
 	}
@@ -344,7 +386,7 @@ func configureGitCredentialHelperIn(ctx context.Context, workingDirectory, key, 
 		return err
 	}
 
-	if strings.TrimSpace(existing) != "" && existing != value && !force {
+	if !replaceableHelper(existing, value) && !force {
 		return apperrors.New(
 			apperrors.KindConflict,
 			fmt.Sprintf("a credential helper is already configured for this host (%s = %s); pass --force to replace it", key, existing),
@@ -370,6 +412,39 @@ func configureGitCredentialHelperIn(ctx context.Context, workingDirectory, key, 
 
 	options.Append = true
 	return backend.SetConfig(ctx, options)
+}
+
+// pinnedConfigPath is the configuration file the helper line names: the one
+// this run of bb reads, as an absolute path, since git runs the helper from
+// wherever the repository is.
+func pinnedConfigPath() (string, error) {
+	path, err := config.ConfigPath()
+	if err != nil {
+		return "", apperrors.New(apperrors.KindInternal, "failed to resolve the configuration file", err)
+	}
+
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", apperrors.New(apperrors.KindInternal, "failed to resolve the configuration file", err)
+	}
+
+	return absolute, nil
+}
+
+// unpinnedHelper matches a helper line that runs bb's helper with no --config:
+// the one an earlier bb wrote, with its executable quoted, or one written by
+// hand naming bb on PATH.
+var unpinnedHelper = regexp.MustCompile(`^!(?:"[^"]*"|\S+) auth git-credential$`)
+
+// replaceableHelper reports whether setup-git may write value over existing
+// without --force: nothing is there, it is the line already, or it is bb's own
+// line from before the helper named its configuration. That line answered for
+// whichever login git's environment named, so pinning one replaces no identity
+// anybody chose.
+func replaceableHelper(existing, value string) bool {
+	trimmed := strings.TrimSpace(existing)
+
+	return trimmed == "" || existing == value || unpinnedHelper.MatchString(trimmed)
 }
 
 func gitScopeName(global bool) string {

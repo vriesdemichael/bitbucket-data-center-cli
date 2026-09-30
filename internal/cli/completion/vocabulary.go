@@ -95,6 +95,7 @@ var flagKinds = map[string]Kind{
 	"comment-version":            KindFree,
 	"commit":                     KindCommit,
 	"commit-message":             KindFree,
+	"config":                     KindLocalFile,
 	"config-file":                KindLocalFile,
 	"content":                    KindFree,
 	"count":                      KindFree,
