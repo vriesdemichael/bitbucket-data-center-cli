@@ -64,7 +64,7 @@ task test:live
 `task stack:up`, which also enables basic authentication: Bitbucket 10 disables
 it by default even once it reports `RUNNING`. The first start downloads roughly
 800MB of Bitbucket artifacts and takes a few minutes; later starts reuse a
-cached volume. A full run takes about five minutes. `task stack:down` when you
+cached volume. A full run takes about four minutes. `task stack:down` when you
 are finished.
 
 Each checkout has its own instance. In a linked git worktree it runs on ports
@@ -198,7 +198,7 @@ Both hooks are heavier than most projects', and neither is hung when it appears
 to stall. [lefthook](https://github.com/evilmartians/lefthook) runs them; they
 install with `lefthook install`.
 
-**`pre-commit` — roughly 3 minutes.** Runs `task test:unit`, which is the
+**`pre-commit` — under a minute on a warm cache.** Runs `task test:unit`, which is the
 whole non-live Go test suite across `./cmd/...`, `./internal/...` and
 `./tools/...`. Not a fast subset of tests related to your change: all of them,
 on every commit. `internal/cli` alone accounts for most of it. Amending several
@@ -303,20 +303,20 @@ failure is real — please do not assume it is infrastructure.
 
 Collected from actually doing this, not hypothetical:
 
-- **Tests that shell out to `git` must scope their environment.** Git exports
-  `GIT_DIR` to every hook it runs, and git honours it over `-C` — so a raw
+- **A test that runs `git` works on a directory it created, normally
+  `t.TempDir()`, with a scoped environment.** Git exports `GIT_DIR` to every
+  hook it runs, and honours it over `-C`, so a raw
   `exec.Command("git", "-C", tmpdir, "init")` running under `pre-commit`
-  reinitialises *this* repository instead. Use `execgit.ScopeFreeEnv()`, which
-  strips git's repository-scoping variables. A `TestMain` guard fails any
-  package whose tests change this repository's git configuration.
+  reinitialises *this* repository instead; `execgit.ScopeFreeEnv()` strips the
+  variables that do that. A package whose tests start git installs
+  `gittest.Guard` in its `TestMain`, which keeps git from finding this
+  repository and fails the package if its configuration changes. A test that
+  missed both once wrote an `http.extraHeader` credential into the project's
+  `.git/config` and broke every push to GitHub. AGENTS.md has the detail.
 - **Line endings on Windows.** `.gitattributes` pins every file to LF, in the
   repository and in your working tree, so `core.autocrlf` cannot change what
   you commit. A tool that writes CRLF anyway shows up in `git diff`; put it
   back with `git add --renormalize .`.
-- **Tests that shell out to `git` must use `t.TempDir()`.** A guard fails the
-  package if a test mutates the repository's own git config. This is not
-  hypothetical — it once wrote an `http.extraHeader` credential into the
-  project's `.git/config` and broke pushes to GitHub.
 - **New commands must be classified for `--dry-run`** in
   `internal/cli/dryrun.go`: a server mutation in `dryRunProfiles`, a command
   that changes this machine in `clientLocalMutatingCommands`.

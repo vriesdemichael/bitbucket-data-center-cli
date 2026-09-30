@@ -13,7 +13,7 @@ That means no `BITBUCKET_LICENSE_KEY`, no `.env` file and no Atlassian account.
 The stack runs identically on a fork, on any contributor's machine, and in CI,
 which is why the live suite runs on pull requests from forks as well.
 
-A full live suite run takes about five minutes, so the 3-hour window only
+A full live suite run takes about four minutes, so the 3-hour window only
 matters for long local sessions, and the instance handles those itself.
 
 ### The instance stops itself before its licence runs out
