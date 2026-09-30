@@ -675,12 +675,13 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 		payload.Me = meFor(currentUsername(ctx, c), pr)
 		summary = summarizeDiff(in, pr, result.Patch)
 	case showKindPullRequestForm:
-		form, pr, formSummary, err := formForView(ctx, c, in)
+		form, pr, formPeople, formSummary, err := formForView(ctx, c, in)
 		if err != nil {
 			return viewPayload{}, nil, viewSummary{}, err
 		}
 		payload.Form = &form
 		payload.PullRequest = pr
+		people = formPeople
 		summary = formSummary
 	default:
 		return viewPayload{}, nil, viewSummary{}, fmt.Errorf("unknown kind %q", in.Kind)

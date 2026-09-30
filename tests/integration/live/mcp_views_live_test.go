@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -723,9 +724,12 @@ func containsAny(values []any, want string) bool {
 
 // TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends: the pull request
 // form starts from what the model drafted and the repository's default
-// branch, suggests the repository's branches and the people who can read
-// it, and the calls the form makes create and save the pull request as the
-// person finished it.
+// branch, with the reviewers Bitbucket's create page fills in -- the default
+// reviewers and the code owners for the branches, less the author -- named
+// and pictured as Bitbucket has them. It suggests the repository's branches
+// and the people who can read it, names whom Bitbucket names for a pair of
+// branches, and the calls the form makes create and save the pull request as
+// the person finished it.
 func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 	t.Parallel()
 
@@ -758,10 +762,28 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 	mustLiveCLI(t, "reviewer", "condition", "create", fmt.Sprintf(
 		`{"sourceMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},"targetMatcher":{"id":"ANY_REF","type":{"id":"ANY_REF"}},"reviewers":[{"id":%d}],"requiredApprovals":0}`,
 		reviewerID), "--repo", seeded.Key+"/"+repo.Slug)
+	// The owner owns form.txt beside bb's own user, who opens the pull
+	// request and so is left out, as the create page leaves them out:
+	// Bitbucket refuses an author as a reviewer.
+	owner := liveCodeOwner(t, ctx, harness, seeded.Key, repo.Slug)
+	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, "master", ".bitbucket/CODEOWNERS",
+		"form.txt @"+owner.Username+" @"+harness.username()+"\n"); err != nil {
+		t.Fatalf("push CODEOWNERS failed: %v", err)
+	}
 	branch := testsupport.UniqueName("feature/form-")
 	if err := harness.pushFileOnBranch(seeded.Key, repo.Slug, branch, "form.txt", "made with the form\n"); err != nil {
 		t.Fatalf("push failed: %v", err)
 	}
+	// The names the form shows, read from Bitbucket on their own.
+	displayName := func(username string) string {
+		t.Helper()
+		user, err := harness.liveJSON(ctx, http.MethodGet, "/rest/api/latest/users/"+username, nil)
+		if err != nil || asString(user["displayName"]) == "" {
+			t.Fatalf("read %s's display name: %v %v", username, err, user)
+		}
+		return asString(user["displayName"])
+	}
+	reviewerName, ownerName := displayName(reviewer.Username), displayName(owner.Username)
 
 	capabilities := &mcp.ClientCapabilities{}
 	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
@@ -794,20 +816,50 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 		if !strings.HasSuffix(asString(form["repository_url"]), "/projects/"+seeded.Key+"/repos/"+repo.Slug) {
 			t.Errorf("the form links under %v, want the repository's page", form["repository_url"])
 		}
-		if filled, _ := form["reviewers"].([]any); len(filled) != 1 || filled[0] != reviewer.Username {
-			t.Errorf("the form fills in reviewers %v, want %s, the default reviewer for these branches", form["reviewers"], reviewer.Username)
+		// The create page fills in the default reviewer and the code owner,
+		// and leaves out bb's own user, who owns the file too.
+		for key, want := range map[string][]any{
+			"reviewers":         {reviewer.Username, owner.Username},
+			"default_reviewers": {reviewer.Username},
+			"code_owners":       {owner.Username},
+		} {
+			if got, _ := form[key].([]any); !slices.Equal(got, want) {
+				t.Errorf("the form starts with %s %v, want %v", key, form[key], want)
+			}
 		}
-		if text := mcpResultText(shown); !strings.Contains(text, "Nothing is created until they submit it.") {
-			t.Errorf("the model reads %q, want it told nothing is created yet", text)
+		people, _ := form["people"].(map[string]any)
+		avatars, _ := payload["avatars"].(map[string]any)
+		for username, name := range map[string]string{reviewer.Username: reviewerName, owner.Username: ownerName} {
+			if person, _ := people[username].(map[string]any); asString(person["display_name"]) != name {
+				t.Errorf("the form names %s %v, want %q as Bitbucket does", username, people[username], name)
+			}
+			if !strings.HasPrefix(asString(avatars[username]), "data:image/") {
+				t.Errorf("the form has no avatar image for %s: %.40q", username, asString(avatars[username]))
+			}
+		}
+		text := mcpResultText(shown)
+		if !strings.Contains(text, "Nothing is created until they submit it.") || !strings.Contains(text, "with reviewers "+reviewer.Username+" and "+owner.Username) {
+			t.Errorf("the model reads %q, want it told whom the form starts with and that nothing is created yet", text)
 		}
 
 		branches, _ := structured(call("suggest_form_values", map[string]any{"project": seeded.Key, "repo": repo.Slug, "field": "branch", "text": "form-"}))["values"].([]any)
 		if len(branches) != 1 || asString(branches[0].(map[string]any)["value"]) != branch {
 			t.Errorf("the form suggests branches %v for what was typed, want %s", branches, branch)
 		}
-		people, _ := structured(call("suggest_form_values", map[string]any{"project": seeded.Key, "repo": repo.Slug, "field": "reviewer", "text": reviewer.Username}))["values"].([]any)
-		if len(people) != 1 || asString(people[0].(map[string]any)["value"]) != reviewer.Username {
-			t.Errorf("the form suggests reviewers %v, want %s, who can read the repository", people, reviewer.Username)
+		// A person the form offers comes with the name and the picture
+		// Bitbucket has for them.
+		offered := func(values []any, username, name string) bool {
+			for _, value := range values {
+				entry, _ := value.(map[string]any)
+				if entry["value"] == username && entry["label"] == name && strings.HasPrefix(asString(entry["avatar"]), "data:image/") {
+					return true
+				}
+			}
+			return false
+		}
+		found, _ := structured(call("suggest_form_values", map[string]any{"project": seeded.Key, "repo": repo.Slug, "field": "reviewer", "text": reviewer.Username}))["values"].([]any)
+		if len(found) != 1 || !offered(found, reviewer.Username, reviewerName) {
+			t.Errorf("the form suggests reviewers %v, want %s, who can read the repository, named and pictured", found, reviewer.Username)
 		}
 		everyone, _ := structured(call("suggest_form_values", map[string]any{"project": seeded.Key, "repo": repo.Slug, "field": "reviewer"}))["values"].([]any)
 		for _, person := range everyone {
@@ -815,19 +867,39 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 				t.Errorf("the form suggests bb's own user %s as a reviewer of their pull request", harness.username())
 			}
 		}
+		// Whom Bitbucket names for the branches the person picks, as the form
+		// asks when they pick others.
+		named := map[string]any{"project": seeded.Key, "repo": repo.Slug, "from_ref": branch, "to_ref": "master"}
+		named["field"] = "default_reviewers"
+		defaults, _ := structured(call("suggest_form_values", named))["values"].([]any)
+		if len(defaults) != 1 || !offered(defaults, reviewer.Username, reviewerName) {
+			t.Errorf("the form names default reviewers %v, want %s, named and pictured", defaults, reviewer.Username)
+		}
+		named["field"] = "code_owners"
+		owners, _ := structured(call("suggest_form_values", named))["values"].([]any)
+		if len(owners) != 1 || !offered(owners, owner.Username, ownerName) {
+			t.Errorf("the form names code owners %v, want %s alone, named and pictured, without bb's own user", owners, owner.Username)
+		}
 
 		// The person finishes it and submits: the form calls create_pull_request
 		// with what they wrote, as the view does.
 		created := structured(call("create_pull_request", map[string]any{"project": seeded.Key, "repo": repo.Slug,
 			"from_ref": branch, "to_ref": "master", "title": "Made with the form, finished", "description": "Drafted by the model.",
-			"reviewers": reviewer.Username, "draft": false}))
+			"reviewers": reviewer.Username + "," + owner.Username, "draft": false}))
 		pr, _ := created["pull_request"].(map[string]any)
 		id := fmt.Sprint(pr["id"])
 		read := structured(call("get_pull_request", map[string]any{"project": seeded.Key, "repo": repo.Slug, "id": id}))
 		readPR, _ := read["pull_request"].(map[string]any)
 		reviewers, _ := readPR["reviewers"].([]any)
-		if readPR["title"] != "Made with the form, finished" || len(reviewers) != 1 || asString(reviewers[0].(map[string]any)["name"]) != reviewer.Username {
-			t.Errorf("Bitbucket holds %v with reviewers %v, want the title and the reviewer the person finished it with", readPR["title"], reviewers)
+		var held []string
+		for _, entry := range reviewers {
+			held = append(held, asString(entry.(map[string]any)["name"]))
+		}
+		slices.Sort(held)
+		want := []string{reviewer.Username, owner.Username}
+		slices.Sort(want)
+		if readPR["title"] != "Made with the form, finished" || !slices.Equal(held, want) {
+			t.Errorf("Bitbucket holds %v with reviewers %v, want the title and the reviewers the person finished it with, %v", readPR["title"], held, want)
 		}
 
 		// Shown again to edit, the form starts from the pull request as it is.
