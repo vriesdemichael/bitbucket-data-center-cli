@@ -62,6 +62,7 @@ path rather than in a flag.
 | `gh` | `bb` | Notes |
 |---|---|---|
 | `gh auth login` | `bb auth login <host>` | The host is an argument: `bb` is built for self-hosted instances, so there is no default one |
+| `gh auth login --web` | `bb auth token-url`, then `bb auth login <host> --token-stdin` | There is no browser login. Bitbucket Data Center has no device flow, and its browser flow gives a command-line tool a token for one hour that it cannot renew ([ADR-022](adr/022-auth-mode-priority-and-oauth-optionality.md)). `bb auth token-url` prints the page where you create a token, behind your single sign-on |
 | `gh auth status` | `bb auth status` | |
 | `gh auth logout` | `bb auth logout` | |
 | `gh auth setup-git` | `bb auth setup-git` | |
