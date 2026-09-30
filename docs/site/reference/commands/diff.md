@@ -6,7 +6,7 @@ search:
 
 # bb diff
 
-Diff and patch commands
+Print the diff of a pull request, a commit or two refs
 
 3 commands.
 

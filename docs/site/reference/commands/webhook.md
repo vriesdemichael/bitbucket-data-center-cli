@@ -6,7 +6,7 @@ search:
 
 # bb webhook
 
-Manage repository webhooks
+Create, list, test and change a repository's webhooks
 
 7 commands.
 

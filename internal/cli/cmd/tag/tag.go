@@ -87,7 +87,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	tagCmd := &cobra.Command{
 		Use:   "tag",
-		Short: "Repository tag lifecycle commands",
+		Short: "Create, list, view and delete tags",
 	}
 
 	tagCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")

@@ -83,7 +83,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	webhookCmd := &cobra.Command{
 		Use:   "webhook",
-		Short: "Manage repository webhooks",
+		Short: "Create, list, test and change a repository's webhooks",
 	}
 	webhookCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 

@@ -6,7 +6,7 @@ search:
 
 # bb tag
 
-Repository tag lifecycle commands
+Create, list, view and delete tags
 
 4 commands.
 

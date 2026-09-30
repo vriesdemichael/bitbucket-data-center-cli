@@ -67,7 +67,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	refCmd := &cobra.Command{
 		Use:   "ref",
-		Short: "Repository ref resolution and listing commands",
+		Short: "List a repository's branches and tags, and resolve a ref to its commit",
 	}
 
 	refCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")

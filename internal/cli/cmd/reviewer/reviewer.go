@@ -81,7 +81,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	reviewerCmd := &cobra.Command{
 		Use:   "reviewer",
-		Short: "Manage default reviewers",
+		Short: "Choose who is added to a pull request as a reviewer by default",
 		Long: "Manage default reviewer conditions.\n\n" +
 			"Note on CODEOWNERS: .bitbucket/CODEOWNERS is a git-tracked file rather than a REST resource, so it is managed through repository contents and not by this command. For server-level reviewer rules use default-reviewer conditions (bb reviewer condition) and reviewer groups (bb reviewer-group); bb pr create and bb pr review reviewer add ask Bitbucket which code owners a change has, so they match what the web interface shows.",
 	}
@@ -92,7 +92,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	conditionCmd := &cobra.Command{
 		Use:   "condition",
-		Short: "Manage default reviewer conditions",
+		Short: "Create, list, update and delete default reviewer conditions",
 	}
 
 	listCmd := &cobra.Command{

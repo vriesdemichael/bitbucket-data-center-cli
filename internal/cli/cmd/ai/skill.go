@@ -146,7 +146,7 @@ func skillNames() []string {
 func newSkillCommand(deps Dependencies) *cobra.Command {
 	skillCmd := &cobra.Command{
 		Use:   "skill",
-		Short: "Agent skill distribution commands",
+		Short: "Install, remove or print the agent skill",
 	}
 
 	skillCmd.AddCommand(newSkillShowCommand(deps))

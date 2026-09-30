@@ -231,7 +231,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	branchCmd := &cobra.Command{
 		Use:   "branch",
-		Short: "Repository branch and branch restriction commands",
+		Short: "Create, list and delete branches, and set the default branch and restrictions",
 	}
 
 	branchCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
@@ -472,7 +472,7 @@ func New(deps Dependencies) *cobra.Command {
 	deleteCmd.Flags().StringVar(&deleteEndPoint, "end-point", "", "Expected commit at branch tip")
 	branchCmd.AddCommand(deleteCmd)
 
-	defaultCmd := &cobra.Command{Use: "default", Short: "Get or set repository default branch"}
+	defaultCmd := &cobra.Command{Use: "default", Short: "Show or set the repository's default branch"}
 
 	defaultGetCmd := &cobra.Command{
 		Use:   "get",
@@ -571,7 +571,7 @@ func New(deps Dependencies) *cobra.Command {
 	defaultCmd.AddCommand(defaultSetCmd)
 	branchCmd.AddCommand(defaultCmd)
 
-	modelCmd := &cobra.Command{Use: "model", Short: "Inspect and update branch model-related settings"}
+	modelCmd := &cobra.Command{Use: "model", Short: "Show the branch a commit belongs to, and set the model's default branch"}
 
 	modelInspectCmd := &cobra.Command{
 		Use:   "inspect <commit>",
@@ -687,7 +687,7 @@ func New(deps Dependencies) *cobra.Command {
 	modelCmd.AddCommand(modelUpdateCmd)
 	branchCmd.AddCommand(modelCmd)
 
-	restrictionCmd := &cobra.Command{Use: "restriction", Short: "Manage repository branch restrictions"}
+	restrictionCmd := &cobra.Command{Use: "restriction", Short: "Create, list, update and delete a repository's branch restrictions"}
 
 	var restrictionType string
 	var matcherType string

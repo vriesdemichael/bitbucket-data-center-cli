@@ -6,18 +6,18 @@ search:
 
 # bb pr
 
-Pull request commands
+Create, review, merge and inspect pull requests
 
 41 commands.
 
 [`bb pr activity`](#bb-pr-activity)
-:   Pull request activity commands (1 command)
+:   List what happened on a pull request (1 command)
 
 [`bb pr auto-merge`](#bb-pr-auto-merge)
-:   Pull request auto-merge commands (3 commands)
+:   Turn a pull request's auto-merge on or off, or read it (3 commands)
 
 [`bb pr build`](#bb-pr-build)
-:   Pull request build status commands (1 command)
+:   Show the builds of a pull request (1 command)
 
 [`bb pr checkout`](#bb-pr-checkout)
 :   Check out a pull request branch locally
@@ -26,7 +26,7 @@ Pull request commands
 :   Show build statuses for a pull request's source commit (alias for bb pr build status)
 
 [`bb pr comment`](#bb-pr-comment)
-:   Pull request comment commands (7 commands)
+:   Add, list, resolve and react to pull request comments (7 commands)
 
 [`bb pr commits`](#bb-pr-commits)
 :   List the commits in a pull request
@@ -74,7 +74,7 @@ Pull request commands
 :   Reopen a pull request
 
 [`bb pr review`](#bb-pr-review)
-:   Pull request review commands (8 commands)
+:   Approve or request changes, and publish or discard a review (8 commands)
 
 [`bb pr status`](#bb-pr-status)
 :   Show pull requests waiting on you
@@ -90,7 +90,7 @@ Pull request commands
 
 ## `bb pr activity`
 
-Pull request activity commands
+List what happened on a pull request
 
 Pull request activity commands. This is an explicit exception to the stable versioned API and is intended only for AI ingestion and debugging.
 
@@ -180,7 +180,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb pr auto-merge`
 
-Pull request auto-merge commands
+Turn a pull request's auto-merge on or off, or read it
 
 [`disable`](#bb-pr-auto-merge-disable)
 :   Disable auto-merge on a pull request
@@ -305,7 +305,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb pr build`
 
-Pull request build status commands
+Show the builds of a pull request
 
 [`status`](#bb-pr-build-status)
 :   Show build statuses for a pull request's source commit (also available as bb pr checks)
@@ -467,7 +467,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb pr comment`
 
-Pull request comment commands
+Add, list, resolve and react to pull request comments
 
 [`add`](#bb-pr-comment-add)
 :   Add a comment to a pull request
@@ -2151,7 +2151,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb pr review`
 
-Pull request review commands
+Approve or request changes, and publish or discard a review
 
 [`approve`](#bb-pr-review-approve)
 :   Approve a pull request
@@ -2402,7 +2402,7 @@ Also takes the [global flags](global-flags.md).
 
 ### `bb pr review reviewer`
 
-Manage pull request reviewers
+Add or remove a pull request's reviewers
 
 #### `bb pr review reviewer add`
 

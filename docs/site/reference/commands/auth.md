@@ -6,18 +6,18 @@ search:
 
 # bb auth
 
-Authentication commands
+Log in, check the setup, and manage tokens, keys and git credentials
 
 22 commands.
 
 [`bb auth alias`](#bb-auth-alias)
-:   Manage host aliases for a stored server context (4 commands)
+:   Add, list and remove the other host names a stored server answers to (4 commands)
 
 [`bb auth git-credential`](#bb-auth-git-credential)
 :   Git credential helper (invoked by git, not run directly)
 
 [`bb auth gpg-key`](#bb-auth-gpg-key)
-:   Manage personal GPG keys (4 commands)
+:   Add, list and remove your GPG keys (4 commands)
 
 [`bb auth identity`](#bb-auth-identity)
 :   Show authenticated user identity
@@ -29,7 +29,7 @@ Authentication commands
 :   Remove stored credentials for a Bitbucket host
 
 [`bb auth server`](#bb-auth-server)
-:   Manage server contexts (2 commands)
+:   List the stored servers, and choose the default one (2 commands)
 
 [`bb auth setup-git`](#bb-auth-setup-git)
 :   Configure git to authenticate to Bitbucket through bb
@@ -38,14 +38,14 @@ Authentication commands
 :   Show the configured target and verify it works
 
 [`bb auth token`](#bb-auth-token)
-:   Manage HTTP access tokens (5 commands)
+:   Create, list, update and revoke HTTP access tokens (5 commands)
 
 [`bb auth token-url`](#bb-auth-token-url)
 :   Show personal access token creation URL
 
 ## `bb auth alias`
 
-Manage host aliases for a stored server context
+Add, list and remove the other host names a stored server answers to
 
 [`add`](#bb-auth-alias-add)
 :   Add aliases to a stored server context
@@ -219,7 +219,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb auth gpg-key`
 
-Manage personal GPG keys
+Add, list and remove your GPG keys
 
 [`add`](#bb-auth-gpg-key-add)
 :   Add a personal GPG key
@@ -499,7 +499,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb auth server`
 
-Manage server contexts
+List the stored servers, and choose the default one
 
 [`list`](#bb-auth-server-list)
 :   List stored server contexts
@@ -668,7 +668,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb auth token`
 
-Manage HTTP access tokens
+Create, list, update and revoke HTTP access tokens
 
 [`create`](#bb-auth-token-create)
 :   Create an HTTP access token

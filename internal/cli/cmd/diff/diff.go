@@ -66,7 +66,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	diffCmd := &cobra.Command{
 		Use:   "diff",
-		Short: "Diff and patch commands",
+		Short: "Print the diff of a pull request, a commit or two refs",
 	}
 
 	diffCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")

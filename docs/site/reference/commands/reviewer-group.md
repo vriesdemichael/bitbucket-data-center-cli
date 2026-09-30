@@ -6,7 +6,7 @@ search:
 
 # bb reviewer-group
 
-Manage reviewer groups
+Create, list and change reviewer groups and their members
 
 5 commands.
 

@@ -77,7 +77,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	commitCmd := &cobra.Command{
 		Use:   "commit",
-		Short: "Commit inspection and compare commands",
+		Short: "List, show and compare commits, and find a commit's pull requests",
 	}
 
 	commitCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")

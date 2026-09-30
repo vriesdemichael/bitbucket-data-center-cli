@@ -339,7 +339,7 @@ func newRepoPermissionSubjectCommand(deps Dependencies, repositorySelector *stri
 
 	group := &cobra.Command{
 		Use:   subject.noun + "s",
-		Short: strings.ToUpper(subject.noun[:1]) + subject.noun[1:] + " permissions",
+		Short: "Grant, list and revoke the repository permissions of a " + subject.noun,
 	}
 
 	shallow := "bb repo permissions"
@@ -455,7 +455,7 @@ func newRepoPermissionsCommand(deps Dependencies) *cobra.Command {
 
 	permissionsCmd := &cobra.Command{
 		Use:   "permissions",
-		Short: "Repository permission inspection commands",
+		Short: "Grant, list and revoke repository permissions",
 	}
 	permissionsCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
 

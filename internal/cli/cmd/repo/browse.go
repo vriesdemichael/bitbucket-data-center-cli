@@ -19,7 +19,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 
 	browseCmd := &cobra.Command{
 		Use:   "browse",
-		Short: "Repository content browsing commands",
+		Short: "Read a file, a tree, its history or its blame at any ref",
 	}
 
 	browseCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")

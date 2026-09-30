@@ -121,7 +121,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	repoCmd := &cobra.Command{
 		Use:   "repo",
-		Short: "Repository commands",
+		Short: "Create, clone, browse and configure repositories",
 	}
 
 	var listPaging paging.Options

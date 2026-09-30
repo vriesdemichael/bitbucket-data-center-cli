@@ -65,7 +65,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	sshCmd := &cobra.Command{
 		Use:   "ssh-key",
-		Short: "Manage personal SSH keys",
+		Short: "Add, list and remove your SSH keys",
 	}
 
 	var listPaging paging.Options

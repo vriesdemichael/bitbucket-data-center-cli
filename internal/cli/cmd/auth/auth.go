@@ -103,7 +103,7 @@ func New(deps Dependencies) *cobra.Command {
 
 	authCmd := &cobra.Command{
 		Use:   "auth",
-		Short: "Authentication commands",
+		Short: "Log in, check the setup, and manage tokens, keys and git credentials",
 	}
 
 	isJSON := func() bool {
@@ -459,7 +459,7 @@ to fail instead of falling back.`,
 
 	serverCmd := &cobra.Command{
 		Use:   "server",
-		Short: "Manage server contexts",
+		Short: "List the stored servers, and choose the default one",
 	}
 
 	serverListCmd := &cobra.Command{
@@ -531,7 +531,7 @@ to fail instead of falling back.`,
 
 	aliasCmd := &cobra.Command{
 		Use:   "alias",
-		Short: "Manage host aliases for a stored server context",
+		Short: "Add, list and remove the other host names a stored server answers to",
 	}
 
 	var aliasHost string

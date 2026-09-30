@@ -6,7 +6,7 @@ search:
 
 # bb build
 
-Build status and required merge-check commands
+Report and read build statuses, and require builds before a merge
 
 10 commands.
 
@@ -17,13 +17,13 @@ Build status and required merge-check commands
 :   Get repository-scoped build status by key
 
 [`bb build required`](#bb-build-required)
-:   Required build merge-check management (4 commands)
+:   Create, list, update and delete the builds a merge requires (4 commands)
 
 [`bb build set`](#bb-build-set)
 :   Set repository-scoped build status for a commit
 
 [`bb build status`](#bb-build-status)
-:   Build status commands by commit (3 commands)
+:   Report and read the build statuses of a commit (3 commands)
 
 ## `bb build delete`
 
@@ -117,7 +117,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb build required`
 
-Required build merge-check management
+Create, list, update and delete the builds a merge requires
 
 [`create`](#bb-build-required-create)
 :   Create required build merge check
@@ -411,7 +411,7 @@ Also takes the [global flags](global-flags.md).
 
 ## `bb build status`
 
-Build status commands by commit
+Report and read the build statuses of a commit
 
 [`get`](#bb-build-status-get)
 :   Get build statuses for a commit
