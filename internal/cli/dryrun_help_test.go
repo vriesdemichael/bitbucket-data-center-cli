@@ -27,7 +27,9 @@ func TestEveryCommandSaysWhatDryRunDoesForIt(t *testing.T) {
 		}
 
 		counted++
-		line := dryRunHelpLine(cmd)
+		// The exported form, so the line the command reference prints is the
+		// one checked against help here.
+		line := DryRunHelp(cmd)
 		if strings.TrimSpace(line) == "" {
 			t.Errorf("%s has no --dry-run help line", dryRunCommandPath(cmd))
 			return

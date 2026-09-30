@@ -17,7 +17,12 @@ theme:
     - navigation.top
     - navigation.tracking
     - navigation.sections
-    - navigation.expand
+    # Lets "All Commands" be both the index page and the section holding a page
+    # per top-level command.
+    - navigation.indexes
+    # Keeps the page's table of contents scrolled to where the reader is; the
+    # longest command pages list far more headings than fit on a screen.
+    - toc.follow
     - content.code.copy
     - search.suggest
     - search.highlight
@@ -54,6 +59,9 @@ extra_css:
 markdown_extensions:
   - admonition
   - tables
+  # Definition lists: the command reference lists commands and flags with them,
+  # because a table scrolls sideways on a narrow screen and a list stacks.
+  - def_list
   - toc:
       permalink: true
   - pymdownx.superfences:
@@ -81,7 +89,36 @@ nav:
   - Coming from gh: gh-parity.md
   - Command Reference:
       - Overview: reference/overview.md
-      - All Commands: reference/commands/index.md
+      # One page per top-level command, generated with the index. A test in
+      # tools/cli-docs-export fails when this list and the command tree differ.
+      - All Commands:
+          - reference/commands/index.md
+          - Global flags: reference/commands/global-flags.md
+          - bb admin: reference/commands/admin.md
+          - bb ai: reference/commands/ai.md
+          - bb api: reference/commands/api.md
+          - bb auth: reference/commands/auth.md
+          - bb branch: reference/commands/branch.md
+          - bb browse: reference/commands/browse.md
+          - bb build: reference/commands/build.md
+          - bb clone: reference/commands/clone.md
+          - bb commit: reference/commands/commit.md
+          - bb deployment: reference/commands/deployment.md
+          - bb diff: reference/commands/diff.md
+          - bb doctor: reference/commands/doctor.md
+          - bb dry-run: reference/commands/dry-run.md
+          - bb insights: reference/commands/insights.md
+          - bb pr: reference/commands/pr.md
+          - bb project: reference/commands/project.md
+          - bb ref: reference/commands/ref.md
+          - bb repo: reference/commands/repo.md
+          - bb reviewer: reference/commands/reviewer.md
+          - bb reviewer-group: reference/commands/reviewer-group.md
+          - bb search: reference/commands/search.md
+          - bb ssh-key: reference/commands/ssh-key.md
+          - bb tag: reference/commands/tag.md
+          - bb update: reference/commands/update.md
+          - bb webhook: reference/commands/webhook.md
       - JSON Schemas: reference/schemas.md
       - Environment Variables: reference/environment.md
       - System Policy: reference/system-policy.md
