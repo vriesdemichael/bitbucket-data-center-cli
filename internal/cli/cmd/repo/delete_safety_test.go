@@ -56,6 +56,69 @@ func TestRepoDeleteWillNotActOnAnInferredTarget(t *testing.T) {
 	}
 }
 
+// TestTheYesRefusalNamesOnlyWhatNamesTheRepository holds the remedy in the
+// refusal to what repo delete counts as naming the repository: a PROJECT/slug
+// argument or --repo. BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG supply a
+// repository nobody wrote on the command line, so following a refusal that
+// suggested them would be refused again. Nor may the refusal say the repository
+// came from the git remote when it came from the environment.
+func TestTheYesRefusalNamesOnlyWhatNamesTheRepository(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		setup  testSetup
+		args   []string
+		untrue []string
+	}{
+		{
+			name:   "a repository from the environment",
+			setup:  testSetup{Host: "https://bitbucket.example.com", Token: "token", ProjectKey: "PRJ", RepoSlug: "repo"},
+			args:   []string{"repo", "delete", "--yes"},
+			untrue: []string{"git remote"},
+		},
+		{
+			name:   "a repository from the environment, through the alias",
+			setup:  testSetup{Host: "https://bitbucket.example.com", Token: "token", ProjectKey: "PRJ", RepoSlug: "repo"},
+			args:   []string{"repo", "admin", "delete", "--yes"},
+			untrue: []string{"git remote"},
+		},
+		{
+			name:  "a repository from the git remote",
+			setup: testSetup{Host: "https://bitbucket.example.com", Token: "token", Inferred: true},
+			args:  []string{"repo", "delete", "--repo", "PRJ/repo", "--yes"},
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := executeTestCLIWith(t, testCase.setup, testCase.args...)
+			if err == nil {
+				t.Fatal("--yes applied to a repository nobody named")
+			}
+
+			message := err.Error()
+			for _, remedy := range []string{"PROJECT/slug argument", "--repo PROJECT/slug"} {
+				if !strings.Contains(message, remedy) {
+					t.Errorf("the refusal does not suggest %s: %q", remedy, message)
+				}
+			}
+			for _, unnamed := range []string{"BITBUCKET_PROJECT_KEY", "BITBUCKET_REPO_SLUG"} {
+				if strings.Contains(message, unnamed) {
+					t.Errorf("the refusal suggests %s, which does not name the repository: %q", unnamed, message)
+				}
+			}
+			for _, claim := range testCase.untrue {
+				if strings.Contains(message, claim) {
+					t.Errorf("the refusal mentions the %s, which is not where the repository came from: %q", claim, message)
+				}
+			}
+		})
+	}
+}
+
 // TestRepoDeleteRefusalNamesTheFlag holds the refusal to ADR-073.
 //
 // Declining to prompt is not the same as proceeding: a run with nobody to ask

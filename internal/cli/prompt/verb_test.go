@@ -9,10 +9,10 @@ import (
 // TestTheRefusalNamesSomethingThatCanBePassed covers the message a pipeline
 // gets when --yes lands on an inferred target.
 //
-// It used to end "pass PROJ/demo branch feature to confirm", which names the
-// resource and not a flag: there is no argument of that shape on any command,
-// so the one reader who cannot ask anybody was told to type something that does
-// not exist. The remedy has to be the way to name the repository.
+// The remedy is the way to name the repository, and only that. The resource is
+// not something any command takes in that shape, and BITBUCKET_PROJECT_KEY and
+// BITBUCKET_REPO_SLUG do not name the repository: inside a checkout bb still
+// infers it, and repo delete does not count them as naming it.
 func TestTheRefusalNamesSomethingThatCanBePassed(t *testing.T) {
 	t.Parallel()
 
@@ -29,13 +29,16 @@ func TestTheRefusalNamesSomethingThatCanBePassed(t *testing.T) {
 	}
 
 	message := err.Error()
-	for _, remedy := range []string{"--repo PROJECT/slug", "BITBUCKET_PROJECT_KEY", "BITBUCKET_REPO_SLUG"} {
-		if !strings.Contains(message, remedy) {
-			t.Errorf("the refusal does not mention %s: %q", remedy, message)
+	if !strings.Contains(message, "--repo PROJECT/slug") {
+		t.Errorf("the refusal does not mention --repo PROJECT/slug: %q", message)
+	}
+	for _, unnamed := range []string{"BITBUCKET_PROJECT_KEY", "BITBUCKET_REPO_SLUG"} {
+		if strings.Contains(message, unnamed) {
+			t.Errorf("the refusal suggests %s, which does not name the repository: %q", unnamed, message)
 		}
 	}
 	if strings.Contains(message, request.Resource) {
-		t.Errorf("the refusal still asks for the resource to be passed: %q", message)
+		t.Errorf("the refusal asks for the resource to be passed: %q", message)
 	}
 }
 
