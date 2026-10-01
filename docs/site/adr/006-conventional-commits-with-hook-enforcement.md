@@ -3,15 +3,12 @@ search:
   boost: 0.3
 ---
 
-# ADR-006: Conventional commits with hook enforcement
+# ADR-006: Conventional Commits, and git hooks run by lefthook
 
-Enforce Conventional Commits via local Git hooks as part of the default development workflow. Use lefthook as the hook runner and a commit message linter for commit-msg validation.
+Every commit subject is a Conventional Commit, `type(scope): description`, with `!` or a `BREAKING CHANGE:` footer marking a breaking change. The type decides whether a commit reaching `main` cuts a release, and how large (ADR-033), and the release notes are built from the subjects, so a wrong type ships a wrong version. No hook checks a subject; a reviewer does.
 
-Use Conventional Commit types for all commits (for example feat, fix, docs, refactor, test, chore). Prefer running quality checks through Taskfile tasks that are also wired into hooks. When adding new recurring checks, include them in hook configuration when execution time is appropriate.
-
-Conventional commits make changelog generation and semantic versioning deterministic. Local hook enforcement keeps quality gates active even in local-first workflows without mandatory CI.
+lefthook runs the git hooks configured in `lefthook.yml`: the unit tests before a commit, and before a push the docs build and the gates that need no Bitbucket instance. They are recommended rather than required, because CI runs the same gates on every pull request and CI is what refuses a change; a hook only tells you sooner. Do not skip a hook. A new gate that needs no Bitbucket instance goes into `task quality:verify`, which the pre-push hook and CI both run (ADR-065).
 
 ## Not chosen
 
-- **Convention by policy only, no enforcement**: Drifts over time and weakens release automation reliability.
-- **Husky-based hook management**: Node-centric and unnecessary for a Go-first project.
+- **Husky to manage the hooks**: Node-centric, for a project with no Node toolchain.

@@ -5,13 +5,11 @@ search:
 
 # ADR-023: Long-term planning via GitHub issues
 
-All planning that exceeds the scope of a single branch or agent session is tracked through GitHub issues. Issues are the source of truth for feature requests, multi-step epics, known bugs, and technical debt.
+Work that outlives one branch or one session is tracked in a GitHub issue: features, efforts of several steps, known bugs and technical debt. The issues are the project's plan; local notes and conversation context are not. A large effort is one issue with a checklist or sub-issues. Start a session by reading the open issues that bear on the task. An agent asks before opening an issue, and fixes a problem it meets mid-task on the branch in hand. A commit that resolves an issue names it with a closing keyword in its body (ADR-081).
 
-For work spanning multiple sessions or branches, create or reference a GitHub issue. Use issue checklists or linked sub-issues for large efforts. Reference resolved issues in commit messages when appropriate (for example: closes #42). Do not keep long-term plans only in local notes or transient chat context. At the start of a session, review open issues to rehydrate project priorities.
-
-Agent sessions are ephemeral and local scratch context is not a durable planning system. GitHub issues provide a shared, searchable, and reviewable project memory that supports coordination between humans and agents over time.
+A session ends and its context goes with it. Issues are shared, searchable and reviewable, by the people and the agents who work here.
 
 ## Not chosen
 
-- **Track long-term plans in local files only**: Poor visibility, weak collaboration, and high risk of plan drift across sessions.
-- **Rely on conversational context for planning continuity**: Session context is temporary and not reliable as a project source of truth.
+- **Plans in local files**: Nobody else sees them, and they drift from one session to the next.
+- **Conversation context as the plan**: It is gone when the session ends.

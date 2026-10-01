@@ -5,21 +5,13 @@ search:
 
 # ADR-003: AI agents as first-class developers
 
-Development-critical knowledge must be stored in AI-discoverable locations such as AGENTS.md, decision records, architecture docs, and focused inline rationale comments. AI agents are treated as first-class contributors and must be able to onboard from repository artifacts without tribal knowledge.
+Agents are first-class contributors here, and everything a contributor needs to know is written down where an agent finds it: AGENTS.md for the mechanics and pitfalls of working in this repository, CONTRIBUTING.md for the process, the decision records for the rules and why they hold, the docs for how bb behaves, and a focused comment beside code whose reason the code does not show. Nothing depends on tribal knowledge or on a convention inferred from the code. When you find a recurring convention that is written nowhere, propose a record or an AGENTS.md entry for it. AGENTS.md repeats the rules from CONTRIBUTING.md that an agent must not lose, because an agent keeps AGENTS.md in context through compaction and drops a file it read once; change such a rule in both.
 
-Always document important standards and assumptions in discoverable project files.
-Do not rely on implicit conventions. When you find recurring but undocumented patterns,
-propose adding or updating a decision record or AGENTS.md guidance.
+A decision record states a rule as it holds now, in prose: the rule first, then why it holds, with what a contributor or an agent must do in the same prose, and the alternatives turned down under Not chosen. CONTRIBUTING.md, under Writing a decision record, has the shape. An agent reads a record as authoritative and cannot tell a stale one from a live one, so a record that stops holding is changed or deleted, never left standing.
 
-ADR content placement:
-
-- Use `agent_instructions` for information an agent must know before modifying areas.
-- Use `decision` and `rationale` for architectural context and trade-offs.
-- Keep instructions concise and actionable to reduce context noise.
-
-High-quality AI collaboration requires the same contextual access humans need. Explicit, structured documentation reduces ambiguity, speeds onboarding, and keeps implementation decisions consistent across sessions and contributors.
+An agent needs the same context a person does, and a session keeps none of it. Standards written down explicitly keep the next session, and the next contributor, consistent with the last.
 
 ## Not chosen
 
-- **Depend mainly on code comments for project conventions**: Comments are distributed and rarely capture cross-cutting workflow or architecture policy.
-- **Assume agents infer conventions from existing code**: Inference is slower, inconsistent, and increases drift in implementation style.
+- **Conventions in code comments alone**: Comments are scattered, and rarely capture a rule that spans the repository.
+- **Let agents infer conventions from the code**: Slower, inconsistent, and it copies whatever the code got wrong.

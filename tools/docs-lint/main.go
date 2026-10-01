@@ -294,8 +294,8 @@ var (
 	proseVersionRe  = regexp.MustCompile(`(?i)\b(?:target|release)\s+version\s*\((?:e\.g\.|example:)\s*[\x60"]?(v?[0-9]+\.[0-9]+\.[0-9]+)[\x60"]?\)`)
 
 	// artifactVersionRe matches a release artifact named with its version, e.g.
-	// bb_4.0.0_linux_amd64.tar.gz. This is the form ADR-055's version
-	// *declarations* miss: it is neither a VERSION= assignment nor a bb
+	// bb_4.0.0_linux_amd64.tar.gz. This is the form the version *declarations*
+	// above miss: it is neither a VERSION= assignment nor a bb
 	// invocation, so SECURITY.md shipped a v2.0.2 verify command through four
 	// releases without the lint noticing (#582).
 	artifactVersionRe = regexp.MustCompile(`\bbb_(v?[0-9]+\.[0-9]+\.[0-9]+)_`)

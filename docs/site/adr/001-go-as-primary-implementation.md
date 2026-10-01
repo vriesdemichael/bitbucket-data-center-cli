@@ -5,12 +5,10 @@ search:
 
 # ADR-001: Go as primary implementation language
 
-Implement the CLI and service client in Go as the primary runtime target. Do not retain Python runtime code in this repository.
+bb is written in Go and ships as one static binary per platform, and every tool under `tools/` is Go too. Python is confined to the documentation build and a few release steps, and nothing bb ships depends on it. Write new code in Go.
 
-For new implementation work, prefer Go packages and binaries over adding new Python runtime features. If parity with legacy behavior is needed, port behavior into Go and keep tests focused on server behavior.
-
-The project requires simple distribution as a standalone binary for local and CI usage. Go provides static binaries, predictable runtime behavior, and low operational friction.
+A static binary installs by copying one file, needs no runtime on the machine it runs on, and behaves the same on a workstation and in CI.
 
 ## Not chosen
 
-- **Keep Python as primary implementation**: Python requires runtime environment management and packaging complexity for standalone distribution.
+- **Python as the implementation language**: A standalone install would need a runtime or a bundling step on every platform bb ships to.
