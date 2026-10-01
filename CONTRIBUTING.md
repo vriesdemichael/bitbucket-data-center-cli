@@ -117,9 +117,8 @@ changes that actually break the CLI contract: a removed or renamed command or
 flag, a changed exit code, or a change to the JSON or YAML document a command prints.
 
 **Keep history linear.** Rebase onto `next`; never merge `next` into your
-branch. This is a convention rather than a gate: the check that enforced it
-existed to keep committed coverage artifacts from conflicting on every rebase,
-and ADR-045 deleted those artifacts.
+branch. The repository requires linear history on `next` and `main` and merges
+pull requests by rebase only, so a merge commit cannot land.
 
 ```bash
 git fetch origin && git rebase origin/next
@@ -272,7 +271,7 @@ They are still expected, and a reviewer will ask:
   fails loudly on the next run. A tool that *computes* fails quietly and
   wrongly, and `tools/quality-report` produces the numbers every other gate
   reads — a bug there makes CI pass when it should not. ADR-049 has the
-  measurements behind leaving `tools/` out of the gate.
+  reasons for leaving `tools/` out of the gate.
 
 ## What CI checks
 

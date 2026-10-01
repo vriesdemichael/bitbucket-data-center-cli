@@ -25,7 +25,7 @@ var commandsThatDoNotEmitJSON = outputschemas.CommandsWithoutDataContract
 // It is only the list that is checked here. The contract the list carves out of
 // -- every other command emitting an envelope under --json -- is enforced by
 // walking and invoking the tree, in
-// TestEveryLeafCommandUnderJSONWritesAnEnvelopeOrNothing.
+// TestEveryLeafCommandUnderJSONWritesExactlyOneEnvelope in cmd/bb.
 func TestEveryJSONExemptionIsARealCommandWithAReason(t *testing.T) {
 	t.Parallel()
 
