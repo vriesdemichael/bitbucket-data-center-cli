@@ -1,9 +1,8 @@
 version: '3'
 
-# Coverage thresholds have one home (ADR-065). They used to be stated here, in
-# .github/coverage-thresholds.env, and in ADR-005's prose, so a local run and a
-# CI run could disagree about what the gate was -- and the failure mode is a
-# developer who believes a gate passed. The workflow sources this same file.
+# Coverage thresholds have one home, .github/coverage-thresholds.env (ADR-065).
+# This file loads it and the workflow sources it, so a local run and a CI run
+# cannot disagree about what the gate is.
 dotenv: ['.github/coverage-thresholds.env', '.github/tool-versions.env']
 
 env:
