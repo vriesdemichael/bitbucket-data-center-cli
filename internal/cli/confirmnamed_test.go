@@ -109,3 +109,21 @@ func TestYesAppliesOnlyToATargetWrittenDownForThisInvocation(t *testing.T) {
 		})
 	}
 }
+
+// TestAMalformedRepoIsRefusedBeforeTheConfirmation holds the order ADR-073
+// sets: input that is invalid fails first. Asked for the confirmation, a person
+// typed back the branch and was then told the repository could not exist, and
+// a caller with nobody to ask added --yes only to meet the same refusal.
+func TestAMalformedRepoIsRefusedBeforeTheConfirmation(t *testing.T) {
+	t.Parallel()
+
+	for _, args := range [][]string{
+		{"branch", "delete", "feature/x", "--repo", "not-a-selector"},
+		{"branch", "delete", "feature/x", "--repo", "not-a-selector", "--yes"},
+	} {
+		_, err := executeTestCLI(t, unreachableRepository(), append([]string{"--json", "--no-input"}, args...)...)
+		if err == nil || !strings.Contains(err.Error(), "invalid repository selector") {
+			t.Errorf("bb %v: want the selector refused, got: %v", args, err)
+		}
+	}
+}

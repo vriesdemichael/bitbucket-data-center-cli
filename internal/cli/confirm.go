@@ -79,6 +79,17 @@ func registerDestructiveConfirmations(root *cobra.Command, options *rootOptions)
 				}
 
 				naming := repositoryNaming(cmd)
+
+				// Invalid input fails first (ADR-073). A --repo that cannot
+				// name a repository is refused before anyone is asked to
+				// confirm a delete in it, and before --yes is demanded for one.
+				if repo := cmd.Flags().Lookup("repo"); naming != "" && repo != nil && repo.Changed &&
+					strings.TrimSpace(repo.Value.String()) != "" {
+					if _, _, err := reposel.Parse(repo.Value.String()); err != nil {
+						return err
+					}
+				}
+
 				if err := prompt.ConfirmDeleteOf(
 					cmd,
 					options.machineOutput(),
