@@ -15,7 +15,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
 )
 
 // credentialRequest is the parsed form of git's credential helper input: a
@@ -341,23 +340,26 @@ credentials to any other remote.`,
 	return cmd
 }
 
-// defaultConfigureGitCredentialHelper writes the helper configuration through
-// the git backend.
+// gitCredentialHelperWriter is setup-git's default writer: it writes the
+// helper configuration through the git backend the command is given, from the
+// factory a test can replace (ADR-020), which auth status reads through too.
 //
 // Refusing to overwrite an existing helper without --force is deliberate: the
 // value may be another credential manager the user relies on, and silently
 // replacing it would break authentication in a way that is hard to attribute.
-func defaultConfigureGitCredentialHelper(ctx context.Context, key, value string, global, force bool) error {
-	workingDirectory := ""
-	if !global {
-		current, err := os.Getwd()
-		if err != nil {
-			return apperrors.New(apperrors.KindInternal, "failed to determine the current directory", err)
+func gitCredentialHelperWriter(backend func() git.Backend) func(ctx context.Context, key, value string, global, force bool) error {
+	return func(ctx context.Context, key, value string, global, force bool) error {
+		workingDirectory := ""
+		if !global {
+			current, err := os.Getwd()
+			if err != nil {
+				return apperrors.New(apperrors.KindInternal, "failed to determine the current directory", err)
+			}
+			workingDirectory = current
 		}
-		workingDirectory = current
-	}
 
-	return configureGitCredentialHelperIn(ctx, workingDirectory, key, value, global, force)
+		return configureGitCredentialHelperIn(ctx, backend(), workingDirectory, key, value, global, force)
+	}
 }
 
 // configureGitCredentialHelperIn takes the working directory explicitly rather
@@ -369,8 +371,10 @@ func defaultConfigureGitCredentialHelper(ctx context.Context, key, value string,
 // process directory then operates on whatever repository it lands in. Doing that
 // once wrote core.bare=true into this project's own configuration and broke
 // every worktree.
-func configureGitCredentialHelperIn(ctx context.Context, workingDirectory, key, value string, global, force bool) error {
-	backend := execgit.New()
+func configureGitCredentialHelperIn(ctx context.Context, backend git.Backend, workingDirectory, key, value string, global, force bool) error {
+	if backend == nil {
+		return apperrors.New(apperrors.KindInternal, "git backend is not configured", nil)
+	}
 
 	options := git.ConfigOptions{Scope: git.ConfigScopeGlobal, Key: key, Value: value}
 	if !global {

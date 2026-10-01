@@ -287,6 +287,16 @@ func forkScope(flag, fromRepo string, target Repository) (Repository, bool, erro
 // that is no longer a checkout, a git too old for one of the format atoms, a
 // repository in the middle of a rebase -- means the same thing to the caller,
 // which is that the server has to be asked instead.
+//
+// The checkout is read through execgit's readers directly, here and in
+// localCommitish and localEntries, rather than through a backend factory a
+// test can replace. They are execgit's alone, outside git.Backend, and ADR-020
+// names them as what completion uses. What a test has to show of them is what
+// git itself writes in a real checkout -- the ref names, the remote-tracking
+// mapping, an annotated tag's dereference -- which a replaced reader cannot,
+// so the tests build checkouts with git instead. And when the checkout answers
+// nothing the source asks Bitbucket, which no unit test stands in for
+// (ADR-079), so a replaced reader would open no path a test could follow.
 func localRefs(ctx context.Context, scope refScope, patterns ...string) []execgit.Ref {
 	if scope.directory == "" {
 		return nil

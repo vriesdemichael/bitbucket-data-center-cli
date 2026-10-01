@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -187,6 +188,55 @@ func TestGitCredentialHelperCheckIsAdvisory(t *testing.T) {
 	identity := statusCheck{Name: "authentication"}
 	if identity.Advisory {
 		t.Fatal("authentication must not be advisory")
+	}
+}
+
+// helperWriteStub records what setup-git writes through the backend.
+type helperWriteStub struct {
+	gitConfigStub
+	writes []git.ConfigOptions
+}
+
+func (stub *helperWriteStub) SetConfig(_ context.Context, options git.ConfigOptions) error {
+	stub.writes = append(stub.writes, options)
+	return nil
+}
+
+// TestSetupGitWritesThroughTheInjectedGitBackend: setup-git takes its git
+// backend from the factory a test can replace, the one auth status reads
+// through (ADR-020), rather than starting git itself.
+func TestSetupGitWritesThroughTheInjectedGitBackend(t *testing.T) {
+	// A setup-git that ignores the injected backend writes the global git
+	// configuration; this keeps that write off the developer's own and lets
+	// the test see it.
+	global := isolatedGitGlobalConfig(t)
+
+	stub := &helperWriteStub{}
+	cmd := New(Dependencies{
+		LoadConfig: func() (config.AppConfig, error) { return config.AppConfig{}, nil },
+		WriteJSON:  jsonoutput.Write,
+		GitBackend: func() git.Backend { return stub },
+	})
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"setup-git", "--host", "https://bitbucket.example.com"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("setup-git: %v", err)
+	}
+
+	key := "credential.https://bitbucket.example.com.helper"
+	if len(stub.writes) != 2 {
+		t.Fatalf("expected the reset and the helper written through the injected backend, got %d writes", len(stub.writes))
+	}
+	if reset := stub.writes[0]; reset.Key != key || reset.Value != "" || reset.Scope != git.ConfigScopeGlobal {
+		t.Errorf("the first write is not the reset of %s: %+v", key, reset)
+	}
+	if helper := stub.writes[1]; helper.Key != key || !helper.Append || !strings.Contains(helper.Value, "auth git-credential") {
+		t.Errorf("the second write is not bb's helper for %s: %+v", key, helper)
+	}
+	if written, err := os.ReadFile(global); err != nil || len(written) != 0 {
+		t.Fatalf("setup-git wrote the global git configuration itself (%v):\n%s", err, written)
 	}
 }
 

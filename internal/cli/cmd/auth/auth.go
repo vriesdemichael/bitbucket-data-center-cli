@@ -56,11 +56,12 @@ type Dependencies struct {
 	// at bb for credentials. Injected so setup-git can be tested without
 	// mutating the developer's real git configuration.
 	ConfigureGitCredentialHelper func(ctx context.Context, key, value string, global, force bool) error
-	// GitBackend reads git configuration for the status checks. Injected for
-	// the same reason as the writer above: without it, running auth status in a
-	// test shells out to real git and reads whatever global configuration the
-	// machine happens to have, so the result depends on the developer rather
-	// than on the code.
+	// GitBackend is the git backend factory (ADR-020): the status checks read
+	// git configuration through it, and the default writer above writes
+	// through it. Injected for the same reason as the writer: without it,
+	// running auth status in a test shells out to real git and reads whatever
+	// global configuration the machine happens to have, so the result depends
+	// on the developer rather than on the code.
 	GitBackend func() git.Backend
 }
 
@@ -98,7 +99,7 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	if deps.ConfigureGitCredentialHelper == nil {
-		deps.ConfigureGitCredentialHelper = defaultConfigureGitCredentialHelper
+		deps.ConfigureGitCredentialHelper = gitCredentialHelperWriter(deps.GitBackend)
 	}
 
 	authCmd := &cobra.Command{
