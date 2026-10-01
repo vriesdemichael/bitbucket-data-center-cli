@@ -27,9 +27,9 @@ concurrency:
 
 jobs:
   # main is a release pointer, and release.yml cuts a version from whatever
-  # conventional commits appear on it. A single `feat!:` merged there outside
-  # the flow cuts a major release, which is the thing next exists to manage
-  # (ADR-066). This refuses that at the pull request.
+  # conventional commits appear on it. Every change integrates on next, and
+  # main moves only when an administrator fast-forwards next onto it (ADR-066),
+  # so this refuses every pull request into main and points it at next.
   #
   # It needs no ruleset of its own: ci-complete depends on it, and CI Complete
   # is already the one required status on main.
@@ -46,10 +46,6 @@ jobs:
       - name: Checkout
         if: github.event_name == 'pull_request'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # The gate reads the commits the pull request adds, so it needs both
-          # ends of the range rather than a shallow tip.
-          fetch-depth: 0
 
       - name: Setup Go
         if: github.event_name == 'pull_request'
@@ -68,16 +64,12 @@ jobs:
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           REPO: ${{ github.repository }}
         run: |
           go run ./tools/release-flow \
             -base-ref "$BASE_REF" \
             -head-ref "$HEAD_REF" \
-            -base-sha "$BASE_SHA" \
-            -head-sha "$HEAD_SHA" \
             -head-repo "$HEAD_REPO" \
             -repo "$REPO"
 

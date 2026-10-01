@@ -277,7 +277,7 @@ They are still expected, and a reviewer will ask:
 
 | Job | What it does |
 |---|---|
-| Release Flow | refuses a pull request into `main` from anything but a `dependabot/*` or `hotfix/*` branch; the rest goes to `next` (ADR-066) |
+| Release Flow | refuses every pull request into `main` and points it at `next`; `main` moves only when `next` is promoted onto it (ADR-066) |
 | ADR Validation | checks that every decision record in `docs/site/adr/` is well formed |
 | Unit Tests | formatting, line endings, `golangci-lint` against the pinned version, non-live tests, that the live-tagged tree compiles, that generated artifacts are current, and that every documented `bb ...` invocation parses |
 | Unit Tests (windows-latest), Unit Tests (macos-latest) | the non-live tests, natively on Windows and on macOS |
