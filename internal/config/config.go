@@ -2184,7 +2184,16 @@ func plaintextRefusal(requireKeyring, allowInsecureStorage bool, cause error) er
 // well (ADR-047: it holds where a credential is read). A plaintext credential
 // under the requirement is an error rather than "not found", so the reader can
 // say why it has nothing.
+//
+// BB_DISABLE_STORED_CONFIG=1 finds nothing, without reading the file, as the
+// configuration load does: the variable promises that no stored credential is
+// read, and git runs its credential helper with the environment of whoever ran
+// git.
 func LoadStoredAuthForHostStrict(runtimeURL string) (AppConfig, bool, error) {
+	if os.Getenv("BB_DISABLE_STORED_CONFIG") == "1" {
+		return AppConfig{}, false, nil
+	}
+
 	stored, err := LoadStoredConfig()
 	if err != nil {
 		return AppConfig{}, false, err

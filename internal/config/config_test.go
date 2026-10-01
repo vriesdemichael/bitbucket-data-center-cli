@@ -1059,6 +1059,40 @@ func TestLoadStoredAuthForHostStrict(t *testing.T) {
 	}
 }
 
+// TestTheStrictLookupReadsNothingWithStoredConfigDisabled holds the promise
+// BB_DISABLE_STORED_CONFIG=1 makes (environment.md): no stored credential is
+// read. git's credential helper reads through this lookup, not the
+// configuration load, and answered git from the file regardless.
+func TestTheStrictLookupReadsNothingWithStoredConfigDisabled(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
+	if _, err := SaveLogin(LoginInput{Host: "https://disabled.bitbucket.example", Token: "tok", SetDefault: true}); err != nil {
+		t.Fatalf("save login failed: %v", err)
+	}
+	if _, ok, err := LoadStoredAuthForHostStrict("https://disabled.bitbucket.example"); err != nil || !ok {
+		t.Fatalf("the login does not resolve with the stored config read, so the check below proves nothing: ok=%v err=%v", ok, err)
+	}
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+
+	resolved, ok, err := LoadStoredAuthForHostStrict("https://disabled.bitbucket.example")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ok || resolved.BitbucketToken != "" {
+		t.Fatalf("a stored credential was read under BB_DISABLE_STORED_CONFIG=1: ok=%v", ok)
+	}
+
+	// Not read at all, as the configuration load does not read it: a file bb
+	// cannot read is no error when it is switched off.
+	t.Setenv("BB_CONFIG_PATH", t.TempDir())
+	if _, _, err := LoadStoredAuthForHostStrict("https://disabled.bitbucket.example"); err != nil {
+		t.Fatalf("the stored config was read under BB_DISABLE_STORED_CONFIG=1: %v", err)
+	}
+}
+
 func TestHostAliasesCRUDAndLookup(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
