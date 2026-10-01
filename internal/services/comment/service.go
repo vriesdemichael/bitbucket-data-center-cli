@@ -253,8 +253,9 @@ func (service *Service) Create(ctx context.Context, target Target, text string) 
 
 const jsonContentType = "application/json"
 
-// decodeCreatedComment turns a create-comment response into the generated
-// model, falling back to the request echo when the body cannot be read as one.
+// decodeWrittenComment turns the response to a comment write into the
+// generated model, falling back to the request echo when the body cannot be
+// read as one.
 //
 // The comment has already been created by the time this runs, so a body that
 // will not decode must not be reported as a failed create — the caller would
