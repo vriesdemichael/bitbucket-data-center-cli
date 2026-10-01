@@ -16,12 +16,10 @@ import (
 )
 
 func TestProjectPermissionAliasRejectsBadInvocations(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	// A listener that fails the test if reached: every invocation here is
 	// refused for its arguments before a request exists.
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(server.Close)
-	t.Setenv("BITBUCKET_URL", server.URL)
 
 	cases := [][]string{
 		{"--json", "project", "permissions", "list"},
@@ -30,7 +28,7 @@ func TestProjectPermissionAliasRejectsBadInvocations(t *testing.T) {
 	}
 
 	for _, args := range cases {
-		command := NewRootCommand()
+		command := newRootCommandAt(server.URL)
 		buffer := &bytes.Buffer{}
 		command.SetOut(buffer)
 		command.SetErr(buffer)
@@ -86,9 +84,6 @@ func TestProjectPermissionsShowRequiresAWiredChecker(t *testing.T) {
 	// guard was skipped rather than that it held.
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(guard.Close)
-
-	t.Setenv("BITBUCKET_URL", guard.URL)
-	t.Setenv("BITBUCKET_TOKEN", "token")
 
 	cfg := config.AppConfig{BitbucketURL: guard.URL}
 	root := &cobra.Command{Use: "bb"}
