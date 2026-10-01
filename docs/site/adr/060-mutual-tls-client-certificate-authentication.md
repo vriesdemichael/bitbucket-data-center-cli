@@ -5,14 +5,13 @@ search:
 
 # ADR-060: Mutual TLS (mTLS) client certificate authentication
 
-Support Mutual TLS (mTLS) client certificate and private key configuration across environment variables (BB_CLIENT_CERT, BB_CLIENT_KEY), CLI flags (--client-cert, --client-key), and stored host configuration profiles.
-The network transport (internal/transport/network) parses PEM-encoded certificate/key pairs using crypto/tls.LoadX509KeyPair and attaches them to TLSClientConfig.Certificates while preserving the host system CA pool and custom CA bundles.
+bb presents a client certificate when one is configured, taken from `--client-cert` and `--client-key`, then `BB_CLIENT_CERT` and `BB_CLIENT_KEY`, then the host's stored profile, which `bb auth login --client-cert --client-key` writes. The network transport in `internal/transport/network` loads the PEM pair with `tls.LoadX509KeyPair` into its TLS configuration, beside the system CA pool and any CA bundle added to it. The certificate and the key are given together or not at all; one without the other is refused when the configuration loads.
 
-When interacting with Bitbucket instances fronted by zero-trust or mTLS authenticating reverse proxies (Envoy, NGINX, F5, Cloudflare Access), configure client certificates via BB_CLIENT_CERT and BB_CLIENT_KEY or stored profiles in ~/.config/bb/config.yaml. Ensure certificate and key are provided together; partial configurations are rejected during validation.
+Use it where Bitbucket sits behind a proxy that demands a client certificate before any request reaches it, such as Envoy, NGINX, F5 or Cloudflare Access.
 
-Enterprise, financial, and defense deployments frequently require hardware or PKI-backed mutual TLS client authentication before any HTTP payload reaches Bitbucket Data Center. Supporting client certificates natively at the transport layer enables seamless CLI operations within zero-trust architectures without requiring wrapper tunnels or compromising security posture.
+Built into the transport, mutual TLS works for every command with nothing else to run, where the alternative is a tunnel beside every bb process.
 
 ## Not chosen
 
-- **Requiring external stunnel or local reverse proxy loopback**: Adds significant operational overhead, extra process lifecycle management, and platform-specific setup friction.
-- **PKCS#12 (.p12 / .pfx) bundle support as primary format**: PEM is standard across Go crypto and cloud native toolchains. Support can be added later if needed.
+- **Requiring an external stunnel or a local reverse proxy**: Another process to run and keep alive on every machine, set up differently per platform.
+- **PKCS#12 (.p12, .pfx) bundles as the primary format**: PEM is the standard across Go's crypto and cloud-native tooling.

@@ -5,66 +5,27 @@ search:
 
 # ADR-058: System-wide configuration and administrative policy enforcement
 
-> Changed in part by [ADR-100](100-administrators-can-switch-bb-off-or-make-it-read-only.md).
+bb reads configuration from a workspace, a user and a system file, on Linux, macOS and Windows, and an administrator sets policy in the system tier, out of a user's reach.
 
-Establish a multi-tiered configuration hierarchy and machine-level administrative policy enforcement for enterprise fleet management across Linux, macOS, and Windows.
+1. Precedence. A setting is taken from the first of these that sets it: a flag, the environment, the workspace file, the user's file, the system file, the built-in default. The workspace file is `.bb/config.yaml`, found by walking up from the working directory to the repository root (`.git` or `go.mod`), or the file `BB_WORKSPACE_CONFIG_PATH` names; it carries no policy. The user's file is `bb/config.yaml` in the OS user configuration directory, or the file `BB_CONFIG_PATH` names. The system file is `/etc/bb/config.yaml`, or `%ProgramData%\bb\config.yaml` on Windows. A host's profile, with its username, client certificate and stored credential, is the exception: it is looked up in the user's file first, then the workspace file, then the system file. `BB_SYSTEM_CONFIG_PATH` names another system file under `go test` only, and on Windows the ProgramData directory is asked of the OS rather than read from `%ProgramData%`. The system file is the policy tier, and a released binary that let the environment relocate it would let anyone able to set a variable replace every policy with a file of their own. Automation that needs different policy writes the real path.
 
-1. Multi-Tiered Precedence: CLI Flags > Environment Variables > Workspace Configuration
-   (`.bb/config.yaml`) > User Configuration (`~/.config/bb/config.yaml` or `%APPDATA%\bb\config.yaml`) >
-   System Configuration (`/etc/bb/config.yaml` or `%ProgramData%\bb\config.yaml`) > Built-in Defaults.
-   Workspace configuration is located by traversing up from the working directory towards the repository
-   root (`.git` or `go.mod`). `BB_WORKSPACE_CONFIG_PATH` overrides the workspace path, which carries no
-   policy. `BB_SYSTEM_CONFIG_PATH` overrides the system path under `go test` only: the system file is the
-   policy tier, and a released binary that relocated it on request would let anyone able to set an
-   environment variable replace every policy below with a file of their own. On Windows the ProgramData
-   directory holding that file is likewise resolved through the OS rather than read from `%ProgramData%`,
-   for the same reason. Automation that needs different policy writes the real path.
+2. Policy. An administrator sets policy in the system file, at its top level or under `policies:` or `policy:`, and on Windows in the registry under `HKLM\Software\Policies\bb`, which is merged last. A policy key in a user's or a workspace file is ignored, and `bb doctor` names it, except `update_base_url`, which every file may set (ADR-059). Four keys are this record's, and each outranks flags, the environment and every other file. `require_keyring: true` mandates keyring-backed credential storage (ADR-047), and `BB_REQUIRE_KEYRING=0` does not lift it: bb warns on stderr and keeps enforcing. `ca_file` mandates a CA bundle: it is used when none is given, and a different one is refused. `allowed_hosts` lists the instances bb may reach, by URL or host name, and a command aimed at any other host, or a login for one, is refused. `allow_insecure_skip_verify: false` refuses `--insecure-skip-verify` and `BB_INSECURE_SKIP_VERIFY=true`. The update controls are ADR-059's, `mcp_audit_file` is ADR-062's, and `disable_bb`, `disable_mcp_server` and `read_only` are ADR-100's. A boolean registry value bb cannot read takes the restrictive side of its control, and `bb doctor` reports it.
 
-2. Administrative Policy Invariants: System administrators can mandate security policies either via
-   system configuration YAML (`/etc/bb/config.yaml` or `%ProgramData%\bb\config.yaml`) or native Windows
-   Registry policy keys (`HKLM\Software\Policies\bb`). These policies take immutable precedence over
-   user and workspace configurations:
-   - `require_keyring: true`: Mandates OS keyring-backed credential storage machine-wide. Refuses fallback
-      to plaintext config storage. Unsetting user environment variables cannot bypass this policy. If
-      `BB_REQUIRE_KEYRING=0` is passed in user environment, a warning is printed to stderr and policy
-      remains enforced.
-   - `ca_file: <path>`: Mandates a corporate Root CA bundle. Defaulting to this CA when unspecified, and
-      rejecting user attempts to supply a conflicting CA file.
-   - `allowed_hosts: [...]`: Whitelists permitted Bitbucket Server / Data Center instances by URL or
-      hostname. Connection attempts and login storage for unlisted hosts are rejected.
-   - `allow_insecure_skip_verify: false`: Prohibits disabling TLS verification. Any attempt to pass
-      `--insecure-skip-verify` or `BB_INSECURE_SKIP_VERIFY=true` is rejected.
+3. Schema validation. Every configuration file is checked against the configuration schema compiled into bb and exported as `docs/reference/schemas/config.schema.json`. A file that does not match it is a file bb could not read (ADR-019).
 
-3. Schema Validation: All configuration files (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`,
-   `.bb/config.yaml`, and user config) are validated against a versioned JSON Schema (`config.schema.json`)
-   exported to `docs/reference/schemas/` to ensure syntax, types, and supported properties are strictly checked.
+4. Errors. A policy refusal is `KindAuthorization`, exit 3, and says administrative policy refused it. A refused plaintext fallback is `KindPermanent`, exit 1, and says how to supply the credential instead. A system file that exists and cannot be read fails closed: every command except the few ADR-100 leaves standing stops with `KindPermanent`, names the file, and tells the person to ask the administrator rather than remove it.
 
-4. Error Handling Contract: All administrative policy violations are classified as `KindAuthorization`
-   (exit code 3) or `KindPermanent` (exit code 1 for storage policy) with actionable guidance indicating
-   that settings are governed by administrative policy. A system configuration file that exists and
-   cannot be read fails closed: every command stops with `KindPermanent`, names the file, and tells the
-   user to ask the administrator rather than to remove it.
+5. Deployment. An administrator creates the policy directory. bb reads the system file and never creates the directory holding it; the only configuration directory bb creates is the user's own. On Windows, `C:\ProgramData` lets any user add a subdirectory and hands its creator full control of it, so deployment creates `%ProgramData%\bb` from an elevated session and leaves unprivileged accounts read-only. On Linux and macOS `/etc` already requires root. `TestPolicyLoadingNeverCreatesTheSystemConfigDirectory` holds the bb half.
 
-5. Deployment: the policy directory is created by an administrator, not by `bb`. `bb` reads the system
-   configuration file and never creates the directory holding it; the only directory it creates is the
-   per-user one. That matters on Windows, where `C:\ProgramData` lets any user add a subdirectory and
-   hands its creator full control of it -- so deployment creates `%ProgramData%\bb` from an elevated
-   session and leaves unprivileged accounts read-only. On Linux and macOS `/etc` already requires root.
-   TestPolicyLoadingNeverCreatesTheSystemConfigDirectory pins the `bb` half.
+6. Registry parity. The registry carries every policy key except `mcp_audit_file`, which only the system file sets, so on Windows point 5 is the whole of what stands behind it.
 
-6. Registry policy carries every setting except `mcp_audit_file`. `HKLM\Software\Policies\bb` needs
-   administrator rights and is merged last, so it is the stronger channel on Windows -- but
-   parseRegistryPolicy has no branch for `mcp_audit_file`, which is therefore file-only, with point 5
-   as the whole of what stands behind it.
+Apply policy before any network or credential operation. Do not add code that creates the system configuration directory: a convenience `MkdirAll` on the way to reading it would create that tier as whichever account ran bb first. When documenting a policy setting as one a user cannot change, name the deployment step that makes it true, and check that the setting is readable from the channel you recommend.
 
-When evaluating configuration and options, always adhere to the 6-tier hierarchy (Flags > Env > Workspace > User > System > Defaults). Enforce administrative policies unconditionally before executing network or credential operations. Policy refusal errors must return KindAuthorization or KindPermanent with descriptive, actionable explanations. Do not add code that creates the system configuration directory. A convenience MkdirAll on the way to reading it would create that tier as whichever account ran bb first. When documenting a policy setting as one a user cannot change, name the deployment step that makes it true, and check the setting is readable from the channel you are recommending.
-
-In enterprise deployments, IT security teams require authoritative control over CLI behavior across workstations and CI/CD agents. Previously, configuration was loaded strictly from the environment or the user's home directory (`~/.config/bb/config.yaml`), allowing operators to bypass corporate CA bundles, disable TLS verification via `BB_INSECURE_SKIP_VERIFY=true`, or store credentials insecurely when the OS keyring failed.
-By supporting system-wide configuration (`/etc/bb/config.yaml`, `%ProgramData%\bb\config.yaml`) and Windows Group Policy (`HKLM\Software\Policies\bb`), organizations deploying via Ansible, Jamf, Intune, or GPO can enforce non-negotiable security postures without interfering with team-level workspace settings or user convenience profiles. Points 5 and 6 came from a report that bb trusts the policy file without checking its owner. The remedy was wrong -- an application does not audit who may write a machine-wide path, and none of /etc's other consumers do -- but it established that the directory does not exist until somebody creates it, and that on Windows that somebody need not be an administrator. The answer is a deployment step, not a check inside bb. The registry advice that came with it was wrong too, which is why point 6 states the parity rather than assuming it.
+An organisation that deploys bb through Ansible, Jamf, Intune or Group Policy needs controls a user cannot switch off: a corporate CA bundle, TLS verification, keyring storage, the hosts bb may reach. The environment and the user's own file belong to the user, and a workspace file arrives with a clone, so policy lives where only an administrator writes, and outranks all three. That only an administrator writes there is the deployment's to make true; bb cannot check it from inside.
 
 ## Not chosen
 
-- **Only support environment variables for policy overrides**: Environment variables can be easily overwritten or unset by unprivileged users in user-space shells, defeating fleet-wide security enforcement.
-- **Rely exclusively on system-level configuration files without Windows Registry support**: Windows enterprise fleet management relies heavily on Group Policy Objects (GPO) and Intune CSPs targeting HKLM\Software\Policies. Restricting policy to flat files would require custom scripting rather than standard GPO.
-- **Check the owner and mode of the policy file before trusting it**: Polices an OS administration problem from inside an application, and would have to decide what a correct owner is on Windows, where the answer is an ACL rather than a uid.
+- **Only support environment variables for policy**: An unprivileged user can set or unset them in their own shell, defeating fleet-wide enforcement.
+- **System files only, without the Windows registry**: Windows fleets are managed through Group Policy and Intune, which target `HKLM\Software\Policies`. Flat files alone would need custom scripting rather than standard GPO.
+- **Check the owner and mode of the policy file before trusting it**: Polices an operating system administration problem from inside an application, and would have to decide what a correct owner is on Windows, where the answer is an ACL rather than a uid.
 - **Have bb create the system configuration directory on first run**: On Windows it would then be created by the first unprivileged account to run bb, which would own the tier that outranks its own configuration.
