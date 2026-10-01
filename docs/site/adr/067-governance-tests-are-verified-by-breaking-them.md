@@ -99,6 +99,7 @@ A governance test asserts an invariant over everything of one kind the repositor
 - TestNoGateIsDefinedAndNeverRun: a task named like a check is reachable from something that runs it.
 - TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit: a package running git installs the guard.
 - TestTheSealIsInstalledWhereTestsLoadTheConfiguration: a package whose tests load the configuration seals its process.
+- TestTheSealWritesEveryVariableBBReads: the seal writes every variable bb reads, so neither the shell nor a .env reaches a unit test through one.
 - TestNoFixtureIsNamedFromTheClock: no test builds a fixture name from time.Now().
 - TestTheRepositoryHasNoUnclassifiedMocks: every mocked server under internal is classified.
 - TestBitbucketImageIsProposedButNotAutoMerged: the product image is proposed but held from auto-merge.
