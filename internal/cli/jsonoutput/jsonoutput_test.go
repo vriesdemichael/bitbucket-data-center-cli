@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/docsite"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -72,48 +71,6 @@ type failingWriter struct{}
 
 func (failingWriter) Write(_ []byte) (int, error) {
 	return 0, errors.New("boom")
-}
-
-func TestEnvelopeSchemaFor(t *testing.T) {
-	t.Parallel()
-
-	dataSchema := map[string]any{"type": "string"}
-	schema := EnvelopeSchemaFor("test.schema.json", "Test Title", "Test description", dataSchema)
-
-	if schema["$schema"] != jsonSchemaVersion {
-		t.Errorf("expected $schema=%q, got %q", jsonSchemaVersion, schema["$schema"])
-	}
-	expected := SchemaBaseURL(docsite.LatestVersion) + "test.schema.json"
-	if schema["$id"] != expected {
-		t.Errorf("expected $id=%q, got %q", expected, schema["$id"])
-	}
-	if schema["title"] != "Test Title" {
-		t.Errorf("unexpected title: %v", schema["title"])
-	}
-	if schema["description"] != "Test description" {
-		t.Errorf("unexpected description: %v", schema["description"])
-	}
-
-	props, ok := schema["properties"].(map[string]any)
-	if !ok {
-		t.Fatal("expected properties map")
-	}
-	for _, field := range []string{"data", "meta"} {
-		if _, ok := props[field]; !ok {
-			t.Errorf("missing envelope property %q", field)
-		}
-	}
-	if _, present := props["version"]; present {
-		t.Error("the published schema still declares a contract version, which ADR-064 removed")
-	}
-	if props["data"] == nil {
-		t.Error("expected data property to be set")
-	}
-
-	req, ok := schema["required"].([]any)
-	if !ok || len(req) != 2 {
-		t.Fatalf("expected required=[data,meta], got %v", schema["required"])
-	}
 }
 
 func TestWriteErrorEmitsClassifiedEnvelope(t *testing.T) {
@@ -433,37 +390,40 @@ func validateAgainstErrorSchema(t *testing.T, document any) {
 // listing command failed the schema published to describe it. Nothing noticed
 // because nothing validated a real envelope against a real schema, which is the
 // same blind spot the output schema coverage report exists to expose.
+//
+// The meta is held to MetaSchema, the member the published schema and
+// --describe both carry. A body that is not text is written too, for the
+// encoding and contentType meta carries beside it.
 func TestAListEnvelopeValidatesAgainstItsOwnSchema(t *testing.T) {
 	t.Parallel()
 
-	for _, limitReached := range []bool{true, false} {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("meta.json", schemaValue(MetaSchema())); err != nil {
+		t.Fatalf("adding the schema failed: %v", err)
+	}
+	compiled, err := compiler.Compile("meta.json")
+	if err != nil {
+		t.Fatalf("compiling the schema failed: %v", err)
+	}
+
+	for name, write := range map[string]func(*bytes.Buffer) error{
+		"a list that reached --limit": func(buffer *bytes.Buffer) error { return WriteList(buffer, []string{"a"}, true) },
+		"a list that did not":         func(buffer *bytes.Buffer) error { return WriteList(buffer, []string{"a"}, false) },
+		"a body that is not text":     func(buffer *bytes.Buffer) error { return WriteBytes(buffer, []byte{0xff}, "image/png") },
+	} {
 		buffer := &bytes.Buffer{}
-		if err := WriteList(buffer, []string{"a"}, limitReached); err != nil {
-			t.Fatalf("writing the list envelope failed: %v", err)
+		if err := write(buffer); err != nil {
+			t.Fatalf("%s: writing the envelope failed: %v", name, err)
 		}
 
-		schema := EnvelopeSchemaFor(
-			"output.example.schema.json",
-			"example",
-			"example",
-			map[string]any{"type": "array"},
-		)
-
-		compiler := jsonschema.NewCompiler()
-		if err := compiler.AddResource("example.json", schema); err != nil {
-			t.Fatalf("adding the schema failed: %v", err)
+		var document struct {
+			Meta any `json:"meta"`
 		}
-		compiled, err := compiler.Compile("example.json")
-		if err != nil {
-			t.Fatalf("compiling the schema failed: %v", err)
-		}
-
-		var document any
 		if err := json.Unmarshal(buffer.Bytes(), &document); err != nil {
-			t.Fatalf("decoding failed: %v", err)
+			t.Fatalf("%s: decoding failed: %v", name, err)
 		}
-		if err := compiled.Validate(document); err != nil {
-			t.Errorf("limitReached=%v: a list envelope fails its own schema: %v\n%s", limitReached, err, buffer.String())
+		if err := compiled.Validate(document.Meta); err != nil {
+			t.Errorf("%s: its meta fails the schema of meta: %v\n%s", name, err, buffer.String())
 		}
 	}
 }
