@@ -140,7 +140,7 @@ func TestEveryHookRunnableGateRunsOnBothSides(t *testing.T) {
 
 // TestParityComparisonDetectsDrift is the sabotage, recorded as a test.
 //
-// ADR-065 asks for governance tests whose failure has been confirmed rather
+// ADR-067 asks for governance tests whose failure has been confirmed rather
 // than assumed: a guard that has quietly stopped guarding is worse than a
 // missing one, because it occupies the slot and reports success. This drives
 // the comparison with lists that are deliberately wrong and asserts it objects.
