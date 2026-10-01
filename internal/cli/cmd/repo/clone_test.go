@@ -443,22 +443,27 @@ func TestRepoCloneCommandValidationAndBackendFailure(t *testing.T) {
 	stub := &cloneBackendStub{cloneErr: errors.New("clone failed")}
 	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}
 
-	_, err := executeTestCLIWith(t, setup, "repo", "clone", "badformat")
-	if err == nil {
-		t.Fatal("expected invalid selector error")
+	// Each is refused before git is asked for anything, and says why: a
+	// configuration bb could not load fails them as well. A bare slug is not
+	// invalid here, since the setup names a project to put it in.
+	for _, testCase := range []struct {
+		args []string
+		want string
+	}{
+		{args: []string{"repo", "clone", "PRJ/"}, want: "repository must be in PROJECT/slug format"},
+		{args: []string{"repo", "clone", "PRJ/demo", ""}, want: "clone directory cannot be empty"},
+		{args: []string{"repo", "clone", "PRJ/demo", "target-dir", "--", "depth=1"}, want: "additional git clone arguments must be passed after --"},
+	} {
+		_, err := executeTestCLIWith(t, setup, testCase.args...)
+		if err == nil || !strings.Contains(err.Error(), testCase.want) {
+			t.Fatalf("%v: expected %q, got: %v", testCase.args, testCase.want, err)
+		}
+	}
+	if len(stub.cloneCalls) != 0 {
+		t.Fatalf("a refused clone still asked git to clone: %v", stub.cloneCalls)
 	}
 
-	_, err = executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo", "")
-	if err == nil {
-		t.Fatal("expected empty directory validation error")
-	}
-
-	_, err = executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo", "target-dir", "--", "depth=1")
-	if err == nil {
-		t.Fatal("expected invalid extra git args error")
-	}
-
-	_, err = executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo")
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo")
 	if err == nil {
 		t.Fatal("expected backend clone failure")
 	}
@@ -623,8 +628,8 @@ func TestRepoCloneCommandConfigAndFactoryValidation(t *testing.T) {
 	setup.Host = "://bad-url"
 	gitBackendFactory = func() git.Backend { return &cloneBackendStub{} }
 	_, err = executeTestCLIWith(t, setup, "repo", "clone", "PRJ/demo")
-	if err == nil {
-		t.Fatal("expected clone URL validation error")
+	if err == nil || !strings.Contains(err.Error(), `is invalid: "://bad-url"`) {
+		t.Fatalf("expected the malformed host to be refused, got: %v", err)
 	}
 }
 

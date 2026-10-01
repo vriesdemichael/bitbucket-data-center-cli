@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
 
@@ -238,8 +239,8 @@ func TestPullRequestStatusFailsWhenTheDashboardFails(t *testing.T) {
 			command.SetOut(buffer)
 			command.SetErr(buffer)
 			command.SetArgs([]string{"--json", "pr", "status"})
-			if err := command.Execute(); err == nil {
-				t.Fatalf("expected a failing %s query to fail the command, got: %s", testCase.failingRole, buffer.String())
+			if err := command.Execute(); !apperrors.IsKind(err, apperrors.KindTransient) || !strings.Contains(err.Error(), "boom") {
+				t.Fatalf("expected a failing %s query to fail the command with its 500, got: %v\n%s", testCase.failingRole, err, buffer.String())
 			}
 		})
 	}

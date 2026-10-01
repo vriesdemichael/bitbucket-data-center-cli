@@ -1,6 +1,7 @@
 package repocmd
 
 import (
+	"strings"
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -12,24 +13,21 @@ func TestRepoAdminCLIValidation(t *testing.T) {
 
 	setup := testSetup{}
 
-	_, err := executeTestCLIWith(t, setup, "repo", "admin", "create")
-	if err == nil {
-		t.Fatal("expected create missing arg error")
-	}
-
-	_, err = executeTestCLIWith(t, setup, "repo", "admin", "create", "--project", "PRJ")
-	if err == nil {
-		t.Fatal("expected create missing name error")
-	}
-
-	_, err = executeTestCLIWith(t, setup, "repo", "create")
-	if err == nil {
-		t.Fatal("expected repo create missing arg error")
-	}
-
-	_, err = executeTestCLIWith(t, setup, "repo", "create", "--project", "PRJ")
-	if err == nil {
-		t.Fatal("expected repo create missing name error")
+	// The setup names no host, so a refusal that does not name the missing
+	// flags could be the configuration rather than the arguments.
+	for _, testCase := range []struct {
+		args []string
+		want string
+	}{
+		{args: []string{"repo", "admin", "create"}, want: `required flag(s) "name", "project" not set`},
+		{args: []string{"repo", "admin", "create", "--project", "PRJ"}, want: `required flag(s) "name" not set`},
+		{args: []string{"repo", "create"}, want: `required flag(s) "name", "project" not set`},
+		{args: []string{"repo", "create", "--project", "PRJ"}, want: `required flag(s) "name" not set`},
+	} {
+		_, err := executeTestCLIWith(t, setup, testCase.args...)
+		if err == nil || !strings.Contains(err.Error(), testCase.want) {
+			t.Errorf("%v: expected %q, got: %v", testCase.args, testCase.want, err)
+		}
 	}
 }
 
@@ -49,6 +47,10 @@ func TestRepoCreateRequiresAProjectKey(t *testing.T) {
 	}
 	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
 		t.Errorf("kind = %v, want validation (error: %v)", kind, err)
+	}
+	// A configuration bb could not load is a validation error too.
+	if !strings.Contains(err.Error(), "project key is required") {
+		t.Errorf("expected the missing project to be what was refused, got: %v", err)
 	}
 }
 

@@ -69,6 +69,9 @@ func TestLoadQualityRepoServiceAndClientReturnsSelectorValidationError(t *testin
 	if !apperrors.IsKind(err, apperrors.KindValidation) {
 		t.Fatalf("expected validation error, got: %v", err)
 	}
+	if !strings.Contains(err.Error(), "--repo must be in PROJECT/slug format") {
+		t.Fatalf("expected the selector to be what was refused, got: %v", err)
+	}
 }
 
 // The variable is the subject: the message has to name BB_CA_FILE, which is

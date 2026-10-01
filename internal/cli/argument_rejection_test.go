@@ -36,7 +36,9 @@ func TestCommandsRejectBadArgumentsWithoutCallingBitbucket(t *testing.T) {
 		args []string
 		// wantMessage is a fragment the rejection must carry. For an enum that
 		// is the list of values, because a rejection that does not say what was
-		// allowed sends the caller back to the documentation.
+		// allowed sends the caller back to the documentation. Every case has
+		// one: a configuration bb could not load exits 2 as well, so the code
+		// alone cannot tell this argument's rejection from that.
 		wantMessage string
 	}{
 		{
@@ -60,12 +62,14 @@ func TestCommandsRejectBadArgumentsWithoutCallingBitbucket(t *testing.T) {
 			wantMessage: "APPROVED, NEEDS_WORK, UNAPPROVED",
 		},
 		{
-			name: "reviewer condition payload that is not JSON",
-			args: []string{"reviewer", "condition", "create", "{invalid}", "--project", "PRJ"},
+			name:        "reviewer condition payload that is not JSON",
+			args:        []string{"reviewer", "condition", "create", "{invalid}", "--project", "PRJ"},
+			wantMessage: "invalid condition JSON",
 		},
 		{
-			name: "reviewer condition update payload that is not JSON",
-			args: []string{"reviewer", "condition", "update", "1", "{invalid}", "--project", "PRJ"},
+			name:        "reviewer condition update payload that is not JSON",
+			args:        []string{"reviewer", "condition", "update", "1", "{invalid}", "--project", "PRJ"},
+			wantMessage: "invalid condition JSON",
 		},
 	}
 
@@ -81,8 +85,8 @@ func TestCommandsRejectBadArgumentsWithoutCallingBitbucket(t *testing.T) {
 					"argument was sent to Bitbucket rather than rejected here (%v)", code, err)
 			}
 
-			if testCase.wantMessage != "" && !strings.Contains(err.Error(), testCase.wantMessage) {
-				t.Errorf("rejection does not name what was allowed: %v", err)
+			if !strings.Contains(err.Error(), testCase.wantMessage) {
+				t.Errorf("rejection does not say %q: %v", testCase.wantMessage, err)
 			}
 		})
 	}

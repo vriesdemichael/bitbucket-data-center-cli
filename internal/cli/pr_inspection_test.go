@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
@@ -61,8 +62,9 @@ func TestPRInspectionServiceErrors(t *testing.T) {
 		{"pr", "files", "7"},
 		{"pr", "merge-base", "7"},
 	} {
-		if _, err := executeTestCLI(t, configured, args...); err == nil {
-			t.Fatalf("expected transport error for %v", args)
+		_, err := executeTestCLI(t, configured, args...)
+		if !apperrors.IsKind(err, apperrors.KindTransient) || !strings.Contains(err.Error(), "boom") {
+			t.Fatalf("expected the server's 500 to reach the caller for %v, got: %v", args, err)
 		}
 	}
 }
@@ -79,8 +81,9 @@ func TestPRInspectionRepositoryResolutionError(t *testing.T) {
 		{"pr", "--repo", "missing-slash", "files", "7"},
 		{"pr", "--repo", "missing-slash", "merge-base", "7"},
 	} {
-		if _, err := executeTestCLI(t, configured, args...); err == nil {
-			t.Fatalf("expected repository resolution error for %v", args)
+		_, err := executeTestCLI(t, configured, args...)
+		if err == nil || !strings.Contains(err.Error(), "invalid repository selector") {
+			t.Fatalf("expected the selector to be refused for %v, got: %v", args, err)
 		}
 	}
 }

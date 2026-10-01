@@ -77,12 +77,13 @@ func TestAnUnreachableInstanceCompletesNothingAndOffersNoFiles(t *testing.T) {
 	} {
 		candidates, directive := completeOffline(t, words...)
 
-		// An Active Help line is allowed: it is how bash and zsh explain the
-		// silence, and Cobra marks it so the other shells drop it.
+		// Not even an Active Help line. An unreachable instance is a silence
+		// nobody can act on mid-word, so completion explains only what will not
+		// fix itself, such as a host or a credential missing from the
+		// configuration -- and a line here means it stopped there, before the
+		// instance this is about.
 		for _, candidate := range candidates {
-			if !strings.HasPrefix(candidate, "_activeHelp_") {
-				t.Errorf("completing %v offered %q from an instance that refuses connections", words, candidate)
-			}
+			t.Errorf("completing %v offered %q from an instance that refuses connections", words, candidate)
 		}
 
 		if directive&int(cobra.ShellCompDirectiveNoFileComp) == 0 {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
@@ -154,8 +155,8 @@ func TestAtGroupShorthandDoesNotMaskServerFailures(t *testing.T) {
 	defer server.Close()
 
 	out, _, err := executePrSplit(t, server.URL, "review", "reviewer", "add", "42", "--user", "@some-team")
-	if err == nil {
-		t.Fatalf("expected the reviewer group failure to surface, got output:\n%s", out)
+	if !apperrors.IsKind(err, apperrors.KindTransient) || !strings.Contains(err.Error(), "reviewer groups unavailable") {
+		t.Fatalf("expected the reviewer group failure to surface, got: %v\noutput:\n%s", err, out)
 	}
 	if strings.Contains(out, "Added reviewer some-team") {
 		t.Fatalf("the group name must not be assigned as a username, got:\n%s", out)

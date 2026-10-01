@@ -34,8 +34,8 @@ func TestBrowseCommand(t *testing.T) {
 	repository := config.Overrides{Host: "://bad-url", ProjectKey: "PRJ", RepoSlug: "repo"}
 
 	_, err := executeTestCLI(t, repository, "browse", "--no-browser")
-	if err == nil {
-		t.Fatal("expected browse URL build validation error")
+	if err == nil || !strings.Contains(err.Error(), `is invalid: "://bad-url"`) {
+		t.Fatalf("expected the malformed host to be refused, got: %v", err)
 	}
 
 	repository.Host = "https://bitbucket.example.com"
@@ -99,15 +99,15 @@ func TestBrowseCommandValidationBranches(t *testing.T) {
 	repository := config.Overrides{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "repo"}
 
 	_, err := executeTestCLI(t, repository, "browse", "--settings", "--releases")
-	if err == nil {
-		t.Fatal("expected mutually exclusive settings/releases validation error")
+	if err == nil || !strings.Contains(err.Error(), "choose only one of --settings or --releases") {
+		t.Fatalf("expected --settings with --releases to be refused, got: %v", err)
 	}
 
 	notADuration := "not-a-duration"
 	repository.RequestTimeout = &notADuration
 	_, err = executeTestCLI(t, repository, "browse")
-	if err == nil {
-		t.Fatal("expected load config validation error")
+	if err == nil || !strings.Contains(err.Error(), "--request-timeout must be a valid duration") {
+		t.Fatalf("expected the timeout to fail the configuration load, got: %v", err)
 	}
 }
 

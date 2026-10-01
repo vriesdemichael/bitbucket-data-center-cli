@@ -54,13 +54,16 @@ func refusedBy(t *testing.T, args []string, err error, lever, file string) {
 	}
 }
 
-// notRefused asserts a run got past the levers. It may still fail, at the
-// refused port or for want of a repository, but not because of policy.
-func notRefused(t *testing.T, args []string, err error) {
+// gotPastTheLevers asserts a run got past the levers: it succeeded, or it
+// failed at the refused port runBB hands it. Any other failure says nothing
+// about the levers -- a configuration bb could not load or a repository it
+// could not resolve is not a policy refusal either, and stops the run before
+// it shows whether policy would have let it through.
+func gotPastTheLevers(t *testing.T, args []string, err error) {
 	t.Helper()
 
-	if err != nil && strings.Contains(err.Error(), "by administrative policy") {
-		t.Errorf("bb %s was refused by policy: %v", strings.Join(args, " "), err)
+	if err != nil && !strings.Contains(err.Error(), testsupport.RefusedURL) {
+		t.Errorf("bb %s did not get as far as the instance: %v", strings.Join(args, " "), err)
 	}
 }
 
@@ -94,8 +97,12 @@ func TestDisableBBRefusesEverythingButWhatSaysWhy(t *testing.T) {
 			t.Errorf("bb %s under disable_bb: %v", strings.Join(args, " "), err)
 		}
 	}
+	// doctor's own verdict is about this machine, so its error is not read;
+	// the report naming the lever is what shows it ran.
 	report, err := runBB("doctor")
-	notRefused(t, []string{"doctor"}, err)
+	if err != nil && strings.Contains(err.Error(), "by administrative policy") {
+		t.Errorf("bb doctor was refused by policy: %v", err)
+	}
 	if !strings.Contains(report, "disable_bb") || !strings.Contains(report, file) {
 		t.Errorf("bb doctor does not report disable_bb and the file that sets it:\n%s", report)
 	}
@@ -125,7 +132,7 @@ func TestDisableMCPServerRefusesOnlyTheServer(t *testing.T) {
 
 	for _, args := range [][]string{{"ai", "mcp", "tools"}, {"pr", "list", "--repo", "PROJ/app"}} {
 		_, err := runBB(args...)
-		notRefused(t, args, err)
+		gotPastTheLevers(t, args, err)
 	}
 }
 
@@ -151,7 +158,7 @@ func TestReadOnlyRefusesWhatChangesBitbucket(t *testing.T) {
 		{"api", "--method", "POST", "/rest/api/latest/projects", "--dry-run"},
 	} {
 		_, err := runBB(args...)
-		notRefused(t, args, err)
+		gotPastTheLevers(t, args, err)
 	}
 }
 
