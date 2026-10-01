@@ -775,19 +775,22 @@ func TestDiagnoseAgreesWithTheLoader(t *testing.T) {
 		t.Setenv(name, value)
 	}
 
-	assertDiagnosisAgreesWithTheLoader(t)
+	assertDiagnosisAgreesWithTheLoader(t, Overrides{})
 
 	// The environment names the host, and the stored file is switched off.
 	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com/")
 	t.Setenv("BITBUCKET_TOKEN", "environment-token")
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	assertDiagnosisAgreesWithTheLoader(t)
+	assertDiagnosisAgreesWithTheLoader(t, Overrides{})
 }
 
-func assertDiagnosisAgreesWithTheLoader(t *testing.T) {
+// assertDiagnosisAgreesWithTheLoader loads the configuration with what an
+// invocation passed and diagnoses it with the same, and holds the two to one
+// answer.
+func assertDiagnosisAgreesWithTheLoader(t *testing.T, passed Overrides) {
 	t.Helper()
 
-	loaded, err := LoadWithOverrides(Overrides{})
+	loaded, err := LoadWithOverrides(passed)
 	if err != nil {
 		t.Fatalf("the configuration did not load: %v", err)
 	}
@@ -804,7 +807,7 @@ func assertDiagnosisAgreesWithTheLoader(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	diagnosis := Diagnose(DiagnoseInput{})
+	diagnosis := Diagnose(DiagnoseInput{Overrides: passed})
 
 	for name, want := range map[string]string{
 		"host":                 loaded.BitbucketURL,

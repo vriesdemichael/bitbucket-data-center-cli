@@ -49,9 +49,8 @@ func TestLoadFromEnvFlagsCredentialsReadFromPlaintextFallback(t *testing.T) {
 	useStoredConfig(t)
 	host := "https://plaintext-flag.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
-	t.Setenv("BITBUCKET_URL", host)
 
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(Overrides{Host: host})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -71,10 +70,9 @@ func TestLoadFromEnvRefusesPlaintextWhenKeyringRequired(t *testing.T) {
 	useStoredConfig(t)
 	host := "https://plaintext-refused.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
-	t.Setenv("BITBUCKET_URL", host)
 	t.Setenv("BB_REQUIRE_KEYRING", "1")
 
-	_, err := LoadFromEnv()
+	_, err := LoadWithOverrides(Overrides{Host: host})
 	if err == nil {
 		t.Fatal("expected loading to fail when plaintext storage is in use and the keyring is required")
 	}
@@ -178,13 +176,12 @@ func TestLoadFromEnvAllowsEnvironmentCredentialsWhenKeyringRequired(t *testing.T
 	useStoredConfig(t)
 	host := "https://env-wins.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
-	t.Setenv("BITBUCKET_URL", host)
 	t.Setenv("BB_REQUIRE_KEYRING", "1")
 	// A token supplied per invocation never touches the config file, so the
 	// policy has nothing to object to — this is the documented escape hatch.
 	t.Setenv("BITBUCKET_TOKEN", "token-from-environment")
 
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(Overrides{Host: host})
 	if err != nil {
 		t.Fatalf("expected environment credentials to satisfy the policy, got %v", err)
 	}
@@ -201,10 +198,9 @@ func TestLoadFromEnvRejectsMalformedKeyringPolicy(t *testing.T) {
 	useStoredConfig(t)
 	host := "https://malformed-policy.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
-	t.Setenv("BITBUCKET_URL", host)
 	t.Setenv("BB_REQUIRE_KEYRING", "yes-please")
 
-	_, err := LoadFromEnv()
+	_, err := LoadWithOverrides(Overrides{Host: host})
 	if err == nil {
 		t.Fatal("expected a malformed BB_REQUIRE_KEYRING to be rejected")
 	}
@@ -523,14 +519,13 @@ func TestARefusedLoginLeavesTheStoredPlaintextCredentialWorking(t *testing.T) {
 	useStoredConfig(t)
 	host := "https://upgraded.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
-	t.Setenv("BITBUCKET_URL", host)
 	withUnavailableKeyring(t)
 
 	if _, err := SaveLogin(LoginInput{Host: host, Token: "rotated-token"}); err == nil {
 		t.Fatal("expected the new login to be refused without --allow-insecure-storage")
 	}
 
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(Overrides{Host: host})
 	if err != nil {
 		t.Fatalf("the stored plaintext credential no longer loads: %v", err)
 	}
@@ -609,12 +604,11 @@ func TestStaleInsecureEntryBesideAWorkingKeyringIsNotReportedAsInsecure(t *testi
 	host := "https://stale.example.invalid"
 	configPath := writePlaintextCredentialConfig(t, host)
 	t.Setenv("BB_CONFIG_PATH", configPath)
-	t.Setenv("BITBUCKET_URL", host)
 
 	store := withWorkingKeyring(t)
 	store["bb/"+host+":token"] = "keyring-token"
 
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(Overrides{Host: host})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -690,12 +684,11 @@ func TestBasicAuthCredentialsAreReadFromTheKeyring(t *testing.T) {
 		t.Fatalf("write config: %v", err)
 	}
 	t.Setenv("BB_CONFIG_PATH", configPath)
-	t.Setenv("BITBUCKET_URL", host)
 
 	store := withWorkingKeyring(t)
 	store["bb/"+host+":password"] = "keyring-password"
 
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(Overrides{Host: host})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -719,12 +712,11 @@ func TestAmbientAuthEnvironmentDoesNotSuppressThePlaintextReport(t *testing.T) {
 	useStoredConfig(t)
 	host := "https://ambient-env.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
-	t.Setenv("BITBUCKET_URL", host)
 	// Set, but supplying no token — the credential in use still comes from the
 	// plaintext file.
 	t.Setenv("ADMIN_USER", "admin")
 
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(Overrides{Host: host})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -744,12 +736,11 @@ func TestAmbientAuthEnvironmentDoesNotBypassTheKeyringPolicy(t *testing.T) {
 	useStoredConfig(t)
 	host := "https://ambient-bypass.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
-	t.Setenv("BITBUCKET_URL", host)
 	t.Setenv("ADMIN_USER", "admin")
 	t.Setenv("BB_REQUIRE_KEYRING", "1")
 
 	// The policy must still refuse: the secret genuinely came off disk.
-	if _, err := LoadFromEnv(); err == nil {
+	if _, err := LoadWithOverrides(Overrides{Host: host}); err == nil {
 		t.Fatal("expected the policy to hold despite an ambient auth variable")
 	}
 }
@@ -758,11 +749,10 @@ func TestEnvironmentSuppliedTokenIsNotReportedAsPlaintext(t *testing.T) {
 	useStoredConfig(t)
 	host := "https://env-token.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
-	t.Setenv("BITBUCKET_URL", host)
 	// This one really does supply the credential, so the file entry is unused.
 	t.Setenv("BITBUCKET_TOKEN", "token-from-environment")
 
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(Overrides{Host: host})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

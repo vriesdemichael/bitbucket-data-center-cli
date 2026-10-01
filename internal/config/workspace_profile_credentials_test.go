@@ -38,14 +38,14 @@ func TestAWorkspaceProfileReleasesNoStoredCredential(t *testing.T) {
 	}
 
 	for name, testCase := range map[string]struct {
-		// bitbucketURL names the author's host when the workspace file does
-		// not: a .env in the clone, or --host given by an agent the clone's
-		// content steers.
-		bitbucketURL string
-		workspace    []string
+		// host names the author's host when the workspace file does not: a
+		// .env in the clone, or --host given by an agent the clone's content
+		// steers. It is passed the way --host is.
+		host      string
+		workspace []string
 	}{
 		"a profile keyed to another host whose url is the user's": {
-			bitbucketURL: attacker,
+			host: attacker,
 			workspace: []string{
 				"hosts:",
 				"  " + attacker + ":",
@@ -85,16 +85,13 @@ func TestAWorkspaceProfileReleasesNoStoredCredential(t *testing.T) {
 				t.Fatalf("write workspace config: %v", err)
 			}
 			t.Setenv("BB_WORKSPACE_CONFIG_PATH", workspacePath)
-			t.Setenv("BITBUCKET_URL", testCase.bitbucketURL)
-			if testCase.bitbucketURL == "" {
-				os.Unsetenv("BITBUCKET_URL")
-			}
 			// Away from any .env above the package: the loader reads the nearest.
 			t.Chdir(t.TempDir())
 
-			cfg, err := LoadFromEnv()
+			passed := Overrides{Host: testCase.host}
+			cfg, err := LoadWithOverrides(passed)
 			if err != nil {
-				t.Fatalf("LoadFromEnv: %v", err)
+				t.Fatalf("LoadWithOverrides: %v", err)
 			}
 
 			// Without this the assertions below pass for a run that never
@@ -112,7 +109,7 @@ func TestAWorkspaceProfileReleasesNoStoredCredential(t *testing.T) {
 
 			// bb doctor reports the credential a command would send; it must not
 			// report one the loader no longer releases (ADR-086).
-			assertDiagnosisAgreesWithTheLoader(t)
+			assertDiagnosisAgreesWithTheLoader(t, passed)
 		})
 	}
 }
@@ -139,12 +136,11 @@ func TestAWorkspaceProfileStillNamesItsUsername(t *testing.T) {
 		t.Fatalf("write workspace config: %v", err)
 	}
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", workspacePath)
-	t.Setenv("BITBUCKET_PASSWORD", "supplied-by-the-caller")
 	t.Chdir(t.TempDir())
 
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(Overrides{Password: "supplied-by-the-caller"})
 	if err != nil {
-		t.Fatalf("LoadFromEnv: %v", err)
+		t.Fatalf("LoadWithOverrides: %v", err)
 	}
 
 	if cfg.BitbucketURL != host || cfg.BitbucketUsername != "alice" {

@@ -114,14 +114,16 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BB_CONFIG_PATH", storedWithDefaultHostCredential(t, storedToken))
 		t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
-		t.Setenv("BITBUCKET_URL", "https://other.example.com")
 		t.Chdir(t.TempDir())
 
-		cfg, err := LoadFromEnv()
+		cfg, err := LoadWithOverrides(Overrides{Host: "https://other.example.com"})
 		if err != nil {
-			t.Fatalf("LoadFromEnv: %v", err)
+			t.Fatalf("LoadWithOverrides: %v", err)
 		}
 
+		if cfg.BitbucketURL != "https://other.example.com" {
+			t.Fatalf("the host named on the command line is not the host bb talks to: %s", cfg.BitbucketURL)
+		}
 		if cfg.BitbucketToken == storedToken {
 			t.Fatal("the stored token for another host followed a host named on the command line")
 		}
@@ -209,12 +211,11 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BB_CONFIG_PATH", path)
 		t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
-		t.Setenv("BITBUCKET_URL", "https://trusted.example.com")
 		t.Chdir(t.TempDir())
 
-		cfg, err := LoadFromEnv()
+		cfg, err := LoadWithOverrides(Overrides{Host: "https://trusted.example.com"})
 		if err != nil {
-			t.Fatalf("LoadFromEnv: %v", err)
+			t.Fatalf("LoadWithOverrides: %v", err)
 		}
 
 		if cfg.BitbucketToken != storedToken {
