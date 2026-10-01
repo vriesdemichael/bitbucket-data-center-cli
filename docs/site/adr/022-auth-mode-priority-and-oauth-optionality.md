@@ -13,7 +13,6 @@ Token and basic auth work on every instance with nothing for an administrator to
 
 ## Not chosen
 
-- **OAuth-only authentication**: Incompatible with many local and evaluation setups, and adds onboarding friction.
 - **An opt-in browser login, by authorization code with PKCE and a loopback callback**: Needs an administrator to register a client and a fixed callback port, and gives a token that lasts an hour. An agent or a pipeline cannot use it at all.
 - **Hand out the client secret, so that bb can renew the token**: The secret alone is exchanged for a token that acts without a user, at the client's scope. Handing it out hands out a shared credential.
 - **A browser login that creates a personal access token**: Needs the ACCOUNT_WRITE scope, which covers the whole account, and ends with the credential bb already takes. Creating that token on the page bb auth token-url prints needs no administrator.
