@@ -5,14 +5,14 @@ search:
 
 # ADR-041: Host aliases and clone URL discovery for server contexts
 
-Extend stored Bitbucket server contexts with explicit host aliases normalized as host:port endpoints. Repository inference and stored-auth lookup must match git remotes against both the canonical Bitbucket URL and configured aliases, while always resolving back to the canonical Bitbucket URL for API calls. Alias discovery is supported as a best-effort auth workflow that probes a small repository page and stops at the first accessible repository exposing clone links, deriving aliases only from server-provided clone URLs. Manual alias management remains first-class.
+A stored server context can carry aliases: the other host names its instance answers to, such as a separate host for SSH clones. An alias is stored on the canonical context, never inferred from a host name, and normalised to `host:port`, keeping an explicit port and taking 443, 80 or 22 for https, http or ssh when none is given. Repository inference matches a git remote against the canonical URL and every alias, and resolves it to the canonical URL for API calls; the stored-credential lookup counts an alias as the host it belongs to. An alias belongs to one context, and adding one that another context already has is a conflict.
 
-Store aliases explicitly on the canonical server context rather than inferring them from hostname patterns. Normalize aliases as host:port identities, preserving explicit non-default ports and defaulting to 443/80/22 for https/http/ssh when omitted. Keep alias discovery cheap: query only a small repository page, stop at the first repository with usable clone links, and do not make login depend on discovery success. Prefer server-provided clone URLs over local git heuristics, and fail clearly if an alias is configured on more than one server context.
+`bb auth login` discovers aliases unless `--discover-aliases=false`, and `bb auth alias discover` does it on request. Discovery reads one small page of the repositories the user recently accessed, then one of all repositories, stops at the first repository that has SSH clone links, and derives aliases from those links alone. A login never fails because discovery did. Discovered aliases are added to the stored ones, so an alias added by hand survives; `--replace` stores only what discovery found and names what it dropped. `bb auth alias add`, `list` and `remove` manage aliases by hand.
 
-Many Bitbucket Server and Data Center deployments use different web/API and SSH hostnames, such as bitbucket.company.org for browser/API access and git.company.org for clone traffic. Treating these as unrelated breaks repository inference and credential reuse even though they refer to the same logical Bitbucket instance. Explicit aliases keep the behavior inspectable and deterministic, while clone-link discovery removes the manual setup burden in the common case without introducing brittle hostname guessing.
+Many deployments serve the web and API from one host name and clone traffic from another, such as bitbucket.company.org and git.company.org. Treated as unrelated, they break repository inference and credential reuse for what is one instance. Explicit aliases keep the match inspectable, and the server's own clone links cover the common case without guessing from host names.
 
 ## Not chosen
 
-- **Infer aliases from hostname patterns such as git.* vs bitbucket.***: Too heuristic and prone to wrong-server matches in enterprise environments.
-- **Keep hostname-only matching and ignore ports**: Conflates distinct endpoints and loses important SSH port distinctions.
-- **Scan all repositories during alias discovery**: Too expensive and unnecessary when a single accessible repository is enough.
+- **Infer aliases from host name patterns such as git.* and bitbucket.***: Too heuristic, and prone to matching the wrong server.
+- **Match host names and ignore ports**: Conflates distinct endpoints and loses SSH port distinctions.
+- **Scan every repository during discovery**: Too expensive, when one accessible repository is enough.
