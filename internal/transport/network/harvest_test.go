@@ -199,10 +199,22 @@ type failingTransport struct{ err error }
 
 func (t failingTransport) RoundTrip(*http.Request) (*http.Response, error) { return nil, t.err }
 
-type unreadableBody struct{}
+// cutShortBody delivers the start of an answer and then the connection drops.
+type cutShortBody struct {
+	start string
+	err   error
+	sent  bool
+}
 
-func (unreadableBody) Read([]byte) (int, error) { return 0, errors.New("connection reset") }
-func (unreadableBody) Close() error             { return nil }
+func (body *cutShortBody) Read(buffer []byte) (int, error) {
+	if body.sent {
+		return 0, body.err
+	}
+	body.sent = true
+	return copy(buffer, body.start), nil
+}
+
+func (*cutShortBody) Close() error { return nil }
 
 // TestHarvestStaysOutOfTheWayWhenTheRequestFails covers the paths where there
 // is nothing to record.
@@ -237,32 +249,39 @@ func TestHarvestStaysOutOfTheWayWhenTheRequestFails(t *testing.T) {
 		}
 	})
 
-	t.Run("a body that cannot be read is still handed back", func(t *testing.T) {
-		path := filepath.Join(t.TempDir(), "harvest.jsonl")
-		transport := &harvestTransport{
-			base: stubTransport{status: http.StatusNotFound},
-			path: path,
-		}
+	t.Run("a body cut short reaches the caller cut short", func(t *testing.T) {
+		const start = `{"errors":[{"message":"Pull request is out of da`
+		dropped := errors.New("connection reset")
 
-		request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "https://bitbucket.example/rest", nil)
+		request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, "https://bitbucket.example/rest", nil)
 		if err != nil {
 			t.Fatalf("build request: %v", err)
 		}
-		response, err := transport.base.RoundTrip(request) //nolint:bodyclose // replaced below
-		if err != nil {
-			t.Fatalf("stub round trip: %v", err)
+		path := filepath.Join(t.TempDir(), "harvest.jsonl")
+		recorded := &harvestTransport{
+			base: fixedTransport{response: &http.Response{
+				StatusCode: http.StatusConflict,
+				Body:       &cutShortBody{start: start, err: dropped},
+				Request:    request,
+			}},
+			path: path,
 		}
-		response.Body = unreadableBody{}
 
-		recorded := &harvestTransport{base: fixedTransport{response: response}, path: path}
 		got, err := recorded.RoundTrip(request) //nolint:bodyclose // closed below
 		if err != nil {
-			t.Fatalf("the recorder turned an unreadable body into an error: %v", err)
+			t.Fatalf("the recorder turned a body cut short into a request error: %v", err)
 		}
+		served, readErr := io.ReadAll(got.Body)
 		_ = got.Body.Close()
 
+		if string(served) != start {
+			t.Errorf("the caller read %q, want the part that arrived, %q", served, start)
+		}
+		if !errors.Is(readErr, dropped) {
+			t.Errorf("reading the body ended with %v, want the error the connection ended with", readErr)
+		}
 		if records := readRecords(t, path); len(records) != 0 {
-			t.Errorf("recorded %d responses from a body it could not read", len(records))
+			t.Errorf("recorded %d responses from a body that never arrived whole", len(records))
 		}
 	})
 

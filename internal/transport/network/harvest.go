@@ -63,10 +63,15 @@ func (transport *harvestTransport) RoundTrip(request *http.Request) (*http.Respo
 
 	body, readErr := io.ReadAll(response.Body)
 	_ = response.Body.Close()
-	response.Body = io.NopCloser(bytes.NewReader(body))
 	if readErr != nil {
+		// The caller reads what arrived and then the same error. Handing back
+		// the bytes alone would turn a body cut short into a short body, and
+		// the client classifies those differently. Nothing is recorded: what
+		// the server meant to say never arrived.
+		response.Body = io.NopCloser(io.MultiReader(bytes.NewReader(body), erroredReader{err: readErr}))
 		return response, nil
 	}
+	response.Body = io.NopCloser(bytes.NewReader(body))
 
 	record := harvestRecord{
 		Method:    request.Method,
@@ -93,6 +98,11 @@ func (transport *harvestTransport) RoundTrip(request *http.Request) (*http.Respo
 
 	return response, nil
 }
+
+// erroredReader ends a replayed body with the error the original ended with.
+type erroredReader struct{ err error }
+
+func (reader erroredReader) Read([]byte) (int, error) { return 0, reader.err }
 
 // append writes one line. Appending rather than accumulating means a run that
 // crashes still leaves what it saw, and several processes can share the file --
