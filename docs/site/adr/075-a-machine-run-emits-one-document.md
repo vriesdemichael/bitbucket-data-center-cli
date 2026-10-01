@@ -13,7 +13,7 @@ Two documents on stdout fail quietly. A strict decoder rejects the second one, b
 
 ## Not chosen
 
-- **Carry the payload inside the failure envelope as data**: ADR-046 forbids data alongside error. The two documents are told apart by which key is present, and a null data would make a command whose payload is legitimately null ambiguous. error.details is inside the error object, so that discriminator is untouched.
+- **Carry the payload inside the failure envelope as data**: ADR-046 forbids data alongside error. error.details sits inside the error object, so which key is present still tells the two documents apart.
 - **Put the detail in the message only**: Every consumer would scrape a sentence for a value no schema describes.
 - **Write the payload and exit non-zero without an error envelope**: Special-cases commands out of the failure contract, so a consumer branching on error kind has to know which commands opt out.
 - **Reuse transient for cancellation**: Documented to agents as "retry later". For a mutating command that is the one response that must not be automatic.
