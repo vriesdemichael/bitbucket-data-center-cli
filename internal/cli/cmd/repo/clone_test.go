@@ -785,6 +785,10 @@ func TestNewCloneLoginRequiredError(t *testing.T) {
 	if !strings.Contains(err.Error(), "no stored HTTP credentials") {
 		t.Fatalf("expected credential message in error, got: %v", err)
 	}
+	// No flag carries a secret (ADR-083): the advice names the stdin form.
+	if !strings.Contains(err.Error(), "--token-stdin") || strings.Contains(err.Error(), "--token <") {
+		t.Fatalf("the advice does not name --token-stdin: %v", err)
+	}
 
 	// nil cause should still produce an error
 	err = newCloneLoginRequiredError("https://bitbucket.example.com", nil, false)
@@ -1050,6 +1054,34 @@ func TestPromptForCloneLoginDirect(t *testing.T) {
 		}
 		if !strings.Contains(out.String(), "No stored HTTP credentials were found") {
 			t.Fatalf("expected HTTPS-only prompt message, got: %s", out.String())
+		}
+	})
+
+	t.Run("a token the keyring cannot hold is used once and stored nowhere", func(t *testing.T) {
+		// The clone has no --allow-insecure-storage to ask for plaintext, so the
+		// token the person typed serves this clone and is not written down.
+		config.UseUnavailableKeyring(t, errors.New("no secret service"))
+		before, _ := os.ReadFile(configPath)
+
+		command := NewRootCommand()
+		out := &bytes.Buffer{}
+		command.SetOut(out)
+		command.SetErr(out)
+		command.SetIn(bytes.NewBufferString("typed-token\n"))
+
+		auth, prompted, err := promptForCloneLogin(command, cfg, "https://bitbucket.example.com", false)
+		if err != nil {
+			t.Fatalf("the clone failed because the token could not be stored: %v", err)
+		}
+		if !prompted || auth.BitbucketToken != "typed-token" {
+			t.Fatalf("the typed token was not used for the clone: prompted=%v token=%q", prompted, auth.BitbucketToken)
+		}
+		if !strings.Contains(out.String(), "used for this clone only") || !strings.Contains(out.String(), "--allow-insecure-storage") {
+			t.Errorf("the note does not say the token was not stored, or how to store it: %s", out.String())
+		}
+		after, _ := os.ReadFile(configPath)
+		if !bytes.Equal(before, after) || strings.Contains(string(after), "typed-token") {
+			t.Errorf("the configuration file changed, or holds the token:\n%s", after)
 		}
 	})
 }

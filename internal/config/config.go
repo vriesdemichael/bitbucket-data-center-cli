@@ -2134,12 +2134,19 @@ func keyringUnavailableError(cause error) error {
 	)
 }
 
+// ErrSecretNotStored is in the chain of a login refused because the OS keyring
+// could not hold the secret and plaintext was not allowed. Nothing was written,
+// so a caller that holds the secret for one use, as a clone that prompted for a
+// token does, can still use it once.
+var ErrSecretNotStored = errors.New("the secret was not stored")
+
 // plaintextRefusal decides whether a secret the OS keyring could not hold may
 // go to the config file in plaintext, and returns the refusal when it may not.
 //
 // A keyring requirement wins over the request: an operator who mandates the
 // keyring has decided for the user, and the flag cannot undo that.
 func plaintextRefusal(requireKeyring, allowInsecureStorage bool, cause error) error {
+	cause = errors.Join(ErrSecretNotStored, cause)
 	if requireKeyring {
 		return keyringUnavailableError(cause)
 	}
