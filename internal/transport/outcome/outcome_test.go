@@ -265,6 +265,7 @@ func TestAServerThatRefusesTheHandshakeIsPermanent(t *testing.T) {
 	}))
 	server.TLS = &tls.Config{ClientAuth: tls.RequireAnyClientCert, MinVersion: tls.VersionTLS13}
 	server.Config.ErrorLog = log.New(io.Discard, "", 0)
+	server.Listener = lingeringListener{server.Listener}
 	server.StartTLS()
 	t.Cleanup(server.Close)
 
@@ -284,6 +285,41 @@ func TestAServerThatRefusesTheHandshakeIsPermanent(t *testing.T) {
 	if outcome.Retriable(classified) {
 		t.Fatal("a refused handshake is retriable, so every command tries it three times")
 	}
+}
+
+// lingeringListener closes each connection the way a server does that lets its
+// last record arrive: it stops sending, reads what the client sent, and only
+// then closes.
+//
+// A socket closed with data still unread sends a reset rather than a FIN, and
+// Windows drops what the client received and has not read yet when the reset
+// arrives. Go's server sends the alert refusing the handshake and closes at
+// once, with the request the client wrote after its Finished already in its
+// buffer. Over loopback the reset can then arrive before the client reads the
+// alert, and on Windows it did about once in a thousand runs: the client read
+// a reset instead, which is another failure than the one under test. Over a
+// network the client has a round trip to start reading before the alert comes.
+type lingeringListener struct{ net.Listener }
+
+func (listener lingeringListener) Accept() (net.Conn, error) {
+	conn, err := listener.Listener.Accept()
+	if err != nil {
+		return nil, err
+	}
+
+	return lingeringConn{conn}, nil
+}
+
+type lingeringConn struct{ net.Conn }
+
+func (conn lingeringConn) Close() error {
+	if tcp, ok := conn.Conn.(*net.TCPConn); ok {
+		_ = tcp.CloseWrite()
+		_ = tcp.SetReadDeadline(time.Now().Add(2 * time.Second))
+		_, _ = io.Copy(io.Discard, tcp)
+	}
+
+	return conn.Conn.Close()
 }
 
 // An https:// URL for a server that speaks only plain HTTP is the likeliest TLS
