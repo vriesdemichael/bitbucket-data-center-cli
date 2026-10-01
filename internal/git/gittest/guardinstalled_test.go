@@ -14,14 +14,15 @@ import (
 // the exec-based backend, which does the same thing one layer down.
 var gitSubprocessPattern = regexp.MustCompile(`exec\.Command(?:Context)?\([^)]*"git"|execgit\.New\(`)
 
-// guardPattern matches a package that installs the ambient-config guard: a
-// TestMain, and the snapshot call that makes it one.
+// These match a package that installs the ambient-config guard: a TestMain,
+// and the call to Guard that makes it one.
 var (
 	testMainPattern = regexp.MustCompile(`func TestMain\(`)
-	// Guard is how a package installs this now. SnapshotAmbientConfig is still
-	// accepted because it remains the exported way to compare by hand, and a
-	// package with a reason to do so is guarded just as well.
-	snapshotPattern = regexp.MustCompile(`gittest\.(Guard|SnapshotAmbientConfig)\(`)
+	// Only Guard counts. A TestMain that snapshots and compares by hand is not
+	// guarded just as well: it keeps none of what Guard does before the run,
+	// as the live suite's copy kept neither the ceiling nor the released
+	// locators while this detector accepted it.
+	guardCallPattern = regexp.MustCompile(`gittest\.Guard\(`)
 )
 
 // TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit is the guard on
@@ -49,7 +50,7 @@ func TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit(t *testing.T) {
 
 	shellsOutToGit := map[string]bool{}
 	hasTestMain := map[string]bool{}
-	hasSnapshot := map[string]bool{}
+	callsGuard := map[string]bool{}
 
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
@@ -85,8 +86,8 @@ func TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit(t *testing.T) {
 		if testMainPattern.MatchString(source) {
 			hasTestMain[directory] = true
 		}
-		if snapshotPattern.MatchString(source) {
-			hasSnapshot[directory] = true
+		if guardCallPattern.MatchString(source) {
+			callsGuard[directory] = true
 		}
 
 		return nil
@@ -108,7 +109,7 @@ func TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit(t *testing.T) {
 
 	var offenders []string
 	for directory := range shellsOutToGit {
-		if !hasTestMain[directory] || !hasSnapshot[directory] {
+		if !hasTestMain[directory] || !callsGuard[directory] {
 			offenders = append(offenders, directory)
 		}
 	}

@@ -224,6 +224,9 @@ Every package whose tests start a git process installs the guard, as one line:
 func TestMain(m *testing.M) { gittest.Guard(m) }
 ```
 
+A TestMain with other work to do, such as the live suite's, does that work first and ends in
+`gittest.Guard(m)`. Do not compare the configuration by hand instead.
+
 `gittest.Guard` does two things. It puts this repository out of git's reach for the run, by setting
 a ceiling at its root, so a command that would find it by searching upward fails with "not inside a
 git repository" instead of succeeding against your checkout — which is the shape both recorded

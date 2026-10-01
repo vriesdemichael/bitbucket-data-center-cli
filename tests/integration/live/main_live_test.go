@@ -12,8 +12,10 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/gittest"
 )
 
-// TestMain fails the live suite when it reconfigures the repository it runs
-// inside. This suite pushes real commits through the git backend, so it is the
+// TestMain sets the suite up and then hands it to gittest.Guard, which puts the
+// repository the suite runs inside out of git's reach and fails the run if the
+// suite reconfigured it anyway. This suite pushes real commits through the git
+// backend, and from a pre-push hook, which exports GIT_DIR to it: it is the
 // most likely place for a helper to lose its working directory and operate on
 // the project checkout instead of its own fixture.
 func TestMain(m *testing.M) {
@@ -46,17 +48,9 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	before := gittest.SnapshotAmbientConfig()
-	code := m.Run()
-
-	if differences := gittest.Diff(before, gittest.SnapshotAmbientConfig()); len(differences) > 0 {
-		fmt.Fprint(os.Stderr, gittest.FailureMessage(differences))
-		if code == 0 {
-			code = 1
-		}
-	}
-
-	os.Exit(code)
+	// Last, and the whole of the comparison: the same guard every unit
+	// package installs, rather than a copy of it that drifts (ADR-071).
+	gittest.Guard(m)
 }
 
 // liveSuiteUnusable names what is missing, or returns empty when the suite can
