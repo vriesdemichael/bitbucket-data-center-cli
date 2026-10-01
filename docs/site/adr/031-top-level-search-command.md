@@ -5,8 +5,10 @@ search:
 
 # ADR-031: Top-level search command tree for discovery
 
-Introduce a top-level `search` command group (`bb search ...`) with subcommands for `repos`, `commits`, and `prs`. This acts as an exception to ADR 013 (which banned one-off top-level commands) to explicitly allow `search` as a first-class discovery primitive.
+`bb search` finds things across the instance: `bb search repos`, `bb search commits` and `bb search prs`, each on a Bitbucket listing endpoint and its filters, with the paging flags (`--limit`, `--start`, `--all`) and the output contract every listing has. Put discovery that is not bound to one resource here, as `bb search <resource>`.
 
-Place global or semi-global discovery functionalities under `bb search <resource>`. Map these commands to existing API listing endpoints utilizing query filters. Preserve pagination (`--limit`, `--start`) and consistent output contracts.
+Some discovery has no one resource to hang from: the pull requests you are involved in across every repository, or a repository whose project you do not know. gh puts it under a search group, and that is where its users look.
 
-Users need discoverability primitives for automation and triage. While resource-scoped lists (e.g. `bb repo list --name foo`) are technically correct, a top-level `search` command provides better discoverability, aligns with `gh search` UX expectations, and handles cross-project discovery (like dashboard PRs) more naturally than a resource-bound command tree.
+## Not chosen
+
+- **Filters on the resource listings, such as `bb repo list --name foo`**: Fit one resource, and leave cross-project discovery nowhere to go.
