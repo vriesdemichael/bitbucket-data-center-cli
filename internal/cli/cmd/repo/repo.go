@@ -209,6 +209,7 @@ func New(deps Dependencies) *cobra.Command {
 	return repoCmd
 }
 
+// NewClone builds bb clone, the alias of bb repo clone (ADR-050).
 func NewClone(deps Dependencies) *cobra.Command {
-	return newCloneCommand(deps.withDefaults(), "bb clone")
+	return newCloneCommand(deps.withDefaults(), true)
 }

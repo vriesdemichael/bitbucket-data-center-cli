@@ -16,6 +16,7 @@ import (
 // by themselves; these are second registrations under a shorter path, so they
 // have to be told.
 var shallowAliasCanonical = map[string]func(*cobra.Command) string{
+	"clone":             canonicalIs("repo clone"),
 	"pr checks":         canonicalIs("pr build status"),
 	"pr diff":           canonicalIs("diff pr"),
 	"repo admin create": canonicalIs("repo create"),
