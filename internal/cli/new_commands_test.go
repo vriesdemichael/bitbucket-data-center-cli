@@ -29,25 +29,24 @@ import (
 
 // mock-inventory: transport-fault — a server answering 500 to everything is injected, alongside a malformed URL and a malformed repository reference that never reach one; the subject is that each command reports rather than printing an empty success.
 func TestNewCLICommandsErrorPaths(t *testing.T) {
-	// 1. Client configuration failure (a host of ://invalid)
-	configured := config.Overrides{Host: "://invalid", Token: "test-token"}
-
+	// The deletes carry --yes, so that each is refused for what the step below
+	// is about rather than for the confirmation nobody is there to give.
 	errorCmds := [][]string{
 		{"repo", "settings", "auto-merge", "get"},
 		{"repo", "settings", "auto-merge", "set", "--enabled"},
-		{"repo", "settings", "auto-merge", "delete"},
+		{"repo", "settings", "auto-merge", "delete", "--yes"},
 		{"repo", "settings", "auto-decline", "get"},
 		{"repo", "settings", "auto-decline", "set", "--enabled", "--inactivity-weeks", "4"},
-		{"repo", "settings", "auto-decline", "delete"},
+		{"repo", "settings", "auto-decline", "delete", "--yes"},
 		{"repo", "label", "list"},
 		{"repo", "label", "add", "label3"},
-		{"repo", "label", "remove", "label1"},
+		{"repo", "label", "remove", "label1", "--yes"},
 		{"repo", "watch"},
 		{"repo", "unwatch"},
 		{"repo", "default-task", "list"},
 		{"repo", "default-task", "add", "task1"},
 		{"repo", "default-task", "update", "123", "--description", "task1-updated"},
-		{"repo", "default-task", "delete", "123"},
+		{"repo", "default-task", "delete", "123", "--yes"},
 		{"webhook", "get", "1"},
 		{"webhook", "update", "1", "--name", "hook1-updated"},
 		{"webhook", "test", "1"},
@@ -55,12 +54,32 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 		{"webhook", "stats", "1", "--summary"},
 	}
 
-	for _, args := range errorCmds {
-		cmd := NewRootCommandWithOverrides(configured)
-		cmd.SetArgs(args)
-		if err := cmd.Execute(); err == nil {
-			t.Errorf("expected error for command %v with invalid URL", args)
+	// failure runs one invocation, which must fail and print nothing beside
+	// the failure: a command that reports nothing as an empty success is what
+	// this test exists to catch. want is a fragment the error must carry.
+	failure := func(t *testing.T, configured config.Overrides, want string, args ...string) error {
+		t.Helper()
+
+		output, err := executeTestCLI(t, configured, args...)
+		if err == nil {
+			t.Errorf("%v succeeded, printing: %q", args, output)
+
+			return nil
 		}
+		if output != "" {
+			t.Errorf("%v printed %q beside its failure", args, output)
+		}
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("%v: expected the error to say %q, got: %v", args, want, err)
+		}
+
+		return err
+	}
+
+	// 1. Client configuration failure (a host of ://invalid)
+	configured := config.Overrides{Host: "://invalid", Token: "test-token"}
+	for _, args := range errorCmds {
+		failure(t, configured, `is invalid: "://invalid"`, args...)
 	}
 
 	// 2. Invalid repo format (e.g. --repo invalid)
@@ -68,14 +87,11 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 	for _, args := range errorCmds {
 		fullArgs := append([]string(nil), args...)
 		fullArgs = append(fullArgs, "--repo", "invalid")
-		cmd := NewRootCommandWithOverrides(configured)
-		cmd.SetArgs(fullArgs)
-		if err := cmd.Execute(); err == nil {
-			t.Errorf("expected error for command %v with invalid repo format", fullArgs)
-		}
+		failure(t, configured, "invalid repository selector", fullArgs...)
 	}
 
-	// 3. Server error (HTTP 500)
+	// 3. Server error (HTTP 500). A write Bitbucket answered with 500 may have
+	// been applied, so it is an unknown outcome rather than a transient failure.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
@@ -86,10 +102,9 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 	configured.RepoSlug = "repo"
 
 	for _, args := range errorCmds {
-		cmd := NewRootCommandWithOverrides(configured)
-		cmd.SetArgs(args)
-		if err := cmd.Execute(); err == nil {
-			t.Errorf("expected error for command %v with HTTP 500 response", args)
+		err := failure(t, configured, "500", args...)
+		if err != nil && !apperrors.IsKind(err, apperrors.KindTransient) && !apperrors.IsKind(err, apperrors.KindUnknownOutcome) {
+			t.Errorf("%v: expected a transient or unknown outcome, got: %v", args, err)
 		}
 	}
 
@@ -111,10 +126,9 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 	}
 
 	for _, args := range dryRunCmds {
-		cmd := NewRootCommandWithOverrides(configured)
-		cmd.SetArgs(args)
-		if err := cmd.Execute(); err == nil {
-			t.Errorf("expected error for dry-run command %v with HTTP 500 response", args)
+		err := failure(t, configured, "500", args...)
+		if err != nil && !apperrors.IsKind(err, apperrors.KindTransient) {
+			t.Errorf("%v: expected the preview's read to fail as transient, got: %v", args, err)
 		}
 	}
 }

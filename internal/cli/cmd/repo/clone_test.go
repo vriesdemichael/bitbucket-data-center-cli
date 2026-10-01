@@ -416,9 +416,6 @@ func TestRepoCloneCommandPromptsForTokenAfterSSHFailure(t *testing.T) {
 	// the command falls through to a "no stored credentials" error.
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed")}}
 
-	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
-	t.Setenv("BB_CONFIG_PATH", configPath)
-
 	_, err := executeTestCLIWith(t, testSetup{
 		Host:       "https://bitbucket.example.com",
 		ProjectKey: "PRJ",
@@ -772,9 +769,6 @@ func TestRepoCloneCommandEmptyTokenPrompt(t *testing.T) {
 	// empty-token check; the error reflects the missing credentials, not the empty token.
 	stub := &cloneBackendStub{cloneErr: errors.New("ssh: connection refused")}
 
-	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
-	t.Setenv("BB_CONFIG_PATH", configPath)
-
 	_, err := executeTestCLIWith(t, testSetup{
 		Host:       "https://bitbucket.example.com",
 		ProjectKey: "PRJ",
@@ -975,9 +969,6 @@ func TestRepoCloneCommandBackendFailsAfterTokenPrompt(t *testing.T) {
 	// so only the SSH attempt occurs and we get a credentials error.
 	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), errors.New("http 401")}}
 
-	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
-	t.Setenv("BB_CONFIG_PATH", configPath)
-
 	_, err := executeTestCLIWith(t, testSetup{
 		Host:       "https://bitbucket.example.com",
 		ProjectKey: "PRJ",
@@ -1122,9 +1113,6 @@ func TestRepoCloneCommandHTTPFallbackFailsBothSSHAndHTTP(t *testing.T) {
 func TestCloneRepositoryWithAuthFallbackPromptPathEmptyToken(t *testing.T) {
 	stub := &cloneBackendStub{cloneErr: errors.New("ssh failed")}
 
-	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
-	t.Setenv("BB_CONFIG_PATH", configPath)
-
 	outText, err := executeTestCLIWith(t, testSetup{
 		Host:       "https://bitbucket.example.com",
 		ProjectKey: "PRJ",
@@ -1177,8 +1165,9 @@ func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
 // a person at the terminal. The clone hands both to the shared decision, as
 // every other prompt does.
 //
-// Not parallel: a prompt that is answered stores the token, and the sealed
-// environment leaves BB_CONFIG_PATH empty, which is the developer's own file.
+// Not parallel: a prompt that is answered stores the token, so the test points
+// BB_CONFIG_PATH at a file of its own rather than the one the sealed process
+// shares between its tests.
 func TestTheCloneTokenPromptHonoursNoInput(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.yaml"))
 

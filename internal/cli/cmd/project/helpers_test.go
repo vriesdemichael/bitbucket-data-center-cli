@@ -12,7 +12,6 @@ import (
 
 func executeTestCLI(t *testing.T, args ...string) (string, error) {
 	t.Helper()
-	t.Setenv("NO_COLOR", "1")
 	root := NewRootCommand()
 	buf := new(bytes.Buffer)
 	root.SetOut(buf)
