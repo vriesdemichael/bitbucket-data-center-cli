@@ -8,9 +8,9 @@
 #
 # Why the base image is the official Bitbucket image rather than a plain JDK:
 # the JVM and git must both fall inside the window the product accepts, and
-# those windows are narrow and version-specific. Bitbucket 10.4.2 requires
-# Java 21, requires git >= 2.42, rejects git >= 2.55, and additionally rejects
-# 2.48, 2.51, 2.52 and 2.53 for "critical regressions". A rejected git is
+# those windows are narrow and change between releases: one release can require
+# Java 21 and git >= 2.42, reject git >= 2.55, and additionally reject 2.48,
+# 2.51, 2.52 and 2.53 for "critical regressions". A rejected git is
 # especially nasty: the instance logs a clean "Started BitbucketServerApplication"
 # and only then parks in ERROR when the Mesh sidecar fails. Inheriting both from
 # the product image means they are correct by construction for whichever version
@@ -43,7 +43,7 @@ RUN sed -n 's/^build\.version[[:space:]]*=[[:space:]]*//p' \
 # as an unexplained ERROR state mid-run.
 #
 # The JVM's major version is printed, not asserted: it follows the release, and
-# this file also builds older ones (Java 17 on 9.2.1, 21 on 10.4.2). A base
+# this file also builds older ones, which run on an older Java. A base
 # that is not a Bitbucket product image already fails at the version read above.
 RUN java -version 2>&1 | head -1 \
     && git --version \
