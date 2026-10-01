@@ -654,15 +654,14 @@ func TestDiagnoseReadsTheFilesALoadWould(t *testing.T) {
 	stored := writeDoctorFile(t, directory, "stored.yaml", "hosts: [broken\n")
 	system := writeDoctorFile(t, directory, "system.yaml", "requre_keyring: true\n")
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BB_CONFIG_PATH", stored)
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", directory)
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", system)
 
 	diagnosis := Diagnose(DiagnoseInput{})
 
-	// BB_DISABLE_STORED_CONFIG promises the file is not read, so its damage is
-	// no obstacle.
+	// The seal sets BB_DISABLE_STORED_CONFIG, which promises the file is not
+	// read, so its damage is no obstacle.
 	storedFile := diagnosedFile(t, diagnosis, TierStored)
 	if storedFile.Read || !storedFile.Exists || !storedFile.Valid() || storedFile.PathFrom != "BB_CONFIG_PATH" ||
 		!strings.Contains(storedFile.NotRead, "BB_DISABLE_STORED_CONFIG") {

@@ -42,10 +42,10 @@ func TestLogoutRefusesToRewriteAConfigItCouldNotRead(t *testing.T) {
 }
 
 // BB_DISABLE_STORED_CONFIG is documented as ignoring the file entirely. A
-// damaged file left on a shared runner is the case it exists for.
+// damaged file left on a shared runner is the case it exists for. The seal
+// has set it to 1.
 func TestDisablingTheStoredConfigIgnoresADamagedOne(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", writeMalformed(t, "stored.yaml"))
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BITBUCKET_URL", "https://bitbucket.example")
 	t.Setenv("BITBUCKET_TOKEN", "from-the-environment")
 

@@ -14,7 +14,6 @@ import (
 )
 
 func TestLoadFromEnvNonHostDefaults(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BB_CA_FILE", "")
 	t.Setenv("BB_INSECURE_SKIP_VERIFY", "")
 	t.Setenv("BB_REQUEST_TIMEOUT", "")
@@ -52,7 +51,6 @@ func TestLoadFromEnvNonHostDefaults(t *testing.T) {
 }
 
 func TestLoadFromEnvErrorsWhenNoHostConfigured(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "empty-config.yaml"))
 
 	_, err := LoadFromEnv()
@@ -111,7 +109,6 @@ func TestLoadFromEnvFindsRepositoryDotenvFromNestedWorkingDirectory(t *testing.T
 	}
 	t.Chdir(nested)
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	unsetEnvKeys(t,
 		"BITBUCKET_USERNAME",
 		"BITBUCKET_PASSWORD",
@@ -155,7 +152,6 @@ func unsetEnvKeys(t *testing.T, keys ...string) {
 }
 
 func TestLoadFromEnvTransportOverrides(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BB_INSECURE_SKIP_VERIFY", "true")
 	t.Setenv("BB_REQUEST_TIMEOUT", "45s")
 	t.Setenv("BB_RETRY_COUNT", "5")
@@ -219,7 +215,6 @@ func TestLoadFromEnvTransportOverrides(t *testing.T) {
 }
 
 func TestLoadFromEnvTransportOverrideValidation(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BB_CA_FILE", "")
 	t.Setenv("BB_LOG_LEVEL", "")
 	t.Setenv("BB_LOG_FORMAT", "")
@@ -345,7 +340,6 @@ func TestLoadFromEnvTransportOverrideValidation(t *testing.T) {
 }
 
 func TestLoadFromEnvInvalidURL(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BITBUCKET_URL", "://broken")
 
 	// A valid project key, so the variable under test is the only thing wrong.
@@ -356,7 +350,6 @@ func TestLoadFromEnvInvalidURL(t *testing.T) {
 }
 
 func TestLoadFromEnvNormalizesURLAndAliasUsername(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BITBUCKET_URL", "localhost:7990")
 	t.Setenv("BITBUCKET_USER", "admin")
 	t.Setenv("BITBUCKET_PASSWORD", "admin")
