@@ -13,7 +13,6 @@ import (
 )
 
 func TestPRDefaults(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 	cmd := New(Dependencies{})
 	if cmd == nil {
 		t.Fatal("expected New(Dependencies{}) to return non-nil command")

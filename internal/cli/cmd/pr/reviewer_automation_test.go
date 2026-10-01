@@ -10,7 +10,6 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -18,12 +17,6 @@ import (
 // separately, so a test can tell a warning apart from command output.
 func executePrSplit(t *testing.T, serverURL string, args ...string) (stdout string, stderr string, err error) {
 	t.Helper()
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", serverURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
 
 	var jsonFlag bool
 	var dryRunFlag bool
@@ -43,15 +36,10 @@ func executePrSplit(t *testing.T, serverURL string, args ...string) (stdout stri
 		JSONEnabled:   func() bool { return jsonFlag },
 		DryRunEnabled: func() bool { return dryRunFlag },
 		LoadConfig: func() (config.AppConfig, error) {
-			return config.LoadFromEnv()
+			return loadTestConfig(serverURL)
 		},
 		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-			cfg, cfgErr := config.LoadFromEnv()
-			if cfgErr != nil {
-				return config.AppConfig{}, nil, cfgErr
-			}
-			client, clientErr := openapi.NewClientWithResponsesFromConfig(cfg)
-			return cfg, client, clientErr
+			return loadTestConfigAndClient(serverURL)
 		},
 		WriteJSON:     jsonoutput.Write,
 		WriteJSONList: jsonoutput.WriteList,

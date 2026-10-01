@@ -92,17 +92,11 @@ func newPullRequestStatusServer(t *testing.T) *httptest.Server {
 func executeStatus(t *testing.T, backend git.Backend, serverURL string, args ...string) string {
 	t.Helper()
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", serverURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-
 	var jsonFlag bool
 	deps := Dependencies{
 		JSONEnabled: func() bool { return jsonFlag },
 		LoadConfig: func() (config.AppConfig, error) {
-			return config.LoadFromEnv()
+			return loadTestConfig(serverURL)
 		},
 		WriteJSON:     jsonoutput.Write,
 		WriteJSONList: jsonoutput.WriteList,

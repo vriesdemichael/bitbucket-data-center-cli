@@ -40,27 +40,16 @@ func (c recordingChecker) CheckRepoPermission(ctx context.Context, projectKey, r
 func executePrRecordingPermissions(t *testing.T, serverURL string, args ...string) ([]openapi.RepositoryPermission, error) {
 	t.Helper()
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", serverURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-
 	var recorded []openapi.RepositoryPermission
 
 	deps := Dependencies{
 		JSONEnabled:   func() bool { return false },
 		DryRunEnabled: func() bool { return true },
 		LoadConfig: func() (config.AppConfig, error) {
-			return config.LoadFromEnv()
+			return loadTestConfig(serverURL)
 		},
 		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-			cfg, err := config.LoadFromEnv()
-			if err != nil {
-				return config.AppConfig{}, nil, err
-			}
-			client, clientErr := openapi.NewClientWithResponsesFromConfig(cfg)
-			return cfg, client, clientErr
+			return loadTestConfigAndClient(serverURL)
 		},
 		WriteJSON:     jsonoutput.Write,
 		WriteJSONList: jsonoutput.WriteList,
