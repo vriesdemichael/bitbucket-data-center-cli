@@ -10,14 +10,16 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
-func executeTestCLI(t *testing.T, args ...string) (string, error) {
+func executeTestCLI(t *testing.T, overrides config.Overrides, args ...string) (string, error) {
 	t.Helper()
-	t.Setenv("NO_COLOR", "1")
 	root := &cobra.Command{Use: "bb"}
 	jsonFlag := root.PersistentFlags().Bool("json", false, "")
 	deps := Dependencies{
 		JSONEnabled: func() bool { return *jsonFlag },
-		URLOpener:   func(string) error { return nil },
+		// The configuration is passed to the load rather than published to the
+		// process, through the load a user's invocation takes.
+		LoadConfig: func() (config.AppConfig, error) { return config.LoadWithOverrides(overrides) },
+		URLOpener:  func(string) error { return nil },
 	}
 	root.AddCommand(New(deps))
 	buf := new(bytes.Buffer)
@@ -29,18 +31,15 @@ func executeTestCLI(t *testing.T, args ...string) (string, error) {
 }
 
 func TestBrowseCommand(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "://bad-url")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+	repository := config.Overrides{Host: "://bad-url", ProjectKey: "PRJ", RepoSlug: "repo"}
 
-	_, err := executeTestCLI(t, "browse", "--no-browser")
+	_, err := executeTestCLI(t, repository, "browse", "--no-browser")
 	if err == nil {
 		t.Fatal("expected browse URL build validation error")
 	}
 
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	output, err := executeTestCLI(t, "browse")
+	repository.Host = "https://bitbucket.example.com"
+	output, err := executeTestCLI(t, repository, "browse")
 	if err != nil {
 		t.Fatalf("expected browse open success, got: %v", err)
 	}
@@ -97,18 +96,16 @@ func TestResolveBrowseTargetValidation(t *testing.T) {
 }
 
 func TestBrowseCommandValidationBranches(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+	repository := config.Overrides{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "repo"}
 
-	_, err := executeTestCLI(t, "browse", "--settings", "--releases")
+	_, err := executeTestCLI(t, repository, "browse", "--settings", "--releases")
 	if err == nil {
 		t.Fatal("expected mutually exclusive settings/releases validation error")
 	}
 
-	t.Setenv("BB_REQUEST_TIMEOUT", "not-a-duration")
-	_, err = executeTestCLI(t, "browse")
+	notADuration := "not-a-duration"
+	repository.RequestTimeout = &notADuration
+	_, err = executeTestCLI(t, repository, "browse")
 	if err == nil {
 		t.Fatal("expected load config validation error")
 	}
