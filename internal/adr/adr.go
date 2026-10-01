@@ -12,13 +12,13 @@
 //
 // The number and the title are the only structure. Everything a record decides
 // and why is one piece of prose, and the alternatives it turned down are the
-// one part kept apart, because they are history that stops a rejected idea
-// coming back, and the guards that read a record's rule skip them.
+// one part kept apart, because they stop a rejected idea coming back, and the
+// guards that read a record's rule skip them.
 //
-// A record may open with a quoted line naming the records that replace or
-// change it. That line is a remnant of the YAML records, whose status and link
-// fields it carries, and goes when the record is rewritten to state the rule
-// that holds.
+// A record states the rule as it holds now, so it carries no status and no
+// line naming the records that replaced or changed it: a record that no longer
+// holds is changed or deleted, and how it came to be is in git. Parse refuses a
+// record that opens with a quoted line, which is where such a line went.
 package adr
 
 import (
@@ -44,12 +44,7 @@ type Record struct {
 	// Number and Title are what the record's heading says.
 	Number int
 	Title  string
-	// Standing is the quoted line naming the records that replace or change
-	// this one, without its "> ". Empty for a record that states the rule
-	// on its own.
-	Standing string
-	// Body is the prose after the heading and the standing line, up to the
-	// alternatives.
+	// Body is the prose after the heading, up to the alternatives.
 	Body string
 	// NotChosen is the list of alternatives, without its heading.
 	NotChosen string
@@ -59,12 +54,6 @@ var (
 	fileName = regexp.MustCompile(`^([0-9]{3})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$`)
 	heading  = regexp.MustCompile(`^# ADR-([0-9]{3}): (\S.*)$`)
 )
-
-// InForce reports whether the record states a rule that holds: it is neither
-// replaced by another nor still a proposal.
-func (record Record) InForce() bool {
-	return !strings.Contains(record.Standing, "Replaced by") && !strings.Contains(record.Standing, "Proposed")
-}
 
 // Load reads every record in the directory, in number order.
 func Load(directory string) ([]Record, error) {
@@ -138,10 +127,9 @@ func Parse(path string, content []byte) (Record, error) {
 	record.NotChosen = strings.TrimSpace(notChosen)
 
 	body = strings.TrimSpace(body)
-	if strings.HasPrefix(body, "> ") {
-		standing, after, _ := strings.Cut(body, "\n\n")
-		record.Standing = strings.TrimSpace(strings.TrimPrefix(standing, "> "))
-		body = strings.TrimSpace(after)
+	if strings.HasPrefix(body, ">") {
+		return Record{}, fmt.Errorf("%s: opens with a quoted line; a record states the rule as it holds now, "+
+			"and which records replaced or changed it is in git", name)
 	}
 	if body == "" {
 		return Record{}, fmt.Errorf("%s: states no rule", name)

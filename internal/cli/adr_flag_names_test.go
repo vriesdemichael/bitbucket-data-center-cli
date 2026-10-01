@@ -43,11 +43,6 @@ var foreignFlags = map[string]bool{
 // The title and the rule are checked, because both are claims about the
 // current binary. An alternative that was not chosen may name a flag that
 // never existed; that is the point of it.
-//
-// A record with a standing line is exempt: it is either one that another
-// changed in part, or the one that changed it, and neither can say what
-// changed without naming what went away. Folding each such pair into one
-// record that states the rule as it now is ends the exemption.
 func TestADRDoesNotNameFlagsThatDoNotExist(t *testing.T) {
 	t.Parallel()
 
@@ -64,10 +59,6 @@ func TestADRDoesNotNameFlagsThatDoNotExist(t *testing.T) {
 	var offenders []string
 
 	for _, record := range records {
-		if record.Standing != "" {
-			continue
-		}
-
 		for _, text := range []string{record.Title, record.Body} {
 			for _, flag := range adrFlagPattern.FindAllString(text, -1) {
 				if known[flag] || foreignFlags[flag] {

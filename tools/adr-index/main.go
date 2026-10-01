@@ -48,32 +48,8 @@ func renderIndex(records []adr.Record) string {
 	out.WriteString("and the alternatives it turned down.\n\n")
 
 	for _, record := range records {
-		fmt.Fprintf(&out, "- [ADR-%03d: %s](%s)", record.Number, record.Title, filepath.Base(record.Path))
-		if !record.InForce() {
-			fmt.Fprintf(&out, " (%s)", strings.TrimSuffix(standingWithoutLinks(record.Standing), "."))
-		}
-		out.WriteString("\n")
+		fmt.Fprintf(&out, "- [ADR-%03d: %s](%s)\n", record.Number, record.Title, filepath.Base(record.Path))
 	}
 
 	return out.String()
-}
-
-// standingWithoutLinks keeps a standing line's words and drops its link
-// targets, which point at pages beside this one anyway.
-func standingWithoutLinks(standing string) string {
-	var out strings.Builder
-	skipping := false
-	for index := 0; index < len(standing); index++ {
-		switch {
-		case standing[index] == '[':
-		case standing[index] == ']' && index+1 < len(standing) && standing[index+1] == '(':
-			skipping = true
-		case skipping && standing[index] == ')':
-			skipping = false
-		case !skipping:
-			out.WriteByte(standing[index])
-		}
-	}
-
-	return strings.ToLower(out.String()[:1]) + out.String()[1:]
 }
