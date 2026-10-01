@@ -44,7 +44,7 @@ func TestAnUndocumentedValueIsRefusedBeforeTheRequest(t *testing.T) {
 	if err == nil {
 		t.Fatal("an undocumented value was accepted")
 	}
-	// ADR-054: the message has to name the values, or the caller has to go
+	// ADR-073: the message has to name the values, or the caller has to go
 	// and find them.
 	for _, want := range []string{"LOW", "MEDIUM", "HIGH", "severity"} {
 		if !strings.Contains(err.Error(), want) {

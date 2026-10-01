@@ -5,11 +5,11 @@ search:
 
 # ADR-032: Refactor CLI root into command packages
 
-Refactor the monolithic CLI composition in internal/cli/root.go into focused command packages under internal/cli/cmd/<domain>, keeping root.go responsible only for global flags, shared runtime wiring, and top-level command registration. Preserve command names, help text, flags, output contracts, and exit behavior.
+Commands live in packages under internal/cli/cmd, one for each top-level group, each exposing `New(Dependencies)` for the root to call. internal/cli keeps what spans the tree: the root and its global flags, the wiring each constructor receives, and the passes over the finished tree. Helpers several groups need, such as output writing and repository or pull request selection, live in shared packages under internal/cli.
 
-New and migrated command handlers should live in domain-focused packages (for example auth, repo, diff, tag, build, insights, pr, issue, admin) and expose constructors consumed by root wiring. Keep shared output and selector helpers in dedicated shared packages rather than duplicating logic. During migration, maintain backward-compatible UX and update tests to guard help/flag parity and command behavior equivalence.
+Put a new command in its group's package and hand it what it needs through Dependencies. Move a helper another group needs to a shared package rather than copying it.
 
-Splitting root command construction by domain lowers cognitive load, improves reviewability, and reduces cross-feature regression risk while preserving user-facing stability.
+Splitting construction by domain keeps a change, and its review, to the group it touches.
 
 ## Not chosen
 

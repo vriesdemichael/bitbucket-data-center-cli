@@ -9,12 +9,10 @@ import (
 //
 // bb repo delete took no positional argument, had no --yes, and let
 // applyInferredRepositoryContext fill the target from the git remote. Typed
-// with no arguments inside a checkout, it deleted that repository. ADR-054
-// used this very command as its example of one made safe by explicit flags,
-// target arguments or --dry-run, and it had none of the three.
+// with no arguments inside a checkout, it deleted that repository.
 //
-// The rule that replaces it (ADR-073): the target must be named, and --yes
-// does nothing when it is not.
+// The rule (ADR-073): the target must be named, and --yes does nothing when it
+// is not.
 func TestRepoDeleteWillNotActOnAnInferredTarget(t *testing.T) {
 	t.Parallel()
 
@@ -58,7 +56,7 @@ func TestRepoDeleteWillNotActOnAnInferredTarget(t *testing.T) {
 	}
 }
 
-// TestRepoDeleteRefusalNamesTheFlag is the half ADR-054 left unsaid.
+// TestRepoDeleteRefusalNamesTheFlag holds the refusal to ADR-073.
 //
 // Declining to prompt is not the same as proceeding: a run with nobody to ask
 // must still say which flag would have supplied the answer, or the caller

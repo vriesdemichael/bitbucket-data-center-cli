@@ -5,13 +5,8 @@ search:
 
 # ADR-036: CLI identity bb and BB namespace
 
-Standardize the public CLI identity on `bb` before first broad release. This includes command invocation, release artifact binary names, environment variable namespace, local config directory naming, and keyring service naming.
+The command, the binary and every release artifact are named `bb`, the artifacts as `bb_<version>_<platform>`. bb's own settings are environment variables prefixed `BB_`, such as `BB_REQUEST_TIMEOUT`; the variables that name the instance, the credential and the repository are `BITBUCKET_URL`, `BITBUCKET_TOKEN` and their siblings. The configuration lives in a `bb` directory under the user configuration directory, `~/.config/bb/` on Linux, and credentials are stored in the keyring under the service name `bb`.
 
-Use `bb` for command examples and command path assumptions. Use `BB_*` for CLI/runtime environment variables. Keep defaults under `~/.config/bb/` and use keyring service name `bb`. Emit the machine envelope under --json; it carries no contract name or version (ADR-064).
+Write `bb` in command examples and path assumptions. Name the variable of a new setting `BB_*`. Do not add a second name for the command, a variable or the keyring service.
 
-The project is still pre-public-release, so this is the safest window for intentional compatibility breaks that reduce long-term migration burden. Aligning names early avoids carrying legacy aliases and dual namespaces in automation and documentation.
-
-## Not chosen
-
-- **Keep bbsc primary and add bb alias**: Retains naming debt and prolongs migration complexity without user benefit pre-release.
-- **Keep BBSC_* environment variables while renaming command only**: Creates an inconsistent public contract and confusion for new users.
+One name everywhere a person or a script meets bb means automation and documentation carry no aliases and no dual namespaces.

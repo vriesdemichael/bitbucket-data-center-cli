@@ -8,7 +8,7 @@
 // documents nothing -- it invites the caller to trust a contract it does not
 // keep.
 //
-// ADR-054 requires that invalid input fail immediately, naming the allowed
+// ADR-073 requires that invalid input fail immediately, naming the allowed
 // values. That is only possible if something owns them; Register is that
 // something.
 //

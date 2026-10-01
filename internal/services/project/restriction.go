@@ -355,7 +355,7 @@ func (service *Service) DeleteRestriction(ctx context.Context, projectKey string
 }
 
 // checkRestrictionID refuses an id Bitbucket cannot route, before anything is
-// sent (ADR-054).
+// sent (ADR-073).
 //
 // The id is a path segment, and one that is not a 32-bit integer never reaches
 // the restriction resource: Bitbucket answers 404 with an empty body under a
