@@ -17,7 +17,6 @@ exists.
 | `unit-test-mock-inventory.json` | every mocked Bitbucket server left in the unit suite, and what each one assumes | `task quality:mock-inventory:update` | `task quality:mock-inventory:verify` |
 | `bitbucket-releases.json` | which Bitbucket Data Center releases bb serves and runs the live suite against | `task quality:bitbucket-releases:update` | `task quality:bitbucket-releases:verify` |
 | `generated-operation-paths.json` | which endpoint each generated operation bb calls targets | `task openapi:operation-paths` | `task openapi:operation-paths:verify` |
-| `bitbucket-error-registry.json` | every error answer a full live run provoked, and the kind bb decides from it; see below | a harvested live run | none: it is a record, not a gate |
 
 Every verify command is static analysis: they read the Cobra command tree, the live test sources,
 the OpenAPI spec, the services source, internal/compat and the versions page. None starts Bitbucket,
@@ -159,30 +158,3 @@ It writes `RELEASE_NOTES.md` and `changelog.json` into the working directory;
 delete both afterwards. `scripts/render_docs_changelog.py` turns the published
 releases into the docs changelog page, with each heading in a release's notes
 turned into a bold line.
-
-## what Bitbucket answers (`bitbucket-error-registry.json`)
-
-Every non-2xx response, and every 204, that a full live run provoked: status,
-Bitbucket's own `exceptionName`, whether a body arrived at all, and the kind bb
-decides from it today.
-
-```bash
-BB_ERROR_HARVEST=.tmp/error-harvest.jsonl go test -tags live ./tests/integration/live/
-go run ./tools/error-registry -in .tmp/error-harvest.jsonl -out docs/quality/bitbucket-error-registry.json
-```
-
-The recorder is a transport wrapper that exists only while `BB_ERROR_HARVEST`
-names a file, so a real run never opens one. It sits under
-`network.NewSafeTransport`, which both the generated client and the raw
-httpclient build on, so nothing bb sends escapes it.
-
-The published spec describes request and response shapes. It does not say which
-exception arrives with which status, whether an endpoint answers 204, or whether
-a refusal carries a body — and those are what the error taxonomy is decided
-from. This is the same argument as ADR-079 applied to error handling: a claim
-about the server is proven against the server. The registry is that proof,
-gathered by observation rather than written by hand.
-
-It is deduplicated and sorted, so re-running a suite that provokes the same
-errors produces no diff. A diff means Bitbucket answered something it had not
-answered before.

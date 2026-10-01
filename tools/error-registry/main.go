@@ -8,7 +8,18 @@
 // proven against the server; this is that proof, gathered by observation.
 //
 //	BB_ERROR_HARVEST=.tmp/error-harvest.jsonl go test -tags live ./tests/integration/live/
-//	go run ./tools/error-registry -in .tmp/error-harvest.jsonl -out docs/quality/bitbucket-error-registry.json
+//	go run ./tools/error-registry -in .tmp/error-harvest.jsonl
+//
+// The recorder is a transport wrapper that exists only while BB_ERROR_HARVEST
+// names a file, so a real run never opens one. It sits under
+// network.NewSafeTransport, which both the generated client and the raw
+// httpclient build on, so nothing bb sends escapes it.
+//
+// The registry lives beside the live suite, tests/integration/live/
+// bitbucket-error-registry.json, because it is evidence from a run of it: it
+// can only be refreshed against a Bitbucket instance, so it is not a quality
+// baseline. Only the kind column is derived from bb, and
+// TestTheRegistryShowsTheKindBBDecides holds that to bb's mapping.
 //
 // The registry is deduplicated and sorted, so re-running a suite that provokes
 // the same errors produces no diff. A diff means Bitbucket answered something
@@ -98,7 +109,7 @@ func kindFor(status int, exception string) string {
 
 func main() {
 	in := flag.String("in", ".tmp/error-harvest.jsonl", "harvest file written by BB_ERROR_HARVEST")
-	out := flag.String("out", "docs/quality/bitbucket-error-registry.json", "registry to write")
+	out := flag.String("out", "tests/integration/live/bitbucket-error-registry.json", "registry to write")
 	flag.Parse()
 
 	raw, err := os.ReadFile(*in)
@@ -140,7 +151,7 @@ func main() {
 	}
 
 	report := registry{
-		Generated: "tools/error-registry from a live suite run; see docs/quality/README.md",
+		Generated: "tools/error-registry from a live suite run; see that command for how",
 		Total:     total,
 	}
 	for key, one := range grouped {
