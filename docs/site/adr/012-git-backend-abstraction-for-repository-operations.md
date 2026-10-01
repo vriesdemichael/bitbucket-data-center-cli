@@ -5,15 +5,12 @@ search:
 
 # ADR-012: Git backend abstraction for repository operations
 
-> Changed in part by [ADR-020](020-execgit-as-default-git-backend.md).
+Every git operation bb performs runs through internal/git. `git.Backend` is the interface for what a command does to a repository: clone, fetch, checkout, remotes and configuration. A command takes its backend from a factory a test can replace, so its git behaviour is tested without a repository. bb has one implementation, internal/git/execgit (ADR-020), which also carries the readers completion uses to list refs, commits and trees. Nothing else in the bb binary starts git.
 
-Define a Git backend interface for repository operations and keep the implementation pluggable so the project can support both programmatic Go-native backends and shell-based git backends.
+Add a git operation to execgit, and to `git.Backend` when a command needs it replaced in a test. Never start git from a command, a workflow or a service. A second implementation, if one is added, passes the same tests as execgit.
 
-Code against the Git backend interface from workflows. Keep backend-specific behavior isolated behind adapter packages. Add compatibility tests to ensure equivalent behavior across backends where supported.
-
-A pluggable backend avoids lock-in and lets the project balance native integration, feature completeness, and behavior parity with standard git.
+How git is run -- its environment, its timeouts, the credentials it is handed and how its failures are reported -- is decided in one package, so every command gets the same answer, and a command's own logic can be tested apart from it.
 
 ## Not chosen
 
-- **Hard dependency on wrapping the git binary everywhere**: Reduces portability and testability of git behavior.
-- **Hard dependency on one Go-native implementation**: Risks missing edge-case compatibility required by workflows.
+- **Run git from each command that needs it**: Every command would settle environment, timeout and credential handling on its own, and its tests would need a real repository.

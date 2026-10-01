@@ -5,15 +5,12 @@ search:
 
 # ADR-020: Execgit as default Git backend
 
-> Changes part of [ADR-012](012-git-backend-abstraction-for-repository-operations.md).
+bb's git backend is internal/git/execgit, which runs the system git binary. Any other backend would be opt-in, never the default. execgit runs git with the variables that point it at a repository removed from its environment, so the working directory alone decides which repository it acts on. A command that works locally is stopped once it has run for the backend's timeout; a clone or a fetch runs as long as it reports progress, and is stopped once it has reported none for that long. Credentials are handed to one invocation and never written into a repository (ADR-044), and every message execgit returns redacts them. A failed command is reported with the command it ran; one stopped for time is transient, or unknown_outcome when it changes something, and an interrupt is cancelled.
 
-Use execgit (wrapping the system git binary) as the default Git backend for repository operations. Keep the Git backend abstraction in place so alternative implementations can be added later, but they are not the default path.
+Pass git its arguments as a slice, never as a string a shell parses. Decide a command's environment, its timeout and how its failure is reported in execgit, not at the call site.
 
-Implement Git workflows against the backend interface but route default behavior through execgit. Focus on robust command execution (cwd/env handling, quoting, timeouts, stdout/stderr capture) and deterministic error classification. Treat any non-exec backend as opt-in and non-default unless a superseding decision changes this.
-
-Execgit provides the highest behavior fidelity with upstream Git and avoids feature/compatibility gaps commonly seen in pure library implementations. This aligns with the project's reliability goals and reduces risk of subtle Git semantic drift.
+Running the git binary is what the user's own git does: their configuration, credential helpers and protocol support apply, and the behaviour is upstream git's. A library reimplements git and differs from it at the edges, where a workflow notices.
 
 ## Not chosen
 
-- **Go-native Git library as default backend**: Higher risk of parity gaps and edge-case incompatibilities for enterprise workflows.
-- **No backend abstraction**: Reduces flexibility and makes future migration/testing strategies harder.
+- **A Go-native git library as the default backend**: Higher risk of parity gaps and edge-case incompatibilities, and it does not apply the configuration the user's own git does.

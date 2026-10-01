@@ -18,8 +18,8 @@ var harnessTagPattern = regexp.MustCompile(`(?m)^FROM\s+atlassian/bitbucket:(\d+
 
 // qualifiedVersionPattern matches a version literal introduced by the product
 // it belongs to: "Bitbucket 9.4.16", "Atlassian Bitbucket Data Center 9.4",
-// "Atlassian 9.4". That is how a record naturally names a release, and it is
-// the form ADR-027 used in all three of its normative fields.
+// "Atlassian 9.4". That is how a record naturally names a release, in its title
+// as much as in its rule.
 //
 // The product word has to lead, and only the product's own qualifiers may sit
 // between it and the number. That is what keeps "golangci-lint v2.6.2" and
@@ -33,15 +33,15 @@ var qualifiedVersionPattern = regexp.MustCompile(
 // narrower second rule below.
 var bareVersionPattern = regexp.MustCompile(`\b(\d+\.\d+(?:\.\d+)*)\b`)
 
-// TestRecordsInForceDoNotNameABitbucketVersion guards the drift that left
-// ADR-027 in force, naming 9.4, while the harness ran 10.4.x.
+// TestRecordsInForceDoNotNameABitbucketVersion guards against a record in
+// force that names one Bitbucket release while the harness runs another.
 //
 // ADR-042 records the Bitbucket release in exactly one place, the harness base
 // image tag, and ADR-068 keeps the vendored OpenAPI reference derived from it.
 // A record that restates a release has made a copy of that fact, and the copy
-// is what goes stale: ADR-027 sat two majors behind for two releases while
-// telling agents -- a first-class audience under ADR-003 -- to prefer a
-// version this project does not vendor.
+// is what goes stale: a record naming the API reference's release once sat two
+// majors behind the harness while telling agents -- a first-class audience
+// under ADR-003 -- to prefer a version this project does not vendor.
 //
 // Only the title and the rule are read. An alternative that was not chosen may
 // say which release it would not have worked on; that is argument, not a copy
@@ -96,7 +96,7 @@ func TestBitbucketVersionScanDetectsAStaleRecord(t *testing.T) {
 		want   bool
 	}{
 		{
-			name: "ADR-027 as it stood: a stale release in the title and the rule",
+			name: "a stale release in the title and the rule",
 			record: adr.Record{
 				Title: "Atlassian 9.4 docs as API reference source",
 				Body:  "Use Atlassian Bitbucket Data Center 9.4 REST documentation and its published OpenAPI artifact.",

@@ -5,46 +5,20 @@ search:
 
 # ADR-059: Enterprise update controls and release mirror support
 
-Provide centralized control over CLI updates for enterprise and air-gapped environments, including update disabling mechanisms and internal release mirror resolution.
+An administrator can switch `bb update` off, and point it at an internal release mirror.
 
-1. Disabling Self-Update:
-   - Runtime Policy: An administrator can disable self-updates machine-wide by setting `disable_update: true`
-     in the system configuration file or the Windows registry, or by setting `BB_DISABLE_UPDATE=1`. When disabled,
-     `bb update` terminates immediately with exit code 3 (`KindAuthorization`).
-   - The refusal message names which of the two levers fired, and the resolved policy path when it is the policy
-     file. Both are legitimate ways to administer a fleet — an environment variable reaches machines through MDM, a
-     container image, a login profile, or a CI runner definition — but they live in unrelated places, and an
-     operator re-enabling self-update has to know which one to go and change. A single shared sentence left them
-     hunting for a variable that may be set anywhere in the login chain.
-   - `update_tuf_url` is held to an absolute `https` URL. It names where Sigstore trust material comes from, and
-     `url.Parse` — which accepts a bare word, a relative path, and any scheme — was never a check on it.
-   - Compile-time Tag: Distributions packaged for managed OS repositories (e.g. RPM, DEB, Homebrew, WinGet)
-     can compile with `-tags no_self_update` to eliminate update execution entirely, reporting:
-     `self-update is disabled in this build; update bb using your system package manager`.
+`disable_update: true` in system policy -- the system configuration file or the Windows registry -- or `BB_DISABLE_UPDATE=1` makes `bb update` refuse at once with exit code 3 (authorization). The refusal names which of the two fired and, for policy, where it was set, so the operator re-enabling it knows what to change. A build with `-tags no_self_update` refuses the same way and says to update through the package manager. Every release publishes such a build of each archive, named `_noupdate`, and every package bb is published to installs it: the .deb and .rpm, Homebrew, Scoop and WinGet.
 
-2. Release Mirror Resolution:
-   - The CLI supports querying internal artifact mirrors (such as JFrog Artifactory, Sonatype Nexus, or internal
-     release caches) instead of hardcoding `https://api.github.com`.
-   - Mirror precedence: `--base-url` flag > `BB_UPDATE_BASE_URL` > Workspace Config > User Config > System Config >
-     Default (`https://api.github.com`).
-   - When querying custom mirrors, relative asset URLs are resolved under the configured base URL, as a
-     directory. An asset URL off the mirror, such as the `github.com` address a manifest copied from GitHub names,
-     is fetched from `{baseURL}/{assetName}` and never from its own address: every download goes through the mirror.
-   - A mirror serves the release without authentication: bb update sends no credentials beyond a TLS client
-     certificate. An estate whose artifact server requires a login for every download provisions bb itself, with
-     the `_noupdate` builds, rather than through `bb update`.
-   - Update URLs are https by default: the base URL, every asset URL a manifest names, and every redirect. Plain
-     HTTP needs an explicit opt-in, `bb update --allow-http` or `BB_ALLOW_HTTP_UPDATE`, and warns on every run.
-     There is no configuration file key for users, because a workspace file arrives with a cloned repository.
-     `allow_http_update` in system policy or the registry decides for every user when set: `false` refuses the
-     opt-in and any `http://` update URL with exit code 3, and `true` permits plain HTTP without one.
+The release comes from a mirror instead of `https://api.github.com` when one is configured: `--base-url`, then `BB_UPDATE_BASE_URL`, then the workspace, user and system configuration, in that order. A relative asset URL resolves under the base URL as a directory. An asset URL off the mirror, such as the github.com address a manifest copied from GitHub names, is fetched from `{baseURL}/{assetName}` and never from its own address. `bb update` sends no credentials beyond a TLS client certificate, so a mirror serves the release anonymously; an estate whose artifact server requires a login for every download installs bb itself, with the `_noupdate` builds.
 
-Do not allow `bb update` to execute when `BB_DISABLE_UPDATE=1`, `disable_update: true` is configured in system policy, or when compiled with `-tags no_self_update`. Always resolve release manifests and binary downloads via the configured release mirror base URL when specified. Hold every request the updater sends, redirects included, to the plain-HTTP permission rather than checking the base URL alone.
+Every update URL is https by default: the base URL, each asset URL and every redirect. Plain HTTP needs `bb update --allow-http` or `BB_ALLOW_HTTP_UPDATE`, and warns on every run. A user's and a workspace's configuration have no key for it, because a workspace file arrives with a cloned repository. `allow_http_update` in system policy decides for every user when it is set: `false` refuses the opt-in and any `http://` update URL with exit code 3, and `true` permits plain HTTP without one.
 
-Enterprise fleets governed by centralized endpoint management (e.g. SCCM, Intune, Munki, Jamf) mandate that software updates be deployed through approved packaging pipelines rather than individual user workstations invoking in-place binary self-updates. Furthermore, air-gapped and high-security enterprise enclaves block outbound access to `api.github.com` and `github.com`, requiring releases, checksums, and Sigstore verification bundles to be mirrored internally.
+Do not let `bb update` run under any of the three switches. Resolve the manifest and every download through the configured mirror. Hold every request the updater sends, redirects included, to the plain-HTTP permission rather than checking the base URL alone.
+
+A fleet under central endpoint management deploys software through its own packaging, not through each workstation replacing its binary, and an air-gapped enclave cannot reach api.github.com or github.com, so releases, checksums and Sigstore bundles are mirrored inside it. Who may sign what a mirror serves is ADR-063.
 
 ## Not chosen
 
-- **Remove the update command entirely for all builds**: Standalone binary users and developer workstation environments benefit greatly from automated self-updates with Sigstore cryptographic verification. Disabling update must be opt-in per organization or package distribution.
+- **Remove the update command entirely for all builds**: Standalone binary users benefit from self-update with Sigstore verification. Switching it off is the choice of an organisation or a package.
 - **Only support environment variables for mirror configuration**: Fleet administrators need system-wide configuration files to set company-wide mirrors without expecting individual developers to configure shell profiles.
-- **Gate major-version self-updates behind an extra confirmation**: Investigated as a release blocker and rejected (#465). Comparable CLIs do not gate majors, package managers cross them without asking, and bb has no background updater that could apply one unattended -- every update is a command somebody ran. A gate would have added a prompt to the one path that is already explicit while doing nothing about the paths that are not, and the enterprise control that matters is disabling update altogether, which this record already provides.
+- **Gate major-version self-updates behind an extra confirmation**: Every update is a command somebody ran, package managers cross majors without asking, and the enterprise control that matters, switching update off, already exists.
