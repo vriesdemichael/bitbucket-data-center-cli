@@ -59,8 +59,6 @@ func TestEveryDestructiveCommandRefusesWhenNobodyConfirmed(t *testing.T) {
 
 	for _, path := range paths {
 		t.Run(path, func(t *testing.T) {
-			configureUnreachableEnv(t)
-
 			fields := strings.Fields(path)
 			var attempts []string
 
@@ -86,7 +84,7 @@ func TestEveryDestructiveCommandRefusesWhenNobodyConfirmed(t *testing.T) {
 				}
 				args = append(args, required...)
 
-				_, err := executeTestCLI(t, args...)
+				_, err := executeTestCLI(t, unreachableRepository(), args...)
 				if err == nil {
 					t.Fatalf("%s ran to completion with no confirmation and no server:\n%v", path, args)
 				}

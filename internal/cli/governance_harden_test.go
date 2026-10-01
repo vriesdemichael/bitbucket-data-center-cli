@@ -3,12 +3,12 @@ package cli
 import (
 	"strings"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
 func TestReviewerConditionCreateMutualExclusionCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost")
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(config.Overrides{Host: "http://localhost"})
 	command.SetArgs([]string{"reviewer", "condition", "create", "{}", "--config-file", "some.json", "--project", "PRJ"})
 	err := command.Execute()
 	if err == nil {
@@ -20,9 +20,7 @@ func TestReviewerConditionCreateMutualExclusionCLI(t *testing.T) {
 }
 
 func TestReviewerConditionUpdateMutualExclusionCLI(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost")
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(config.Overrides{Host: "http://localhost"})
 	command.SetArgs([]string{"reviewer", "condition", "update", "1", "{}", "--config-file", "some.json", "--project", "PRJ"})
 	err := command.Execute()
 	if err == nil {

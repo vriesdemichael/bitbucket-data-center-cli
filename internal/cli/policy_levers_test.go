@@ -9,13 +9,12 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
-// writeLeverPolicy points bb at a system configuration holding the policy, and
-// at a refused port, so a command the policy lets through fails there rather
-// than at a real server.
+// writeLeverPolicy points bb at a system configuration holding the policy.
 func writeLeverPolicy(t *testing.T, body string) string {
 	t.Helper()
 
@@ -24,17 +23,17 @@ func writeLeverPolicy(t *testing.T, body string) string {
 		t.Fatalf("write system config: %v", err)
 	}
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", path)
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", testsupport.RefusedURL)
-	t.Setenv("BITBUCKET_TOKEN", "token")
 
 	return path
 }
 
 // runBB runs bb with the arguments and returns what it printed and its error.
 // It stamps a version, as main does, so --version exists.
+//
+// The host is a refused port, so a command the policy lets through fails there
+// rather than at a real server.
 func runBB(args ...string) (string, error) {
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(config.Overrides{Host: testsupport.RefusedURL, Token: "token"})
 	command.Version = "0.0.0-test"
 	output := &bytes.Buffer{}
 	command.SetOut(output)

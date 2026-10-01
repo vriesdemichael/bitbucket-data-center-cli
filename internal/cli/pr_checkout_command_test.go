@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
@@ -170,35 +171,20 @@ func newCheckoutServer(t *testing.T, sourceProject string, sourceSlug string, so
 	return server
 }
 
-func configureCheckoutEnv(t *testing.T, serverURL string) {
-	t.Helper()
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", serverURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-
-	// The whole credential fallback chain, not just the primary names.
-	// BITBUCKET_USERNAME falls back to BITBUCKET_USER and then ADMIN_USER, and
-	// the password to ADMIN_PASSWORD — so clearing only the first of each
-	// leaves a test inheriting whatever the surrounding environment has. The
-	// live CI job exports ADMIN_USER and ADMIN_PASSWORD for the harness, which
-	// is exactly where that assumption broke.
-	for _, key := range []string{
-		"BITBUCKET_USERNAME",
-		"BITBUCKET_USER",
-		"BITBUCKET_PASSWORD",
-		"ADMIN_USER",
-		"ADMIN_PASSWORD",
-	} {
-		t.Setenv(key, "")
-	}
+// checkoutRepository is PRJ/demo on serverURL with a token, the repository
+// every pull request below targets.
+//
+// The rest of the credential chain -- BITBUCKET_USER, ADMIN_USER and
+// ADMIN_PASSWORD, which the live CI job exports -- is empty because the seal
+// empties it for the whole process, not because anything here clears it.
+func checkoutRepository(serverURL string) config.Overrides {
+	return configuredRepository(serverURL, "PRJ", "demo")
 }
 
-func runCheckout(t *testing.T, args ...string) string {
+func runCheckout(t *testing.T, configured config.Overrides, args ...string) string {
 	t.Helper()
 
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(configured)
 	buffer := &bytes.Buffer{}
 	command.SetOut(buffer)
 	command.SetErr(buffer)
@@ -210,10 +196,10 @@ func runCheckout(t *testing.T, args ...string) string {
 	return buffer.String()
 }
 
-func runCheckoutExpectingError(t *testing.T, args ...string) error {
+func runCheckoutExpectingError(t *testing.T, configured config.Overrides, args ...string) error {
 	t.Helper()
 
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(configured)
 	buffer := &bytes.Buffer{}
 	command.SetOut(buffer)
 	command.SetErr(buffer)
@@ -246,7 +232,7 @@ func decodeCheckoutResult(t *testing.T, output string) map[string]any {
 // repository means a later push can go to whichever git resolves first.
 func TestPullRequestCheckoutReusesAnExistingForkRemote(t *testing.T) {
 	server := newCheckoutServer(t, "~jdoe", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 
 	stub := newCheckoutBackendStub(
 		git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"},
@@ -254,7 +240,7 @@ func TestPullRequestCheckoutReusesAnExistingForkRemote(t *testing.T) {
 	)
 	withGitBackend(t, stub)
 
-	result := decodeCheckoutResult(t, runCheckout(t, "--json", "pr", "checkout", "42"))
+	result := decodeCheckoutResult(t, runCheckout(t, configured, "--json", "pr", "checkout", "42"))
 
 	if result["remote"] != "myfork" || result["remoteAdded"] != false {
 		t.Fatalf("expected the existing fork remote to be reused, got: %v", result)
@@ -269,7 +255,7 @@ func TestPullRequestCheckoutReusesAnExistingForkRemote(t *testing.T) {
 
 func TestPullRequestCheckoutAvoidsRemoteNameCollisions(t *testing.T) {
 	server := newCheckoutServer(t, "~jdoe", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 
 	// A remote already called jdoe, pointing somewhere else entirely.
 	stub := newCheckoutBackendStub(
@@ -278,7 +264,7 @@ func TestPullRequestCheckoutAvoidsRemoteNameCollisions(t *testing.T) {
 	)
 	withGitBackend(t, stub)
 
-	result := decodeCheckoutResult(t, runCheckout(t, "--json", "pr", "checkout", "42"))
+	result := decodeCheckoutResult(t, runCheckout(t, configured, "--json", "pr", "checkout", "42"))
 
 	if result["remote"] != "jdoe-2" {
 		t.Fatalf("expected a suffixed remote name, got: %v", result)
@@ -292,14 +278,14 @@ func TestPullRequestCheckoutAvoidsRemoteNameCollisions(t *testing.T) {
 // answer, not a problem to work around. Resetting would discard local commits.
 func TestPullRequestCheckoutSurfacesADivergedBranch(t *testing.T) {
 	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 
 	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 	stub.branches["feature/login"] = true
 	stub.fastForwardErr = errors.New("fatal: Not possible to fast-forward, aborting.")
 	withGitBackend(t, stub)
 
-	err := runCheckoutExpectingError(t, "--json", "pr", "checkout", "42")
+	err := runCheckoutExpectingError(t, configured, "--json", "pr", "checkout", "42")
 	if !strings.Contains(err.Error(), "fast-forward") {
 		t.Fatalf("expected the fast-forward failure to surface, got: %v", err)
 	}
@@ -307,16 +293,16 @@ func TestPullRequestCheckoutSurfacesADivergedBranch(t *testing.T) {
 
 func TestPullRequestCheckoutRejectsBadInvocations(t *testing.T) {
 	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 
 	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 	withGitBackend(t, stub)
 
-	if err := runCheckoutExpectingError(t, "pr", "checkout", "42", "--branch", "x", "--detach"); err == nil {
+	if err := runCheckoutExpectingError(t, configured, "pr", "checkout", "42", "--branch", "x", "--detach"); err == nil {
 		t.Fatal("expected --branch and --detach to be mutually exclusive")
 	}
-	runCheckoutExpectingError(t, "pr", "checkout")
-	runCheckoutExpectingError(t, "pr", "checkout", "99")
+	runCheckoutExpectingError(t, configured, "pr", "checkout")
+	runCheckoutExpectingError(t, configured, "pr", "checkout", "99")
 }
 
 // TestPullRequestCheckoutOutsideARepository is the one place this command is
@@ -324,13 +310,13 @@ func TestPullRequestCheckoutRejectsBadInvocations(t *testing.T) {
 // working copy, so it says what to do instead of degrading.
 func TestPullRequestCheckoutOutsideARepository(t *testing.T) {
 	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 
 	stub := newCheckoutBackendStub()
 	stub.rootErr = errors.New("fatal: not a git repository (or any of the parent directories): .git")
 	withGitBackend(t, stub)
 
-	err := runCheckoutExpectingError(t, "pr", "checkout", "42")
+	err := runCheckoutExpectingError(t, configured, "pr", "checkout", "42")
 	for _, expected := range []string{"needs a git repository", "bb repo clone"} {
 		if !strings.Contains(err.Error(), expected) {
 			t.Fatalf("expected %q in the error, got: %v", expected, err)
@@ -340,12 +326,12 @@ func TestPullRequestCheckoutOutsideARepository(t *testing.T) {
 
 func TestPullRequestCheckoutHumanOutput(t *testing.T) {
 	server := newCheckoutServer(t, "~jdoe", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 
 	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 	withGitBackend(t, stub)
 
-	output := runCheckout(t, "pr", "checkout", "42")
+	output := runCheckout(t, configured, "pr", "checkout", "42")
 	for _, expected := range []string{
 		"Added remote jdoe",
 		"Checked out #42 on branch jdoe/feature/login tracking jdoe/feature/login",
@@ -409,16 +395,12 @@ func TestForkRemoteDoesNotBreakRepositoryInference(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-			t.Setenv("BITBUCKET_URL", "https://bitbucket.local:7990")
-			t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-			t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 			withGitBackend(t, inferenceGitBackendStub{repoRoot: "/tmp/repo", remotes: testCase.remotes})
 
 			command := &cobra.Command{Use: "pr list"}
 			command.Flags().String("repo", "", "")
 
-			options := &rootOptions{}
+			options := &rootOptions{runtime: config.Overrides{Host: "https://bitbucket.local:7990", ProjectKey: "TEST", RepoSlug: "demo"}}
 			err := options.applyInferredRepositoryContext(command, false)
 			if testCase.wantError {
 				if err == nil {
@@ -433,8 +415,8 @@ func TestForkRemoteDoesNotBreakRepositoryInference(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected inference to succeed, got: %v", err)
 			}
-			// The inferred context is a value now, not an environment write, so
-			// BITBUCKET_PROJECT_KEY still holds what the test set above.
+			// The inferred context is a value now, not an environment write, and
+			// it replaces the TEST the root was handed.
 			if got := options.runtime.ProjectKey; got != testCase.wantProject {
 				t.Fatalf("expected project %q, got %q", testCase.wantProject, got)
 			}

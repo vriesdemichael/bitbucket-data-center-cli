@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -252,13 +253,9 @@ func TestEveryEnumPositionalIsEnforced(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-			t.Setenv("BITBUCKET_URL", "http://bb-governance.invalid")
-			t.Setenv("BITBUCKET_TOKEN", "token")
-			t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-			t.Setenv("BITBUCKET_REPO_SLUG", "repo")
-
-			root := NewRootCommand()
+			root := NewRootCommandWithOverrides(config.Overrides{
+				Host: "http://bb-governance.invalid", Token: "token", ProjectKey: "PRJ", RepoSlug: "repo",
+			})
 			root.SetOut(io.Discard)
 			root.SetErr(io.Discard)
 			root.SetArgs(testCase.args)

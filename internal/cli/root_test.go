@@ -36,14 +36,19 @@ func (stub inferenceGitBackendStub) Version(context.Context) (string, error) {
 	return "", nil
 }
 
-func executeTestCLI(t *testing.T, args ...string) (string, error) {
+// executeTestCLI runs bb configured with what the test passes and nothing the
+// process carries (ADR-082), and returns what it printed on either stream.
+//
+// Plain output is asked for with the flag rather than NO_COLOR: publishing it
+// would rule every caller out of t.Parallel for a setting the flag already
+// carries.
+func executeTestCLI(t *testing.T, overrides config.Overrides, args ...string) (string, error) {
 	t.Helper()
-	t.Setenv("NO_COLOR", "1")
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(overrides)
 	output := &bytes.Buffer{}
 	command.SetOut(output)
 	command.SetErr(output)
-	command.SetArgs(args)
+	command.SetArgs(append([]string{"--no-color"}, args...))
 	err := command.Execute()
 	return output.String(), err
 }
@@ -129,16 +134,7 @@ func init() {
 // exits zero. The live half, what the server says about an account that does
 // exist, is TestLiveAuthIdentity.
 func TestAuthStatusSmoke(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://bitbucket.invalid")
-	t.Setenv("BITBUCKET_VERSION_TARGET", "9.4.16")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
-
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(config.Overrides{Host: "http://bitbucket.invalid"})
 	buffer := &bytes.Buffer{}
 	command.SetOut(buffer)
 	command.SetErr(buffer)
@@ -162,7 +158,6 @@ func TestAuthStatusSmoke(t *testing.T) {
 	}
 }
 func TestBranchValidationErrors(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	// Every case here is refused before a request is built, so the handler is
 	// an assertion rather than a stand-in: reaching it means validation let
 	// something through (ADR-079).
@@ -171,9 +166,7 @@ func TestBranchValidationErrors(t *testing.T) {
 	}))
 	defer server.Close()
 
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	configured := config.Overrides{Host: server.URL, ProjectKey: "TEST", RepoSlug: "demo"}
 
 	tests := []struct {
 		name         string
@@ -192,7 +185,7 @@ func TestBranchValidationErrors(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			command := NewRootCommand()
+			command := NewRootCommandWithOverrides(configured)
 			command.SetOut(&bytes.Buffer{})
 			command.SetErr(&bytes.Buffer{})
 			command.SetArgs(testCase.args)
@@ -210,10 +203,7 @@ func TestBranchValidationErrors(t *testing.T) {
 }
 
 func TestBranchCommandsFailOnInvalidRepositorySelector(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://example.local")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	configured := config.Overrides{Host: "http://example.local", ProjectKey: "TEST", RepoSlug: "demo"}
 
 	tests := []struct {
 		name string
@@ -235,7 +225,7 @@ func TestBranchCommandsFailOnInvalidRepositorySelector(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			command := NewRootCommand()
+			command := NewRootCommandWithOverrides(configured)
 			command.SetOut(&bytes.Buffer{})
 			command.SetErr(&bytes.Buffer{})
 			command.SetArgs(testCase.args)
@@ -252,10 +242,7 @@ func TestBranchCommandsFailOnInvalidRepositorySelector(t *testing.T) {
 }
 
 func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "://bad-url")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	configured := config.Overrides{Host: "://bad-url", ProjectKey: "TEST", RepoSlug: "demo"}
 
 	tests := []struct {
 		name string
@@ -277,7 +264,7 @@ func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			command := NewRootCommand()
+			command := NewRootCommandWithOverrides(configured)
 			command.SetOut(&bytes.Buffer{})
 			command.SetErr(&bytes.Buffer{})
 			command.SetArgs(testCase.args)
@@ -294,16 +281,7 @@ func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 }
 
 func TestAuthStatusJSON(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
-	t.Setenv("BITBUCKET_VERSION_TARGET", "9.4.16")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
-
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(config.Overrides{Host: "http://localhost:7990"})
 	buffer := &bytes.Buffer{}
 	command.SetOut(buffer)
 	command.SetErr(buffer)
@@ -362,11 +340,9 @@ func decodeJSONEnvelopeDataMap(t *testing.T, raw []byte) map[string]any {
 }
 
 func TestRootTransportFlagsOverrideEnvironment(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 	t.Setenv("BB_REQUEST_TIMEOUT", "not-a-duration")
 
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(config.Overrides{Host: "http://localhost:7990"})
 	buffer := &bytes.Buffer{}
 	command.SetOut(buffer)
 	command.SetErr(buffer)
@@ -379,12 +355,7 @@ func TestRootTransportFlagsOverrideEnvironment(t *testing.T) {
 }
 
 func TestDiffRefsRejectsMultipleOutputModes(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(config.Overrides{Host: "http://localhost:7990", ProjectKey: "TEST", RepoSlug: "demo"})
 	command.SetOut(&bytes.Buffer{})
 	command.SetErr(&bytes.Buffer{})
 	command.SetArgs([]string{"diff", "refs", "main", "feature", "--patch", "--stat"})
@@ -397,21 +368,13 @@ func TestDiffRefsRejectsMultipleOutputModes(t *testing.T) {
 
 // mock-inventory: transport-fault — a server answering 503 to everything is injected; the subject is that bb reports it as transient rather than as a bad request, and a live instance cannot be asked to be unavailable.
 func TestAdminHealthPropagatesHardFailure(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = writer.Write([]byte("unavailable"))
 	}))
 	defer server.Close()
 
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
-
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(config.Overrides{Host: server.URL})
 	command.SetOut(&bytes.Buffer{})
 	command.SetErr(&bytes.Buffer{})
 	command.SetArgs([]string{"admin", "health"})
@@ -440,8 +403,6 @@ func TestResolveRepositorySelector(t *testing.T) {
 	})
 
 	t.Run("rejects missing values", func(t *testing.T) {
-		t.Setenv("BITBUCKET_REPO_SLUG", "")
-
 		_, err := resolveRepositorySelector("", config.AppConfig{})
 		if err == nil {
 			t.Fatal("expected validation error")
@@ -472,10 +433,11 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		gitBackendFactory = originalFactory
 	})
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://bitbucket.local:7990")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "ENV")
-	t.Setenv("BITBUCKET_REPO_SLUG", "env-repo")
+	// The host the remotes are matched against, handed to the root rather than
+	// published: a remote on a host bb was not given is never inferred from.
+	configured := func() *rootOptions {
+		return &rootOptions{runtime: config.Overrides{Host: "http://bitbucket.local:7990"}}
+	}
 
 	t.Run("sets inferred repository and host", func(t *testing.T) {
 		gitBackendFactory = func() git.Backend {
@@ -495,7 +457,7 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 
 		// The inferred context is carried as a value now rather than published
 		// to the environment, so this asserts where it actually lands.
-		options := &rootOptions{}
+		options := configured()
 		if err := options.applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("apply inferred repository context failed: %v", err)
 		}
@@ -515,14 +477,14 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 	})
 
 	t.Run("nil command is ignored", func(t *testing.T) {
-		if err := (&rootOptions{}).applyInferredRepositoryContext(nil, false); err != nil {
+		if err := configured().applyInferredRepositoryContext(nil, false); err != nil {
 			t.Fatalf("expected nil command to be ignored, got: %v", err)
 		}
 	})
 
 	t.Run("command without repo flag is ignored", func(t *testing.T) {
 		cmd := &cobra.Command{Use: "project list"}
-		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false); err != nil {
+		if err := configured().applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("expected no error when repo flag is absent, got: %v", err)
 		}
 	})
@@ -535,8 +497,9 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 			}
 		}
 
-		t.Setenv("BITBUCKET_PROJECT_KEY", "EXPLICIT")
-		t.Setenv("BITBUCKET_REPO_SLUG", "keep")
+		options := configured()
+		options.runtime.ProjectKey = "EXPLICIT"
+		options.runtime.RepoSlug = "keep"
 
 		cmd := &cobra.Command{Use: "branch list"}
 		cmd.Flags().String("repo", "", "")
@@ -544,15 +507,24 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 			t.Fatalf("set repo flag: %v", err)
 		}
 
-		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false); err != nil {
+		if err := options.applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("expected no error for explicit repo, got: %v", err)
 		}
 
-		if got := os.Getenv("BITBUCKET_PROJECT_KEY"); got != "EXPLICIT" {
+		// Inference writes the context it found over what the root was handed,
+		// so a context that survives is one inference left alone.
+		if got := options.runtime.ProjectKey; got != "EXPLICIT" {
 			t.Fatalf("expected project key unchanged, got %q", got)
 		}
-		if got := os.Getenv("BITBUCKET_REPO_SLUG"); got != "keep" {
+		if got := options.runtime.RepoSlug; got != "keep" {
 			t.Fatalf("expected repo slug unchanged, got %q", got)
+		}
+		// Nor is anything published: the seal left these empty (#458).
+		if got := os.Getenv("BITBUCKET_PROJECT_KEY"); got != "" {
+			t.Fatalf("expected no project key in the environment, got %q", got)
+		}
+		if got := os.Getenv("BITBUCKET_REPO_SLUG"); got != "" {
+			t.Fatalf("expected no repo slug in the environment, got %q", got)
 		}
 	})
 
@@ -584,7 +556,7 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 			}
 			cmd.SetErr(&bytes.Buffer{})
 
-			options := &rootOptions{}
+			options := configured()
 			if err := options.applyInferredRepositoryContext(cmd, false); err != nil {
 				t.Fatalf("%v: apply inferred repository context failed: %v", testCase.args, err)
 			}
@@ -610,7 +582,7 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		cmd := &cobra.Command{Use: "branch list"}
 		cmd.Flags().String("repo", "", "")
 
-		err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false)
+		err := configured().applyInferredRepositoryContext(cmd, false)
 		if err == nil {
 			t.Fatal("expected ambiguity error")
 		}
@@ -627,7 +599,7 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		cmd := &cobra.Command{Use: "branch list"}
 		cmd.Flags().String("repo", "", "")
 
-		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false); err != nil {
+		if err := configured().applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("expected non-repository error to be ignored, got: %v", err)
 		}
 	})
@@ -645,8 +617,13 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		errBuffer := &bytes.Buffer{}
 		cmd.SetErr(errBuffer)
 
-		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, true); err != nil {
+		options := configured()
+		if err := options.applyInferredRepositoryContext(cmd, true); err != nil {
 			t.Fatalf("json inference failed: %v", err)
+		}
+		// Silence only counts if there was something to announce.
+		if got := options.runtime.ProjectKey; got != "PRJ" {
+			t.Fatalf("expected the repository to be inferred, got project key %q", got)
 		}
 		if errBuffer.Len() != 0 {
 			t.Fatalf("expected no banner output in json mode, got: %q", errBuffer.String())
@@ -654,11 +631,11 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 	})
 
 	t.Run("load config errors are ignored", func(t *testing.T) {
-		t.Setenv("BITBUCKET_URL", "://bad-url")
 		cmd := &cobra.Command{Use: "branch list"}
 		cmd.Flags().String("repo", "", "")
 
-		if err := (&rootOptions{}).applyInferredRepositoryContext(cmd, false); err != nil {
+		broken := &rootOptions{runtime: config.Overrides{Host: "://bad-url"}}
+		if err := broken.applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("expected load config error to be ignored, got: %v", err)
 		}
 	})
@@ -693,11 +670,6 @@ func TestMCPServeOptsOutOfAmbientRepositoryInference(t *testing.T) {
 		gitBackendFactory = originalFactory
 	})
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://bitbucket.local:7990")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "ENV")
-	t.Setenv("BITBUCKET_REPO_SLUG", "env-repo")
-
 	root := NewRootCommand()
 	serve, _, err := root.Find([]string{"ai", "mcp", "serve"})
 	if err != nil {
@@ -725,19 +697,27 @@ func TestMCPServeOptsOutOfAmbientRepositoryInference(t *testing.T) {
 
 	// A method on rootOptions here rather than the free function it was written
 	// against: this branch carries the global flags as values (ADR from the v4
-	// milestone) instead of publishing them to the environment.
-	if err := (&rootOptions{}).applyInferredRepositoryContext(serve, false); err != nil {
+	// milestone) instead of publishing them to the environment. The host is
+	// what makes the backend's remote one inference would take.
+	options := &rootOptions{runtime: config.Overrides{Host: "http://bitbucket.local:7990", ProjectKey: "KEPT", RepoSlug: "kept"}}
+	if err := options.applyInferredRepositoryContext(serve, false); err != nil {
 		t.Fatalf("apply inferred repository context failed: %v", err)
 	}
 
 	if got := serve.Flags().Lookup("repo").Value.String(); got != "" {
 		t.Fatalf("expected serve --repo to stay unset, got %q", got)
 	}
-	if got := os.Getenv("BITBUCKET_PROJECT_KEY"); got != "ENV" {
+	if got := options.runtime.ProjectKey; got != "KEPT" {
 		t.Fatalf("expected project key unchanged, got %q", got)
 	}
-	if got := os.Getenv("BITBUCKET_REPO_SLUG"); got != "env-repo" {
+	if got := options.runtime.RepoSlug; got != "kept" {
 		t.Fatalf("expected repo slug unchanged, got %q", got)
+	}
+	if got := os.Getenv("BITBUCKET_PROJECT_KEY"); got != "" {
+		t.Fatalf("expected no project key in the environment, got %q", got)
+	}
+	if got := os.Getenv("BITBUCKET_REPO_SLUG"); got != "" {
+		t.Fatalf("expected no repo slug in the environment, got %q", got)
 	}
 	if errBuffer.Len() != 0 {
 		t.Fatalf("expected no inference banner, got %q", errBuffer.String())
@@ -960,8 +940,6 @@ func TestInferenceHelperFunctions(t *testing.T) {
 	})
 
 	t.Run("infer context with no authenticated hosts returns nil", func(t *testing.T) {
-		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-		t.Setenv("BITBUCKET_URL", "")
 		gitBackendFactory = func() git.Backend {
 			return inferenceGitBackendStub{repoRoot: "/tmp/repo", remotes: []git.Remote{{Name: "origin", URL: "https://bitbucket.local/scm/PRJ/repo.git"}}}
 		}
@@ -1109,12 +1087,7 @@ func TestRootCommandPreRunPropagatesInferenceErrors(t *testing.T) {
 		}
 	}
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.local:7990")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(config.Overrides{Host: "https://bitbucket.local:7990", ProjectKey: "TEST", RepoSlug: "demo"})
 	command.SetOut(&bytes.Buffer{})
 	command.SetErr(&bytes.Buffer{})
 	command.SetArgs([]string{"branch", "list"})
@@ -1130,11 +1103,9 @@ func TestRootCommandPreRunPropagatesInferenceErrors(t *testing.T) {
 
 func TestLoadConfigAndClientAndClientFactoryBranches(t *testing.T) {
 	t.Run("load config failure", func(t *testing.T) {
-		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-		t.Setenv("BITBUCKET_URL", "://broken")
-		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+		options := &rootOptions{runtime: config.Overrides{Host: "://broken", ProjectKey: "TEST"}}
 
-		_, _, err := (&rootOptions{}).loadConfigAndClient()
+		_, _, err := options.loadConfigAndClient()
 		if err == nil {
 			t.Fatal("expected config load failure")
 		}
@@ -1156,23 +1127,18 @@ func TestLoadConfigAndClientAndClientFactoryBranches(t *testing.T) {
 
 func TestLoadQualityRepoAndServiceBranches(t *testing.T) {
 	t.Run("config load failure", func(t *testing.T) {
-		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-		t.Setenv("BITBUCKET_URL", "://broken")
-		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+		options := &rootOptions{runtime: config.Overrides{Host: "://broken", ProjectKey: "TEST"}}
 
-		_, _, err := (&rootOptions{}).loadQualityRepoAndService("")
+		_, _, err := options.loadQualityRepoAndService("")
 		if err == nil {
 			t.Fatal("expected config load failure")
 		}
 	})
 
 	t.Run("invalid selector failure", func(t *testing.T) {
-		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-		t.Setenv("BITBUCKET_URL", "http://localhost:7990")
-		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-		t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+		options := &rootOptions{runtime: config.Overrides{Host: "http://localhost:7990", ProjectKey: "TEST", RepoSlug: "demo"}}
 
-		_, _, err := (&rootOptions{}).loadQualityRepoAndService("bad-format")
+		_, _, err := options.loadQualityRepoAndService("bad-format")
 		if err == nil {
 			t.Fatal("expected repository selector validation error")
 		}
@@ -1184,12 +1150,9 @@ func TestLoadQualityRepoAndServiceBranches(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		// Resolving the repository and building the service makes no request,
 		// so this needs a URL rather than a listener.
-		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-		t.Setenv("BITBUCKET_URL", "http://bitbucket.invalid")
-		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-		t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+		options := &rootOptions{runtime: config.Overrides{Host: "http://bitbucket.invalid", ProjectKey: "TEST", RepoSlug: "demo"}}
 
-		repo, service, err := (&rootOptions{}).loadQualityRepoAndService("")
+		repo, service, err := options.loadQualityRepoAndService("")
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
@@ -1407,14 +1370,9 @@ func TestSafeUsersHelper(t *testing.T) {
 func TestAuthLoginAndLogoutJSON(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "auth-config.yaml"))
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
+	configured := config.Overrides{Host: "http://localhost:7990"}
 
-	loginCommand := NewRootCommand()
+	loginCommand := NewRootCommandWithOverrides(configured)
 	loginBuffer := &bytes.Buffer{}
 	loginCommand.SetOut(loginBuffer)
 	loginCommand.SetErr(loginBuffer)
@@ -1427,7 +1385,7 @@ func TestAuthLoginAndLogoutJSON(t *testing.T) {
 		t.Fatalf("expected token auth mode in login output, got: %s", loginBuffer.String())
 	}
 
-	logoutCommand := NewRootCommand()
+	logoutCommand := NewRootCommandWithOverrides(configured)
 	logoutBuffer := &bytes.Buffer{}
 	logoutCommand.SetOut(logoutBuffer)
 	logoutCommand.SetErr(logoutBuffer)
@@ -1443,11 +1401,6 @@ func TestAuthLoginAndLogoutJSON(t *testing.T) {
 func TestAuthLoginWithPositionalHost(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "auth-config-positional.yaml"))
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	loginCommand := NewRootCommand()
 	loginBuffer := &bytes.Buffer{}
@@ -1466,14 +1419,9 @@ func TestAuthLoginWithPositionalHost(t *testing.T) {
 func TestAuthStatusHostOverrideAndHumanLoginLogout(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "auth-config.yaml"))
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
+	configured := config.Overrides{Host: "http://localhost:7990"}
 
-	statusCommand := NewRootCommand()
+	statusCommand := NewRootCommandWithOverrides(configured)
 	statusBuffer := &bytes.Buffer{}
 	statusCommand.SetOut(statusBuffer)
 	statusCommand.SetErr(statusBuffer)
@@ -1485,7 +1433,7 @@ func TestAuthStatusHostOverrideAndHumanLoginLogout(t *testing.T) {
 		t.Fatalf("expected overridden host in status output, got: %s", statusBuffer.String())
 	}
 
-	loginCommand := NewRootCommand()
+	loginCommand := NewRootCommandWithOverrides(configured)
 	loginBuffer := &bytes.Buffer{}
 	loginCommand.SetOut(loginBuffer)
 	loginCommand.SetErr(loginBuffer)
@@ -1498,7 +1446,7 @@ func TestAuthStatusHostOverrideAndHumanLoginLogout(t *testing.T) {
 		t.Fatalf("expected human login output, got: %s", loginBuffer.String())
 	}
 
-	logoutCommand := NewRootCommand()
+	logoutCommand := NewRootCommandWithOverrides(configured)
 	logoutBuffer := &bytes.Buffer{}
 	logoutCommand.SetOut(logoutBuffer)
 	logoutCommand.SetErr(logoutBuffer)
@@ -1512,9 +1460,9 @@ func TestAuthStatusHostOverrideAndHumanLoginLogout(t *testing.T) {
 }
 
 func TestAuthTokenURLCommand(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
+	configured := config.Overrides{Host: "http://localhost:7990"}
 
-	human := NewRootCommand()
+	human := NewRootCommandWithOverrides(configured)
 	humanBuffer := &bytes.Buffer{}
 	human.SetOut(humanBuffer)
 	human.SetErr(humanBuffer)
@@ -1526,7 +1474,7 @@ func TestAuthTokenURLCommand(t *testing.T) {
 		t.Fatalf("expected PAT URL in human output, got: %s", humanBuffer.String())
 	}
 
-	jsonCmd := NewRootCommand()
+	jsonCmd := NewRootCommandWithOverrides(configured)
 	jsonBuffer := &bytes.Buffer{}
 	jsonCmd.SetOut(jsonBuffer)
 	jsonCmd.SetErr(jsonBuffer)
@@ -1599,10 +1547,7 @@ func TestResolveRepositoryReferenceWrappers(t *testing.T) {
 }
 
 func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+	configured := config.Overrides{Host: "http://localhost:7990", ProjectKey: "TEST", RepoSlug: "demo"}
 
 	tests := []struct {
 		name string
@@ -1618,7 +1563,7 @@ func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			command := NewRootCommand()
+			command := NewRootCommandWithOverrides(configured)
 			command.SetOut(&bytes.Buffer{})
 			command.SetErr(&bytes.Buffer{})
 			command.SetArgs(testCase.args)
@@ -1638,13 +1583,9 @@ func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
 // diff-pull-request command, which both `bb diff pr` and `bb pr diff` use.
 func TestDiffPullRequestRejectsBadInvocations(t *testing.T) {
 	t.Run("conflicting output modes", func(t *testing.T) {
-		t.Setenv("BITBUCKET_URL", "https://bitbucket.example.invalid")
-		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-		t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-		t.Setenv("BITBUCKET_TOKEN", "token")
-		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-
-		command := NewRootCommand()
+		command := NewRootCommandWithOverrides(config.Overrides{
+			Host: "https://bitbucket.example.invalid", ProjectKey: "TEST", RepoSlug: "demo", Token: "token",
+		})
 		buffer := &bytes.Buffer{}
 		command.SetOut(buffer)
 		command.SetErr(buffer)
@@ -1656,13 +1597,7 @@ func TestDiffPullRequestRejectsBadInvocations(t *testing.T) {
 	})
 
 	t.Run("no repository context", func(t *testing.T) {
-		t.Setenv("BITBUCKET_URL", "https://bitbucket.example.invalid")
-		t.Setenv("BITBUCKET_PROJECT_KEY", "")
-		t.Setenv("BITBUCKET_REPO_SLUG", "")
-		t.Setenv("BITBUCKET_TOKEN", "token")
-		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-
-		command := NewRootCommand()
+		command := NewRootCommandWithOverrides(config.Overrides{Host: "https://bitbucket.example.invalid", Token: "token"})
 		buffer := &bytes.Buffer{}
 		command.SetOut(buffer)
 		command.SetErr(buffer)

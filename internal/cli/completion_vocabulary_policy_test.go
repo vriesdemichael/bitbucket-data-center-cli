@@ -272,11 +272,10 @@ func completeWith(t *testing.T, words ...string) []string {
 func runCommand(t *testing.T, args ...string) string {
 	t.Helper()
 
-	// No stored configuration and no instance: everything these tests complete
-	// is a fixed vocabulary, and a source that reached for a host would be
-	// answering a different question.
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-
+	// No stored configuration and no instance, which is what the seal leaves
+	// a root built with nothing: everything these tests complete is a fixed
+	// vocabulary, and a source that reached for a host would be answering a
+	// different question.
 	command := NewRootCommand()
 	output := &bytes.Buffer{}
 	command.SetOut(output)

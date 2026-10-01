@@ -69,8 +69,6 @@ func completeOffline(t *testing.T, words ...string) ([]string, int) {
 // TestAnUnreachableInstanceCompletesNothingAndOffersNoFiles is the behaviour
 // every server-backed slot shares.
 func TestAnUnreachableInstanceCompletesNothingAndOffersNoFiles(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-
 	for _, words := range [][]string{
 		{"pr", "merge", "--repo", "PRJ/nothing", ""},
 		{"branch", "delete", "--repo", "PRJ/nothing", ""},
@@ -99,8 +97,6 @@ func TestAnUnreachableInstanceCompletesNothingAndOffersNoFiles(t *testing.T) {
 // machine's own must answer whether or not an instance can be reached. A
 // completion package that resolved eagerly would fail here.
 func TestValuesThatNeedNoServerStillComplete(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-
 	for _, testCase := range []struct {
 		words []string
 		want  string
@@ -132,8 +128,6 @@ func TestValuesThatNeedNoServerStillComplete(t *testing.T) {
 // take a local path, and those are the ones where the shell's own answer is
 // the right one.
 func TestASlotThatTakesAPathAsksTheShellForOne(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-
 	if _, directive := completeOffline(t, "--ca-file", ""); directive != int(cobra.ShellCompDirectiveDefault) {
 		t.Errorf("--ca-file should leave file completion to the shell, got directive %d", directive)
 	}

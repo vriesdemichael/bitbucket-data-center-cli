@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
 // captureStderr redirects os.Stderr for the duration of fn.
@@ -62,25 +64,24 @@ func writeInsecureConfig(t *testing.T, host string) string {
 // storage is a standing condition rather than a one-off event.
 func TestLoadConfigWarnsOncePerProcessAboutPlaintextStorage(t *testing.T) {
 	host := "https://warn-once.example.invalid"
+	// The stored configuration is the subject, so it is switched back on and
+	// pointed at a file of the test's own. The credential variables the CI
+	// runner exports for the live suite are already empty: the seal saw to
+	// that. BB_REQUIRE_KEYRING is not among them, and would turn the warning
+	// into a refusal.
 	t.Setenv("BB_CONFIG_PATH", writeInsecureConfig(t, host))
-	t.Setenv("BITBUCKET_URL", host)
-	// ADMIN_USER and ADMIN_PASSWORD are set on the CI runner for the live suite
-	// and leak into the unit run, so every auth variable has to be cleared for
-	// this to test what it claims to.
-	for _, key := range []string{
-		"BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD",
-		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
-	} {
-		t.Setenv(key, "")
-	}
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+	t.Setenv("BB_REQUIRE_KEYRING", "")
 
 	// The once is package state; reset it so this test does not depend on
 	// whether some earlier test already consumed it.
 	insecureStorageWarningOnce = sync.Once{}
 	t.Cleanup(func() { insecureStorageWarningOnce = sync.Once{} })
 
+	configured := config.Overrides{Host: host}
+
 	output := captureStderr(t, func() {
-		cfg, err := (&rootOptions{}).loadConfig()
+		cfg, err := (&rootOptions{runtime: configured}).loadConfig()
 		if err != nil {
 			t.Fatalf("loadConfig failed: %v", err)
 		}
@@ -89,7 +90,7 @@ func TestLoadConfigWarnsOncePerProcessAboutPlaintextStorage(t *testing.T) {
 		}
 
 		// A second load in the same process must stay quiet.
-		if _, err := (&rootOptions{}).loadConfig(); err != nil {
+		if _, err := (&rootOptions{runtime: configured}).loadConfig(); err != nil {
 			t.Fatalf("second loadConfig failed: %v", err)
 		}
 	})
