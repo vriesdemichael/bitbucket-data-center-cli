@@ -60,6 +60,13 @@ var orderedSections = []string{
 // the reader and anything that tells them what changed.
 const collapseLedgerAbove = 40
 
+// maxBodyLength is the longest body GitHub accepts for a release. v5.0.0 came
+// to 141,931 characters and GitHub refused it after the tag was pushed, so the
+// tag stood with no release behind it. This tool runs before the tag step, so
+// refusing here stops a release that cannot publish before it leaves anything
+// behind. Counted in bytes, which is never fewer than GitHub's characters.
+const maxBodyLength = 125000
+
 // entry is one commit as the changelog reports it. The field order is the key
 // order in changelog.json.
 type entry struct {
@@ -175,6 +182,10 @@ func render(config settings, commits []cc.Commit) (markdown string, data payload
 		lines = append(lines, "Initial release changes.", "")
 	}
 
+	// Each bullet names its commit by the bare short SHA. GitHub links one to the
+	// commit in a release body, and scripts/render_docs_changelog.py does the same
+	// for the docs page. A written-out link cost 120 characters a bullet, which
+	// was 60,600 of the 141,931 that v5.0.0 came to.
 	if len(breaking) > 0 {
 		lines = append(lines, "### ⚠ Breaking Changes")
 		for _, item := range breaking {
@@ -182,7 +193,7 @@ func render(config settings, commits []cc.Commit) (markdown string, data payload
 			if item.BreakingNote != nil && *item.BreakingNote != "" {
 				note = " — " + *item.BreakingNote
 			}
-			lines = append(lines, fmt.Sprintf("- %s ([%s](%s))%s", item.Description, item.ShortSHA, item.URL, note))
+			lines = append(lines, fmt.Sprintf("- %s (%s)%s", item.Description, item.ShortSHA, note))
 		}
 		lines = append(lines, "")
 	}
@@ -204,7 +215,7 @@ func render(config settings, commits []cc.Commit) (markdown string, data payload
 			if item.Scope != nil && *item.Scope != "" {
 				described = *item.Scope + ": " + item.Description
 			}
-			lines = append(lines, fmt.Sprintf("- %s ([%s](%s))", described, item.ShortSHA, item.URL))
+			lines = append(lines, fmt.Sprintf("- %s (%s)", described, item.ShortSHA))
 		}
 		lines = append(lines, "")
 	}
@@ -214,6 +225,10 @@ func render(config settings, commits []cc.Commit) (markdown string, data payload
 	}
 
 	markdown = strings.TrimRight(strings.Join(lines, "\n"), " \t\n\r\v\f") + "\n"
+
+	if len(markdown) > maxBodyLength {
+		return "", payload{}, fmt.Errorf("the body is %d bytes and GitHub accepts at most %d for a release", len(markdown), maxBodyLength)
+	}
 
 	return markdown, payload{
 		Version:         config.version,

@@ -57,13 +57,13 @@ func TestRenderWritesTheWholeBody(t *testing.T) {
 		"Compare: [v3.4.5...v3.5.0](" + repositoryURL + "/compare/v3.4.5...v3.5.0)",
 		"",
 		"### Features",
-		"- auth: read the token from stdin ([0000000](" + repositoryURL + "/commit/0000000000000000000000000000000000000001))",
+		"- auth: read the token from stdin (0000000)",
 		"",
 		"### Fixes",
-		"- repair the paging guard ([0000000](" + repositoryURL + "/commit/0000000000000000000000000000000000000002))",
+		"- repair the paging guard (0000000)",
 		"",
 		"### Chores",
-		"- tidy the makefile ([0000000](" + repositoryURL + "/commit/0000000000000000000000000000000000000003))",
+		"- tidy the makefile (0000000)",
 		"",
 	}, "\n")
 
@@ -84,7 +84,7 @@ func TestRenderPutsBreakingChangesAboveTheLedgerWithTheirNotes(t *testing.T) {
 		t.Fatalf("render: %v", err)
 	}
 
-	if !strings.Contains(markdown, "### ⚠ Breaking Changes\n- retire --token ([0000000]") {
+	if !strings.Contains(markdown, "### ⚠ Breaking Changes\n- retire --token (0000000)") {
 		t.Errorf("the breaking section is missing or misshapen:\n%s", markdown)
 	}
 	if !strings.Contains(markdown, " — --token is gone; read it from stdin.") {
@@ -171,6 +171,44 @@ func TestRenderCollapsesTheLedgerOnlyOnceItIsLong(t *testing.T) {
 	}
 	if !strings.Contains(overThreshold, fmt.Sprintf("<summary>All %d changes</summary>", collapseLedgerAbove+1)) {
 		t.Errorf("the summary should count the changes:\n%s", overThreshold)
+	}
+}
+
+// GitHub refuses a release body over its limit, and only after the tag is
+// pushed. Refusing here is what stops the release before the tag step, so the
+// boundary is checked on both sides: a body of exactly the limit renders, one
+// byte more is refused.
+func TestRenderRefusesABodyGitHubWouldRefuse(t *testing.T) {
+	t.Parallel()
+
+	commits := commitsFrom([2]string{"fix: a thing", ""})
+	renderWithPreamble := func(length int) (string, error) {
+		config := settingsFor(t, "v4.0.0", "v3.9.1")
+		preamble := []byte(strings.Repeat("a", length))
+		if err := os.WriteFile(filepath.Join(config.preambleDir, "v4.0.0.md"), preamble, 0o600); err != nil {
+			t.Fatalf("seed the preamble: %v", err)
+		}
+		markdown, _, err := render(config, commits)
+
+		return markdown, err
+	}
+
+	short, err := renderWithPreamble(1)
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	fill := maxBodyLength - len(short) + 1
+
+	atLimit, err := renderWithPreamble(fill)
+	if err != nil {
+		t.Fatalf("a body of exactly %d bytes should render: %v", maxBodyLength, err)
+	}
+	if len(atLimit) != maxBodyLength {
+		t.Fatalf("the boundary case is %d bytes, want %d", len(atLimit), maxBodyLength)
+	}
+
+	if _, err := renderWithPreamble(fill + 1); err == nil {
+		t.Errorf("a body of %d bytes should be refused", maxBodyLength+1)
 	}
 }
 

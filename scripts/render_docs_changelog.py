@@ -81,11 +81,22 @@ def flatten_body_headings(body: str) -> str:
     return "\n".join(flattened).strip()
 
 
-def render_release(release: dict[str, object]) -> list[str]:
+BARE_SHA = re.compile(r"\(([0-9a-f]{7,40})\)")
+
+
+def link_bare_shas(body: str, repository_url: str) -> str:
+    # tools/release-notes names each commit by its bare short SHA, which GitHub
+    # links in a release body and mkdocs does not. Older bodies carry a written
+    # link, "([abc1234](...))", which this leaves alone: a "[" follows the "(".
+    return BARE_SHA.sub(lambda match: f"([{match.group(1)}]({repository_url}/commit/{match.group(1)}))", body)
+
+
+def render_release(release: dict[str, object], repository_url: str) -> list[str]:
     tag = str(release.get("tag_name") or release.get("name") or "Unversioned release")
     url = str(release.get("html_url") or "").strip()
     published_at = str(release.get("published_at") or "").strip()
     body = flatten_body_headings(strip_duplicate_heading(tag, str(release.get("body") or "")))
+    body = link_bare_shas(body, repository_url)
 
     heading = f"## [{tag}]({url})" if url else f"## {tag}"
     lines = [heading, ""]
@@ -117,8 +128,9 @@ def main() -> None:
         lines.append("")
         lines.append(f"- GitHub Releases: {args.releases_page_url}")
     else:
+        repository_url = args.releases_page_url.rstrip("/").removesuffix("/releases")
         for release in published_releases:
-            lines.extend(render_release(release))
+            lines.extend(render_release(release, repository_url))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
