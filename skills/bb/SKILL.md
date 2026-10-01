@@ -554,14 +554,14 @@ A successful run:
 
 <!-- docs-lint: envelope-shape -->
 ```json
-{ "data": { }, "meta": { "bbVersion": "v4.1.0" } }
+{ "data": { }, "meta": { "bbVersion": "..." } }
 ```
 
 A failed run:
 
 <!-- docs-lint: envelope-shape -->
 ```json
-{ "error": { "kind": "not_found", "message": "…", "exitCode": 4 }, "meta": { "bbVersion": "v4.1.0" } }
+{ "error": { "kind": "not_found", "message": "…", "exitCode": 4 }, "meta": { "bbVersion": "..." } }
 ```
 
 There is no contract version field. The binary version is the contract version, so a breaking
