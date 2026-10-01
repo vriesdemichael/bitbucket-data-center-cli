@@ -2,6 +2,7 @@ package cli
 
 import (
 	"slices"
+	"sync"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
@@ -15,39 +16,31 @@ import (
 var (
 	metaDeclaration = result.For[jsonoutput.EnvelopeMeta](nil)
 
-	errorDeclaration = result.For[jsonoutput.EnvelopeError](map[string][]string{
-		"kind": kindNames(apperrors.Kinds()...),
+	// The error member is jsonoutput's, which the published failure schema is
+	// built from too, so --describe and that schema cannot disagree about it.
+	errorSchema = sync.OnceValue(func() *jsonschema.Schema {
+		return jsonoutput.ErrorSchema(apperrors.Kinds()...)
 	})
 
 	// Under --dry-run a top-level error means no verdict was reached, so it
 	// can only be one of these (ADR-096).
-	noVerdictErrorDeclaration = result.For[jsonoutput.EnvelopeError](map[string][]string{
-		"kind": kindNames(apperrors.KindTransient, apperrors.KindCancelled, apperrors.KindInternal, apperrors.KindUnknownOutcome),
+	noVerdictErrorSchema = sync.OnceValue(func() *jsonschema.Schema {
+		return jsonoutput.ErrorSchema(apperrors.KindTransient, apperrors.KindCancelled, apperrors.KindInternal, apperrors.KindUnknownOutcome)
 	})
 
 	previewDeclaration = result.For[jsonoutput.Preview](map[string][]string{
 		"tier":            {string(jsonoutput.TierServerValidated), string(jsonoutput.TierPreconditionsChecked), string(jsonoutput.TierPredicted)},
 		"effects.action":  {"create", "update", "delete"},
 		"effects.outcome": {string(jsonoutput.OutcomeWouldApply), string(jsonoutput.OutcomeNoOp), string(jsonoutput.OutcomeWouldFail)},
-		"error.kind":      kindNames(apperrors.Kinds()...),
 	})
 )
-
-func kindNames(kinds ...apperrors.Kind) []string {
-	names := make([]string, 0, len(kinds))
-	for _, kind := range kinds {
-		names = append(names, string(kind))
-	}
-
-	return names
-}
 
 // runDocumentSchema is the JSON Schema of the whole document a run writes:
 // data and meta, or error and meta when it fails.
 func runDocumentSchema(data *jsonschema.Schema) *jsonschema.Schema {
 	return &jsonschema.Schema{OneOf: []*jsonschema.Schema{
 		documentSchema("data", data),
-		documentSchema("error", errorDeclaration.Schema().CloneSchemas()),
+		documentSchema("error", errorSchema().CloneSchemas()),
 	}}
 }
 
@@ -57,6 +50,13 @@ func runDocumentSchema(data *jsonschema.Schema) *jsonschema.Schema {
 // report of a command in dryRunReports; any other has no data there.
 func dryRunDocumentSchema(carriesData bool, data *jsonschema.Schema) *jsonschema.Schema {
 	preview := previewDeclaration.Schema().CloneSchemas()
+
+	// The verdict's error is the same member a failed run carries, under the
+	// preview's own description of it.
+	verdict := errorSchema().CloneSchemas()
+	verdict.Description = preview.Properties["error"].Description
+	preview.Properties["error"] = verdict
+
 	if carriesData {
 		preview.Properties["data"] = data
 	} else {
@@ -66,7 +66,7 @@ func dryRunDocumentSchema(carriesData bool, data *jsonschema.Schema) *jsonschema
 
 	return &jsonschema.Schema{OneOf: []*jsonschema.Schema{
 		documentSchema("preview", preview),
-		documentSchema("error", noVerdictErrorDeclaration.Schema().CloneSchemas()),
+		documentSchema("error", noVerdictErrorSchema().CloneSchemas()),
 	}}
 }
 

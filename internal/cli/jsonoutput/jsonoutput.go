@@ -286,10 +286,13 @@ type ErrorEnvelope struct {
 // EnvelopeError is the classified failure. Kind and ExitCode come from the
 // ADR-011 taxonomy, so a script can branch on either without parsing the
 // message.
+//
+// Its schema, published and served by --describe alike, is derived from this
+// type by ErrorSchema, so the descriptions here are the ones a consumer reads.
 type EnvelopeError struct {
-	Kind     string `json:"kind" jsonschema:"What kind of failure it is."`
-	Message  string `json:"message" jsonschema:"What went wrong, for a person."`
-	ExitCode int    `json:"exitCode" jsonschema:"The exit code the kind maps to."`
+	Kind     string `json:"kind" jsonschema:"Error classification from the ADR-011 taxonomy."`
+	Message  string `json:"message" jsonschema:"Human-readable failure description, without the kind prefix shown on stderr."`
+	ExitCode int    `json:"exitCode" jsonschema:"Process exit status, determined by kind."`
 	// Details carries handles the caller needs to act on the failure, keyed by
 	// name so nobody has to scrape them out of the message: upstreamStatus and
 	// upstreamException on a failure Bitbucket answered, one entry per issue
@@ -297,7 +300,7 @@ type EnvelopeError struct {
 	//
 	// Omitted when there is nothing to carry, so its absence means the message
 	// is all there is.
-	Details map[string]string `json:"details,omitempty" jsonschema:"Handles the caller needs to act on the failure, by name."`
+	Details map[string]string `json:"details,omitempty" jsonschema:"Machine-readable fields to act or branch on, keyed by name, rather than words to match in the message. Absent when there are none. A failure Bitbucket answered carries upstreamStatus, and upstreamException when Bitbucket named the exception."`
 }
 
 // WriteError emits the failure envelope for err.

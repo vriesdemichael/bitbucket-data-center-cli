@@ -225,10 +225,11 @@ func TestErrorEnvelopeSchemaMatchesTheTaxonomy(t *testing.T) {
 
 	// Every kind's exit code must be an allowed value, or the CLI can emit an
 	// envelope that fails validation against its own published schema.
+	// The published schema is a JSON value, so its numbers are float64.
 	codeEnum := errorProperties["exitCode"].(map[string]any)["enum"].([]any)
 	allowed := map[int]bool{}
 	for _, code := range codeEnum {
-		allowed[code.(int)] = true
+		allowed[int(code.(float64))] = true
 	}
 	for _, kind := range apperrors.Kinds() {
 		code := apperrors.ExitCode(apperrors.New(kind, "", nil))
