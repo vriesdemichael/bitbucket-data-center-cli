@@ -117,7 +117,12 @@ func (options *rootOptions) applyInferredRepositoryContext(cmd *cobra.Command, a
 		return nil
 	}
 
-	cfg, err := config.LoadFromEnv()
+	// Resolved with what the root was handed and what the flags said, as
+	// completion resolves it, rather than from the environment alone: a host
+	// the caller passed is a host whose remotes are worth matching, and a
+	// --request-timeout outranking a broken BB_REQUEST_TIMEOUT should not
+	// quietly turn inference off.
+	cfg, err := config.LoadWithOverrides(options.runtime)
 	if err != nil {
 		return nil
 	}
