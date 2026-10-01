@@ -21,6 +21,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 type inferenceGitBackendStub struct {
@@ -1485,8 +1486,11 @@ func TestAuthStatusHostOverrideAndHumanLoginLogout(t *testing.T) {
 	}
 }
 
+// The configured host refuses every connection. With a credential in reach the
+// JSON half would look the caller up there to name their own token page, and a
+// unit test sends nothing to an instance this machine may be running (ADR-029).
 func TestAuthTokenURLCommand(t *testing.T) {
-	configured := config.Overrides{Host: "http://localhost:7990"}
+	configured := config.Overrides{Host: testsupport.RefusedURL}
 
 	human := NewRootCommandWithOverrides(configured)
 	humanBuffer := &bytes.Buffer{}
@@ -1510,6 +1514,9 @@ func TestAuthTokenURLCommand(t *testing.T) {
 	}
 	if !strings.Contains(jsonBuffer.String(), "/plugins/servlet/access-tokens/manage") && !strings.Contains(jsonBuffer.String(), "/plugins/servlet/access-tokens/users/") {
 		t.Fatalf("expected token_url in json output, got: %s", jsonBuffer.String())
+	}
+	if !strings.Contains(jsonBuffer.String(), testsupport.RefusedURL+"/plugins/servlet/access-tokens/") {
+		t.Fatalf("expected the token URL on the configured host, got: %s", jsonBuffer.String())
 	}
 }
 
