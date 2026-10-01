@@ -1,7 +1,9 @@
 package testsupport
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -55,6 +57,23 @@ func SealAmbientEnvironment() {
 	}
 	_ = os.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 
+	// The user's own configuration file is out of reach.
+	//
+	// An empty BB_CONFIG_PATH is not "no file": it is bb's default path, the
+	// developer's own configuration. BB_DISABLE_STORED_CONFIG keeps the
+	// configuration load from reading it, but a command that writes a login --
+	// bb auth login, the token a clone asks for -- writes there all the same,
+	// and a test that lists stored hosts reads the developer's. Pointing it at a
+	// directory of the process's own keeps every such test away from the file,
+	// whichever command it runs. A test that needs a configuration of its own
+	// still sets BB_CONFIG_PATH itself.
+	directory, err := os.MkdirTemp("", "bb-test-config-")
+	if err != nil {
+		panic(fmt.Sprintf("seal the test environment: make a configuration directory of its own: %v", err))
+	}
+	sealedConfigDirectory = directory
+	_ = os.Setenv("BB_CONFIG_PATH", filepath.Join(directory, "config.yaml"))
+
 	// No retries.
 	//
 	// The shipped policy is two, at 250ms and then 500ms, which is right for a
@@ -84,8 +103,15 @@ func SealedMain(m *testing.M) int {
 	SealAmbientEnvironment()
 	SkipWindowsMousetrap()
 
-	return m.Run()
+	code := m.Run()
+	_ = os.RemoveAll(sealedConfigDirectory)
+
+	return code
 }
+
+// sealedConfigDirectory holds the configuration file BB_CONFIG_PATH names in a
+// sealed process.
+var sealedConfigDirectory string
 
 // SkipWindowsMousetrap stops cobra checking whether the binary was launched
 // from Explorer.
