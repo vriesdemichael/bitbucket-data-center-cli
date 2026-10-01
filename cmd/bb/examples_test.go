@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
 // exampleFiles are the files the examples name, with something in each that
@@ -48,11 +49,6 @@ var examplesThatNeedACheckout = map[string]bool{
 // stopped before it has not.
 func TestEveryExampleIsAnInvocationBBAccepts(t *testing.T) {
 	sealEnvironment(t)
-
-	// A host and a credential, so a command gets as far as its own arguments:
-	// with neither, every one stops at the missing host and proves nothing.
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_TOKEN", "not-a-token")
 
 	home, err := os.Getwd()
 	if err != nil {
@@ -185,6 +181,12 @@ func commandsWithExamples(root *cobra.Command) []*cobra.Command {
 	return found
 }
 
+// configuredForDryRun is a host and a credential, so a command gets as far as
+// its own arguments: with neither, every one stops at the missing host and
+// proves nothing. Passed to the root command rather than published to the
+// process (ADR-082).
+var configuredForDryRun = config.Overrides{Host: "https://bitbucket.example.com", Token: "not-a-token"}
+
 // dryRunKind runs one invocation under --dry-run --json and returns the kind of
 // failure it ended in, or "" when it ended in none, with what it printed.
 func dryRunKind(t *testing.T, invocation []string) (string, string) {
@@ -197,7 +199,7 @@ func dryRunKind(t *testing.T, invocation []string) (string, string) {
 	}
 
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
-	root := cli.NewRootCommand()
+	root := cli.NewRootCommandWithOverrides(configuredForDryRun)
 	root.SetArgs(args)
 	root.SetErr(stderr)
 	// What an example pipes in: a secret, a file's content, git's request.
