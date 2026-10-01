@@ -67,9 +67,9 @@ func TestCommentHelpers(t *testing.T) {
 }
 
 // TestResolveCommentTargetRequiresExactlyOneContext moved here from
-// internal/cli, where it exercised a copy of this function left behind by the
-// ADR-032 modularization. The copy had no callers; this one has four, and had
-// no test of its own.
+// internal/cli, where it exercised a copy of this function left behind when the
+// commands moved into their own packages. The copy had no callers; this one has
+// four, and had no test of its own.
 func TestResolveCommentTargetRequiresExactlyOneContext(t *testing.T) {
 	t.Parallel()
 
