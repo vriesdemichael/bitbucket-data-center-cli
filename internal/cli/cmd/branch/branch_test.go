@@ -32,12 +32,12 @@ func newMockBranchServer(t *testing.T) *httptest.Server {
 	return server
 }
 
-func newTestDependencies(t *testing.T, serverURL string, jsonMode bool, dryRun bool) branchcmd.Dependencies {
+func newTestDependencies(serverURL string, jsonMode bool, dryRun bool) branchcmd.Dependencies {
 	cfg := config.AppConfig{
 		BitbucketURL: serverURL,
 		ProjectKey:   "PRJ",
+		RepoSlug:     "demo",
 	}
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 
 	return branchcmd.Dependencies{
 		JSONEnabled:   func() bool { return jsonMode },
@@ -126,7 +126,7 @@ func TestBranchNormalize(t *testing.T) {
 
 func TestBranchValidationErrors(t *testing.T) {
 	server := newMockBranchServer(t)
-	deps := newTestDependencies(t, server.URL, false, false)
+	deps := newTestDependencies(server.URL, false, false)
 
 	// A non-numeric restriction id is not among these. The service refuses it
 	// before anything is sent, which its own tests cover, and
