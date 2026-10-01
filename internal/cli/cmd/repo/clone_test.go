@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/interactive"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
@@ -1163,7 +1163,7 @@ func TestCloneRepositoryWithAuthFallbackPromptPathEmptyToken(t *testing.T) {
 
 	outText, err := executeTestCLIWith(t, testSetup{
 		Backend:   stub,
-		CanPrompt: func(io.Reader, io.Writer) bool { return true },
+		CanPrompt: func(interactive.Options) bool { return true },
 		Stdin:     bytes.NewBufferString("\n"),
 	}, "repo", "clone", "PRJ/demo")
 	_ = outText
@@ -1192,7 +1192,7 @@ func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
 
 	outText, err := executeTestCLIWith(t, testSetup{
 		Backend:   stub,
-		CanPrompt: func(io.Reader, io.Writer) bool { return true },
+		CanPrompt: func(interactive.Options) bool { return true },
 		Stdin:     bytes.NewBufferString("my-secret-token\n"),
 	}, "repo", "clone", "PRJ/demo")
 	if err != nil {
@@ -1206,6 +1206,59 @@ func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
 	}
 }
 
+// TestTheCloneTokenPromptHonoursNoInput: --no-input and machine output refuse
+// every prompt (ADR-072, ADR-073), the clone's token prompt included, even with
+// a person at the terminal. The clone hands both to the shared decision, as
+// every other prompt does.
+//
+// Not parallel: a prompt that is answered stores the token, and the sealed
+// environment leaves BB_CONFIG_PATH empty, which is the developer's own file.
+func TestTheCloneTokenPromptHonoursNoInput(t *testing.T) {
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.yaml"))
+
+	cases := []struct {
+		flag  string
+		given func(interactive.Options) bool
+	}{
+		{flag: "--no-input", given: func(options interactive.Options) bool { return options.Disabled }},
+		{flag: "--json", given: func(options interactive.Options) bool { return options.MachineOutput }},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.flag, func(t *testing.T) {
+			var asked []interactive.Options
+			// A person at the terminal: the shared decision refuses only for
+			// what the invocation says.
+			personAtTheTerminal := func(options interactive.Options) bool {
+				asked = append(asked, options)
+				return !options.Disabled && !options.MachineOutput
+			}
+
+			stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh failed"), nil}}
+			output, err := executeTestCLIWith(t, testSetup{
+				Host:       "https://bitbucket.example.com",
+				ProjectKey: "PRJ",
+				Backend:    stub,
+				CanPrompt:  personAtTheTerminal,
+				Stdin:      bytes.NewBufferString("typed-token\n"),
+			}, tc.flag, "repo", "clone", "PRJ/demo")
+
+			if len(asked) != 1 || !tc.given(asked[0]) {
+				t.Fatalf("the decision was not told about %s: %+v", tc.flag, asked)
+			}
+			if strings.Contains(output, "Token:") {
+				t.Fatalf("the clone prompted for a token under %s: %s", tc.flag, output)
+			}
+			if err == nil || !strings.Contains(err.Error(), "no stored HTTP credentials") {
+				t.Fatalf("expected the login-required refusal, got: %v", err)
+			}
+			if len(stub.cloneCalls) != 1 {
+				t.Fatalf("expected the SSH attempt alone, got %d clone calls", len(stub.cloneCalls))
+			}
+		})
+	}
+}
+
 // TestCanPromptForCloneLoginDefersToTheSharedDecision checks the delegation.
 //
 // os.Stdin is an *os.File but is not a terminal under `go test`, so the shared
@@ -1214,7 +1267,7 @@ func TestCloneRepositoryWithAuthFallbackPromptPathSuccess(t *testing.T) {
 func TestCanPromptForCloneLoginDefersToTheSharedDecision(t *testing.T) {
 	t.Parallel()
 
-	if canPromptForCloneLogin(os.Stdin, os.Stdout) {
+	if canPromptForCloneLogin(interactive.Options{Stdin: os.Stdin, Stdout: os.Stdout}) {
 		t.Fatal("prompting was permitted with no terminal attached")
 	}
 }

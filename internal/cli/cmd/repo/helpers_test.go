@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/interactive"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/permissionchecker"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
@@ -40,7 +41,7 @@ type testSetup struct {
 	RepoSlug   string
 
 	Backend   git.Backend
-	CanPrompt func(io.Reader, io.Writer) bool
+	CanPrompt func(interactive.Options) bool
 	// Stdin is what the command reads, for the clone paths that prompt.
 	Stdin io.Reader
 

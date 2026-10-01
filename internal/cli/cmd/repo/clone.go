@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/interactive"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -314,7 +315,7 @@ func cloneRepositoryWithAuthFallback(
 	cloneOptions git.CloneOptions,
 	backend git.Backend,
 	jsonOutput bool,
-	canPrompt func(io.Reader, io.Writer) bool,
+	canPrompt func(interactive.Options) bool,
 ) (string, error) {
 	httpCloneURL, err := resolveHTTPCloneURL(rawInput, usedURLInput, cloneHost, repo)
 	if err != nil {
@@ -364,7 +365,15 @@ func cloneRepositoryWithAuthFallback(
 		}
 	}
 
-	if jsonOutput || !canPrompt(cmd.InOrStdin(), cmd.OutOrStdout()) {
+	// --no-input and machine output reach the decision the way they reach every
+	// other prompt, through prompt.RequestFor, so either one refuses this one.
+	request := prompt.RequestFor(cmd, jsonOutput)
+	if !canPrompt(interactive.Options{
+		Stdin:         request.In,
+		Stdout:        request.Out,
+		Disabled:      request.Disabled,
+		MachineOutput: request.MachineOutput,
+	}) {
 		return "", newCloneLoginRequiredError(cloneHost, sshErr, transportMode == cloneTransportAuto)
 	}
 
@@ -471,13 +480,11 @@ func promptForCloneLogin(cmd *cobra.Command, cfg config.AppConfig, cloneHost str
 	return savedCfg, true, nil
 }
 
-// canPromptForCloneLogin defers to the shared interactivity decision.
-//
-// It used to test stdin alone, which permitted a prompt into a pipeline and is
-// weaker than the two-stream rule ADR-072 records. The decision now lives in
-// one place so a command cannot get it subtly wrong on its own.
-func canPromptForCloneLogin(input io.Reader, output io.Writer) bool {
-	return interactive.Detect(interactive.Options{Stdin: input, Stdout: output}).Allowed
+// canPromptForCloneLogin is the shared interactivity decision (ADR-072), given
+// the streams, --no-input and machine output, so the clone keeps no rule of its
+// own.
+func canPromptForCloneLogin(options interactive.Options) bool {
+	return interactive.Detect(options).Allowed
 }
 
 func readCloneToken(input io.Reader, output io.Writer) (string, error) {

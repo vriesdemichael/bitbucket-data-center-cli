@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/interactive"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/paging"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
@@ -52,7 +53,8 @@ type Dependencies struct {
 	RepositoryWasInferred func() bool
 
 	// GitBackend builds the git backend a clone runs through, and
-	// CanPromptForCloneLogin decides whether a clone may ask for credentials.
+	// CanPromptForCloneLogin decides whether a clone may ask for credentials,
+	// from the options the shared decision takes (ADR-072).
 	//
 	// Fields rather than the package-level variables they replace. Those were
 	// swapped and restored by 24 tests, which is why every test in this package
@@ -61,7 +63,7 @@ type Dependencies struct {
 	// run together, and it costs the production path nothing -- withDefaults
 	// supplies exactly what the variables held.
 	GitBackend             func() git.Backend
-	CanPromptForCloneLogin func(io.Reader, io.Writer) bool
+	CanPromptForCloneLogin func(interactive.Options) bool
 }
 
 func (deps *Dependencies) withDefaults() Dependencies {
