@@ -157,6 +157,7 @@ func TestGitCredentialDoesNotAnswerHTTPForAnHTTPSLogin(t *testing.T) {
 		t.Fatalf("write stored config: %v", err)
 	}
 	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
 	answer := func(protocol string) string {
 		cmd := newGitCredentialCommand()
@@ -176,6 +177,54 @@ func TestGitCredentialDoesNotAnswerHTTPForAnHTTPSLogin(t *testing.T) {
 	}
 	if got := answer("http"); got != "" {
 		t.Fatalf("a credential stored for https was handed to git for plain http: %q", got)
+	}
+}
+
+// TestGitCredentialAnswersNothingWithStoredConfigDisabled: BB_DISABLE_STORED_CONFIG=1
+// means no stored credential is read (environment.md), and git runs the helper
+// with the environment of whoever ran git, CI included.
+func TestGitCredentialAnswersNothingWithStoredConfigDisabled(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	stored := strings.Join([]string{
+		"hosts:",
+		"  https://bitbucket.example.com:",
+		"    url: https://bitbucket.example.com",
+		"insecure_secrets:",
+		"  https://bitbucket.example.com:",
+		"    token: stored-token",
+		"",
+	}, "\n")
+	if err := os.WriteFile(configPath, []byte(stored), 0o600); err != nil {
+		t.Fatalf("write stored config: %v", err)
+	}
+	t.Setenv("BB_CONFIG_PATH", configPath)
+
+	answer := func(args ...string) string {
+		cmd := newGitCredentialCommand()
+		var out bytes.Buffer
+		cmd.SetOut(&out)
+		cmd.SetErr(&out)
+		cmd.SetIn(strings.NewReader("protocol=https\nhost=bitbucket.example.com\n\n"))
+		cmd.SetArgs(append([]string{"get"}, args...))
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("git-credential get: %v", err)
+		}
+		return out.String()
+	}
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+	if got := answer(); !strings.Contains(got, "password=stored-token") {
+		t.Fatal("the helper does not answer with the stored config read, so the checks below prove nothing")
+	}
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	if got := answer(); got != "" {
+		t.Fatalf("the helper read a stored credential under BB_DISABLE_STORED_CONFIG=1 (%d bytes of output)", len(got))
+	}
+	// The helper line bb auth setup-git writes names the file; the variable
+	// still wins.
+	if got := answer("--config", configPath); got != "" {
+		t.Fatalf("the helper read the pinned file under BB_DISABLE_STORED_CONFIG=1 (%d bytes of output)", len(got))
 	}
 }
 
