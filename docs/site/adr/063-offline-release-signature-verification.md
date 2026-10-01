@@ -13,7 +13,7 @@ These five settings are read from system policy only: the system configuration f
 
 Never read an update trust setting from an environment variable or a command flag. Never skip the SHA256 check, including under `allow_unverified_update`. When adding a verification step to `bb update`, keep a failure to obtain trust material distinguishable from a signature that failed to verify.
 
-A mirror alone does not make `bb update` work offline while verification fetches its trust root from the Sigstore CDN. A trust root on disk removes that last network dependency and keeps full verification, and it is deployed by the same fleet push that delivers the corporate CA bundle. Each trust setting changes which signer bb accepts for a binary it is about to execute, so honouring one from the environment would hand that decision to anyone who can set a variable in a user's shell, on the most privileged code path in the CLI. Where the bytes come from is a different question from who signed them.
+A mirror alone does not make `bb update` work offline while verification fetches its trust root from the Sigstore CDN. A trust root on disk removes that last network dependency and keeps full verification, and it is deployed by the same fleet push that delivers the corporate CA bundle. Each trust setting changes which signer bb accepts for a binary it is about to execute, so honouring one from the environment would hand that decision to anyone who can set a variable in a user's shell, on the most privileged code path in the CLI.
 
 ## Not chosen
 
