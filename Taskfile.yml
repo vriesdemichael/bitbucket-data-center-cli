@@ -591,10 +591,9 @@ tasks:
     # replay every commit with new shas while next kept the originals, leaving
     # two copies of the same work.
     #
-    # Hotfixes, and Dependabot security updates merged rather than retargeted,
-    # land on main directly, so main moves ahead of next and the fast-forward
-    # stops being possible. Rebasing next onto main restores it. This says which
-    # of the two situations you are in.
+    # main takes no commit that next lacks (ADR-066), so the push is always a
+    # fast-forward. A commit on main that next lacks arrived outside the flow;
+    # this lists it and stops, and which branch to repair is a person's call.
     silent: true
     cmds:
       - git fetch --quiet origin main next
@@ -640,9 +639,8 @@ tasks:
         else
           behind=$(git rev-list --count origin/next..origin/main)
           echo "main has $behind commit(s) next does not, so the promotion is not a fast-forward." >&2
-          echo "" >&2
-          echo "Rebase next onto main first:" >&2
-          echo "  git switch next && git fetch origin && git rebase origin/main && git push --force-with-lease origin next" >&2
+          echo "main moves only by promotion, so these arrived outside the flow:" >&2
+          git log --oneline origin/next..origin/main >&2
           exit 1
         fi
 

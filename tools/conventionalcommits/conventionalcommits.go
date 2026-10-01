@@ -1,12 +1,12 @@
 // Package conventionalcommits reads commit messages the way the release
 // machinery reads them, in one place.
 //
-// Two things have to agree about a commit: the release workflow, which decides
-// from it whether a release is cut and how the version moves, and the
-// release-flow gate, which refuses a breaking change on a pull request into
-// main. Disagreement fails in the one direction the gate exists to prevent --
-// the gate saying "not breaking, allow it" while the releaser says "breaking,
-// cut a major" -- so they read this package and not their own copies (ADR-065).
+// Everything that reads a commit for a release has to agree about it: the
+// version, which decides whether a release is cut and how far the version
+// moves; the notes, which list what broke; and the deprecation check, which
+// names the removals a major would ship. Disagreement shows as a major release
+// whose notes do not say what broke, so they read this package and not their
+// own copies (ADR-065).
 //
 // They did not, before this existed. The bump detection asked whether the body
 // contained the string "BREAKING CHANGE:" anywhere; the changelog matched a

@@ -2,10 +2,9 @@
 // what the version is.
 //
 // It reads the commits since the last tag through the conventionalcommits
-// package -- the same reading the release-flow gate applies to a pull request
-// into main -- so the gate cannot allow something in that this then cuts a
-// major release from (ADR-065). Its answers go to GITHUB_OUTPUT for the rest of
-// the release workflow.
+// package -- the same reading the release notes apply -- so the notes cannot
+// leave out the breaking change this cut a major release for (ADR-065). Its
+// answers go to GITHUB_OUTPUT for the rest of the release workflow.
 package main
 
 import (

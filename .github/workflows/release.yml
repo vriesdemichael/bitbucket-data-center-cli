@@ -64,11 +64,9 @@ jobs:
           git fetch --tags --force origin
 
           # Which commits release, and what counts as breaking, live in
-          # tools/conventionalcommits -- the same package the release-flow gate
-          # reads to refuse a breaking change on a pull request into main. Two
-          # copies could disagree, and the disagreement that matters is the gate
-          # allowing something in that this then cuts a major release from
-          # (ADR-065).
+          # tools/conventionalcommits -- the same package the release notes
+          # read. Two copies could disagree, and the disagreement that matters
+          # is a major release whose notes do not say what broke (ADR-065).
           go run ./tools/release-version
 
       # A pull request into main was gated by branch protection, which requires
