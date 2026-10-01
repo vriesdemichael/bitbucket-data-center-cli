@@ -416,6 +416,10 @@ func resolveCloneHTTPAuth(cfg config.AppConfig, cloneHost string) (config.AppCon
 	// being cloned. The loose lookup answers a host it has never seen with the
 	// default host's credential, so `bb clone https://elsewhere/...` handed the
 	// user's Bitbucket token to elsewhere.
+	//
+	// Both lookups refuse a plaintext credential under the keyring requirement
+	// (ADR-047), and the refusal is returned rather than read as no credential,
+	// so the clone says why instead of asking for a token the person has.
 	storedAuth, ok, err := config.LoadStoredAuthForHostStrict(cloneHost)
 	if err != nil {
 		return config.AppConfig{}, "", false, err

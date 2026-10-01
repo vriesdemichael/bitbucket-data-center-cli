@@ -90,6 +90,91 @@ func TestLoadFromEnvRefusesPlaintextWhenKeyringRequired(t *testing.T) {
 	}
 }
 
+// TestTheStrictLookupRefusesPlaintextWhenKeyringRequired holds the requirement
+// where git's credential helper and a clone read a credential (ADR-047: it
+// holds where a credential is read). Both go through LoadStoredAuthForHostStrict
+// rather than the configuration load, and the lookup handed them the plaintext
+// fallback the load refuses.
+func TestTheStrictLookupRefusesPlaintextWhenKeyringRequired(t *testing.T) {
+	cases := []struct {
+		name    string
+		require func(t *testing.T)
+	}{
+		{
+			name:    "BB_REQUIRE_KEYRING",
+			require: func(t *testing.T) { t.Setenv("BB_REQUIRE_KEYRING", "1") },
+		},
+		{
+			name: "the require_keyring policy",
+			require: func(t *testing.T) {
+				policy := filepath.Join(t.TempDir(), "system.yaml")
+				if err := os.WriteFile(policy, []byte("require_keyring: true\n"), 0o600); err != nil {
+					t.Fatalf("write policy: %v", err)
+				}
+				t.Setenv("BB_SYSTEM_CONFIG_PATH", policy)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			clearAuthEnvironment(t)
+			host := "https://strict-plaintext.example.invalid"
+			t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
+			t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
+
+			// Without the requirement the plaintext credential is the answer, so
+			// the refusal below is the requirement's doing.
+			allowed, found, err := LoadStoredAuthForHostStrict(host)
+			if err != nil || !found || allowed.BitbucketToken != "plaintext-token" {
+				t.Fatalf("without the requirement: found=%v err=%v; the check below proves nothing", found, err)
+			}
+
+			tc.require(t)
+
+			resolved, found, err := LoadStoredAuthForHostStrict(host)
+			if err == nil {
+				t.Fatalf("the plaintext credential was handed out under the requirement: found=%v, token present=%v", found, resolved.BitbucketToken != "")
+			}
+			if found || resolved.BitbucketToken != "" {
+				t.Fatal("a refusal still returned the credential")
+			}
+			if apperrors.KindOf(err) != apperrors.KindPermanent {
+				t.Fatalf("expected permanent, got kind %q (%v)", apperrors.KindOf(err), err)
+			}
+			message := apperrors.MessageOf(err)
+			if !strings.Contains(message, "keyring") || !strings.Contains(message, host) {
+				t.Fatalf("the refusal does not say the keyring is required for %s: %s", host, message)
+			}
+			if strings.Contains(err.Error(), "plaintext-token") {
+				t.Fatalf("the refusal carries the credential: %v", err)
+			}
+		})
+	}
+}
+
+// TestTheStrictLookupKeepsAKeyringCredentialWhenKeyringRequired: the
+// requirement refuses only a secret adopted from the plaintext fallback. A
+// stale file entry beside a credential the keyring holds is not one.
+func TestTheStrictLookupKeepsAKeyringCredentialWhenKeyringRequired(t *testing.T) {
+	clearAuthEnvironment(t)
+	host := "https://strict-keyring.example.invalid"
+	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
+	t.Setenv("BB_REQUIRE_KEYRING", "1")
+
+	store := withWorkingKeyring(t)
+	store["bb/"+host+":token"] = "keyring-token"
+
+	resolved, found, err := LoadStoredAuthForHostStrict(host)
+	if err != nil {
+		t.Fatalf("a keyring credential was refused: %v", err)
+	}
+	if !found || resolved.BitbucketToken != "keyring-token" || resolved.UsedInsecureStorage {
+		t.Fatalf("expected the keyring token, got found=%v keyring=%v insecure=%v", found, resolved.BitbucketToken == "keyring-token", resolved.UsedInsecureStorage)
+	}
+}
+
 func TestLoadFromEnvAllowsEnvironmentCredentialsWhenKeyringRequired(t *testing.T) {
 	clearAuthEnvironment(t)
 	host := "https://env-wins.example.invalid"

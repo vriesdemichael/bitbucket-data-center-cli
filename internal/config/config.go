@@ -553,16 +553,8 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	}
 
 	if config.UsedInsecureStorage {
-		requireKeyring, err := RequireKeyring()
-		if err != nil {
+		if err := refuseStoredPlaintext("stored credentials for this host are held in the plaintext config fallback and keyring-backed storage is required; run 'bb auth login <host>' again with a working keyring, or supply BITBUCKET_TOKEN instead"); err != nil {
 			return AppConfig{}, err
-		}
-		if requireKeyring {
-			return AppConfig{}, apperrors.New(
-				apperrors.KindPermanent,
-				"stored credentials for this host are held in the plaintext config fallback and keyring-backed storage is required; run 'bb auth login <host>' again with a working keyring, or supply BITBUCKET_TOKEN instead",
-				nil,
-			)
 		}
 	}
 
@@ -2113,6 +2105,23 @@ func requireKeyringPolicy(requestedByFlag bool) (bool, error) {
 	return requestedByFlag || fromEnv, nil
 }
 
+// refuseStoredPlaintext applies the keyring requirement to a credential read
+// from the plaintext fallback: nil when nothing requires the keyring, and the
+// refusal, worded by the reader, when something does. A reader states the
+// remedy because the remedies differ: a command can take BITBUCKET_TOKEN in
+// place of the stored credential, and git's credential helper cannot.
+func refuseStoredPlaintext(message string) error {
+	requireKeyring, err := RequireKeyring()
+	if err != nil {
+		return err
+	}
+	if !requireKeyring {
+		return nil
+	}
+
+	return apperrors.New(apperrors.KindPermanent, message, nil)
+}
+
 // keyringUnavailableError reports a mandated keyring that could not be used.
 //
 // Classified permanent rather than transient: retrying the same command on the
@@ -2169,6 +2178,12 @@ func plaintextRefusal(requireKeyring, allowInsecureStorage bool, cause error) er
 // cloned repository's .env or .bb/config.yaml, by a URL given to `bb api`, or
 // by --host. Aliases, and a host stored over http asked for over https, are
 // matches, not fallbacks, and still resolve.
+//
+// git's credential helper and a clone read their credential here rather than
+// through LoadWithOverrides, so the keyring requirement is applied here as
+// well (ADR-047: it holds where a credential is read). A plaintext credential
+// under the requirement is an error rather than "not found", so the reader can
+// say why it has nothing.
 func LoadStoredAuthForHostStrict(runtimeURL string) (AppConfig, bool, error) {
 	stored, err := LoadStoredConfig()
 	if err != nil {
@@ -2176,6 +2191,16 @@ func LoadStoredAuthForHostStrict(runtimeURL string) (AppConfig, bool, error) {
 	}
 
 	resolved, ok := resolveStoredCredentialsStrict(stored, runtimeURL)
+	if ok && resolved.UsedInsecureStorage {
+		host := resolved.BitbucketURL
+		if err := refuseStoredPlaintext(fmt.Sprintf(
+			"the credential stored for %s is held in plaintext in the configuration file and keyring-backed storage is required; run 'bb auth login %s' again where the OS keyring works",
+			host, host,
+		)); err != nil {
+			return AppConfig{}, false, err
+		}
+	}
+
 	return resolved, ok, nil
 }
 
