@@ -24,12 +24,12 @@ func newMockCommitServer(t *testing.T) *httptest.Server {
 	return server
 }
 
-func newTestDependencies(t *testing.T, serverURL string, jsonMode bool) commitcmd.Dependencies {
+func newTestDependencies(serverURL string, jsonMode bool) commitcmd.Dependencies {
 	cfg := config.AppConfig{
 		BitbucketURL: serverURL,
 		ProjectKey:   "PRJ",
+		RepoSlug:     "demo",
 	}
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 
 	return commitcmd.Dependencies{
 		JSONEnabled: func() bool { return jsonMode },
@@ -48,7 +48,7 @@ func newTestDependencies(t *testing.T, serverURL string, jsonMode bool) commitcm
 
 func TestCommitValidationErrors(t *testing.T) {
 	server := newMockCommitServer(t)
-	deps := newTestDependencies(t, server.URL, false)
+	deps := newTestDependencies(server.URL, false)
 
 	// Invalid repo selector
 	cmd := commitcmd.New(deps)
