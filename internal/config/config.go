@@ -510,7 +510,7 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		// was ever reached.
 		stored, foundStored := resolveStoredCredentialsStrict(storedConfig, config.BitbucketURL)
 		if !foundStored && len(workspaceConfig.Hosts) > 0 {
-			stored, foundStored = resolveStoredCredentialsStrict(StoredConfig{Hosts: workspaceConfig.Hosts}, config.BitbucketURL)
+			stored, foundStored = resolveWorkspaceProfile(workspaceConfig.Hosts, config.BitbucketURL)
 		}
 		if !foundStored && len(sysConfig.Hosts) > 0 {
 			stored, foundStored = resolveStoredCredentialsStrict(sysConfig.StoredConfig(), config.BitbucketURL)
@@ -1916,6 +1916,26 @@ func matchStoredHost(stored StoredConfig, runtimeURL string) (string, StoredProf
 	}
 
 	return "", StoredProfile{}, false
+}
+
+// resolveWorkspaceProfile matches a host profile from the workspace file and
+// takes its username, and nothing that acts as the user.
+//
+// The workspace file arrives with a clone, so its author decides what it says.
+// A profile there may describe a host the repository works with, but which
+// stored secret bb releases, and which client certificate it presents, are the
+// user's own file's to decide. Reading them through a workspace profile let
+// the author key a profile to their own host with its url pointing at the
+// user's Bitbucket, or claim their host as an alias of the user's, and so
+// receive the token stored for the user's Bitbucket; or name the user's client
+// certificate for their host.
+func resolveWorkspaceProfile(hosts map[string]StoredProfile, runtimeURL string) (AppConfig, bool) {
+	_, profile, ok := matchStoredHost(StoredConfig{Hosts: hosts}, runtimeURL)
+	if !ok {
+		return AppConfig{}, false
+	}
+
+	return AppConfig{BitbucketURL: normalizeURL(profile.URL), BitbucketUsername: profile.Username}, true
 }
 
 // resolveStoredCredentialsStrict resolves credentials only for a host that is

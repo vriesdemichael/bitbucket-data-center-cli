@@ -762,6 +762,11 @@ func (r resolution) storedProfile(host string) (string, string, StoredProfile, m
 		// for a host that matches nothing would describe a run that cannot
 		// happen (ADR-086 asks the two to agree).
 		if key, profile, found := matchStoredHost(candidate.config, host); found {
+			if candidate.tier == TierWorkspace {
+				// As resolveWorkspaceProfile: a workspace profile names a
+				// username, and no secret or client certificate.
+				profile = StoredProfile{URL: profile.URL, Username: profile.Username}
+			}
 			return candidate.tier, key, profile, candidate.config.InsecureSecrets, true
 		}
 	}
@@ -776,7 +781,7 @@ func (r resolution) credentials(host string, requireKeyring bool) []DiagnosedSet
 	tier, key, profile, insecure, found := r.storedProfile(host)
 
 	var keyringToken, keyringPassword string
-	if found {
+	if found && tier != TierWorkspace {
 		keyringToken, keyringPassword = r.in.secrets(profile.URL, key)
 	}
 	stored := func(fromKeyring string, plaintext string, field string) []settingCandidate {

@@ -30,7 +30,7 @@ Some settings take fewer sources, or add one:
 |---|---|
 | Host | `--host` on a command that takes it, the host of the git checkout's remote when the repository comes from it, `BITBUCKET_URL`, then `default_host` in the workspace file, your own file and the system file. A host `allowed_hosts` does not list is refused. |
 | Repository | `--repo`, then the repository of the git checkout you are in, then `BITBUCKET_PROJECT_KEY` and `BITBUCKET_REPO_SLUG`. The workspace file's `project_key` stands in for the project. |
-| Credential | A credential in the environment: `BITBUCKET_TOKEN`, or `BITBUCKET_USERNAME` and `BITBUCKET_PASSWORD`. Otherwise the one stored for the host the command talks to, looked up in your own file, then the workspace file, then the system file. No flag takes a credential. |
+| Credential | A credential in the environment: `BITBUCKET_TOKEN`, or `BITBUCKET_USERNAME` and `BITBUCKET_PASSWORD`. Otherwise the one stored for the host the command talks to, looked up in your own file, then the system file. A host profile in the workspace file can name a username, but never a stored credential or a client certificate. No flag takes a credential. |
 | CA bundle | `--ca-file`, `BB_CA_FILE`, then the system file's `ca_file`, which is a mandate: a different bundle is refused. |
 | Release mirror | `--base-url` on `bb update`, `BB_UPDATE_BASE_URL`, then `update_base_url` in the workspace file, your own file and the system file. `bb update` reads no `.env`. |
 
@@ -73,7 +73,7 @@ ignored, and `bb doctor` names it.
 | Key | Your own | Workspace | System | What it sets |
 |---|---|---|---|---|
 | `default_host` | read | read | read | The host a command talks to when nothing earlier in the order names one. A URL, or a key of `hosts`. |
-| `hosts` | read | read | read | Servers by their URL: `url`, `aliases` (other host names the server answers to, such as its SSH host), `username`, `auth_mode` (`token` or `basic`), `client_cert` and `client_key`. |
+| `hosts` | read | read | read | Servers by their URL: `url`, `aliases` (other host names the server answers to, such as its SSH host), `username`, `auth_mode` (`token` or `basic`), `client_cert` and `client_key`. A workspace file's profile gives a host its `url` and `username` only: it never releases a stored credential, and its `client_cert` and `client_key` are ignored. |
 | `project_key` | | read | | The project a command uses when no repository names one. |
 | `insecure_secrets` | read | | read | Tokens and passwords by host, where no keyring could hold them. |
 | `update_base_url` | read | read | read | The release mirror `bb update` fetches from. |
