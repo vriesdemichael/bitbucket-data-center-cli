@@ -112,7 +112,7 @@ bb webhook delete 12 --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb webhook`](#bb-webhook):
 

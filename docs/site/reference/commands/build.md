@@ -42,7 +42,7 @@ bb build delete a1b2c3d --key ci --repo PROJ/repo
 :   Build status key
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb build`](#bb-build):
 
@@ -202,7 +202,7 @@ bb build required delete 5 --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb build`](#bb-build):
 

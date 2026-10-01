@@ -5,7 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/giturl"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 )
 
 // destructiveVerbs name a leaf command that destroys something.
@@ -61,8 +63,13 @@ func registerDestructiveConfirmations(root *cobra.Command, options *rootOptions)
 		_, asksItself := confirmsItself[path]
 
 		if destructive && !asksItself && command.RunE != nil {
+			usage := "Confirm without being asked"
+			if naming := repositoryNaming(command); naming != "" {
+				usage += "; applies only when the target is named " + naming
+			}
+
 			var confirmed bool
-			command.Flags().BoolVarP(&confirmed, "yes", "y", false, "Confirm without being asked")
+			command.Flags().BoolVarP(&confirmed, "yes", "y", false, usage)
 
 			originalRun := command.RunE
 			command.RunE = func(cmd *cobra.Command, args []string) error {
@@ -71,11 +78,13 @@ func registerDestructiveConfirmations(root *cobra.Command, options *rootOptions)
 					return originalRun(cmd, args)
 				}
 
+				naming := repositoryNaming(cmd)
 				if err := prompt.ConfirmDeleteOf(
 					cmd,
 					options.machineOutput(),
 					confirmed,
-					targetWasNamed(options),
+					targetWasNamed(cmd, args, options, naming),
+					naming,
 					destructiveTarget(cmd, args),
 				); err != nil {
 					return err
@@ -93,22 +102,69 @@ func registerDestructiveConfirmations(root *cobra.Command, options *rootOptions)
 	visit(root)
 }
 
-// targetWasNamed reports whether the caller said what to destroy, rather than
-// having part of it guessed.
+// targetWasNamed reports whether the caller wrote down, for this invocation,
+// the whole of what --yes would destroy (ADR-073). naming is what
+// repositoryNaming says names the target's repository, "" when it has none.
 //
-// It asks one question -- did bb infer a repository for this invocation -- and
-// not whether --repo was set. Inference sets --repo and marks it Changed so
-// every command can resolve a target, which silently made an inferred
-// repository count as explicit and let --yes apply to the one you happened to
-// be standing in (#472). Naming the branch does not rescue it: `bb branch
-// delete main` names the branch and infers the repository, which is how a probe
-// deleted main.
+// Only a repository can be part of a target without being written down, so a
+// target without one was named by what was typed. A scope named another way,
+// with --project, leaves no repository in the target, and a pull request's URL
+// names the repository itself: the command reads neither --repo nor the
+// environment for it. Otherwise the repository has to be named with --repo, as
+// prompt.TargetNamed decides for repo delete too: one taken from the git remote
+// or from BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG is not, and naming the
+// branch does not rescue it -- `bb branch delete main` names the branch and not
+// the repository it is in.
+func targetWasNamed(cmd *cobra.Command, args []string, options *rootOptions, naming string) bool {
+	if naming == "" || reposel.NamedInsteadOfRepo(cmd.Flags()) != "" {
+		return true
+	}
+
+	for _, arg := range args {
+		if _, _, _, _, isURL := giturl.ParseBitbucketPR(strings.TrimSpace(arg)); isURL {
+			return true
+		}
+	}
+
+	return prompt.TargetNamed(cmd, func() bool { return options.repositoryInferred })
+}
+
+// repositoryNaming is what names the repository of the target cmd destroys,
+// as the refusal of --yes offers it, or "" when the target has none.
 //
-// Keying on the flag's presence was worse than keying on inference: auth token
-// revoke carries a --repo flag it never uses, so a token could not be revoked
-// with --yes at all.
-func targetWasNamed(options *rootOptions) bool {
-	return !options.repositoryInferred
+// A command without --repo acts on no repository. Nor does one whose --repo
+// nothing but the caller fills in: auth token's picks which token, and absent
+// it acts on none. Where a flag names the scope in place of --repo, the
+// refusal offers it too, since following a remedy that named only --repo
+// would destroy something in a repository rather than in the project meant.
+func repositoryNaming(cmd *cobra.Command) string {
+	flags := flagsOf(cmd)
+	if flags.Lookup("repo") == nil || cmd.Annotations[annotationNoAmbientRepoInference] == "true" {
+		return ""
+	}
+
+	naming := "with --repo PROJECT/slug"
+	for _, name := range reposel.InsteadOfRepo(flags) {
+		naming += " or --" + name
+	}
+
+	return naming
+}
+
+// flagsOf is every flag cmd takes: its own, and those its parents hand down.
+//
+// Read without cmd.InheritedFlags, which merges the parents' flags into cmd as
+// a side effect. Cobra does that when it parses; done while the tree is still
+// being wired, it changed which flags other walks over the tree see as cmd's
+// own.
+func flagsOf(cmd *cobra.Command) *pflag.FlagSet {
+	flags := pflag.NewFlagSet(cmd.Name(), pflag.ContinueOnError)
+	flags.AddFlagSet(cmd.Flags())
+	for command := cmd; command != nil; command = command.Parent() {
+		flags.AddFlagSet(command.PersistentFlags())
+	}
+
+	return flags
 }
 
 // destructiveTarget is what the person has to type back, and what the refusal

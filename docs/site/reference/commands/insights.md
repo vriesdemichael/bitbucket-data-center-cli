@@ -83,7 +83,7 @@ bb insights annotation delete a1b2c3d lint --external-id lint-1 --repo PROJ/repo
 :   External annotation ID to delete
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb insights`](#bb-insights):
 
@@ -233,7 +233,7 @@ bb insights report delete a1b2c3d lint --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb insights`](#bb-insights):
 

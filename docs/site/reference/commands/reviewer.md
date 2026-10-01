@@ -116,7 +116,7 @@ bb reviewer condition delete 9 --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug or --project
 
 Inherited from [`bb reviewer`](#bb-reviewer):
 

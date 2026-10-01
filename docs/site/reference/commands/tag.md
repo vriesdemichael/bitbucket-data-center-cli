@@ -85,7 +85,7 @@ bb tag delete v1.2.0 --repo PROJ/repo --yes
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb tag`](#bb-tag):
 

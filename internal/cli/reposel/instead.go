@@ -28,6 +28,19 @@ func MarkInsteadOfRepo(flags *pflag.FlagSet, names ...string) {
 	}
 }
 
+// InsteadOfRepo returns the names of the flags of flags that name the scope in
+// place of --repo, given or not, so a refusal can offer them beside --repo.
+func InsteadOfRepo(flags *pflag.FlagSet) []string {
+	var names []string
+	flags.VisitAll(func(flag *pflag.Flag) {
+		if len(flag.Annotations[annotationInsteadOfRepo]) > 0 {
+			names = append(names, flag.Name)
+		}
+	})
+
+	return names
+}
+
 // NamedInsteadOfRepo returns the name of a flag given a value on this
 // invocation that names the scope in place of --repo, or "" when none was. An
 // empty value names nothing, as with --repo.

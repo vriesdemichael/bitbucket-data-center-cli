@@ -279,15 +279,9 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 			}
 
 			// A named target is the one the caller wrote down: a PROJECT/slug
-			// argument or --repo. BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG
-			// supply a repository too, but one set for every command rather
-			// than written down for this one, so it does not count as naming
-			// the repository here (ADR-073). Changed alone is not "the caller
-			// named it" either: inference sets --repo from the git remote and
-			// marks it Changed so every command can resolve a target, and --yes
-			// must not apply to the repository the caller is standing in.
-			targetExplicit := cmd.Flags().Changed("repo") &&
-				!(deps.RepositoryWasInferred != nil && deps.RepositoryWasInferred())
+			// argument, or --repo as every destructive command counts it
+			// (ADR-073).
+			targetExplicit := prompt.TargetNamed(cmd, deps.RepositoryWasInferred)
 			if len(args) == 1 {
 				// Two named targets that disagree is not something to resolve
 				// by precedence. The caller believes one of them is about to be

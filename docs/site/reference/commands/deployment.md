@@ -135,7 +135,7 @@ bb deployment delete a1b2c3d --repo PROJ/repo --key deploy-128 --env-key prod \
 :   Identify by deployment key
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb deployment`](#bb-deployment):
 
