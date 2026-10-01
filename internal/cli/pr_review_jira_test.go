@@ -72,8 +72,8 @@ func TestReviewAndJiraCommandsNeedARepository(t *testing.T) {
 		configured := config.Overrides{ProjectKey: "TEST", RepoSlug: "demo"}
 
 		for _, args := range commands {
-			if _, err := executeTestCLI(t, configured, args...); err == nil {
-				t.Errorf("%s ran without a configured Bitbucket", strings.Join(args, " "))
+			if _, err := executeTestCLI(t, configured, args...); err == nil || !strings.Contains(err.Error(), "no Bitbucket host configured") {
+				t.Errorf("%s did not refuse for want of a configured Bitbucket: %v", strings.Join(args, " "), err)
 			}
 		}
 	})

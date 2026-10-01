@@ -10,6 +10,7 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
@@ -165,8 +166,8 @@ func TestPRCreateSurfacesDefaultReviewerFailure(t *testing.T) {
 			"--default-reviewers",
 			"--no-codeowners",
 		)
-		if err == nil {
-			t.Fatal("expected an error when --default-reviewers was requested explicitly")
+		if !apperrors.IsKind(err, apperrors.KindTransient) || !strings.Contains(err.Error(), "upstream exploded") {
+			t.Fatalf("expected the failed default reviewer lookup to fail the command, got: %v", err)
 		}
 	})
 
@@ -231,8 +232,8 @@ func TestPRCreateSurfacesCodeOwnersFailure(t *testing.T) {
 			"--no-default-reviewers",
 			"--codeowners",
 		)
-		if err == nil {
-			t.Fatal("expected an error when --codeowners was requested explicitly")
+		if !apperrors.IsKind(err, apperrors.KindTransient) || !strings.Contains(err.Error(), "upstream exploded") {
+			t.Fatalf("expected the failed code owners lookup to fail the command, got: %v", err)
 		}
 	})
 }

@@ -168,19 +168,23 @@ func TestBranchValidationErrors(t *testing.T) {
 
 	configured := config.Overrides{Host: server.URL, ProjectKey: "TEST", RepoSlug: "demo"}
 
+	// want is what the refusal says. A configuration bb could not load fails
+	// these with exit code 2 as well, so the code alone cannot tell the
+	// argument being refused from the command never getting that far.
 	tests := []struct {
 		name         string
 		args         []string
 		expectAppErr bool
+		want         string
 	}{
-		{name: "branch create missing start-point", args: []string{"branch", "create", "feature/demo"}, expectAppErr: false},
-		{name: "branch restriction create missing matcher-id", args: []string{"branch", "restriction", "create", "--type", "read-only"}, expectAppErr: false},
-		{name: "branch restriction create access key overflow", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main", "--access-key-id", "2147483648"}, expectAppErr: true},
-		{name: "branch restriction list invalid matcher-type", args: []string{"branch", "restriction", "list", "--matcher-type", "invalid"}, expectAppErr: true},
-		{name: "branch restriction update access key overflow", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main", "--access-key-id", "2147483648"}, expectAppErr: true},
-		{name: "branch restriction update invalid id", args: []string{"branch", "restriction", "update", "bad", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}, expectAppErr: true},
-		{name: "branch default set blank", args: []string{"branch", "default", "set", " "}, expectAppErr: true},
-		{name: "branch model update blank", args: []string{"branch", "model", "update", " "}, expectAppErr: true},
+		{name: "branch create missing start-point", args: []string{"branch", "create", "feature/demo"}, expectAppErr: false, want: "start-point"},
+		{name: "branch restriction create missing matcher-id", args: []string{"branch", "restriction", "create", "--type", "read-only"}, expectAppErr: false, want: "matcher-id"},
+		{name: "branch restriction create access key overflow", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main", "--access-key-id", "2147483648"}, expectAppErr: true, want: "access-key-id must be between 0 and 2147483647"},
+		{name: "branch restriction list invalid matcher-type", args: []string{"branch", "restriction", "list", "--matcher-type", "invalid"}, expectAppErr: true, want: `invalid argument "invalid" for "--matcher-type"`},
+		{name: "branch restriction update access key overflow", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main", "--access-key-id", "2147483648"}, expectAppErr: true, want: "access-key-id must be between 0 and 2147483647"},
+		{name: "branch restriction update invalid id", args: []string{"branch", "restriction", "update", "bad", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}, expectAppErr: true, want: `restriction id must be a number no larger than 2147483647, got "bad"`},
+		{name: "branch default set blank", args: []string{"branch", "default", "set", " "}, expectAppErr: true, want: "default branch name is required"},
+		{name: "branch model update blank", args: []string{"branch", "model", "update", " "}, expectAppErr: true, want: "default branch name is required"},
 	}
 
 	for _, testCase := range tests {
@@ -198,10 +202,15 @@ func TestBranchValidationErrors(t *testing.T) {
 			if testCase.expectAppErr && exitCode != 2 && exitCode != 4 {
 				t.Fatalf("expected validation exit code 2 or 4, got %d (%v)", exitCode, err)
 			}
+			if !strings.Contains(err.Error(), testCase.want) {
+				t.Fatalf("expected the refusal to say %q, got: %v", testCase.want, err)
+			}
 		})
 	}
 }
 
+// The deletes carry --yes so that the selector, rather than the confirmation
+// nobody is there to give, is what they are refused for.
 func TestBranchCommandsFailOnInvalidRepositorySelector(t *testing.T) {
 	configured := config.Overrides{Host: "http://example.local", ProjectKey: "TEST", RepoSlug: "demo"}
 
@@ -211,7 +220,7 @@ func TestBranchCommandsFailOnInvalidRepositorySelector(t *testing.T) {
 	}{
 		{name: "list invalid repo selector", args: []string{"branch", "list", "--repo", "bad"}},
 		{name: "create invalid repo selector", args: []string{"branch", "create", "feature/demo", "--start-point", "abc", "--repo", "bad"}},
-		{name: "delete invalid repo selector", args: []string{"branch", "delete", "feature/demo", "--repo", "bad"}},
+		{name: "delete invalid repo selector", args: []string{"branch", "delete", "feature/demo", "--repo", "bad", "--yes"}},
 		{name: "default get invalid repo selector", args: []string{"branch", "default", "get", "--repo", "bad"}},
 		{name: "default set invalid repo selector", args: []string{"branch", "default", "set", "main", "--repo", "bad"}},
 		{name: "model inspect invalid repo selector", args: []string{"branch", "model", "inspect", "abc", "--repo", "bad"}},
@@ -220,7 +229,7 @@ func TestBranchCommandsFailOnInvalidRepositorySelector(t *testing.T) {
 		{name: "restriction get invalid repo selector", args: []string{"branch", "restriction", "get", "12", "--repo", "bad"}},
 		{name: "restriction create invalid repo selector", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main", "--repo", "bad"}},
 		{name: "restriction update invalid repo selector", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main", "--repo", "bad"}},
-		{name: "restriction delete invalid repo selector", args: []string{"branch", "restriction", "delete", "12", "--repo", "bad"}},
+		{name: "restriction delete invalid repo selector", args: []string{"branch", "restriction", "delete", "12", "--repo", "bad", "--yes"}},
 	}
 
 	for _, testCase := range tests {
@@ -237,10 +246,15 @@ func TestBranchCommandsFailOnInvalidRepositorySelector(t *testing.T) {
 			if apperrors.ExitCode(err) != 2 {
 				t.Fatalf("expected validation exit code 2 for args %v, got %d (%v)", testCase.args, apperrors.ExitCode(err), err)
 			}
+			if !strings.Contains(err.Error(), "invalid repository selector") {
+				t.Fatalf("expected the selector to be what was refused for args %v, got: %v", testCase.args, err)
+			}
 		})
 	}
 }
 
+// The deletes carry --yes so that the configuration, rather than the
+// confirmation nobody is there to give, is what they are refused for.
 func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 	configured := config.Overrides{Host: "://bad-url", ProjectKey: "TEST", RepoSlug: "demo"}
 
@@ -250,7 +264,7 @@ func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 	}{
 		{name: "list invalid config", args: []string{"branch", "list"}},
 		{name: "create invalid config", args: []string{"branch", "create", "feature/demo", "--start-point", "abc"}},
-		{name: "delete invalid config", args: []string{"branch", "delete", "feature/demo"}},
+		{name: "delete invalid config", args: []string{"branch", "delete", "feature/demo", "--yes"}},
 		{name: "default get invalid config", args: []string{"branch", "default", "get"}},
 		{name: "default set invalid config", args: []string{"branch", "default", "set", "main"}},
 		{name: "model inspect invalid config", args: []string{"branch", "model", "inspect", "abc"}},
@@ -259,7 +273,7 @@ func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 		{name: "restriction get invalid config", args: []string{"branch", "restriction", "get", "12"}},
 		{name: "restriction create invalid config", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main"}},
 		{name: "restriction update invalid config", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}},
-		{name: "restriction delete invalid config", args: []string{"branch", "restriction", "delete", "12"}},
+		{name: "restriction delete invalid config", args: []string{"branch", "restriction", "delete", "12", "--yes"}},
 	}
 
 	for _, testCase := range tests {
@@ -275,6 +289,9 @@ func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 			}
 			if apperrors.ExitCode(err) != 2 {
 				t.Fatalf("expected validation exit code 2 for args %v, got %d (%v)", testCase.args, apperrors.ExitCode(err), err)
+			}
+			if !strings.Contains(err.Error(), `is invalid: "://bad-url"`) {
+				t.Fatalf("expected the malformed host to be what was refused for args %v, got: %v", testCase.args, err)
 			}
 		})
 	}
@@ -361,8 +378,8 @@ func TestDiffRefsRejectsMultipleOutputModes(t *testing.T) {
 	command.SetArgs([]string{"diff", "refs", "main", "feature", "--patch", "--stat"})
 
 	err := command.Execute()
-	if err == nil {
-		t.Fatal("expected validation error")
+	if err == nil || !strings.Contains(err.Error(), "only one of --patch, --stat, or --name-only may be specified") {
+		t.Fatalf("expected --patch with --stat to be refused, got: %v", err)
 	}
 }
 
@@ -588,6 +605,9 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 		}
 		if apperrors.ExitCode(err) != 2 {
 			t.Fatalf("expected validation exit code, got %d (%v)", apperrors.ExitCode(err), err)
+		}
+		if !strings.Contains(err.Error(), "ambiguous git remote context") {
+			t.Fatalf("expected the two remotes to be what was refused, got: %v", err)
 		}
 	})
 
@@ -1099,6 +1119,9 @@ func TestRootCommandPreRunPropagatesInferenceErrors(t *testing.T) {
 	if apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected validation exit code, got %d (%v)", apperrors.ExitCode(err), err)
 	}
+	if !strings.Contains(err.Error(), "ambiguous git remote context") {
+		t.Fatalf("expected the two remotes to be what was refused, got: %v", err)
+	}
 }
 
 func TestLoadConfigAndClientAndClientFactoryBranches(t *testing.T) {
@@ -1106,8 +1129,8 @@ func TestLoadConfigAndClientAndClientFactoryBranches(t *testing.T) {
 		options := &rootOptions{runtime: config.Overrides{Host: "://broken", ProjectKey: "TEST"}}
 
 		_, _, err := options.loadConfigAndClient()
-		if err == nil {
-			t.Fatal("expected config load failure")
+		if err == nil || !strings.Contains(err.Error(), `is invalid: "://broken"`) {
+			t.Fatalf("expected the malformed host to fail the load, got: %v", err)
 		}
 	})
 
@@ -1130,8 +1153,8 @@ func TestLoadQualityRepoAndServiceBranches(t *testing.T) {
 		options := &rootOptions{runtime: config.Overrides{Host: "://broken", ProjectKey: "TEST"}}
 
 		_, _, err := options.loadQualityRepoAndService("")
-		if err == nil {
-			t.Fatal("expected config load failure")
+		if err == nil || !strings.Contains(err.Error(), `is invalid: "://broken"`) {
+			t.Fatalf("expected the malformed host to fail the load, got: %v", err)
 		}
 	})
 
@@ -1144,6 +1167,9 @@ func TestLoadQualityRepoAndServiceBranches(t *testing.T) {
 		}
 		if apperrors.ExitCode(err) != 2 {
 			t.Fatalf("expected validation exit code 2, got %d (%v)", apperrors.ExitCode(err), err)
+		}
+		if !strings.Contains(err.Error(), "--repo must be in PROJECT/slug format") {
+			t.Fatalf("expected the selector to be what was refused, got: %v", err)
 		}
 	})
 
@@ -1549,16 +1575,20 @@ func TestResolveRepositoryReferenceWrappers(t *testing.T) {
 func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
 	configured := config.Overrides{Host: "http://localhost:7990", ProjectKey: "TEST", RepoSlug: "demo"}
 
+	// want is what the refusal says: a configuration bb could not load exits 2
+	// as well. The delete carries --yes so that its id, rather than the
+	// confirmation nobody is there to give, is what it is refused for.
 	tests := []struct {
 		name string
 		args []string
+		want string
 	}{
-		{name: "build required create invalid json", args: []string{"build", "required", "create", "--body", "{"}},
-		{name: "build required update invalid id", args: []string{"build", "required", "update", "bad", "--body", `{"buildParentKeys":["ci"]}`}},
-		{name: "build required update invalid json", args: []string{"build", "required", "update", "12", "--body", "{"}},
-		{name: "build required delete invalid id", args: []string{"build", "required", "delete", "bad"}},
-		{name: "insights report set invalid json", args: []string{"insights", "report", "set", "abc", "lint", "--body", "{"}},
-		{name: "insights annotation add invalid json", args: []string{"insights", "annotation", "add", "abc", "lint", "--body", "{"}},
+		{name: "build required create invalid json", args: []string{"build", "required", "create", "--body", "{"}, want: "invalid JSON for --body"},
+		{name: "build required update invalid id", args: []string{"build", "required", "update", "bad", "--body", `{"buildParentKeys":["ci"]}`}, want: "merge check id must be a valid integer"},
+		{name: "build required update invalid json", args: []string{"build", "required", "update", "12", "--body", "{"}, want: "invalid JSON for --body"},
+		{name: "build required delete invalid id", args: []string{"build", "required", "delete", "bad", "--yes"}, want: "merge check id must be a valid integer"},
+		{name: "insights report set invalid json", args: []string{"insights", "report", "set", "abc", "lint", "--body", "{"}, want: "invalid JSON for --body"},
+		{name: "insights annotation add invalid json", args: []string{"insights", "annotation", "add", "abc", "lint", "--body", "{"}, want: "invalid JSON for --body (expected array of annotations)"},
 	}
 
 	for _, testCase := range tests {
@@ -1574,6 +1604,9 @@ func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
 			}
 			if apperrors.ExitCode(err) != 2 {
 				t.Fatalf("expected validation exit code 2, got %d (%v)", apperrors.ExitCode(err), err)
+			}
+			if !strings.Contains(err.Error(), testCase.want) {
+				t.Fatalf("expected the refusal to say %q, got: %v", testCase.want, err)
 			}
 		})
 	}
@@ -1591,8 +1624,8 @@ func TestDiffPullRequestRejectsBadInvocations(t *testing.T) {
 		command.SetErr(buffer)
 		command.SetArgs([]string{"pr", "diff", "1", "--patch", "--stat"})
 
-		if err := command.Execute(); err == nil {
-			t.Fatal("expected --patch with --stat to be rejected")
+		if err := command.Execute(); err == nil || !strings.Contains(err.Error(), "only one of --patch, --stat, or --name-only may be specified") {
+			t.Fatalf("expected --patch with --stat to be rejected, got: %v", err)
 		}
 	})
 
@@ -1603,8 +1636,8 @@ func TestDiffPullRequestRejectsBadInvocations(t *testing.T) {
 		command.SetErr(buffer)
 		command.SetArgs([]string{"pr", "diff", "1"})
 
-		if err := command.Execute(); err == nil {
-			t.Fatal("expected a missing repository to be rejected")
+		if err := command.Execute(); err == nil || !strings.Contains(err.Error(), "repository is required") {
+			t.Fatalf("expected a missing repository to be rejected, got: %v", err)
 		}
 	})
 }

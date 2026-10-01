@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
 func TestCommitCLICommandValidation(t *testing.T) {
@@ -43,8 +44,8 @@ func TestCommitListJiraError(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	_, err := executeTestCLI(t, configuredRepository(server.URL, "PRJ", "repo"), "commit", "list", "--jira", "ISSUE-123")
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	if !apperrors.IsKind(err, apperrors.KindTransient) || !strings.Contains(err.Error(), "jira error") {
+		t.Fatalf("expected the server's 500 to reach the caller as transient, got: %v", err)
 	}
 }
 

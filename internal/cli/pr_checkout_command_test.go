@@ -298,11 +298,17 @@ func TestPullRequestCheckoutRejectsBadInvocations(t *testing.T) {
 	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 	withGitBackend(t, stub)
 
-	if err := runCheckoutExpectingError(t, configured, "pr", "checkout", "42", "--branch", "x", "--detach"); err == nil {
-		t.Fatal("expected --branch and --detach to be mutually exclusive")
+	if err := runCheckoutExpectingError(t, configured, "pr", "checkout", "42", "--branch", "x", "--detach"); !strings.Contains(err.Error(), "[branch detach]") {
+		t.Fatalf("expected --branch and --detach to be mutually exclusive, got: %v", err)
 	}
-	runCheckoutExpectingError(t, configured, "pr", "checkout")
-	runCheckoutExpectingError(t, configured, "pr", "checkout", "99")
+	if err := runCheckoutExpectingError(t, configured, "pr", "checkout"); !strings.Contains(err.Error(), "pr checkout takes <pr-id>") {
+		t.Fatalf("expected the missing pull request to be named, got: %v", err)
+	}
+	// The server knows only #42, so this is the pull request lookup failing
+	// rather than anything before it.
+	if err := runCheckoutExpectingError(t, configured, "pr", "checkout", "99"); !apperrors.IsKind(err, apperrors.KindNotFound) {
+		t.Fatalf("expected an unknown pull request to be not found, got: %v", err)
+	}
 }
 
 // TestPullRequestCheckoutOutsideARepository is the one place this command is

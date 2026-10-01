@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -101,25 +102,27 @@ func executeInsights(t *testing.T, serverURL string, args ...string) (string, er
 	return buffer.String(), err
 }
 
+// Each case asserts what it is refused for: a configuration bb could not load
+// would fail every one of them as well.
 func TestInsightsValidationErrors(t *testing.T) {
 	server := newMockInsightsServer(t)
 
 	// Invalid body in report set
 	_, err := executeInsights(t, server.URL, "report", "set", "commit1", "report1", "--body", "invalid-json")
-	if err == nil {
-		t.Fatalf("expected error on invalid JSON report body")
+	if err == nil || !strings.Contains(err.Error(), "invalid JSON for --body") {
+		t.Fatalf("expected the report body to be refused as JSON, got: %v", err)
 	}
 
 	// Invalid body in annotation add
 	_, err = executeInsights(t, server.URL, "annotation", "add", "commit1", "report1", "--body", "invalid-json")
-	if err == nil {
-		t.Fatalf("expected error on invalid JSON annotation body")
+	if err == nil || !strings.Contains(err.Error(), "invalid JSON for --body (expected array of annotations)") {
+		t.Fatalf("expected the annotation body to be refused as JSON, got: %v", err)
 	}
 
 	// Missing required flags in annotation set
 	_, err = executeInsights(t, server.URL, "annotation", "set", "commit1", "report1", "ann1")
-	if err == nil {
-		t.Fatalf("expected error when required flags are missing in annotation set")
+	if err == nil || !strings.Contains(err.Error(), `"message", "severity" not set`) {
+		t.Fatalf("expected annotation set to name the flags it is missing, got: %v", err)
 	}
 }
 

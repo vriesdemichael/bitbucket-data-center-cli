@@ -3,6 +3,7 @@ package cli
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
@@ -133,9 +134,10 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 // These two are different: they are the CLI refusing a value, which needs no
 // server and produces no request.
 func TestFlagValuesTheseCommandsRefuse(t *testing.T) {
-	// A listener that fails the test if it is reached. The exit code asserted
-	// below is the whole point -- a command that got as far as a request would
-	// fail for the wrong reason and report a different one.
+	// A listener that fails the test if it is reached: a command that got as
+	// far as a request would fail for the wrong reason and report a different
+	// one. The message is asserted beside the exit code, because a
+	// configuration bb could not load exits 2 as well.
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(guard.Close)
 
@@ -144,10 +146,12 @@ func TestFlagValuesTheseCommandsRefuse(t *testing.T) {
 	cases := []struct {
 		name string
 		args []string
+		want string
 	}{
 		{
 			name: "webhook update --active takes a boolean",
 			args: []string{"webhook", "update", "1", "--active", "invalid"},
+			want: `invalid argument "invalid" for "--active" flag: must be one of: true, false`,
 		},
 		{
 			// Turning auto-decline on without saying after how long would
@@ -155,6 +159,7 @@ func TestFlagValuesTheseCommandsRefuse(t *testing.T) {
 			// a default nobody chose.
 			name: "auto-decline set needs an inactivity window",
 			args: []string{"repo", "settings", "auto-decline", "set", "--enabled"},
+			want: "inactivity weeks must be > 0 when enabled is true",
 		},
 	}
 
@@ -166,6 +171,9 @@ func TestFlagValuesTheseCommandsRefuse(t *testing.T) {
 			}
 			if code := apperrors.ExitCode(err); code != 2 {
 				t.Errorf("exit code = %d, want 2 (validation): %v", code, err)
+			}
+			if !strings.Contains(err.Error(), testCase.want) {
+				t.Errorf("expected the refusal to say %q, got: %v", testCase.want, err)
 			}
 		})
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -108,14 +109,14 @@ func TestPRValidationErrors(t *testing.T) {
 
 	// --unresolved with conflicting --state
 	_, err := executePr(t, server.URL, "comment", "list", "42", "--unresolved", "--state", "resolved")
-	if err == nil {
-		t.Fatalf("expected error on --unresolved with --state resolved")
+	if err == nil || !strings.Contains(err.Error(), "--unresolved cannot be combined with a --state other than open") {
+		t.Fatalf("expected --unresolved with --state resolved to be refused, got: %v", err)
 	}
 
 	// invalid state
 	_, err = executePr(t, server.URL, "comment", "list", "42", "--state", "invalid-state")
-	if err == nil {
-		t.Fatalf("expected error on invalid comment state")
+	if err == nil || !strings.Contains(err.Error(), `invalid argument "invalid-state" for "--state" flag`) {
+		t.Fatalf("expected an unknown comment state to be refused, got: %v", err)
 	}
 }
 
@@ -137,9 +138,10 @@ func TestPRValidationErrors(t *testing.T) {
 //
 // What is left is the case that never reaches a server.
 func TestPRCreateFromAForkRefusesAMalformedRepository(t *testing.T) {
-	// A listener that fails the test if it is reached. The kind asserted below
-	// is the whole point -- a command that got as far as a request would fail
-	// for a different reason and report a different kind.
+	// A listener that fails the test if it is reached: a command that got as
+	// far as a request would fail for a different reason and report a
+	// different kind. The message is asserted beside the kind, because a
+	// configuration bb could not load is a validation error too.
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(guard.Close)
 
@@ -151,6 +153,9 @@ func TestPRCreateFromAForkRefusesAMalformedRepository(t *testing.T) {
 	}
 	if kind := apperrors.KindOf(err); kind != apperrors.KindValidation {
 		t.Errorf("kind = %v, want validation", kind)
+	}
+	if !strings.Contains(err.Error(), "--from-repo must be in PROJECT/slug form") {
+		t.Errorf("expected --from-repo to be what was refused, got: %v", err)
 	}
 }
 
