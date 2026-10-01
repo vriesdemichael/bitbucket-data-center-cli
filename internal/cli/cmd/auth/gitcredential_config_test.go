@@ -181,7 +181,7 @@ func TestConfigureGitCredentialHelperWritesScopedGlobalConfig(t *testing.T) {
 	key := "credential.https://bitbucket.example.com.helper"
 	value := "!\"/usr/local/bin/bb\" auth git-credential"
 
-	if err := defaultConfigureGitCredentialHelper(context.Background(), key, value, true, false); err != nil {
+	if err := gitCredentialHelperWriter(defaultGitBackend)(context.Background(), key, value, true, false); err != nil {
 		t.Fatalf("configure helper: %v", err)
 	}
 
@@ -205,7 +205,7 @@ func TestConfigureGitCredentialHelperResetsAnInheritedHelper(t *testing.T) {
 	}
 
 	value := "!\"/usr/local/bin/bb\" auth git-credential"
-	if err := defaultConfigureGitCredentialHelper(context.Background(), key, value, true, true); err != nil {
+	if err := gitCredentialHelperWriter(defaultGitBackend)(context.Background(), key, value, true, true); err != nil {
 		t.Fatalf("configure helper with force: %v", err)
 	}
 
@@ -228,7 +228,7 @@ func TestConfigureGitCredentialHelperRefusesToClobberWithoutForce(t *testing.T) 
 		t.Fatalf("seed an existing helper: %v", err)
 	}
 
-	err := defaultConfigureGitCredentialHelper(context.Background(), key, "!bb auth git-credential", true, false)
+	err := gitCredentialHelperWriter(defaultGitBackend)(context.Background(), key, "!bb auth git-credential", true, false)
 	if err == nil {
 		t.Fatal("expected an existing helper to be preserved without --force")
 	}
@@ -249,7 +249,7 @@ func TestConfigureGitCredentialHelperIsIdempotent(t *testing.T) {
 	value := "!\"/usr/local/bin/bb\" auth git-credential"
 
 	for range 2 {
-		if err := defaultConfigureGitCredentialHelper(context.Background(), key, value, true, false); err != nil {
+		if err := gitCredentialHelperWriter(defaultGitBackend)(context.Background(), key, value, true, false); err != nil {
 			t.Fatalf("configure helper: %v", err)
 		}
 	}
@@ -271,6 +271,7 @@ func TestConfigureGitCredentialHelperLocalScopeRequiresARepository(t *testing.T)
 
 	err := configureGitCredentialHelperIn(
 		context.Background(),
+		defaultGitBackend(),
 		t.TempDir(),
 		"credential.https://bitbucket.example.com.helper",
 		"!bb auth git-credential",
@@ -296,7 +297,7 @@ func TestConfigureGitCredentialHelperWritesLocalConfig(t *testing.T) {
 	key := "credential.https://bitbucket.example.com.helper"
 	value := "!\"/usr/local/bin/bb\" auth git-credential"
 
-	if err := configureGitCredentialHelperIn(context.Background(), repository, key, value, false, false); err != nil {
+	if err := configureGitCredentialHelperIn(context.Background(), defaultGitBackend(), repository, key, value, false, false); err != nil {
 		t.Fatalf("configure helper locally: %v", err)
 	}
 
@@ -412,7 +413,7 @@ func TestDefaultConfigureGitCredentialHelperGlobalPath(t *testing.T) {
 	isolatedGitGlobalConfig(t)
 
 	key := "credential.https://bb-wrapper-fixture.invalid.helper"
-	if err := defaultConfigureGitCredentialHelper(context.Background(), key, "!bb auth git-credential", true, false); err != nil {
+	if err := gitCredentialHelperWriter(defaultGitBackend)(context.Background(), key, "!bb auth git-credential", true, false); err != nil {
 		t.Fatalf("configure helper: %v", err)
 	}
 

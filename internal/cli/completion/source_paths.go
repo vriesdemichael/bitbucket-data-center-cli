@@ -225,6 +225,7 @@ func localEntries(ctx context.Context, scope refScope, at, directory string) []e
 		return nil
 	}
 
+	// execgit's tree reader directly, for the reasons localRefs gives.
 	backend := execgit.New()
 
 	for _, ref := range checkoutRefs(at, scope.repository.RemoteName) {
