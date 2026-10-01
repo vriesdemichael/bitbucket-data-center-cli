@@ -401,7 +401,7 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		}
 	}
 
-	tlsSettings, err := resolveTLSSettings(policy, sysConfig, overrides, flagSourced)
+	tlsSettings, err := resolveTLSSettings(policy, overrides, flagSourced)
 	if err != nil {
 		return AppConfig{}, err
 	}
@@ -1415,12 +1415,16 @@ type TLSSettings struct {
 }
 
 // ResolveTLSSettings resolves the TLS configuration from the environment with
-// administrative policy and system configuration layered on top.
+// administrative policy layered on top.
 //
 // It is deliberately independent of host resolution and stored credentials, so
 // commands that run without a configured Bitbucket host — `bb update` in
 // particular — inherit the same policy as the API client instead of reading the
 // environment on their own.
+func ResolveTLSSettings() (TLSSettings, error) {
+	return ResolveTLSSettingsWith(Overrides{})
+}
+
 // ResolveTLSSettingsWith is ResolveTLSSettings for a caller that has global
 // flags to apply. bb update is the one that matters: it downloads and executes
 // a new binary, and --ca-file, --insecure-skip-verify and --client-cert have to
@@ -1431,29 +1435,15 @@ func ResolveTLSSettingsWith(overrides Overrides) (TLSSettings, error) {
 	if err != nil {
 		return TLSSettings{}, err
 	}
-	sysConfig, _ := LoadSystemConfig()
 
-	return resolveTLSSettings(policy, sysConfig, overrides, map[string]bool{})
+	return resolveTLSSettings(policy, overrides, map[string]bool{})
 }
 
-func ResolveTLSSettings() (TLSSettings, error) {
-	policy, err := LoadPolicy()
-	if err != nil {
-		return TLSSettings{}, err
-	}
-	sysConfig, _ := LoadSystemConfig()
-	return ResolveTLSSettingsFrom(policy, sysConfig)
-}
-
-// ResolveTLSSettingsFrom is ResolveTLSSettings for callers that have already
-// loaded policy and system configuration.
-// ResolveTLSSettingsFrom is ResolveTLSSettings for callers that have already
-// loaded policy and system configuration, and have no flags to apply.
-func ResolveTLSSettingsFrom(policy PolicyConfig, sysConfig SystemConfigFile) (TLSSettings, error) {
-	return resolveTLSSettings(policy, sysConfig, Overrides{}, map[string]bool{})
-}
-
-func resolveTLSSettings(policy PolicyConfig, sysConfig SystemConfigFile, overrides Overrides, sourced map[string]bool) (TLSSettings, error) {
+// resolveTLSSettings applies the policy to what the flags and the environment
+// name. The system file's top-level ca_file is a policy key like the others
+// (SystemConfigFile.PolicyConfig), so it arrives here as policy.CAFile and
+// mandates the bundle.
+func resolveTLSSettings(policy PolicyConfig, overrides Overrides, sourced map[string]bool) (TLSSettings, error) {
 	insecureSkipVerify, err := resolveBool(sourced, settingInsecureSkipVerify, overrides.InsecureSkipVerify, false)
 	if err != nil {
 		return TLSSettings{}, apperrors.New(apperrors.KindValidation, nameOf(sourced, settingInsecureSkipVerify)+" must be a boolean", err)
@@ -1473,8 +1463,6 @@ func resolveTLSSettings(policy PolicyConfig, sysConfig SystemConfigFile, overrid
 				nil,
 			)
 		}
-	} else if caFile == "" && sysConfig.CAFile != "" {
-		caFile = sysConfig.CAFile
 	}
 
 	return TLSSettings{
