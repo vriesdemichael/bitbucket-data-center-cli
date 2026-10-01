@@ -302,17 +302,15 @@ func (beacon *credentialBeacon) seen() (int, string) {
 }
 
 // storeCredentials stores a token for each host, the first as the default, and
-// clears every credential the environment could supply, so the only
-// credentials in play are the stored ones. The policy and workspace tiers are
-// pointed at files that are not there, so this machine's own cannot steer the
-// load.
+// turns the stored config back on, so the only credentials in play are the
+// stored ones: the host and credentials the environment could supply are
+// already empty in a sealed process (TestMain). The policy and workspace tiers
+// are pointed at files that are not there, so this machine's own cannot steer
+// the load.
 func storeCredentials(t *testing.T, tokens ...[2]string) {
 	t.Helper()
 
-	for _, key := range []string{
-		"BITBUCKET_URL", "BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD",
-		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
-	} {
+	for _, key := range []string{"BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG"} {
 		t.Setenv(key, "")
 	}
 	absent := t.TempDir()
