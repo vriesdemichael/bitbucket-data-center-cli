@@ -433,7 +433,7 @@ func (service *Service) Update(ctx context.Context, repository RepositoryRef, pu
 
 	// Validate before fetching. The reads below cost a request, and a caller
 	// who named no field or a negative version should hear that immediately
-	// rather than after a round trip -- ADR-054, and the reason this is not
+	// rather than after a round trip -- ADR-073, and the reason this is not
 	// simply folded into the block that follows.
 	if err := validateUpdateInput(input); err != nil {
 		return PullRequest{}, err

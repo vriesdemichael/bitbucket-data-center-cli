@@ -310,7 +310,7 @@ type Overrides struct {
 // A flag written into BB_* loses its origin, and validation then reports the
 // environment variable: `bb --retry-count -5` said "BB_RETRY_COUNT must be
 // greater than or equal to 0", sending the user to look for a variable they
-// never set. ADR-054 asks for a message naming the flag; this is what lets one
+// never set. ADR-073 asks for a message naming the flag; this is what lets one
 // exist.
 type runtimeSetting struct {
 	environment string
@@ -2485,7 +2485,7 @@ func mergeAliases(existing []string, additions []string) []string {
 //
 // A flag written into BB_* loses its origin, and validation then reported the
 // variable: `bb --retry-count -5` said "BB_RETRY_COUNT must be greater than or
-// equal to 0", sending the user to look for something they never set. ADR-054
+// equal to 0", sending the user to look for something they never set. ADR-073
 // asks for a message naming the flag; this is what lets one exist.
 func nameOf(sourced map[string]bool, setting runtimeSetting) string {
 	if sourced[setting.environment] {

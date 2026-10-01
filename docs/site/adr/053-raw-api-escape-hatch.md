@@ -5,16 +5,8 @@ search:
 
 # ADR-053: Raw API escape hatch for uncovered endpoints and version gaps
 
-Introduce a top-level `bb api <path>` command that acts as a direct REST passthrough escape hatch to Bitbucket Data Center instances, modeled after the UX of `gh api`.
-`bb api` reuses core CLI capabilities:
+`bb api <endpoint>` sends a request to the Bitbucket REST API as given, as `gh api` does, for what no command covers: an endpoint a newer Bitbucket added, or a plugin's. It uses what every command uses: the configured instance or `--host`, the stored credential, the TLS settings, and the retry policy of ADR-009. A credential given on the command line is refused (ADR-083). `--paginate` follows `isLastPage` and `nextPageStart` into one page. Under `--json` the response is the document's data. A GET or HEAD only reads, so it runs under `--dry-run`, where any other request is shown and not sent. The `read_only` policy refuses anything but GET and HEAD (ADR-100). The MCP server has no such passthrough.
 
-- Configuration, credential resolution (keyring, tokens, basic auth), and host aliasing (`internal/config`).
-- Transport resilience, automatic retry with exponential backoff, and 429 `Retry-After` handling (`internal/transport/httpclient`).
-- TLS trust configuration (`--ca-file`, `--insecure-skip-verify`).
-- Bitbucket Data Center pagination traversal (`--paginate`) following `isLastPage` and `nextPageStart`.
-- Machine-mode output envelopes under `--json`.
-- Strict `--dry-run` safety: non-GET mutating methods (`POST`, `PUT`, `DELETE`, `PATCH`) are safely refused.
+Recommend `bb api` for an endpoint no command covers, rather than waiting for one. A script that calls it should pass its own `--dry-run` through.
 
-Recommend `bb api` when users or automation need to interact with newer Bitbucket REST endpoints not yet exposed as dedicated CLI subcommands, or when testing custom Bitbucket plugin endpoints. Ensure `--dry-run` safety is preserved when constructing scripts that invoke `bb api`.
-
-Bitbucket Data Center has a vast and evolving REST API surface. With 220+ commands, gaps inevitably exist between pinned OpenAPI specifications and the latest server versions. A robust raw API escape hatch allows users and AI agents to immediately unblock themselves without waiting for a dedicated CLI release, while ensuring security, retry resilience, and output consistency are fully maintained.
+Bitbucket's REST surface outgrows any command set with each release. A passthrough on the same configuration, credentials, transport and envelope unblocks a person or an agent at once, without a release and without giving up the safety the rest of bb has.

@@ -433,7 +433,7 @@ func (service *Service) SetDefault(ctx context.Context, repo RepositoryRef, bran
 	// Bitbucket accepts a ref that does not exist -- 204, and the repository is
 	// left pointing at nothing. Its own UI only offers real branches, so a
 	// typo here is silent and the repository's default branch is broken until
-	// somebody notices. Refuse it (ADR-054).
+	// somebody notices. Refuse it (ADR-073).
 	//
 	// An empty repository is the exception and a real use: setting the default
 	// before the first push is how a repository gets `main` instead of
@@ -797,7 +797,7 @@ func (service *Service) DeleteRestriction(ctx context.Context, repo RepositoryRe
 }
 
 // checkRestrictionID refuses an id Bitbucket cannot route, before anything is
-// sent (ADR-054).
+// sent (ADR-073).
 //
 // The id is a path segment, and one that is not a 32-bit integer never reaches
 // the restriction resource: Bitbucket answers 404 with an empty body under a

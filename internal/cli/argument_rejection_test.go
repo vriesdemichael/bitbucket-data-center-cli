@@ -20,7 +20,7 @@ import (
 // Pointing BITBUCKET_URL at a closed port is the whole assertion. Anything that
 // reaches the network fails with a connection error and a transient kind, so a
 // validation kind is proof the argument never left the process, which is what
-// ADR-054 asks for.
+// ADR-073 asks for.
 //
 // The address is testsupport.RefusedURL, whose port no listener is ever
 // handed, so a request that does leave the process fails rather than quietly

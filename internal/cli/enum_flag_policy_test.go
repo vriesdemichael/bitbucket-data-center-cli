@@ -116,7 +116,7 @@ func visitFlags(t *testing.T, visit func(cmd *cobra.Command, flag *pflag.Flag)) 
 
 // TestEveryAdvertisedEnumIsEnforced is the first half of #482's test for this
 // pattern: a flag that names its values must refuse everything else, before the
-// request rather than after it (ADR-054).
+// request rather than after it (ADR-073).
 func TestEveryAdvertisedEnumIsEnforced(t *testing.T) {
 	t.Parallel()
 
@@ -143,7 +143,7 @@ func TestEveryAdvertisedEnumIsEnforced(t *testing.T) {
 		} else {
 			for _, value := range values {
 				if !strings.Contains(err.Error(), value) {
-					t.Errorf("%s --%s rejected %q without naming %q, which ADR-054 requires: %v",
+					t.Errorf("%s --%s rejected %q without naming %q, which ADR-073 requires: %v",
 						cmd.CommandPath(), flag.Name, outside, value, err)
 				}
 			}
@@ -276,7 +276,7 @@ func TestEveryEnumPositionalIsEnforced(t *testing.T) {
 			}
 			for _, want := range testCase.allowed {
 				if !strings.Contains(err.Error(), want) {
-					t.Errorf("rejection does not name %q, which ADR-054 requires: %v", want, err)
+					t.Errorf("rejection does not name %q, which ADR-073 requires: %v", want, err)
 				}
 			}
 		})

@@ -2,9 +2,9 @@
 //
 // It is the only place bb prompts. Deciding whether to ask belongs to
 // internal/cli/interactive (ADR-072); deciding what happens when the answer
-// cannot be had belongs here, because that is the half ADR-054 left unsaid and
-// the half that makes prompting safe: a refused prompt names the flag that
-// would have supplied the value, and never substitutes a default.
+// cannot be had belongs here, because that is the half that makes prompting
+// safe: a refused prompt names the flag that would have supplied the value,
+// and never substitutes a default.
 //
 // See ADR-073.
 package prompt
@@ -186,8 +186,8 @@ var decide = interactive.Detect
 // gate is the shared half: when nobody can answer, say which flag was missing.
 //
 // Refusing to prompt is not permission to proceed, and it is not permission to
-// stay quiet either. ADR-054 said only the first half, which is how a command
-// ended up reading stdin with no guard at all.
+// stay quiet either (ADR-073). A rule that says only the first half is how a
+// command ends up reading stdin with no guard at all.
 func gate(request Request, action string) error {
 	if request.Yes {
 		return nil
