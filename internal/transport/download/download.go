@@ -3,11 +3,12 @@
 //
 // Every other request bb makes is held to request_timeout from connecting to
 // the last byte of the answer. That suits an API call and not a download, whose
-// length is set by its size: twenty seconds needs 4.4 Mbit/s for a 10.5 MB
-// release, and a large repository could not be archived at all. Here the same
-// timeout bounds each wait instead -- for the response headers, and for the
-// next bytes of the body -- so a download fails when the server stops sending,
-// not when it is merely slow. The caller's context still ends it.
+// length is set by its size: the default twenty seconds needs a link of over
+// 4 Mbit/s for a release archive of ten megabytes, and a large repository could
+// not be archived at all. Here the same timeout bounds each wait instead -- for
+// the response headers, and for the next bytes of the body -- so a download
+// fails when the server stops sending, not when it is merely slow. The caller's
+// context still ends it.
 //
 // Without a deadline, something else has to bound what a server can make bb
 // read, so each call names a cap. A body that breaks off is resumed with a

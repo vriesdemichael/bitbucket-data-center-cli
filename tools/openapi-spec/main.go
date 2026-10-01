@@ -3,11 +3,11 @@
 //
 // ADR-042 records the version under test in exactly one place, the base image
 // tag in docker/harness/Dockerfile, so that nothing else can drift away from it.
-// The vendored spec used to carry its own pinned version in the Taskfile and in
-// its filename, which is a second copy of the same fact — and it drifted: the
-// harness moved to 10.4.x while the spec stayed at 10.2.
+// A version pinned for the spec anywhere else, in the Taskfile or in its
+// filename, would be a second copy of the same fact, free to stay behind when
+// the harness moves.
 //
-// This tool derives the API version from that one tag instead. Refresh mode
+// So this tool derives the API version from that one tag. Refresh mode
 // downloads the matching spec; verify mode fails when the vendored spec and the
 // harness have parted ways.
 package main
@@ -70,8 +70,8 @@ func fail(err error) {
 }
 
 // harnessAPIVersion reads the major.minor Atlassian publishes a spec for from
-// the harness base image tag. The image is pinned to a patch release (10.4.2)
-// while specs are published per minor (10.4), so the patch is discarded.
+// the harness base image tag. The image is pinned to a patch release while
+// specs are published per minor, so the patch is discarded.
 func harnessAPIVersion(dockerfile string) (string, error) {
 	content, err := os.ReadFile(dockerfile)
 	if err != nil {

@@ -8,11 +8,10 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/retrypolicy"
 )
 
-// TestOnlyIdempotentMethodsAreReplayable is #454.
-//
-// Both transports replayed every method twice by default, so a POST whose
-// response was lost could open the same pull request three times and report
-// success for whichever attempt answered.
+// TestOnlyIdempotentMethodsAreReplayable holds replays to the methods that are
+// idempotent by definition. Replaying a POST whose response was lost could open
+// the same pull request three times and report success for whichever attempt
+// answered.
 func TestOnlyIdempotentMethodsAreReplayable(t *testing.T) {
 	t.Parallel()
 
@@ -101,11 +100,8 @@ func TestMethodMatchingIsCaseInsensitive(t *testing.T) {
 	}
 }
 
-// TestDelay covers what the two transports each used to test against their own
-// copy of this function.
-//
-// The copies were identical, so the two suites made the same six assertions
-// twice; they are here once now, against the one implementation both call.
+// TestDelay covers the wait before a replay, once, against the one
+// implementation both transports call.
 func TestDelay(t *testing.T) {
 	t.Parallel()
 

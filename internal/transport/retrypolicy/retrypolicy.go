@@ -1,14 +1,15 @@
 // Package retrypolicy decides which HTTP requests may be replayed.
 //
-// Both transports used to retry every method on a transport error and on any
-// 429 or 5xx, twice by default. A POST that reached Bitbucket and whose
-// response was lost -- a reset connection, a proxy answering 502 after the
-// write landed, a load balancer timing out -- is indistinguishable from one
-// that never arrived, so `bb pr create` could open the same pull request three
-// times and report success for whichever attempt answered (#454).
+// A request is replayed only where sending it again is safe (ADR-009). A POST
+// that reached Bitbucket and whose response was lost -- a reset connection, a
+// proxy answering 502 after the write landed, a load balancer timing out -- is
+// indistinguishable from one that never arrived, so replaying it on a transport
+// error or a 5xx could make `bb pr create` open the same pull request three
+// times and report success for whichever attempt answered.
 //
-// ADR-009 already asked for retries to be "explicit and safe for idempotent
-// operations". No guard existed; this is it.
+// Both transports, httpclient and the generated OpenAPI client, ask this
+// package, so a rule about retrying lives in one place and a change to it
+// reaches both.
 package retrypolicy
 
 import (
@@ -72,11 +73,9 @@ func RetriableStatus(method string, status int) bool {
 //
 // Without the header it is a linear backoff on the attempt number.
 //
-// This lived twice, once in each transport, in copies that were identical
-// character for character. That made the two consistent by coincidence rather
-// than by construction, which is the same reason Replayable and RetriableStatus
-// are here: a policy about retrying belongs in one place, or the next change
-// lands in one transport and not the other.
+// It is here rather than in each transport for the reason Replayable and
+// RetriableStatus are: two copies are consistent only by coincidence, and the
+// next change lands in one transport and not the other.
 func Delay(headers http.Header, attempt int, fallbackBase time.Duration) time.Duration {
 	if fallbackBase <= 0 {
 		fallbackBase = defaultBackoffBase
