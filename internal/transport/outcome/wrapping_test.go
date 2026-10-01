@@ -21,14 +21,15 @@ var transientWithCause = regexp.MustCompile(`(?s)apperrors\.New\(\s*apperrors\.K
 // classification, for the sanity check below.
 var wrappedThroughTransport = regexp.MustCompile(`apperrors\.Transport\(`)
 
-// TestNoFailureIsWrappedAsTransient is #574's structure.
+// TestNoFailureIsWrappedAsTransient keeps the transport's classification
+// reaching the caller.
 //
 // The transport decides what a failed exchange means, and the kind a caller
-// sees is the outermost one. 209 sites wrapped the transport's error with
-// New(KindTransient, message, err), so a rejected certificate and a POST that
-// may already have been applied both reached the caller as "retry later". They
-// wrap with apperrors.Transport now, which keeps the kind; this keeps a new
-// site from reintroducing the old shape.
+// sees is the outermost one. Wrapping the transport's error with
+// New(KindTransient, message, err) would report a rejected certificate and a
+// POST that may already have been applied alike as "retry later". Sites wrap
+// with apperrors.Transport, which keeps the kind; this fails on one that does
+// not.
 //
 // A transient error with no cause is the code deciding for itself, and stays
 // allowed.

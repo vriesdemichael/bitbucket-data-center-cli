@@ -7,9 +7,9 @@
 //
 // Telling those apart takes the method, the error, and whether the request
 // reached the connection at all. Both transports -- httpclient and the
-// generated OpenAPI client -- decide it here. The classification used to live
-// in httpclient alone, so every command on the generated client reported a
-// rejected certificate and a lost POST alike as "retry later" (#574).
+// generated OpenAPI client -- decide it here, and only here: a transport that
+// classified for itself, or not at all, would report a rejected certificate and
+// a lost POST alike as "retry later".
 package outcome
 
 import (
@@ -64,8 +64,8 @@ func Track(request *http.Request) (*http.Request, *Exchange) {
 // Of returns the Exchange Track attached to request.
 //
 // A request nobody tracked gets one that knows its method and nothing about
-// the wire. That reads as "not written", so its failures classify as they did
-// before the trace existed rather than as an outcome nobody observed.
+// the wire. That reads as "not written", so its failures classify by method
+// and error alone rather than as an outcome nobody observed.
 func Of(request *http.Request) *Exchange {
 	if exchange, ok := request.Context().Value(exchangeKey{}).(*Exchange); ok {
 		return exchange
@@ -223,9 +223,9 @@ func (exchange *Exchange) Status(status int, mapped error) error {
 // it. Both transports send it again themselves first, so a caller sees this
 // only when every attempt was answered the same way.
 //
-// It used to be nil for those, on the understanding that the retry policy would
-// replay them. The policy retried no 400, so an update Bitbucket had applied
-// reached the caller as the 400 it was, validation, exit 2.
+// It is never nil, even for a method the retry policy replays: the policy
+// replays no 400, so without this an update Bitbucket had applied would reach
+// the caller as the 400 it was, validation, exit 2.
 func (exchange *Exchange) AnswerFailed(mapped error) error {
 	if retrypolicy.Replayable(exchange.method) {
 		// Decided here rather than wrapped around mapped: that is the 400 read
