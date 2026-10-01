@@ -16,4 +16,4 @@ The global floor runs with little headroom, and bringing tools/ into scope would
 - **Add tools/ to the coverage scope**: Leaves the global floor too little headroom to survive changes that have nothing to do with it, or needs the threshold lowered for everything.
 - **Include tools/ in patch coverage only**: Targets the real concern, new tool code arriving untested, but still cannot tell logic from main() plumbing, so it demands the same ceremony. Worth revisiting if the convention proves insufficient.
 - **Require every tools/ package to have a _test.go**: Satisfied by one meaningless test, and a check that can be satisfied without doing the work tends to be. It remains available as a complement if the convention erodes.
-- **Leave tooling untested and rely on the build breaking**: Adequate for tools whose failures are loud, and wrong for the ones that compute. A defect in quality-report does not break the build; it makes it pass.
+- **Leave tooling untested and rely on the build breaking**: Adequate for tools whose failures are loud, and wrong for the ones that compute.
