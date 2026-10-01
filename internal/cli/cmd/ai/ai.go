@@ -15,7 +15,7 @@ type Dependencies struct {
 	// after setting cmd.Version post-construction.
 	Version func() string
 	// LoadConfig loads the resolved AppConfig from environment and stored
-	// credentials, steered by the --host and --token flags of `mcp serve`.
+	// credentials, steered by the --host flag of `mcp serve`.
 	LoadConfig func(config.Overrides) (config.AppConfig, error)
 	// WriteJSON serialises v to w as indented JSON.
 	WriteJSON func(w io.Writer, v any) error
