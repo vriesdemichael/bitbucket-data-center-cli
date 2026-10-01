@@ -89,14 +89,14 @@ func (beacon *authorizationBeacon) presented() []string {
 }
 
 // withNoOtherConfiguration keeps this machine's own configuration out of a
-// load: no stored file, no policy or workspace file, and nothing in the
-// environment that names a host or a credential.
+// load: no stored file, no policy or workspace file, and no TLS setting or
+// keyring requirement from the environment. A host or a credential in the
+// environment is already empty: TestMain seals the process.
 func withNoOtherConfiguration(t *testing.T) {
 	t.Helper()
 
 	for _, key := range []string{
-		"BITBUCKET_URL", "BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD",
-		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
+		"BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
 		"BB_CA_FILE", "BB_CLIENT_CERT", "BB_CLIENT_KEY", "BB_INSECURE_SKIP_VERIFY",
 	} {
 		t.Setenv(key, "")

@@ -13,18 +13,6 @@ import (
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
 
-func executeTestCLI(t *testing.T, args ...string) (string, error) {
-	t.Helper()
-	t.Setenv("NO_COLOR", "1")
-	root := NewRootCommand()
-	buf := new(bytes.Buffer)
-	root.SetOut(buf)
-	root.SetErr(buf)
-	root.SetArgs(args)
-	err := root.Execute()
-	return buf.String(), err
-}
-
 // testSetup is everything a test used to put in the process: the configuration
 // it wanted the command to see, the git backend it wanted the command to use,
 // and whether a clone was allowed to prompt.
