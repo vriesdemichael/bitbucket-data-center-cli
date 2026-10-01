@@ -36,7 +36,7 @@ func EnvelopeSchemaFor(schemaFileName, title, description string, dataSchema map
 		"additionalProperties": false,
 		"properties": map[string]any{
 			"data": dataSchema,
-			"meta": metaSchema(),
+			"meta": schemaValue(MetaSchema()),
 		},
 		"required": []any{"data", "meta"},
 	}
@@ -58,7 +58,7 @@ func ErrorEnvelopeSchema(schemaFileName string) map[string]any {
 		"additionalProperties": false,
 		"properties": map[string]any{
 			"error": schemaValue(ErrorSchema(apperrors.Kinds()...)),
-			"meta":  metaSchema(),
+			"meta":  schemaValue(MetaSchema()),
 		},
 		"required": []any{"error", "meta"},
 	}
@@ -127,41 +127,34 @@ func schemaValue(schema *jsonschema.Schema) map[string]any {
 	return value
 }
 
-func metaSchema() map[string]any {
-	return map[string]any{
-		"type": "object",
-		// Open, unlike the envelope around it. meta is provenance, and it is
-		// expected to grow: a field added to it lands in a minor release only
-		// if a document carrying a field this schema does not name still
-		// validates. Closed, the first published version of this schema would
-		// have turned every later meta field into a breaking change for anyone
-		// validating strictly. The set of top-level members stays closed; only
-		// what sits inside meta may widen.
-		"additionalProperties": true,
-		"properties": map[string]any{
-			"command": map[string]any{
-				"type":        "string",
-				"description": "The command that wrote this document, by its canonical path (bb pr view reports pr get), so a document held on its own says which --describe describes it. Absent when no command resolved.",
-			},
-			"bbVersion": map[string]any{
-				"type":        "string",
-				"minLength":   1,
-				"description": "Version of the bb binary that produced this document. Provenance for stored output, not a compatibility switch: pin the binary to pin the contract (ADR-064).",
-			},
-			"limitReached": map[string]any{
-				"type":        "boolean",
-				"description": "Present on listing commands: true when the result set came back at --limit and there may be more behind it.",
-			},
-			"encoding": map[string]any{
-				"type":        "string",
-				"enum":        []any{"base64"},
-				"description": "Present when data is a body that is not text, carried as a string in this encoding.",
-			},
-			"contentType": map[string]any{
-				"type":        "string",
-				"description": "Present with encoding: the media type of the body data carries.",
-			},
-		},
-		"required": []any{"bbVersion"},
+// MetaSchema is the JSON Schema of the meta member every document carries.
+//
+// It is derived from EnvelopeMeta, as ErrorSchema derives the error member,
+// and then narrowed by what a Go type cannot say: bbVersion is never empty,
+// encoding is only ever base64, and limitReached, a pointer so that false is
+// told from absent, is omitted rather than written as null. The published
+// failure schema and --describe both take the member from here, so they cannot
+// describe it two ways.
+//
+// It is open, unlike the document around it. meta is provenance and expected
+// to grow: a field added to it lands in a minor release only if a document
+// carrying a field this schema does not name still validates. The set of
+// top-level members stays closed; only what sits inside meta may widen.
+func MetaSchema() *jsonschema.Schema {
+	schema, err := jsonschema.For[EnvelopeMeta](nil)
+	if err != nil {
+		panic(fmt.Sprintf("deriving the meta schema from EnvelopeMeta: %v", err))
 	}
+
+	nonEmpty := 1
+	schema.Properties["bbVersion"].MinLength = &nonEmpty
+	schema.Properties["encoding"].Enum = []any{"base64"}
+
+	limitReached := schema.Properties["limitReached"]
+	limitReached.Type, limitReached.Types = "boolean", nil
+
+	// The empty schema, which jsonschema-go writes as true.
+	schema.AdditionalProperties = &jsonschema.Schema{}
+
+	return schema
 }

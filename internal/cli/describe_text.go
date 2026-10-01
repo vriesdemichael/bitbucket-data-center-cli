@@ -5,7 +5,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/outline"
 )
@@ -28,7 +27,7 @@ func writeDescriptionText(out io.Writer, cmd *cobra.Command, description Descrip
 		text.WriteString(outline.Paragraph(fmt.Sprintf("bb %s --json prints data, or error when it fails:", path)) + "\n")
 		if err := outline.Write(&text,
 			outline.Member{Name: "data", Schema: data},
-			outline.Member{Name: "meta", Schema: openMetaSchema()},
+			outline.Member{Name: "meta", Schema: metaSchema()},
 		); err != nil {
 			return err
 		}
@@ -91,13 +90,4 @@ func writeCatalogueText(out io.Writer, group *cobra.Command, description Descrip
 	_, err := io.WriteString(out, text.String())
 
 	return err
-}
-
-// openMetaSchema is meta as the document carries it: derived from its type,
-// and open, since it may gain fields in a minor release.
-func openMetaSchema() *jsonschema.Schema {
-	meta := metaDeclaration.Schema().CloneSchemas()
-	meta.AdditionalProperties = nil
-
-	return meta
 }
