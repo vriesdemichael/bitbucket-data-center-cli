@@ -234,33 +234,11 @@ var variableReadByALibrary = map[string]string{
 	"BB_ACTIVE_HELP": "Cobra reads <PROGRAM>_ACTIVE_HELP, from the root command's name",
 }
 
-// TestEnvironmentPageNamesEveryVariableBBReads holds environment.md to the
-// BB_ and BITBUCKET_ names in bb's source: a variable in a table has to be one
-// the code names, and every name the code holds has to be on the page.
-func TestEnvironmentPageNamesEveryVariableBBReads(t *testing.T) {
-	t.Parallel()
-
-	page := referencePage(t, "environment.md")
-
-	variable := regexp.MustCompile(`^(BB|BITBUCKET)_[A-Z0-9_]+$`)
-	inTables, onPage := map[string]bool{}, map[string]bool{}
-	for _, row := range tableRows(strings.Split(page, "\n")) {
-		for _, match := range quoted.FindAllStringSubmatch(row[0], -1) {
-			if variable.MatchString(match[1]) {
-				inTables[match[1]] = true
-			}
-		}
-	}
-	// Line by line: a code fence is three backticks, and read across lines it
-	// would pair each backtick after it with the wrong one.
-	for _, line := range strings.Split(page, "\n") {
-		if strings.HasPrefix(strings.TrimSpace(line), "```") {
-			continue
-		}
-		for _, match := range quoted.FindAllStringSubmatch(line, -1) {
-			onPage[match[1]] = true
-		}
-	}
+// variablesInSource are the BB_ and BITBUCKET_ names bb's own Go files spell
+// out, tests left aside: the variables bb reads, but the ones a library reads
+// for it.
+func variablesInSource(t *testing.T) map[string]bool {
+	t.Helper()
 
 	literal := regexp.MustCompile(`"((?:BB|BITBUCKET)_[A-Z0-9_]+)"`)
 	inCode := map[string]bool{}
@@ -289,6 +267,39 @@ func TestEnvironmentPageNamesEveryVariableBBReads(t *testing.T) {
 	if len(inCode) < 20 {
 		t.Fatalf("found only %d variable names in the source; the walk has stopped reaching it", len(inCode))
 	}
+
+	return inCode
+}
+
+// TestEnvironmentPageNamesEveryVariableBBReads holds environment.md to the
+// BB_ and BITBUCKET_ names in bb's source: a variable in a table has to be one
+// the code names, and every name the code holds has to be on the page.
+func TestEnvironmentPageNamesEveryVariableBBReads(t *testing.T) {
+	t.Parallel()
+
+	page := referencePage(t, "environment.md")
+
+	variable := regexp.MustCompile(`^(BB|BITBUCKET)_[A-Z0-9_]+$`)
+	inTables, onPage := map[string]bool{}, map[string]bool{}
+	for _, row := range tableRows(strings.Split(page, "\n")) {
+		for _, match := range quoted.FindAllStringSubmatch(row[0], -1) {
+			if variable.MatchString(match[1]) {
+				inTables[match[1]] = true
+			}
+		}
+	}
+	// Line by line: a code fence is three backticks, and read across lines it
+	// would pair each backtick after it with the wrong one.
+	for _, line := range strings.Split(page, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "```") {
+			continue
+		}
+		for _, match := range quoted.FindAllStringSubmatch(line, -1) {
+			onPage[match[1]] = true
+		}
+	}
+
+	inCode := variablesInSource(t)
 
 	for _, name := range sortedKeys(inTables) {
 		if !inCode[name] && variableReadByALibrary[name] == "" {

@@ -9,35 +9,79 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ambientSettings are the variables a unit test must not inherit.
+// ambientSettings are the variables a unit test must not inherit: every
+// variable bb reads, but the four SealAmbientEnvironment sets.
 //
-// The config layer reads all of them, and two things put them in a test
-// process without any test asking: the developer's shell, and the .env the
-// live suite is configured with -- config.LoadWithOverrides loads .env itself,
-// walking up from the working directory, so `go test ./...` in this checkout
-// sees whatever credentials the local Bitbucket runs with.
+// Two things put them in a test process without any test asking: the
+// developer's shell, and the .env the live suite is configured with --
+// config.LoadWithOverrides loads .env itself, walking up from the working
+// directory, so `go test ./...` in this checkout sees whatever credentials the
+// local Bitbucket runs with.
 //
 // The result was a suite whose behaviour depended on the machine it ran on,
 // and tests that defended against it one at a time with t.Setenv(key, "") --
 // which is the call that disqualifies a test from t.Parallel. Clearing them
 // once for the process is the same defence without that cost, and it is a
 // stronger one: it also covers the tests that never thought to defend.
+//
+// bb reads an empty value of each as it reads an unset one, but NO_COLOR,
+// which it takes as set whatever the value, so a sealed test renders without
+// colour on every machine. TestTheSealWritesEveryVariableBBReads, in
+// internal/config, fails when bb reads a BB_ or BITBUCKET_ name this list
+// leaves out. ADMIN_USER, ADMIN_PASSWORD and NO_COLOR it cannot see, so they
+// are kept here by hand.
 var ambientSettings = []string{
+	// Connection and credentials.
 	"BITBUCKET_URL",
+	"BITBUCKET_VERSION_TARGET",
 	"BITBUCKET_TOKEN",
 	"BITBUCKET_USERNAME",
 	"BITBUCKET_USER",
 	"BITBUCKET_PASSWORD",
-	"BITBUCKET_PROJECT_KEY",
-	"BITBUCKET_REPO_SLUG",
 	"ADMIN_USER",
 	"ADMIN_PASSWORD",
-	"BB_CONFIG_PATH",
+	"BB_REQUIRE_KEYRING",
+	"BB_REQUEST_TIMEOUT",
+	"BB_RETRY_BACKOFF",
+
+	// TLS.
+	"BB_CA_FILE",
+	"BB_CLIENT_CERT",
+	"BB_CLIENT_KEY",
+	"BB_INSECURE_SKIP_VERIFY",
+
+	// Repository context.
+	"BITBUCKET_PROJECT_KEY",
+	"BITBUCKET_REPO_SLUG",
+
+	// Configuration files.
 	"BB_SYSTEM_CONFIG_PATH",
 	"BB_WORKSPACE_CONFIG_PATH",
+
+	// Webhook credentials.
+	"BB_WEBHOOK_SECRET",
+	"BB_WEBHOOK_PASSWORD",
+
+	// Interactivity.
+	"BB_NO_PROMPT",
+	"BB_NO_PROMPT_VARS",
+
+	// Updates.
+	"BB_DISABLE_UPDATE",
+	"BB_UPDATE_BASE_URL",
+	"BB_ALLOW_HTTP_UPDATE",
+
+	// Output and diagnostics.
 	"BB_LOG_LEVEL",
 	"BB_LOG_FORMAT",
 	"NO_COLOR",
+	"BB_ERROR_HARVEST",
+
+	// Shell completion. Cobra reads BB_ACTIVE_HELP, from the root command's
+	// name.
+	"BB_COMPLETION_TIMEOUT",
+	"BB_COMPLETION_DEBUG",
+	"BB_ACTIVE_HELP",
 }
 
 // SealAmbientEnvironment empties the settings a unit test must not inherit and
@@ -46,6 +90,8 @@ var ambientSettings = []string{
 // Called from TestMain, before any test runs. Process-wide is safe here in a
 // way it never was per test: these are set once and never changed, so no test
 // can observe another's value, and nothing has to be restored afterwards.
+// Sealing a sealed process again writes the same values and keeps its
+// configuration directory.
 //
 // A variable is emptied rather than unset because .env is loaded with
 // godotenv, which fills in only names the environment does not already carry.
@@ -67,12 +113,14 @@ func SealAmbientEnvironment() {
 	// directory of the process's own keeps every such test away from the file,
 	// whichever command it runs. A test that needs a configuration of its own
 	// still sets BB_CONFIG_PATH itself.
-	directory, err := os.MkdirTemp("", "bb-test-config-")
-	if err != nil {
-		panic(fmt.Sprintf("seal the test environment: make a configuration directory of its own: %v", err))
+	if sealedConfigDirectory == "" {
+		directory, err := os.MkdirTemp("", "bb-test-config-")
+		if err != nil {
+			panic(fmt.Sprintf("seal the test environment: make a configuration directory of its own: %v", err))
+		}
+		sealedConfigDirectory = directory
 	}
-	sealedConfigDirectory = directory
-	_ = os.Setenv("BB_CONFIG_PATH", filepath.Join(directory, "config.yaml"))
+	_ = os.Setenv("BB_CONFIG_PATH", filepath.Join(sealedConfigDirectory, "config.yaml"))
 
 	// No retries.
 	//
