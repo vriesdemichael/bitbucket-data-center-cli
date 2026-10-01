@@ -337,11 +337,10 @@ to fail instead of falling back.`,
 			return nil
 		},
 	}
-	// No --token value form. A secret passed as a flag lands in the process
-	// argument list, which is world-readable on Linux, and in shell history --
-	// on the shared build agents and jump boxes this tool targets that is a real
-	// exposure, not a theoretical one (#464). BITBUCKET_TOKEN remains for
-	// non-interactive use, and #396 shipped a prompt for the interactive case.
+	// No --token value form (ADR-083). A secret passed as a flag lands in the
+	// process argument list, which any local account can read, and in shell
+	// history, on the shared build agents and jump boxes this tool targets.
+	// BITBUCKET_TOKEN covers non-interactive use.
 	loginCmd.Flags().BoolVar(&loginTokenStdin, "token-stdin", false, "Read the access token from stdin")
 	loginCmd.Flags().StringVar(&loginUsername, "username", "", "Username for basic auth")
 	loginCmd.Flags().BoolVar(&loginPasswordStdin, "password-stdin", false, "Read the basic-auth password from stdin")
