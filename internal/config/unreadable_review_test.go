@@ -88,10 +88,8 @@ func TestADamagedConfigIsPermanentAndSaysWhoseItIsToFix(t *testing.T) {
 		path := writeMalformed(t, "stored.yaml")
 		t.Setenv("BB_CONFIG_PATH", path)
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "")
-		t.Setenv("BITBUCKET_URL", "https://bitbucket.example")
-		t.Setenv("BITBUCKET_TOKEN", "t")
 
-		_, err := LoadFromEnv()
+		_, err := LoadWithOverrides(configuredElsewhere)
 		if apperrors.ExitCode(err) != 1 || !apperrors.IsKind(err, apperrors.KindPermanent) {
 			t.Fatalf("got %v (exit %d), want permanent and exit 1", err, apperrors.ExitCode(err))
 		}
@@ -108,10 +106,8 @@ func TestADamagedConfigIsPermanentAndSaysWhoseItIsToFix(t *testing.T) {
 	t.Run("system", func(t *testing.T) {
 		path := writeMalformed(t, "system.yaml")
 		t.Setenv("BB_SYSTEM_CONFIG_PATH", path)
-		t.Setenv("BITBUCKET_URL", "https://bitbucket.example")
-		t.Setenv("BITBUCKET_TOKEN", "t")
 
-		_, err := LoadFromEnv()
+		_, err := LoadWithOverrides(configuredElsewhere)
 		if err == nil {
 			t.Fatal("a damaged system policy was ignored")
 		}

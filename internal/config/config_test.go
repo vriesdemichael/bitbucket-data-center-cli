@@ -15,7 +15,6 @@ import (
 
 func TestLoadFromEnvNonHostDefaults(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 	t.Setenv("BB_CA_FILE", "")
 	t.Setenv("BB_INSECURE_SKIP_VERIFY", "")
 	t.Setenv("BB_REQUEST_TIMEOUT", "")
@@ -24,7 +23,7 @@ func TestLoadFromEnvNonHostDefaults(t *testing.T) {
 	t.Setenv("BB_LOG_LEVEL", "")
 	t.Setenv("BB_LOG_FORMAT", "")
 
-	config, err := LoadFromEnv()
+	config, err := LoadWithOverrides(Overrides{Host: "http://localhost:7990"})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -157,7 +156,6 @@ func unsetEnvKeys(t *testing.T, keys ...string) {
 
 func TestLoadFromEnvTransportOverrides(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 	t.Setenv("BB_INSECURE_SKIP_VERIFY", "true")
 	t.Setenv("BB_REQUEST_TIMEOUT", "45s")
 	t.Setenv("BB_RETRY_COUNT", "5")
@@ -183,7 +181,7 @@ func TestLoadFromEnvTransportOverrides(t *testing.T) {
 	}
 	t.Setenv("BB_CLIENT_KEY", keyFile)
 
-	loaded, err := LoadFromEnv()
+	loaded, err := LoadWithOverrides(Overrides{Host: "http://localhost:7990"})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -349,9 +347,9 @@ func TestLoadFromEnvTransportOverrideValidation(t *testing.T) {
 func TestLoadFromEnvInvalidURL(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BITBUCKET_URL", "://broken")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
 
-	_, err := LoadFromEnv()
+	// A valid project key, so the variable under test is the only thing wrong.
+	_, err := LoadWithOverrides(Overrides{ProjectKey: "TEST"})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -451,10 +449,9 @@ func TestSaveLoginWithClientCertAndKey(t *testing.T) {
 	}
 
 	// Loading config with unset env adopts stored client cert & key
-	t.Setenv("BITBUCKET_URL", "https://mtls.example.com")
 	t.Setenv("BB_CLIENT_CERT", "")
 	t.Setenv("BB_CLIENT_KEY", "")
-	loaded, err := LoadFromEnv()
+	loaded, err := LoadWithOverrides(Overrides{Host: "https://mtls.example.com"})
 	if err != nil {
 		t.Fatalf("load from env: %v", err)
 	}
@@ -895,7 +892,6 @@ func TestLoadFromEnvUsesStoredTokenBranch(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
-	t.Setenv("BITBUCKET_URL", "http://stored.local:7990")
 
 	stored := StoredConfig{
 		DefaultHost: "http://stored.local:7990",
@@ -910,7 +906,7 @@ func TestLoadFromEnvUsesStoredTokenBranch(t *testing.T) {
 		t.Fatalf("save stored config: %v", err)
 	}
 
-	loaded, err := LoadFromEnv()
+	loaded, err := LoadWithOverrides(Overrides{Host: "http://stored.local:7990"})
 	if err != nil {
 		t.Fatalf("load from env failed: %v", err)
 	}
@@ -1587,11 +1583,11 @@ allow_insecure_skip_verify: false
 
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
-	t.Setenv("BITBUCKET_URL", "https://bb.example.local")
+	host := Overrides{Host: "https://bb.example.local"}
 
 	// BB_INSECURE_SKIP_VERIFY=true must be rejected
 	t.Setenv("BB_INSECURE_SKIP_VERIFY", "true")
-	_, err := LoadFromEnv()
+	_, err := LoadWithOverrides(host)
 	if err == nil {
 		t.Fatal("expected error when allow_insecure_skip_verify=false and BB_INSECURE_SKIP_VERIFY=true, got nil")
 	}
@@ -1601,7 +1597,7 @@ allow_insecure_skip_verify: false
 
 	// BB_INSECURE_SKIP_VERIFY=false should succeed
 	t.Setenv("BB_INSECURE_SKIP_VERIFY", "false")
-	_, err = LoadFromEnv()
+	_, err = LoadWithOverrides(host)
 	if err != nil {
 		t.Fatalf("expected success when BB_INSECURE_SKIP_VERIFY=false, got: %v", err)
 	}
@@ -1627,11 +1623,11 @@ func TestSystemPolicyMandatedCAFile(t *testing.T) {
 
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(tempDir, "user.yaml"))
-	t.Setenv("BITBUCKET_URL", "https://bb.example.local")
+	host := Overrides{Host: "https://bb.example.local"}
 
 	// Empty BB_CA_FILE adopts mandated CA file
 	t.Setenv("BB_CA_FILE", "")
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(host)
 	if err != nil {
 		t.Fatalf("expected success, got: %v", err)
 	}
@@ -1641,7 +1637,7 @@ func TestSystemPolicyMandatedCAFile(t *testing.T) {
 
 	// Identical BB_CA_FILE succeeds
 	t.Setenv("BB_CA_FILE", mandatedCA)
-	cfg2, err := LoadFromEnv()
+	cfg2, err := LoadWithOverrides(host)
 	if err != nil {
 		t.Fatalf("expected success with matching CA, got: %v", err)
 	}
@@ -1651,7 +1647,7 @@ func TestSystemPolicyMandatedCAFile(t *testing.T) {
 
 	// Conflicting BB_CA_FILE is rejected
 	t.Setenv("BB_CA_FILE", conflictingCA)
-	_, err = LoadFromEnv()
+	_, err = LoadWithOverrides(host)
 	if err == nil {
 		t.Fatal("expected error when overriding mandated CA, got nil")
 	}
@@ -2038,11 +2034,10 @@ func TestLoadFromEnvSystemCAFile(t *testing.T) {
 	}
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
 	t.Setenv("BB_CA_FILE", "")
-	t.Setenv("BITBUCKET_URL", "https://bb.example.local")
 
-	cfg, err := LoadFromEnv()
+	cfg, err := LoadWithOverrides(Overrides{Host: "https://bb.example.local"})
 	if err != nil {
-		t.Fatalf("LoadFromEnv failed: %v", err)
+		t.Fatalf("LoadWithOverrides failed: %v", err)
 	}
 	if filepath.Clean(cfg.CAFile) != filepath.Clean(caPath) {
 		t.Fatalf("expected ca_file from system config %s, got %s", caPath, cfg.CAFile)
@@ -2068,12 +2063,12 @@ hosts:
 	// test just wrote, so re-enabling it here reaches those and never the
 	// developer's own config.
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
-	t.Setenv("BITBUCKET_URL", "https://bb.example.local")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
 
-	cfg, err := LoadFromEnv()
+	// A token, because the profile names a username and no secret, and a
+	// username alone fails validation.
+	cfg, err := LoadWithOverrides(Overrides{Host: "https://bb.example.local", Token: "test-token"})
 	if err != nil {
-		t.Fatalf("LoadFromEnv failed: %v", err)
+		t.Fatalf("LoadWithOverrides failed: %v", err)
 	}
 	if cfg.BitbucketUsername != "ws-user" {
 		t.Fatalf("expected ws-user username from workspace, got %s", cfg.BitbucketUsername)

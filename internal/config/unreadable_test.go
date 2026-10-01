@@ -10,6 +10,10 @@ import (
 // malformed is YAML no parser will accept: a tab cannot start a token.
 const malformed = "default_host: corp-a\nhosts:\n  corp-a: {url: https://a.example}\n  corp-b: {url: https://b.example}\n\tbad-indent: {url: https://oops}\n"
 
+// configuredElsewhere is a host and a credential that need no file, so a load
+// that ignored a damaged one would succeed rather than stop for want of a host.
+var configuredElsewhere = Overrides{Host: "https://bitbucket.example", Token: "t"}
+
 func writeMalformed(t *testing.T, name string) string {
 	t.Helper()
 
@@ -41,10 +45,8 @@ func TestADamagedConfigIsReportedRatherThanTreatedAsEmpty(t *testing.T) {
 			path := writeMalformed(t, testCase.name+".yaml")
 			t.Setenv(testCase.variable, path)
 			t.Setenv("BB_DISABLE_STORED_CONFIG", "")
-			t.Setenv("BITBUCKET_URL", "https://bitbucket.example")
-			t.Setenv("BITBUCKET_TOKEN", "t")
 
-			_, err := LoadFromEnv()
+			_, err := LoadWithOverrides(configuredElsewhere)
 			if err == nil {
 				t.Fatal("a config that cannot be parsed was accepted")
 			}
@@ -69,10 +71,8 @@ func TestADamagedConfigIsReportedRatherThanTreatedAsEmpty(t *testing.T) {
 // could be switched off by corrupting the file.
 func TestABrokenSystemPolicyFailsClosed(t *testing.T) {
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", writeMalformed(t, "system.yaml"))
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example")
-	t.Setenv("BITBUCKET_TOKEN", "t")
 
-	if _, err := LoadFromEnv(); err == nil {
+	if _, err := LoadWithOverrides(configuredElsewhere); err == nil {
 		t.Fatal("a damaged system policy was ignored, so the policy did not apply and nothing said so")
 	}
 }
@@ -106,10 +106,8 @@ func TestSaveLoginRefusesToRewriteAConfigItCouldNotRead(t *testing.T) {
 func TestAnAbsentConfigIsNotAnError(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "not-created.yaml"))
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example")
-	t.Setenv("BITBUCKET_TOKEN", "t")
 
-	if _, err := LoadFromEnv(); err != nil {
+	if _, err := LoadWithOverrides(configuredElsewhere); err != nil {
 		t.Fatalf("an absent config must resolve, got: %v", err)
 	}
 }
