@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
@@ -62,23 +63,21 @@ func TestRootOptionsPermissionCheckerFor(t *testing.T) {
 }
 
 func TestLoadQualityRepoServiceAndClientReturnsSelectorValidationError(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://example.local")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+	options := &rootOptions{runtime: config.Overrides{Host: "http://example.local", ProjectKey: "PRJ", RepoSlug: "repo"}}
 
-	_, _, err := (&rootOptions{}).loadQualityRepoAndService("bad-selector")
+	_, _, err := options.loadQualityRepoAndService("bad-selector")
 	if !apperrors.IsKind(err, apperrors.KindValidation) {
 		t.Fatalf("expected validation error, got: %v", err)
 	}
 }
 
+// The variable is the subject: the message has to name BB_CA_FILE, which is
+// what the user set, rather than a flag they did not pass.
 func TestLoadConfigAndClientPropagatesConfigValidationError(t *testing.T) {
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "http://example.local")
 	t.Setenv("BB_CA_FILE", "/definitely/missing-ca.pem")
 
-	_, _, err := (&rootOptions{}).loadConfigAndClient()
+	options := &rootOptions{runtime: config.Overrides{Host: "http://example.local"}}
+	_, _, err := options.loadConfigAndClient()
 	if !apperrors.IsKind(err, apperrors.KindValidation) {
 		t.Fatalf("expected validation error, got: %v", err)
 	}

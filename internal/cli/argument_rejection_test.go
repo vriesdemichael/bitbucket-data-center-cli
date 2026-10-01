@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
@@ -17,7 +18,7 @@ import (
 // way -- including in the case where bb had dutifully sent nonsense to
 // Bitbucket and repeated the complaint.
 //
-// Pointing BITBUCKET_URL at a closed port is the whole assertion. Anything that
+// Pointing the host at a closed port is the whole assertion. Anything that
 // reaches the network fails with a connection error and a transient kind, so a
 // validation kind is proof the argument never left the process, which is what
 // ADR-073 asks for.
@@ -25,16 +26,8 @@ import (
 // The address is testsupport.RefusedURL, whose port no listener is ever
 // handed, so a request that does leave the process fails rather than quietly
 // succeeding against whatever answered.
-func configureUnreachableEnv(t *testing.T) {
-	t.Helper()
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", testsupport.RefusedURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
+func unreachableRepository() config.Overrides {
+	return configuredRepository(testsupport.RefusedURL, "PRJ", "demo")
 }
 
 func TestCommandsRejectBadArgumentsWithoutCallingBitbucket(t *testing.T) {
@@ -78,9 +71,7 @@ func TestCommandsRejectBadArgumentsWithoutCallingBitbucket(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			configureUnreachableEnv(t)
-
-			output, err := executeTestCLI(t, testCase.args...)
+			output, err := executeTestCLI(t, unreachableRepository(), testCase.args...)
 			if err == nil {
 				t.Fatalf("expected the argument to be rejected, got:\n%s", output)
 			}

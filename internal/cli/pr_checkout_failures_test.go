@@ -41,13 +41,13 @@ func TestPullRequestCheckoutSurfacesBackendFailures(t *testing.T) {
 				sourceProject = "~jdoe"
 			}
 			server := newCheckoutServer(t, sourceProject, "demo", "feature/login")
-			configureCheckoutEnv(t, server.URL)
+			configured := checkoutRepository(server.URL)
 
 			stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 			stub.failOn = map[string]error{testCase.failing: errors.New("git said no")}
 			withGitBackend(t, stub)
 
-			err := runCheckoutExpectingError(t, "pr", "checkout", "42")
+			err := runCheckoutExpectingError(t, configured, "pr", "checkout", "42")
 			if !strings.Contains(err.Error(), "git said no") {
 				t.Fatalf("expected the git failure to surface, got: %v", err)
 			}
@@ -106,12 +106,12 @@ func TestPullRequestCheckoutRefusesIncompletePayloads(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			server := newIncompletePullRequestServer(t, testCase.body)
-			configureCheckoutEnv(t, server.URL)
+			configured := checkoutRepository(server.URL)
 
 			stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 			withGitBackend(t, stub)
 
-			err := runCheckoutExpectingError(t, "pr", "checkout", "42")
+			err := runCheckoutExpectingError(t, configured, "pr", "checkout", "42")
 			if !strings.Contains(err.Error(), testCase.expected) {
 				t.Fatalf("expected %q in the error, got: %v", testCase.expected, err)
 			}
@@ -127,12 +127,12 @@ func TestPullRequestCheckoutRefusesIncompletePayloads(t *testing.T) {
 // produce a branch name starting with a slash, which git rejects.
 func TestPullRequestCheckoutForkWithoutAnOwnerName(t *testing.T) {
 	server := newCheckoutServer(t, "~", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 
 	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 	withGitBackend(t, stub)
 
-	result := decodeCheckoutResult(t, runCheckout(t, "--json", "pr", "checkout", "42"))
+	result := decodeCheckoutResult(t, runCheckout(t, configured, "--json", "pr", "checkout", "42"))
 
 	if result["branch"] != "feature/login" {
 		t.Fatalf("expected an unprefixed branch name, got: %v", result)
@@ -146,7 +146,7 @@ func TestPullRequestCheckoutForkWithoutAnOwnerName(t *testing.T) {
 // when the whole tree is modified.
 func TestPullRequestCheckoutTruncatesALongDirtyList(t *testing.T) {
 	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 
 	entries := make([]string, 0, 9)
 	for index := range 9 {
@@ -157,7 +157,7 @@ func TestPullRequestCheckoutTruncatesALongDirtyList(t *testing.T) {
 	stub.status = git.WorkingTreeStatus{Dirty: true, Entries: entries}
 	withGitBackend(t, stub)
 
-	err := runCheckoutExpectingError(t, "pr", "checkout", "42")
+	err := runCheckoutExpectingError(t, configured, "pr", "checkout", "42")
 	if !strings.Contains(err.Error(), "and 4 more") {
 		t.Fatalf("expected the list to be truncated with a count, got: %v", err)
 	}
@@ -173,10 +173,10 @@ func TestPullRequestCheckoutTruncatesALongDirtyList(t *testing.T) {
 func TestPullRequestCheckoutHumanOutputVariants(t *testing.T) {
 	t.Run("detached", func(t *testing.T) {
 		server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-		configureCheckoutEnv(t, server.URL)
+		configured := checkoutRepository(server.URL)
 		withGitBackend(t, newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"}))
 
-		output := runCheckout(t, "pr", "checkout", "42", "--detach")
+		output := runCheckout(t, configured, "pr", "checkout", "42", "--detach")
 		if !strings.Contains(output, "Checked out #42 at origin/feature/login (detached HEAD)") {
 			t.Fatalf("expected a detached-HEAD line, got:\n%s", output)
 		}
@@ -184,12 +184,12 @@ func TestPullRequestCheckoutHumanOutputVariants(t *testing.T) {
 
 	t.Run("existing branch", func(t *testing.T) {
 		server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-		configureCheckoutEnv(t, server.URL)
+		configured := checkoutRepository(server.URL)
 		stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 		stub.branches["feature/login"] = true
 		withGitBackend(t, stub)
 
-		output := runCheckout(t, "pr", "checkout", "42")
+		output := runCheckout(t, configured, "pr", "checkout", "42")
 		if !strings.Contains(output, "Updated #42 on branch feature/login") {
 			t.Fatalf("expected the update wording for an existing branch, got:\n%s", output)
 		}
@@ -200,10 +200,10 @@ func TestPullRequestCheckoutHumanOutputVariants(t *testing.T) {
 // otherwise be a nil dereference.
 func TestPullRequestCheckoutWithoutAGitBackend(t *testing.T) {
 	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 	withGitBackend(t, nil)
 
-	err := runCheckoutExpectingError(t, "pr", "checkout", "42")
+	err := runCheckoutExpectingError(t, configured, "pr", "checkout", "42")
 	if !strings.Contains(err.Error(), "no git backend") {
 		t.Fatalf("expected a missing-backend error, got: %v", err)
 	}
@@ -220,12 +220,12 @@ func TestPullRequestCheckoutWithoutAGitBackend(t *testing.T) {
 // suite with "could not read Username".
 func TestPullRequestCheckoutSuppliesCredentialsToTheFetch(t *testing.T) {
 	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
+	configured := checkoutRepository(server.URL)
 
 	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 	withGitBackend(t, stub)
 
-	runCheckout(t, "--json", "pr", "checkout", "42")
+	runCheckout(t, configured, "--json", "pr", "checkout", "42")
 
 	if len(stub.fetches) != 1 {
 		t.Fatalf("expected one fetch, got %d", len(stub.fetches))
@@ -249,13 +249,13 @@ func TestPullRequestCheckoutSuppliesCredentialsToTheFetch(t *testing.T) {
 // whatever helper the user has.
 func TestPullRequestCheckoutWithoutCredentialsLeavesItToGit(t *testing.T) {
 	server := newCheckoutServer(t, "PRJ", "demo", "feature/login")
-	configureCheckoutEnv(t, server.URL)
-	t.Setenv("BITBUCKET_TOKEN", "")
+	configured := checkoutRepository(server.URL)
+	configured.Token = ""
 
 	stub := newCheckoutBackendStub(git.Remote{Name: "origin", URL: server.URL + "/scm/PRJ/demo.git"})
 	withGitBackend(t, stub)
 
-	runCheckout(t, "--json", "pr", "checkout", "42")
+	runCheckout(t, configured, "--json", "pr", "checkout", "42")
 
 	if len(stub.fetches) != 1 {
 		t.Fatalf("expected one fetch, got %d", len(stub.fetches))

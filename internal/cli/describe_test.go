@@ -30,10 +30,6 @@ func runIsolated(t *testing.T, arguments ...string) string {
 	directory := t.TempDir()
 	t.Chdir(directory)
 	t.Setenv("BB_CONFIG_PATH", directory+"/config.yaml")
-	t.Setenv("BB_URL", "")
-	t.Setenv("BB_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
 
 	root := NewRootCommand()
 	out := &bytes.Buffer{}

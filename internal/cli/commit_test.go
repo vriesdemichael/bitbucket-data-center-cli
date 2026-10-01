@@ -5,10 +5,12 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 )
 
 func TestCommitCLICommandValidation(t *testing.T) {
-	output, err := executeTestCLI(t, "commit", "get")
+	output, err := executeTestCLI(t, config.Overrides{}, "commit", "get")
 	if err == nil {
 		t.Fatal("expected error for empty commit get")
 	}
@@ -21,12 +23,12 @@ func TestCommitCLICommandValidation(t *testing.T) {
 		}
 	}
 
-	_, err = executeTestCLI(t, "commit", "compare", "abc")
+	_, err = executeTestCLI(t, config.Overrides{}, "commit", "compare", "abc")
 	if err == nil {
 		t.Fatal("expected error for compare missing arg")
 	}
 
-	_, err = executeTestCLI(t, "ref", "resolve")
+	_, err = executeTestCLI(t, config.Overrides{}, "ref", "resolve")
 	if err == nil {
 		t.Fatal("expected error for resolve missing arg")
 	}
@@ -40,13 +42,7 @@ func TestCommitListJiraError(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-
-	_, err := executeTestCLI(t, "commit", "list", "--jira", "ISSUE-123")
+	_, err := executeTestCLI(t, configuredRepository(server.URL, "PRJ", "repo"), "commit", "list", "--jira", "ISSUE-123")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

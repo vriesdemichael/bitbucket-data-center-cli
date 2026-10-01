@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
 )
 
@@ -55,15 +56,13 @@ func newPullRequestStatusServer(t *testing.T) *httptest.Server {
 	return server
 }
 
-func configurePullRequestStatusEnv(t *testing.T, serverURL string, username string) {
-	t.Helper()
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", serverURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-	t.Setenv("BITBUCKET_USERNAME", username)
-	t.Setenv("BITBUCKET_PASSWORD", "")
+// pullRequestStatusRepository is PRJ/demo on serverURL, as username: the
+// dashboard sections are about whoever the token belongs to.
+func pullRequestStatusRepository(serverURL string, username string) config.Overrides {
+	configured := configuredRepository(serverURL, "PRJ", "demo")
+	configured.Username = username
+
+	return configured
 }
 
 func withGitBackend(t *testing.T, backend git.Backend) {
@@ -73,10 +72,10 @@ func withGitBackend(t *testing.T, backend git.Backend) {
 	t.Cleanup(func() { gitBackendFactory = original })
 }
 
-func executePullRequestStatus(t *testing.T, args ...string) string {
+func executePullRequestStatus(t *testing.T, configured config.Overrides, args ...string) string {
 	t.Helper()
 
-	command := NewRootCommand()
+	command := NewRootCommandWithOverrides(configured)
 	buffer := &bytes.Buffer{}
 	command.SetOut(buffer)
 	command.SetErr(buffer)
@@ -171,10 +170,9 @@ func TestPullRequestStatusDegradesOutsideARepository(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			server := newPullRequestStatusServer(t)
-			configurePullRequestStatusEnv(t, server.URL, "me")
 			withGitBackend(t, testCase.backend)
 
-			payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
+			payload := decodePullRequestStatus(t, executePullRequestStatus(t, pullRequestStatusRepository(server.URL, "me"), "--json", "pr", "status"))
 
 			currentBranch := statusSection(t, payload, "currentBranch")
 			note, _ := currentBranch["note"].(string)
@@ -195,12 +193,11 @@ func TestPullRequestStatusDegradesOutsideARepository(t *testing.T) {
 
 func TestPullRequestStatusReportsMissingRepositoryContext(t *testing.T) {
 	server := newPullRequestStatusServer(t)
-	configurePullRequestStatusEnv(t, server.URL, "me")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
-	t.Setenv("BITBUCKET_REPO_SLUG", "")
+	configured := pullRequestStatusRepository(server.URL, "me")
+	configured.ProjectKey, configured.RepoSlug = "", ""
 	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
 
-	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
+	payload := decodePullRequestStatus(t, executePullRequestStatus(t, configured, "--json", "pr", "status"))
 
 	note, _ := statusSection(t, payload, "currentBranch")["note"].(string)
 	if !strings.Contains(note, "no repository context") {
@@ -234,10 +231,9 @@ func TestPullRequestStatusFailsWhenTheDashboardFails(t *testing.T) {
 			}))
 			t.Cleanup(server.Close)
 
-			configurePullRequestStatusEnv(t, server.URL, "me")
 			withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
 
-			command := NewRootCommand()
+			command := NewRootCommandWithOverrides(pullRequestStatusRepository(server.URL, "me"))
 			buffer := &bytes.Buffer{}
 			command.SetOut(buffer)
 			command.SetErr(buffer)
@@ -265,10 +261,9 @@ func TestPullRequestStatusNotesABranchListingFailure(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	configurePullRequestStatusEnv(t, server.URL, "me")
 	withGitBackend(t, inferenceGitBackendStub{repoRoot: "/repo", branch: "feature/x"})
 
-	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
+	payload := decodePullRequestStatus(t, executePullRequestStatus(t, pullRequestStatusRepository(server.URL, "me"), "--json", "pr", "status"))
 	note, _ := statusSection(t, payload, "currentBranch")["note"].(string)
 	if !strings.Contains(note, "could not list pull requests for feature/x") {
 		t.Fatalf("expected the listing failure to be reported as a note, got: %q", note)
@@ -277,10 +272,9 @@ func TestPullRequestStatusNotesABranchListingFailure(t *testing.T) {
 
 func TestPullRequestStatusWithoutAGitBackend(t *testing.T) {
 	server := newPullRequestStatusServer(t)
-	configurePullRequestStatusEnv(t, server.URL, "me")
 	withGitBackend(t, nil)
 
-	payload := decodePullRequestStatus(t, executePullRequestStatus(t, "--json", "pr", "status"))
+	payload := decodePullRequestStatus(t, executePullRequestStatus(t, pullRequestStatusRepository(server.URL, "me"), "--json", "pr", "status"))
 	note, _ := statusSection(t, payload, "currentBranch")["note"].(string)
 	if !strings.Contains(note, "not on a branch") {
 		t.Fatalf("expected a note when there is no git backend at all, got: %q", note)

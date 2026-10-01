@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 )
 
@@ -45,14 +46,10 @@ func TestReviewAndJiraCommandsNeedARepository(t *testing.T) {
 	t.Run("no repository", func(t *testing.T) {
 		// A URL is configured, so reaching the server is what would happen next
 		// if the repository check did not stop it.
-		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-		t.Setenv("BITBUCKET_URL", "http://bitbucket.invalid")
-		t.Setenv("BITBUCKET_TOKEN", "unused")
-		t.Setenv("BITBUCKET_PROJECT_KEY", "")
-		t.Setenv("BITBUCKET_REPO_SLUG", "")
+		configured := config.Overrides{Host: "http://bitbucket.invalid", Token: "unused"}
 
 		for _, args := range commands {
-			_, err := executeTestCLI(t, args...)
+			_, err := executeTestCLI(t, configured, args...)
 			if err == nil {
 				t.Errorf("%s ran without a repository", strings.Join(args, " "))
 
@@ -72,13 +69,10 @@ func TestReviewAndJiraCommandsNeedARepository(t *testing.T) {
 	})
 
 	t.Run("no bitbucket url", func(t *testing.T) {
-		t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-		t.Setenv("BITBUCKET_URL", "")
-		t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-		t.Setenv("BITBUCKET_REPO_SLUG", "demo")
+		configured := config.Overrides{ProjectKey: "TEST", RepoSlug: "demo"}
 
 		for _, args := range commands {
-			if _, err := executeTestCLI(t, args...); err == nil {
+			if _, err := executeTestCLI(t, configured, args...); err == nil {
 				t.Errorf("%s ran without a configured Bitbucket", strings.Join(args, " "))
 			}
 		}

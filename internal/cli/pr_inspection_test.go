@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
@@ -15,7 +16,7 @@ func TestPRInspectionArgValidation(t *testing.T) {
 		{"pr", "files"},
 		{"pr", "merge-base"},
 	} {
-		if _, err := executeTestCLI(t, args...); err == nil {
+		if _, err := executeTestCLI(t, config.Overrides{}, args...); err == nil {
 			t.Fatalf("expected arg validation error for %v", args)
 		}
 	}
@@ -28,9 +29,9 @@ func TestPRInspectionEmptyResults(t *testing.T) {
 		_, _ = w.Write([]byte(`{"values":[],"isLastPage":true,"nextPageStart":0}`))
 	}))
 	defer server.Close()
-	configureDryRunEnv(t, server.URL, "TEST", "demo")
+	configured := configuredRepository(server.URL, "TEST", "demo")
 
-	commitsOut, err := executeTestCLI(t, "pr", "commits", "7")
+	commitsOut, err := executeTestCLI(t, configured, "pr", "commits", "7")
 	if err != nil {
 		t.Fatalf("unexpected error: %v (output: %s)", err, commitsOut)
 	}
@@ -38,7 +39,7 @@ func TestPRInspectionEmptyResults(t *testing.T) {
 		t.Fatalf("expected empty commits message, got: %s", commitsOut)
 	}
 
-	filesOut, err := executeTestCLI(t, "pr", "files", "7")
+	filesOut, err := executeTestCLI(t, configured, "pr", "files", "7")
 	if err != nil {
 		t.Fatalf("unexpected error: %v (output: %s)", err, filesOut)
 	}
@@ -53,14 +54,14 @@ func TestPRInspectionServiceErrors(t *testing.T) {
 		http.Error(w, `{"errors":[{"message":"boom"}]}`, http.StatusInternalServerError)
 	}))
 	defer server.Close()
-	configureDryRunEnv(t, server.URL, "TEST", "demo")
+	configured := configuredRepository(server.URL, "TEST", "demo")
 
 	for _, args := range [][]string{
 		{"pr", "commits", "7"},
 		{"pr", "files", "7"},
 		{"pr", "merge-base", "7"},
 	} {
-		if _, err := executeTestCLI(t, args...); err == nil {
+		if _, err := executeTestCLI(t, configured, args...); err == nil {
 			t.Fatalf("expected transport error for %v", args)
 		}
 	}
@@ -71,14 +72,14 @@ func TestPRInspectionRepositoryResolutionError(t *testing.T) {
 	// so the listener fails the test if one arrives.
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
-	configureDryRunEnv(t, server.URL, "TEST", "demo")
+	configured := configuredRepository(server.URL, "TEST", "demo")
 
 	for _, args := range [][]string{
 		{"pr", "--repo", "missing-slash", "commits", "7"},
 		{"pr", "--repo", "missing-slash", "files", "7"},
 		{"pr", "--repo", "missing-slash", "merge-base", "7"},
 	} {
-		if _, err := executeTestCLI(t, args...); err == nil {
+		if _, err := executeTestCLI(t, configured, args...); err == nil {
 			t.Fatalf("expected repository resolution error for %v", args)
 		}
 	}

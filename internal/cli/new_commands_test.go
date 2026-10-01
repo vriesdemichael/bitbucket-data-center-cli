@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
@@ -27,10 +28,8 @@ import (
 
 // mock-inventory: transport-fault — a server answering 500 to everything is injected, alongside a malformed URL and a malformed repository reference that never reach one; the subject is that each command reports rather than printing an empty success.
 func TestNewCLICommandsErrorPaths(t *testing.T) {
-	// 1. Client configuration failure (BITBUCKET_URL=://invalid)
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "://invalid")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
+	// 1. Client configuration failure (a host of ://invalid)
+	configured := config.Overrides{Host: "://invalid", Token: "test-token"}
 
 	errorCmds := [][]string{
 		{"repo", "settings", "auto-merge", "get"},
@@ -56,7 +55,7 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 	}
 
 	for _, args := range errorCmds {
-		cmd := NewRootCommand()
+		cmd := NewRootCommandWithOverrides(configured)
 		cmd.SetArgs(args)
 		if err := cmd.Execute(); err == nil {
 			t.Errorf("expected error for command %v with invalid URL", args)
@@ -64,11 +63,11 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 	}
 
 	// 2. Invalid repo format (e.g. --repo invalid)
-	t.Setenv("BITBUCKET_URL", "http://localhost")
+	configured.Host = "http://localhost"
 	for _, args := range errorCmds {
 		fullArgs := append([]string(nil), args...)
 		fullArgs = append(fullArgs, "--repo", "invalid")
-		cmd := NewRootCommand()
+		cmd := NewRootCommandWithOverrides(configured)
 		cmd.SetArgs(fullArgs)
 		if err := cmd.Execute(); err == nil {
 			t.Errorf("expected error for command %v with invalid repo format", fullArgs)
@@ -81,12 +80,12 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+	configured.Host = server.URL
+	configured.ProjectKey = "PRJ"
+	configured.RepoSlug = "repo"
 
 	for _, args := range errorCmds {
-		cmd := NewRootCommand()
+		cmd := NewRootCommandWithOverrides(configured)
 		cmd.SetArgs(args)
 		if err := cmd.Execute(); err == nil {
 			t.Errorf("expected error for command %v with HTTP 500 response", args)
@@ -111,7 +110,7 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 	}
 
 	for _, args := range dryRunCmds {
-		cmd := NewRootCommand()
+		cmd := NewRootCommandWithOverrides(configured)
 		cmd.SetArgs(args)
 		if err := cmd.Execute(); err == nil {
 			t.Errorf("expected error for dry-run command %v with HTTP 500 response", args)
@@ -140,11 +139,7 @@ func TestFlagValuesTheseCommandsRefuse(t *testing.T) {
 	guard := httptest.NewServer(testsupport.UnreachedHandler(t))
 	t.Cleanup(guard.Close)
 
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", guard.URL)
-	t.Setenv("BITBUCKET_TOKEN", "unused")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "repo")
+	configured := config.Overrides{Host: guard.URL, Token: "unused", ProjectKey: "PRJ", RepoSlug: "repo"}
 
 	cases := []struct {
 		name string
@@ -165,7 +160,7 @@ func TestFlagValuesTheseCommandsRefuse(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := executeTestCLI(t, testCase.args...)
+			_, err := executeTestCLI(t, configured, testCase.args...)
 			if err == nil {
 				t.Fatal("expected the value to be refused")
 			}

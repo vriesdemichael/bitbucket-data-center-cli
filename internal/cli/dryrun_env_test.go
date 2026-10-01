@@ -1,8 +1,10 @@
 package cli
 
-import "testing"
+import "github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 
-// configureDryRunEnv points the CLI at a test server with a token.
+// configuredRepository is the configuration a command is handed to reach one
+// repository on a server with a token: passed to the root it is built with,
+// never published to the process (ADR-082).
 //
 // It is what remains of dryrun_stateful_commands_test.go, which drove every
 // stateful dry run against a hand-written Bitbucket and asserted the prediction
@@ -24,13 +26,6 @@ import "testing"
 // no-op branch nothing can reach. The precheck suite was wrong in the opposite
 // direction: its blanket 403 asserted refusals for three operations Bitbucket
 // lets a reader perform.
-func configureDryRunEnv(t *testing.T, serverURL, projectKey, repoSlug string) {
-	t.Helper()
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", serverURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", projectKey)
-	t.Setenv("BITBUCKET_REPO_SLUG", repoSlug)
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
+func configuredRepository(serverURL, projectKey, repoSlug string) config.Overrides {
+	return config.Overrides{Host: serverURL, ProjectKey: projectKey, RepoSlug: repoSlug, Token: "test-token"}
 }

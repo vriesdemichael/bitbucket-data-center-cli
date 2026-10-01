@@ -48,15 +48,15 @@ func (beacon *credentialBeacon) seen() []string {
 }
 
 // withNothingConfigured is a machine bb has never been set up on: no stored
-// configuration, no host or credential in the environment, and no policy or
-// workspace file.
+// configuration, no policy or workspace file, and no host or credential in the
+// environment -- the last of which the seal already guarantees.
+//
+// The stored configuration is read here, because what these tests are about
+// is the credential it holds.
 func withNothingConfigured(t *testing.T) {
 	t.Helper()
 
-	for _, key := range []string{
-		"BITBUCKET_URL", "BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD",
-		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
-	} {
+	for _, key := range []string{"BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG"} {
 		t.Setenv(key, "")
 	}
 	absent := t.TempDir()
