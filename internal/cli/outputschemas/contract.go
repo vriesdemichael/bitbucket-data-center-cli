@@ -11,7 +11,7 @@ package outputschemas
 //
 // Adding an entry is a decision, not a formality. The question to answer is
 // whether the command returns *data* or produces a *document or stream*. Data
-// owes the caller an envelope (ADR-014) and a published schema. A document does
+// owes the caller an envelope (ADR-095) and a published schema. A document does
 // not, because wrapping markdown or a diff in a JSON string helps nobody.
 //
 // help and completion are listed. Cobra injects them at execute time, and bb

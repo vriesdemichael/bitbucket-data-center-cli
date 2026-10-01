@@ -21,7 +21,7 @@ type Dependencies struct {
 	WriteJSON func(w io.Writer, v any) error
 	// JSONEnabled reports whether --json was passed. The skill commands report
 	// an outcome and a resolved path, which is a data payload rather than a
-	// document, so they owe the caller an envelope (ADR-014).
+	// document, so they owe the caller an envelope (ADR-095).
 	JSONEnabled func() bool
 }
 

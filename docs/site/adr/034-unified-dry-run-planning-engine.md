@@ -5,13 +5,13 @@ search:
 
 # ADR-034: Unified dry-run planning engine for server mutating commands
 
-Use one planning engine for dry-run behavior across every command that changes state. A global --dry-run flag covers every such command, defaulting to stateful planning for server-mutating command handlers, with static planning previews retained as a compatibility and safety fallback and for commands that change only this machine.
+`--dry-run` is one global flag, and every command that changes state answers it through one planning engine: the profiles and the interceptor in `internal/cli/dryrun.go`, and the preview in `internal/cli/dryrunpreview`. A command that changes the server checks, in its own handler, the state its change depends on, and builds the preview from what it found. A command that checks nothing first, and one that changes only this machine, gets a static preview from the interceptor: the change it would make, predicted. Neither may make its change under `--dry-run`. Every preview answers with a verdict and its tier (ADR-096, ADR-078).
 
-Implement dry-run behavior through shared planning abstractions rather than per-command ad-hoc flags. Preview a command that changes this machine as well as one that changes the server; neither may make its change under --dry-run. Ensure dry-run output explicitly reports planning mode and capability signaling for each operation path.
+Implement a preview through these shared abstractions, never through a flag or an output of the command's own. Plan a server mutation statefully wherever the state it depends on can be read. Test a stateful preview against a live Bitbucket, and read the state back afterwards to show the dry run changed nothing.
 
-A single planning model keeps previews from diverging between commands, improves operator trust, and keeps output behavior consistent across automation and interactive usage. Making stateful planning the primary implementation for server mutations improves preview quality, enables realistic no-side-effect validation against live Bitbucket state, and preserves a narrow static fallback for unsupported or future paths without redefining the main operator contract.
+One model keeps previews from diverging between commands and keeps their output the same for scripts and people. A check against live state predicts what a static preview cannot: a create that would conflict, a set that is already the value asked for, a permission the caller lacks.
 
 ## Not chosen
 
-- **Keep dry-run command-local**: Creates semantic drift, duplicated logic, and inconsistent output contracts.
-- **Static-only dry-run globally**: Misses opportunities to provide stronger preflight confidence where API/state checks exist.
+- **Keep dry-run command-local**: Previews drift apart in meaning, logic and output.
+- **Static-only dry-run globally**: Gives up the checks that make a preview worth trusting where the state can be read.
