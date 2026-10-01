@@ -3,9 +3,9 @@
 //
 // ADR-088 says bb serves every release Atlassian supports and never drops one,
 // that every release in the window passes the live suite at least once, and
-// that each difference between releases is catalogued. Three things had to
-// agree for that to be true, and nothing checked that they did: the window
-// itself, the differences declared in internal/compat, and the table in
+// that each difference between releases is catalogued. Three things have to
+// agree for that to be true, and this checks that they do: the window itself,
+// the differences declared in internal/compat, and the table in
 // docs/site/reference/bitbucket-versions.md a reader decides on.
 //
 // docs/quality/bitbucket-releases.json is the window. It is a baseline in the
@@ -36,11 +36,14 @@ import (
 type window struct {
 	Version int `json:"version"`
 	// OldestServed is the release bb states it serves from, as the versions
-	// page states it: major and minor, because a floor is not a patch.
+	// page states it: major and minor, because a floor is not a patch. It is
+	// never newer than the oldest release tested, and may be older: a release
+	// past Atlassian's support stops being tested, not served.
 	OldestServed string `json:"oldestServed"`
 	// Releases are the exact releases the live suite is run against, one patch
-	// per minor in the window. Nothing in the repository can derive this list:
-	// which patch of 9.4 to run is a choice, and it is made here.
+	// per minor tested, ending with the release the harness runs. Nothing in
+	// the repository can derive this list: which patch of 9.4 to run is a
+	// choice, and it is made here.
 	Releases []string `json:"releases"`
 }
 
@@ -102,7 +105,7 @@ func main() {
 			}
 			os.Exit(1)
 		}
-		fmt.Printf("%d releases served from %s, %d differences catalogued\n", len(recorded.Releases), recorded.OldestServed, len(mustDifferences()))
+		fmt.Printf("served from %s, %d releases tested, %d differences catalogued\n", recorded.OldestServed, len(recorded.Releases), len(mustDifferences()))
 	default:
 		fmt.Printf("bb serves Bitbucket Data Center %s and every release after it.\n", recorded.OldestServed)
 		fmt.Printf("The live suite is run against: %s\n", strings.Join(recorded.Releases, ", "))
@@ -140,8 +143,19 @@ func check(recorded window) ([]string, error) {
 	}
 
 	oldest, newest := sorted[0], sorted[len(sorted)-1]
-	if floor := fmt.Sprintf("%d.%d", oldest.Major, oldest.Minor); floor != recorded.OldestServed {
-		problems = append(problems, fmt.Sprintf("%s serves from %s but its oldest release is %s", windowPath, recorded.OldestServed, oldest))
+
+	// A release past Atlassian's support stops being tested, not served
+	// (ADR-088), so the floor may be older than the oldest release tested. It
+	// may not be newer: bb would be testing a release it does not serve.
+	floor, readable := servedFloor(recorded.OldestServed)
+	if !readable {
+		problems = append(problems, fmt.Sprintf("%s serves from %q, which is not a release's major and minor alone", windowPath, recorded.OldestServed))
+		floor = compat.Release{Major: oldest.Major, Minor: oldest.Minor}
+	}
+	if (compat.Release{Major: oldest.Major, Minor: oldest.Minor}).Before(floor) {
+		problems = append(problems, fmt.Sprintf(
+			"%s serves from %s but tests %s, which is older than any release it serves; serve from %d.%d or stop testing %s",
+			windowPath, recorded.OldestServed, oldest, oldest.Major, oldest.Minor, oldest))
 	}
 
 	provisioned, err := harnessRelease()
@@ -162,15 +176,32 @@ func check(recorded window) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	problems = append(problems, compareToPage(differences, string(page), recorded, oldest, newest)...)
+	problems = append(problems, compareToPage(differences, string(page), recorded, floor, newest)...)
 
 	return problems, nil
+}
+
+// servedPattern is the form of oldestServed: a major and a minor release.
+var servedPattern = regexp.MustCompile(`^[0-9]+\.[0-9]+$`)
+
+// servedFloor reads the oldest release served, and reports whether it is one.
+func servedFloor(oldestServed string) (compat.Release, bool) {
+	if !servedPattern.MatchString(oldestServed) {
+		return compat.Release{}, false
+	}
+	floor, err := compat.ParseRelease(oldestServed)
+
+	return floor, err == nil
 }
 
 // compareToPage checks the catalogue a reader sees against the differences the
 // code acts on. They are compared by the release each names, which is the part
 // that decides what bb does; the wording is for the reader and is not checked.
-func compareToPage(differences []difference, page string, recorded window, oldest, newest compat.Release) []string {
+//
+// floor is the oldest release served. A difference it already has is one no
+// release served lacks, which is why it is compared with the floor rather than
+// with the oldest release tested: a release below that is still served.
+func compareToPage(differences []difference, page string, recorded window, floor, newest compat.Release) []string {
 	problems := []string{}
 
 	if !strings.Contains(page, "Data Center "+recorded.OldestServed+" and every release after it") {
@@ -187,9 +218,10 @@ func compareToPage(differences []difference, page string, recorded window, oldes
 		key := fmt.Sprintf("%d.%d", found.Since.Major, found.Since.Minor)
 		declared[key]++
 
-		if found.Since.Before(oldest) {
+		if !floor.Before(found.Since) {
 			problems = append(problems, fmt.Sprintf(
-				"%s arrived in %s, before the oldest release served (%s), so every release in the window has it", found.Name, key, oldest))
+				"%s arrived in %s, no later than the oldest release served (%d.%d), so every release served has it",
+				found.Name, key, floor.Major, floor.Minor))
 		}
 		if newest.Before(found.Since) {
 			problems = append(problems, fmt.Sprintf(
