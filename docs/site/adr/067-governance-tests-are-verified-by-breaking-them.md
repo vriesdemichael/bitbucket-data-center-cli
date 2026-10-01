@@ -100,6 +100,7 @@ A governance test asserts an invariant over everything of one kind the repositor
 - TestAmbientGitConfigGuardIsInstalledWhereTestsShellOutToGit: a package running git installs the guard.
 - TestTheSealIsInstalledWhereTestsLoadTheConfiguration: a package whose tests load the configuration seals its process.
 - TestTheSealWritesEveryVariableBBReads: the seal writes every variable bb reads, so neither the shell nor a .env reaches a unit test through one.
+- TestTheSealEmptiesWhatSaysNobodyIsThere: the seal empties every variable the interactivity check takes as nobody being there, so a runner or a coding harness does not change what a unit test sees.
 - TestNoFixtureIsNamedFromTheClock: no test builds a fixture name from time.Now().
 - TestTheRepositoryHasNoUnclassifiedMocks: every mocked server under internal is classified.
 - TestBitbucketImageIsProposedButNotAutoMerged: the product image is proposed but held from auto-merge.

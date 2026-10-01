@@ -29,7 +29,7 @@ import (
 // colour on every machine. TestTheSealWritesEveryVariableBBReads, in
 // internal/config, fails when bb reads a BB_ or BITBUCKET_ name this list
 // leaves out. ADMIN_USER, ADMIN_PASSWORD and NO_COLOR it cannot see, so they
-// are kept here by hand.
+// are kept here by hand; the interactivity names have a guard of their own.
 var ambientSettings = []string{
 	// Connection and credentials.
 	"BITBUCKET_URL",
@@ -62,9 +62,25 @@ var ambientSettings = []string{
 	"BB_WEBHOOK_SECRET",
 	"BB_WEBHOOK_PASSWORD",
 
-	// Interactivity.
+	// Interactivity. The names after the two of bb's own are the ones
+	// interactive.Detect takes as "nobody is there"; set, they change the
+	// reason a refusal gives, so a test saw "CI is set" on a runner and
+	// "CLAUDECODE is set" under Claude Code.
+	// TestTheSealEmptiesWhatSaysNobodyIsThere, in internal/cli/interactive,
+	// holds this to that list.
+	// TERM is left alone: only "dumb" means anything to bb, and git and the
+	// renderer read it too.
 	"BB_NO_PROMPT",
 	"BB_NO_PROMPT_VARS",
+	"CI",
+	"DEBIAN_FRONTEND",
+	"NONINTERACTIVE",
+	"CLAUDECODE",
+	"AI_AGENT",
+	"CURSOR_TRACE_ID",
+	"CODEX_THREAD_ID",
+	"REPLIT_ENVIRONMENT",
+	"AIDER_CHAT",
 
 	// Updates.
 	"BB_DISABLE_UPDATE",
