@@ -50,7 +50,7 @@ A governance test asserts an invariant about the codebase rather than a behaviou
 - TestADRDoesNotNameToolsThatDoNotExist: a record does not name a removed tool.
 - TestADRDoesNotNameFlagsThatDoNotExist: a record does not name a removed flag.
 - TestEveryADRMentionHasARecord: nothing in the repository names a record that does not exist.
-- TestRecordsInForceDoNotNameABitbucketVersion: a record in force does not restate a Bitbucket release.
+- TestNoRecordNamesABitbucketVersion: no record restates a Bitbucket release.
 - TestGovernanceTestsNamedInThisRecordExist: this list names only tests that exist.
 - TestEveryHookRunnableGateRunsOnBothSides: every gate a git hook can run runs locally and in CI.
 - TestNoGateIsDefinedAndNeverRun: a task named like a check is reachable from something that runs it.

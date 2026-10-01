@@ -374,9 +374,10 @@ prose, and may end with a `## Not chosen` list of `- **Alternative**: why not`.
 - When a rule no longer holds, delete the record and every mention of its number;
   `TestEveryADRMentionHasARecord` fails on one left behind. A number is never
   used again.
-- Some records still open with a standing line (`> Changed in part by …`,
-  `> Replaced by …`). They are being folded into the records they point at; do
-  not add a new one.
+- Say each thing once. A `Not chosen` entry gives a reason the body does not
+  already give; one that repeats the body is cut.
+- Keep it short. Every sentence states a rule, a reason it holds, or what to do;
+  an agent carries what it reads in its context.
 - After adding or deleting a record, run `task docs:export-adr-index`.
 
 ## Development Tips & Gotchas

@@ -33,8 +33,8 @@ var qualifiedVersionPattern = regexp.MustCompile(
 // narrower second rule below.
 var bareVersionPattern = regexp.MustCompile(`\b(\d+\.\d+(?:\.\d+)*)\b`)
 
-// TestRecordsInForceDoNotNameABitbucketVersion guards against a record in
-// force that names one Bitbucket release while the harness runs another.
+// TestNoRecordNamesABitbucketVersion guards against a record that
+// names one Bitbucket release while the harness runs another.
 //
 // ADR-042 records the Bitbucket release in exactly one place, the harness base
 // image tag, and ADR-068 keeps the vendored OpenAPI reference derived from it.
@@ -45,9 +45,8 @@ var bareVersionPattern = regexp.MustCompile(`\b(\d+\.\d+(?:\.\d+)*)\b`)
 //
 // Only the title and the rule are read. An alternative that was not chosen may
 // say which release it would not have worked on; that is argument, not a copy
-// of the release under test. A record that no longer holds is exempt, because
-// its standing line is what tells a reader not to act on it.
-func TestRecordsInForceDoNotNameABitbucketVersion(t *testing.T) {
+// of the release under test.
+func TestNoRecordNamesABitbucketVersion(t *testing.T) {
 	t.Parallel()
 
 	root := repositoryRoot(t)
@@ -118,14 +117,6 @@ func TestBitbucketVersionScanDetectsAStaleRecord(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "the same claim in a record that was replaced",
-			record: adr.Record{
-				Standing: "Replaced by [ADR-068](068-x.md).",
-				Body:     "Use Atlassian Bitbucket Data Center 9.4 REST documentation.",
-			},
-			want: false,
-		},
-		{
 			name: "a release named by an alternative that was not chosen",
 			record: adr.Record{
 				Body:      "Target the newest Bitbucket version that runs in this project's container stack.",
@@ -161,10 +152,6 @@ func TestBitbucketVersionScanDetectsAStaleRecord(t *testing.T) {
 // otherwise far more likely to be a linter or generator version, and flagging
 // those would make the guard something people work around.
 func versionsNamedIn(record adr.Record, harness []string) []string {
-	if !record.InForce() {
-		return nil
-	}
-
 	current := map[string]bool{}
 	for _, version := range harness {
 		current[version] = true
