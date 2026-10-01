@@ -47,7 +47,8 @@
             "unknown_outcome",
             "unsupported",
             "internal"
-          ]
+          ],
+          "type": "string"
         },
         "message": {
           "description": "Human-readable failure description, without the kind prefix shown on stderr.",
