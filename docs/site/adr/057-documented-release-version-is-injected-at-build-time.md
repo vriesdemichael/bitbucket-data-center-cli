@@ -5,53 +5,20 @@ search:
 
 # ADR-057: Documented release version is injected at build time
 
-> Replaces [ADR-055](055-documented-release-versions-are-validated-and-synchronized.md).
+Documentation names no bb release as a literal. A page the site builds gets the version when the site is built: `docs/main.py` gives mkdocs-macros `bb_version`, bare, for asset file names, and `bb_version_tag`, with its v, for release tags. It takes them from `BB_DOCS_VERSION`, else the newest git tag, else the placeholder X.Y.Z, and `task docs:deploy-version` sets `BB_DOCS_VERSION` to the release being published, so each published build shows the release it was built from. The macros take double square brackets rather than double braces, so the Ansible and Taskfile Jinja the pages show reaches the reader as written.
 
-No source file pins a release version. The documentation site resolves it once, when the site is built, and the README does not state one at all.
+Every release asset is published twice: under its versioned name, `bb_1.2.3_linux_amd64.tar.gz`, and without the version, `bb_linux_amd64.tar.gz`, which `/releases/latest/download/` serves. The copies are made before the checksum and signing steps, so `sha256sums.txt` lists both names, `sha256sum -c --ignore-missing` verifies whichever was downloaded, and both are signed. Homebrew, WinGet and Scoop use the versioned names.
 
-1. Build-time Injection: `docs/main.py` supplies `bb_version` and `bb_version_tag` to
-   mkdocs-macros, reading `BB_DOCS_VERSION` when set, otherwise the newest git tag, otherwise the
-   placeholder `X.Y.Z`. `task docs:deploy-version` passes the release version through that
-   variable, so each published snapshot renders the release it was built for.
+So instructions that install the newest release name no version: the README and the quickstart use `latest/download` URLs. Instructions that pin a release on purpose, to mirror it into an internal registry, set a Dockerfile `ARG` or verify one named artifact, use the macros. `tools/docs-lint` fails a literal version that is not the newest release, and `task docs:sync-version` rewrites one.
 
-2. Non-colliding Delimiters: the macros plugin uses double square brackets rather than its default double
-   braces, because the documentation shows Ansible and Taskfile snippets containing literal
-   Jinja that must reach the reader unevaluated. `enterprise-hardening.md` already carries an
-   Ansible `{{ bb_version }}` belonging to the reader's own playbook run.
+Never write a literal bb release version into documentation. In a page MkDocs builds, use the `bb_version` or `bb_version_tag` macro in double square brackets. In the README, and anything else read outside MkDocs, state no version: point at the releases page or use a `latest/download` URL. To show literal Jinja for another tool, write `{{ ... }}`; it passes through untouched.
 
-3. Version-less Asset Aliases: every release publishes each download twice, once as
-   `bb_1.2.3_linux_amd64.deb` and once as `bb_linux_amd64.deb`. The second name is reachable at
-   `/releases/latest/download/`, so an install snippet needs no version at all. The aliases are
-   created before the checksum step, so `sha256sums.txt` lists both names and
-   `sha256sum -c --ignore-missing` verifies whichever was downloaded; the signing step's globs
-   cover them too. The versioned names are unchanged, because Homebrew, WinGet and Scoop all
-   reference them.
-
-4. Instructions That Install the Newest Release Name No Version: the README and the quickstart use
-   the `latest/download` URLs. The README is rendered by GitHub, so no substitution can reach it,
-   and it now needs none.
-
-5. Instructions That Pin Deliberately Keep the Version: the enterprise hardening and threat model
-   pages mirror into internal registries, pin a Dockerfile ARG, pass `--version` to WinGet and
-   verify one named artifact. Pinning is the point there, so those keep the build-time macro, which
-   renders a concrete current release as a worked example.
-
-6. Static Validation Is Retained: `tools/docs-lint` still fails any literal version older than the
-   newest tag, and `task docs:sync-version` still rewrites one. Nothing currently pins a version,
-   so both are guards against a future hardcoding rather than part of the release path.
-
-Never write a literal release version into documentation. In pages built by MkDocs use the bb_version macro (bare, for asset filenames) or bb_version_tag (v-prefixed, for release tags), in double square brackets. In the README, and anywhere else rendered outside MkDocs, do not state a version at all -- point the reader at the releases page. When a documentation snippet must show literal Jinja for another tool, write it as `{{ ... }}` and it will pass through untouched.
-
-ADR-055 pinned literals and kept them current with `task docs:sync-version`, run by the release workflow before publishing. The rewrite reached the built site but never reached the repository: `mike deploy` pushes the built output to gh-pages and the modified markdown was discarded.
-So every release left the checked-in documentation a version behind, `docs-lint` failed on a clean checkout of main, and the next contributor's push was blocked by a release they had nothing to do with. This happened twice within a single afternoon, across v2.12.0 and v2.13.0.
-Committing the rewrite back would fix it, but main is protected and rebase-only, so the release workflow would have to open a pull request against itself -- a CI overhaul out of proportion to the problem. Injecting at build time removes the class of failure instead: with nothing pinned, there is nothing to go stale, and the release workflow already knows the version to inject.
-ADR-055 rejected this approach because template tags are not evaluated when markdown renders on GitHub. That objection was correct and is answered rather than ignored: the only file GitHub renders directly, the README, now states no version at all.
+A literal goes stale at the next release. A rewrite made by the release workflow reaches the built site but not the repository, because `main` takes no commit from the workflow, so the checked-in docs would fall a release behind and fail docs-lint for the next person to push. With nothing pinned, nothing goes stale. GitHub renders the README without substituting anything, which is why the README names no version at all.
 
 ## Not chosen
 
-- **Commit the synchronized markdown back to main from the release workflow**: main is protected and rebase-only, so the workflow would have to raise and merge a pull request against itself. That is a substantial change to release automation to keep a mechanism whose only job is preventing staleness that build-time injection makes impossible.
-- **Keep ADR-055 and move the version check out of the pre-push and quality gates**: Stops contributors being blocked but leaves the published README and site advertising an old release until someone notices, which is the failure ADR-055 existed to prevent.
-- **Publish a VERSION.txt asset for the README to read**: Its filename carries no version, so /releases/latest/download/VERSION.txt would resolve and a snippet could read the current release from it. Rejected because it still leaves the reader making two requests and carrying a shell variable, and a failed fetch leaves that variable empty and builds a nonsense URL. Aliasing the assets removes the variable entirely.
-- **Read the version from the existing changelog.json asset**: It is already published at a version-less path and its first field is the version, so no new asset would be needed. Rejected for the same reason as VERSION.txt, and because parsing it in a copy-paste snippet needs jq, which is not reliably present, or a brittle grep of JSON.
-- **Publish only version-less names and drop the versioned ones**: Homebrew, WinGet and Scoop all reference the versioned filenames, and anyone pinning a release depends on them. Publishing both costs duplicate assets and nothing else.
-- **Use the macros plugin with its default double-brace delimiters**: The documentation shows Ansible and Taskfile snippets whose literal Jinja must survive to the reader. Default delimiters would evaluate them and silently corrupt working examples.
+- **Commit the synchronised docs back to main from the release workflow**: `main` takes changes through pull requests, so the workflow would have to open and merge one against itself, a large change to release automation to keep a mechanism that injection makes unnecessary.
+- **Pin literals and drop the check that holds them current**: Nobody is blocked, and the README and the site advertise an old release until someone notices.
+- **Publish the version for a snippet to read, as a VERSION.txt asset or from changelog.json**: The reader makes two requests and carries a shell variable, a failed fetch leaves it empty and builds a nonsense URL, and reading changelog.json needs jq or a brittle grep. Aliased assets need no variable at all.
+- **Publish only version-less names**: Homebrew, WinGet and Scoop reference the versioned names, and so does anyone pinning a release.
+- **The macros plugin's default double-brace delimiters**: They would evaluate the Ansible and Taskfile Jinja the pages show, and silently corrupt working examples.

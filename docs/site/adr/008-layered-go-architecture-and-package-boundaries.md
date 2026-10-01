@@ -5,12 +5,12 @@ search:
 
 # ADR-008: Layered Go architecture and package boundaries
 
-Implement the system in four layers with strict dependency direction: transport -> api services -> workflows -> cli. Cross-layer shortcuts are disallowed unless explicitly approved in a superseding decision.
+bb is built in layers, and a dependency points down, never up. `internal/transport` sends requests to Bitbucket and the other servers bb talks to; `internal/services` turns Bitbucket's API into operations; `internal/workflows` strings several operations into one; `internal/cli` and the MCP server in `internal/mcp` put them in front of a person or an agent. A layer may use any layer below it, and none uses a layer above. Something two layers both need lives outside both, as `internal/safederef` does. `TestTheServiceLayerDoesNotImportTheCLI` holds the service layer to this.
 
-Place new code in the narrowest responsible layer. Keep transport concerns out of workflows and CLI concerns out of service packages. When a change seems to require cross-layer coupling, propose a design adjustment first.
+Put new code in the narrowest layer that owns it: no request handling in a command, and no flag or output concern in a service. When a change seems to need a dependency that points up, change the design instead.
 
-Strong boundaries reduce accidental complexity and make Bitbucket behavior handling testable. This structure keeps a stable public interface while isolating server quirks in controlled locations.
+A Bitbucket quirk is then handled once, in the layer that meets it, and tested there, and the command line and the MCP server present the same operations.
 
 ## Not chosen
 
-- **Single service package with mixed responsibilities**: Leads to hard-to-test coupling between HTTP, mapping, and workflow behavior.
+- **One service package with mixed responsibilities**: Couples HTTP, mapping and workflow behaviour so that none of them can be tested alone.
