@@ -254,7 +254,7 @@ type AliasMatch struct {
 
 // Overrides are per-invocation values that outrank the environment when
 // configuration is resolved, for flags like `bb api --host` and
-// `bb ai mcp serve --host/--token`.
+// `bb ai mcp serve --host`.
 //
 // They exist so a command can target a specific instance without writing to the
 // process environment. Setting BITBUCKET_URL or BITBUCKET_TOKEN to steer a load
