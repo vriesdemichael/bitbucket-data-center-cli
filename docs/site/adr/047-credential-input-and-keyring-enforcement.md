@@ -11,7 +11,7 @@ A keyring entry is keyed by the host and a digest of the configuration file's ca
 
 Warnings about credential handling go to stderr, never stdout: under `--json` stdout is a machine contract, and prose there makes the envelope unparseable. A test that shares one buffer for both streams hides that bug. When a policy refuses an operation, refuse before writing anything; a check that fails after the secret has reached disk is worse than none. Reach the keyring through the `keyringSet`, `keyringGet` and `keyringDelete` indirection in `internal/config`, never through go-keyring directly. It gives a test binary an in-memory store, and a test swaps it to exercise an unavailable keyring; go-keyring's own mock replaces a package-level provider with no way to restore it, which makes later tests in the binary depend on their order.
 
-The keyring is missing on the hosts bb runs on most in automation: headless servers, CI containers, WSL without a keyring service, jump boxes. Plaintext is the ordinary path there, so an operator who mandates keyring storage needs a way to require it, not a warning. A credential outlives the login that stored it, so the requirement has to hold where it is read. For CI, supply `BITBUCKET_TOKEN` per run and do not log in at all.
+The keyring is missing on the hosts bb runs on most in automation: headless servers, CI containers, WSL without a keyring service, jump boxes. Plaintext is the ordinary path there, so an operator who mandates keyring storage needs a way to require it, not a warning. For CI, supply `BITBUCKET_TOKEN` per run and do not log in at all.
 
 ## Not chosen
 

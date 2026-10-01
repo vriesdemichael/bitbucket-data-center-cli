@@ -15,4 +15,3 @@ Logging in once per host beats exporting variables in every shell, and the keyri
 
 - **Environment variables only**: Fragile across shells and sessions, and awkward with more than one host.
 - **Plaintext secrets in the configuration file**: Puts every credential on disk; the file is the fallback, not the store.
-- **Fall back to the default host's credential when nothing matches**: Saves naming the host, and sends the user's token wherever a file or an agent points bb.
