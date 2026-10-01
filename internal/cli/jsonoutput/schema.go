@@ -23,25 +23,6 @@ func SchemaID(siteVersion, schemaFileName string) string {
 	return SchemaBaseURL(siteVersion) + schemaFileName
 }
 
-// EnvelopeSchemaFor builds a full bb.machine envelope schema whose data
-// field is constrained to the supplied dataSchema.  title and description are
-// shown in documentation tooling.
-func EnvelopeSchemaFor(schemaFileName, title, description string, dataSchema map[string]any) map[string]any {
-	return map[string]any{
-		"$schema":              jsonSchemaVersion,
-		"$id":                  SchemaID(docsite.LatestVersion, schemaFileName),
-		"title":                title,
-		"description":          description,
-		"type":                 "object",
-		"additionalProperties": false,
-		"properties": map[string]any{
-			"data": dataSchema,
-			"meta": schemaValue(MetaSchema()),
-		},
-		"required": []any{"data", "meta"},
-	}
-}
-
 // ErrorEnvelopeSchema describes the envelope written to stdout when any command
 // fails under --json.
 //
