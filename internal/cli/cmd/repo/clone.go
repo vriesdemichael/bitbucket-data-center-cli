@@ -3,6 +3,7 @@ package repocmd
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -451,10 +452,14 @@ func promptForCloneLogin(cmd *cobra.Command, cfg config.AppConfig, cloneHost str
 	}
 
 	// Never in plaintext: the clone has no --allow-insecure-storage to ask for
-	// it, so where the keyring cannot hold the token nothing is stored and the
-	// error names bb auth login with that flag, and BITBUCKET_TOKEN.
+	// it. Where the keyring cannot hold the token, nothing is stored, and the
+	// token the person just typed is used for this clone and kept nowhere; the
+	// note says how to store it.
 	if _, err := config.SaveLogin(config.LoginInput{Host: saveHost, Token: tokenValue, SetDefault: false}); err != nil {
-		return config.AppConfig{}, false, err
+		if !errors.Is(err, config.ErrSecretNotStored) {
+			return config.AppConfig{}, false, err
+		}
+		fmt.Fprintf(output, "The token is used for this clone only. %s\n", apperrors.MessageOf(err))
 	}
 
 	savedCfg := cfg
@@ -491,7 +496,7 @@ func readCloneToken(input io.Reader, output io.Writer) (string, error) {
 
 func newCloneLoginRequiredError(cloneHost string, cause error, attemptedSSH bool) error {
 	message := fmt.Sprintf(
-		"no stored HTTP credentials are configured for %s; run 'bb auth login %s --token <token>' and retry",
+		"no stored HTTP credentials are configured for %s; run 'bb auth login %s --token-stdin' with the token on stdin, and retry",
 		cloneHost,
 		cloneHost,
 	)
