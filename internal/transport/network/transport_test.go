@@ -59,7 +59,10 @@ func TestSafeTransport(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			os.Setenv("BB_BLOCK_EXTERNAL_NETWORK", tt.blockEnv)
+			// The variable is the subject, and t.Setenv puts the seal's value
+			// back: the last case turns the block off, and every test after
+			// this one would otherwise run with the network open.
+			t.Setenv("BB_BLOCK_EXTERNAL_NETWORK", tt.blockEnv)
 
 			// Use a dummy transport for the success cases to avoid real network calls
 			// if the URL is actually reachable.
