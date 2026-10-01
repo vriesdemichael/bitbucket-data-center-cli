@@ -21,13 +21,6 @@ func useConfig(t *testing.T, path string) {
 	t.Helper()
 	t.Setenv("BB_CONFIG_PATH", path)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
-	t.Setenv("BITBUCKET_URL", "")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 }
 
 // storeProfileWithoutSecret writes a config naming the host, as a pre-upgrade

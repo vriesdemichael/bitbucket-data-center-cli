@@ -86,8 +86,6 @@ func TestAWorkspaceProfileReleasesNoStoredCredential(t *testing.T) {
 			}
 			t.Setenv("BB_WORKSPACE_CONFIG_PATH", workspacePath)
 			t.Setenv("BITBUCKET_URL", testCase.bitbucketURL)
-			t.Setenv("BITBUCKET_TOKEN", "")
-			os.Unsetenv("BITBUCKET_TOKEN")
 			if testCase.bitbucketURL == "" {
 				os.Unsetenv("BITBUCKET_URL")
 			}
@@ -141,11 +139,7 @@ func TestAWorkspaceProfileStillNamesItsUsername(t *testing.T) {
 		t.Fatalf("write workspace config: %v", err)
 	}
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", workspacePath)
-	t.Setenv("BITBUCKET_URL", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
 	t.Setenv("BITBUCKET_PASSWORD", "supplied-by-the-caller")
-	os.Unsetenv("BITBUCKET_URL")
-	os.Unsetenv("BITBUCKET_USERNAME")
 	t.Chdir(t.TempDir())
 
 	cfg, err := LoadFromEnv()

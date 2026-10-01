@@ -16,8 +16,6 @@ import (
 func TestLoadFromEnvNonHostDefaults(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
-	t.Setenv("BITBUCKET_VERSION_TARGET", "")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
 	t.Setenv("BB_CA_FILE", "")
 	t.Setenv("BB_INSECURE_SKIP_VERIFY", "")
 	t.Setenv("BB_REQUEST_TIMEOUT", "")
@@ -56,7 +54,6 @@ func TestLoadFromEnvNonHostDefaults(t *testing.T) {
 
 func TestLoadFromEnvErrorsWhenNoHostConfigured(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", "")
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "empty-config.yaml"))
 
 	_, err := LoadFromEnv()
@@ -365,9 +362,6 @@ func TestLoadFromEnvNormalizesURLAndAliasUsername(t *testing.T) {
 	t.Setenv("BITBUCKET_URL", "localhost:7990")
 	t.Setenv("BITBUCKET_USER", "admin")
 	t.Setenv("BITBUCKET_PASSWORD", "admin")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	config, err := LoadFromEnv()
 	if err != nil {
@@ -598,13 +592,6 @@ func TestResolveStoredCredentialsAndLoadFromStoredHost(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
-	t.Setenv("BITBUCKET_URL", "")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	stored := StoredConfig{
 		DefaultHost: "http://stored.local:7990",
@@ -909,12 +896,6 @@ func TestLoadFromEnvUsesStoredTokenBranch(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 	t.Setenv("BITBUCKET_URL", "http://stored.local:7990")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	stored := StoredConfig{
 		DefaultHost: "http://stored.local:7990",
@@ -1491,8 +1472,6 @@ update_base_url: https://workspace-mirror.corp.internal
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", sysPath)
 	t.Setenv("BB_CONFIG_PATH", userPath)
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", wsPath)
-	t.Setenv("BITBUCKET_URL", "")
-	t.Setenv("BITBUCKET_PROJECT_KEY", "")
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
 
 	cfg, err := LoadFromEnv()
@@ -2091,11 +2070,6 @@ hosts:
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 	t.Setenv("BITBUCKET_URL", "https://bb.example.local")
 	t.Setenv("BITBUCKET_TOKEN", "test-token")
-	t.Setenv("BITBUCKET_USERNAME", "")
-	t.Setenv("BITBUCKET_USER", "")
-	t.Setenv("ADMIN_USER", "")
-	t.Setenv("BITBUCKET_PASSWORD", "")
-	t.Setenv("ADMIN_PASSWORD", "")
 
 	cfg, err := LoadFromEnv()
 	if err != nil {

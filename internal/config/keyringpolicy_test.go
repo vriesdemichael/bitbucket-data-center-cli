@@ -35,19 +35,18 @@ func writePlaintextCredentialConfig(t *testing.T, host string) string {
 	return path
 }
 
-func clearAuthEnvironment(t *testing.T) {
+// useStoredConfig turns the stored config back on, which the seal turns off,
+// and clears BB_REQUIRE_KEYRING, which the seal leaves alone. The credential
+// variables need nothing: the seal has already emptied them.
+func useStoredConfig(t *testing.T) {
 	t.Helper()
 
-	for _, key := range []string{
-		"BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD",
-		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
-	} {
-		t.Setenv(key, "")
-	}
+	t.Setenv("BB_REQUIRE_KEYRING", "")
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 }
 
 func TestLoadFromEnvFlagsCredentialsReadFromPlaintextFallback(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://plaintext-flag.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 	t.Setenv("BITBUCKET_URL", host)
@@ -69,7 +68,7 @@ func TestLoadFromEnvFlagsCredentialsReadFromPlaintextFallback(t *testing.T) {
 }
 
 func TestLoadFromEnvRefusesPlaintextWhenKeyringRequired(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://plaintext-refused.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 	t.Setenv("BITBUCKET_URL", host)
@@ -118,7 +117,7 @@ func TestTheStrictLookupRefusesPlaintextWhenKeyringRequired(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			clearAuthEnvironment(t)
+			useStoredConfig(t)
 			host := "https://strict-plaintext.example.invalid"
 			t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 			t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
@@ -157,7 +156,7 @@ func TestTheStrictLookupRefusesPlaintextWhenKeyringRequired(t *testing.T) {
 // requirement refuses only a secret adopted from the plaintext fallback. A
 // stale file entry beside a credential the keyring holds is not one.
 func TestTheStrictLookupKeepsAKeyringCredentialWhenKeyringRequired(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://strict-keyring.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 	t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
@@ -176,7 +175,7 @@ func TestTheStrictLookupKeepsAKeyringCredentialWhenKeyringRequired(t *testing.T)
 }
 
 func TestLoadFromEnvAllowsEnvironmentCredentialsWhenKeyringRequired(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://env-wins.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 	t.Setenv("BITBUCKET_URL", host)
@@ -199,7 +198,7 @@ func TestLoadFromEnvAllowsEnvironmentCredentialsWhenKeyringRequired(t *testing.T
 }
 
 func TestLoadFromEnvRejectsMalformedKeyringPolicy(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://malformed-policy.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 	t.Setenv("BITBUCKET_URL", host)
@@ -254,7 +253,7 @@ func TestRequireKeyringPolicyHonoursTheFlagWithoutTheEnvironment(t *testing.T) {
 }
 
 func TestSaveLoginRejectsRequireKeyringWithMalformedPolicy(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.yaml"))
 	t.Setenv("BB_REQUIRE_KEYRING", "not-a-bool")
 
@@ -364,7 +363,7 @@ func withWorkingKeyring(t *testing.T) map[string]string {
 }
 
 func TestSaveLoginStoresPlaintextWhenAskedAndTheKeyringIsUnavailable(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	withUnavailableKeyring(t)
@@ -431,7 +430,7 @@ func TestSaveLoginRefusesPlaintextUnlessAsked(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			clearAuthEnvironment(t)
+			useStoredConfig(t)
 			configPath, before := existingConfig(t)
 			t.Setenv("BB_CONFIG_PATH", configPath)
 			withUnavailableKeyring(t)
@@ -492,7 +491,7 @@ func TestSaveLoginRequirementOutranksAllowInsecureStorage(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			clearAuthEnvironment(t)
+			useStoredConfig(t)
 			configPath, before := existingConfig(t)
 			t.Setenv("BB_CONFIG_PATH", configPath)
 			t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
@@ -521,7 +520,7 @@ func TestSaveLoginRequirementOutranksAllowInsecureStorage(t *testing.T) {
 // path: a credential stored in plaintext before the rule keeps working on the
 // machine with no keyring, and a login refused there does not take it away.
 func TestARefusedLoginLeavesTheStoredPlaintextCredentialWorking(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://upgraded.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 	t.Setenv("BITBUCKET_URL", host)
@@ -541,7 +540,7 @@ func TestARefusedLoginLeavesTheStoredPlaintextCredentialWorking(t *testing.T) {
 }
 
 func TestSaveLoginRefusesToFallBackWhenKeyringIsRequired(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	withUnavailableKeyring(t)
@@ -563,7 +562,7 @@ func TestSaveLoginRefusesToFallBackWhenKeyringIsRequired(t *testing.T) {
 }
 
 func TestSaveLoginRefusesToFallBackWhenPolicyComesFromTheEnvironment(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.yaml"))
 	t.Setenv("BB_REQUIRE_KEYRING", "1")
 	withUnavailableKeyring(t)
@@ -580,7 +579,7 @@ func TestSaveLoginRefusesToFallBackWhenPolicyComesFromTheEnvironment(t *testing.
 }
 
 func TestSaveLoginKeepsSecretsOutOfTheConfigFileWhenKeyringWorks(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	store := withWorkingKeyring(t)
@@ -606,7 +605,7 @@ func TestSaveLoginKeepsSecretsOutOfTheConfigFileWhenKeyringWorks(t *testing.T) {
 }
 
 func TestStaleInsecureEntryBesideAWorkingKeyringIsNotReportedAsInsecure(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://stale.example.invalid"
 	configPath := writePlaintextCredentialConfig(t, host)
 	t.Setenv("BB_CONFIG_PATH", configPath)
@@ -634,7 +633,7 @@ func TestStaleInsecureEntryBesideAWorkingKeyringIsNotReportedAsInsecure(t *testi
 }
 
 func TestSaveLoginRefusesBasicAuthFallbackWhenKeyringIsRequired(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	withUnavailableKeyring(t)
@@ -661,7 +660,7 @@ func TestSaveLoginRefusesBasicAuthFallbackWhenKeyringIsRequired(t *testing.T) {
 }
 
 func TestSaveLoginStoresPlaintextForBasicAuthWhenAsked(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	withUnavailableKeyring(t)
@@ -682,7 +681,7 @@ func TestSaveLoginStoresPlaintextForBasicAuthWhenAsked(t *testing.T) {
 }
 
 func TestBasicAuthCredentialsAreReadFromTheKeyring(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://basic-keyring.example.invalid"
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	contents := "default_host: " + host + "\nhosts:\n    " + host + ":\n        url: " + host +
@@ -717,7 +716,7 @@ func TestBasicAuthCredentialsAreReadFromTheKeyring(t *testing.T) {
 // the config file while reporting "environment", suppressing both the warning
 // and the BB_REQUIRE_KEYRING check.
 func TestAmbientAuthEnvironmentDoesNotSuppressThePlaintextReport(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://ambient-env.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 	t.Setenv("BITBUCKET_URL", host)
@@ -742,7 +741,7 @@ func TestAmbientAuthEnvironmentDoesNotSuppressThePlaintextReport(t *testing.T) {
 }
 
 func TestAmbientAuthEnvironmentDoesNotBypassTheKeyringPolicy(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://ambient-bypass.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 	t.Setenv("BITBUCKET_URL", host)
@@ -756,7 +755,7 @@ func TestAmbientAuthEnvironmentDoesNotBypassTheKeyringPolicy(t *testing.T) {
 }
 
 func TestEnvironmentSuppliedTokenIsNotReportedAsPlaintext(t *testing.T) {
-	clearAuthEnvironment(t)
+	useStoredConfig(t)
 	host := "https://env-token.example.invalid"
 	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
 	t.Setenv("BITBUCKET_URL", host)
