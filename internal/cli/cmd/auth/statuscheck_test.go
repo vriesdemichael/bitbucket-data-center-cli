@@ -249,8 +249,6 @@ func TestSetupGitWritesThroughTheInjectedGitBackend(t *testing.T) {
 // problem. The outcome depended on whether the developer had run
 // bb auth setup-git, not on the code.
 func TestStatusCommandUsesTheInjectedGitBackend(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-
 	stub := &gitConfigStub{value: `!"/usr/local/bin/bb" auth git-credential`}
 
 	cmd := New(Dependencies{
