@@ -5,7 +5,7 @@ search:
 
 # ADR-078: A dry run's tier is the weakest of its checks, not a label the author writes
 
-Every item a dry run checks states how its prediction was reached, as one of three tiers: server-validated, where Bitbucket answered the exact question through its own dry-run endpoint or an equivalent authoritative call; preconditions-checked, where the caller's permission and the current state were both fetched and the preconditions that decide the operation were evaluated; and predicted, where the answer was derived from partial state. The verdict reports the weakest tier among its items, so it claims no more than its weakest check. An item that states no tier is predicted, and so is a preview with nothing checked. A command that only reads runs, and its verdict is server-validated. A verdict found as a failure is server-validated when Bitbucket gave the answer, and preconditions-checked when bb found it before asking.
+Every item a dry run checks states how its prediction was reached, as one of three tiers: server-validated, where Bitbucket answered the exact question through its own dry-run endpoint or an equivalent authoritative call; preconditions-checked, where the caller's permission and the current state were both fetched and the preconditions that decide the operation were evaluated; and predicted, where the answer was derived from partial state. The verdict reports the weakest tier among its items. An item that states no tier is predicted, and so is a preview with nothing checked. A command that only reads runs, and its verdict is server-validated. A verdict found as a failure is server-validated when Bitbucket gave the answer, and preconditions-checked when bb found it before asking.
 
 Each command's profile in `dryRunProfiles` declares the strongest tier its preview reaches when every check can be made, and its `--dry-run` help line and `--describe` are generated from that declaration. `TestEveryStatefulProfileDeclaresItsTier` fails on a stateful profile that names none. A preview may report less than its declared tier and never more, and the live suite fails one that reports more.
 
@@ -15,5 +15,4 @@ A label typed beside a prediction is only as honest as its author is modest, and
 
 ## Not chosen
 
-- **A confidence label the author writes, with the rule in review guidance**: Nothing relates the label to what the code checked, so it stays a matter of the author's modesty.
 - **Infer the tier statically from what each call site does**: A permission pre-flight plus a non-constant predicted action classifies most sites correctly and over-credits the rest, because fetching state is not the same as evaluating the preconditions. It makes a good first guess and a bad contract.
