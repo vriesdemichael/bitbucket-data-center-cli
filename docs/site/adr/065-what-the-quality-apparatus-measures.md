@@ -8,8 +8,8 @@ search:
 Each part of the quality apparatus answers a question no other part does:
 
 - Patch line coverage blocks new untested code, with a lower bar for a patch too small for a percentage to mean anything.
-- Global line coverage, over cmd/ and internal/ without generated code, catches erosion: a deleted test, or a refactor that drops whole paths, neither of which shows as an uncovered changed line. It is not a stricter patch gate.
-- Raw line coverage, the same measurement with generated code included, is printed and labelled as such, and not gated.
+- Global line coverage, over cmd/ and internal/ without generated code, catches erosion: a deleted test, or a refactor that drops whole paths, neither of which shows as an uncovered changed line. It is not a stricter patch gate, and its floor is chosen on its own, not to match the patch floor.
+- Raw line coverage, the same measurement with generated code included, is printed and not gated, and labelled as such: most of the tree is the generated client, so unlabelled it reads as the project failing.
 - Spec coverage records which Bitbucket operations the CLI calls at all.
 - Command reach records which commands a live test runs against a real server and asserts on (ADR-004). It is binary per command and says nothing about the flags or paths within one; what it catches is a command no live test exercises.
 - `TestEveryCommandIsModelled` requires every runnable command to publish the schema of its result, or to say why it has none.
@@ -22,7 +22,7 @@ Deliberately not measured: mutation testing, live-suite flake rate, dependency f
 
 Before adding a mechanism, say which axis it belongs to and what it catches that the others do not; more coverage is not an answer. Add a gate that needs no Bitbucket instance to quality:verify in Taskfile.yml and as a step in a CI job outside the live one. Put a coverage threshold in .github/coverage-thresholds.env, never in Taskfile.yml or a workflow, and do not lower one to make a change pass. When patch coverage fails, read the uncovered lines the gate prints. If they are unreachable, the code is wrong rather than the gate: extract the decision into something a test can reach. A metric whose threshold is zero is not a gate; say that it is reported, or delete it. Name a metric for what it measures: command reach counts commands reached, not lines covered within them.
 
-A gate that runs in one place only is checked by nobody, and its false positives cannot be told from its true ones; a gate that runs in both is checked by the disagreement between them. One that runs only in a hook is advisory, because nothing stops a branch that skipped the hook. A threshold stated twice can disagree silently, and the failure is a developer who believes a gate passed. The global floor runs with little headroom, which is tolerable only because its job is narrow; thin headroom is a signal to add tests, never to lower the floor.
+A gate that runs in one place only is checked by nobody, and its false positives cannot be told from its true ones; a gate that runs in both is checked by the disagreement between them. One that runs only in a hook is advisory, because nothing stops a branch that skipped the hook. A threshold stated twice can disagree silently, and the failure is a developer who believes a gate passed. The global floor runs with little headroom, which is tolerable only because its job is narrow.
 
 ## Not chosen
 
