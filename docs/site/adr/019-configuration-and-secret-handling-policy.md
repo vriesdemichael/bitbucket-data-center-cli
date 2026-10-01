@@ -13,5 +13,4 @@ A failure at load time is cheaper to trace than one halfway through a command. A
 
 ## Not chosen
 
-- **Best-effort validation and permissive startup**: Delays failures and makes them harder to trace.
 - **Print secrets for troubleshooting**: A secret printed once is in a scrollback, a CI log or a support ticket from then on.

@@ -13,7 +13,7 @@ outcome classifies a failed exchange once, for both clients, and only a transien
 
 Do not write HTTP behaviour in a service or workflow package; use the clients, their error mapping and their paging. Decide a retry through retrypolicy, never with a status or method check at the call site, and have any new transport that loops on failure consult it. A request whose body cannot be rewound returns an error rather than a response whose body an earlier attempt already consumed. Wrap a transport error with apperrors.Transport, which keeps its classification; TestNoFailureIsWrappedAsTransient fails on New(KindTransient, message, err).
 
-Authentication, timeouts, retries and paging written once behave the same in every command. A retry rule can be checked only when it says which methods and which statuses it covers.
+Authentication, timeouts, retries and paging written once behave the same in every command.
 
 ## Not chosen
 

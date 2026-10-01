@@ -10,8 +10,3 @@ search:
 Implement a preview through these shared abstractions, never through a flag or an output of the command's own. Plan a server mutation statefully wherever the state it depends on can be read. Test a stateful preview against a live Bitbucket, and read the state back afterwards to show the dry run changed nothing.
 
 One model keeps previews from diverging between commands and keeps their output the same for scripts and people. A check against live state predicts what a static preview cannot: a create that would conflict, a set that is already the value asked for, a permission the caller lacks.
-
-## Not chosen
-
-- **Keep dry-run command-local**: Previews drift apart in meaning, logic and output.
-- **Static-only dry-run globally**: Gives up the checks that make a preview worth trusting where the state can be read.

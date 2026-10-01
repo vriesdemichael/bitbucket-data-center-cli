@@ -5,7 +5,7 @@ search:
 
 # ADR-088: Every Bitbucket release Atlassian supports is served, and none is dropped
 
-bb serves every Bitbucket Data Center release Atlassian supports, and never drops one. A release past Atlassian's end of support stops being tested, not served. The window is docs/quality/bitbucket-releases.json: the oldest release served, and the releases the live suite is run against, ending with the one the harness runs. docs/site/reference/bitbucket-versions.md states the oldest to readers and catalogues each difference. A fix ships in bb's next release; no earlier bb release is patched.
+bb serves every Bitbucket Data Center release Atlassian supports, and never drops one. A release past Atlassian's end of support stops being tested, not served. The window is docs/quality/bitbucket-releases.json: the oldest release served, and the releases the live suite is run against, ending with the one the harness runs. docs/site/reference/bitbucket-versions.md states the oldest to readers and catalogues each difference.
 
 bb is generated against the newest release (ADR-042). An older release behaves the same except where the versions page catalogues a difference, and each difference is handled in the call it affects and nowhere else. The call asks the instance's release through internal/compat, once per instance per process, and only when the request or the answer is one the release changes. Where bb can make the older release answer as the newest does, it does. Where it cannot, it refuses before sending, with kind unsupported (exit 14), naming the release that has the capability, and a dry run gives that refusal as its verdict.
 

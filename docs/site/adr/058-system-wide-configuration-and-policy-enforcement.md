@@ -25,7 +25,5 @@ An organisation that deploys bb through Ansible, Jamf, Intune or Group Policy ne
 
 ## Not chosen
 
-- **Only support environment variables for policy**: An unprivileged user can set or unset them in their own shell, defeating fleet-wide enforcement.
 - **System files only, without the Windows registry**: Windows fleets are managed through Group Policy and Intune, which target `HKLM\Software\Policies`. Flat files alone would need custom scripting rather than standard GPO.
 - **Check the owner and mode of the policy file before trusting it**: Polices an operating system administration problem from inside an application, and would have to decide what a correct owner is on Windows, where the answer is an ACL rather than a uid.
-- **Have bb create the system configuration directory on first run**: On Windows it would then be created by the first unprivileged account to run bb, which would own the tier that outranks its own configuration.
