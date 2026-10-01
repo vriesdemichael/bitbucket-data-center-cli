@@ -613,15 +613,27 @@ func TestApplyInferredRepositoryContext(t *testing.T) {
 	})
 
 	t.Run("non-repository git context is ignored", func(t *testing.T) {
+		// Git has to be asked for the answer to be ignored: a configuration
+		// that failed to load stops inference before git, and is ignored too.
+		gitAsked := false
 		gitBackendFactory = func() git.Backend {
+			gitAsked = true
 			return inferenceGitBackendStub{rootErr: errors.New("fatal: not a git repository (or any of the parent directories): .git")}
 		}
 
 		cmd := &cobra.Command{Use: "branch list"}
 		cmd.Flags().String("repo", "", "")
 
-		if err := configured().applyInferredRepositoryContext(cmd, false); err != nil {
+		options := configured()
+		if err := options.applyInferredRepositoryContext(cmd, false); err != nil {
 			t.Fatalf("expected non-repository error to be ignored, got: %v", err)
+		}
+		if !gitAsked {
+			t.Fatal("inference stopped before asking git, so nothing about a non-repository was shown")
+		}
+		if options.repositoryInferred || cmd.Flags().Changed("repo") || options.runtime.ProjectKey != "" {
+			t.Errorf("a directory outside any repository supplied one: --repo %q, project %q",
+				cmd.Flags().Lookup("repo").Value.String(), options.runtime.ProjectKey)
 		}
 	})
 
