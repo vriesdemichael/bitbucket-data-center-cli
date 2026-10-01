@@ -151,7 +151,7 @@ bb --json auth status
     ]
   },
   "meta": {
-    "bbVersion": "v4.1.0"
+    "bbVersion": "..."
   }
 }
 ```
