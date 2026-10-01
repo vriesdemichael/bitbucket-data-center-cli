@@ -61,9 +61,6 @@ var deprecatedFlagsThatAreNotRunHere = map[string]bool{
 func TestEveryDeprecatedFlagIsStillTakenAndSaysSo(t *testing.T) {
 	sealEnvironment(t)
 
-	t.Setenv("BITBUCKET_URL", "https://bitbucket.example.com")
-	t.Setenv("BITBUCKET_TOKEN", "not-a-token")
-
 	checked := 0
 	for _, entry := range deprecation.Entries {
 		path, flag, isFlag := strings.Cut(entry.Name, " --")
@@ -140,7 +137,7 @@ func runForDeprecation(invocation []string) (string, string) {
 	args := append(append([]string{}, invocation...), "--dry-run", "--json", "--no-input")
 
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
-	root := cli.NewRootCommand()
+	root := cli.NewRootCommandWithOverrides(configuredForDryRun)
 	root.SetArgs(args)
 	root.SetErr(stderr)
 	executeRootCommand(root, args, stdout, stderr)
