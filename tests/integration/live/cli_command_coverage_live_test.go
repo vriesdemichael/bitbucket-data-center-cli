@@ -644,7 +644,7 @@ func TestLiveCLIAuthStoredConfigFlow(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	loginOutput, err := executeLiveCLIWithStdin(t, "admin", "auth", "login", host, "--username", "admin", "--password-stdin", "--set-default")
+	loginOutput, err := executeLiveCLIWithStdin(t, "admin", "auth", "login", host, "--username", "admin", "--password-stdin", "--set-default", "--allow-insecure-storage")
 	if err != nil {
 		t.Fatalf("auth login failed: %v\noutput: %s", err, loginOutput)
 	}

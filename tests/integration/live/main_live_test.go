@@ -22,6 +22,12 @@ func TestMain(m *testing.M) {
 	// login` here and then spawns a separately built bb as git's credential
 	// helper -- another process, which can only find the credential where the
 	// operating system keeps it.
+	//
+	// A Linux CI runner usually has no Secret Service, and a login there fails
+	// unless it asks for plaintext. So every login here that has to succeed
+	// passes --allow-insecure-storage: where there is a keyring it changes
+	// nothing, and where there is none the credential lands in the test's own
+	// config file, where the helper finds it too.
 	config.UseOSKeyring()
 
 	configureLiveCLIConstants()

@@ -239,21 +239,12 @@ func TestKeyringUnavailableErrorIsPermanentAndActionable(t *testing.T) {
 	}
 }
 
-// withUnavailableKeyring simulates the machines where the fallback actually
-// fires: headless servers, containers, WSL without gnome-keyring.
+// withUnavailableKeyring simulates the machines with no keyring: headless
+// servers, containers, WSL without gnome-keyring.
 func withUnavailableKeyring(t *testing.T) {
 	t.Helper()
 
-	failure := errors.New("no keyring daemon")
-	originalSet, originalGet, originalDelete := keyringSet, keyringGet, keyringDelete
-
-	keyringSet = func(string, string, string) error { return failure }
-	keyringGet = func(string, string) (string, error) { return "", failure }
-	keyringDelete = func(string, string) error { return failure }
-
-	t.Cleanup(func() {
-		keyringSet, keyringGet, keyringDelete = originalSet, originalGet, originalDelete
-	})
+	UseUnavailableKeyring(t, errors.New("no keyring daemon"))
 }
 
 // withWorkingKeyring substitutes an in-memory store, so a test can assert that
@@ -287,15 +278,15 @@ func withWorkingKeyring(t *testing.T) map[string]string {
 	return store
 }
 
-func TestSaveLoginFallsBackToPlaintextWhenKeyringIsUnavailable(t *testing.T) {
+func TestSaveLoginStoresPlaintextWhenAskedAndTheKeyringIsUnavailable(t *testing.T) {
 	clearAuthEnvironment(t)
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	withUnavailableKeyring(t)
 
-	result, err := SaveLogin(LoginInput{Host: "https://fallback.example.invalid", Token: "tok", SetDefault: true})
+	result, err := SaveLogin(LoginInput{Host: "https://fallback.example.invalid", Token: "tok", SetDefault: true, AllowInsecureStorage: true})
 	if err != nil {
-		t.Fatalf("expected the fallback to succeed, got %v", err)
+		t.Fatalf("expected the login to store the token in plaintext, got %v", err)
 	}
 	if !result.UsedInsecureStorage {
 		t.Fatal("expected the result to report insecure storage")
@@ -308,6 +299,159 @@ func TestSaveLoginFallsBackToPlaintextWhenKeyringIsUnavailable(t *testing.T) {
 	}
 	if !strings.Contains(string(contents), "tok") {
 		t.Fatalf("expected the token in the config file, got:\n%s", contents)
+	}
+}
+
+// existingConfig writes a config file holding another host, so a test can
+// assert that a refused login left it byte for byte as it was.
+func existingConfig(t *testing.T) (string, []byte) {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	contents := []byte("default_host: https://other.example.invalid\n" +
+		"hosts:\n" +
+		"    https://other.example.invalid:\n" +
+		"        url: https://other.example.invalid\n" +
+		"        auth_mode: token\n")
+	if err := os.WriteFile(path, contents, 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	return path, contents
+}
+
+func assertConfigUnchanged(t *testing.T, path string, before []byte) {
+	t.Helper()
+
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if string(after) != string(before) {
+		t.Fatalf("a refused login rewrote the config file:\n%s", after)
+	}
+}
+
+// TestSaveLoginRefusesPlaintextUnlessAsked is the rule: where the keyring
+// cannot hold the secret, nobody lands in plaintext without deciding to.
+func TestSaveLoginRefusesPlaintextUnlessAsked(t *testing.T) {
+	cases := []struct {
+		name   string
+		input  LoginInput
+		secret string
+	}{
+		{"token", LoginInput{Host: "https://refused.example.invalid", Token: "refused-token", SetDefault: true}, "refused-token"},
+		{"basic auth", LoginInput{Host: "https://refused-basic.example.invalid", Username: "alice", Password: "refused-password", SetDefault: true}, "refused-password"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			clearAuthEnvironment(t)
+			configPath, before := existingConfig(t)
+			t.Setenv("BB_CONFIG_PATH", configPath)
+			withUnavailableKeyring(t)
+
+			_, err := SaveLogin(tc.input)
+			if err == nil {
+				t.Fatal("expected the login to refuse plaintext it was not asked for")
+			}
+			if apperrors.KindOf(err) != apperrors.KindPermanent || apperrors.ExitCode(err) != 1 {
+				t.Fatalf("expected permanent, exit 1, got kind %q (%v)", apperrors.KindOf(err), err)
+			}
+			// Both ways forward, so the reader does not have to look either up.
+			message := apperrors.MessageOf(err)
+			for _, want := range []string{"keyring is unavailable", "--allow-insecure-storage", "BITBUCKET_TOKEN"} {
+				if !strings.Contains(message, want) {
+					t.Errorf("the refusal does not name %q: %s", want, message)
+				}
+			}
+			if strings.Contains(message, tc.secret) {
+				t.Errorf("the refusal carries the secret: %s", message)
+			}
+
+			assertConfigUnchanged(t, configPath, before)
+		})
+	}
+}
+
+// TestSaveLoginRequirementOutranksAllowInsecureStorage holds the order: an
+// operator who mandates the keyring has decided, and the flag does not undo it.
+func TestSaveLoginRequirementOutranksAllowInsecureStorage(t *testing.T) {
+	cases := []struct {
+		name    string
+		require func(t *testing.T, input *LoginInput)
+		message string
+	}{
+		{
+			name:    "--require-keyring",
+			require: func(_ *testing.T, input *LoginInput) { input.RequireKeyring = true },
+			message: "keyring-backed storage is required;",
+		},
+		{
+			name:    "BB_REQUIRE_KEYRING",
+			require: func(t *testing.T, _ *LoginInput) { t.Setenv("BB_REQUIRE_KEYRING", "1") },
+			message: "keyring-backed storage is required;",
+		},
+		{
+			name: "the require_keyring policy",
+			require: func(t *testing.T, _ *LoginInput) {
+				policy := filepath.Join(t.TempDir(), "system.yaml")
+				if err := os.WriteFile(policy, []byte("require_keyring: true\n"), 0o600); err != nil {
+					t.Fatalf("write policy: %v", err)
+				}
+				t.Setenv("BB_SYSTEM_CONFIG_PATH", policy)
+			},
+			message: "required by administrative policy",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			clearAuthEnvironment(t)
+			configPath, before := existingConfig(t)
+			t.Setenv("BB_CONFIG_PATH", configPath)
+			t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
+			withUnavailableKeyring(t)
+
+			input := LoginInput{Host: "https://outranked.example.invalid", Token: "outranked-token", AllowInsecureStorage: true}
+			tc.require(t, &input)
+
+			_, err := SaveLogin(input)
+			if err == nil {
+				t.Fatal("expected the requirement to refuse plaintext despite --allow-insecure-storage")
+			}
+			if apperrors.KindOf(err) != apperrors.KindPermanent {
+				t.Fatalf("expected permanent, got kind %q (%v)", apperrors.KindOf(err), err)
+			}
+			if message := apperrors.MessageOf(err); !strings.Contains(message, tc.message) {
+				t.Fatalf("expected the requirement's own message, got %s", message)
+			}
+
+			assertConfigUnchanged(t, configPath, before)
+		})
+	}
+}
+
+// TestARefusedLoginLeavesTheStoredPlaintextCredentialWorking is the upgrade
+// path: a credential stored in plaintext before the rule keeps working on the
+// machine with no keyring, and a login refused there does not take it away.
+func TestARefusedLoginLeavesTheStoredPlaintextCredentialWorking(t *testing.T) {
+	clearAuthEnvironment(t)
+	host := "https://upgraded.example.invalid"
+	t.Setenv("BB_CONFIG_PATH", writePlaintextCredentialConfig(t, host))
+	t.Setenv("BITBUCKET_URL", host)
+	withUnavailableKeyring(t)
+
+	if _, err := SaveLogin(LoginInput{Host: host, Token: "rotated-token"}); err == nil {
+		t.Fatal("expected the new login to be refused without --allow-insecure-storage")
+	}
+
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("the stored plaintext credential no longer loads: %v", err)
+	}
+	if cfg.BitbucketToken != "plaintext-token" || !cfg.UsedInsecureStorage {
+		t.Fatalf("expected the stored plaintext token in use, got token %q, insecure %v", cfg.BitbucketToken, cfg.UsedInsecureStorage)
 	}
 }
 
@@ -431,20 +575,21 @@ func TestSaveLoginRefusesBasicAuthFallbackWhenKeyringIsRequired(t *testing.T) {
 	}
 }
 
-func TestSaveLoginFallsBackToPlaintextForBasicAuth(t *testing.T) {
+func TestSaveLoginStoresPlaintextForBasicAuthWhenAsked(t *testing.T) {
 	clearAuthEnvironment(t)
 	configPath := filepath.Join(t.TempDir(), "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	withUnavailableKeyring(t)
 
 	result, err := SaveLogin(LoginInput{
-		Host:       "https://basic-fallback.example.invalid",
-		Username:   "alice",
-		Password:   "hunter2",
-		SetDefault: true,
+		Host:                 "https://basic-fallback.example.invalid",
+		Username:             "alice",
+		Password:             "hunter2",
+		SetDefault:           true,
+		AllowInsecureStorage: true,
 	})
 	if err != nil {
-		t.Fatalf("expected the fallback to succeed, got %v", err)
+		t.Fatalf("expected the login to store the password in plaintext, got %v", err)
 	}
 	if !result.UsedInsecureStorage || result.AuthMode != "basic" {
 		t.Fatalf("unexpected result %+v", result)

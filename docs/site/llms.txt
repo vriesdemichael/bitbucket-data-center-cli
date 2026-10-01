@@ -60,8 +60,9 @@ bb auth status --check
 ```
 
 Credentials go to the OS keyring. On headless servers and most containers there is no
-keyring and `bb` falls back to a plaintext config file, saying so. Pass
-`--require-keyring` to `bb auth login` to fail instead of falling back.
+keyring, and `bb auth login` fails there unless it is given `--allow-insecure-storage`,
+which keeps the secret in the config file in plaintext. Setting `BITBUCKET_TOKEN` for the
+run instead needs neither.
 
 When a command refuses and the configuration is the suspect, `bb doctor` reads every
 configuration file on its own and reports each problem with its line, plus where every

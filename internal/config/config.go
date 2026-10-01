@@ -228,8 +228,12 @@ type LoginInput struct {
 	ClientKey  string
 	SetDefault bool
 	// RequireKeyring fails the login when the OS keyring cannot store the
-	// secret, instead of falling back to plaintext in the config file.
+	// secret, as BB_REQUIRE_KEYRING does, whatever AllowInsecureStorage says.
 	RequireKeyring bool
+	// AllowInsecureStorage puts the secret in the config file in plaintext when
+	// the OS keyring cannot store it. Without it that login fails, so nobody
+	// lands in plaintext without deciding to. A keyring requirement outranks it.
+	AllowInsecureStorage bool
 }
 
 type LoginResult struct {
@@ -758,8 +762,8 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 	insecure := StoredSecret{}
 	if hasToken {
 		if keyringErr := keyringSet(keyringServiceName, secretKey+":token", strings.TrimSpace(input.Token)); keyringErr != nil {
-			if requireKeyring {
-				return LoginResult{}, keyringUnavailableError(keyringErr)
+			if err := plaintextRefusal(requireKeyring, input.AllowInsecureStorage, keyringErr); err != nil {
+				return LoginResult{}, err
 			}
 			insecure.Token = strings.TrimSpace(input.Token)
 			result.UsedInsecureStorage = true
@@ -767,8 +771,8 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 		_ = keyringDelete(keyringServiceName, secretKey+":password")
 	} else {
 		if keyringErr := keyringSet(keyringServiceName, secretKey+":password", strings.TrimSpace(input.Password)); keyringErr != nil {
-			if requireKeyring {
-				return LoginResult{}, keyringUnavailableError(keyringErr)
+			if err := plaintextRefusal(requireKeyring, input.AllowInsecureStorage, keyringErr); err != nil {
+				return LoginResult{}, err
 			}
 			insecure.Password = strings.TrimSpace(input.Password)
 			result.UsedInsecureStorage = true
@@ -2125,9 +2129,29 @@ func keyringUnavailableError(cause error) error {
 
 	return apperrors.New(
 		apperrors.KindPermanent,
-		"OS keyring is unavailable and keyring-backed storage is required; unset BB_REQUIRE_KEYRING or drop --require-keyring to allow the plaintext config fallback, or supply credentials through BITBUCKET_TOKEN instead of storing them",
+		"OS keyring is unavailable and keyring-backed storage is required; to keep the secret in the config file in plaintext, unset BB_REQUIRE_KEYRING or drop --require-keyring and pass --allow-insecure-storage, or supply credentials through BITBUCKET_TOKEN instead of storing them",
 		cause,
 	)
+}
+
+// plaintextRefusal decides whether a secret the OS keyring could not hold may
+// go to the config file in plaintext, and returns the refusal when it may not.
+//
+// A keyring requirement wins over the request: an operator who mandates the
+// keyring has decided for the user, and the flag cannot undo that.
+func plaintextRefusal(requireKeyring, allowInsecureStorage bool, cause error) error {
+	if requireKeyring {
+		return keyringUnavailableError(cause)
+	}
+	if !allowInsecureStorage {
+		return apperrors.New(
+			apperrors.KindPermanent,
+			"OS keyring is unavailable, so the credential was not stored; pass --allow-insecure-storage to bb auth login to keep it in the config file in plaintext, or set BITBUCKET_TOKEN in the environment instead of logging in",
+			cause,
+		)
+	}
+
+	return nil
 }
 
 // LoadStoredAuthForHostStrict resolves credentials for exactly the given host.
@@ -2626,6 +2650,29 @@ func UseOSKeyring() {
 	}
 
 	keyringSet, keyringGet, keyringDelete = keyring.Set, keyring.Get, keyring.Delete
+}
+
+// UseUnavailableKeyring makes every call to the credential store fail with
+// cause until the test ends, as on a machine with no keyring: a headless
+// server, a container, WSL without gnome-keyring.
+//
+// For tests outside this package, which cannot reach the indirection. It swaps
+// package state, so a test calling it cannot run in parallel. A no-op outside a
+// test binary.
+func UseUnavailableKeyring(tb testing.TB, cause error) {
+	if !testing.Testing() {
+		return
+	}
+	tb.Helper()
+
+	originalSet, originalGet, originalDelete := keyringSet, keyringGet, keyringDelete
+	keyringSet = func(string, string, string) error { return cause }
+	keyringGet = func(string, string) (string, error) { return "", cause }
+	keyringDelete = func(string, string) error { return cause }
+
+	tb.Cleanup(func() {
+		keyringSet, keyringGet, keyringDelete = originalSet, originalGet, originalDelete
+	})
 }
 
 // unreadableConfig says which file bb could not read, and does not suggest a

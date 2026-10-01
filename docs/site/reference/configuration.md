@@ -36,7 +36,8 @@ Some settings take fewer sources, or add one:
 
 A stored credential goes only to the host it was stored for, whichever file holds
 it and whatever named the host. The token or password itself is in the operating
-system's keyring, or in the file's `insecure_secrets` where there is no keyring:
+system's keyring, or in the file's `insecure_secrets` where there is no keyring and
+the login passed `--allow-insecure-storage`:
 see [where credentials are stored](../installation-and-quickstart.md#where-credentials-are-stored).
 
 ## The files
@@ -75,7 +76,7 @@ ignored, and `bb doctor` names it.
 | `default_host` | read | read | read | The host a command talks to when nothing earlier in the order names one. A URL, or a key of `hosts`. |
 | `hosts` | read | read | read | Servers by their URL: `url`, `aliases` (other host names the server answers to, such as its SSH host), `username`, `auth_mode` (`token` or `basic`), `client_cert` and `client_key`. A workspace file's profile gives a host its `url` and `username` only: it never releases a stored credential, and its `client_cert` and `client_key` are ignored. |
 | `project_key` | | read | | The project a command uses when no repository names one. |
-| `insecure_secrets` | read | | read | Tokens and passwords by host, where no keyring could hold them. |
+| `insecure_secrets` | read | | read | Tokens and passwords by host, where no keyring could hold them and the login passed `--allow-insecure-storage`. |
 | `update_base_url` | read | read | read | The release mirror `bb update` fetches from. |
 | The [policy keys](system-policy.md#keys) | | | read | Mandates, at the top level of the file or under `policies:` or `policy:`. |
 

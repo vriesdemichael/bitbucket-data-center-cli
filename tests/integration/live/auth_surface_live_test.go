@@ -77,7 +77,7 @@ func TestLiveAuthAliasLifecycle(t *testing.T) {
 	t.Setenv("ADMIN_USER", "")
 	t.Setenv("ADMIN_PASSWORD", "")
 
-	if output, err := executeLiveCLIWithStdin(t, "admin", "auth", "login", host, "--username", "admin", "--password-stdin", "--set-default"); err != nil {
+	if output, err := executeLiveCLIWithStdin(t, "admin", "auth", "login", host, "--username", "admin", "--password-stdin", "--set-default", "--allow-insecure-storage"); err != nil {
 		t.Fatalf("auth login failed: %v\noutput: %s", err, output)
 	}
 
