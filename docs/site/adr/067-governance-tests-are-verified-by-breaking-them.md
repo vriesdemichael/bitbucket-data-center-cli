@@ -13,6 +13,7 @@ A governance test asserts an invariant about the codebase rather than a behaviou
 - TestVerbClassificationExemptionsNameRealCommands: an exemption names a real command and gives a reason.
 - TestClassifyUsageErrorMatchesCobrasRealMessages: the usage-error markers match what Cobra emits.
 - TestAMissingArgumentIsNamed: a missing positional argument is named in the error.
+- TestEveryShallowAliasNamesACommandThatExists: every command whose help calls it an alias names its canonical command, and that command exists.
 - TestEveryCommandIsModelled: every runnable command publishes the schema of its result, or says why it has none.
 - TestAnEchoedFlagPublishesTheValuesItAccepts: a payload field that echoes an enum flag publishes the flag's values.
 - TestEveryCompletionSlotIsDeclared: every argument and every flag that takes a value declares what it accepts.
@@ -26,7 +27,10 @@ A governance test asserts an invariant about the codebase rather than a behaviou
 - TestTheStatusMappingIsOnlyTestedWhereItLives: no package outside internal/openapi tests the status-to-kind mapping.
 - TestOnlyTheSharedHelperDecidesInteractivity: only the shared helper asks whether a stream is a terminal.
 - TestEveryUseOfStandardInputIsAccountedFor: every place standard input is used is recorded.
+- TestEveryDestructiveCommandCanBeConfirmed: every command named delete, remove, revoke or clear takes --yes.
 - TestPolicyLoadingNeverCreatesTheSystemConfigDirectory: reading policy does not create its directory.
+- TestReadOnlyCoversEveryCommandThatChangesBitbucket: read_only refuses every command classified as changing Bitbucket, and no other.
+- TestDiagnoseAgreesWithTheLoader: bb doctor resolves a configuration to the values the loader does.
 - TestConfigurationPageSaysWhichFileReadsWhichKey: the configuration page names the keys each file's loader reads.
 - TestSystemPolicyPageListsEveryPolicyKey: the system policy page lists every policy key.
 - TestEnvironmentPageNamesEveryVariableBBReads: the environment page names every variable bb reads, and only those.
@@ -42,6 +46,7 @@ A governance test asserts an invariant about the codebase rather than a behaviou
 - TestEveryToolDeclaresItsHintsAndTitle: every MCP tool states all four hints and a title.
 - TestEveryLimitedToolSaysWhenItStopped: an MCP tool that takes a limit returns a required limit_reached.
 - TestLiveMCPEveryToolReturnsAClientCompatibleResult: every MCP tool is called, and its result is a JSON object with a text fallback.
+- TestViewScriptsBuildNoHTMLFromStrings: no MCP view script parses a string as HTML.
 - TestADRDoesNotNameToolsThatDoNotExist: a record does not name a removed tool.
 - TestADRDoesNotNameFlagsThatDoNotExist: a record does not name a removed flag.
 - TestEveryADRMentionHasARecord: nothing in the repository names a record that does not exist.
