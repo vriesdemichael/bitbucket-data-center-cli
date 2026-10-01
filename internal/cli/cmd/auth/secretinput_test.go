@@ -427,11 +427,10 @@ func TestAPlaintextCredentialStoredBeforeKeepsWorking(t *testing.T) {
 		t.Fatalf("write config: %v", err)
 	}
 	t.Setenv("BB_CONFIG_PATH", configPath)
-	t.Setenv("BITBUCKET_URL", host)
 	clearAuthEnvironment(t)
 	noKeyring(t)
 
-	cfg, err := config.LoadFromEnv()
+	cfg, err := config.LoadWithOverrides(config.Overrides{Host: host})
 	if err != nil {
 		t.Fatalf("the stored plaintext credential no longer loads: %v", err)
 	}
@@ -477,13 +476,12 @@ func TestAuthStatusNamesPlaintextStorage(t *testing.T) {
 	}
 
 	t.Setenv("BB_CONFIG_PATH", configPath)
-	t.Setenv("BITBUCKET_URL", host)
 	clearAuthEnvironment(t)
 
 	stdout := &bytes.Buffer{}
 	cmd := New(Dependencies{
 		JSONEnabled: func() bool { return false },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		LoadConfig:  func() (config.AppConfig, error) { return config.LoadWithOverrides(config.Overrides{Host: host}) },
 	})
 	cmd.SetOut(stdout)
 	cmd.SetErr(&bytes.Buffer{})
@@ -503,19 +501,17 @@ func TestAuthStatusNamesPlaintextStorage(t *testing.T) {
 	}
 }
 
-// clearAuthEnvironment removes every variable LoadFromEnv treats as an auth
-// source.
+// clearAuthEnvironment leaves the stored configuration as the only source of a
+// credential: it turns the stored config back on, which the seal turns off, and
+// clears a keyring requirement the shell may carry.
 //
-// ADMIN_USER and ADMIN_PASSWORD are set on the CI runner for the live suite and
-// leak into the unit run, which is how the ambient-environment bug this guards
-// against reached CI in the first place.
+// The credentials the environment could supply -- BITBUCKET_TOKEN and the rest,
+// and the ADMIN_* pair the CI runner sets for the live suite -- are already
+// empty: TestMain seals the process.
 func clearAuthEnvironment(t *testing.T) {
 	t.Helper()
 
-	for _, key := range []string{
-		"BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD",
-		"ADMIN_USER", "ADMIN_PASSWORD", "BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG",
-	} {
+	for _, key := range []string{"BB_REQUIRE_KEYRING", "BB_DISABLE_STORED_CONFIG"} {
 		t.Setenv(key, "")
 	}
 }
