@@ -1,10 +1,9 @@
 // Command output-schema-export writes the --json envelope schemas to disk.
 //
-// They already existed, derived from the same declarations the CLI emits from,
-// and nothing wrote them anywhere. ADR-046 says the failure shape "is published
-// once as docs/reference/schemas/output/output.error.schema.json"; that file did
-// not exist, so meta.limitReached, meta.bbVersion and error.kind were a contract
-// a consumer could only discover by provoking it (#573).
+// They are derived from the same declarations the CLI emits from. The failure
+// shape is published once, as docs/reference/schemas/output/output.error.schema.json
+// (ADR-046), so a consumer reads meta.limitReached, meta.bbVersion and error.kind
+// from a schema rather than discovering them by provoking a failure.
 package main
 
 import (
