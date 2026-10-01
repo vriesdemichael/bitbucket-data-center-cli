@@ -28,20 +28,29 @@ var gitBackendFactory = func() git.Backend {
 }
 
 func newRepoCloneCommand(deps Dependencies) *cobra.Command {
-	return newCloneCommand(deps, "bb repo clone")
+	return newCloneCommand(deps, false)
 }
 
 // newCloneCommand builds the clone command for one of the two paths it is
-// registered under; path is the one its examples spell.
-func newCloneCommand(deps Dependencies, path string) *cobra.Command {
+// registered under: bb repo clone, which names its subject and is canonical,
+// or the alias bb clone (ADR-050). Its examples spell the path it is under.
+func newCloneCommand(deps Dependencies, isAlias bool) *cobra.Command {
 	var noUpstream bool
 	var upstreamRemoteName string
 	var forceSSH bool
 	var forceHTTPS bool
 
+	path := "bb repo clone"
+	longDesc := "Clone a repository to the local filesystem.\n\nAlso available as bb clone."
+	if isAlias {
+		path = "bb clone"
+		longDesc = "Clone a repository to the local filesystem.\n\nAlias for bb repo clone."
+	}
+
 	cmd := &cobra.Command{
 		Use:   "clone <repository> [directory] [-- <gitflags>...]",
 		Short: "Clone a repository to the local filesystem",
+		Long:  longDesc,
 		Example: "  # Clone into a directory named after the repository\n" +
 			"  " + path + " PROJ/repo\n\n" +
 			"  # By the address the browser shows, into a directory of your choice\n" +

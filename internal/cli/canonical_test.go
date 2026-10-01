@@ -68,6 +68,41 @@ func TestEveryShallowAliasNamesACommandThatExists(t *testing.T) {
 	}
 }
 
+// TestCloneIsAnAliasOfRepoClone: bb clone and bb repo clone are one
+// constructor registered twice. bb repo clone names its subject, so it is the
+// canonical path (ADR-050): both spellings write one document, meta.command
+// naming bb repo clone, and each help names the other.
+func TestCloneIsAnAliasOfRepoClone(t *testing.T) {
+	root := NewRootCommand()
+	alias, _, err := root.Find([]string{"clone"})
+	if err != nil {
+		t.Fatalf("find clone: %v", err)
+	}
+	canonical, _, err := root.Find([]string{"repo", "clone"})
+	if err != nil {
+		t.Fatalf("find repo clone: %v", err)
+	}
+
+	for _, cmd := range []*cobra.Command{alias, canonical} {
+		if got := CanonicalPath(cmd); got != "repo clone" {
+			t.Errorf("bb %s reports meta.command %q, want %q", commandPathWithoutRoot(cmd), got, "repo clone")
+		}
+	}
+	if !strings.Contains(alias.Long, "Alias for bb repo clone") {
+		t.Errorf("bb clone's help does not name bb repo clone:\n%s", alias.Long)
+	}
+	if !strings.Contains(canonical.Long, "Also available as bb clone") {
+		t.Errorf("bb repo clone's help does not name bb clone:\n%s", canonical.Long)
+	}
+
+	// The preview nothing is sent for, so the whole document can be compared.
+	short := runIsolated(t, "--json", "--dry-run", "clone", "PRJ/demo")
+	long := runIsolated(t, "--json", "--dry-run", "repo", "clone", "PRJ/demo")
+	if short != long {
+		t.Errorf("bb clone wrote a different document from bb repo clone\nrepo clone: %s\nclone:      %s", long, short)
+	}
+}
+
 // TestAShallowAliasReportsItsCanonicalCommand: the permission aliases choose
 // users or groups by --group, and meta.command follows the flag.
 func TestAShallowAliasReportsItsCanonicalCommand(t *testing.T) {

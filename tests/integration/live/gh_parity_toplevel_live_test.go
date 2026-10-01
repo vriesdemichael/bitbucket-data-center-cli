@@ -55,8 +55,8 @@ func TestLiveTopLevelBrowse(t *testing.T) {
 	}
 }
 
-// TestLiveTopLevelClone covers the top-level bb clone, the gh-shaped spelling of
-// bb repo clone.
+// TestLiveTopLevelClone covers the top-level bb clone, the alias of bb repo
+// clone (ADR-050).
 //
 // Covering it separately is not redundant: the two are different commands in the
 // tree, and the short one is the one people reach for first, so a break in it is
@@ -109,6 +109,47 @@ func TestLiveTopLevelClone(t *testing.T) {
 	if !strings.HasPrefix(origin, "http") || !strings.HasSuffix(strings.ToLower(origin), strings.ToLower("/scm/"+seeded.Key+"/"+repo.Slug+".git")) {
 		t.Errorf("the clone's origin is %q, want the HTTP clone URL of %s/%s", origin, seeded.Key, repo.Slug)
 	}
+}
+
+// TestLiveCloneWritesWhatRepoCloneWrites holds the alias bb clone to writing
+// bb repo clone's document byte for byte, meta.command naming bb repo clone
+// for both (ADR-050). The document names the directory, so both clone into the
+// same one, the first clone moved aside before the second.
+func TestLiveCloneWritesWhatRepoCloneWrites(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	parent := t.TempDir()
+	cloneDir := filepath.Join(parent, "clone")
+
+	canonical, err := executeLiveCLI(t, "--json", "repo", "clone", "--https", seeded.Key+"/"+repo.Slug, cloneDir)
+	if err != nil {
+		t.Fatalf("repo clone failed: %v\noutput: %s", err, canonical)
+	}
+	if err := os.Rename(cloneDir, filepath.Join(parent, "repo-clone")); err != nil {
+		t.Fatalf("move the first clone aside: %v", err)
+	}
+
+	alias, err := executeLiveCLI(t, "--json", "clone", "--https", seeded.Key+"/"+repo.Slug, cloneDir)
+	if err != nil {
+		t.Fatalf("clone failed: %v\noutput: %s", err, alias)
+	}
+	if _, err := os.Stat(filepath.Join(cloneDir, "seed.txt")); err != nil {
+		t.Fatalf("expected the alias's clone to contain the seeded file: %v", err)
+	}
+
+	assertAliasParity(t, "clone", canonical, "repo clone", alias)
 }
 
 // TestLiveAISkillLifecycle covers bb ai skill install/show/remove.

@@ -12,6 +12,8 @@ Clone a repository to the local filesystem
 bb clone <repository> [directory] [-- <gitflags>...] [flags]
 ```
 
+Alias for bb repo clone.
+
 ```bash
 # Clone into a directory named after the repository
 bb clone PROJ/repo

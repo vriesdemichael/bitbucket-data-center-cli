@@ -649,6 +649,8 @@ Clone a repository to the local filesystem
 bb repo clone <repository> [directory] [-- <gitflags>...] [flags]
 ```
 
+Also available as bb clone.
+
 ```bash
 # Clone into a directory named after the repository
 bb repo clone PROJ/repo
