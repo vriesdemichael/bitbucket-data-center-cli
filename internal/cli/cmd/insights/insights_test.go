@@ -32,14 +32,32 @@ func newMockInsightsServer(t *testing.T) *httptest.Server {
 	return server
 }
 
+// loadTestConfig resolves the configuration the helpers here run a command with:
+// the given server, a token, and PRJ/demo as the repository. It goes through the
+// load a user's invocation takes, with the values passed to it rather than
+// published to the process.
+func loadTestConfig(serverURL string) (config.AppConfig, error) {
+	return config.LoadWithOverrides(config.Overrides{
+		Host:       serverURL,
+		Token:      "test-token",
+		ProjectKey: "PRJ",
+		RepoSlug:   "demo",
+	})
+}
+
+// loadTestConfigAndClient is loadTestConfig with a client built from it.
+func loadTestConfigAndClient(serverURL string) (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
+	cfg, err := loadTestConfig(serverURL)
+	if err != nil {
+		return config.AppConfig{}, nil, err
+	}
+	client, err := openapi.NewClientWithResponsesFromConfig(cfg)
+
+	return cfg, client, err
+}
+
 func executeInsights(t *testing.T, serverURL string, args ...string) (string, error) {
 	t.Helper()
-
-	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
-	t.Setenv("BITBUCKET_URL", serverURL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "PRJ")
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
-	t.Setenv("BITBUCKET_TOKEN", "test-token")
 
 	var jsonFlag bool
 	var dryRunFlag bool
@@ -58,15 +76,10 @@ func executeInsights(t *testing.T, serverURL string, args ...string) (string, er
 		JSONEnabled:   func() bool { return jsonFlag },
 		DryRunEnabled: func() bool { return dryRunFlag },
 		LoadConfig: func() (config.AppConfig, error) {
-			return config.LoadFromEnv()
+			return loadTestConfig(serverURL)
 		},
 		LoadConfigAndClient: func() (config.AppConfig, *openapigenerated.ClientWithResponses, error) {
-			cfg, err := config.LoadFromEnv()
-			if err != nil {
-				return config.AppConfig{}, nil, err
-			}
-			client, err := openapi.NewClientWithResponsesFromConfig(cfg)
-			return cfg, client, err
+			return loadTestConfigAndClient(serverURL)
 		},
 		WriteJSON:     jsonoutput.Write,
 		WriteJSONList: jsonoutput.WriteList,
