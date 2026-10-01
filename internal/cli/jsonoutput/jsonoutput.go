@@ -243,11 +243,15 @@ type Envelope struct {
 	Meta EnvelopeMeta `json:"meta"`
 }
 
+// EnvelopeMeta is what every document carries beside its answer.
+//
+// Its schema, published and served by --describe alike, is derived from this
+// type by MetaSchema, so the descriptions here are the ones a consumer reads.
 type EnvelopeMeta struct {
 	// Command is the command that wrote the document, by its canonical path:
 	// bb pr view reports pr get. With it a document held on its own says which
 	// --describe describes it. Absent when no command resolved.
-	Command string `json:"command,omitempty" jsonschema:"The command that wrote it, by its canonical path."`
+	Command string `json:"command,omitempty" jsonschema:"The command that wrote this document, by its canonical path (bb pr view reports pr get), so a document held on its own says which --describe describes it. Absent when no command resolved."`
 	// LimitReached reports that the result set came back at --limit, so there
 	// may be more behind it. Omitted for commands that do not list, so its
 	// presence is itself the signal that a result set is bounded.
@@ -255,20 +259,20 @@ type EnvelopeMeta struct {
 	// Without it a consumer cannot tell a complete result set from the first
 	// --limit of an unknown number — the difference between finishing and
 	// needing to ask again with a higher --limit or --all.
-	LimitReached *bool `json:"limitReached,omitempty" jsonschema:"On a listing: true when it stopped at --limit, so there may be more."`
+	LimitReached *bool `json:"limitReached,omitempty" jsonschema:"Present on listing commands: true when the result set came back at --limit and there may be more behind it."`
 	// Encoding is present when data is a body that is not text, carried as a
 	// string in this encoding: base64. A JSON string cannot hold arbitrary
 	// bytes, and a wrapper object inside data could not be told from a body
 	// that is such an object; meta is bb's own, so the encoding goes here.
-	Encoding string `json:"encoding,omitempty" jsonschema:"Set when data is bytes carried as a string: base64."`
+	Encoding string `json:"encoding,omitempty" jsonschema:"Present when data is a body that is not text, carried as a string in this encoding."`
 	// ContentType is the media type of the body Encoding carries.
-	ContentType string `json:"contentType,omitempty" jsonschema:"Set with encoding: the media type of the bytes."`
+	ContentType string `json:"contentType,omitempty" jsonschema:"Present with encoding: the media type of the body data carries."`
 	// BBVersion is the version of the binary that produced the document.
 	//
 	// Provenance, for an operator auditing stored output -- not a compatibility
 	// switch. Nothing in bb branches on it and nothing outside bb should: the
 	// way to pin a contract is to pin the binary (ADR-064).
-	BBVersion string `json:"bbVersion" jsonschema:"The bb version that wrote it."`
+	BBVersion string `json:"bbVersion" jsonschema:"Version of the bb binary that produced this document. Provenance for stored output, not a compatibility switch: pin the binary to pin the contract (ADR-064)."`
 }
 
 // ErrorEnvelope is the bb.machine document written to stdout when a command

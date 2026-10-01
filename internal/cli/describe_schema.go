@@ -14,10 +14,11 @@ import (
 // a command's data schema is derived from its result type (ADR-010): a schema
 // written beside the type is a second copy, and the copy is what drifts.
 var (
-	metaDeclaration = result.For[jsonoutput.EnvelopeMeta](nil)
+	// The meta and error members are jsonoutput's, which the published failure
+	// schema is built from too, so --describe and that schema cannot disagree
+	// about them.
+	metaSchema = sync.OnceValue(jsonoutput.MetaSchema)
 
-	// The error member is jsonoutput's, which the published failure schema is
-	// built from too, so --describe and that schema cannot disagree about it.
 	errorSchema = sync.OnceValue(func() *jsonschema.Schema {
 		return jsonoutput.ErrorSchema(apperrors.Kinds()...)
 	})
@@ -73,19 +74,12 @@ func dryRunDocumentSchema(carriesData bool, data *jsonschema.Schema) *jsonschema
 // documentSchema is one shape of document: its member and meta, and nothing
 // else, since the set of top-level members is closed (ADR-064).
 func documentSchema(member string, schema *jsonschema.Schema) *jsonschema.Schema {
-	meta := metaDeclaration.Schema().CloneSchemas()
-
-	// The reflector closes every object it derives. The document is closed,
-	// and its closing is taken from there rather than spelled a second way
-	// here; meta is not, since it may gain fields in a minor release.
-	closed := meta.AdditionalProperties
-	meta.AdditionalProperties = nil
-
 	return &jsonschema.Schema{
-		Type:                 "object",
-		Properties:           map[string]*jsonschema.Schema{member: schema, "meta": meta},
-		PropertyOrder:        []string{member, "meta"},
-		Required:             []string{member, "meta"},
-		AdditionalProperties: closed,
+		Type:          "object",
+		Properties:    map[string]*jsonschema.Schema{member: schema, "meta": metaSchema().CloneSchemas()},
+		PropertyOrder: []string{member, "meta"},
+		Required:      []string{member, "meta"},
+		// The false schema, as jsonschema-go spells it.
+		AdditionalProperties: &jsonschema.Schema{Not: &jsonschema.Schema{}},
 	}
 }

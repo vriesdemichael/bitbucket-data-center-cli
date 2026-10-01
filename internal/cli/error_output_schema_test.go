@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
@@ -51,13 +52,37 @@ func TestErrorEnvelopeMatchesPublishedSchemaForPlainErrors(t *testing.T) {
 
 var errUnclassified = errors.New("upstream returned an unexpected response")
 
+// TestThePublishedFailureSchemaAndDescribeAgreeOnEveryMember: error and meta
+// are the same members in the published failure schema as in what --describe
+// gives, so the two cannot describe one document two ways (ADR-010).
+func TestThePublishedFailureSchemaAndDescribeAgreeOnEveryMember(t *testing.T) {
+	published := schemaJSON(t, outputschemas.Schemas()[outputschemas.ErrorSchemaFileName])["properties"].(map[string]any)
+
+	description := schemaJSON(t, DescribeCommand("tag list"))
+	for _, mode := range []string{"run", "dryRun"} {
+		for index, branch := range schemaAt(t, description, mode, "outputSchema")["oneOf"].([]any) {
+			members := branch.(map[string]any)["properties"].(map[string]any)
+			if !reflect.DeepEqual(members["meta"], published["meta"]) {
+				t.Errorf("%s shape %d: meta is not the published one\n--describe: %v\npublished:  %v", mode, index, members["meta"], published["meta"])
+			}
+		}
+	}
+
+	// Under --dry-run a top-level error is narrowed to the kinds that reach no
+	// verdict, so only a run's error is the whole taxonomy the published one is.
+	runError := schemaAt(t, description, "run", "outputSchema")["oneOf"].([]any)[1].(map[string]any)["properties"].(map[string]any)["error"]
+	if !reflect.DeepEqual(runError, published["error"]) {
+		t.Errorf("error is not the published one\n--describe: %v\npublished:  %v", runError, published["error"])
+	}
+}
+
 // validateAgainstOutputSchema compiles a published output schema and validates
 // a real document against it.
 //
-// Only the failure envelope still has a hand-written schema: it is one shape
-// for every command rather than a per-command payload, so there is no result
-// type to derive it from. Data payloads are validated against the schema their
-// command declares -- see validateAgainstDeclaredSchema.
+// The failure schema is the one published output schema: it is one document for
+// every command, its members derived from the types that write them. Data
+// payloads are validated against the schema their command declares -- see
+// validateAgainstDeclaredSchema.
 func validateAgainstOutputSchema(t *testing.T, schemaName string, output string) {
 	t.Helper()
 
