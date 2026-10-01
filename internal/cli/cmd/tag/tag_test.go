@@ -48,24 +48,23 @@ func newTestDependencies(serverURL string, jsonMode bool, dryRun bool) tagcmd.De
 	}
 }
 
+// TestTagWithDefaults: a tag command built with no dependencies loads the
+// configuration's own way. The seal names no host, so the load fails the way
+// the configuration does, where a stub would answer or fail in words of its
+// own. Reading BITBUCKET_URL is internal/config's to test.
 func TestTagWithDefaults(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
-	d := tagcmd.Dependencies{}
-	cmd := tagcmd.New(d)
+	cmd := tagcmd.New(tagcmd.Dependencies{})
 	if cmd == nil {
 		t.Fatal("expected non-nil root tag command")
 	}
 
-	// Test default loaders
-	defaults := (&d)
-	_ = cmd // cmd was initialized with defaults
-	if d.LoadConfig == nil {
-		cfg, err := config.LoadFromEnv()
-		if err != nil || cfg.BitbucketURL != "http://localhost:7990" {
-			t.Fatalf("unexpected LoadConfig: %v", err)
-		}
+	output := &bytes.Buffer{}
+	cmd.SetOut(output)
+	cmd.SetErr(output)
+	cmd.SetArgs([]string{"list", "--repo", "PRJ/demo"})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "no Bitbucket host configured") {
+		t.Fatalf("the default loader is not the configuration's own: %v", err)
 	}
-	_ = defaults
 }
 
 // #470 is live now, in TestLiveResourceDryRunPredictionsReadRealState.
