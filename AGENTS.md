@@ -293,10 +293,6 @@ package a quote comes from, as in `message-of bb crypto/x509`. Copy the message 
 and write `...` where it carries a value. When the check fails the quote is stale, not the source.
 See ADR-087.
 
-If the linter flags something you believe is correct, suspect a trailing carriage return before
-suspecting the documentation: on a CRLF checkout `\r` ends up inside the last token and pflag
-reports it as an unknown flag, with nothing visible in the message to say so. See ADR-048.
-
 ### Adding a governance test: break it first
 
 A governance test asserts an invariant about the codebase rather than a
