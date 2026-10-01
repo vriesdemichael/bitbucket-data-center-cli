@@ -9,7 +9,7 @@ bb presents a client certificate when one is configured, taken from `--client-ce
 
 Use it where Bitbucket sits behind a proxy that demands a client certificate before any request reaches it, such as Envoy, NGINX, F5 or Cloudflare Access.
 
-Built into the transport, mutual TLS works for every command with nothing else to run, where the alternative is a tunnel beside every bb process.
+Built into the transport, mutual TLS works for every command with nothing else to run.
 
 ## Not chosen
 
