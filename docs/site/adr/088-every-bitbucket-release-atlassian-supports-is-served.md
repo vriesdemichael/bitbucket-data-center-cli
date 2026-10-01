@@ -5,24 +5,15 @@ search:
 
 # ADR-088: Every Bitbucket release Atlassian supports is served, and none is dropped
 
-> Changes part of [ADR-028](028-openapi-fix-registry-and-parity-policy.md), [ADR-042](042-track-newest-containerisable-bitbucket-version.md).
+bb serves every Bitbucket Data Center release Atlassian supports, and never drops one. A release past Atlassian's end of support stops being tested, not served. The window is docs/quality/bitbucket-releases.json: the oldest release served, and the releases the live suite is run against, ending with the one the harness runs. docs/site/reference/bitbucket-versions.md states the oldest to readers and catalogues each difference. A fix ships in bb's next release; no earlier bb release is patched.
 
-bb serves every Bitbucket Data Center release Atlassian supports, and never drops one. A release past Atlassian's end of support stops being tested, not served. The oldest release served is stated once, in docs/site/reference/bitbucket-versions.md.
-bb is generated against the newest release (ADR-042). An older release behaves the same except where the catalogue in that page says otherwise, and each difference is handled in the call it affects and nowhere else:
+bb is generated against the newest release (ADR-042). An older release behaves the same except where the versions page catalogues a difference, and each difference is handled in the call it affects and nowhere else. The call asks the instance's release through internal/compat, once per instance per process, and only when the request or the answer is one the release changes. Where bb can make the older release answer as the newest does, it does. Where it cannot, it refuses before sending, with kind unsupported (exit 14), naming the release that has the capability, and a dry run gives that refusal as its verdict.
 
-  - The call asks the instance's release through internal/compat, once per instance per process,
-    and only when the request or the answer is one the release changes.
-  - Where bb can make the older release answer as the newest does, it does.
-  - Where it cannot, it refuses before sending, with kind unsupported (exit 14), naming the release
-    that has the capability. A dry run refuses the same way.
+A difference is found by running the live suite against the release: `RELEASE=<tag> task test:live`, or `task test:live:matrix` for the oldest and newest. Every release in the window passes it at least once, locally; CI runs the newest. A live test whose behaviour differs by release asserts each side, with the boundary stated in the test. `task quality:bitbucket-releases:verify` fails when internal/compat and the versions page disagree about a difference, and when the window does not end with the release the harness runs.
 
-A difference is found by running the live suite against the release: `RELEASE=<tag> task test:live`. Every release served passes it at least once, locally; CI runs the newest. A live test whose behaviour differs by release asserts each side, with the boundary stated in the test.
-The window is docs/quality/bitbucket-releases.json, and `task quality:bitbucket-releases:verify` refuses a difference the page does not catalogue, a catalogue entry no call declares, and a stack provisioning a release the window does not name.
-docs/openapi/fixes.yaml records only where a published specification is wrong about the release it describes (ADR-028). A capability an older release lacks is not a specification error, and is catalogued in the versions page instead.
+When a live test fails on an older release and passes on the newest, compare what each release stores before changing anything. A real difference gets a compat.Difference with the release it arrived in, a row in the versions page, and either an adaptation or a refusal in the call that differs; the test then asserts both sides against a boundary it states itself. Never branch on the release outside the call that differs, never skip a test on a release, and never send a request an older release answers 200 and ignores. Do not generate a client per release, and do not remove a release from the versions page when Atlassian ends its support.
 
-When a live test fails on an older release and passes on the newest, compare what each release stores before changing anything. A real difference gets a compat.Difference with the release it arrived in, a row in docs/site/reference/bitbucket-versions.md, and either an adaptation or a refusal in the call that differs; the test then asserts both sides against a boundary it states itself. Never branch on the release outside the call that differs, never skip a test on a release, and never send a request an older release answers 200 and ignores. Do not generate a client per release, and do not remove a release from the page when Atlassian ends its support.
-
-Bitbucket answers 2xx to a JSON property it does not know and ignores it, so an older release does not refuse what it cannot do: it does something else. Before 10.2 a required build created to spare pull requests blocks them, while bb reported its scope as absent rather than as enforced. Only the release says which requests those are, and administrators run releases on their own schedule, so the window a tool supports has to include what Atlassian still supports.
+Bitbucket answers 2xx to a JSON property it does not know and ignores it, so an older release does not refuse what it cannot do: it does something else. A required build created to spare pull requests blocks them on a release that predates the setting. Only the release says which requests those are, and administrators upgrade on their own schedule, so the window a tool supports has to include what Atlassian still supports.
 
 ## Not chosen
 

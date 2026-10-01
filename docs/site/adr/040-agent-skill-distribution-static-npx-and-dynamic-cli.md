@@ -3,47 +3,17 @@ search:
   boost: 0.3
 ---
 
-# ADR-040: Agent skill distribution via static npx packaging and dynamic CLI generation
+# ADR-040: Agent skill distribution through npx and the copy embedded in bb
 
-> Changed in part by [ADR-090](090-a-package-sets-up-what-every-user-shares.md).
+The bb agent skill has one source, skills/bb/SKILL.md, and reaches agents two ways. `npx skills add vriesdemichael/bitbucket-data-center-cli` installs it from the repository, with no bb needed. bb embeds the same file with //go:embed: `bb ai skill show` prints it stamped with the binary's version, and `bb ai skill install` writes that to .agents/skills/bb/SKILL.md, which most agents read, and to .claude/skills/bb/SKILL.md, which Claude Code reads instead, under the working directory or, with --global, under the home directory. `bb ai skill remove` takes out what install wrote. What they write depends on the binary alone, and none of them makes a network call, so they work air-gapped and without the source tree. The help of `bb ai skill show` explains both channels, and that the npx copy is a snapshot of the repository and does not follow the installed bb.
 
-Distribute the bb agent skill through two complementary channels. First, package a baseline SKILL.md at skills/bb/SKILL.md in this repository so that npx skills add vriesdemichael/bitbucket-data-center-cli works out of the box via the open agent skills ecosystem at skills.sh. Second, expose bb ai skill show to print the skill from the running binary, stamped with its version. A bb ai skill install command writes it to the appropriate agent skills directory (.agents/skills/bb/SKILL.md for project scope, ~/.agents/skills/bb/SKILL.md for global scope via --global).
-The skill is embedded directly in the bb binary at compile time using Go's //go:embed directive, pointing at the canonical skills/bb/SKILL.md source file. bb ai skill show reads the embedded bytes, appends a version stamp, and writes the result to stdout. No filesystem access and no network connection are required at runtime. The npx-installable file and the embedded copy are the same source file, so they are always identical at the moment of a release.
-The committed file carries no template placeholders. It is distributed verbatim by npx, and the skill advertises that install path itself, so anything left unrendered in it reaches the reader raw.
-The multi-tenant callout in the generated skill (explaining --host usage when multiple Bitbucket instances are detected) is included only when bb auth server list returns more than one configured context.
-The help text for bb ai skill show must explain both distribution channels, including the limitation that the npx-installed file is a snapshot from the repository release and will not reflect capabilities added after that release.
+When helping a user install or update the skill, prefer `bb ai skill install` when bb is present: its copy cannot be older than the installed CLI. Recommend npx for a first install, or where bb is not installed yet. The skill does not replace `bb --help` or `bb ai mcp tools` when accuracy matters. Keep the committed file free of placeholders: npx distributes it verbatim, so anything left unrendered reaches the reader raw. Append at render time instead, as buildSkill does with the version stamp. Do not restate the MCP tool catalogue in the skill; point at `bb ai mcp tools`, which derives the list, and which tools ask the person before they run, from mcp.AllSpecs().
 
-When helping a user install or update the bb skill:
-
-- Prefer bb ai skill install when bb is present: it writes the copy embedded in that binary,
-  so it cannot be older than the installed CLI. It does not derive content from the command
-  tree, so it is not a substitute for bb --help or bb ai mcp tools when accuracy matters.
-
-- Do not reintroduce a placeholder into skills/bb/SKILL.md. The committed file is distributed
-  verbatim by npx, so anything unrendered reaches the reader raw. Append at render time
-  instead, as buildSkill does with the version stamp.
-- Do not restate the MCP tool catalogue in the skill. It drifted from the server and gave no
-  hint how its tools behave; point at bb ai mcp tools, which derives the list, and which tools
-  ask the person before they run, from mcp.AllSpecs().
-- Recommend npx skills add vriesdemichael/bitbucket-data-center-cli for zero-friction first-time
-  setup or when bb is not yet installed.
-- The standard project-scoped path is .agents/skills/bb/SKILL.md, which is picked up by
-  GitHub Copilot, Cursor, Codex, Cline, Amp, and most other agents. Agent-specific paths
-  (e.g. .claude/skills/) take precedence if the agent supports them; consult bb ai skill show
-  help text for guidance.
-- The npx path and the CLI path are not mutually exclusive. Users may install via npx for
-  discoverability and then override with bb ai skill show output when they need version parity.
-- bb ai skill show and bb ai skill install never make network calls. They are safe to use in
-  air-gapped or network-restricted environments.
-- The embedded template lives at skills/bb/SKILL.md in the source tree. Edits to that file
-  are picked up by the binary on the next build; no separate embedding step is needed.
-
-A static file in the repository enables discovery and installation through the established skills.sh ecosystem without requiring bb to be installed. This is the right entry point for new users. A static file cannot capture dynamic information such as the installed bb version, the configured host URL, or whether the user has multiple Bitbucket instances. bb ai skill show fills this gap, ensuring the skill agents receive is accurate and actionable for their specific environment. The two-channel approach maximises reach while preserving correctness.
-Embedding the template via //go:embed means bb ai skill show works in air-gapped environments, CI runners without outbound access, and developer machines where the source tree is not present. It also eliminates any risk of the binary looking for a file that has been moved, renamed, or is not present in a release artifact's working directory. Using the same source file for both the embedded template and the npx-installable file ensures they cannot diverge.
+A file in the repository reaches agents through the skills.sh ecosystem before bb is installed, which is where a new user starts. It is a snapshot, though, and an agent working with a newer bb needs the skill that bb was built with. Embedding the same file gives it that, with no file to find at runtime and no way for the two copies to differ at a release.
 
 ## Not chosen
 
-- **Static repository file only; no CLI generation**: Becomes stale after every release. Agents operating on a newer bb version may attempt commands or flags that the skill does not describe, or follow removed guidance.
-- **CLI generation only; no npx packaging**: Requires bb to be installed before the skill can be obtained. Loses discoverability on skills.sh and breaks the npx zero-friction install flow.
-- **Read skills/bb/SKILL.md from the filesystem at runtime instead of embedding**: Fails in release builds where the source tree is absent, and in any environment where the working directory is not the repository root. Embedding is the correct Go idiom for shipping static assets in a binary.
-- **bb ai skill install --target flag for per-agent path selection**: Per-agent path management belongs to the npx skills CLI, which already handles this across 40+ agents. Duplicating that logic in bb adds maintenance burden without benefit.
+- **Static repository file only; no CLI copy**: Becomes stale after every release. Agents operating on a newer bb may attempt commands or flags that the skill does not describe, or follow removed guidance.
+- **CLI copy only; no npx packaging**: Requires bb to be installed before the skill can be obtained, and loses discoverability on skills.sh.
+- **Read skills/bb/SKILL.md from the filesystem at runtime instead of embedding**: Fails in release builds where the source tree is absent, and in any environment where the working directory is not the repository root.
+- **A bb ai skill install --target flag for per-agent path selection**: Per-agent path management belongs to the skills tooling. bb writes the two locations that cover the agents that read a project's skills.
