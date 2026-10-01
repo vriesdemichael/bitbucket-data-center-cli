@@ -24,12 +24,12 @@ func newMockDiffServer(t *testing.T) *httptest.Server {
 	return server
 }
 
-func newTestDependencies(t *testing.T, serverURL string, jsonMode bool) diffcmd.Dependencies {
+func newTestDependencies(serverURL string, jsonMode bool) diffcmd.Dependencies {
 	cfg := config.AppConfig{
 		BitbucketURL: serverURL,
 		ProjectKey:   "PRJ",
+		RepoSlug:     "demo",
 	}
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 
 	return diffcmd.Dependencies{
 		JSONEnabled: func() bool { return jsonMode },
@@ -48,7 +48,7 @@ func newTestDependencies(t *testing.T, serverURL string, jsonMode bool) diffcmd.
 
 func TestDiffValidationErrors(t *testing.T) {
 	server := newMockDiffServer(t)
-	deps := newTestDependencies(t, server.URL, false)
+	deps := newTestDependencies(server.URL, false)
 
 	// Mutually exclusive flags in refs
 	cmd := diffcmd.New(deps)
@@ -92,7 +92,6 @@ func TestDiffValidationErrors(t *testing.T) {
 }
 
 func TestDiffDefaults(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 	var deps diffcmd.Dependencies
 	cmd := diffcmd.New(deps)
 	if cmd == nil {
