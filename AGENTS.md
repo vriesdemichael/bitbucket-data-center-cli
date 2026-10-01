@@ -165,7 +165,7 @@ extreme case — it produces the numbers every other gate reads, so a bug there 
 when it should not.
 
 Do not add `tools/` to `-scope-include`, and do not lower a threshold to accommodate a tool change.
-ADR-049 records the measurements behind that line.
+ADR-049 has the reasons.
 ### Command reach
 
 `docs/quality/command-reach.json` records which CLI commands the live suite actually proves work

@@ -206,9 +206,9 @@ func (h *liveHarness) seedIsolatedProjectWith(ctx context.Context, repositoryCou
 
 // createProject makes a project and returns its key.
 //
-// The key carries a process-unique counter, so two tests seeding at the same
-// instant cannot pick the same one -- they did, and Bitbucket answered the
-// duplicate insert with a 500 rather than the 409 this retry was written for.
+// The key carries a random suffix (ADR-085), so two tests seeding at the same
+// instant cannot pick the same one; Bitbucket answers a duplicate insert made
+// at the same instant with a 500 rather than the 409 this retry is written for.
 // The retry remains for the other collision: a key still held by a project an
 // earlier run deleted, since Bitbucket removes projects asynchronously and the
 // key outlives the delete call.

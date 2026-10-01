@@ -48,11 +48,9 @@ func TestGovernanceTestsNamedInThisRecordExist(t *testing.T) {
 
 // governanceTestsNamedIn reads the list entries, not the whole record.
 //
-// The prose legitimately names tests that no longer exist -- the rationale
-// discusses TestAllMutatingCommandsHaveDryRunProfile, which this branch
-// deleted, and mentions the TestEvery and TestAll prefixes that made three
-// guards easy to miss. Only a list entry, "- TestName: what it asserts", is a
-// claim that the test is present.
+// The prose may name a test that does not exist, or only the TestEvery and
+// TestAll prefixes the set does not keep to. Only a list entry,
+// "- TestName: what it asserts", is a claim that the test is present.
 func governanceTestsNamedIn(t *testing.T, path string) []string {
 	t.Helper()
 
