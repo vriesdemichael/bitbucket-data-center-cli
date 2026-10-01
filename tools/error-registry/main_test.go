@@ -18,7 +18,7 @@ import (
 func TestTheRegistryShowsTheKindBBDecides(t *testing.T) {
 	t.Parallel()
 
-	raw, err := os.ReadFile(filepath.Join("..", "..", "docs", "quality", "bitbucket-error-registry.json"))
+	raw, err := os.ReadFile(filepath.Join("..", "..", "tests", "integration", "live", "bitbucket-error-registry.json"))
 	if err != nil {
 		t.Fatalf("read the registry: %v", err)
 	}

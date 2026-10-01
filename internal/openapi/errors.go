@@ -165,7 +165,7 @@ func mapStatus(status int, body []byte, baseMessage string) error {
 // 400 and 401 are the ambiguous statuses Bitbucket sends in practice: 403, 404
 // and 409 each mean one thing, and a full live run produces no 5xx at all. So
 // these are short lists rather than a table, and they are grown from
-// docs/quality/bitbucket-error-registry.json -- an entry earns its place by
+// tests/integration/live/bitbucket-error-registry.json -- an entry earns its place by
 // having been observed, not by seeming likely.
 //
 // DuplicateRefException is `bb branch create` on a name that is already taken.

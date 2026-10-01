@@ -288,7 +288,7 @@ func TestMapStatusErrorReadsTheExceptionOnA400(t *testing.T) {
 
 // TestMapStatusErrorReadsTheExceptionOnA401 tells a caller Bitbucket refused
 // from a caller it could not identify, with the bodies a live run recorded in
-// docs/quality/bitbucket-error-registry.json.
+// tests/integration/live/bitbucket-error-registry.json.
 func TestMapStatusErrorReadsTheExceptionOnA401(t *testing.T) {
 	t.Parallel()
 
