@@ -1,0 +1,3189 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CLI automation for Bitbucket Data Center">
+      
+      
+      
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v5/reference/commands/">
+      
+      
+        <link rel="prev" href="../overview/">
+      
+      
+        <link rel="next" href="global-flags/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>All Commands - Bitbucket Data Center CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#all-commands" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-header__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Bitbucket Data Center CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              All Commands
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-nav__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    Bitbucket Data Center CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation-and-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation and Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cheatsheet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Cheatsheet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../basic-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Command Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Commands
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    All Commands
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="global-flags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Global flags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="admin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb admin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb api
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="branch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb branch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="browse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb browse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb build
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="clone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb clone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="commit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb commit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="completion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb completion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb diff
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="doctor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb doctor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="insights/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb insights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb pr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ref
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="repo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb repo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reviewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb reviewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reviewer-group/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb reviewer-group
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb search
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ssh-key/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ssh-key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb tag
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="webhook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb webhook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bitbucket-versions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bitbucket Versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../advanced/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Hardening
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise Hardening
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/enterprise-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/release-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/fleet-controls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Controls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/fleet-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/mcp-governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server Governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Architecture & Threat Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/repository-discovery-and-server-switching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Discovery and Server Switching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/dry-run-planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-Run Planning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/git-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/networks-proxies-and-tls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Networks, Proxies and TLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/machine-mode-diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Mode and Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/shell-completion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shell Completion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/webhook-secrets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Secrets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai-and-llms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI and llms.txt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#every-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every command
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Every command">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bb-admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb admin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb ai
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb auth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-branch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb branch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb commit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-completion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb completion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-diff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb diff
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb pr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb project
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-repo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb repo
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-reviewer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb reviewer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-reviewer-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb reviewer-group
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb search
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-ssh-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb ssh-key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb tag
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bb-webhook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb webhook
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        bb
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="all-commands">All Commands<a class="headerlink" href="#all-commands" title="Permanent link">&para;</a></h1>
+<p>237 commands, on a page per top-level command. <a id="global-flags"></a>Each also takes the <a href="global-flags/">global flags</a>.</p>
+<dl>
+<dt><a href="admin/"><code>bb admin</code></a></dt>
+<dd>Check that the configured Bitbucket answers and accepts your credentials (1 command)</dd>
+<dt><a href="ai/"><code>bb ai</code></a></dt>
+<dd>Run bb's MCP server, and install its agent skill (5 commands)</dd>
+<dt><a id="bb-api"></a><a href="api/"><code>bb api</code></a></dt>
+<dd>Send a raw HTTP request to the Bitbucket REST API</dd>
+<dt><a href="auth/"><code>bb auth</code></a></dt>
+<dd>Log in, check the setup, and manage tokens, keys and git credentials (22 commands)</dd>
+<dt><a href="branch/"><code>bb branch</code></a></dt>
+<dd>Create, list and delete branches, and set the default branch and restrictions (12 commands)</dd>
+<dt><a id="bb-browse"></a><a href="browse/"><code>bb browse</code></a></dt>
+<dd>Open repository pages in a web browser</dd>
+<dt><a href="build/"><code>bb build</code></a></dt>
+<dd>Report and read build statuses, and require builds before a merge (10 commands)</dd>
+<dt><a id="bb-clone"></a><a href="clone/"><code>bb clone</code></a></dt>
+<dd>Clone a repository to the local filesystem</dd>
+<dt><a href="commit/"><code>bb commit</code></a></dt>
+<dd>List, show and compare commits, and find a commit's pull requests (4 commands)</dd>
+<dt><a href="completion/"><code>bb completion</code></a></dt>
+<dd>Set shell completion up, or print the script for a shell (2 commands)</dd>
+<dt><a href="deployment/"><code>bb deployment</code></a></dt>
+<dd>Record, read and delete the deployments of a commit (3 commands)</dd>
+<dt><a href="diff/"><code>bb diff</code></a></dt>
+<dd>Print the diff of a pull request, a commit or two refs (3 commands)</dd>
+<dt><a id="bb-doctor"></a><a href="doctor/"><code>bb doctor</code></a></dt>
+<dd>Check the configuration bb would load</dd>
+<dt><a id="bb-dry-run"></a><a href="dry-run/"><code>bb dry-run</code></a></dt>
+<dd>What --dry-run answers, and how far to trust it</dd>
+<dt><a href="insights/"><code>bb insights</code></a></dt>
+<dd>Publish and read Code Insights reports and annotations (8 commands)</dd>
+<dt><a href="pr/"><code>bb pr</code></a></dt>
+<dd>Create, review, merge and inspect pull requests (41 commands)</dd>
+<dt><a href="project/"><code>bb project</code></a></dt>
+<dd>Create and change projects, and the settings their repositories inherit (30 commands)</dd>
+<dt><a href="ref/"><code>bb ref</code></a></dt>
+<dd>List a repository's branches and tags, and resolve a ref to its commit (2 commands)</dd>
+<dt><a href="repo/"><code>bb repo</code></a></dt>
+<dd>Create, clone, browse and configure repositories (63 commands)</dd>
+<dt><a href="reviewer/"><code>bb reviewer</code></a></dt>
+<dd>Choose who is added to a pull request as a reviewer by default (4 commands)</dd>
+<dt><a href="reviewer-group/"><code>bb reviewer-group</code></a></dt>
+<dd>Create, list and change reviewer groups and their members (5 commands)</dd>
+<dt><a href="search/"><code>bb search</code></a></dt>
+<dd>Search for repositories, commits, and pull requests (3 commands)</dd>
+<dt><a href="ssh-key/"><code>bb ssh-key</code></a></dt>
+<dd>Add, list and remove your SSH keys (3 commands)</dd>
+<dt><a href="tag/"><code>bb tag</code></a></dt>
+<dd>Create, list, view and delete tags (4 commands)</dd>
+<dt><a id="bb-update"></a><a href="update/"><code>bb update</code></a></dt>
+<dd>Check for and install the latest bb release</dd>
+<dt><a href="webhook/"><code>bb webhook</code></a></dt>
+<dd>Create, list, test and change a repository's webhooks (7 commands)</dd>
+</dl>
+<h2 id="every-command">Every command<a class="headerlink" href="#every-command" title="Permanent link">&para;</a></h2>
+<h3 id="bb-admin"><code>bb admin</code><a class="headerlink" href="#bb-admin" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-admin-health"></a><a href="admin/#bb-admin-health"><code>admin health</code></a></dt>
+<dd>Probe the configured Bitbucket for reachability and authentication</dd>
+</dl>
+<h3 id="bb-ai"><code>bb ai</code><a class="headerlink" href="#bb-ai" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-ai-mcp"></a><a id="bb-ai-mcp-serve"></a><a href="ai/#bb-ai-mcp-serve"><code>ai mcp serve</code></a></dt>
+<dd>Start the MCP server (stdio transport)</dd>
+<dt><a id="bb-ai-mcp-tools"></a><a href="ai/#bb-ai-mcp-tools"><code>ai mcp tools</code></a></dt>
+<dd>List MCP tools with what they change and whether they ask</dd>
+<dt><a id="bb-ai-skill"></a><a id="bb-ai-skill-install"></a><a href="ai/#bb-ai-skill-install"><code>ai skill install</code></a></dt>
+<dd>Write an agent skill to the agent skills directories</dd>
+<dt><a id="bb-ai-skill-remove"></a><a href="ai/#bb-ai-skill-remove"><code>ai skill remove</code></a></dt>
+<dd>Remove an installed agent skill file</dd>
+<dt><a id="bb-ai-skill-show"></a><a href="ai/#bb-ai-skill-show"><code>ai skill show</code></a></dt>
+<dd>Print an agent skill to stdout</dd>
+</dl>
+<h3 id="bb-auth"><code>bb auth</code><a class="headerlink" href="#bb-auth" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-auth-alias"></a><a id="bb-auth-alias-add"></a><a href="auth/#bb-auth-alias-add"><code>auth alias add</code></a></dt>
+<dd>Add aliases to a stored server context</dd>
+<dt><a id="bb-auth-alias-discover"></a><a href="auth/#bb-auth-alias-discover"><code>auth alias discover</code></a></dt>
+<dd>Discover aliases from the first accessible repository clone links</dd>
+<dt><a id="bb-auth-alias-list"></a><a href="auth/#bb-auth-alias-list"><code>auth alias list</code></a></dt>
+<dd>List aliases for a stored server context</dd>
+<dt><a id="bb-auth-alias-remove"></a><a href="auth/#bb-auth-alias-remove"><code>auth alias remove</code></a></dt>
+<dd>Remove an alias from a stored server context</dd>
+<dt><a id="bb-auth-git-credential"></a><a href="auth/#bb-auth-git-credential"><code>auth git-credential</code></a></dt>
+<dd>Git credential helper (invoked by git, not run directly)</dd>
+<dt><a id="bb-auth-gpg-key"></a><a id="bb-auth-gpg-key-add"></a><a href="auth/#bb-auth-gpg-key-add"><code>auth gpg-key add</code></a></dt>
+<dd>Add a personal GPG key</dd>
+<dt><a id="bb-auth-gpg-key-clear"></a><a href="auth/#bb-auth-gpg-key-clear"><code>auth gpg-key clear</code></a></dt>
+<dd>Clear all personal GPG keys</dd>
+<dt><a id="bb-auth-gpg-key-list"></a><a href="auth/#bb-auth-gpg-key-list"><code>auth gpg-key list</code></a></dt>
+<dd>List personal GPG keys</dd>
+<dt><a id="bb-auth-gpg-key-remove"></a><a href="auth/#bb-auth-gpg-key-remove"><code>auth gpg-key remove</code></a></dt>
+<dd>Remove a personal GPG key</dd>
+<dt><a id="bb-auth-identity"></a><a href="auth/#bb-auth-identity"><code>auth identity</code></a></dt>
+<dd>Show authenticated user identity</dd>
+<dt><a id="bb-auth-login"></a><a href="auth/#bb-auth-login"><code>auth login</code></a></dt>
+<dd>Store credentials for a Bitbucket host</dd>
+<dt><a id="bb-auth-logout"></a><a href="auth/#bb-auth-logout"><code>auth logout</code></a></dt>
+<dd>Remove stored credentials for a Bitbucket host</dd>
+<dt><a id="bb-auth-server"></a><a id="bb-auth-server-list"></a><a href="auth/#bb-auth-server-list"><code>auth server list</code></a></dt>
+<dd>List stored server contexts</dd>
+<dt><a id="bb-auth-server-use"></a><a href="auth/#bb-auth-server-use"><code>auth server use</code></a></dt>
+<dd>Set the active default server context</dd>
+<dt><a id="bb-auth-setup-git"></a><a href="auth/#bb-auth-setup-git"><code>auth setup-git</code></a></dt>
+<dd>Configure git to authenticate to Bitbucket through bb</dd>
+<dt><a id="bb-auth-status"></a><a href="auth/#bb-auth-status"><code>auth status</code></a></dt>
+<dd>Show the configured target and verify it works</dd>
+<dt><a id="bb-auth-token"></a><a id="bb-auth-token-create"></a><a href="auth/#bb-auth-token-create"><code>auth token create</code></a></dt>
+<dd>Create an HTTP access token</dd>
+<dt><a id="bb-auth-token-get"></a><a href="auth/#bb-auth-token-get"><code>auth token get</code></a></dt>
+<dd>Get an HTTP access token by ID</dd>
+<dt><a id="bb-auth-token-list"></a><a href="auth/#bb-auth-token-list"><code>auth token list</code></a></dt>
+<dd>List HTTP access tokens</dd>
+<dt><a id="bb-auth-token-revoke"></a><a href="auth/#bb-auth-token-revoke"><code>auth token revoke</code></a></dt>
+<dd>Revoke an HTTP access token by ID</dd>
+<dt><a id="bb-auth-token-update"></a><a href="auth/#bb-auth-token-update"><code>auth token update</code></a></dt>
+<dd>Update an HTTP access token name or permissions</dd>
+<dt><a id="bb-auth-token-url"></a><a href="auth/#bb-auth-token-url"><code>auth token-url</code></a></dt>
+<dd>Show personal access token creation URL</dd>
+</dl>
+<h3 id="bb-branch"><code>bb branch</code><a class="headerlink" href="#bb-branch" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-branch-create"></a><a href="branch/#bb-branch-create"><code>branch create</code></a></dt>
+<dd>Create repository branch</dd>
+<dt><a id="bb-branch-default"></a><a id="bb-branch-default-get"></a><a href="branch/#bb-branch-default-get"><code>branch default get</code></a></dt>
+<dd>Get repository default branch</dd>
+<dt><a id="bb-branch-default-set"></a><a href="branch/#bb-branch-default-set"><code>branch default set</code></a></dt>
+<dd>Set repository default branch</dd>
+<dt><a id="bb-branch-delete"></a><a href="branch/#bb-branch-delete"><code>branch delete</code></a></dt>
+<dd>Delete repository branch</dd>
+<dt><a id="bb-branch-list"></a><a href="branch/#bb-branch-list"><code>branch list</code></a></dt>
+<dd>List repository branches</dd>
+<dt><a id="bb-branch-model"></a><a id="bb-branch-model-inspect"></a><a href="branch/#bb-branch-model-inspect"><code>branch model inspect</code></a></dt>
+<dd>Show the branch a commit belongs to</dd>
+<dt><a id="bb-branch-model-update"></a><a href="branch/#bb-branch-model-update"><code>branch model update</code></a></dt>
+<dd>Update repository default branch used by branch model settings</dd>
+<dt><a id="bb-branch-restriction"></a><a id="bb-branch-restriction-create"></a><a href="branch/#bb-branch-restriction-create"><code>branch restriction create</code></a></dt>
+<dd>Create branch restriction</dd>
+<dt><a id="bb-branch-restriction-delete"></a><a href="branch/#bb-branch-restriction-delete"><code>branch restriction delete</code></a></dt>
+<dd>Delete branch restriction</dd>
+<dt><a id="bb-branch-restriction-get"></a><a href="branch/#bb-branch-restriction-get"><code>branch restriction get</code></a></dt>
+<dd>Get branch restriction by id</dd>
+<dt><a id="bb-branch-restriction-list"></a><a href="branch/#bb-branch-restriction-list"><code>branch restriction list</code></a></dt>
+<dd>List branch restrictions</dd>
+<dt><a id="bb-branch-restriction-update"></a><a href="branch/#bb-branch-restriction-update"><code>branch restriction update</code></a></dt>
+<dd>Update branch restriction</dd>
+</dl>
+<h3 id="bb-build"><code>bb build</code><a class="headerlink" href="#bb-build" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-build-delete"></a><a href="build/#bb-build-delete"><code>build delete</code></a></dt>
+<dd>Delete repository-scoped build status by key</dd>
+<dt><a id="bb-build-get"></a><a href="build/#bb-build-get"><code>build get</code></a></dt>
+<dd>Get repository-scoped build status by key</dd>
+<dt><a id="bb-build-required"></a><a id="bb-build-required-create"></a><a href="build/#bb-build-required-create"><code>build required create</code></a></dt>
+<dd>Create required build merge check</dd>
+<dt><a id="bb-build-required-delete"></a><a href="build/#bb-build-required-delete"><code>build required delete</code></a></dt>
+<dd>Delete required build merge check</dd>
+<dt><a id="bb-build-required-list"></a><a href="build/#bb-build-required-list"><code>build required list</code></a></dt>
+<dd>List required build merge checks</dd>
+<dt><a id="bb-build-required-update"></a><a href="build/#bb-build-required-update"><code>build required update</code></a></dt>
+<dd>Update required build merge check</dd>
+<dt><a id="bb-build-set"></a><a href="build/#bb-build-set"><code>build set</code></a></dt>
+<dd>Set repository-scoped build status for a commit</dd>
+<dt><a id="bb-build-status"></a><a id="bb-build-status-get"></a><a href="build/#bb-build-status-get"><code>build status get</code></a></dt>
+<dd>Get build statuses for a commit</dd>
+<dt><a id="bb-build-status-set"></a><a href="build/#bb-build-status-set"><code>build status set</code></a></dt>
+<dd>Set build status for a commit</dd>
+<dt><a id="bb-build-status-stats"></a><a href="build/#bb-build-status-stats"><code>build status stats</code></a></dt>
+<dd>Get build status summary counts for one or more commits</dd>
+</dl>
+<h3 id="bb-commit"><code>bb commit</code><a class="headerlink" href="#bb-commit" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-commit-compare"></a><a href="commit/#bb-commit-compare"><code>commit compare</code></a></dt>
+<dd>Compare two commits or refs</dd>
+<dt><a id="bb-commit-get"></a><a href="commit/#bb-commit-get"><code>commit get</code></a></dt>
+<dd>Get a specific commit</dd>
+<dt><a id="bb-commit-list"></a><a href="commit/#bb-commit-list"><code>commit list</code></a></dt>
+<dd>List repository commits</dd>
+<dt><a id="bb-commit-prs"></a><a href="commit/#bb-commit-prs"><code>commit prs</code></a></dt>
+<dd>List pull requests containing a commit</dd>
+</dl>
+<h3 id="bb-completion"><code>bb completion</code><a class="headerlink" href="#bb-completion" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-completion-install"></a><a href="completion/#bb-completion-install"><code>completion install</code></a></dt>
+<dd>Set completion up so every new shell completes bb</dd>
+<dt><a id="bb-completion-remove"></a><a href="completion/#bb-completion-remove"><code>completion remove</code></a></dt>
+<dd>Take out what bb completion install set up</dd>
+</dl>
+<h3 id="bb-deployment"><code>bb deployment</code><a class="headerlink" href="#bb-deployment" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-deployment-create"></a><a href="deployment/#bb-deployment-create"><code>deployment create</code></a></dt>
+<dd>Create or update a repository-scoped deployment for a commit</dd>
+<dt><a id="bb-deployment-delete"></a><a href="deployment/#bb-deployment-delete"><code>deployment delete</code></a></dt>
+<dd>Delete repository-scoped deployment for a commit</dd>
+<dt><a id="bb-deployment-get"></a><a href="deployment/#bb-deployment-get"><code>deployment get</code></a></dt>
+<dd>Get repository-scoped deployment details for a commit</dd>
+</dl>
+<h3 id="bb-diff"><code>bb diff</code><a class="headerlink" href="#bb-diff" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-diff-commit"></a><a href="diff/#bb-diff-commit"><code>diff commit</code></a></dt>
+<dd>Diff a commit against its parent</dd>
+<dt><a id="bb-diff-pr"></a><a href="diff/#bb-diff-pr"><code>diff pr</code></a></dt>
+<dd>Diff a pull request</dd>
+<dt><a id="bb-diff-refs"></a><a href="diff/#bb-diff-refs"><code>diff refs</code></a></dt>
+<dd>Diff two refs or commits</dd>
+</dl>
+<h3 id="bb-insights"><code>bb insights</code><a class="headerlink" href="#bb-insights" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-insights-annotation"></a><a id="bb-insights-annotation-add"></a><a href="insights/#bb-insights-annotation-add"><code>insights annotation add</code></a></dt>
+<dd>Add annotations to a Code Insights report</dd>
+<dt><a id="bb-insights-annotation-delete"></a><a href="insights/#bb-insights-annotation-delete"><code>insights annotation delete</code></a></dt>
+<dd>Delete annotation(s) by external id for a report</dd>
+<dt><a id="bb-insights-annotation-list"></a><a href="insights/#bb-insights-annotation-list"><code>insights annotation list</code></a></dt>
+<dd>List annotations for a Code Insights report or commit</dd>
+<dt><a id="bb-insights-annotation-set"></a><a href="insights/#bb-insights-annotation-set"><code>insights annotation set</code></a></dt>
+<dd>Create or replace a Code Insights report annotation</dd>
+<dt><a id="bb-insights-report"></a><a id="bb-insights-report-delete"></a><a href="insights/#bb-insights-report-delete"><code>insights report delete</code></a></dt>
+<dd>Delete a Code Insights report</dd>
+<dt><a id="bb-insights-report-get"></a><a href="insights/#bb-insights-report-get"><code>insights report get</code></a></dt>
+<dd>Get a Code Insights report</dd>
+<dt><a id="bb-insights-report-list"></a><a href="insights/#bb-insights-report-list"><code>insights report list</code></a></dt>
+<dd>List Code Insights reports for a commit</dd>
+<dt><a id="bb-insights-report-set"></a><a href="insights/#bb-insights-report-set"><code>insights report set</code></a></dt>
+<dd>Create or update a Code Insights report</dd>
+</dl>
+<h3 id="bb-pr"><code>bb pr</code><a class="headerlink" href="#bb-pr" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-pr-activity"></a><a id="bb-pr-activity-list"></a><a href="pr/#bb-pr-activity-list"><code>pr activity list</code></a></dt>
+<dd>List raw pull request activity items</dd>
+<dt><a id="bb-pr-auto-merge"></a><a id="bb-pr-auto-merge-disable"></a><a href="pr/#bb-pr-auto-merge-disable"><code>pr auto-merge disable</code></a></dt>
+<dd>Disable auto-merge on a pull request</dd>
+<dt><a id="bb-pr-auto-merge-enable"></a><a href="pr/#bb-pr-auto-merge-enable"><code>pr auto-merge enable</code></a></dt>
+<dd>Enable auto-merge on a pull request</dd>
+<dt><a id="bb-pr-auto-merge-get"></a><a href="pr/#bb-pr-auto-merge-get"><code>pr auto-merge get</code></a></dt>
+<dd>Get auto-merge configuration for a pull request</dd>
+<dt><a id="bb-pr-build"></a><a id="bb-pr-build-status"></a><a href="pr/#bb-pr-build-status"><code>pr build status</code></a></dt>
+<dd>Show build statuses for a pull request's source commit (also available as bb pr checks)</dd>
+<dt><a id="bb-pr-checkout"></a><a href="pr/#bb-pr-checkout"><code>pr checkout</code></a></dt>
+<dd>Check out a pull request branch locally</dd>
+<dt><a id="bb-pr-checks"></a><a href="pr/#bb-pr-checks"><code>pr checks</code></a></dt>
+<dd>Show build statuses for a pull request's source commit (alias for bb pr build status)</dd>
+<dt><a id="bb-pr-comment"></a><a id="bb-pr-comment-add"></a><a href="pr/#bb-pr-comment-add"><code>pr comment add</code></a></dt>
+<dd>Add a comment to a pull request</dd>
+<dt><a id="bb-pr-comment-apply-suggestion"></a><a href="pr/#bb-pr-comment-apply-suggestion"><code>pr comment apply-suggestion</code></a></dt>
+<dd>Apply a suggested change from a comment</dd>
+<dt><a id="bb-pr-comment-get"></a><a href="pr/#bb-pr-comment-get"><code>pr comment get</code></a></dt>
+<dd>Get a pull request comment</dd>
+<dt><a id="bb-pr-comment-list"></a><a href="pr/#bb-pr-comment-list"><code>pr comment list</code></a></dt>
+<dd>List comment threads for a pull request, unresolved first</dd>
+<dt><a id="bb-pr-comment-react"></a><a href="pr/#bb-pr-comment-react"><code>pr comment react</code></a></dt>
+<dd>Add or remove a reaction on a pull request comment</dd>
+<dt><a id="bb-pr-comment-reopen"></a><a href="pr/#bb-pr-comment-reopen"><code>pr comment reopen</code></a></dt>
+<dd>Reopen a resolved pull request comment</dd>
+<dt><a id="bb-pr-comment-resolve"></a><a href="pr/#bb-pr-comment-resolve"><code>pr comment resolve</code></a></dt>
+<dd>Resolve a pull request comment, closing it as a task</dd>
+<dt><a id="bb-pr-commits"></a><a href="pr/#bb-pr-commits"><code>pr commits</code></a></dt>
+<dd>List the commits in a pull request</dd>
+<dt><a id="bb-pr-create"></a><a href="pr/#bb-pr-create"><code>pr create</code></a></dt>
+<dd>Create a pull request</dd>
+<dt><a id="bb-pr-decline"></a><a href="pr/#bb-pr-decline"><code>pr decline</code></a></dt>
+<dd>Decline a pull request</dd>
+<dt><a id="bb-pr-default-reviewers"></a><a href="pr/#bb-pr-default-reviewers"><code>pr default-reviewers</code></a></dt>
+<dd>List default reviewers and matching conditions for repository</dd>
+<dt><a id="bb-pr-diff"></a><a href="pr/#bb-pr-diff"><code>pr diff</code></a></dt>
+<dd>Diff a pull request (alias for bb diff pr)</dd>
+<dt><a id="bb-pr-files"></a><a href="pr/#bb-pr-files"><code>pr files</code></a></dt>
+<dd>List the files changed in a pull request</dd>
+<dt><a id="bb-pr-get"></a><a href="pr/#bb-pr-get"><code>pr get</code></a></dt>
+<dd>Get pull request details, including outstanding review feedback</dd>
+<dt><a id="bb-pr-jira"></a><a href="pr/#bb-pr-jira"><code>pr jira</code></a></dt>
+<dd>List Jira issues associated with a pull request</dd>
+<dt><a id="bb-pr-list"></a><a href="pr/#bb-pr-list"><code>pr list</code></a></dt>
+<dd>List pull requests</dd>
+<dt><a id="bb-pr-merge"></a><a href="pr/#bb-pr-merge"><code>pr merge</code></a></dt>
+<dd>Merge a pull request</dd>
+<dt><a id="bb-pr-merge-base"></a><a href="pr/#bb-pr-merge-base"><code>pr merge-base</code></a></dt>
+<dd>Show the common ancestor commit of a pull request's source and target branches</dd>
+<dt><a id="bb-pr-participants"></a><a href="pr/#bb-pr-participants"><code>pr participants</code></a></dt>
+<dd>Search pull request participants across a repository</dd>
+<dt><a id="bb-pr-ready"></a><a href="pr/#bb-pr-ready"><code>pr ready</code></a></dt>
+<dd>Mark a draft pull request ready for review, or turn it back into a draft</dd>
+<dt><a id="bb-pr-rebase"></a><a href="pr/#bb-pr-rebase"><code>pr rebase</code></a></dt>
+<dd>Rebase a pull request</dd>
+<dt><a id="bb-pr-reopen"></a><a href="pr/#bb-pr-reopen"><code>pr reopen</code></a></dt>
+<dd>Reopen a pull request</dd>
+<dt><a id="bb-pr-review"></a><a id="bb-pr-review-approve"></a><a href="pr/#bb-pr-review-approve"><code>pr review approve</code></a></dt>
+<dd>Approve a pull request</dd>
+<dt><a id="bb-pr-review-complete"></a><a href="pr/#bb-pr-review-complete"><code>pr review complete</code></a></dt>
+<dd>Publish draft comments and optionally submit a status change</dd>
+<dt><a id="bb-pr-review-discard"></a><a href="pr/#bb-pr-review-discard"><code>pr review discard</code></a></dt>
+<dd>Discard all draft comments and cancel review</dd>
+<dt><a id="bb-pr-review-get"></a><a href="pr/#bb-pr-review-get"><code>pr review get</code></a></dt>
+<dd>Retrieve current draft review details</dd>
+<dt><a id="bb-pr-review-reviewer"></a><a id="bb-pr-review-reviewer-add"></a><a href="pr/#bb-pr-review-reviewer-add"><code>pr review reviewer add</code></a></dt>
+<dd>Add reviewers to a pull request</dd>
+<dt><a id="bb-pr-review-reviewer-remove"></a><a href="pr/#bb-pr-review-reviewer-remove"><code>pr review reviewer remove</code></a></dt>
+<dd>Remove a reviewer</dd>
+<dt><a id="bb-pr-review-set"></a><a href="pr/#bb-pr-review-set"><code>pr review set</code></a></dt>
+<dd>Set your review status on a pull request</dd>
+<dt><a id="bb-pr-review-unapprove"></a><a href="pr/#bb-pr-review-unapprove"><code>pr review unapprove</code></a></dt>
+<dd>Clear your review status on a pull request</dd>
+<dt><a id="bb-pr-status"></a><a href="pr/#bb-pr-status"><code>pr status</code></a></dt>
+<dd>Show pull requests waiting on you</dd>
+<dt><a id="bb-pr-unwatch"></a><a href="pr/#bb-pr-unwatch"><code>pr unwatch</code></a></dt>
+<dd>Unwatch a pull request</dd>
+<dt><a id="bb-pr-update"></a><a href="pr/#bb-pr-update"><code>pr update</code></a></dt>
+<dd>Update pull request metadata</dd>
+<dt><a id="bb-pr-watch"></a><a href="pr/#bb-pr-watch"><code>pr watch</code></a></dt>
+<dd>Watch a pull request</dd>
+</dl>
+<h3 id="bb-project"><code>bb project</code><a class="headerlink" href="#bb-project" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-project-branch-restriction"></a><a id="bb-project-branch-restriction-create"></a><a href="project/#bb-project-branch-restriction-create"><code>project branch-restriction create</code></a></dt>
+<dd>Create a new project-level restriction</dd>
+<dt><a id="bb-project-branch-restriction-delete"></a><a href="project/#bb-project-branch-restriction-delete"><code>project branch-restriction delete</code></a></dt>
+<dd>Delete a project restriction</dd>
+<dt><a id="bb-project-branch-restriction-get"></a><a href="project/#bb-project-branch-restriction-get"><code>project branch-restriction get</code></a></dt>
+<dd>Get details of a single branch restriction</dd>
+<dt><a id="bb-project-branch-restriction-list"></a><a href="project/#bb-project-branch-restriction-list"><code>project branch-restriction list</code></a></dt>
+<dd>List all project branch restrictions</dd>
+<dt><a id="bb-project-branch-restriction-update"></a><a href="project/#bb-project-branch-restriction-update"><code>project branch-restriction update</code></a></dt>
+<dd>Update an existing restriction</dd>
+<dt><a id="bb-project-create"></a><a href="project/#bb-project-create"><code>project create</code></a></dt>
+<dd>Create a new project</dd>
+<dt><a id="bb-project-default-task"></a><a id="bb-project-default-task-add"></a><a href="project/#bb-project-default-task-add"><code>project default-task add</code></a></dt>
+<dd>Add a default checklist task</dd>
+<dt><a id="bb-project-default-task-delete"></a><a href="project/#bb-project-default-task-delete"><code>project default-task delete</code></a></dt>
+<dd>Delete a default checklist task</dd>
+<dt><a id="bb-project-default-task-list"></a><a href="project/#bb-project-default-task-list"><code>project default-task list</code></a></dt>
+<dd>List all default checklist tasks for the project</dd>
+<dt><a id="bb-project-default-task-update"></a><a href="project/#bb-project-default-task-update"><code>project default-task update</code></a></dt>
+<dd>Update a default checklist task</dd>
+<dt><a id="bb-project-delete"></a><a href="project/#bb-project-delete"><code>project delete</code></a></dt>
+<dd>Delete a project</dd>
+<dt><a id="bb-project-get"></a><a href="project/#bb-project-get"><code>project get</code></a></dt>
+<dd>Get project details</dd>
+<dt><a id="bb-project-list"></a><a href="project/#bb-project-list"><code>project list</code></a></dt>
+<dd>List projects</dd>
+<dt><a id="bb-project-permissions"></a><a id="bb-project-permissions-grant"></a><a href="project/#bb-project-permissions-grant"><code>project permissions grant</code></a></dt>
+<dd>Grant a project permission to a user or group</dd>
+<dt><a id="bb-project-permissions-groups"></a><a id="bb-project-permissions-groups-grant"></a><a href="project/#bb-project-permissions-groups-grant"><code>project permissions groups grant</code></a></dt>
+<dd>Grant a project permission to a group</dd>
+<dt><a id="bb-project-permissions-groups-list"></a><a href="project/#bb-project-permissions-groups-list"><code>project permissions groups list</code></a></dt>
+<dd>List groups with project permissions</dd>
+<dt><a id="bb-project-permissions-groups-revoke"></a><a href="project/#bb-project-permissions-groups-revoke"><code>project permissions groups revoke</code></a></dt>
+<dd>Revoke a project permission from a group</dd>
+<dt><a id="bb-project-permissions-list"></a><a href="project/#bb-project-permissions-list"><code>project permissions list</code></a></dt>
+<dd>List users or groups with project permissions</dd>
+<dt><a id="bb-project-permissions-revoke"></a><a href="project/#bb-project-permissions-revoke"><code>project permissions revoke</code></a></dt>
+<dd>Revoke a project permission from a user or group</dd>
+<dt><a id="bb-project-permissions-show"></a><a href="project/#bb-project-permissions-show"><code>project permissions show</code></a></dt>
+<dd>Show the caller's effective permissions on a project</dd>
+<dt><a id="bb-project-permissions-users"></a><a id="bb-project-permissions-users-grant"></a><a href="project/#bb-project-permissions-users-grant"><code>project permissions users grant</code></a></dt>
+<dd>Grant a project permission to a user</dd>
+<dt><a id="bb-project-permissions-users-list"></a><a href="project/#bb-project-permissions-users-list"><code>project permissions users list</code></a></dt>
+<dd>List users with project permissions</dd>
+<dt><a id="bb-project-permissions-users-revoke"></a><a href="project/#bb-project-permissions-users-revoke"><code>project permissions users revoke</code></a></dt>
+<dd>Revoke a project permission from a user</dd>
+<dt><a id="bb-project-update"></a><a href="project/#bb-project-update"><code>project update</code></a></dt>
+<dd>Update project details</dd>
+<dt><a id="bb-project-webhook"></a><a id="bb-project-webhook-create"></a><a href="project/#bb-project-webhook-create"><code>project webhook create</code></a></dt>
+<dd>Create a new project-level webhook</dd>
+<dt><a id="bb-project-webhook-delete"></a><a href="project/#bb-project-webhook-delete"><code>project webhook delete</code></a></dt>
+<dd>Delete a project webhook</dd>
+<dt><a id="bb-project-webhook-list"></a><a href="project/#bb-project-webhook-list"><code>project webhook list</code></a></dt>
+<dd>List all webhooks configured for the project</dd>
+<dt><a id="bb-project-webhook-stats"></a><a href="project/#bb-project-webhook-stats"><code>project webhook stats</code></a></dt>
+<dd>Retrieve execution statistics</dd>
+<dt><a id="bb-project-webhook-test"></a><a href="project/#bb-project-webhook-test"><code>project webhook test</code></a></dt>
+<dd>Trigger a connection test ping</dd>
+<dt><a id="bb-project-webhook-update"></a><a href="project/#bb-project-webhook-update"><code>project webhook update</code></a></dt>
+<dd>Update a project webhook</dd>
+</dl>
+<h3 id="bb-ref"><code>bb ref</code><a class="headerlink" href="#bb-ref" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-ref-list"></a><a href="ref/#bb-ref-list"><code>ref list</code></a></dt>
+<dd>List repository refs (branches and tags)</dd>
+<dt><a id="bb-ref-resolve"></a><a href="ref/#bb-ref-resolve"><code>ref resolve</code></a></dt>
+<dd>Resolve a ref by name to its full ref and commit if applicable</dd>
+</dl>
+<h3 id="bb-repo"><code>bb repo</code><a class="headerlink" href="#bb-repo" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-repo-admin"></a><a id="bb-repo-admin-create"></a><a href="repo/#bb-repo-admin-create"><code>repo admin create</code></a></dt>
+<dd>Create a new repository</dd>
+<dt><a id="bb-repo-admin-delete"></a><a href="repo/#bb-repo-admin-delete"><code>repo admin delete</code></a></dt>
+<dd>Delete a repository</dd>
+<dt><a id="bb-repo-admin-fork"></a><a href="repo/#bb-repo-admin-fork"><code>repo admin fork</code></a></dt>
+<dd>Fork a repository</dd>
+<dt><a id="bb-repo-admin-update"></a><a href="repo/#bb-repo-admin-update"><code>repo admin update</code></a></dt>
+<dd>Update repository metadata</dd>
+<dt><a id="bb-repo-archive"></a><a href="repo/#bb-repo-archive"><code>repo archive</code></a></dt>
+<dd>Download repository archive</dd>
+<dt><a id="bb-repo-browse"></a><a id="bb-repo-browse-blame"></a><a href="repo/#bb-repo-browse-blame"><code>repo browse blame</code></a></dt>
+<dd>Get file blame</dd>
+<dt><a id="bb-repo-browse-file"></a><a href="repo/#bb-repo-browse-file"><code>repo browse file</code></a></dt>
+<dd>Get structured file content</dd>
+<dt><a id="bb-repo-browse-history"></a><a href="repo/#bb-repo-browse-history"><code>repo browse history</code></a></dt>
+<dd>List commit history for a file</dd>
+<dt><a id="bb-repo-browse-raw"></a><a href="repo/#bb-repo-browse-raw"><code>repo browse raw</code></a></dt>
+<dd>Get raw file content</dd>
+<dt><a id="bb-repo-browse-tree"></a><a href="repo/#bb-repo-browse-tree"><code>repo browse tree</code></a></dt>
+<dd>List repository files in a directory</dd>
+<dt><a id="bb-repo-cat"></a><a href="repo/#bb-repo-cat"><code>repo cat</code></a></dt>
+<dd>Output the raw content of a file over REST</dd>
+<dt><a id="bb-repo-clone"></a><a href="repo/#bb-repo-clone"><code>repo clone</code></a></dt>
+<dd>Clone a repository to the local filesystem</dd>
+<dt><a id="bb-repo-comment"></a><a id="bb-repo-comment-create"></a><a href="repo/#bb-repo-comment-create"><code>repo comment create</code></a></dt>
+<dd>Create a comment</dd>
+<dt><a id="bb-repo-comment-delete"></a><a href="repo/#bb-repo-comment-delete"><code>repo comment delete</code></a></dt>
+<dd>Delete a comment</dd>
+<dt><a id="bb-repo-comment-list"></a><a href="repo/#bb-repo-comment-list"><code>repo comment list</code></a></dt>
+<dd>List comments</dd>
+<dt><a id="bb-repo-comment-update"></a><a href="repo/#bb-repo-comment-update"><code>repo comment update</code></a></dt>
+<dd>Update a comment</dd>
+<dt><a id="bb-repo-compare"></a><a href="repo/#bb-repo-compare"><code>repo compare</code></a></dt>
+<dd>Compare commits or branches</dd>
+<dt><a id="bb-repo-create"></a><a href="repo/#bb-repo-create"><code>repo create</code></a></dt>
+<dd>Create a new repository</dd>
+<dt><a id="bb-repo-default-task"></a><a id="bb-repo-default-task-add"></a><a href="repo/#bb-repo-default-task-add"><code>repo default-task add</code></a></dt>
+<dd>Add a default checklist task</dd>
+<dt><a id="bb-repo-default-task-delete"></a><a href="repo/#bb-repo-default-task-delete"><code>repo default-task delete</code></a></dt>
+<dd>Delete a default checklist task</dd>
+<dt><a id="bb-repo-default-task-list"></a><a href="repo/#bb-repo-default-task-list"><code>repo default-task list</code></a></dt>
+<dd>List default checklist tasks</dd>
+<dt><a id="bb-repo-default-task-update"></a><a href="repo/#bb-repo-default-task-update"><code>repo default-task update</code></a></dt>
+<dd>Update a default checklist task</dd>
+<dt><a id="bb-repo-delete"></a><a href="repo/#bb-repo-delete"><code>repo delete</code></a></dt>
+<dd>Delete a repository</dd>
+<dt><a id="bb-repo-edit"></a><a href="repo/#bb-repo-edit"><code>repo edit</code></a></dt>
+<dd>Edit a file's content over REST</dd>
+<dt><a id="bb-repo-fork"></a><a href="repo/#bb-repo-fork"><code>repo fork</code></a></dt>
+<dd>Fork a repository</dd>
+<dt><a id="bb-repo-get"></a><a href="repo/#bb-repo-get"><code>repo get</code></a></dt>
+<dd>Show a repository's details and its README</dd>
+<dt><a id="bb-repo-label"></a><a id="bb-repo-label-add"></a><a href="repo/#bb-repo-label-add"><code>repo label add</code></a></dt>
+<dd>Add a repository label</dd>
+<dt><a id="bb-repo-label-list"></a><a href="repo/#bb-repo-label-list"><code>repo label list</code></a></dt>
+<dd>List repository labels</dd>
+<dt><a id="bb-repo-label-remove"></a><a href="repo/#bb-repo-label-remove"><code>repo label remove</code></a></dt>
+<dd>Remove a repository label</dd>
+<dt><a id="bb-repo-list"></a><a href="repo/#bb-repo-list"><code>repo list</code></a></dt>
+<dd>List repositories</dd>
+<dt><a id="bb-repo-permissions"></a><a id="bb-repo-permissions-grant"></a><a href="repo/#bb-repo-permissions-grant"><code>repo permissions grant</code></a></dt>
+<dd>Grant a repository permission to a user or group</dd>
+<dt><a id="bb-repo-permissions-list"></a><a href="repo/#bb-repo-permissions-list"><code>repo permissions list</code></a></dt>
+<dd>List users or groups with repository permissions</dd>
+<dt><a id="bb-repo-permissions-revoke"></a><a href="repo/#bb-repo-permissions-revoke"><code>repo permissions revoke</code></a></dt>
+<dd>Revoke a repository permission from a user or group</dd>
+<dt><a id="bb-repo-permissions-show"></a><a href="repo/#bb-repo-permissions-show"><code>repo permissions show</code></a></dt>
+<dd>Show the caller's effective permissions on a repository</dd>
+<dt><a id="bb-repo-settings"></a><a id="bb-repo-settings-auto-decline"></a><a id="bb-repo-settings-auto-decline-delete"></a><a href="repo/#bb-repo-settings-auto-decline-delete"><code>repo settings auto-decline delete</code></a></dt>
+<dd>Delete repository auto-decline settings</dd>
+<dt><a id="bb-repo-settings-auto-decline-get"></a><a href="repo/#bb-repo-settings-auto-decline-get"><code>repo settings auto-decline get</code></a></dt>
+<dd>Get repository auto-decline settings</dd>
+<dt><a id="bb-repo-settings-auto-decline-set"></a><a href="repo/#bb-repo-settings-auto-decline-set"><code>repo settings auto-decline set</code></a></dt>
+<dd>Set repository auto-decline settings</dd>
+<dt><a id="bb-repo-settings-auto-merge"></a><a id="bb-repo-settings-auto-merge-delete"></a><a href="repo/#bb-repo-settings-auto-merge-delete"><code>repo settings auto-merge delete</code></a></dt>
+<dd>Delete repository auto-merge settings</dd>
+<dt><a id="bb-repo-settings-auto-merge-get"></a><a href="repo/#bb-repo-settings-auto-merge-get"><code>repo settings auto-merge get</code></a></dt>
+<dd>Get repository auto-merge settings</dd>
+<dt><a id="bb-repo-settings-auto-merge-set"></a><a href="repo/#bb-repo-settings-auto-merge-set"><code>repo settings auto-merge set</code></a></dt>
+<dd>Set repository auto-merge settings</dd>
+<dt><a id="bb-repo-settings-pull-requests"></a><a id="bb-repo-settings-pull-requests-get"></a><a href="repo/#bb-repo-settings-pull-requests-get"><code>repo settings pull-requests get</code></a></dt>
+<dd>Get repository pull-request settings</dd>
+<dt><a id="bb-repo-settings-pull-requests-merge-checks"></a><a id="bb-repo-settings-pull-requests-merge-checks-list"></a><a href="repo/#bb-repo-settings-pull-requests-merge-checks-list"><code>repo settings pull-requests merge-checks list</code></a></dt>
+<dd>List configured merge checks</dd>
+<dt><a id="bb-repo-settings-pull-requests-set-strategy"></a><a href="repo/#bb-repo-settings-pull-requests-set-strategy"><code>repo settings pull-requests set-strategy</code></a></dt>
+<dd>Set default merge strategy</dd>
+<dt><a id="bb-repo-settings-pull-requests-update"></a><a href="repo/#bb-repo-settings-pull-requests-update"><code>repo settings pull-requests update</code></a></dt>
+<dd>Update repository pull-request settings</dd>
+<dt><a id="bb-repo-settings-pull-requests-update-approvers"></a><a href="repo/#bb-repo-settings-pull-requests-update-approvers"><code>repo settings pull-requests update-approvers</code></a></dt>
+<dd>Update required approvers count</dd>
+<dt><a id="bb-repo-settings-security"></a><a id="bb-repo-settings-security-permissions"></a><a id="bb-repo-settings-security-permissions-groups"></a><a id="bb-repo-settings-security-permissions-groups-grant"></a><a href="repo/#bb-repo-settings-security-permissions-groups-grant"><code>repo settings security permissions groups grant</code></a></dt>
+<dd>Grant a repository permission to a group</dd>
+<dt><a id="bb-repo-settings-security-permissions-groups-list"></a><a href="repo/#bb-repo-settings-security-permissions-groups-list"><code>repo settings security permissions groups list</code></a></dt>
+<dd>List groups with repository permissions</dd>
+<dt><a id="bb-repo-settings-security-permissions-groups-revoke"></a><a href="repo/#bb-repo-settings-security-permissions-groups-revoke"><code>repo settings security permissions groups revoke</code></a></dt>
+<dd>Revoke a repository permission from a group</dd>
+<dt><a id="bb-repo-settings-security-permissions-users"></a><a id="bb-repo-settings-security-permissions-users-grant"></a><a href="repo/#bb-repo-settings-security-permissions-users-grant"><code>repo settings security permissions users grant</code></a></dt>
+<dd>Grant a repository permission to a user</dd>
+<dt><a id="bb-repo-settings-security-permissions-users-list"></a><a href="repo/#bb-repo-settings-security-permissions-users-list"><code>repo settings security permissions users list</code></a></dt>
+<dd>List users with repository permissions</dd>
+<dt><a id="bb-repo-settings-security-permissions-users-revoke"></a><a href="repo/#bb-repo-settings-security-permissions-users-revoke"><code>repo settings security permissions users revoke</code></a></dt>
+<dd>Revoke a repository permission from a user</dd>
+<dt><a id="bb-repo-settings-workflow"></a><a id="bb-repo-settings-workflow-webhooks"></a><a id="bb-repo-settings-workflow-webhooks-create"></a><a href="repo/#bb-repo-settings-workflow-webhooks-create"><code>repo settings workflow webhooks create</code></a></dt>
+<dd>Create a repository webhook</dd>
+<dt><a id="bb-repo-settings-workflow-webhooks-delete"></a><a href="repo/#bb-repo-settings-workflow-webhooks-delete"><code>repo settings workflow webhooks delete</code></a></dt>
+<dd>Delete a repository webhook</dd>
+<dt><a id="bb-repo-settings-workflow-webhooks-list"></a><a href="repo/#bb-repo-settings-workflow-webhooks-list"><code>repo settings workflow webhooks list</code></a></dt>
+<dd>List repository webhooks</dd>
+<dt><a id="bb-repo-ssh-key"></a><a id="bb-repo-ssh-key-add"></a><a href="repo/#bb-repo-ssh-key-add"><code>repo ssh-key add</code></a></dt>
+<dd>Add a project or repository SSH access key</dd>
+<dt><a id="bb-repo-ssh-key-list"></a><a href="repo/#bb-repo-ssh-key-list"><code>repo ssh-key list</code></a></dt>
+<dd>List project or repository SSH access keys</dd>
+<dt><a id="bb-repo-ssh-key-remove"></a><a href="repo/#bb-repo-ssh-key-remove"><code>repo ssh-key remove</code></a></dt>
+<dd>Remove a project or repository SSH access key by ID</dd>
+<dt><a id="bb-repo-sync"></a><a href="repo/#bb-repo-sync"><code>repo sync</code></a></dt>
+<dd>Bring a fork up to date with its origin, and turn automatic syncing on or off</dd>
+<dt><a id="bb-repo-sync-disable"></a><a href="repo/#bb-repo-sync-disable"><code>repo sync disable</code></a></dt>
+<dd>Disable automatic background synchronization</dd>
+<dt><a id="bb-repo-sync-enable"></a><a href="repo/#bb-repo-sync-enable"><code>repo sync enable</code></a></dt>
+<dd>Enable automatic background synchronization</dd>
+<dt><a id="bb-repo-sync-status"></a><a href="repo/#bb-repo-sync-status"><code>repo sync status</code></a></dt>
+<dd>Query synchronization status, divergence, and settings</dd>
+<dt><a id="bb-repo-unwatch"></a><a href="repo/#bb-repo-unwatch"><code>repo unwatch</code></a></dt>
+<dd>Unwatch repository</dd>
+<dt><a id="bb-repo-watch"></a><a href="repo/#bb-repo-watch"><code>repo watch</code></a></dt>
+<dd>Watch repository</dd>
+</dl>
+<h3 id="bb-reviewer"><code>bb reviewer</code><a class="headerlink" href="#bb-reviewer" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-reviewer-condition"></a><a id="bb-reviewer-condition-create"></a><a href="reviewer/#bb-reviewer-condition-create"><code>reviewer condition create</code></a></dt>
+<dd>Create a default reviewer condition</dd>
+<dt><a id="bb-reviewer-condition-delete"></a><a href="reviewer/#bb-reviewer-condition-delete"><code>reviewer condition delete</code></a></dt>
+<dd>Delete a default reviewer condition</dd>
+<dt><a id="bb-reviewer-condition-list"></a><a href="reviewer/#bb-reviewer-condition-list"><code>reviewer condition list</code></a></dt>
+<dd>List default reviewer conditions</dd>
+<dt><a id="bb-reviewer-condition-update"></a><a href="reviewer/#bb-reviewer-condition-update"><code>reviewer condition update</code></a></dt>
+<dd>Update a default reviewer condition</dd>
+</dl>
+<h3 id="bb-reviewer-group"><code>bb reviewer-group</code><a class="headerlink" href="#bb-reviewer-group" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-reviewer-group-create"></a><a href="reviewer-group/#bb-reviewer-group-create"><code>reviewer-group create</code></a></dt>
+<dd>Create a reviewer group</dd>
+<dt><a id="bb-reviewer-group-delete"></a><a href="reviewer-group/#bb-reviewer-group-delete"><code>reviewer-group delete</code></a></dt>
+<dd>Delete a reviewer group</dd>
+<dt><a id="bb-reviewer-group-list"></a><a href="reviewer-group/#bb-reviewer-group-list"><code>reviewer-group list</code></a></dt>
+<dd>List reviewer groups</dd>
+<dt><a id="bb-reviewer-group-update"></a><a href="reviewer-group/#bb-reviewer-group-update"><code>reviewer-group update</code></a></dt>
+<dd>Update a reviewer group</dd>
+<dt><a id="bb-reviewer-group-users"></a><a href="reviewer-group/#bb-reviewer-group-users"><code>reviewer-group users</code></a></dt>
+<dd>List the members of a repository reviewer group who can see the repository</dd>
+</dl>
+<h3 id="bb-search"><code>bb search</code><a class="headerlink" href="#bb-search" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-search-commits"></a><a href="search/#bb-search-commits"><code>search commits</code></a></dt>
+<dd>Search for commits within a repository</dd>
+<dt><a id="bb-search-prs"></a><a href="search/#bb-search-prs"><code>search prs</code></a></dt>
+<dd>Search for pull requests globally or within a repository</dd>
+<dt><a id="bb-search-repos"></a><a href="search/#bb-search-repos"><code>search repos</code></a></dt>
+<dd>Search for repositories</dd>
+</dl>
+<h3 id="bb-ssh-key"><code>bb ssh-key</code><a class="headerlink" href="#bb-ssh-key" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-ssh-key-add"></a><a href="ssh-key/#bb-ssh-key-add"><code>ssh-key add</code></a></dt>
+<dd>Add a personal SSH key</dd>
+<dt><a id="bb-ssh-key-list"></a><a href="ssh-key/#bb-ssh-key-list"><code>ssh-key list</code></a></dt>
+<dd>List personal SSH keys</dd>
+<dt><a id="bb-ssh-key-remove"></a><a href="ssh-key/#bb-ssh-key-remove"><code>ssh-key remove</code></a></dt>
+<dd>Remove a personal SSH key by ID</dd>
+</dl>
+<h3 id="bb-tag"><code>bb tag</code><a class="headerlink" href="#bb-tag" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-tag-create"></a><a href="tag/#bb-tag-create"><code>tag create</code></a></dt>
+<dd>Create repository tag</dd>
+<dt><a id="bb-tag-delete"></a><a href="tag/#bb-tag-delete"><code>tag delete</code></a></dt>
+<dd>Delete repository tag</dd>
+<dt><a id="bb-tag-list"></a><a href="tag/#bb-tag-list"><code>tag list</code></a></dt>
+<dd>List repository tags</dd>
+<dt><a id="bb-tag-view"></a><a href="tag/#bb-tag-view"><code>tag view</code></a></dt>
+<dd>View repository tag</dd>
+</dl>
+<h3 id="bb-webhook"><code>bb webhook</code><a class="headerlink" href="#bb-webhook" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><a id="bb-webhook-create"></a><a href="webhook/#bb-webhook-create"><code>webhook create</code></a></dt>
+<dd>Create a repository webhook</dd>
+<dt><a id="bb-webhook-delete"></a><a href="webhook/#bb-webhook-delete"><code>webhook delete</code></a></dt>
+<dd>Delete a repository webhook</dd>
+<dt><a id="bb-webhook-get"></a><a href="webhook/#bb-webhook-get"><code>webhook get</code></a></dt>
+<dd>Get a repository webhook by ID</dd>
+<dt><a id="bb-webhook-list"></a><a href="webhook/#bb-webhook-list"><code>webhook list</code></a></dt>
+<dd>List repository webhooks</dd>
+<dt><a id="bb-webhook-stats"></a><a href="webhook/#bb-webhook-stats"><code>webhook stats</code></a></dt>
+<dd>Get repository webhook statistics</dd>
+<dt><a id="bb-webhook-test"></a><a href="webhook/#bb-webhook-test"><code>webhook test</code></a></dt>
+<dd>Test connection to repository webhook URL by sending a ping event</dd>
+<dt><a id="bb-webhook-update"></a><a href="webhook/#bb-webhook-update"><code>webhook update</code></a></dt>
+<dd>Update a repository webhook</dd>
+</dl>
+<h2 id="bb"><code>bb</code><a class="headerlink" href="#bb" title="Permanent link">&para;</a></h2>
+<p>Bitbucket Data Center CLI (live-behavior first)</p>
+<p>bb — Bitbucket Data Center CLI (live-behavior first)</p>
+<p>A CLI for interacting with recent versions of Bitbucket for Data Center APIs.</p>
+<p>AGENT NOTICE If you are an AI agent or automated tool using this CLI and you encounter unexpected behavior, missing functionality, or errors that do not match what you expected, please report it so it can be investigated.</p>
+<p>You can create an issue at:</p>
+<div class="highlight"><pre><span></span><code>https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/new
+</code></pre></div>
+<p>If you cannot open the URL directly, ask the user to file the issue on your behalf using the link above.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.tracking", "navigation.sections", "navigation.indexes", "toc.follow", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

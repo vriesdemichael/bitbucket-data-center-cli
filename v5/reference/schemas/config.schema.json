@@ -1,0 +1,299 @@
+{
+  "$id": "https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Schema for bb system, workspace, and user configuration files (/etc/bb/config.yaml, %ProgramData%\\bb\\config.yaml, .bb/config.yaml, and ~/.config/bb/config.yaml).",
+  "properties": {
+    "$schema": {
+      "description": "JSON schema reference URI.",
+      "type": "string"
+    },
+    "allow_http_update": {
+      "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+      "type": "boolean"
+    },
+    "allow_insecure_skip_verify": {
+      "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
+      "type": "boolean"
+    },
+    "allow_unverified_update": {
+      "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+      "type": "boolean"
+    },
+    "allowed_hosts": {
+      "description": "Whitelist of permitted Bitbucket Data Center instance URLs or hostnames.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "ca_file": {
+      "description": "Absolute or relative path to PEM Root CA certificate bundle.",
+      "type": "string"
+    },
+    "default_host": {
+      "description": "Default Bitbucket Data Center instance URL or alias.",
+      "type": "string"
+    },
+    "disable_bb": {
+      "description": "Disable bb machine-wide: every command is refused except help, --describe, --version, bb doctor and printing a completion script, so a copy a user installed themselves cannot be used. System configuration or registry policy only.",
+      "type": "boolean"
+    },
+    "disable_mcp_server": {
+      "description": "Refuse 'bb ai mcp serve' machine-wide; the rest of bb keeps working. System configuration or registry policy only.",
+      "type": "boolean"
+    },
+    "disable_update": {
+      "description": "Disable CLI self-update command (bb update) machine-wide.",
+      "type": "boolean"
+    },
+    "hosts": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "aliases": {
+            "description": "Host aliases for remote URL matching.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "auth_mode": {
+            "description": "Authentication mechanism for the host.",
+            "enum": [
+              "token",
+              "basic"
+            ],
+            "type": "string"
+          },
+          "client_cert": {
+            "description": "Absolute or relative path to PEM client certificate for mutual TLS (mTLS).",
+            "type": "string"
+          },
+          "client_key": {
+            "description": "Absolute or relative path to PEM client private key for mutual TLS (mTLS).",
+            "type": "string"
+          },
+          "url": {
+            "description": "Bitbucket Data Center base URL.",
+            "type": "string"
+          },
+          "username": {
+            "description": "Username when using HTTP basic authentication.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "type": "object"
+      },
+      "description": "Configured Bitbucket host profiles.",
+      "type": "object"
+    },
+    "insecure_secrets": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "password": {
+            "description": "Plaintext password storage fallback.",
+            "type": "string"
+          },
+          "token": {
+            "description": "Plaintext token storage fallback.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "description": "Plaintext fallback secrets store.",
+      "type": "object"
+    },
+    "mcp_audit_file": {
+      "description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
+      "type": "string"
+    },
+    "policies": {
+      "additionalProperties": false,
+      "description": "Administrative policy block.",
+      "properties": {
+        "allow_http_update": {
+          "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+          "type": "boolean"
+        },
+        "allow_insecure_skip_verify": {
+          "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
+          "type": "boolean"
+        },
+        "allow_unverified_update": {
+          "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+          "type": "boolean"
+        },
+        "allowed_hosts": {
+          "description": "Whitelist of permitted Bitbucket Data Center instance URLs or hostnames.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "ca_file": {
+          "description": "Absolute or relative path to PEM Root CA certificate bundle.",
+          "type": "string"
+        },
+        "disable_bb": {
+          "description": "Disable bb machine-wide: every command is refused except help, --describe, --version, bb doctor and printing a completion script, so a copy a user installed themselves cannot be used. System configuration or registry policy only.",
+          "type": "boolean"
+        },
+        "disable_mcp_server": {
+          "description": "Refuse 'bb ai mcp serve' machine-wide; the rest of bb keeps working. System configuration or registry policy only.",
+          "type": "boolean"
+        },
+        "disable_update": {
+          "description": "Disable CLI self-update command (bb update) machine-wide.",
+          "type": "boolean"
+        },
+        "mcp_audit_file": {
+          "description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
+          "type": "string"
+        },
+        "read_only": {
+          "description": "Make bb read-only machine-wide: every command that changes something in Bitbucket is refused and 'bb ai mcp serve' offers only the tools that read, while reads, --dry-run and changes to the local machine still run. System configuration or registry policy only.",
+          "type": "boolean"
+        },
+        "require_keyring": {
+          "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",
+          "type": "boolean"
+        },
+        "update_base_url": {
+          "description": "Base URL of internal release manifest and asset mirror.",
+          "type": "string"
+        },
+        "update_signature_identity": {
+          "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "type": "string"
+        },
+        "update_signature_issuer": {
+          "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "type": "string"
+        },
+        "update_trusted_root": {
+          "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+          "type": "string"
+        },
+        "update_tuf_url": {
+          "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "policy": {
+      "additionalProperties": false,
+      "description": "Administrative policy block (alias).",
+      "properties": {
+        "allow_http_update": {
+          "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+          "type": "boolean"
+        },
+        "allow_insecure_skip_verify": {
+          "description": "Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.",
+          "type": "boolean"
+        },
+        "allow_unverified_update": {
+          "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+          "type": "boolean"
+        },
+        "allowed_hosts": {
+          "description": "Whitelist of permitted Bitbucket Data Center instance URLs or hostnames.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "ca_file": {
+          "description": "Absolute or relative path to PEM Root CA certificate bundle.",
+          "type": "string"
+        },
+        "disable_bb": {
+          "description": "Disable bb machine-wide: every command is refused except help, --describe, --version, bb doctor and printing a completion script, so a copy a user installed themselves cannot be used. System configuration or registry policy only.",
+          "type": "boolean"
+        },
+        "disable_mcp_server": {
+          "description": "Refuse 'bb ai mcp serve' machine-wide; the rest of bb keeps working. System configuration or registry policy only.",
+          "type": "boolean"
+        },
+        "disable_update": {
+          "description": "Disable CLI self-update command (bb update) machine-wide.",
+          "type": "boolean"
+        },
+        "mcp_audit_file": {
+          "description": "Mandate where 'bb ai mcp serve' writes its JSON Lines audit trail. The server then audits whether or not --audit-file is passed, and rejects a --audit-file naming a different path. Accepts a file path or the literal 'stderr'.",
+          "type": "string"
+        },
+        "read_only": {
+          "description": "Make bb read-only machine-wide: every command that changes something in Bitbucket is refused and 'bb ai mcp serve' offers only the tools that read, while reads, --dry-run and changes to the local machine still run. System configuration or registry policy only.",
+          "type": "boolean"
+        },
+        "require_keyring": {
+          "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",
+          "type": "boolean"
+        },
+        "update_base_url": {
+          "description": "Base URL of internal release manifest and asset mirror.",
+          "type": "string"
+        },
+        "update_signature_identity": {
+          "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "type": "string"
+        },
+        "update_signature_issuer": {
+          "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "type": "string"
+        },
+        "update_trusted_root": {
+          "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+          "type": "string"
+        },
+        "update_tuf_url": {
+          "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "project_key": {
+      "description": "Default project key for repository operations.",
+      "type": "string"
+    },
+    "read_only": {
+      "description": "Make bb read-only machine-wide: every command that changes something in Bitbucket is refused and 'bb ai mcp serve' offers only the tools that read, while reads, --dry-run and changes to the local machine still run. System configuration or registry policy only.",
+      "type": "boolean"
+    },
+    "require_keyring": {
+      "description": "Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.",
+      "type": "boolean"
+    },
+    "update_base_url": {
+      "description": "Base URL of internal release manifest and asset mirror.",
+      "type": "string"
+    },
+    "update_signature_identity": {
+      "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+      "type": "string"
+    },
+    "update_signature_issuer": {
+      "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+      "type": "string"
+    },
+    "update_trusted_root": {
+      "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+      "type": "string"
+    },
+    "update_tuf_url": {
+      "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
+      "type": "string"
+    }
+  },
+  "title": "Bitbucket Data Center CLI Configuration",
+  "type": "object"
+}

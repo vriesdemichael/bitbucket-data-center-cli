@@ -1,0 +1,2947 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CLI automation for Bitbucket Data Center">
+      
+      
+      
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v5/installation-and-quickstart/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../cheatsheet/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Installation and Quickstart - Bitbucket Data Center CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#installation-and-quickstart" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Bitbucket Data Center CLI" class="md-header__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Bitbucket Data Center CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Installation and Quickstart
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Bitbucket Data Center CLI" class="md-nav__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    Bitbucket Data Center CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation and Quickstart
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation and Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#which-bitbucket-versions-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which Bitbucket versions work
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-on-windows-via-winget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install on Windows via WinGet
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-on-windows-via-scoop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install on Windows via Scoop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-on-macos-or-linux-via-homebrew" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install on macOS or Linux via Homebrew
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-on-debianubuntu-or-rhelfedora" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install on Debian/Ubuntu or RHEL/Fedora
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-from-release-artifacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install from release artifacts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keep-bb-up-to-date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep bb up to date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authenticate-to-bitbucket" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authenticate to Bitbucket
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Authenticate to Bitbucket">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-token-lets-bb-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the token lets bb do
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-credentials-are-stored" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where credentials are stored
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#let-git-authenticate-too" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Let git authenticate too
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#turn-on-tab-completion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turn on tab completion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-something-is-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When something is wrong
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#first-useful-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First useful commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-flags-and-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime flags and environment variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cheatsheet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Cheatsheet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../basic-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Command Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../reference/commands/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Commands
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    All Commands
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/global-flags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Global flags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/admin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb admin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb api
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/branch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb branch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/browse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb browse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb build
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/clone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb clone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/commit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb commit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/completion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb completion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb diff
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/doctor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb doctor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/insights/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb insights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/pr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb pr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ref
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/repo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb repo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/reviewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb reviewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/reviewer-group/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb reviewer-group
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb search
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/ssh-key/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ssh-key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/tag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb tag
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/commands/webhook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb webhook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/bitbucket-versions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bitbucket Versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../advanced/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Hardening
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise Hardening
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/enterprise-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/release-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/fleet-controls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Controls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/fleet-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/mcp-governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server Governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Architecture & Threat Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/repository-discovery-and-server-switching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Discovery and Server Switching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/dry-run-planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-Run Planning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/git-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/networks-proxies-and-tls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Networks, Proxies and TLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/machine-mode-diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Mode and Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/shell-completion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shell Completion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/webhook-secrets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Secrets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ai-and-llms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI and llms.txt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#which-bitbucket-versions-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which Bitbucket versions work
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-on-windows-via-winget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install on Windows via WinGet
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-on-windows-via-scoop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install on Windows via Scoop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-on-macos-or-linux-via-homebrew" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install on macOS or Linux via Homebrew
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-on-debianubuntu-or-rhelfedora" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install on Debian/Ubuntu or RHEL/Fedora
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-from-release-artifacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install from release artifacts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keep-bb-up-to-date" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep bb up to date
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authenticate-to-bitbucket" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authenticate to Bitbucket
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Authenticate to Bitbucket">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-token-lets-bb-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the token lets bb do
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-credentials-are-stored" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where credentials are stored
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#let-git-authenticate-too" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Let git authenticate too
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#turn-on-tab-completion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Turn on tab completion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-something-is-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When something is wrong
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#first-useful-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First useful commands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#runtime-flags-and-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime flags and environment variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="installation-and-quickstart">Installation and Quickstart<a class="headerlink" href="#installation-and-quickstart" title="Permanent link">&para;</a></h1>
+<h2 id="which-bitbucket-versions-work">Which Bitbucket versions work<a class="headerlink" href="#which-bitbucket-versions-work" title="Permanent link">&para;</a></h2>
+<p><code>bb</code> works with the Bitbucket Data Center releases in
+<a href="../reference/bitbucket-versions/">Bitbucket Versions</a>, and is tested against
+10.4.3 on every pull request. A newer release is adopted once
+the suite passes against it.</p>
+<div class="admonition warning">
+<p class="admonition-title">Data Center only — Bitbucket Cloud is not supported</p>
+<p>Bitbucket Cloud (bitbucket.org) is a different API, and no <code>bb</code> command
+will work against it. Installing <code>bb</code> for a bitbucket.org repository will
+not get you anywhere.</p>
+</div>
+<h2 id="install-on-windows-via-winget">Install on Windows via WinGet<a class="headerlink" href="#install-on-windows-via-winget" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">winget</span> <span class="n">install</span> <span class="n">vriesdemichael</span><span class="p">.</span><span class="n">bb</span>
+</code></pre></div>
+<h2 id="install-on-windows-via-scoop">Install on Windows via Scoop<a class="headerlink" href="#install-on-windows-via-scoop" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">scoop</span> <span class="n">bucket</span> <span class="n">add</span> <span class="n">vriesdemichael</span> <span class="n">https</span><span class="p">://</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">vriesdemichael</span><span class="p">/</span><span class="n">scoop</span>
+<span class="n">scoop</span> <span class="n">install</span> <span class="n">vriesdemichael</span><span class="p">/</span><span class="n">bb</span>
+</code></pre></div>
+<h2 id="install-on-macos-or-linux-via-homebrew">Install on macOS or Linux via Homebrew<a class="headerlink" href="#install-on-macos-or-linux-via-homebrew" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>brew<span class="w"> </span>install<span class="w"> </span>vriesdemichael/tap/bb
+</code></pre></div>
+<h2 id="install-on-debianubuntu-or-rhelfedora">Install on Debian/Ubuntu or RHEL/Fedora<a class="headerlink" href="#install-on-debianubuntu-or-rhelfedora" title="Permanent link">&para;</a></h2>
+<p>Download the <code>.deb</code> or <code>.rpm</code> for your architecture from GitHub Releases and install it:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Debian/Ubuntu</span>
+curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.deb&quot;</span>
+sudo<span class="w"> </span>dpkg<span class="w"> </span>-i<span class="w"> </span>bb_linux_amd64.deb
+<span class="c1"># RHEL/Fedora</span>
+curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.rpm&quot;</span>
+sudo<span class="w"> </span>rpm<span class="w"> </span>-i<span class="w"> </span>bb_linux_amd64.rpm
+</code></pre></div>
+<p>To install a specific release rather than the newest, use the versioned name and
+a release tag: <code>.../releases/download/v5.0.0/bb_5.0.0_linux_amd64.deb</code>.</p>
+<h2 id="install-from-release-artifacts">Install from release artifacts<a class="headerlink" href="#install-from-release-artifacts" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Download the platform archive, <code>sha256sums.txt</code>, and <code>sha256sums.txt.sigstore.json</code> from GitHub Releases.</li>
+<li>Verify the signed checksum manifest with Cosign, then verify checksums and run <code>bb --help</code>.</li>
+</ol>
+<p>Linux amd64 example:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_linux_amd64.tar.gz&quot;</span>
+curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/sha256sums.txt&quot;</span>
+curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/sha256sums.txt.sigstore.json&quot;</span>
+cosign<span class="w"> </span>verify-blob<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--bundle<span class="w"> </span>sha256sums.txt.sigstore.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--certificate-identity<span class="w"> </span><span class="s2">&quot;https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--certificate-oidc-issuer<span class="w"> </span><span class="s2">&quot;https://token.actions.githubusercontent.com&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>sha256sums.txt
+sha256sum<span class="w"> </span>-c<span class="w"> </span>sha256sums.txt<span class="w"> </span>--ignore-missing
+tar<span class="w"> </span>-xzf<span class="w"> </span>bb_linux_amd64.tar.gz
+install<span class="w"> </span>-m<span class="w"> </span><span class="m">0755</span><span class="w"> </span>bb<span class="w"> </span>/usr/local/bin/bb
+bb<span class="w"> </span>--help
+</code></pre></div>
+<p><code>sha256sums.txt</code> lists both the version-less and the versioned filename for every
+artifact, so <code>--ignore-missing</code> verifies whichever you downloaded. To pin a
+release, swap <code>latest/download</code> for <code>download/v5.0.0</code> and use the
+versioned names.</p>
+<p>Per-archive signatures, build provenance and SBOMs are covered in
+<a href="../advanced/release-verification/">Release Verification</a>.</p>
+<h2 id="keep-bb-up-to-date">Keep bb up to date<a class="headerlink" href="#keep-bb-up-to-date" title="Permanent link">&para;</a></h2>
+<p>Installed through WinGet, Scoop, Homebrew or a <code>.deb</code> or <code>.rpm</code>, <code>bb</code> is updated
+the way it was installed: <code>winget upgrade vriesdemichael.bb</code>,
+<code>scoop update vriesdemichael/bb</code>, <code>brew upgrade vriesdemichael/tap/bb</code>, or the
+newer package from GitHub Releases. Those builds leave self-update out, and
+<code>bb update</code> says so. A binary from a release archive updates itself:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>update
+</code></pre></div>
+<h2 id="authenticate-to-bitbucket">Authenticate to Bitbucket<a class="headerlink" href="#authenticate-to-bitbucket" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>token-url<span class="w"> </span>--host<span class="w"> </span>https://bitbucket.example.com
+<span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;%s&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BITBUCKET_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>auth<span class="w"> </span>login<span class="w"> </span>https://bitbucket.example.com<span class="w"> </span>--token-stdin
+bb<span class="w"> </span>auth<span class="w"> </span>status
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Secrets cannot be passed as flag values</p>
+<p>There are no <code>--token</code> or <code>--password</code> flags: a flag value lands in the process argument
+list, where any local user can read it via <code>ps</code> or <code>/proc/&lt;pid&gt;/cmdline</code>, where Windows shows
+it in Task Manager details, and where process-auditing and EDR tooling records it -- and your
+shell keeps it in history. Use <code>--token-stdin</code> or <code>--password-stdin</code>, or set <code>BITBUCKET_TOKEN</code>.</p>
+</div>
+<h3 id="what-the-token-lets-bb-do">What the token lets bb do<a class="headerlink" href="#what-the-token-lets-bb-do" title="Permanent link">&para;</a></h3>
+<p><code>bb</code> does nothing the token does not allow. A personal access token carries the
+permission it was created with, for projects and for repositories: read, write or
+admin. It never has more rights than you, and it can have fewer: a token created
+to read cannot write, even where you can in the web interface.</p>
+<p>With the permission it needs, <code>bb</code> does from the command line what you do in the
+web interface, up to the level of a whole project:</p>
+<table>
+<thead>
+<tr>
+<th>To</th>
+<th>The token needs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Read repositories, pull requests, builds and settings</td>
+<td>read</td>
+</tr>
+<tr>
+<td>Change what is in a repository: branches, tags, pull requests</td>
+<td>write</td>
+</tr>
+<tr>
+<td>Change a repository's settings, permissions, webhooks and restrictions</td>
+<td>admin</td>
+</tr>
+<tr>
+<td>The same for every repository in a project at once, and the project's own permissions</td>
+<td>project admin</td>
+</tr>
+</tbody>
+</table>
+<p>Creating a project, and administering Bitbucket itself, are beyond a personal
+access token.</p>
+<p>A request the token does not allow is refused by Bitbucket, and <code>bb</code> reports it as
+<code>authorization</code> with Bitbucket's own words:</p>
+<div class="highlight"><pre><span></span><code>authorization: bitbucket API returned 401: You are not permitted to access this resource
+</code></pre></div>
+<p>If you can do the same thing in the web interface, the token is what stops it.
+Create one with the permission you need, at the page <code>bb auth token-url</code> prints,
+and log in with it.</p>
+<h3 id="where-credentials-are-stored">Where credentials are stored<a class="headerlink" href="#where-credentials-are-stored" title="Permanent link">&para;</a></h3>
+<p><code>bb auth login</code> stores the secret in your operating system's keyring — Credential Manager on
+Windows, Keychain on macOS, Secret Service on Linux.</p>
+<p>Where no keyring is available — headless servers, most containers, WSL without <code>gnome-keyring</code> —
+the login fails and stores nothing, unless you ask for plaintext:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;%s&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BITBUCKET_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>auth<span class="w"> </span>login<span class="w"> </span>https://bitbucket.example.com<span class="w"> </span>--token-stdin<span class="w"> </span>--allow-insecure-storage
+</code></pre></div>
+<p>The secret then goes into the config file in plaintext (<code>0600</code>, in a <code>0700</code> directory), and bb
+warns on stderr at login and whenever it uses it. <code>bb auth status</code> reports which is in use:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>status
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Target Bitbucket: https://bitbucket.example.com (auth=token, source=stored)
+Credential storage: keyring
+- authentication: Alice Smith (alice)
+- git credential helper: configured for https://bitbucket.example.com
+</code></pre></div>
+<p><code>bb auth status</code> does not just report the configuration, it checks it: the
+authentication line proves the host is reachable, its certificate is trusted,
+any proxy is working, and the credential is still valid. A failing line says
+what to do about it.</p>
+<p>Lines marked <code>!</code> are advisory — worth knowing, but not a broken setup. The git
+credential helper is one: it is needed to <code>git push</code> and irrelevant if you only
+call the API, so it is reported and never fails the command.</p>
+<p>In CI, <code>--check</code> makes it exit non-zero when a non-advisory check fails:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>status<span class="w"> </span>--check
+</code></pre></div>
+<p>Without it the exit status is zero whatever the findings. Under <code>--json</code> the exit status is always zero and the verdict is
+the <code>ok</code> field.</p>
+<p>To refuse plaintext even when a login asks for it, set <code>BB_REQUIRE_KEYRING=1</code>, or the
+<a href="../reference/system-policy/#keys"><code>require_keyring</code> policy</a> fleet-wide. With either on, bb fails
+rather than degrading — including on later commands, if the config file already holds a plaintext
+credential from before it was set.</p>
+<p>In CI and containers, prefer supplying <code>BITBUCKET_TOKEN</code> per invocation instead of logging in at
+all. An environment variable never touches the config file and satisfies <code>BB_REQUIRE_KEYRING</code>.</p>
+<p>If your Bitbucket instance uses a different SSH clone host than its web/API URL, <code>bb auth login</code>
+will try to discover aliases automatically from the first accessible repository clone links.
+You can inspect or manage aliases explicitly with:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span><span class="nb">alias</span><span class="w"> </span>list<span class="w"> </span>--host<span class="w"> </span>https://bitbucket.example.com
+bb<span class="w"> </span>auth<span class="w"> </span><span class="nb">alias</span><span class="w"> </span>discover<span class="w"> </span>--host<span class="w"> </span>https://bitbucket.example.com
+bb<span class="w"> </span>auth<span class="w"> </span><span class="nb">alias</span><span class="w"> </span>add<span class="w"> </span>--host<span class="w"> </span>https://bitbucket.example.com<span class="w"> </span>git.example.com:7999
+</code></pre></div>
+<h2 id="let-git-authenticate-too">Let git authenticate too<a class="headerlink" href="#let-git-authenticate-too" title="Permanent link">&para;</a></h2>
+<p><code>bb auth login</code> authenticates <code>bb</code> itself. Plain <code>git</code> — <code>git push</code>, <code>git pull</code>
+and <code>git fetch</code> inside a clone — does not go through <code>bb</code>, so it needs telling
+where to get credentials:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>setup-git
+</code></pre></div>
+<p>Git now asks <code>bb</code> for a credential whenever it contacts your Bitbucket host,
+using what you just stored. No token is written into any repository, and
+revoking one takes effect immediately.</p>
+<p>Run this once; it applies to every clone of that host. If you clone over SSH you
+do not need it — SSH authenticates with your key.</p>
+<p>See <a href="../advanced/git-authentication/">Git Authentication</a> for how it works, and how
+to take a stored token out of a clone's configuration.</p>
+<h2 id="turn-on-tab-completion">Turn on tab completion<a class="headerlink" href="#turn-on-tab-completion" title="Permanent link">&para;</a></h2>
+<p><code>bb</code> completes pull request numbers, branches, repositories and people, as well
+as its commands and flags. Homebrew and the <code>.deb</code> and <code>.rpm</code> packages set this
+up for bash, zsh and fish, and Scoop for PowerShell. Otherwise:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>completion<span class="w"> </span>install
+</code></pre></div>
+<p><a href="../advanced/shell-completion/">Shell Completion</a> has what it writes, and how to
+set it up for every user of a machine.</p>
+<h2 id="when-something-is-wrong">When something is wrong<a class="headerlink" href="#when-something-is-wrong" title="Permanent link">&para;</a></h2>
+<p><code>bb doctor</code> is the first thing to run. It needs no host and no network, and
+reports every problem in every configuration file and where each setting comes
+from:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>doctor
+</code></pre></div>
+<p><code>bb auth status</code> is the other half: it proves the host is reachable, the
+certificate is trusted and the credential still works.</p>
+<p><a href="../troubleshooting/"><strong>Troubleshooting</strong></a> has the messages people actually hit,
+each with what to do about it. <a href="../gh-parity/">Coming from <code>gh</code></a> maps the <code>gh</code>
+command you were about to type to its <code>bb</code> counterpart.</p>
+<h2 id="first-useful-commands">First useful commands<a class="headerlink" href="#first-useful-commands" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>repo<span class="w"> </span>clone<span class="w"> </span>PLATFORM/api
+bb<span class="w"> </span>browse<span class="w"> </span>--repo<span class="w"> </span>PLATFORM/api
+bb<span class="w"> </span>search<span class="w"> </span>repos<span class="w"> </span>--limit<span class="w"> </span><span class="m">20</span>
+bb<span class="w"> </span>search<span class="w"> </span>prs<span class="w"> </span>--state<span class="w"> </span>OPEN
+bb<span class="w"> </span>--json<span class="w"> </span>auth<span class="w"> </span>status
+</code></pre></div>
+<h2 id="runtime-flags-and-environment-variables">Runtime flags and environment variables<a class="headerlink" href="#runtime-flags-and-environment-variables" title="Permanent link">&para;</a></h2>
+<p>Most global runtime controls exist as both a flag and an environment variable —
+<code>--ca-file</code> / <code>BB_CA_FILE</code>, <code>--retry-count</code> / <code>BB_RETRY_COUNT</code>, and so on. Flags
+win over environment variables, which win over the configuration files;
+<a href="../reference/configuration/">Configuration</a> gives the whole order.</p>
+<p><strong><a href="../reference/environment/">Environment Variables</a></strong> is the complete list, with
+defaults and what each one does.</p>
+<p>Behind a proxy, or against a certificate from an internal CA, see
+<a href="../advanced/networks-proxies-and-tls/">Networks, Proxies and TLS</a>.</p>
+<p>See <a href="../basic-usage/">Basic Usage</a> for precedence, dry-run behavior, machine mode, and diagnostics guidance,
+and <a href="../troubleshooting/">Troubleshooting</a> when a command does not do what you expected.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.top", "navigation.tracking", "navigation.sections", "navigation.indexes", "toc.follow", "content.code.copy", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

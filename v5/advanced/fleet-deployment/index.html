@@ -1,0 +1,2869 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CLI automation for Bitbucket Data Center">
+      
+      
+      
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v5/advanced/fleet-deployment/">
+      
+      
+        <link rel="prev" href="../fleet-controls/">
+      
+      
+        <link rel="next" href="../mcp-governance/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Fleet Deployment - Bitbucket Data Center CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#fleet-deployment" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-header__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Bitbucket Data Center CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Fleet Deployment
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-nav__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    Bitbucket Data Center CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation-and-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation and Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cheatsheet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Cheatsheet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../basic-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Command Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/commands/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Commands
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    All Commands
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/global-flags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Global flags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/admin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb admin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb api
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/branch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb branch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/browse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb browse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb build
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/clone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb clone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/commit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb commit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/completion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb completion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb diff
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/doctor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb doctor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/insights/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb insights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/pr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb pr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ref
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/repo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb repo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/reviewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb reviewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/reviewer-group/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb reviewer-group
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb search
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/ssh-key/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ssh-key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/tag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb tag
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/webhook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb webhook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/bitbucket-versions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bitbucket Versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Hardening
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise Hardening
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fleet-controls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Controls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Deployment
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#macos-jamf-pro-kandji-intune" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS (Jamf Pro / Kandji / Intune)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-workstations-ansible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux Workstations (Ansible)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-workstations-microsoft-intune-powershell-gpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows Workstations (Microsoft Intune / PowerShell / GPO)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cicd-headless-containers-docker-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD &amp; Headless Containers (Docker / Kubernetes)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification Audit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helpdesk-troubleshooting-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helpdesk Troubleshooting Guide
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pat-expiration-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PAT Expiration &amp; Rotation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fleet-upgrades-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fleet Upgrades &amp; Rollback
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server Governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Architecture & Threat Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository-discovery-and-server-switching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Discovery and Server Switching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dry-run-planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-Run Planning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../networks-proxies-and-tls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Networks, Proxies and TLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../machine-mode-diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Mode and Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shell-completion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shell Completion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-secrets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Secrets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai-and-llms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI and llms.txt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#macos-jamf-pro-kandji-intune" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS (Jamf Pro / Kandji / Intune)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-workstations-ansible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux Workstations (Ansible)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-workstations-microsoft-intune-powershell-gpo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows Workstations (Microsoft Intune / PowerShell / GPO)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cicd-headless-containers-docker-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD &amp; Headless Containers (Docker / Kubernetes)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verification Audit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helpdesk-troubleshooting-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helpdesk Troubleshooting Guide
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pat-expiration-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PAT Expiration &amp; Rotation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fleet-upgrades-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fleet Upgrades &amp; Rollback
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="fleet-deployment">Fleet Deployment<a class="headerlink" href="#fleet-deployment" title="Permanent link">&para;</a></h1>
+<p>Recipes for deploying <code>bb</code> and its policy to macOS, Linux and Windows workstations and to CI, how to verify a machine afterwards, and the work that follows: rotating tokens, upgrading, and removing <code>bb</code>. <a href="../fleet-controls/">Fleet Controls</a> explains the settings the recipes deploy.</p>
+<h2 id="macos-jamf-pro-kandji-intune">macOS (Jamf Pro / Kandji / Intune)<a class="headerlink" href="#macos-jamf-pro-kandji-intune" title="Permanent link">&para;</a></h2>
+<p>macOS developer workstations authenticate through the <strong>Apple Keychain</strong> (Security framework). Deploy system configuration to <code>/etc/bb/config.yaml</code> so that all terminal sessions and GUI applications (like VS Code or Cursor invoking MCP servers) automatically inherit policy without relying on shell environment inheritance:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. Distribute via Homebrew or universal binary</span>
+brew<span class="w"> </span>install<span class="w"> </span>vriesdemichael/tap/bb
+
+<span class="c1"># 2. Deploy Enterprise Root CA to System Keychain</span>
+sudo<span class="w"> </span>security<span class="w"> </span>add-trusted-cert<span class="w"> </span>-d<span class="w"> </span>-r<span class="w"> </span>trustRoot<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-k<span class="w"> </span>/Library/Keychains/System.keychain<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/Library/Application<span class="se">\ </span>Support/Corporate/Certs/corp-root-ca.pem
+
+<span class="c1"># 3. Deploy Immutable System Configuration (/etc/bb/config.yaml)</span>
+<span class="c1"># Note: Unlike /etc/zshenv, /etc/bb/config.yaml is read directly by bb in GUI IDEs as well.</span>
+sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/etc/bb
+sudo<span class="w"> </span>tee<span class="w"> </span>/etc/bb/config.yaml<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="s">&lt;&lt;&#39;EOF&#39;</span>
+<span class="s">require_keyring: true</span>
+<span class="s">ca_file: /Library/Application Support/Corporate/Certs/corp-root-ca.pem</span>
+<span class="s">allowed_hosts:</span>
+<span class="s">  - https://bitbucket.example.com</span>
+<span class="s">allow_insecure_skip_verify: false</span>
+<span class="s">allow_http_update: false</span>
+<span class="s">disable_update: true</span>
+<span class="s">EOF</span>
+sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">644</span><span class="w"> </span>/etc/bb/config.yaml
+</code></pre></div>
+<h2 id="linux-workstations-ansible">Linux Workstations (Ansible)<a class="headerlink" href="#linux-workstations-ansible" title="Permanent link">&para;</a></h2>
+<p>Linux workstations authenticate through the <strong>Secret Service API over D-Bus</strong> (GNOME Keyring / KWallet). Deploy <code>/etc/bb/config.yaml</code> to enforce security postures across all local users:</p>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deploy and harden bb across Linux workstations</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workstations</span>
+<span class="w">  </span><span class="nt">become</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">vars</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">bb_version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5.0.0&quot;</span>
+<span class="w">  </span><span class="nt">tasks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deploy Corporate Root CA bundle</span>
+<span class="w">      </span><span class="nt">copy</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">src</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">files/corp-root-ca.pem</span>
+<span class="w">        </span><span class="nt">dest</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/ssl/certs/corp-root-ca.pem</span>
+<span class="w">        </span><span class="nt">owner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root</span>
+<span class="w">        </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root</span>
+<span class="w">        </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;0644&#39;</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Download verified bb Debian package</span>
+<span class="w">      </span><span class="nt">get_url</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://artifactory.example.com/binaries/bb_{{</span><span class="nv"> </span><span class="s">bb_version</span><span class="nv"> </span><span class="s">}}_linux_amd64.deb&quot;</span>
+<span class="w">        </span><span class="nt">dest</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/tmp/bb_{{</span><span class="nv"> </span><span class="s">bb_version</span><span class="nv"> </span><span class="s">}}_linux_amd64.deb&quot;</span>
+<span class="w">        </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;0644&#39;</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ansible_os_family == &quot;Debian&quot;</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Install bb package (Debian/Ubuntu)</span>
+<span class="w">      </span><span class="nt">apt</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">deb</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/tmp/bb_{{</span><span class="nv"> </span><span class="s">bb_version</span><span class="nv"> </span><span class="s">}}_linux_amd64.deb&quot;</span>
+<span class="w">      </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ansible_os_family == &quot;Debian&quot;</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deploy system-wide policy configuration</span>
+<span class="w">      </span><span class="nt">copy</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">dest</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/bb/config.yaml</span>
+<span class="w">        </span><span class="nt">owner</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root</span>
+<span class="w">        </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">root</span>
+<span class="w">        </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;0644&#39;</span>
+<span class="w">        </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">          </span><span class="no">require_keyring: true</span>
+<span class="w">          </span><span class="no">ca_file: /etc/ssl/certs/corp-root-ca.pem</span>
+<span class="w">          </span><span class="no">allowed_hosts:</span>
+<span class="w">            </span><span class="no">- https://bitbucket.example.com</span>
+<span class="w">          </span><span class="no">allow_insecure_skip_verify: false</span>
+<span class="w">          </span><span class="no">allow_http_update: false</span>
+<span class="w">          </span><span class="no">disable_update: true</span>
+<span class="w">          </span><span class="no">update_base_url: https://artifactory.example.com/artifactory/bb-releases</span>
+</code></pre></div>
+<h2 id="windows-workstations-microsoft-intune-powershell-gpo">Windows Workstations (Microsoft Intune / PowerShell / GPO)<a class="headerlink" href="#windows-workstations-microsoft-intune-powershell-gpo" title="Permanent link">&para;</a></h2>
+<p>Windows workstations authenticate through <strong>Windows Credential Manager</strong> (DPAPI). Administrators can deploy system configuration via <code>%ProgramData%\bb\config.yaml</code> or through native Windows Group Policy / Intune CSP targeting the Windows Registry (<code>HKLM\Software\Policies\bb</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Run as Administrator via Intune or administrative PowerShell</span>
+<span class="nv">$Version</span> <span class="p">=</span> <span class="s2">&quot;5.0.0&quot;</span>
+
+<span class="c"># 1. Install via WinGet</span>
+<span class="n">winget</span> <span class="n">install</span> <span class="p">-</span><span class="n">-id</span> <span class="n">vriesdemichael</span><span class="p">.</span><span class="n">bb</span> <span class="p">-</span><span class="o">-exact</span> <span class="p">-</span><span class="n">-version</span> <span class="nv">$Version</span> <span class="p">-</span><span class="n">-accept-source-agreements</span> <span class="p">-</span><span class="n">-accept-package-agreements</span>
+
+<span class="c"># 2. Deploy Corporate Root CA</span>
+<span class="nv">$CertDir</span> <span class="p">=</span> <span class="s2">&quot;C:\ProgramData\Corporate\Certs&quot;</span>
+<span class="nb">New-Item</span> <span class="n">-ItemType</span> <span class="n">Directory</span> <span class="n">-Force</span> <span class="n">-Path</span> <span class="nv">$CertDir</span> <span class="p">|</span> <span class="nb">Out-Null</span>
+<span class="nb">Copy-Item</span> <span class="s2">&quot;.\corp-root-ca.pem&quot;</span> <span class="n">-Destination</span> <span class="s2">&quot;$CertDir\corp-root-ca.pem&quot;</span>
+
+<span class="c"># 3. Option A: Deploy System Configuration File (%ProgramData%\bb\config.yaml)</span>
+<span class="c">#    Create this directory as an administrator before any developer runs bb. C:\ProgramData</span>
+<span class="c">#    lets an unprivileged account create a subdirectory and become its owner, and bb never</span>
+<span class="c">#    creates the directory itself (ADR-058, point 5). The ACL below removes the inherited</span>
+<span class="c">#    Users write entry so the policy file cannot be replaced by the accounts it governs.</span>
+<span class="nv">$ConfigDir</span> <span class="p">=</span> <span class="s2">&quot;C:\ProgramData\bb&quot;</span>
+<span class="nb">New-Item</span> <span class="n">-ItemType</span> <span class="n">Directory</span> <span class="n">-Force</span> <span class="n">-Path</span> <span class="nv">$ConfigDir</span> <span class="p">|</span> <span class="nb">Out-Null</span>
+<span class="nv">$Acl</span> <span class="p">=</span> <span class="nb">Get-Acl</span> <span class="nv">$ConfigDir</span>
+<span class="nv">$Acl</span><span class="p">.</span><span class="n">SetAccessRuleProtection</span><span class="p">(</span><span class="nv">$true</span><span class="p">,</span> <span class="nv">$false</span><span class="p">)</span>
+<span class="k">foreach</span> <span class="p">(</span><span class="nv">$Identity</span> <span class="k">in</span> <span class="s2">&quot;SYSTEM&quot;</span><span class="p">,</span> <span class="s2">&quot;Administrators&quot;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$Acl</span><span class="p">.</span><span class="n">AddAccessRule</span><span class="p">((</span><span class="nb">New-Object</span> <span class="n">Security</span><span class="p">.</span><span class="n">AccessControl</span><span class="p">.</span><span class="n">FileSystemAccessRule</span><span class="p">(</span>
+        <span class="nv">$Identity</span><span class="p">,</span> <span class="s2">&quot;FullControl&quot;</span><span class="p">,</span> <span class="s2">&quot;ContainerInherit,ObjectInherit&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="s2">&quot;Allow&quot;</span><span class="p">)))</span>
+<span class="p">}</span>
+<span class="nv">$Acl</span><span class="p">.</span><span class="n">AddAccessRule</span><span class="p">((</span><span class="nb">New-Object</span> <span class="n">Security</span><span class="p">.</span><span class="n">AccessControl</span><span class="p">.</span><span class="n">FileSystemAccessRule</span><span class="p">(</span>
+    <span class="s2">&quot;Users&quot;</span><span class="p">,</span> <span class="s2">&quot;ReadAndExecute&quot;</span><span class="p">,</span> <span class="s2">&quot;ContainerInherit,ObjectInherit&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="s2">&quot;Allow&quot;</span><span class="p">)))</span>
+<span class="nb">Set-Acl</span> <span class="n">-Path</span> <span class="nv">$ConfigDir</span> <span class="n">-AclObject</span> <span class="nv">$Acl</span>
+<span class="sh">@&quot;</span>
+<span class="sh">require_keyring: true</span>
+<span class="sh">ca_file: $CertDir\corp-root-ca.pem</span>
+<span class="sh">allowed_hosts:</span>
+<span class="sh">  - https://bitbucket.example.com</span>
+<span class="sh">allow_insecure_skip_verify: false</span>
+<span class="sh">allow_http_update: false</span>
+<span class="sh">disable_update: true</span>
+<span class="sh">update_base_url: https://artifactory.example.com/artifactory/bb-releases</span>
+<span class="sh">&quot;@</span> <span class="p">|</span> <span class="nb">Set-Content</span> <span class="n">-Path</span> <span class="s2">&quot;$ConfigDir\config.yaml&quot;</span> <span class="n">-Encoding</span> <span class="n">UTF8</span>
+
+<span class="c"># 4. Option B: Native Windows Registry GPO Policies (HKLM\Software\Policies\bb)</span>
+<span class="nv">$RegPath</span> <span class="p">=</span> <span class="s2">&quot;HKLM:\Software\Policies\bb&quot;</span>
+<span class="k">if</span> <span class="p">(!(</span><span class="nb">Test-Path</span> <span class="nv">$RegPath</span><span class="p">))</span> <span class="p">{</span> <span class="nb">New-Item</span> <span class="n">-Path</span> <span class="nv">$RegPath</span> <span class="n">-Force</span> <span class="p">|</span> <span class="nb">Out-Null</span> <span class="p">}</span>
+<span class="nb">Set-ItemProperty</span> <span class="n">-Path</span> <span class="nv">$RegPath</span> <span class="n">-Name</span> <span class="s2">&quot;RequireKeyring&quot;</span> <span class="n">-Value</span> <span class="n">1</span> <span class="n">-Type</span> <span class="n">DWord</span>
+<span class="nb">Set-ItemProperty</span> <span class="n">-Path</span> <span class="nv">$RegPath</span> <span class="n">-Name</span> <span class="s2">&quot;CAFile&quot;</span> <span class="n">-Value</span> <span class="s2">&quot;$CertDir\corp-root-ca.pem&quot;</span> <span class="n">-Type</span> <span class="n">String</span>
+<span class="nb">Set-ItemProperty</span> <span class="n">-Path</span> <span class="nv">$RegPath</span> <span class="n">-Name</span> <span class="s2">&quot;AllowedHosts&quot;</span> <span class="n">-Value</span> <span class="s2">&quot;https://bitbucket.example.com&quot;</span> <span class="n">-Type</span> <span class="n">String</span>
+<span class="nb">Set-ItemProperty</span> <span class="n">-Path</span> <span class="nv">$RegPath</span> <span class="n">-Name</span> <span class="s2">&quot;AllowInsecureSkipVerify&quot;</span> <span class="n">-Value</span> <span class="n">0</span> <span class="n">-Type</span> <span class="n">DWord</span>
+<span class="nb">Set-ItemProperty</span> <span class="n">-Path</span> <span class="nv">$RegPath</span> <span class="n">-Name</span> <span class="s2">&quot;AllowHTTPUpdate&quot;</span> <span class="n">-Value</span> <span class="n">0</span> <span class="n">-Type</span> <span class="n">DWord</span>
+<span class="nb">Set-ItemProperty</span> <span class="n">-Path</span> <span class="nv">$RegPath</span> <span class="n">-Name</span> <span class="s2">&quot;DisableUpdate&quot;</span> <span class="n">-Value</span> <span class="n">1</span> <span class="n">-Type</span> <span class="n">DWord</span>
+<span class="c"># Optional: no MCP server, or a read-only bb (ADR-100)</span>
+<span class="c"># Set-ItemProperty -Path $RegPath -Name &quot;DisableMCPServer&quot; -Value 1 -Type DWord</span>
+<span class="c"># Set-ItemProperty -Path $RegPath -Name &quot;ReadOnly&quot; -Value 1 -Type DWord</span>
+</code></pre></div>
+<h2 id="cicd-headless-containers-docker-kubernetes">CI/CD &amp; Headless Containers (Docker / Kubernetes)<a class="headerlink" href="#cicd-headless-containers-docker-kubernetes" title="Permanent link">&para;</a></h2>
+<p>Headless runners do not have interactive desktop sessions or D-Bus daemons. Configure runners to read secrets entirely from process memory and bypass disk storage.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Hardened CI Container Pattern</span>
+<span class="k">FROM</span><span class="w"> </span><span class="s">alpine:3.21</span>
+
+<span class="k">ARG</span><span class="w"> </span><span class="nv">BB_VERSION</span><span class="o">=</span><span class="m">5</span>.0.0
+
+<span class="c"># Install runtime dependencies (ca-certificates and git)</span>
+<span class="k">RUN</span><span class="w"> </span>apk<span class="w"> </span>add<span class="w"> </span>--no-cache<span class="w"> </span>ca-certificates<span class="w"> </span>git<span class="w"> </span>curl
+
+<span class="c"># Download and install official release binary</span>
+<span class="k">RUN</span><span class="w"> </span>curl<span class="w"> </span>-fsSL<span class="w"> </span><span class="s2">&quot;https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/v</span><span class="si">${</span><span class="nv">BB_VERSION</span><span class="si">}</span><span class="s2">/bb_</span><span class="si">${</span><span class="nv">BB_VERSION</span><span class="si">}</span><span class="s2">_linux_amd64.tar.gz&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="p">|</span><span class="w"> </span>tar<span class="w"> </span>-xz<span class="w"> </span>-C<span class="w"> </span>/usr/local/bin<span class="w"> </span>bb<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/usr/local/bin/bb
+
+<span class="c"># Install corporate CA</span>
+<span class="k">COPY</span><span class="w"> </span>corp-root-ca.pem<span class="w"> </span>/etc/ssl/certs/corp-root-ca.pem
+
+<span class="c"># Environment flags for headless isolation</span>
+<span class="k">ENV</span><span class="w"> </span><span class="nv">BB_CA_FILE</span><span class="o">=</span>/etc/ssl/certs/corp-root-ca.pem
+<span class="k">ENV</span><span class="w"> </span><span class="nv">BB_DISABLE_STORED_CONFIG</span><span class="o">=</span><span class="m">1</span>
+
+<span class="c"># Execution in CI: pass the token through the environment, so nothing is written to disk</span>
+<span class="c"># docker run --rm -e BITBUCKET_TOKEN=$SECRET -e BITBUCKET_URL=https://bitbucket.example.com my-image bb repo list</span>
+</code></pre></div>
+<h2 id="verification-audit">Verification Audit<a class="headerlink" href="#verification-audit" title="Permanent link">&para;</a></h2>
+<p>Run the machine-readable auth status check to verify configuration:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>status<span class="w"> </span>--json
+</code></pre></div>
+<p>Confirm:
+- <code>.data.credentialStorage</code>: Must report <code>keyring</code> (on workstations) or <code>environment</code> (in CI). If it reports <code>config-file-plaintext</code>, <code>BB_REQUIRE_KEYRING=1</code> is missing.
+- Check active git helper for your Bitbucket host:
+  <div class="highlight"><pre><span></span><code>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>--get<span class="w"> </span><span class="s2">&quot;credential.https://bitbucket.example.com.helper&quot;</span>
+</code></pre></div></p>
+<p>Check the deployed configuration itself. <code>bb doctor</code> needs no host and no login, so it runs as soon as the file is in place:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>doctor<span class="w"> </span>--json
+</code></pre></div>
+<p>Confirm:
+- It exits <code>0</code>. Any issue exits <code>1</code>, and the output is then the failure envelope rather than the report, with each issue in <code>.error.details</code> under its own key: <code>violation/system/policies/require_keyrng</code> for a key the schema rejects, <code>ignored/stored/require_keyring</code> for a policy key in a user's own file, which mandates nothing.
+- Each policy setting you deployed has a <code>source.kind</code> of <code>system</code> or <code>registry</code> in <code>.data.settings</code>, not <code>default</code>.</p>
+<h2 id="helpdesk-troubleshooting-guide">Helpdesk Troubleshooting Guide<a class="headerlink" href="#helpdesk-troubleshooting-guide" title="Permanent link">&para;</a></h2>
+<!-- docs-lint: message-of bb crypto/x509 -->
+
+<table>
+<thead>
+<tr>
+<th>Symptom / Error Message</th>
+<th>Root Cause</th>
+<th>Remediation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>read CA bundle: open ...: no such file or directory</code></td>
+<td>Imaging race condition: <code>BB_CA_FILE</code> was set before the CA certificate was written to disk.</td>
+<td>Ensure the provisioning script copies the <code>.pem</code> file before setting the environment variable.</td>
+</tr>
+<tr>
+<td><code>OS keyring is unavailable and keyring-backed storage is required</code></td>
+<td>A headless Linux host or SSH session: no D-Bus session bus, or no Secret Service provider on it.</td>
+<td>Start both, as <a href="../../troubleshooting/#os-keyring-is-unavailable-and-keyring-backed-storage-is-required">Troubleshooting</a> shows, or supply credentials via <code>BITBUCKET_TOKEN</code>.</td>
+</tr>
+<tr>
+<td>Git prompts for password on <code>git push</code>/<code>git pull</code></td>
+<td>Git credential helper is not scoped to the exact URL or scheme used by the remote.</td>
+<td>Run <code>git remote -v</code> and configure: <code>bb auth setup-git --host &lt;remote-url&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>certificate signed by unknown authority</code></td>
+<td><code>BB_CA_FILE</code> is not set, or a GUI IDE failed to inherit shell environment variables.</td>
+<td>Set <code>BB_CA_FILE</code> in the IDE's <code>"env"</code> block or export it in <code>/etc/zshenv</code> / <code>/etc/profile.d/bb.sh</code>.</td>
+</tr>
+<tr>
+<td><code>host "..." is not permitted by administrative policy</code></td>
+<td>Target Bitbucket instance is not listed in <code>allowed_hosts</code> in system configuration or registry policy.</td>
+<td>Connect only to approved corporate hosts, or request security to add the instance to <code>allowed_hosts</code>.</td>
+</tr>
+<tr>
+<td><code>insecure TLS verification is disabled by administrative policy</code></td>
+<td>Attempted <code>--insecure-skip-verify</code> when prohibited by <code>allow_insecure_skip_verify: false</code> in system policy.</td>
+<td>Configure the corporate CA certificate rather than disabling TLS verification.</td>
+</tr>
+<tr>
+<td><code>overriding CA bundle is disabled by administrative policy</code></td>
+<td>Attempted to override mandated corporate CA bundle with a conflicting custom certificate.</td>
+<td>Remove user-level <code>BB_CA_FILE</code> override and use the mandated corporate CA.</td>
+</tr>
+<tr>
+<td><code>self-update is disabled by administrative policy</code></td>
+<td>Self-update is disabled machine-wide (<code>disable_update: true</code> or <code>BB_DISABLE_UPDATE=1</code>).</td>
+<td>Update <code>bb</code> through your IT system package manager (<code>apt</code>, <code>dnf</code>, <code>brew</code>, <code>winget</code>).</td>
+</tr>
+<tr>
+<td><code>bb is disabled on this machine by administrative policy</code></td>
+<td>Policy sets <code>disable_bb</code>.</td>
+<td>Ask the administrator named by the message's file or registry key. <code>bb doctor</code> still runs and shows the setting.</td>
+</tr>
+<tr>
+<td><code>bb's MCP server is disabled on this machine by administrative policy</code></td>
+<td>Policy sets <code>disable_mcp_server</code>.</td>
+<td>Use <code>bb</code> in the terminal; no MCP client may start it on this machine.</td>
+</tr>
+<tr>
+<td><code>changes Bitbucket, and bb is read-only on this machine by administrative policy</code></td>
+<td>Policy sets <code>read_only</code>, and the command would change something in Bitbucket.</td>
+<td>Reads and <code>--dry-run</code> still work. Make the change in Bitbucket itself, or ask the administrator.</td>
+</tr>
+<tr>
+<td><code>could not load the Sigstore trust material needed to verify the release manifest</code></td>
+<td>The host cannot reach <code>https://tuf-repo-cdn.sigstore.dev</code>, and no offline trust root is configured. The release itself is not implicated.</td>
+<td>Deploy a <code>trusted_root.json</code> and set <code>update_trusted_root</code> in system configuration (or <code>update_tuf_url</code> for a mirrored TUF repository).</td>
+</tr>
+<tr>
+<td><code>update_trusted_root is invalid</code></td>
+<td>The configured trusted root path does not exist on this host — typically an imaging race, the same one that bites <code>ca_file</code>.</td>
+<td>Ensure the provisioning script writes <code>trusted_root.json</code> before the configuration file that references it.</td>
+</tr>
+<tr>
+<td><code>update_trusted_root and update_tuf_url are mutually exclusive</code></td>
+<td>Both Sigstore trust sources are configured.</td>
+<td>Keep the trusted root file for air-gapped hosts, or the TUF mirror URL — not both.</td>
+</tr>
+<tr>
+<td><code>the system configuration at ... could not be read</code></td>
+<td>The system configuration file is malformed, typically from a provisioning template or a partial write. bb fails closed rather than run without the policy.</td>
+<td>Run <code>bb doctor</code> on the host: it lists every problem in the file with its line (see <a href="../../troubleshooting/#checking-the-configuration">Checking the configuration</a>). Redeploy the corrected file. Users cannot work around it, by design.</td>
+</tr>
+<tr>
+<td>A policy setting is not enforced</td>
+<td>The key is in a user or workspace configuration file, which bb reads no policy from.</td>
+<td>Run <code>bb doctor</code>: it lists the key as <code>ignored</code> in that file, and names the source each policy setting comes from. Move the key to the system configuration.</td>
+</tr>
+<tr>
+<td><code>update_tuf_url must be an absolute https URL</code></td>
+<td>The configured mirror is a bare hostname, a relative path, or plain <code>http</code>.</td>
+<td>Give the full origin, for example <code>https://artifactory.example.com/tuf</code>.</td>
+</tr>
+<tr>
+<td><code>uses plain HTTP; pass --allow-http or set BB_ALLOW_HTTP_UPDATE=1 to permit it</code></td>
+<td>The update base URL, an asset URL in the mirror's manifest, or a redirect uses <code>http://</code>.</td>
+<td>Serve the mirror over <code>https</code>, or opt in explicitly for a mirror that has no TLS.</td>
+</tr>
+<tr>
+<td><code>plain-HTTP update URLs are disabled by administrative policy</code></td>
+<td><code>--allow-http</code> or <code>BB_ALLOW_HTTP_UPDATE</code> was set on a host whose policy sets <code>allow_http_update: false</code>.</td>
+<td>Serve the mirror over <code>https</code>; the policy exists so the fleet cannot fall back to plain HTTP.</td>
+</tr>
+<tr>
+<td><code>uses plain HTTP, which administrative policy forbids</code></td>
+<td>An update URL uses <code>http://</code> and policy sets <code>allow_http_update: false</code>.</td>
+<td>Serve the mirror over <code>https</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="pat-expiration-rotation">PAT Expiration &amp; Rotation<a class="headerlink" href="#pat-expiration-rotation" title="Permanent link">&para;</a></h2>
+<p>Personal Access Tokens expire based on enterprise TTL policies (e.g. 90 days). When rotating a token:
+1. Generate a replacement token in Bitbucket (<code>bb auth token create "Dev Token" --expiry-days 90</code> or via web UI).
+2. Update the stored credential in the OS keyring without downtime:
+   <div class="highlight"><pre><span></span><code><span class="nb">printf</span><span class="w"> </span><span class="s2">&quot;%s&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NEW_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>auth<span class="w"> </span>login<span class="w"> </span>https://bitbucket.example.com<span class="w"> </span>--token-stdin
+</code></pre></div>
+3. Because git queries <code>bb</code> dynamically, all local repositories immediately begin using the new token without needing <code>.git/config</code> updates.</p>
+<h2 id="fleet-upgrades-rollback">Fleet Upgrades &amp; Rollback<a class="headerlink" href="#fleet-upgrades-rollback" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Upgrades</strong>: Deploy new packages via system package managers (<code>apt</code>, <code>dnf</code>, <code>brew</code>, <code>winget</code>). Stored credentials and git helpers persist across version upgrades.</li>
+<li><strong>De-provisioning &amp; Rollback</strong>:
+  <div class="highlight"><pre><span></span><code><span class="c1"># 1. Log out and remove secrets from the OS Keyring</span>
+bb<span class="w"> </span>auth<span class="w"> </span><span class="nb">logout</span><span class="w"> </span>--host<span class="w"> </span>https://bitbucket.example.com
+
+<span class="c1"># 2. Remove git credential helper configuration</span>
+git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>--unset-all<span class="w"> </span><span class="s2">&quot;credential.https://bitbucket.example.com.helper&quot;</span>
+
+<span class="c1"># 3. Remove package</span>
+apt<span class="w"> </span>remove<span class="w"> </span>bb<span class="w">   </span><span class="c1"># or: brew uninstall bb / winget uninstall vriesdemichael.bb</span>
+</code></pre></div></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.tracking", "navigation.sections", "navigation.indexes", "toc.follow", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

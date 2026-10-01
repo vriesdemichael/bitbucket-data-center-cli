@@ -1,0 +1,2676 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CLI automation for Bitbucket Data Center">
+      
+      
+      
+        <link rel="canonical" href="https://vriesdemichael.github.io/bitbucket-data-center-cli/v5/advanced/fleet-controls/">
+      
+      
+        <link rel="prev" href="../release-verification/">
+      
+      
+        <link rel="next" href="../fleet-deployment/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Fleet Controls - Bitbucket Data Center CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,300i,400,400i,700,700i%7CIBM+Plex+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"IBM Plex Sans";--md-code-font:"IBM Plex Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#fleet-controls" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-header__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Bitbucket Data Center CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Fleet Controls
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="blue-grey" data-md-color-accent="deep-orange"  aria-hidden="true"  type="radio" name="__palette" id="__palette_1">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Bitbucket Data Center CLI" class="md-nav__button md-logo" aria-label="Bitbucket Data Center CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 14c-3.36 0-4.46 1.35-4.82 2.24C9.25 16.7 10 17.76 10 19a3 3 0 0 1-3 3 3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V7.83A2.99 2.99 0 0 1 4 5a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83v5.29c.88-.65 2.16-1.12 4-1.12 2.67 0 3.56-1.34 3.85-2.23A3.01 3.01 0 0 1 14 7a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 1.34-.88 2.5-2.09 2.86C17.65 11.29 16.68 14 13 14m-6 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M7 4a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m10 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+
+    </a>
+    Bitbucket Data Center CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/bitbucket-data-center-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation-and-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation and Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cheatsheet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Cheatsheet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../basic-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gh-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming from gh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Command Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/commands/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    All Commands
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    All Commands
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/global-flags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Global flags
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/admin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb admin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ai
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb api
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/branch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb branch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/browse/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb browse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/build/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb build
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/clone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb clone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/commit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb commit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/completion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb completion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb diff
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/doctor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb doctor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/dry-run/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb dry-run
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/insights/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb insights
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/pr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb pr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/ref/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ref
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/repo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb repo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/reviewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb reviewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/reviewer-group/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb reviewer-group
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb search
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/ssh-key/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb ssh-key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/tag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb tag
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/commands/webhook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bb webhook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/schemas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JSON Schemas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Variables
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/system-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/bitbucket-versions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bitbucket Versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mcp-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Topics
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced Topics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Hardening
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Enterprise Hardening
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise-hardening/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Controls
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Controls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#deployable-fleet-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployable Fleet Controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#builds-with-self-update-compiled-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Builds With Self-Update Compiled Out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#socialized-developer-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Socialized Developer Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#critical-imaging-order-deploy-ca-before-env-var" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical Imaging Order: Deploy CA Before Env Var
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trust-client-certificates-and-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust, Client Certificates and Proxies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-server-estates-avoid-blanket-bitbucket_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Server Estates (Avoid Blanket BITBUCKET_URL)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fleet-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fleet Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp-governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server Governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../threat-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Architecture & Threat Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository-discovery-and-server-switching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Repository Discovery and Server Switching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dry-run-planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dry-Run Planning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../networks-proxies-and-tls/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Networks, Proxies and TLS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../machine-mode-diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Machine Mode and Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shell-completion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shell Completion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../server-side-hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server-Side Hooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhook-secrets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook Secrets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ai-and-llms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AI and llms.txt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR Records
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/CONTRIBUTING.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#deployable-fleet-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployable Fleet Controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#builds-with-self-update-compiled-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Builds With Self-Update Compiled Out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#socialized-developer-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Socialized Developer Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#critical-imaging-order-deploy-ca-before-env-var" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical Imaging Order: Deploy CA Before Env Var
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trust-client-certificates-and-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust, Client Certificates and Proxies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-server-estates-avoid-blanket-bitbucket_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Server Estates (Avoid Blanket BITBUCKET_URL)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="fleet-controls">Fleet Controls<a class="headerlink" href="#fleet-controls" title="Permanent link">&para;</a></h1>
+<p>The settings an administrator uses to govern <code>bb</code> on every machine: system policy, update controls and release mirrors, builds without self-update, and trust for an internal PKI. <a href="../../reference/system-policy/">System Policy</a> lists every key; this page is how to use them, and <a href="../fleet-deployment/">Fleet Deployment</a> how to roll them out.</p>
+<p>Distinguish between <strong>enforceable technical controls</strong> (which systems engineers deploy via configuration) and <strong>socialized practices</strong> (which developers and CI authors follow).</p>
+<h2 id="deployable-fleet-controls">Deployable Fleet Controls<a class="headerlink" href="#deployable-fleet-controls" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>System Configuration and Immutable Administrative Policies (<a href="../../adr/058-system-wide-configuration-and-policy-enforcement/">ADR-058</a>)</strong>:
+   Deploy a machine-level configuration file (<code>/etc/bb/config.yaml</code> on Linux/macOS, <code>%ProgramData%\bb\config.yaml</code> on Windows) or native Windows Registry policy keys (<code>HKLM\Software\Policies\bb</code>). Policies defined at this tier are immutable and cannot be overridden by user shell environment variables, user config files, or repository workspace configs — including the path the policy file is read from:
+   <div class="highlight"><pre><span></span><code><span class="c1"># yaml-language-server: $schema=https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json</span>
+<span class="nt">$schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://raw.githubusercontent.com/vriesdemichael/bitbucket-data-center-cli/main/docs/reference/schemas/config.schema.json</span>
+<span class="nt">require_keyring</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">ca_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/ssl/certs/corp-root-ca.pem</span>
+<span class="nt">allowed_hosts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://bitbucket.example.com</span>
+<span class="nt">allow_insecure_skip_verify</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">allow_http_update</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">disable_update</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">update_base_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://artifactory.example.com/artifactory/bb-releases</span>
+</code></pre></div></li>
+<li><strong>JSON Schema Validation</strong>: All configuration files are validated against <a href="../../reference/schemas/config.schema.json"><code>config.schema.json</code></a>. Supplying the <code>$schema</code> directive enables live linting and autocompletion in VS Code and IntelliJ. On the host, <code>bb doctor</code> reports every key the schema rejects in the deployed file, and the source each policy setting comes from.</li>
+<li><code>require_keyring: true</code>: Enforces OS keyring storage machine-wide; refuses fallback to plaintext files even if <code>BB_REQUIRE_KEYRING</code> is unset or set to <code>0</code>. If a user sets <code>BB_REQUIRE_KEYRING=0</code>, <code>bb</code> outputs an explicit warning to <code>stderr</code> and continues enforcing keyring policy.</li>
+<li><code>ca_file: &lt;path&gt;</code>: Mandates corporate Root CA bundle. Attempts to pass a conflicting CA file abort with an authorization error.</li>
+<li><code>allowed_hosts: [...]</code>: Whitelists permitted Bitbucket Data Center instances. Connection attempts to unlisted hosts abort with an authorization error.</li>
+<li><code>allow_insecure_skip_verify: false</code>: Hard-refuses <code>--insecure-skip-verify</code> and <code>BB_INSECURE_SKIP_VERIFY=true</code>.</li>
+<li>
+<p><code>allow_http_update: false</code>: Hard-refuses plain-HTTP update URLs, <code>bb update --allow-http</code> and <code>BB_ALLOW_HTTP_UPDATE=1</code>.</p>
+</li>
+<li>
+<p><strong>Restricting What <code>bb</code> May Be Used For (<a href="../../adr/100-administrators-can-switch-bb-off-or-make-it-read-only/">ADR-100</a>)</strong>:
+   Three policy keys decide whether <code>bb</code>, or part of it, may be used on a managed machine. No user setting lifts them:
+   <div class="highlight"><pre><span></span><code><span class="nt">policy</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">disable_mcp_server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">   </span><span class="c1"># no MCP client can start bb ai mcp serve</span>
+<span class="w">  </span><span class="nt">read_only</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">            </span><span class="c1"># bb reads and previews, and never changes Bitbucket</span>
+</code></pre></div></p>
+</li>
+<li><code>disable_mcp_server: true</code>: For an organisation that has not approved AI agents working through <code>bb</code>. <code>bb ai mcp serve</code> is refused, and people keep using <code>bb</code> in the terminal.</li>
+<li><code>read_only: true</code>: For machines, or agents, that may read Bitbucket but never change it. Every command that changes Bitbucket is refused before a request is sent, <code>bb api</code> sends only <code>GET</code> and <code>HEAD</code>, and <code>bb ai mcp serve</code> offers only the tools that read.</li>
+<li><code>disable_bb: true</code>: For a machine where <code>bb</code> has no business running, a copy a user downloaded themselves included. Every command is refused except help, <code>--describe</code>, <code>--version</code>, <code>bb doctor</code> and printing a completion script.</li>
+</ol>
+<p>These govern the <code>bb</code> binary, not the account. Against a person or an agent with a shell, the control that holds is still a token with read permissions only; see <a href="../../reference/system-policy/#switching-bb-off-or-part-of-it">Switching bb off, or part of it</a>.</p>
+<ol>
+<li><strong>Enterprise Update Controls and Release Mirrors (<a href="../../adr/059-enterprise-update-controls-and-release-mirrors/">ADR-059</a>)</strong>:</li>
+<li><strong>Disabling In-Place Self-Updates</strong>: On managed corporate machines where software must be installed exclusively through IT package managers (e.g. Jamf, Ansible, Intune, SCCM), disable <code>bb update</code> by setting <code>disable_update: true</code> in system configuration or <code>export BB_DISABLE_UPDATE=1</code>. Alternatively, deploy the <code>_noupdate</code> builds described below, which cannot self-update whatever the configuration says.</li>
+<li><strong>Internal Release Mirrors</strong>: In firewalled or air-gapped enterprise enclaves, configure <code>bb update</code> to query internal mirrors (e.g. JFrog Artifactory, Sonatype Nexus) instead of <code>api.github.com</code> via <code>--base-url &lt;url&gt;</code>, <code>BB_UPDATE_BASE_URL</code>, or <code>update_base_url</code> in system/user config. A mirror alone is not sufficient on a host with no internet access: pair it with an offline trust root, below. Mirror URLs must be <code>https</code>: a plain-HTTP mirror needs <code>bb update --allow-http</code> or <code>BB_ALLOW_HTTP_UPDATE=1</code>, and <code>allow_http_update: false</code> in system configuration refuses it for every user (<code>true</code> permits it fleet-wide).</li>
+<li><strong>Offline Signature Verification (<a href="../../adr/063-offline-release-signature-verification/">ADR-063</a>)</strong>: By default, <code>bb update</code> fetches Sigstore trust material from <code>https://tuf-repo-cdn.sigstore.dev</code> on every run. Deploy a <code>trusted_root.json</code> alongside the corporate CA bundle and point at it to verify releases with no internet access at all:
+     <div class="highlight"><pre><span></span><code><span class="nt">update_trusted_root</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/bb/trusted_root.json</span>
+</code></pre></div>
+     Produce the file once, on a host that does have access:
+     <div class="highlight"><pre><span></span><code>cosign<span class="w"> </span>trusted-root<span class="w"> </span>create<span class="w"> </span>&gt;<span class="w"> </span>trusted_root.json
+</code></pre></div>
+     This verifies the public releases as published — signed certificate timestamps, the Rekor inclusion promise, and observer timestamps are all checked against keys inside the file — so mirroring artifacts byte-for-byte needs no re-signing. Refresh the file when Sigstore rotates its keys, which is a multi-year event and another file push. Organisations that mirror the Sigstore TUF repository itself can set <code>update_tuf_url: &lt;url&gt;</code> instead; the two are mutually exclusive, it must be an absolute <code>https</code> URL, and the TUF fetch uses the configured <code>ca_file</code> and client certificates.</li>
+<li><strong>Mirrored Trust Root</strong>: Hosts that reach an internal mirror but not the internet can point <code>update_tuf_url</code> at a mirror of Sigstore's public TUF repository instead of deploying a file. <code>bb</code> verifies what that mirror serves against the Sigstore root compiled into <code>bb</code>, so it has to be a byte-for-byte mirror of <code>https://tuf-repo-cdn.sigstore.dev</code>, not a TUF repository of your own. The metadata it fetches is cached under <code>.sigstore/root</code> in the home directory of the user running <code>bb update</code>.</li>
+<li><strong>Re-Signed Artifacts</strong>: Organisations that rebuild or re-sign <code>bb</code> against their own Fulcio instance replace the pinned signer with <code>update_signature_identity</code> (certificate SAN) and <code>update_signature_issuer</code> (OIDC issuer).</li>
+<li><strong>Unverified Updates (Last Resort)</strong>: <code>allow_unverified_update: true</code> skips signature verification entirely. SHA256 checksum verification remains mandatory, so this still catches corruption but not tampering; every run prints a warning to stderr and reports <code>trust.signatureSkipped: true</code> in <code>--json</code> output. Prefer an offline trust root.</li>
+<li><strong>Policy Only</strong>: <code>update_trusted_root</code>, <code>update_tuf_url</code>, <code>update_signature_identity</code>, <code>update_signature_issuer</code> and <code>allow_unverified_update</code> are read from system configuration and Windows registry policy only — never from an environment variable or a flag. Each decides who may vouch for a binary <code>bb</code> is about to execute, and that decision does not belong to whoever can set a variable in a user's shell. <code>update_base_url</code> keeps its flag and environment forms, because signature verification still gates whatever the mirror serves.</li>
+<li>
+<p><strong>Mirror Layout</strong>: The mirror serves a GitHub-release-shaped manifest at <code>/repos/vriesdemichael/bitbucket-data-center-cli/releases/latest</code>, or — for generic Artifactory/Nexus repositories — at <code>/releases/latest</code> or <code>/latest</code>, which <code>bb</code> tries in that order:
+     <div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;tag_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v5.0.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;html_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://artifactory.example.com/artifactory/bb-releases&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bb_5.0.0_linux_amd64.tar.gz&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;browser_download_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bb_5.0.0_linux_amd64.tar.gz&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256sums.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;browser_download_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256sums.txt&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256sums.txt.sigstore.json&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;browser_download_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sha256sums.txt.sigstore.json&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+     Mirror <code>bb_&lt;version&gt;_&lt;os&gt;_&lt;arch&gt;.tar.gz</code> (<code>.zip</code> on Windows), <code>sha256sums.txt</code>, and <code>sha256sums.txt.sigstore.json</code> at the base URL. The mirror has to allow anonymous downloads of them: <code>bb update</code> sends no credentials, only a TLS client certificate when one is configured. Where the artifact server requires a login for every download, install <code>bb</code> through your own tooling instead, with the <a href="#builds-with-self-update-compiled-out"><code>_noupdate</code> builds</a>. Asset URLs may be relative, as above, or absolute mirror URLs; a manifest copied verbatim from GitHub also works, since <code>bb</code> fetches an off-mirror asset URL from <code>{base_url}/{asset_name}</code>, and never from the <code>github.com</code> address the manifest names. Verify a mirror without replacing any binary:
+     <div class="highlight"><pre><span></span><code>bb<span class="w"> </span>update<span class="w"> </span>--dry-run<span class="w"> </span>--base-url<span class="w"> </span>https://artifactory.example.com/artifactory/bb-releases
+</code></pre></div>
+     The dry run verifies whatever release the mirror serves, the installed version included: the signature on <code>sha256sums.txt</code> against the configured trust material, that file's entry for this platform's archive, and the archive against that entry. It reports the trust material used and each check that passed (<code>preview.data.trust</code> under <code>--json</code>), and fails with exit <code>5</code> (<code>conflict</code>) when the mirror serves a release older than the installed one, the sign of a mirror that has stopped receiving releases.</p>
+</li>
+<li>
+<p><strong>Mandate Keyring Storage (Advisory / User Tier)</strong>:
+   <div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">BB_REQUIRE_KEYRING</span><span class="o">=</span><span class="m">1</span>
+</code></pre></div>
+   When set in user environments where system policy is not yet deployed, <code>bb</code> refuses to read credentials from or write credentials to the plaintext configuration fallback (<code>~/.config/bb/config.yaml</code> on Linux, <code>~/Library/Application Support/bb/config.yaml</code> on macOS, or <code>%AppData%\bb\config.yaml</code> on Windows). Any command that would otherwise rely on plaintext fallback aborts with an error (<a href="../../adr/047-credential-input-and-keyring-enforcement/">ADR-047</a>).</p>
+</li>
+<li>
+<p><strong>Configure Host-Scoped Git Credential Helper</strong>:
+   <div class="highlight"><pre><span></span><code>bb<span class="w"> </span>auth<span class="w"> </span>setup-git
+</code></pre></div>
+   Writes a host-scoped credential helper into the user's global <code>~/.gitconfig</code>:
+   <div class="highlight"><pre><span></span><code><span class="k">[credential &quot;https://bitbucket.example.com&quot;]</span>
+<span class="w"> </span><span class="na">helper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">!&quot;/usr/local/bin/bb&quot; auth git-credential --config &quot;/home/alice/.config/bb/config.yaml&quot;</span>
+</code></pre></div>
+   <em>Note: <code>bb</code> writes the absolute executable path into the git configuration.</em> Git queries <code>bb</code> dynamically on demand for that specific host, ensuring zero credentials are ever written into local repository <code>.git/config</code> files and credentials are never offered to external remotes (<a href="../../adr/044-git-credential-helper-instead-of-persisted-credentials/">ADR-044</a>).</p>
+</li>
+<li>
+<p><strong>Disable Stored Config for Headless CI</strong>:
+   <div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">BB_DISABLE_STORED_CONFIG</span><span class="o">=</span><span class="m">1</span>
+</code></pre></div>
+   An ephemeral CI/CD runner then reads its credential from <code>BITBUCKET_TOKEN</code> only: no stored credential is read, and no desktop keyring is contacted.</p>
+</li>
+</ol>
+<h2 id="builds-with-self-update-compiled-out">Builds With Self-Update Compiled Out<a class="headerlink" href="#builds-with-self-update-compiled-out" title="Permanent link">&para;</a></h2>
+<p>Every release publishes each platform twice. The <code>_noupdate</code> archives are built
+with <code>-tags no_self_update</code>, so <code>bb update</code> in one of them exits <code>3</code>
+(<code>authorization</code>) with:</p>
+<div class="highlight"><pre><span></span><code>self-update is disabled in this build; update bb using your system package manager
+</code></pre></div>
+<p>Everything else behaves identically.</p>
+<p>This matters for a fleet in two ways.</p>
+<p><strong>It is what your users already have.</strong> The WinGet, Scoop and Homebrew manifests
+all reference <code>_noupdate</code> archives, so a developer who installed through a
+package manager cannot self-update regardless of policy. A binary that replaces
+itself behind a package manager leaves that manager's records describing a
+version no longer on disk.</p>
+<p><strong>It survives a machine you do not control.</strong> <code>disable_update</code> and
+<code>BB_DISABLE_UPDATE</code> are configuration, and configuration can be missing —
+an imaging step that has not run yet, a container built from a bare archive, a
+developer who installed the binary by hand. A <code>_noupdate</code> build refuses in all
+of those cases because the capability is not compiled in. Prefer it wherever the
+requirement is that a host never fetches its own binary; use <code>disable_update</code>
+where you need the same result on hosts that already have the ordinary build.</p>
+<p>Both spellings are published, versioned and version-less:</p>
+<div class="highlight"><pre><span></span><code>bb_5.0.0_linux_amd64_noupdate.tar.gz
+bb_linux_amd64_noupdate.tar.gz
+</code></pre></div>
+<h2 id="socialized-developer-practices">Socialized Developer Practices<a class="headerlink" href="#socialized-developer-practices" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Pipe Tokens via Stdin (Never in CLI Flags)</strong>:
+   No flag takes a credential value; the secret goes over stdin or <code>BITBUCKET_TOKEN</code>. Flag values are visible to local processes in <code>ps aux</code>, <code>/proc/&lt;pid&gt;/cmdline</code>, Windows Task Manager, EDR sensors, and shell history files.
+   <div class="highlight"><pre><span></span><code><span class="c1"># Provide the token via pipe</span>
+<span class="nb">printf</span><span class="w"> </span><span class="s2">&quot;%s&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BITBUCKET_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>auth<span class="w"> </span>login<span class="w"> </span>https://bitbucket.example.com<span class="w"> </span>--token-stdin
+
+<span class="c1"># Or stream directly from a secure file</span>
+cat<span class="w"> </span>/run/secrets/bitbucket_token<span class="w"> </span><span class="p">|</span><span class="w"> </span>bb<span class="w"> </span>auth<span class="w"> </span>login<span class="w"> </span>https://bitbucket.example.com<span class="w"> </span>--token-stdin
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Remove Tokens from Existing Clones</strong>:
+   A clone's local <code>.git/config</code> can hold a plaintext token in <code>http.extraHeader</code>:
+   <div class="highlight"><pre><span></span><code>git<span class="w"> </span>config<span class="w"> </span>--local<span class="w"> </span>--unset-all<span class="w"> </span>http.extraHeader
+</code></pre></div></p>
+</li>
+</ol>
+<h2 id="critical-imaging-order-deploy-ca-before-env-var">Critical Imaging Order: Deploy CA Before Env Var<a class="headerlink" href="#critical-imaging-order-deploy-ca-before-env-var" title="Permanent link">&para;</a></h2>
+<p><code>bb</code> initializes its TLS transport during client construction. If <code>BB_CA_FILE</code> points to a non-existent path, <code>bb</code> immediately aborts with:
+<div class="highlight"><pre><span></span><code>read CA bundle: open /etc/ssl/certs/corp-root-ca.pem: no such file or directory
+</code></pre></div>
+Ensure provisioning scripts place the CA certificate on disk <strong>before</strong> exporting <code>BB_CA_FILE</code>.</p>
+<h2 id="trust-client-certificates-and-proxies">Trust, Client Certificates and Proxies<a class="headerlink" href="#trust-client-certificates-and-proxies" title="Permanent link">&para;</a></h2>
+<p><a href="../networks-proxies-and-tls/">Networks, Proxies and TLS</a> covers each setting: a CA bundle is added to the system's trust store rather than replacing it, a client certificate and key for mutual TLS at an ingress gateway can be set per host or per runner (<a href="../../adr/060-mutual-tls-client-certificate-authentication/">ADR-060</a>), and <code>HTTPS_PROXY</code> and <code>NO_PROXY</code> are honoured for every request. For a fleet, set the CA bundle through system policy (<code>ca_file</code>) so that no user can replace it.</p>
+<h2 id="multi-server-estates-avoid-blanket-bitbucket_url">Multi-Server Estates (Avoid Blanket <code>BITBUCKET_URL</code>)<a class="headerlink" href="#multi-server-estates-avoid-blanket-bitbucket_url" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Do Not Pin <code>BITBUCKET_URL</code> Fleet-Wide in Multi-Server Estates</p>
+<p>If your organization operates multiple Bitbucket instances (e.g. post-acquisition environments, production vs. staging), do <strong>not</strong> export a static <code>BITBUCKET_URL</code> in <code>/etc/profile.d/</code> or <code>/etc/zshenv</code>. Setting <code>BITBUCKET_URL</code> globally overrides local repository context discovery. Instead, let developers configure server profiles (<code>bb auth login &lt;host&gt;</code>) or rely on automatic clone URL discovery (<a href="../repository-discovery-and-server-switching/">Repository Discovery and Server Switching</a>).</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.tracking", "navigation.sections", "navigation.indexes", "toc.follow", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
