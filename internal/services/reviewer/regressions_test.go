@@ -107,61 +107,6 @@ func TestRepositoryIDValidation(t *testing.T) {
 	}
 }
 
-func TestSelectMembers(t *testing.T) {
-	t.Parallel()
-
-	members := []string{"alice", "bob", "carol", "dave"}
-	busy := map[string]int{"alice": 5, "bob": 0, "carol": 3, "dave": 1}
-
-	t.Run("excludes the author regardless of case", func(t *testing.T) {
-		got := SelectMembers(members, "ALICE", "all", 0, nil)
-		for _, name := range got {
-			if strings.EqualFold(name, "alice") {
-				t.Fatalf("author should have been excluded, got %v", got)
-			}
-		}
-		if len(got) != 3 {
-			t.Fatalf("got %v, want the three non-author members", got)
-		}
-	})
-
-	t.Run("a count of zero selects everyone", func(t *testing.T) {
-		if got := SelectMembers(members, "", "random", 0, nil); len(got) != 4 {
-			t.Fatalf("got %v, want all four members", got)
-		}
-	})
-
-	t.Run("least_busy picks the lowest counts", func(t *testing.T) {
-		got := SelectMembers(members, "", "least_busy", 2, busy)
-		want := []string{"bob", "dave"}
-		if len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
-			t.Fatalf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("least_busy without counts keeps group order", func(t *testing.T) {
-		got := SelectMembers(members, "", "least_busy", 2, nil)
-		if len(got) != 2 || got[0] != "alice" || got[1] != "bob" {
-			t.Fatalf("got %v, want [alice bob]", got)
-		}
-	})
-
-	t.Run("random returns the requested number of distinct members", func(t *testing.T) {
-		got := SelectMembers(members, "", "random", 2, nil)
-		if len(got) != 2 {
-			t.Fatalf("got %v, want two members", got)
-		}
-		if got[0] == got[1] {
-			t.Fatalf("got duplicate members: %v", got)
-		}
-		for _, name := range got {
-			if !strings.Contains(strings.Join(members, ","), name) {
-				t.Fatalf("got unknown member %q", name)
-			}
-		}
-	})
-}
-
 // The half of TestRepositoryID that returned the numeric id is live now, and
 // not as its own test: a reviewer condition on a repository will not be
 // created without one, so every `reviewer condition create --repo` in

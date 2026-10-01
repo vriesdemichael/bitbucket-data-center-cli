@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -839,62 +837,6 @@ func (service *Service) ResolveReviewerGroupUsers(ctx context.Context, projectKe
 		return nil, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("reviewer group %q not found in repository %s/%s or project %s", trimmedGroup, projectKey, repositorySlug, projectKey), nil)
 	}
 	return nil, apperrors.New(apperrors.KindNotFound, fmt.Sprintf("reviewer group %q not found in project %s", trimmedGroup, projectKey), nil)
-}
-
-// SelectMembers applies reviewer group selection strategies (:all, :random(N), :least_busy(N)),
-// excluding the PR author from selection.
-func SelectMembers(
-	members []string,
-	author string,
-	strategy string,
-	count int,
-	busyCounts map[string]int,
-) []string {
-	var eligible []string
-	for _, m := range members {
-		trimmed := strings.TrimSpace(m)
-		if trimmed == "" {
-			continue
-		}
-		if author != "" && strings.EqualFold(trimmed, strings.TrimSpace(author)) {
-			continue
-		}
-		eligible = append(eligible, trimmed)
-	}
-
-	if count <= 0 || len(eligible) <= count {
-		return eligible
-	}
-
-	switch strategy {
-	case "random":
-		shuffled := make([]string, len(eligible))
-		copy(shuffled, eligible)
-		// math/rand, not crypto/rand: this picks which reviewers to ask, and
-		// nobody gains by predicting the draw -- Bitbucket enforces what each
-		// of them may actually do. A cryptographic source here would cost
-		// more and promise a property nothing relies on.
-		//nolint:gosec // G404: reviewer selection is not a security decision
-		rand.Shuffle(len(shuffled), func(i, j int) {
-			shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-		})
-		return shuffled[:count]
-	case "least_busy":
-		sorted := make([]string, len(eligible))
-		copy(sorted, eligible)
-		sort.SliceStable(sorted, func(i, j int) bool {
-			countI := 0
-			countJ := 0
-			if busyCounts != nil {
-				countI = busyCounts[strings.ToLower(sorted[i])]
-				countJ = busyCounts[strings.ToLower(sorted[j])]
-			}
-			return countI < countJ
-		})
-		return sorted[:count]
-	default:
-		return eligible
-	}
 }
 
 // resolveGroupMembers turns usernames into the members Bitbucket accepts.
