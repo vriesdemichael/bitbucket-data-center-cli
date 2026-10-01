@@ -22,12 +22,12 @@ func (t testPermissionChecker) CheckRepoPermission(ctx context.Context, projectK
 	return t.err
 }
 
-func newTestDependencies(t *testing.T, serverURL string, jsonMode bool, dryRun bool) tagcmd.Dependencies {
+func newTestDependencies(serverURL string, jsonMode bool, dryRun bool) tagcmd.Dependencies {
 	cfg := config.AppConfig{
 		BitbucketURL: serverURL,
 		ProjectKey:   "PRJ",
+		RepoSlug:     "demo",
 	}
-	t.Setenv("BITBUCKET_REPO_SLUG", "demo")
 
 	return tagcmd.Dependencies{
 		JSONEnabled:   func() bool { return jsonMode },
@@ -102,7 +102,7 @@ func TestTagCreateDryRunSurfacesANonNotFoundLookupFailure(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	deps := newTestDependencies(t, server.URL, true, true)
+	deps := newTestDependencies(server.URL, true, true)
 	cmd := tagcmd.New(deps)
 	buf := new(bytes.Buffer)
 	cmd.SetOut(buf)
