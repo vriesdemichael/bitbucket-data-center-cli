@@ -236,8 +236,8 @@ func TierOfFailure(err error) Tier {
 // clients which shape they are getting, because those clients cannot choose the
 // server's code; a CLI inverts that, since the consumer installs the binary. So
 // the binary version is the contract version, and breaking payload changes ride
-// the release major -- see ADR-064, which supersedes ADR-014 and is the record
-// to read before changing this shape.
+// the release major -- see ADR-064, the record to read before changing this
+// shape.
 type Envelope struct {
 	Data any          `json:"data"`
 	Meta EnvelopeMeta `json:"meta"`

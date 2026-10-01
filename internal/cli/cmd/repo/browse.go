@@ -106,7 +106,7 @@ func newRepoBrowseCommand(deps Dependencies) *cobra.Command {
 			service := browseservice.NewService(client, httpclient.NewFromConfig(cfg))
 
 			// Raw means the bytes, unwrapped -- but only without --json. Under
-			// --json stdout is one bb.machine document (ADR-014), and this used
+			// --json stdout is one bb.machine document (ADR-075), and this used
 			// to write the file there instead, which is not a document at all.
 			// bb repo cat reads the same endpoint and answers the same way.
 			return writeRawFile(cmd, deps, service, repo, args[0], rawAt)

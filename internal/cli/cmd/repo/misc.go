@@ -825,7 +825,7 @@ const maxHeldFileBytes = 64 << 20
 
 // writeRawFile writes a file's bytes, for bb repo cat and bb repo browse raw:
 // to stdout as they arrive, or under --json held and wrapped in the document
-// ADR-014 promises.
+// ADR-095 promises.
 func writeRawFile(cmd *cobra.Command, deps Dependencies, service *browseservice.Service, repo browseservice.RepositoryRef, path, at string) error {
 	if deps.JSONEnabled() {
 		var held download.Memory
