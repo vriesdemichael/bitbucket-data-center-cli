@@ -19,9 +19,11 @@ import (
 //
 // Every listing here is the whole instance's, since the suite runs as one
 // user, so each is narrowed to this test's own project before it is read.
+//
+// Not parallel, for the reason TestLiveRepoLabelAndWatchLifecycle gives: with
+// the parallel tests running, Bitbucket has answered this test's decline with
+// 500 "A database error has occurred", on two runs in a row.
 func TestLiveSearchPullRequestsByStateAndPeriod(t *testing.T) {
-	t.Parallel()
-
 	harness := newLiveHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
