@@ -3,6 +3,7 @@ package execgit_test
 import (
 	"testing"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/execgit"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git/gittest"
 )
 
@@ -11,4 +12,10 @@ import (
 // into, so a target directory that is not a temporary one silently rewrites the
 // project's own git configuration. That happened, and it broke authentication
 // for every push until someone noticed months later.
-func TestMain(m *testing.M) { gittest.Guard(m) }
+//
+// A test may start a copy of this binary as git; that copy records its
+// arguments and exits before the guard or any test runs.
+func TestMain(m *testing.M) {
+	execgit.ActAsStandInGit()
+	gittest.Guard(m)
+}

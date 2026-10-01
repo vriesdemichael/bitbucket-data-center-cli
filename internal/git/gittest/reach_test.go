@@ -122,6 +122,9 @@ func TestAnInheritedGitDirCannotReachTheRepository(t *testing.T) {
 // ambientGitDir is the repository the tests are running inside, asked for with
 // the scoping variables stripped -- the ceiling Guard placed is exactly what
 // stops an ordinary git command from answering.
+//
+// The hazard under test is that repository's own GIT_DIR, so there is no
+// stand-in for it: outside a checkout the test fails and says so.
 func ambientGitDir(t *testing.T) string {
 	t.Helper()
 
@@ -130,7 +133,7 @@ func ambientGitDir(t *testing.T) string {
 
 	output, err := command.Output()
 	if err != nil {
-		t.Skipf("not running inside a git repository: %v", err)
+		t.Fatalf("no repository was found from the working directory: run the unit tests from a git checkout of bb, with git on PATH: %v", err)
 	}
 	return strings.TrimSpace(string(output))
 }
