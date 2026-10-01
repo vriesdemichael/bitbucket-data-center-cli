@@ -728,6 +728,49 @@ func TestRepoCloneCommandUsesStoredConfigForOtherHost(t *testing.T) {
 	}
 }
 
+// TestTheCloneRefusesAPlaintextCredentialWhenKeyringRequired holds ADR-047's
+// requirement where a clone reads the credential it gives git. The clone host
+// is not the configured one, so the configuration load, which refuses the
+// plaintext fallback, never reads its credential; the clone's own lookup does.
+func TestTheCloneRefusesAPlaintextCredentialWhenKeyringRequired(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	stored := strings.Join([]string{
+		"hosts:",
+		"  https://otherbucket.example.com:",
+		"    url: https://otherbucket.example.com",
+		"insecure_secrets:",
+		"  https://otherbucket.example.com:",
+		"    token: plaintext-token",
+		"",
+	}, "\n")
+	if err := os.WriteFile(configPath, []byte(stored), 0o600); err != nil {
+		t.Fatalf("write stored config: %v", err)
+	}
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
+	t.Setenv("BB_REQUIRE_KEYRING", "1")
+
+	stub := &cloneBackendStub{cloneErrs: []error{errors.New("ssh: connection refused"), nil}}
+	setup := testSetup{Host: "https://main.example.com", Token: "main-token", ProjectKey: "PRJ", Backend: stub}
+
+	_, err := executeTestCLIWith(t, setup, "repo", "clone", "https://otherbucket.example.com/scm/PRJ/demo.git")
+	if err == nil {
+		t.Fatal("the clone succeeded with a plaintext credential under the requirement")
+	}
+	if !strings.Contains(err.Error(), "keyring") {
+		t.Fatalf("the clone does not report the requirement: %v", err)
+	}
+	for _, call := range stub.cloneCalls {
+		if call.options.AuthToken == "plaintext-token" {
+			t.Fatalf("git was given the plaintext credential for %s", call.repositoryURL)
+		}
+	}
+	if len(stub.cloneCalls) != 1 {
+		t.Fatalf("expected the SSH attempt alone, got %d clone calls", len(stub.cloneCalls))
+	}
+}
+
 func TestRepoCloneCommandJSONFailsWithNoAuth(t *testing.T) {
 	stub := &cloneBackendStub{cloneErr: errors.New("ssh: connection refused")}
 	setup := testSetup{Host: "https://bitbucket.example.com", ProjectKey: "PRJ", RepoSlug: "demo", Backend: stub}

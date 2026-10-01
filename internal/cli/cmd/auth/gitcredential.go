@@ -170,6 +170,13 @@ bb stay in agreement and no token is ever written into a repository.`,
 				// other helpers or a prompt, as the protocol expects. But said on
 				// stderr, which git shows: silence here was "not logged in" again,
 				// for a config bb could not read (#567).
+				//
+				// A plaintext credential refused under the keyring requirement
+				// (ADR-047) comes this way too, and is "cannot help" for the same
+				// reasons: the helper has nothing it may give, a non-zero exit
+				// would end git's lookup instead of letting it ask elsewhere, and
+				// silence alone would read as not logged in when the remedy is to
+				// log in again where the keyring works.
 				fmt.Fprintf(cmd.ErrOrStderr(), "bb: %s\n", apperrors.MessageOf(err))
 
 				return nil
