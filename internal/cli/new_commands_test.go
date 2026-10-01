@@ -76,10 +76,17 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 		return err
 	}
 
+	// named gives an invocation its repository with --repo, which is the only
+	// way --yes applies to one (ADR-073); from the configuration, the deletes
+	// would be refused for that before reaching the step's subject.
+	named := func(args []string) []string {
+		return append(append([]string(nil), args...), "--repo", "PRJ/repo")
+	}
+
 	// 1. Client configuration failure (a host of ://invalid)
 	configured := config.Overrides{Host: "://invalid", Token: "test-token"}
 	for _, args := range errorCmds {
-		failure(t, configured, `is invalid: "://invalid"`, args...)
+		failure(t, configured, `is invalid: "://invalid"`, named(args)...)
 	}
 
 	// 2. Invalid repo format (e.g. --repo invalid)
@@ -102,7 +109,7 @@ func TestNewCLICommandsErrorPaths(t *testing.T) {
 	configured.RepoSlug = "repo"
 
 	for _, args := range errorCmds {
-		err := failure(t, configured, "500", args...)
+		err := failure(t, configured, "500", named(args)...)
 		if err != nil && !apperrors.IsKind(err, apperrors.KindTransient) && !apperrors.IsKind(err, apperrors.KindUnknownOutcome) {
 			t.Errorf("%v: expected a transient or unknown outcome, got: %v", args, err)
 		}

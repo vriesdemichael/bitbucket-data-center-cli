@@ -265,7 +265,7 @@ func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 	}{
 		{name: "list invalid config", args: []string{"branch", "list"}},
 		{name: "create invalid config", args: []string{"branch", "create", "feature/demo", "--start-point", "abc"}},
-		{name: "delete invalid config", args: []string{"branch", "delete", "feature/demo", "--yes"}},
+		{name: "delete invalid config", args: []string{"branch", "delete", "feature/demo", "--repo", "TEST/demo", "--yes"}},
 		{name: "default get invalid config", args: []string{"branch", "default", "get"}},
 		{name: "default set invalid config", args: []string{"branch", "default", "set", "main"}},
 		{name: "model inspect invalid config", args: []string{"branch", "model", "inspect", "abc"}},
@@ -274,7 +274,7 @@ func TestBranchCommandsFailOnInvalidConfig(t *testing.T) {
 		{name: "restriction get invalid config", args: []string{"branch", "restriction", "get", "12"}},
 		{name: "restriction create invalid config", args: []string{"branch", "restriction", "create", "--type", "read-only", "--matcher-id", "refs/heads/main"}},
 		{name: "restriction update invalid config", args: []string{"branch", "restriction", "update", "12", "--type", "read-only", "--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main"}},
-		{name: "restriction delete invalid config", args: []string{"branch", "restriction", "delete", "12", "--yes"}},
+		{name: "restriction delete invalid config", args: []string{"branch", "restriction", "delete", "12", "--repo", "TEST/demo", "--yes"}},
 	}
 
 	for _, testCase := range tests {
@@ -1583,8 +1583,9 @@ func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
 	configured := config.Overrides{Host: "http://localhost:7990", ProjectKey: "TEST", RepoSlug: "demo"}
 
 	// want is what the refusal says: a configuration bb could not load exits 2
-	// as well. The delete carries --yes so that its id, rather than the
-	// confirmation nobody is there to give, is what it is refused for.
+	// as well. The delete carries --yes, and --repo for --yes to apply to
+	// (ADR-073), so that its id, rather than the confirmation nobody is there
+	// to give, is what it is refused for.
 	tests := []struct {
 		name string
 		args []string
@@ -1593,7 +1594,7 @@ func TestBuildAndInsightsValidationErrorPaths(t *testing.T) {
 		{name: "build required create invalid json", args: []string{"build", "required", "create", "--body", "{"}, want: "invalid JSON for --body"},
 		{name: "build required update invalid id", args: []string{"build", "required", "update", "bad", "--body", `{"buildParentKeys":["ci"]}`}, want: "merge check id must be a valid integer"},
 		{name: "build required update invalid json", args: []string{"build", "required", "update", "12", "--body", "{"}, want: "invalid JSON for --body"},
-		{name: "build required delete invalid id", args: []string{"build", "required", "delete", "bad", "--yes"}, want: "merge check id must be a valid integer"},
+		{name: "build required delete invalid id", args: []string{"build", "required", "delete", "bad", "--repo", "TEST/demo", "--yes"}, want: "merge check id must be a valid integer"},
 		{name: "insights report set invalid json", args: []string{"insights", "report", "set", "abc", "lint", "--body", "{"}, want: "invalid JSON for --body"},
 		{name: "insights annotation add invalid json", args: []string{"insights", "annotation", "add", "abc", "lint", "--body", "{"}, want: "invalid JSON for --body (expected array of annotations)"},
 	}
