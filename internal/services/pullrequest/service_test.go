@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
@@ -25,17 +26,9 @@ func TestListPullRequestsValidation(t *testing.T) {
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
+	service := serviceAgainst(server.URL)
 
-	cfg, err := config.LoadFromEnv()
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
-
-	service := NewService(httpclient.NewFromConfig(cfg))
-
-	_, err = service.List(context.Background(), RepositoryRef{}, ListOptions{})
+	_, err := service.List(context.Background(), RepositoryRef{}, ListOptions{})
 	if err == nil || apperrors.ExitCode(err) != 2 {
 		t.Fatalf("expected validation error exit code 2, got: %v", err)
 	}
@@ -93,17 +86,25 @@ func intPtr(value int) *int {
 	return &value
 }
 
+// serviceAgainst is a service whose client talks to serverURL.
+//
+// The address is handed to the client directly. A service takes a client, not
+// a configuration, so loading one from the environment only to build that
+// client made these tests depend on what the process carried (ADR-082).
+func serviceAgainst(serverURL string) *Service {
+	return NewService(httpclient.NewFromConfig(config.AppConfig{
+		BitbucketURL:   serverURL,
+		RequestTimeout: 10 * time.Second,
+	}))
+}
+
 // Every case here is refused before a request is built, so the server fails
 // the test if one arrives.
 func TestGetPRBuildStatusesValidation(t *testing.T) {
 	server := httptest.NewServer(testsupport.UnreachedHandler(t))
 	defer server.Close()
 
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-
-	cfg, _ := config.LoadFromEnv()
-	service := NewService(httpclient.NewFromConfig(cfg))
+	service := serviceAgainst(server.URL)
 
 	// Missing repository ref
 	_, err := service.GetBuildStatuses(context.Background(), RepositoryRef{}, "1", 25)
@@ -137,11 +138,7 @@ func TestGetBuildStatusesPaginationStuck(t *testing.T) {
 	}))
 	defer server.Close()
 
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-
-	cfg, _ := config.LoadFromEnv()
-	service := NewService(httpclient.NewFromConfig(cfg))
+	service := serviceAgainst(server.URL)
 	statuses, err := service.GetBuildStatuses(context.Background(), RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, "6", 25)
 	if err != nil {
 		t.Fatalf("unexpected error with stuck pagination: %v", err)
@@ -515,15 +512,7 @@ func newCommentTestService(t *testing.T, handler func(w http.ResponseWriter, req
 	server := httptest.NewServer(http.HandlerFunc(handler))
 	t.Cleanup(server.Close)
 
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-
-	cfg, err := config.LoadFromEnv()
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
-
-	return NewService(httpclient.NewFromConfig(cfg))
+	return serviceAgainst(server.URL)
 }
 
 func TestNeedsWorkValidation(t *testing.T) {
@@ -818,20 +807,12 @@ func TestRebaseRetriesOnceOnAVersionItReadItself(t *testing.T) {
 	}))
 	t.Cleanup(server.Close)
 
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-
-	cfg, err := config.LoadFromEnv()
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
-
 	apiClient, err := openapigenerated.NewClientWithResponses(server.URL, openapigenerated.WithHTTPClient(server.Client()))
 	if err != nil {
 		t.Fatalf("failed to create api client: %v", err)
 	}
 
-	service := NewService(httpclient.NewFromConfig(cfg)).WithAPIClient(apiClient)
+	service := serviceAgainst(server.URL).WithAPIClient(apiClient)
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
 	// version nil: bb resolves it, so bb owns it going stale.

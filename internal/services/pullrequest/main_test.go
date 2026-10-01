@@ -9,15 +9,14 @@ import (
 
 // TestMain seals the process per ADR-082.
 //
-// These tests call config.LoadFromEnv after setting only BITBUCKET_URL, and the
-// config layer answers with more than the test asked for: it reads the stored
-// config too. On a machine where someone has run `bb auth login`, that supplied
-// a username whose password lives in the keyring, and validation rejected the
-// pair -- so seven tests failed for everyone who actually uses the tool they
-// are developing, and passed on CI, which has no stored config.
-//
-// The pre-commit hook runs the unit suite, so that was not a slow test. It was
-// a contributor unable to commit until they exported a variable by hand.
+// No test here loads the configuration: each hands its client the address of
+// the server it talks to. They used to load it from BITBUCKET_URL instead, and
+// the config layer answered with more than they asked for -- the stored config
+// too. On a machine where someone had run `bb auth login`, that supplied a
+// username whose password lives in the keyring, and validation rejected the
+// pair, so seven tests failed for everyone who uses the tool they are
+// developing and passed on CI, which has no stored config. The seal stays so a
+// test that starts loading it again cannot bring that back.
 func TestMain(m *testing.M) {
 	os.Exit(testsupport.SealedMain(m))
 }
