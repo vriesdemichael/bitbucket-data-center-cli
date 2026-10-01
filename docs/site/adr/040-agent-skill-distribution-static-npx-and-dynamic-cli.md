@@ -13,7 +13,4 @@ A file in the repository reaches agents through the skills.sh ecosystem before b
 
 ## Not chosen
 
-- **Static repository file only; no CLI copy**: Becomes stale after every release. Agents operating on a newer bb may attempt commands or flags that the skill does not describe, or follow removed guidance.
-- **CLI copy only; no npx packaging**: Requires bb to be installed before the skill can be obtained, and loses discoverability on skills.sh.
-- **Read skills/bb/SKILL.md from the filesystem at runtime instead of embedding**: Fails in release builds where the source tree is absent, and in any environment where the working directory is not the repository root.
 - **A bb ai skill install --target flag for per-agent path selection**: Per-agent path management belongs to the skills tooling. bb writes the two locations that cover the agents that read a project's skills.

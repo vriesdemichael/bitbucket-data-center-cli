@@ -18,7 +18,4 @@ A literal goes stale at the next release. A rewrite made by the release workflow
 ## Not chosen
 
 - **Commit the synchronised docs back to main from the release workflow**: `main` takes changes through pull requests, so the workflow would have to open and merge one against itself, a large change to release automation to keep a mechanism that injection makes unnecessary.
-- **Pin literals and drop the check that holds them current**: Nobody is blocked, and the README and the site advertise an old release until someone notices.
 - **Publish the version for a snippet to read, as a VERSION.txt asset or from changelog.json**: The reader makes two requests and carries a shell variable, a failed fetch leaves it empty and builds a nonsense URL, and reading changelog.json needs jq or a brittle grep. Aliased assets need no variable at all.
-- **Publish only version-less names**: Homebrew, WinGet and Scoop reference the versioned names, and so does anyone pinning a release.
-- **The macros plugin's default double-brace delimiters**: They would evaluate the Ansible and Taskfile Jinja the pages show, and silently corrupt working examples.

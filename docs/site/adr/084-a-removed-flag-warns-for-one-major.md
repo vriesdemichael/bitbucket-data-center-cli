@@ -20,4 +20,3 @@ ADR-064 puts all compatibility on the major number, and SECURITY.md supports onl
 ## Not chosen
 
 - **Keep removed forms working indefinitely**: The compatibility shim outlives the migration it was written for, and the CLI carries both behaviours forever. ADR-066 rejected the same idea for the same reason.
-- **Announce removals in release notes only**: Reaches a human who reads the notes and nobody else, which excludes the pipelines and agents this project is built for.

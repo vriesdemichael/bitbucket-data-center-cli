@@ -9,7 +9,7 @@ Tests are sorted by what they need. A unit test needs nothing beyond the machine
 
 Tests run on every operating system. A test decides by the capability it needs, by asking the file system or looking for the tool, and asserts on every system rather than skipping one by name. A test that cannot reach its dependency fails and says what is missing; it does not skip. The live suite exits before running anything when it has no credentials or no git, and the view tests fail without Chrome.
 
-Put a test that needs an outside dependency behind a tag and a task, so the fast suite stays fast and needs no setup. Do not skip on a missing dependency, and do not write a test that runs on one operating system only.
+Put a test that needs an outside dependency behind a tag and a task, so the fast suite stays fast and needs no setup. Do not skip on a missing dependency, and do not write a test that runs on one operating system only, unless the code it tests is built for that system alone.
 
 A skipped test reads as a passing one: a run that skipped everything reports success having proven nothing, and a skip on one system is coverage that never ran there. bb ships for all three systems, and what differs between them, such as paths and shells, is exactly what a test confined to one never sees.
 

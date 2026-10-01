@@ -13,6 +13,5 @@ Two implementations of one file format drift apart, and the format is Bitbucket'
 
 ## Not chosen
 
-- **Parse locally, with semantics aligned to Bitbucket's**: Any agreement lasts until Bitbucket next changes the format, and a second implementation is a second thing to keep in step.
 - **Use the endpoint, then add bb's extra forms on top**: Both implementations then run on every pull request, and the answer is their union -- so the CLI still assigns reviewers the button does not.
 - **Avoid /rest/ui because it is not the documented public API**: It is the only server-side evaluation there is, it carries swagger annotations and a declared scope, and it is what the product's own UI depends on. The live suite pins its shape, so a change is a test failure here rather than a surprise in someone's pull request.

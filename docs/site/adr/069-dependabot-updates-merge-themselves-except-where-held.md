@@ -10,8 +10,3 @@ Dependabot proposes dependency updates against `next`, like every other change (
 Do not add a dependency exception to this record; add it to the workflow, where it is executable. Do not weaken a CI gate to get an update through: the gate is what auto-merge trusts. Pin a new action the same way, as `owner/action@<full commit> # vX.Y.Z`, where the commit is the one the release tag points to (follow an annotated tag to its commit). `TestEveryActionIsPinnedToACommit` fails on a tag, a short SHA, or a commit with no release named beside it.
 
 Auto-merge is only defensible where the gate is. Every pull request here runs the live suite against a real Bitbucket (ADR-043) and must clear the coverage gates (ADR-065), so a green run exercises the dependency rather than merely compiling against it. Reading the diff of a patch bump adds little to that, and doing it for every proposal adds enough friction that updates accumulate, which is the outcome the policy exists to avoid. The held set is where a green run is not the whole question. A major bump can be green and still change behaviour a reader should see, and the product image tag is a claim about what this project supports rather than a dependency of its build.
-
-## Not chosen
-
-- **Review every dependency update by hand**: Updates accumulate and land in batches, which is when they break. The gate already exercises them against a real server.
-- **Auto-merge majors too**: A green run does not answer whether a behaviour change should be adopted.
