@@ -299,7 +299,6 @@ func TestBrowserCommand(t *testing.T) {
 }
 
 func TestBrowseDefaults(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 	var deps Dependencies
 	d := deps.withDefaults()
 
@@ -309,11 +308,16 @@ func TestBrowseDefaults(t *testing.T) {
 	if d.WriteJSON == nil || d.URLOpener == nil {
 		t.Fatal("expected WriteJSON and URLOpener to default to non-nil")
 	}
-	if d.LoadConfig != nil {
-		cfg, err := d.LoadConfig()
-		if err != nil || cfg.BitbucketURL != "http://localhost:7990" {
-			t.Fatalf("unexpected LoadConfig: %v", err)
-		}
+
+	// The default loader is the configuration's own. The seal names no host,
+	// so it fails the way the configuration does, where a stub would answer
+	// or fail in words of its own. Reading BITBUCKET_URL is internal/config's
+	// to test.
+	if d.LoadConfig == nil {
+		t.Fatal("expected LoadConfig to default to non-nil")
+	}
+	if _, err := d.LoadConfig(); err == nil || !strings.Contains(err.Error(), "no Bitbucket host configured") {
+		t.Fatalf("the default LoadConfig is not the configuration's own: %v", err)
 	}
 }
 

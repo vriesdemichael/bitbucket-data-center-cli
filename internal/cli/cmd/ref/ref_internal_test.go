@@ -1,6 +1,7 @@
 package refcmd
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
@@ -21,7 +22,6 @@ func TestRefInternalHelpers(t *testing.T) {
 }
 
 func TestRefInternalWithDefaults(t *testing.T) {
-	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 	var deps Dependencies
 	d := deps.withDefaults()
 
@@ -32,17 +32,27 @@ func TestRefInternalWithDefaults(t *testing.T) {
 		t.Fatal("expected WriteJSON to default to non-nil")
 	}
 
-	if d.LoadConfig != nil {
-		cfg, err := d.LoadConfig()
-		if err != nil || cfg.BitbucketURL != "http://localhost:7990" {
-			t.Fatalf("unexpected LoadConfig result: %v", err)
-		}
+	// The default loader is the configuration's own. The seal names no host,
+	// so it fails the way the configuration does, where a stub would answer
+	// or fail in words of its own. Reading BITBUCKET_URL is internal/config's
+	// to test.
+	if d.LoadConfig == nil || d.LoadConfigAndClient == nil {
+		t.Fatal("expected LoadConfig and LoadConfigAndClient to default to non-nil")
 	}
-	if d.LoadConfigAndClient != nil {
-		cfg, client, err := d.LoadConfigAndClient()
-		if err != nil || client == nil || cfg.BitbucketURL != "http://localhost:7990" {
-			t.Fatalf("unexpected LoadConfigAndClient result: %v", err)
-		}
+	if _, err := d.LoadConfig(); err == nil || !strings.Contains(err.Error(), "no Bitbucket host configured") {
+		t.Fatalf("the default LoadConfig is not the configuration's own: %v", err)
+	}
+	if _, _, err := d.LoadConfigAndClient(); err == nil || !strings.Contains(err.Error(), "no Bitbucket host configured") {
+		t.Fatalf("the default LoadConfigAndClient does not load through it: %v", err)
+	}
+
+	// Handed a configuration, the default LoadConfigAndClient builds a client for it.
+	handed := Dependencies{LoadConfig: func() (config.AppConfig, error) {
+		return config.AppConfig{BitbucketURL: "http://bitbucket.invalid"}, nil
+	}}
+	cfg, client, err := handed.withDefaults().LoadConfigAndClient()
+	if err != nil || client == nil || cfg.BitbucketURL != "http://bitbucket.invalid" {
+		t.Fatalf("unexpected LoadConfigAndClient result: %v", err)
 	}
 }
 
