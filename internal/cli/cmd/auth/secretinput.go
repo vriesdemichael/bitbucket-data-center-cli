@@ -50,11 +50,14 @@ func storedConfigLocation() string {
 // reportInsecureStorage announces that a secret was written to the config file
 // in plaintext, naming the file so the reader can act on it.
 //
+// The login asked for it with --allow-insecure-storage, and says so anyway: the
+// flag may sit in a script nobody rereads.
+//
 // Always to stderr: under --json stdout carries the machine contract, and prose
 // there makes the envelope unparseable.
 func reportInsecureStorage(writer io.Writer, host string) {
 	fmt.Fprintf(writer, "Warning: OS keyring unavailable; credentials for %s were written in plaintext to %s.\n", host, storedConfigLocation())
-	fmt.Fprintln(writer, "         Use --require-keyring (or BB_REQUIRE_KEYRING=1) to fail instead of falling back.")
+	fmt.Fprintf(writer, "         To keep them off disk, run 'bb auth logout --host %s' and set BITBUCKET_TOKEN in the environment instead.\n", host)
 }
 
 // describeCredentialStorage renders where the credential in use is held, naming

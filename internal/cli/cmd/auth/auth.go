@@ -229,6 +229,7 @@ for.`,
 	var loginSetDefault bool
 	var loginDiscoverAliases bool
 	var loginRequireKeyring bool
+	var loginAllowInsecureStorage bool
 	loginCmd := &cobra.Command{
 		Use:   "login <host>",
 		Short: "Store credentials for a Bitbucket host",
@@ -243,9 +244,9 @@ for.`,
   printf '%s' "$STAGING_TOKEN" | bb auth login https://bitbucket-staging.example.com \
     --token-stdin --set-default=false
 
-  # Fail rather than store the credential in plaintext when there is no keyring
+  # On a host with no keyring, keep the credential in the config file in plaintext
   printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com \
-    --token-stdin --require-keyring`,
+    --token-stdin --allow-insecure-storage`,
 		Long: `Store credentials for a Bitbucket host.
 
 Prefer the stdin forms. A secret passed as a flag value appears in the process
@@ -255,9 +256,11 @@ the shell records it in history:
   printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
 
 Credentials are stored in the OS keyring. Where no keyring is available — headless
-servers, most containers, WSL without gnome-keyring — bb falls back to the config
-file in plaintext and says so. Pass --require-keyring (or set BB_REQUIRE_KEYRING=1)
-to fail instead of falling back.`,
+servers, most containers, WSL without gnome-keyring — the login fails rather than
+write the secret to disk unencrypted. Pass --allow-insecure-storage to keep it in
+the config file in plaintext instead, or set BITBUCKET_TOKEN in the environment and
+skip the login. BB_REQUIRE_KEYRING=1 and the require_keyring policy refuse
+plaintext even with --allow-insecure-storage.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			resolvedHost := strings.TrimSpace(args[0])
@@ -300,15 +303,16 @@ to fail instead of falling back.`,
 			}
 
 			stored, err := config.SaveLogin(config.LoginInput{
-				Host:           resolvedHost,
-				Aliases:        aliases,
-				Username:       loginUsername,
-				Password:       password,
-				Token:          token,
-				ClientCert:     clientCert,
-				ClientKey:      clientKey,
-				SetDefault:     loginSetDefault,
-				RequireKeyring: loginRequireKeyring,
+				Host:                 resolvedHost,
+				Aliases:              aliases,
+				Username:             loginUsername,
+				Password:             password,
+				Token:                token,
+				ClientCert:           clientCert,
+				ClientKey:            clientKey,
+				SetDefault:           loginSetDefault,
+				RequireKeyring:       loginRequireKeyring,
+				AllowInsecureStorage: loginAllowInsecureStorage,
 			})
 			if err != nil {
 				return err
@@ -349,6 +353,12 @@ to fail instead of falling back.`,
 	loginCmd.Flags().BoolVar(&loginSetDefault, "set-default", true, "Set host as default target")
 	loginCmd.Flags().BoolVar(&loginDiscoverAliases, "discover-aliases", true, "Discover host aliases from the first accessible repository clone links")
 	loginCmd.Flags().BoolVar(&loginRequireKeyring, "require-keyring", false, "Fail if the OS keyring is unavailable instead of storing credentials in plaintext")
+	// A boolean, like every flag here: it says where the secret may go, and the
+	// secret still arrives on stdin (ADR-083).
+	loginCmd.Flags().BoolVar(&loginAllowInsecureStorage, "allow-insecure-storage", false, "Where the OS keyring is unavailable, store the credential in the config file in plaintext instead of failing")
+	// One refuses plaintext and the other asks for it, so together they are a
+	// mistake to report, not one to settle by ignoring a flag the user typed.
+	loginCmd.MarkFlagsMutuallyExclusive("require-keyring", "allow-insecure-storage")
 	authCmd.AddCommand(loginCmd)
 
 	var identityHost string

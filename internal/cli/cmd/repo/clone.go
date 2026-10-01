@@ -450,6 +450,9 @@ func promptForCloneLogin(cmd *cobra.Command, cfg config.AppConfig, cloneHost str
 		saveHost = cfg.BitbucketURL
 	}
 
+	// Never in plaintext: the clone has no --allow-insecure-storage to ask for
+	// it, so where the keyring cannot hold the token nothing is stored and the
+	// error names bb auth login with that flag, and BITBUCKET_TOKEN.
 	if _, err := config.SaveLogin(config.LoginInput{Host: saveHost, Token: tokenValue, SetDefault: false}); err != nil {
 		return config.AppConfig{}, false, err
 	}

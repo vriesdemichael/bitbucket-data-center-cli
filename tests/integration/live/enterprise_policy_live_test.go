@@ -319,7 +319,7 @@ func TestLiveEnterprisePolicyAuthLoginAllowedHosts(t *testing.T) {
 	}
 
 	// Login to the allowed live host must succeed
-	output, err = executeLiveCLIWithStdin(t, harness.config.BitbucketPassword, "auth", "login", harness.config.BitbucketURL, "--username", harness.config.BitbucketUsername, "--password-stdin", "--discover-aliases=false")
+	output, err = executeLiveCLIWithStdin(t, harness.config.BitbucketPassword, "auth", "login", harness.config.BitbucketURL, "--username", harness.config.BitbucketUsername, "--password-stdin", "--discover-aliases=false", "--allow-insecure-storage")
 	if err != nil {
 		t.Fatalf("expected login to allowed live host to succeed: %v\noutput: %s", err, output)
 	}

@@ -413,7 +413,7 @@ Prefer the stdin forms. A secret passed as a flag value appears in the process a
 printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
 ```
 
-Credentials are stored in the OS keyring. Where no keyring is available — headless servers, most containers, WSL without gnome-keyring — bb falls back to the config file in plaintext and says so. Pass --require-keyring (or set BB\_REQUIRE\_KEYRING=1) to fail instead of falling back.
+Credentials are stored in the OS keyring. Where no keyring is available — headless servers, most containers, WSL without gnome-keyring — the login fails rather than write the secret to disk unencrypted. Pass --allow-insecure-storage to keep it in the config file in plaintext instead, or set BITBUCKET\_TOKEN in the environment and skip the login. BB\_REQUIRE\_KEYRING=1 and the require\_keyring policy refuse plaintext even with --allow-insecure-storage.
 
 ```bash
 # Store a personal access token, read from stdin
@@ -427,10 +427,13 @@ printf '%s' "$BITBUCKET_PASSWORD" | bb auth login https://bitbucket.example.com 
 printf '%s' "$STAGING_TOKEN" | bb auth login https://bitbucket-staging.example.com \
   --token-stdin --set-default=false
 
-# Fail rather than store the credential in plaintext when there is no keyring
+# On a host with no keyring, keep the credential in the config file in plaintext
 printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com \
-  --token-stdin --require-keyring
+  --token-stdin --allow-insecure-storage
 ```
+
+`--allow-insecure-storage`
+:   Where the OS keyring is unavailable, store the credential in the config file in plaintext instead of failing
 
 `--client-cert string`
 :   Path to PEM client certificate for mTLS

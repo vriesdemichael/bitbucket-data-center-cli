@@ -100,9 +100,9 @@ Credential storage: keyring
 ```
 
 `--token-stdin` keeps the token out of the process list and your shell history.
-The token is stored in your OS keyring; where none is available bb falls back to
-the config file in plaintext and says so — pass `--require-keyring` to fail
-instead.
+The token is stored in your OS keyring; where none is available the login fails
+unless you pass `--allow-insecure-storage`, which keeps it in the config file in
+plaintext.
 
 **Clone and browse** — no need to look up URLs:
 

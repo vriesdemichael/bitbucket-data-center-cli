@@ -146,8 +146,14 @@ and log in with it.
 Windows, Keychain on macOS, Secret Service on Linux.
 
 Where no keyring is available — headless servers, most containers, WSL without `gnome-keyring` —
-bb falls back to writing the secret in plaintext into its config file (`0600`, in a `0700`
-directory) and warns on stderr. `bb auth status` reports which is in use:
+the login fails and stores nothing, unless you ask for plaintext:
+
+```bash
+printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin --allow-insecure-storage
+```
+
+The secret then goes into the config file in plaintext (`0600`, in a `0700` directory), and bb
+warns on stderr at login and whenever it uses it. `bb auth status` reports which is in use:
 
 ```bash
 bb auth status
@@ -178,9 +184,10 @@ bb auth status --check
 Without it the exit status is zero whatever the findings. Under `--json` the exit status is always zero and the verdict is
 the `ok` field.
 
-To refuse the plaintext fallback, pass `--require-keyring` at login, or set `BB_REQUIRE_KEYRING=1`
-to enforce it fleet-wide. With the policy on, bb fails rather than degrading — including on later
-commands, if the config file already holds a plaintext credential from before the policy was set.
+To refuse plaintext even when a login asks for it, set `BB_REQUIRE_KEYRING=1`, or the
+[`require_keyring` policy](reference/system-policy.md#keys) fleet-wide. With either on, bb fails
+rather than degrading — including on later commands, if the config file already holds a plaintext
+credential from before it was set.
 
 In CI and containers, prefer supplying `BITBUCKET_TOKEN` per invocation instead of logging in at
 all. An environment variable never touches the config file and satisfies `BB_REQUIRE_KEYRING`.

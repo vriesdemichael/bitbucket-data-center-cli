@@ -22,9 +22,10 @@ type issue struct {
 // the order it shows them.
 //
 // Facts are not issues: where a setting came from, what it overrides, and that
-// a file holds a plaintext credential, which is the fallback bb uses by design
-// where no keyring exists. When keyring-backed storage is required, that
-// credential is an issue, and it arrives here as the setting's problem.
+// a file holds a plaintext credential, which a login puts there where no
+// keyring exists and the user asked for it. When keyring-backed storage is
+// required, that credential is an issue, and it arrives here as the setting's
+// problem.
 func issuesIn(diagnosis config.Diagnosis) []issue {
 	issues := []issue{}
 

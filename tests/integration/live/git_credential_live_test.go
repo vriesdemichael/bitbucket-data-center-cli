@@ -95,7 +95,7 @@ func TestLiveGitCredentialHelperAuthenticatesClone(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
 	// The secret goes over stdin: --token and --password were retired in #464.
-	loginArgs := []string{"auth", "login", harness.config.BitbucketURL, "--discover-aliases=false"}
+	loginArgs := []string{"auth", "login", harness.config.BitbucketURL, "--discover-aliases=false", "--allow-insecure-storage"}
 	loginSecret := strings.TrimSpace(harness.config.BitbucketToken)
 	if loginSecret != "" {
 		loginArgs = append(loginArgs, "--token-stdin")
