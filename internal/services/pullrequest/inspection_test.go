@@ -5,9 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 func newInspectionService(t *testing.T, handler http.HandlerFunc) *Service {
@@ -15,14 +12,7 @@ func newInspectionService(t *testing.T, handler http.HandlerFunc) *Service {
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 
-	t.Setenv("BITBUCKET_URL", server.URL)
-	t.Setenv("BITBUCKET_PROJECT_KEY", "TEST")
-
-	cfg, err := config.LoadFromEnv()
-	if err != nil {
-		t.Fatalf("failed to load config: %v", err)
-	}
-	return NewService(httpclient.NewFromConfig(cfg))
+	return serviceAgainst(server.URL)
 }
 
 var inspectionRepo = RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
