@@ -104,7 +104,8 @@ func sameDir(t *testing.T, a, b string) bool {
 }
 
 // runGitIn runs git in dir with an explicit environment and returns trimmed
-// output, skipping the test if git is unavailable.
+// output. Without git on PATH the test fails: git is a declared dependency of
+// the unit suite, and a skip would report this check as run (ADR-016).
 func runGitIn(t *testing.T, environment []string, dir string, args ...string) string {
 	t.Helper()
 
@@ -115,7 +116,7 @@ func runGitIn(t *testing.T, environment []string, dir string, args ...string) st
 	output, err := command.CombinedOutput()
 	if err != nil {
 		if errors.Is(err, exec.ErrNotFound) {
-			t.Skip("git is not available")
+			t.Fatalf("git is not on PATH, and the unit suite needs it: %v", err)
 		}
 		t.Fatalf("git %s in %s failed: %v: %s", strings.Join(args, " "), dir, err, output)
 	}

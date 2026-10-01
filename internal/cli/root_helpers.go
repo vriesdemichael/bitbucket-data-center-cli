@@ -31,6 +31,11 @@ var gitBackendFactory = func() git.Backend {
 	return execgit.New()
 }
 
+// workingDirectory is where repository inference starts looking. It is a seam
+// so a test can make it fail on every system: the one real way to make os.Getwd
+// fail is to delete the working directory, and Windows refuses that.
+var workingDirectory = os.Getwd
+
 type inferredRepositoryContext struct {
 	Host       string
 	ProjectKey string
@@ -193,7 +198,7 @@ func gitRepositoryCandidates(cfg config.AppConfig) ([]inferredRepositoryContext,
 		return nil, nil
 	}
 
-	cwd, err := os.Getwd()
+	cwd, err := workingDirectory()
 	if err != nil {
 		return nil, nil
 	}

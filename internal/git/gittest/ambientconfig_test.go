@@ -112,12 +112,16 @@ func TestFailureMessageIsActionable(t *testing.T) {
 }
 
 // The guard is only useful if it can actually read the repository it runs in.
+//
+// That repository is the checkout the tests run from, so this needs one, and
+// git on PATH to read it. Outside a checkout the guard compares nothing; the
+// test says so rather than skipping, which would report it as checked.
 func TestSnapshotAmbientConfigReadsTheRepository(t *testing.T) {
 	t.Parallel()
 
 	current := SnapshotAmbientConfig()
 	if !current.Available {
-		t.Skip("not running inside a git repository")
+		t.Fatal("no repository was found from the working directory: run the unit tests from a git checkout of bb, with git on PATH")
 	}
 
 	if len(current.entries) == 0 {
@@ -325,8 +329,12 @@ func TestNothingIsPlacedOutsideARepository(t *testing.T) {
 
 	outside := t.TempDir()
 
-	if _, err := repositoryRoot(outside); err == nil {
-		t.Skip("the temporary directory is inside a repository; nothing to assert")
+	// A temporary directory inside a repository leaves nothing to assert, and
+	// a skip would report the branch as covered. The environment is what is
+	// wrong, so the test names it.
+	if root, err := repositoryRoot(outside); err == nil {
+		t.Fatalf("the temporary directory %s is inside the repository at %s; "+
+			"point TMPDIR (TEMP on Windows) at a directory outside any repository", outside, root)
 	}
 
 	complaints := &bytes.Buffer{}

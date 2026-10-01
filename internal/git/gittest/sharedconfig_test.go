@@ -39,8 +39,11 @@ func git(t *testing.T, directory string, arguments ...string) string {
 func repositoryWithTwoWorktrees(t *testing.T) (observer string, sibling string, upstream string) {
 	t.Helper()
 
+	// git is a declared dependency of the unit suite. Without it these
+	// fixtures cannot be built, and a skip would report the guard as tested
+	// (ADR-016).
 	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git is not installed")
+		t.Fatalf("git is not on PATH, and the unit suite needs it: %v", err)
 	}
 
 	root := t.TempDir()

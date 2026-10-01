@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -977,25 +976,17 @@ func TestInferenceHelperFunctions(t *testing.T) {
 	})
 
 	t.Run("infer context returns nil when working directory cannot be resolved", func(t *testing.T) {
-		if runtime.GOOS == "windows" {
-			t.Skip("simulates an unresolvable CWD by deleting it; Windows forbids removing a directory that is the process working directory")
-		}
+		// A backend that would answer, so nil can only come from the working
+		// directory failing.
 		gitBackendFactory = func() git.Backend {
-			return inferenceGitBackendStub{repoRoot: "/tmp/repo", remotes: []git.Remote{{Name: "origin", URL: "https://bitbucket.local/scm/PRJ/repo.git"}}}
+			return inferenceGitBackendStub{repoRoot: "/tmp/repo", remotes: []git.Remote{{Name: "origin", URL: "https://bitbucket.local:7990/scm/PRJ/repo.git"}}}
 		}
 
-		originalDirectory, err := os.Getwd()
-		if err != nil {
-			t.Fatalf("getwd failed: %v", err)
+		originalWorkingDirectory := workingDirectory
+		workingDirectory = func() (string, error) {
+			return "", errors.New("getwd: no such file or directory")
 		}
-		badDirectory := t.TempDir()
-		if err := os.Chdir(badDirectory); err != nil {
-			t.Fatalf("chdir failed: %v", err)
-		}
-		if err := os.RemoveAll(badDirectory); err != nil {
-			t.Fatalf("remove temp directory failed: %v", err)
-		}
-		t.Cleanup(func() { _ = os.Chdir(originalDirectory) })
+		t.Cleanup(func() { workingDirectory = originalWorkingDirectory })
 
 		inferred, err := inferRepositoryContextFromGit(config.AppConfig{BitbucketURL: "https://bitbucket.local:7990"})
 		if err != nil {

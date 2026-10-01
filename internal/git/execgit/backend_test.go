@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -50,34 +49,22 @@ func TestVersion(t *testing.T) {
 	}
 }
 
+// Not parallel: the stand-in git replaces PATH for the process.
 func TestClonePlacesOptionsBeforeRepositoryAndDirectory(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("path wrapper script is shell-specific")
-	}
-
+	// New's own timeout: the stand-in is a fresh copy of this binary, and a
+	// virus scanner may hold its first start for longer than a short one.
 	backend := New()
-	backend.Timeout = 5 * time.Second
 
-	temporary := t.TempDir()
-	logPath := filepath.Join(temporary, "git-args.log")
-	gitWrapper := filepath.Join(temporary, "git")
-	script := "#!/bin/sh\nprintf '%s\n' \"$@\" > \"$BB_GIT_ARGS_LOG\"\n"
-	if err := os.WriteFile(gitWrapper, []byte(script), 0o755); err != nil {
-		t.Fatalf("failed to write git wrapper: %v", err)
-	}
+	logPath := installStandInGit(t)
 
-	originalPath := os.Getenv("PATH")
-	t.Setenv("PATH", temporary+string(os.PathListSeparator)+originalPath)
-	t.Setenv("BB_GIT_ARGS_LOG", logPath)
-
-	cloneDir := filepath.Join(temporary, "clone")
+	cloneDir := filepath.Join(t.TempDir(), "clone")
 	if err := backend.Clone(context.Background(), "https://example.local/scm/PRJ/repo.git", git.CloneOptions{
 		Directory: cloneDir,
 		Branch:    "main",
 		Depth:     1,
 		ExtraArgs: []string{"--filter=blob:none", "--origin", "upstream"},
 	}); err != nil {
-		t.Fatalf("expected clone to succeed through wrapper, got: %v", err)
+		t.Fatalf("expected clone to succeed through the stand-in git, got: %v", err)
 	}
 
 	logged, err := os.ReadFile(logPath)
