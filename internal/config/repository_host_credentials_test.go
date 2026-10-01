@@ -59,10 +59,6 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BB_CONFIG_PATH", storedWithDefaultHostCredential(t, storedToken))
 		t.Setenv("BB_WORKSPACE_CONFIG_PATH", workspacePath)
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
-		t.Setenv("BITBUCKET_URL", "")
-		t.Setenv("BITBUCKET_TOKEN", "")
-		os.Unsetenv("BITBUCKET_URL")
-		os.Unsetenv("BITBUCKET_TOKEN")
 		// Away from any .env above the package: LoadFromEnv reads the nearest.
 		t.Chdir(t.TempDir())
 
@@ -95,9 +91,7 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		// Unset rather than empty: godotenv fills only what the environment
 		// lacks, and an empty value is something the environment has.
 		t.Setenv("BITBUCKET_URL", "")
-		t.Setenv("BITBUCKET_TOKEN", "")
 		os.Unsetenv("BITBUCKET_URL")
-		os.Unsetenv("BITBUCKET_TOKEN")
 		t.Chdir(working)
 
 		cfg, err := LoadFromEnv()
@@ -120,8 +114,6 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BB_CONFIG_PATH", storedWithDefaultHostCredential(t, storedToken))
 		t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
-		t.Setenv("BITBUCKET_TOKEN", "")
-		os.Unsetenv("BITBUCKET_TOKEN")
 		t.Setenv("BITBUCKET_URL", "https://other.example.com")
 		t.Chdir(t.TempDir())
 
@@ -148,10 +140,6 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BB_CONFIG_PATH", storedWithDefaultHostCredential(t, storedToken))
 		t.Setenv("BB_WORKSPACE_CONFIG_PATH", workspacePath)
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
-		t.Setenv("BITBUCKET_URL", "")
-		t.Setenv("BITBUCKET_TOKEN", "")
-		os.Unsetenv("BITBUCKET_URL")
-		os.Unsetenv("BITBUCKET_TOKEN")
 		t.Chdir(t.TempDir())
 
 		cfg, err := LoadFromEnv()
@@ -178,10 +166,9 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BB_CONFIG_PATH", storedWithDefaultHostCredential(t, storedToken))
 		t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
+		// Unset rather than empty, so the .env can supply it.
 		t.Setenv("BITBUCKET_URL", "")
-		t.Setenv("BITBUCKET_TOKEN", "")
 		os.Unsetenv("BITBUCKET_URL")
-		os.Unsetenv("BITBUCKET_TOKEN")
 		t.Chdir(working)
 
 		cfg, err := LoadFromEnv()
@@ -222,8 +209,6 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		t.Setenv("BB_CONFIG_PATH", path)
 		t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "0")
-		t.Setenv("BITBUCKET_TOKEN", "")
-		os.Unsetenv("BITBUCKET_TOKEN")
 		t.Setenv("BITBUCKET_URL", "https://trusted.example.com")
 		t.Chdir(t.TempDir())
 

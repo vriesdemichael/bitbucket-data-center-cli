@@ -139,8 +139,6 @@ func TestTwoConfigFilesKeepSeparateCredentialsForOneHost(t *testing.T) {
 		t.Helper()
 		t.Setenv("BB_CONFIG_PATH", path)
 		t.Setenv("BB_DISABLE_STORED_CONFIG", "")
-		t.Setenv("BITBUCKET_TOKEN", "")
-		t.Setenv("BITBUCKET_URL", "")
 
 		cfg, err := LoadFromEnv()
 		if err != nil {
@@ -170,8 +168,6 @@ func TestALegacyKeyringEntryStillResolves(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", path)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
-	t.Setenv("BITBUCKET_TOKEN", "")
-	t.Setenv("BITBUCKET_URL", "")
 
 	if _, err := SaveLogin(LoginInput{Host: host, Token: "current"}); err != nil {
 		t.Fatalf("login: %v", err)
