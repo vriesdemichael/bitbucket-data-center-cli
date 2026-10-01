@@ -13,7 +13,7 @@ The release comes from a mirror instead of `https://api.github.com` when one is 
 
 Every update URL is https by default: the base URL, each asset URL and every redirect. Plain HTTP needs `bb update --allow-http` or `BB_ALLOW_HTTP_UPDATE`, and warns on every run. A user's and a workspace's configuration have no key for it, because a workspace file arrives with a cloned repository. `allow_http_update` in system policy decides for every user when it is set: `false` refuses the opt-in and any `http://` update URL with exit code 3, and `true` permits plain HTTP without one.
 
-Do not let `bb update` run under any of the three switches. Resolve the manifest and every download through the configured mirror. Hold every request the updater sends, redirects included, to the plain-HTTP permission rather than checking the base URL alone.
+Hold every request the updater sends, redirects included, to the plain-HTTP permission rather than checking the base URL alone.
 
 A fleet under central endpoint management deploys software through its own packaging, not through each workstation replacing its binary, and an air-gapped enclave cannot reach api.github.com or github.com, so releases, checksums and Sigstore bundles are mirrored inside it. Who may sign what a mirror serves is ADR-063.
 

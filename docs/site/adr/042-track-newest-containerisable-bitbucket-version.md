@@ -13,11 +13,10 @@ Dependabot proposes every published release: .github/dependabot.yml watches /doc
 
 Do not open a release bump by hand: Dependabot has proposed it already. Editing the tag locally to reproduce or bisect a release-specific bug is fine. Do not add an ignore for atlassian/bitbucket to .github/dependabot.yml; it suppresses the proposal, so nobody learns a release exists and the suite never runs against it. When adopting a release, run `task openapi:refresh` in the same change.
 
-A release stated in more than one place drifts: a copy stops matching what the suite runs, and a reader trusts the copy. Whether a release can be tracked is not judged in advance; its pull request passes or fails. Adopting it changes what bb claims to support, which is why a person merges it.
+A release stated in more than one place drifts: a copy stops matching what the suite runs, and a reader trusts the copy. Adopting a release changes what bb claims to support, which is why a person merges it.
 
 ## Not chosen
 
 - **Pin a supported release in configuration and documentation**: The copies drift at the next upgrade, and a pin claims support that nothing verifies.
 - **Merge the product image bump unattended**: It changes a user-facing claim, and a bare bump does not pass openapi:verify.
-- **Ignore atlassian/bitbucket in Dependabot and bump the tag by hand**: Hides that a release exists, so the suite never runs against it and nobody knows whether bb could move.
 - **Remove bitbucketVersionTarget from bb auth status**: Scripts read the field. It reports what BITBUCKET_VERSION_TARGET records for an operator's own environment, and bb does not act on it.
