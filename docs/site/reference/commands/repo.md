@@ -831,7 +831,7 @@ bb repo comment delete --commit a1b2c3d --id 1389396 --repo PROJ/repo
 :   Expected comment version
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo comment`](#bb-repo-comment):
 
@@ -1245,7 +1245,7 @@ bb repo default-task delete 3 --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo default-task`](#bb-repo-default-task):
 
@@ -1709,7 +1709,7 @@ bb repo label remove backend --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo label`](#bb-repo-label):
 
@@ -1910,7 +1910,7 @@ bb repo permissions revoke backend-team --group --repo PROJ/repo
 :   Treat the argument as a group rather than a user
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo permissions`](#bb-repo-permissions):
 
@@ -2049,7 +2049,7 @@ bb repo settings auto-decline delete --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings auto-decline`](#bb-repo-settings-auto-decline):
 
@@ -2164,7 +2164,7 @@ bb repo settings auto-merge delete --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings auto-merge`](#bb-repo-settings-auto-merge):
 
@@ -2597,7 +2597,7 @@ bb repo settings security permissions groups revoke backend-team --repo PROJ/rep
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
 
@@ -2721,7 +2721,7 @@ bb repo settings security permissions users revoke alice --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
 
@@ -2834,7 +2834,7 @@ bb repo settings workflow webhooks delete 12 --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
 
@@ -3025,7 +3025,7 @@ bb repo ssh-key remove 31 --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug or --project
 
 Inherited from [`bb repo ssh-key`](#bb-repo-ssh-key):
 

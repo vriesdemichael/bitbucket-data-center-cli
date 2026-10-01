@@ -88,8 +88,8 @@ func ConfirmDestructive(request Request) error {
 		// The remedy is what to do, not what was going to happen, and only what
 		// counts as naming the repository. The resource is not something any
 		// command takes in that shape, and BITBUCKET_PROJECT_KEY with
-		// BITBUCKET_REPO_SLUG names nothing: inside a checkout bb still infers
-		// the repository, and repo delete does not count them. Nor does the
+		// BITBUCKET_REPO_SLUG names nothing: they are set for every command
+		// rather than written down for this one (TargetNamed). Nor does the
 		// message say where the repository came from, since that may be the
 		// git remote or the environment.
 		return apperrors.New(
@@ -422,11 +422,13 @@ func fillUnattended(request Request, absent []Missing, reason string) error {
 // The rule was implemented once, correctly, on repo delete, and stayed there:
 // thirty-four other destructive commands had no confirmation and no --yes at
 // all. Copying seven lines to thirty-four call sites is how the copies drift,
-// so the seven lines live here and the call sites pass what differs.
-func ConfirmDeleteOf(cmd *cobra.Command, machineOutput, yes, targetExplicit bool, resource string) error {
+// so the seven lines live here and the call sites pass what differs. naming is
+// Request.Naming: what names the target, when it was not named.
+func ConfirmDeleteOf(cmd *cobra.Command, machineOutput, yes, targetExplicit bool, naming, resource string) error {
 	request := RequestFor(cmd, machineOutput)
 	request.Yes = yes
 	request.TargetExplicit = targetExplicit
+	request.Naming = naming
 	request.Resource = resource
 	request.Flag = "--yes"
 	if cmd != nil {
@@ -436,17 +438,26 @@ func ConfirmDeleteOf(cmd *cobra.Command, machineOutput, yes, targetExplicit bool
 	return ConfirmDestructive(request)
 }
 
-// TargetNamed reports whether the caller named the repository, rather than
-// having it filled in from the git remote.
+// TargetNamed reports whether the caller wrote the repository down for this
+// invocation with --repo, which is what lets --yes apply to a destructive
+// command whose target is in a repository (ADR-073).
 //
-// Changed alone is not "the caller named it": inference sets --repo and marks
-// it Changed so every command can resolve a target, which silently made an
-// inferred repository count as explicit and let --yes apply to the one you
-// happened to be standing in (#472). A branch named on the command line does
-// not rescue that -- `bb branch delete main` names the branch and infers the
-// repository, which is how a probe deleted main.
+// A repository from anywhere else was not written down. BITBUCKET_PROJECT_KEY
+// and BITBUCKET_REPO_SLUG are set for every command rather than this one, and
+// never set --repo; nor does an empty --repo name anything, since the command
+// then takes the repository from them. Changed alone is not "the caller named
+// it" either: inference sets --repo from the git remote and marks it Changed
+// so every command can resolve a target, which let --yes apply to the
+// repository the caller happened to be standing in (#472). A branch named on
+// the command line does not rescue that -- `bb branch delete main` names the
+// branch and infers the repository, which is how a probe deleted main.
 func TargetNamed(cmd *cobra.Command, repositoryWasInferred func() bool) bool {
-	if cmd == nil || !cmd.Flags().Changed("repo") {
+	if cmd == nil {
+		return false
+	}
+
+	repo := cmd.Flags().Lookup("repo")
+	if repo == nil || !repo.Changed || strings.TrimSpace(repo.Value.String()) == "" {
 		return false
 	}
 

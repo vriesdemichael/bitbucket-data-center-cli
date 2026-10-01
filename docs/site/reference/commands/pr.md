@@ -2533,7 +2533,7 @@ bb pr review reviewer remove 42 --user alice --repo PROJ/repo
 :   Reviewer username
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb pr`](#bb-pr):
 

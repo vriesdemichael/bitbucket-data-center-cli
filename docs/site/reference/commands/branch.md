@@ -174,7 +174,7 @@ bb branch delete feature/x --repo PROJ/repo --end-point a1b2c3d --yes
 :   Expected commit at branch tip
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb branch`](#bb-branch):
 
@@ -523,7 +523,7 @@ bb branch restriction delete 7 --repo PROJ/repo
 ```
 
 `-y, --yes`
-:   Confirm without being asked
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb branch`](#bb-branch):
 
