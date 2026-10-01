@@ -27,6 +27,10 @@ var sealPattern = regexp.MustCompile(`testsupport\.Seal(?:edMain|AmbientEnvironm
 // liveBuildTag matches the constraint that marks the integration suite.
 var liveBuildTag = regexp.MustCompile(`(?m)^//go:build .*\blive\b`)
 
+// configPackage is the package whose tests load the configuration because
+// loading it is their subject, relative to the repository root.
+const configPackage = "internal/config"
+
 // TestTheSealIsInstalledWhereTestsLoadTheConfiguration is the guard on the seal.
 //
 // ADR-082 says a unit test process inherits nothing. The enforcement is per
@@ -95,7 +99,11 @@ func TestTheSealIsInstalledWhereTestsLoadTheConfiguration(t *testing.T) {
 			return nil
 		}
 
-		directory := filepath.ToSlash(filepath.Dir(path))
+		relative, relErr := filepath.Rel(root, filepath.Dir(path))
+		if relErr != nil {
+			return relErr
+		}
+		directory := filepath.ToSlash(relative)
 		if configLoadPattern.MatchString(source) {
 			loadsConfig[directory] = true
 		}
@@ -110,13 +118,17 @@ func TestTheSealIsInstalledWhereTestsLoadTheConfiguration(t *testing.T) {
 	}
 
 	// A detector that stopped matching would report perfect compliance, which
-	// is the failure mode ADR-067 exists to catch. Several packages are known
-	// to load configuration in their tests; finding almost none means the
-	// pattern broke rather than that the repository improved.
-	if len(loadsConfig) < 4 {
+	// is the failure mode ADR-067 exists to catch. How many packages load the
+	// configuration in their tests says nothing about that: passing values
+	// through the seams takes the loads out, and the count falls for a good
+	// reason. internal/config is the loader's own package, and its tests load
+	// the configuration for as long as there is one, so a detector that misses
+	// it has broken, however many others it finds.
+	if !loadsConfig[configPackage] {
 		t.Fatalf(
-			"expected several packages whose tests load configuration, found %d: %v\nThe detector is probably broken, not the repository.",
-			len(loadsConfig), sortedKeys(loadsConfig),
+			"the detector does not see %s load the configuration, and its tests are the loader's own; "+
+				"it found these: %v\nThe detector is broken, not the repository.",
+			configPackage, sortedKeys(loadsConfig),
 		)
 	}
 
@@ -137,6 +149,39 @@ func TestTheSealIsInstalledWhereTestsLoadTheConfiguration(t *testing.T) {
 				"stored config writes its own and points BB_CONFIG_PATH at it.",
 			len(offenders), strings.Join(offenders, "\n  "),
 		)
+	}
+}
+
+// TestTheSealDetectorReadsEverySpelling holds the detector's patterns to the
+// lines they are for. internal/config is found by one spelling, so a pattern
+// that lost another would still find it while missing every package that
+// writes only that one.
+func TestTheSealDetectorReadsEverySpelling(t *testing.T) {
+	for pattern, lines := range map[*regexp.Regexp]map[string]bool{
+		configLoadPattern: {
+			"cfg, err := config.LoadWithOverrides(overrides)":        true,
+			"cfg, err := config.LoadFromEnv()":                       true,
+			"cfg, err := LoadWithOverrides(Overrides{})":             true,
+			"cfg, err := LoadFromEnv()":                              true,
+			"func TestLoadFromEnvSystemCAFile(t *testing.T) {":       false,
+			"func TestLoadWithOverridesKeepsTheFlag(t *testing.T) {": false,
+		},
+		sealPattern: {
+			"os.Exit(testsupport.SealedMain(m))":   true,
+			"testsupport.SealAmbientEnvironment()": true,
+			"testsupport.SkipWindowsMousetrap()":   false,
+		},
+		liveBuildTag: {
+			"//go:build live\n\npackage live":             true,
+			"//go:build live && !windows\n\npackage live": true,
+			"//go:build !windows\n\npackage config":       false,
+		},
+	} {
+		for line, want := range lines {
+			if got := pattern.MatchString(line); got != want {
+				t.Errorf("%s matches %q: %v, want %v", pattern, line, got, want)
+			}
+		}
 	}
 }
 
