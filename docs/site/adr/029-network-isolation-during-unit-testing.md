@@ -5,13 +5,13 @@ search:
 
 # ADR-029: Network Isolation during Unit Testing
 
-Implement a project-wide network isolation policy for unit tests by introducing a SafeTransport RoundTripper that blocks all non-local HTTP requests when BB_BLOCK_EXTERNAL_NETWORK=1 is set.
+Unit tests reach nothing beyond the machine. `network.SafeTransport`, the round tripper bb's HTTP clients are built on, refuses any host but localhost, 127.0.0.1 and ::1 while BB_BLOCK_EXTERNAL_NETWORK is 1, and the error names the host it refused. The seal a unit test package installs (ADR-082) sets it, so a test that reaches out fails at once.
 
-Ensure all unit tests remain isolated from the external network. Mocks must use httptest.Server or local loopback addresses (127.0.0.1, localhost, ::1). Any test attempting to reach an  external or unconfigured domain must fail immediately with a descriptive error.
+Build every HTTP client on `network.NewSafeTransport`, so the block covers it. A test that needs a server uses a loopback listener, within what ADR-079 allows. A test that needs a connection to fail, or must show that none was made, points at `testsupport.RefusedURL`, a loopback port no listener is ever given.
 
-Unintended network calls in tests lead to flaky behavior, slow suites, and build failures in isolated CI environments. Standardizing on local-only communication during testing improves stability and developer confidence.
+An unintended network call makes a suite slow and flaky, fails on an isolated CI runner, and lets a command under test act on the world, such as installing a downloaded release over the test binary.
 
 ## Not chosen
 
-- **Depend on manual environment configuration**: Error-prone and fails to catch new tests that accidentally leak network calls.
-- **Use a general mock library only**: Doesn't provide a project-wide safety net for accidental direct http.Client usage.
+- **Depend on manual environment configuration**: Error-prone, and it misses a new test that leaks a network call.
+- **Use a general mock library only**: Gives no project-wide safety net for a direct http.Client.

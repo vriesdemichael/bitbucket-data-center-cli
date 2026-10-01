@@ -5,12 +5,12 @@ search:
 
 # ADR-017: Undocumented behavior registry via live tests
 
-Treat undocumented or surprising Bitbucket behavior as first-class compatibility knowledge by encoding each finding as an explicit live test with a descriptive name and rationale.
+Each undocumented or surprising thing Bitbucket does is recorded as a live test that asserts it, named for what the server does, with a comment saying why it matters to bb. Where the published specification is wrong about it, docs/openapi/fixes.yaml records the correction as well (ADR-028).
 
-When discovering quirks, add or update a targeted live test and include a concise explanation in test naming or adjacent documentation. Do not rely on memory or ad-hoc notes for behavior exceptions.
+When you find a quirk, add or update a targeted live test in the same change as the code that depends on it. Do not keep it in memory, in a note, or in a mock.
 
-Executable behavior knowledge prevents regressions and creates durable project memory. It is especially important for APIs with inconsistent documentation quality.
+A test keeps the knowledge true. When a Bitbucket release changes the behaviour, the test fails, where a note would go on describing the old one. APIs whose documentation is uneven need this most.
 
 ## Not chosen
 
-- **Track quirks only in prose docs**: Not enforceable and prone to drift.
+- **Track quirks only in prose docs**: Not enforceable, and prone to drift.
