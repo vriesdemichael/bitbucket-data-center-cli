@@ -278,16 +278,14 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 				selector = *repositorySelector
 			}
 
-			// A named target is the one the caller wrote down. The environment
-			// carries an inferred one too -- applyInferredRepositoryContext
-			// fills BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG from the git
-			// remote -- and that is indistinguishable from an operator setting
-			// them, so neither counts as naming the repository here (ADR-073).
-			// Changed alone is not "the caller named it": inference sets the
-			// flag and marks it Changed so every command can resolve a target,
-			// which silently made an inferred repository count as explicit and
-			// let --yes apply to the one you were standing in. That is the
-			// hazard #472 reports, reintroduced by the fix for it.
+			// A named target is the one the caller wrote down: a PROJECT/slug
+			// argument or --repo. BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG
+			// supply a repository too, but one set for every command rather
+			// than written down for this one, so it does not count as naming
+			// the repository here (ADR-073). Changed alone is not "the caller
+			// named it" either: inference sets --repo from the git remote and
+			// marks it Changed so every command can resolve a target, and --yes
+			// must not apply to the repository the caller is standing in.
 			targetExplicit := cmd.Flags().Changed("repo") &&
 				!(deps.RepositoryWasInferred != nil && deps.RepositoryWasInferred())
 			if len(args) == 1 {
@@ -337,6 +335,7 @@ func newRepoDeleteCommand(deps Dependencies, repositorySelector *string, isAlias
 			request := prompt.RequestFor(cmd, deps.JSONEnabled())
 			request.Yes = confirmed
 			request.TargetExplicit = targetExplicit
+			request.Naming = "as a PROJECT/slug argument or with --repo PROJECT/slug"
 			request.Resource = fullName
 			request.Flag = "--yes"
 			if err := prompt.ConfirmDestructive(request); err != nil {

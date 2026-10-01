@@ -42,9 +42,15 @@ type Request struct {
 
 	// TargetExplicit reports whether the caller named the target rather than
 	// letting it be inferred. A safety flag that works on an inferred target is
-	// not a safety flag: bb repo delete deleted the repository you were
-	// standing in, with no arguments at all.
+	// not a safety flag: it would apply to the repository the caller happens
+	// to be standing in.
 	TargetExplicit bool
+
+	// Naming completes "name it ..." in the refusal of --yes on a target that
+	// was not named: what the command counts as naming its repository. Empty
+	// means "with --repo PROJECT/slug", which every command with a repository
+	// takes.
+	Naming string
 
 	// Resource is what will be destroyed, as the person must type it back.
 	Resource string
@@ -79,15 +85,19 @@ func ConfirmDestructive(request Request) error {
 		// gh reaches the same answer for the same reason: --yes on an inferred
 		// target is the accident it was meant to prevent.
 		//
-		// The remedy is what to do, not what was going to happen. It named the
-		// resource -- "pass PROJ/repo branch feature to confirm" -- which is
-		// not something that can be passed to anything, and a pipeline running
-		// inside a checkout is exactly where this is read.
+		// The remedy is what to do, not what was going to happen, and only what
+		// counts as naming the repository. The resource is not something any
+		// command takes in that shape, and BITBUCKET_PROJECT_KEY with
+		// BITBUCKET_REPO_SLUG names nothing: inside a checkout bb still infers
+		// the repository, and repo delete does not count them. Nor does the
+		// message say where the repository came from, since that may be the
+		// git remote or the environment.
 		return apperrors.New(
 			apperrors.KindValidation,
 			fmt.Sprintf(
-				"%s only applies when the target is named explicitly, and bb took the repository from the git remote; name it with --repo PROJECT/slug, or set BITBUCKET_PROJECT_KEY and BITBUCKET_REPO_SLUG",
+				"%s only applies when the target is named explicitly, and the repository was not named; name it %s",
 				request.Flag,
+				request.naming(),
 			),
 			nil,
 		)
@@ -101,6 +111,15 @@ func ConfirmDestructive(request Request) error {
 	}
 
 	return confirmDeletion(request.In, request.Out, request.Resource, request.destruction())
+}
+
+// naming is how to name the repository, for the refusal of --yes to suggest.
+func (request Request) naming() string {
+	if strings.TrimSpace(request.Naming) == "" {
+		return "with --repo PROJECT/slug"
+	}
+
+	return strings.TrimSpace(request.Naming)
 }
 
 // verb is what the command does, for the question and the refusal to say.
