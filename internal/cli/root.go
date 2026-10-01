@@ -513,8 +513,8 @@ func (options *rootOptions) loadConfig() (config.AppConfig, error) {
 	return options.loadConfigWithOverrides(config.Overrides{})
 }
 
-// loadConfigWithOverrides is loadConfig for the commands that take a --host or
-// --token flag, which have to steer the resolution rather than inherit it.
+// loadConfigWithOverrides is loadConfig for the commands that take a --host
+// flag, which have to steer the resolution rather than inherit it.
 func (options *rootOptions) loadConfigWithOverrides(overrides config.Overrides) (config.AppConfig, error) {
 	cfg, err := config.LoadWithOverrides(options.merge(overrides))
 	if err != nil {
@@ -719,10 +719,9 @@ func hasPositionalPlaceholder(use string) bool {
 
 // merge layers a command's own overrides on top of the invocation's flags.
 //
-// A command that takes --host or --token steers resolution for itself; the
-// global flags apply to every command. Both are per-invocation values now, so
-// the two compose here rather than racing to write the same environment
-// variable.
+// A command that takes --host steers resolution for itself; the global flags
+// apply to every command. Both are per-invocation values, so the two compose
+// here rather than racing to write the same environment variable.
 func (options *rootOptions) merge(command config.Overrides) config.Overrides {
 	if options == nil {
 		return command
