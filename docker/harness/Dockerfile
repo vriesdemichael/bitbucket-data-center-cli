@@ -21,7 +21,7 @@
 # at build time so nothing has to be kept in sync by hand. scripts/stack.sh
 # builds this same file on another release's image for a run against an older
 # release, replacing only this line.
-FROM atlassian/bitbucket:10.4.3
+FROM atlassian/bitbucket:10.5.0
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV JAVA_HOME=/opt/java/openjdk
