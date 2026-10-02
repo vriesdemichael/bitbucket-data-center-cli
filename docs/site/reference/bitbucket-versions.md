@@ -18,7 +18,9 @@ gives the same answer as its verdict: the run would fail, as `unsupported`.
 | Capability | From | On an earlier release |
 |---|---|---|
 | A required build that spares pull requests or applies to the merge queue: `requiredForPullRequest: false` or `requiredForMergeQueue: true` in `bb build required create` or `update` | 10.2 | Refused. Bitbucket would store the check and ignore both fields, so it would block every pull request. A check reads back as applying to pull requests and not to a merge queue, which that release does not have. |
+| A required build or default reviewer condition matching the default branch: a `DEFAULT_BRANCH` ref matcher in `bb build required create` or `update`, or in `bb reviewer condition create` or `update` | 10.2 | Refused. Bitbucket refuses the required build and fails on the condition with a server error. |
 | A default reviewer condition naming reviewer groups: `reviewerGroups` in `bb reviewer condition create` or `update` | 9.5 | Refused. Bitbucket would store the condition without the groups. |
+| A default reviewer condition required to name reviewers or reviewer groups, in `bb reviewer condition create` or `update` | 9.5 | A condition naming no reviewers is stored if it requires at least one approval, and refused if it requires none. A reviewer named without an id is refused as invalid rather than not found. A dry run predicts what that release does. |
 | A `no-creates` branch restriction: `--type no-creates` on `bb branch restriction` and `bb project branch-restriction` | 9.4 | `create` and `update` are refused. `list --type no-creates` answers with none, which is what that release holds. |
 | A build status naming its repository: `repository` in what `bb --json build get <commit> --key <key> --repo <project>/<slug>` prints | 9.4 | `bb` names the repository the status was read through, as a later release does. |
 
