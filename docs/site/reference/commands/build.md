@@ -161,30 +161,30 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
-  id?                     integer                                             Check identifier, which update and delete
-                                                                              address.
-  buildParentKeys?        list of string                                      Build keys that must be green before a
-                                                                              pull request can merge.
-  refMatcher?             object                                              Which target branches the check is
-                                                                              enforced on.
-    id?                   string                                              Matcher value: a branch name, a pattern,
-                                                                              or a model branch id depending on type.
-    displayId?            string                                              Human-readable form of the same thing.
-    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                              MODEL_CATEGORY, which decides how id is
-                                                                              read.
-  exemptRefMatcher?       object                                              Which source branches are exempt from the
-                                                                              check.
-    id?                   string                                              Matcher value: a branch name, a pattern,
-                                                                              or a model branch id depending on type.
-    displayId?            string                                              Human-readable form of the same thing.
-    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                              MODEL_CATEGORY, which decides how id is
-                                                                              read.
-  requiredForPullRequest  boolean                                             Whether the check is enforced on pull
-                                                                              requests.
-  requiredForMergeQueue   boolean                                             Whether the check is enforced on
-                                                                              merge-queue merges.
+  id?                     integer                                                            Check identifier, which update and
+                                                                                             delete address.
+  buildParentKeys?        list of string                                                     Build keys that must be green before a
+                                                                                             pull request can merge.
+  refMatcher?             object                                                             Which target branches the check is
+                                                                                             enforced on.
+    id?                   string                                                             Matcher value: a branch name, a pattern,
+                                                                                             or a model branch id depending on type.
+    displayId?            string                                                             Human-readable form of the same thing.
+    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                             MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                             decides how id is read.
+  exemptRefMatcher?       object                                                             Which source branches are exempt from
+                                                                                             the check.
+    id?                   string                                                             Matcher value: a branch name, a pattern,
+                                                                                             or a model branch id depending on type.
+    displayId?            string                                                             Human-readable form of the same thing.
+    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                             MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                             decides how id is read.
+  requiredForPullRequest  boolean                                                            Whether the check is enforced on pull
+                                                                                             requests.
+  requiredForMergeQueue   boolean                                                            Whether the check is enforced on
+                                                                                             merge-queue merges.
 </code></pre>
 </details>
 
@@ -255,30 +255,30 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data                      list of object
-  id?                     integer                                             Check identifier, which update and delete
-                                                                              address.
-  buildParentKeys?        list of string                                      Build keys that must be green before a
-                                                                              pull request can merge.
-  refMatcher?             object                                              Which target branches the check is
-                                                                              enforced on.
-    id?                   string                                              Matcher value: a branch name, a pattern,
-                                                                              or a model branch id depending on type.
-    displayId?            string                                              Human-readable form of the same thing.
-    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                              MODEL_CATEGORY, which decides how id is
-                                                                              read.
-  exemptRefMatcher?       object                                              Which source branches are exempt from the
-                                                                              check.
-    id?                   string                                              Matcher value: a branch name, a pattern,
-                                                                              or a model branch id depending on type.
-    displayId?            string                                              Human-readable form of the same thing.
-    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                              MODEL_CATEGORY, which decides how id is
-                                                                              read.
-  requiredForPullRequest  boolean                                             Whether the check is enforced on pull
-                                                                              requests.
-  requiredForMergeQueue   boolean                                             Whether the check is enforced on
-                                                                              merge-queue merges.
+  id?                     integer                                                            Check identifier, which update and
+                                                                                             delete address.
+  buildParentKeys?        list of string                                                     Build keys that must be green before a
+                                                                                             pull request can merge.
+  refMatcher?             object                                                             Which target branches the check is
+                                                                                             enforced on.
+    id?                   string                                                             Matcher value: a branch name, a pattern,
+                                                                                             or a model branch id depending on type.
+    displayId?            string                                                             Human-readable form of the same thing.
+    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                             MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                             decides how id is read.
+  exemptRefMatcher?       object                                                             Which source branches are exempt from
+                                                                                             the check.
+    id?                   string                                                             Matcher value: a branch name, a pattern,
+                                                                                             or a model branch id depending on type.
+    displayId?            string                                                             Human-readable form of the same thing.
+    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                             MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                             decides how id is read.
+  requiredForPullRequest  boolean                                                            Whether the check is enforced on pull
+                                                                                             requests.
+  requiredForMergeQueue   boolean                                                            Whether the check is enforced on
+                                                                                             merge-queue merges.
 </code></pre>
 </details>
 
@@ -311,30 +311,30 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
-  id?                     integer                                             Check identifier, which update and delete
-                                                                              address.
-  buildParentKeys?        list of string                                      Build keys that must be green before a
-                                                                              pull request can merge.
-  refMatcher?             object                                              Which target branches the check is
-                                                                              enforced on.
-    id?                   string                                              Matcher value: a branch name, a pattern,
-                                                                              or a model branch id depending on type.
-    displayId?            string                                              Human-readable form of the same thing.
-    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                              MODEL_CATEGORY, which decides how id is
-                                                                              read.
-  exemptRefMatcher?       object                                              Which source branches are exempt from the
-                                                                              check.
-    id?                   string                                              Matcher value: a branch name, a pattern,
-                                                                              or a model branch id depending on type.
-    displayId?            string                                              Human-readable form of the same thing.
-    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                              MODEL_CATEGORY, which decides how id is
-                                                                              read.
-  requiredForPullRequest  boolean                                             Whether the check is enforced on pull
-                                                                              requests.
-  requiredForMergeQueue   boolean                                             Whether the check is enforced on
-                                                                              merge-queue merges.
+  id?                     integer                                                            Check identifier, which update and
+                                                                                             delete address.
+  buildParentKeys?        list of string                                                     Build keys that must be green before a
+                                                                                             pull request can merge.
+  refMatcher?             object                                                             Which target branches the check is
+                                                                                             enforced on.
+    id?                   string                                                             Matcher value: a branch name, a pattern,
+                                                                                             or a model branch id depending on type.
+    displayId?            string                                                             Human-readable form of the same thing.
+    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                             MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                             decides how id is read.
+  exemptRefMatcher?       object                                                             Which source branches are exempt from
+                                                                                             the check.
+    id?                   string                                                             Matcher value: a branch name, a pattern,
+                                                                                             or a model branch id depending on type.
+    displayId?            string                                                             Human-readable form of the same thing.
+    type?                 ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                             MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                             decides how id is read.
+  requiredForPullRequest  boolean                                                            Whether the check is enforced on pull
+                                                                                             requests.
+  requiredForMergeQueue   boolean                                                            Whether the check is enforced on
+                                                                                             merge-queue merges.
 </code></pre>
 </details>
 

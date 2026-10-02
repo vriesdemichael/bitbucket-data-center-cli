@@ -115,9 +115,9 @@ Also takes the [global flags](global-flags.md).
       id?            string                                                               Matcher value: a branch name, a pattern,
                                                                                           or a model branch id depending on type.
       displayId?     string                                                               Human-readable form of the same thing.
-      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY                   ANY_REF, BRANCH, PATTERN, MODEL_BRANCH
-                                                                                          or MODEL_CATEGORY, which decides how id
-                                                                                          is read.
+      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH    ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
     users?           list of object                                                       Users exempt from the restriction.
       id?            integer                                                              User identifier.
       name?          string                                                               Username.
@@ -201,9 +201,9 @@ Also takes the [global flags](global-flags.md).
       id?            string                                                               Matcher value: a branch name, a pattern,
                                                                                           or a model branch id depending on type.
       displayId?     string                                                               Human-readable form of the same thing.
-      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY                   ANY_REF, BRANCH, PATTERN, MODEL_BRANCH
-                                                                                          or MODEL_CATEGORY, which decides how id
-                                                                                          is read.
+      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH    ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
     users?           list of object                                                       Users exempt from the restriction.
       id?            integer                                                              User identifier.
       name?          string                                                               Username.
@@ -270,9 +270,9 @@ Also takes the [global flags](global-flags.md).
       id?            string                                                               Matcher value: a branch name, a pattern,
                                                                                           or a model branch id depending on type.
       displayId?     string                                                               Human-readable form of the same thing.
-      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY                   ANY_REF, BRANCH, PATTERN, MODEL_BRANCH
-                                                                                          or MODEL_CATEGORY, which decides how id
-                                                                                          is read.
+      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH    ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
     users?           list of object                                                       Users exempt from the restriction.
       id?            integer                                                              User identifier.
       name?          string                                                               Username.
@@ -346,9 +346,9 @@ Also takes the [global flags](global-flags.md).
       id?            string                                                               Matcher value: a branch name, a pattern,
                                                                                           or a model branch id depending on type.
       displayId?     string                                                               Human-readable form of the same thing.
-      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY                   ANY_REF, BRANCH, PATTERN, MODEL_BRANCH
-                                                                                          or MODEL_CATEGORY, which decides how id
-                                                                                          is read.
+      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH    ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
     users?           list of object                                                       Users exempt from the restriction.
       id?            integer                                                              User identifier.
       name?          string                                                               Username.
@@ -455,26 +455,32 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
-  id?             integer                                             Task identifier, which update and delete address.
-  description?    string                                              The task text, which appears on every pull request
-                                                                      the matchers cover.
-  sourceMatcher?  object                                              Which source branches the task applies to; type
-                                                                      ANY_REF when it applies to all of them.
-    id?           string                                              Matcher value: a branch name, a pattern, or a
-                                                                      model branch id depending on type.
-    displayId?    string                                              Human-readable form of the same thing.
-    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                      MODEL_CATEGORY, which decides how id is read.
-  targetMatcher?  object                                              Which target branches the task applies to; type
-                                                                      ANY_REF when it applies to all of them.
-    id?           string                                              Matcher value: a branch name, a pattern, or a
-                                                                      model branch id depending on type.
-    displayId?    string                                              Human-readable form of the same thing.
-    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                      MODEL_CATEGORY, which decides how id is read.
-  scope?          PROJECT|REPOSITORY                                  PROJECT when the task is set on the project, and a
-                                                                      repository inherits it; REPOSITORY when it is set
-                                                                      on the repository itself.
+  id?             integer                                                            Task identifier, which update and delete
+                                                                                     address.
+  description?    string                                                             The task text, which appears on every
+                                                                                     pull request the matchers cover.
+  sourceMatcher?  object                                                             Which source branches the task applies
+                                                                                     to; type ANY_REF when it applies to all
+                                                                                     of them.
+    id?           string                                                             Matcher value: a branch name, a pattern,
+                                                                                     or a model branch id depending on type.
+    displayId?    string                                                             Human-readable form of the same thing.
+    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                     MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                     decides how id is read.
+  targetMatcher?  object                                                             Which target branches the task applies
+                                                                                     to; type ANY_REF when it applies to all
+                                                                                     of them.
+    id?           string                                                             Matcher value: a branch name, a pattern,
+                                                                                     or a model branch id depending on type.
+    displayId?    string                                                             Human-readable form of the same thing.
+    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                     MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                     decides how id is read.
+  scope?          PROJECT|REPOSITORY                                                 PROJECT when the task is set on the
+                                                                                     project, and a repository inherits it;
+                                                                                     REPOSITORY when it is set on the
+                                                                                     repository itself.
 </code></pre>
 </details>
 
@@ -527,26 +533,32 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data              list of object
-  id?             integer                                             Task identifier, which update and delete address.
-  description?    string                                              The task text, which appears on every pull request
-                                                                      the matchers cover.
-  sourceMatcher?  object                                              Which source branches the task applies to; type
-                                                                      ANY_REF when it applies to all of them.
-    id?           string                                              Matcher value: a branch name, a pattern, or a
-                                                                      model branch id depending on type.
-    displayId?    string                                              Human-readable form of the same thing.
-    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                      MODEL_CATEGORY, which decides how id is read.
-  targetMatcher?  object                                              Which target branches the task applies to; type
-                                                                      ANY_REF when it applies to all of them.
-    id?           string                                              Matcher value: a branch name, a pattern, or a
-                                                                      model branch id depending on type.
-    displayId?    string                                              Human-readable form of the same thing.
-    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                      MODEL_CATEGORY, which decides how id is read.
-  scope?          PROJECT|REPOSITORY                                  PROJECT when the task is set on the project, and a
-                                                                      repository inherits it; REPOSITORY when it is set
-                                                                      on the repository itself.
+  id?             integer                                                            Task identifier, which update and delete
+                                                                                     address.
+  description?    string                                                             The task text, which appears on every
+                                                                                     pull request the matchers cover.
+  sourceMatcher?  object                                                             Which source branches the task applies
+                                                                                     to; type ANY_REF when it applies to all
+                                                                                     of them.
+    id?           string                                                             Matcher value: a branch name, a pattern,
+                                                                                     or a model branch id depending on type.
+    displayId?    string                                                             Human-readable form of the same thing.
+    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                     MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                     decides how id is read.
+  targetMatcher?  object                                                             Which target branches the task applies
+                                                                                     to; type ANY_REF when it applies to all
+                                                                                     of them.
+    id?           string                                                             Matcher value: a branch name, a pattern,
+                                                                                     or a model branch id depending on type.
+    displayId?    string                                                             Human-readable form of the same thing.
+    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                     MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                     decides how id is read.
+  scope?          PROJECT|REPOSITORY                                                 PROJECT when the task is set on the
+                                                                                     project, and a repository inherits it;
+                                                                                     REPOSITORY when it is set on the
+                                                                                     repository itself.
 </code></pre>
 </details>
 
@@ -579,26 +591,32 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
-  id?             integer                                             Task identifier, which update and delete address.
-  description?    string                                              The task text, which appears on every pull request
-                                                                      the matchers cover.
-  sourceMatcher?  object                                              Which source branches the task applies to; type
-                                                                      ANY_REF when it applies to all of them.
-    id?           string                                              Matcher value: a branch name, a pattern, or a
-                                                                      model branch id depending on type.
-    displayId?    string                                              Human-readable form of the same thing.
-    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                      MODEL_CATEGORY, which decides how id is read.
-  targetMatcher?  object                                              Which target branches the task applies to; type
-                                                                      ANY_REF when it applies to all of them.
-    id?           string                                              Matcher value: a branch name, a pattern, or a
-                                                                      model branch id depending on type.
-    displayId?    string                                              Human-readable form of the same thing.
-    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                      MODEL_CATEGORY, which decides how id is read.
-  scope?          PROJECT|REPOSITORY                                  PROJECT when the task is set on the project, and a
-                                                                      repository inherits it; REPOSITORY when it is set
-                                                                      on the repository itself.
+  id?             integer                                                            Task identifier, which update and delete
+                                                                                     address.
+  description?    string                                                             The task text, which appears on every
+                                                                                     pull request the matchers cover.
+  sourceMatcher?  object                                                             Which source branches the task applies
+                                                                                     to; type ANY_REF when it applies to all
+                                                                                     of them.
+    id?           string                                                             Matcher value: a branch name, a pattern,
+                                                                                     or a model branch id depending on type.
+    displayId?    string                                                             Human-readable form of the same thing.
+    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                     MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                     decides how id is read.
+  targetMatcher?  object                                                             Which target branches the task applies
+                                                                                     to; type ANY_REF when it applies to all
+                                                                                     of them.
+    id?           string                                                             Matcher value: a branch name, a pattern,
+                                                                                     or a model branch id depending on type.
+    displayId?    string                                                             Human-readable form of the same thing.
+    type?         ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                     MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                     decides how id is read.
+  scope?          PROJECT|REPOSITORY                                                 PROJECT when the task is set on the
+                                                                                     project, and a repository inherits it;
+                                                                                     REPOSITORY when it is set on the
+                                                                                     repository itself.
 </code></pre>
 </details>
 
