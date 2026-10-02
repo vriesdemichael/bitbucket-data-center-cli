@@ -556,7 +556,7 @@ func (service *Service) GetRepositoryAutoMergeSettings(ctx context.Context, repo
 	if err := validateRepositoryRef(repo); err != nil {
 		return nil, err
 	}
-	response, err := service.client.Get5WithResponse(ctx, repo.ProjectKey, repo.Slug)
+	response, err := service.client.Get4WithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
 		return nil, apperrors.Transport("failed to get auto-merge settings", err)
 	}
@@ -587,7 +587,7 @@ func (service *Service) DeleteRepositoryAutoMergeSettings(ctx context.Context, r
 	if err := validateRepositoryRef(repo); err != nil {
 		return err
 	}
-	response, err := service.client.Delete5WithResponse(ctx, repo.ProjectKey, repo.Slug)
+	response, err := service.client.Delete4WithResponse(ctx, repo.ProjectKey, repo.Slug)
 	if err != nil {
 		return apperrors.Transport("failed to delete auto-merge settings", err)
 	}

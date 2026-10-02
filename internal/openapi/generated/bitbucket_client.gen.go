@@ -57,6 +57,20 @@ const (
 	ElevationMethodRestDTOElevationMethodsTOTP     ElevationMethodRestDTOElevationMethods = "TOTP"
 )
 
+// Defines values for EnrichedRepositoryOriginOriginProjectType.
+const (
+	EnrichedRepositoryOriginOriginProjectTypeNORMAL   EnrichedRepositoryOriginOriginProjectType = "NORMAL"
+	EnrichedRepositoryOriginOriginProjectTypePERSONAL EnrichedRepositoryOriginOriginProjectType = "PERSONAL"
+)
+
+// Defines values for EnrichedRepositoryOriginOriginState.
+const (
+	EnrichedRepositoryOriginOriginStateAVAILABLE            EnrichedRepositoryOriginOriginState = "AVAILABLE"
+	EnrichedRepositoryOriginOriginStateINITIALISATIONFAILED EnrichedRepositoryOriginOriginState = "INITIALISATION_FAILED"
+	EnrichedRepositoryOriginOriginStateINITIALISING         EnrichedRepositoryOriginOriginState = "INITIALISING"
+	EnrichedRepositoryOriginOriginStateOFFLINE              EnrichedRepositoryOriginOriginState = "OFFLINE"
+)
+
 // Defines values for EnrichedRepositoryOriginProjectType.
 const (
 	EnrichedRepositoryOriginProjectTypeNORMAL   EnrichedRepositoryOriginProjectType = "NORMAL"
@@ -173,8 +187,8 @@ const (
 
 // Defines values for RestAnnouncementBannerAudience.
 const (
-	RestAnnouncementBannerAudienceALL           RestAnnouncementBannerAudience = "ALL"
-	RestAnnouncementBannerAudienceAUTHENTICATED RestAnnouncementBannerAudience = "AUTHENTICATED"
+	ALL           RestAnnouncementBannerAudience = "ALL"
+	AUTHENTICATED RestAnnouncementBannerAudience = "AUTHENTICATED"
 )
 
 // Defines values for RestApplicationUserType.
@@ -989,6 +1003,20 @@ const (
 	RestLabelableLabelableTypeREPOSITORY RestLabelableLabelableType = "REPOSITORY"
 )
 
+// Defines values for RestLabelableOriginOriginProjectType.
+const (
+	RestLabelableOriginOriginProjectTypeNORMAL   RestLabelableOriginOriginProjectType = "NORMAL"
+	RestLabelableOriginOriginProjectTypePERSONAL RestLabelableOriginOriginProjectType = "PERSONAL"
+)
+
+// Defines values for RestLabelableOriginOriginState.
+const (
+	RestLabelableOriginOriginStateAVAILABLE            RestLabelableOriginOriginState = "AVAILABLE"
+	RestLabelableOriginOriginStateINITIALISATIONFAILED RestLabelableOriginOriginState = "INITIALISATION_FAILED"
+	RestLabelableOriginOriginStateINITIALISING         RestLabelableOriginOriginState = "INITIALISING"
+	RestLabelableOriginOriginStateOFFLINE              RestLabelableOriginOriginState = "OFFLINE"
+)
+
 // Defines values for RestLabelableOriginProjectType.
 const (
 	RestLabelableOriginProjectTypeNORMAL   RestLabelableOriginProjectType = "NORMAL"
@@ -1019,14 +1047,14 @@ const (
 
 // Defines values for RestMailConfigurationAuthType.
 const (
-	RestMailConfigurationAuthTypeBASIC  RestMailConfigurationAuthType = "BASIC"
-	RestMailConfigurationAuthTypeOAUTH2 RestMailConfigurationAuthType = "OAUTH2"
+	BASIC  RestMailConfigurationAuthType = "BASIC"
+	OAUTH2 RestMailConfigurationAuthType = "OAUTH2"
 )
 
 // Defines values for RestMailConfigurationProtocol.
 const (
-	RestMailConfigurationProtocolSMTP  RestMailConfigurationProtocol = "SMTP"
-	RestMailConfigurationProtocolSMTPS RestMailConfigurationProtocol = "SMTPS"
+	SMTP  RestMailConfigurationProtocol = "SMTP"
+	SMTPS RestMailConfigurationProtocol = "SMTPS"
 )
 
 // Defines values for RestMeshNodeState.
@@ -1671,13 +1699,13 @@ const (
 	RestRequiredBuildConditionRefMatcherTypeIdPATTERN       RestRequiredBuildConditionRefMatcherTypeId = "PATTERN"
 )
 
-// Defines values for RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId.
+// Defines values for RestRequiredBuildConditionSetRequestRefMatcherTypeId.
 const (
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdANYREF        RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "ANY_REF"
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdBRANCH        RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "BRANCH"
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdMODELBRANCH   RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "MODEL_BRANCH"
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdMODELCATEGORY RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "MODEL_CATEGORY"
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdPATTERN       RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "PATTERN"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdANYREF        RestRequiredBuildConditionSetRequestRefMatcherTypeId = "ANY_REF"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdBRANCH        RestRequiredBuildConditionSetRequestRefMatcherTypeId = "BRANCH"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdMODELBRANCH   RestRequiredBuildConditionSetRequestRefMatcherTypeId = "MODEL_BRANCH"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdMODELCATEGORY RestRequiredBuildConditionSetRequestRefMatcherTypeId = "MODEL_CATEGORY"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdPATTERN       RestRequiredBuildConditionSetRequestRefMatcherTypeId = "PATTERN"
 )
 
 // Defines values for RestRestrictionRequestMatcherTypeId.
@@ -1759,6 +1787,12 @@ const (
 	RestSshAccessKeyRepositoryStateINITIALISATIONFAILED RestSshAccessKeyRepositoryState = "INITIALISATION_FAILED"
 	RestSshAccessKeyRepositoryStateINITIALISING         RestSshAccessKeyRepositoryState = "INITIALISING"
 	RestSshAccessKeyRepositoryStateOFFLINE              RestSshAccessKeyRepositoryState = "OFFLINE"
+)
+
+// Defines values for RestSystemSigningConfigurationFormat.
+const (
+	GPG  RestSystemSigningConfigurationFormat = "GPG"
+	X509 RestSystemSigningConfigurationFormat = "X509"
 )
 
 // Defines values for RestTagType.
@@ -2118,24 +2152,6 @@ const (
 	SERVICE RestUserReactionUserType = "SERVICE"
 )
 
-// Defines values for SetBannerJSONBodyAudience.
-const (
-	SetBannerJSONBodyAudienceALL           SetBannerJSONBodyAudience = "ALL"
-	SetBannerJSONBodyAudienceAUTHENTICATED SetBannerJSONBodyAudience = "AUTHENTICATED"
-)
-
-// Defines values for SetMailConfigJSONBodyAuthType.
-const (
-	SetMailConfigJSONBodyAuthTypeBASIC  SetMailConfigJSONBodyAuthType = "BASIC"
-	SetMailConfigJSONBodyAuthTypeOAUTH2 SetMailConfigJSONBodyAuthType = "OAUTH2"
-)
-
-// Defines values for SetMailConfigJSONBodyProtocol.
-const (
-	SetMailConfigJSONBodyProtocolSMTP  SetMailConfigJSONBodyProtocol = "SMTP"
-	SetMailConfigJSONBodyProtocolSMTPS SetMailConfigJSONBodyProtocol = "SMTPS"
-)
-
 // Defines values for SetPermissionForGroupsParamsPermission.
 const (
 	SetPermissionForGroupsParamsPermissionADMIN         SetPermissionForGroupsParamsPermission = "ADMIN"
@@ -2278,10 +2294,10 @@ const (
 
 // Defines values for GetRestrictionsParamsMatcherType.
 const (
-	GetRestrictionsParamsMatcherTypeBRANCH        GetRestrictionsParamsMatcherType = "BRANCH"
-	GetRestrictionsParamsMatcherTypeMODELBRANCH   GetRestrictionsParamsMatcherType = "MODEL_BRANCH"
-	GetRestrictionsParamsMatcherTypeMODELCATEGORY GetRestrictionsParamsMatcherType = "MODEL_CATEGORY"
-	GetRestrictionsParamsMatcherTypePATTERN       GetRestrictionsParamsMatcherType = "PATTERN"
+	BRANCH        GetRestrictionsParamsMatcherType = "BRANCH"
+	MODELBRANCH   GetRestrictionsParamsMatcherType = "MODEL_BRANCH"
+	MODELCATEGORY GetRestrictionsParamsMatcherType = "MODEL_CATEGORY"
+	PATTERN       GetRestrictionsParamsMatcherType = "PATTERN"
 )
 
 // Defines values for GetRestrictionsParamsType.
@@ -2291,15 +2307,6 @@ const (
 	GetRestrictionsParamsTypeNoDeletes       GetRestrictionsParamsType = "no-deletes"
 	GetRestrictionsParamsTypePullRequestOnly GetRestrictionsParamsType = "pull-request-only"
 	GetRestrictionsParamsTypeReadOnly        GetRestrictionsParamsType = "read-only"
-)
-
-// Defines values for UpdatePullRequestCondition1JSONBodySourceMatcherTypeId.
-const (
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdANYREF        UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "ANY_REF"
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdBRANCH        UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "BRANCH"
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdMODELBRANCH   UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "MODEL_BRANCH"
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdMODELCATEGORY UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "MODEL_CATEGORY"
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdPATTERN       UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "PATTERN"
 )
 
 // Defines values for GetAllReposForProjectParamsIncludeDefaultBranch.
@@ -2343,7 +2350,7 @@ const (
 
 // AdminPasswordUpdate defines model for AdminPasswordUpdate.
 type AdminPasswordUpdate struct {
-	Name            *string `json:"name,omitempty"`
+	Name            string  `json:"name"`
 	Password        *string `json:"password,omitempty"`
 	PasswordConfirm *string `json:"passwordConfirm,omitempty"`
 }
@@ -2482,8 +2489,38 @@ type EnrichedRepository struct {
 		Id            *int32                  `json:"id,omitempty"`
 		Links         *map[string]interface{} `json:"links,omitempty"`
 		Name          *string                 `json:"name,omitempty"`
-		Partition     *int32                  `json:"partition,omitempty"`
-		Project       *struct {
+		Origin        *struct {
+			Archived      *bool                   `json:"archived,omitempty"`
+			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
+			Description   *string                 `json:"description,omitempty"`
+			Forkable      *bool                   `json:"forkable,omitempty"`
+			HierarchyId   *string                 `json:"hierarchyId,omitempty"`
+			Id            *int32                  `json:"id,omitempty"`
+			Links         *map[string]interface{} `json:"links,omitempty"`
+			Name          *string                 `json:"name,omitempty"`
+			Partition     *int32                  `json:"partition,omitempty"`
+			Project       *struct {
+				Avatar      *string                                    `json:"avatar,omitempty"`
+				AvatarUrl   *string                                    `json:"avatarUrl,omitempty"`
+				Description *string                                    `json:"description,omitempty"`
+				Id          *int32                                     `json:"id,omitempty"`
+				Key         string                                     `json:"key"`
+				Links       *map[string]interface{}                    `json:"links,omitempty"`
+				Name        *string                                    `json:"name,omitempty"`
+				Public      *bool                                      `json:"public,omitempty"`
+				Scope       *string                                    `json:"scope,omitempty"`
+				Type        *EnrichedRepositoryOriginOriginProjectType `json:"type,omitempty"`
+			} `json:"project,omitempty"`
+			Public        *bool                                `json:"public,omitempty"`
+			RelatedLinks  *map[string]interface{}              `json:"relatedLinks,omitempty"`
+			ScmId         *string                              `json:"scmId,omitempty"`
+			Scope         *string                              `json:"scope,omitempty"`
+			Slug          *string                              `json:"slug,omitempty"`
+			State         *EnrichedRepositoryOriginOriginState `json:"state,omitempty"`
+			StatusMessage *string                              `json:"statusMessage,omitempty"`
+		} `json:"origin,omitempty"`
+		Partition *int32 `json:"partition,omitempty"`
+		Project   *struct {
 			Avatar      *string                              `json:"avatar,omitempty"`
 			AvatarUrl   *string                              `json:"avatarUrl,omitempty"`
 			Description *string                              `json:"description,omitempty"`
@@ -2530,6 +2567,12 @@ type EnrichedRepository struct {
 	StatusMessage *string                  `json:"statusMessage,omitempty"`
 }
 
+// EnrichedRepositoryOriginOriginProjectType defines model for EnrichedRepository.Origin.Origin.Project.Type.
+type EnrichedRepositoryOriginOriginProjectType string
+
+// EnrichedRepositoryOriginOriginState defines model for EnrichedRepository.Origin.Origin.State.
+type EnrichedRepositoryOriginOriginState string
+
 // EnrichedRepositoryOriginProjectType defines model for EnrichedRepository.Origin.Project.Type.
 type EnrichedRepositoryOriginProjectType string
 
@@ -2545,6 +2588,12 @@ type EnrichedRepositoryState string
 // ErrorEntity defines model for ErrorEntity.
 type ErrorEntity struct {
 	Message *string `json:"message,omitempty"`
+}
+
+// ExampleAttachmentMultipartFormData defines model for ExampleAttachmentMultipartFormData.
+type ExampleAttachmentMultipartFormData struct {
+	// File The file to attach.
+	File openapi_types.File `json:"file"`
 }
 
 // ExampleAvatarMultipartFormData defines model for ExampleAvatarMultipartFormData.
@@ -2693,7 +2742,7 @@ type FileListResource = interface{}
 
 // GroupAndUsers defines model for GroupAndUsers.
 type GroupAndUsers struct {
-	Group *string  `json:"group,omitempty"`
+	Group string   `json:"group"`
 	Users []string `json:"users"`
 }
 
@@ -2804,8 +2853,8 @@ type NextLoginStepDTONextLoginStep string
 type Project struct {
 	Description *string     `json:"description,omitempty"`
 	Id          *int32      `json:"id,omitempty"`
-	Key         *string     `json:"key,omitempty"`
-	Name        *string     `json:"name,omitempty"`
+	Key         string      `json:"key"`
+	Name        string      `json:"name"`
 	Public      *bool       `json:"public,omitempty"`
 	Type        ProjectType `json:"type"`
 }
@@ -2964,10 +3013,17 @@ type RestApplicationUserWithPermissionsType string
 
 // RestApplySuggestionRequest defines model for RestApplySuggestionRequest.
 type RestApplySuggestionRequest struct {
-	CommentVersion     int32  `json:"commentVersion"`
-	Message            string `json:"message"`
-	PullRequestVersion int32  `json:"pullRequestVersion"`
-	SuggestionIndex    int32  `json:"suggestionIndex"`
+	CommentVersion     int32   `json:"commentVersion"`
+	Message            *string `json:"message"`
+	PullRequestVersion int32   `json:"pullRequestVersion"`
+	SuggestionIndex    int32   `json:"suggestionIndex"`
+}
+
+// RestAttachment defines model for RestAttachment.
+type RestAttachment struct {
+	Id   *int64  `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Url  *string `json:"url,omitempty"`
 }
 
 // RestAttachmentMetadata defines model for RestAttachmentMetadata.
@@ -4243,7 +4299,6 @@ type RestComment struct {
 			Slug         string                      `json:"slug"`
 			Type         RestCommentParentAuthorType `json:"type"`
 		} `json:"author,omitempty"`
-		Comments     *[]RestComment          `json:"comments,omitempty"`
 		CreatedDate  *int64                  `json:"createdDate,omitempty"`
 		Html         *string                 `json:"html,omitempty"`
 		Id           *int64                  `json:"id,omitempty"`
@@ -4515,6 +4570,11 @@ type RestCspSettings struct {
 
 // RestCspSettingsStrictness defines model for RestCspSettings.Strictness.
 type RestCspSettingsStrictness string
+
+// RestDefaultBranch defines model for RestDefaultBranch.
+type RestDefaultBranch struct {
+	Id *string `json:"id,omitempty"`
+}
 
 // RestDefaultReviewersRequest defines model for RestDefaultReviewersRequest.
 type RestDefaultReviewersRequest struct {
@@ -4912,7 +4972,7 @@ type RestHookScriptTriggers struct {
 
 // RestImportRequest defines model for RestImportRequest.
 type RestImportRequest struct {
-	ArchivePath *string `json:"archivePath,omitempty"`
+	ArchivePath string `json:"archivePath"`
 }
 
 // RestIndexingIsRepositoryQueued defines model for RestIndexingIsRepositoryQueued.
@@ -5129,8 +5189,38 @@ type RestLabelable struct {
 		Id            *int32                  `json:"id,omitempty"`
 		Links         *map[string]interface{} `json:"links,omitempty"`
 		Name          *string                 `json:"name,omitempty"`
-		Partition     *int32                  `json:"partition,omitempty"`
-		Project       *struct {
+		Origin        *struct {
+			Archived      *bool                   `json:"archived,omitempty"`
+			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
+			Description   *string                 `json:"description,omitempty"`
+			Forkable      *bool                   `json:"forkable,omitempty"`
+			HierarchyId   *string                 `json:"hierarchyId,omitempty"`
+			Id            *int32                  `json:"id,omitempty"`
+			Links         *map[string]interface{} `json:"links,omitempty"`
+			Name          *string                 `json:"name,omitempty"`
+			Partition     *int32                  `json:"partition,omitempty"`
+			Project       *struct {
+				Avatar      *string                               `json:"avatar,omitempty"`
+				AvatarUrl   *string                               `json:"avatarUrl,omitempty"`
+				Description *string                               `json:"description,omitempty"`
+				Id          *int32                                `json:"id,omitempty"`
+				Key         string                                `json:"key"`
+				Links       *map[string]interface{}               `json:"links,omitempty"`
+				Name        *string                               `json:"name,omitempty"`
+				Public      *bool                                 `json:"public,omitempty"`
+				Scope       *string                               `json:"scope,omitempty"`
+				Type        *RestLabelableOriginOriginProjectType `json:"type,omitempty"`
+			} `json:"project,omitempty"`
+			Public        *bool                           `json:"public,omitempty"`
+			RelatedLinks  *map[string]interface{}         `json:"relatedLinks,omitempty"`
+			ScmId         *string                         `json:"scmId,omitempty"`
+			Scope         *string                         `json:"scope,omitempty"`
+			Slug          *string                         `json:"slug,omitempty"`
+			State         *RestLabelableOriginOriginState `json:"state,omitempty"`
+			StatusMessage *string                         `json:"statusMessage,omitempty"`
+		} `json:"origin,omitempty"`
+		Partition *int32 `json:"partition,omitempty"`
+		Project   *struct {
 			Avatar      *string                         `json:"avatar,omitempty"`
 			AvatarUrl   *string                         `json:"avatarUrl,omitempty"`
 			Description *string                         `json:"description,omitempty"`
@@ -5174,6 +5264,12 @@ type RestLabelable struct {
 
 // RestLabelableLabelableType defines model for RestLabelable.LabelableType.
 type RestLabelableLabelableType string
+
+// RestLabelableOriginOriginProjectType defines model for RestLabelable.Origin.Origin.Project.Type.
+type RestLabelableOriginOriginProjectType string
+
+// RestLabelableOriginOriginState defines model for RestLabelable.Origin.Origin.State.
+type RestLabelableOriginOriginState string
 
 // RestLabelableOriginProjectType defines model for RestLabelable.Origin.Project.Type.
 type RestLabelableOriginProjectType string
@@ -5388,8 +5484,8 @@ type RestMirrorServerMirrorType string
 
 // RestMirrorUpgradeRequest defines model for RestMirrorUpgradeRequest.
 type RestMirrorUpgradeRequest struct {
-	BaseUrl        *string `json:"baseUrl,omitempty"`
-	ProductVersion *string `json:"productVersion,omitempty"`
+	BaseUrl        string `json:"baseUrl"`
+	ProductVersion string `json:"productVersion"`
 }
 
 // RestMirroredRepository defines model for RestMirroredRepository.
@@ -6653,16 +6749,16 @@ type RestRequiredBuildConditionRefMatcherTypeId string
 // RestRequiredBuildConditionSetRequest defines model for RestRequiredBuildConditionSetRequest.
 type RestRequiredBuildConditionSetRequest struct {
 	// BuildParentKeys A non-empty list of build parent keys that require green builds for this merge check to pass
-	BuildParentKeys  []string `json:"buildParentKeys"`
-	ExemptRefMatcher *struct {
+	BuildParentKeys  []string        `json:"buildParentKeys"`
+	ExemptRefMatcher *RestRefMatcher `json:"exemptRefMatcher,omitempty"`
+	RefMatcher       struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId `json:"id"`
-			Name string                                                     `json:"name"`
+			Id   RestRequiredBuildConditionSetRequestRefMatcherTypeId `json:"id"`
+			Name string                                               `json:"name"`
 		} `json:"type,omitempty"`
-	} `json:"exemptRefMatcher,omitempty"`
-	RefMatcher RestRefMatcher `json:"refMatcher"`
+	} `json:"refMatcher"`
 
 	// RequiredForMergeQueue Indicates whether this required build condition is enforced for merges via the merge queue. If not specified, defaults to true.
 	RequiredForMergeQueue *bool `json:"requiredForMergeQueue,omitempty"`
@@ -6671,8 +6767,8 @@ type RestRequiredBuildConditionSetRequest struct {
 	RequiredForPullRequest *bool `json:"requiredForPullRequest,omitempty"`
 }
 
-// RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId defines model for RestRequiredBuildConditionSetRequest.ExemptRefMatcher.Type.Id.
-type RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId string
+// RestRequiredBuildConditionSetRequestRefMatcherTypeId defines model for RestRequiredBuildConditionSetRequest.RefMatcher.Type.Id.
+type RestRequiredBuildConditionSetRequestRefMatcherTypeId string
 
 // RestRestrictionRequest defines model for RestRestrictionRequest.
 type RestRestrictionRequest struct {
@@ -6986,8 +7082,30 @@ type RestSyncProgress struct {
 
 // RestSystemSigningConfiguration defines model for RestSystemSigningConfiguration.
 type RestSystemSigningConfiguration struct {
-	Enabled *bool `json:"enabled,omitempty"`
+	// Certificate PEM-encoded X.509 certificate (write-only, only used when format is X509)
+	Certificate *string                               `json:"certificate,omitempty"`
+	Enabled     *bool                                 `json:"enabled,omitempty"`
+	Format      *RestSystemSigningConfigurationFormat `json:"format,omitempty"`
+
+	// Passphrase Passphrase for the encrypted private key (write-only)
+	Passphrase *string `json:"passphrase,omitempty"`
+
+	// PrivateKey PEM-encoded encrypted private key (write-only, only used when format is X509)
+	PrivateKey *string `json:"privateKey,omitempty"`
+
+	// X509Certificate Stored X.509 certificate metadata (read-only, only present when a certificate is stored)
+	X509Certificate *struct {
+		Certificate *string `json:"certificate,omitempty"`
+		Fingerprint *string `json:"fingerprint,omitempty"`
+		Issuer      *string `json:"issuer,omitempty"`
+		NotAfter    *int64  `json:"notAfter,omitempty"`
+		NotBefore   *int64  `json:"notBefore,omitempty"`
+		Subject     *string `json:"subject,omitempty"`
+	} `json:"x509Certificate,omitempty"`
 }
+
+// RestSystemSigningConfigurationFormat defines model for RestSystemSigningConfiguration.Format.
+type RestSystemSigningConfigurationFormat string
 
 // RestTag defines model for RestTag.
 type RestTag struct {
@@ -7541,7 +7659,6 @@ type RestUserReaction struct {
 				Slug         string                                  `json:"slug"`
 				Type         RestUserReactionCommentParentAuthorType `json:"type"`
 			} `json:"author,omitempty"`
-			Comments     *[]RestComment          `json:"comments,omitempty"`
 			CreatedDate  *int64                  `json:"createdDate,omitempty"`
 			Html         *string                 `json:"html,omitempty"`
 			Id           *int64                  `json:"id,omitempty"`
@@ -7877,12 +7994,12 @@ type TotpUserEnrollmentDTO struct {
 // UserAndGroups defines model for UserAndGroups.
 type UserAndGroups struct {
 	Groups []string `json:"groups"`
-	User   *string  `json:"user,omitempty"`
+	User   string   `json:"user"`
 }
 
 // UserPasswordUpdate defines model for UserPasswordUpdate.
 type UserPasswordUpdate struct {
-	OldPassword     *string `json:"oldPassword,omitempty"`
+	OldPassword     string  `json:"oldPassword"`
 	Password        *string `json:"password,omitempty"`
 	PasswordConfirm *string `json:"passwordConfirm,omitempty"`
 }
@@ -7895,22 +8012,22 @@ type UserPickerContext struct {
 
 // UserRename defines model for UserRename.
 type UserRename struct {
-	Name    *string `json:"name,omitempty"`
-	NewName *string `json:"newName,omitempty"`
+	Name    string `json:"name"`
+	NewName string `json:"newName"`
 }
 
 // UserUpdate defines model for UserUpdate.
 type UserUpdate struct {
-	DisplayName *string `json:"displayName,omitempty"`
-	Email       *string `json:"email,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	DisplayName string `json:"displayName"`
+	Email       string `json:"email"`
+	Name        string `json:"name"`
 }
 
 // UserUpdateWithCredentials defines model for UserUpdateWithCredentials.
 type UserUpdateWithCredentials struct {
-	DisplayName *string `json:"displayName,omitempty"`
-	Email       *string `json:"email,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	DisplayName string `json:"displayName"`
+	Email       string `json:"email"`
+	Name        string `json:"name"`
 
 	// Password The user's password, which the system may require when users update their email.
 	Password *string `json:"password,omitempty"`
@@ -7943,23 +8060,8 @@ type GetAllAccessTokens2Params struct {
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// SetBannerJSONBody defines parameters for SetBanner.
-type SetBannerJSONBody struct {
-	Audience SetBannerJSONBodyAudience `json:"audience"`
-	Enabled  *bool                     `json:"enabled,omitempty"`
-	Message  *string                   `json:"message,omitempty"`
-}
-
-// SetBannerJSONBodyAudience defines parameters for SetBanner.
-type SetBannerJSONBodyAudience string
-
-// SetDefaultBranchJSONBody defines parameters for SetDefaultBranch.
-type SetDefaultBranchJSONBody struct {
-	Id *string `json:"id,omitempty"`
-}
-
-// Delete2Params defines parameters for Delete2.
-type Delete2Params struct {
+// Delete1Params defines parameters for Delete1.
+type Delete1Params struct {
 	Force *bool `form:"force,omitempty" json:"force,omitempty"`
 }
 
@@ -8016,27 +8118,6 @@ type FindUsersNotInGroupParams struct {
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
-
-// SetMailConfigJSONBody defines parameters for SetMailConfig.
-type SetMailConfigJSONBody struct {
-	AuthType         *SetMailConfigJSONBodyAuthType `json:"authType,omitempty"`
-	Hostname         *string                        `json:"hostname,omitempty"`
-	Oauth2ProviderId *string                        `json:"oauth2ProviderId,omitempty"`
-	Password         *string                        `json:"password,omitempty"`
-	Port             *int32                         `json:"port,omitempty"`
-	Protocol         *SetMailConfigJSONBodyProtocol `json:"protocol,omitempty"`
-	RequireStartTls  *bool                          `json:"requireStartTls,omitempty"`
-	SenderAddress    *string                        `json:"senderAddress,omitempty"`
-	TokenId          *string                        `json:"tokenId,omitempty"`
-	UseStartTls      *bool                          `json:"useStartTls,omitempty"`
-	Username         *string                        `json:"username,omitempty"`
-}
-
-// SetMailConfigJSONBodyAuthType defines parameters for SetMailConfig.
-type SetMailConfigJSONBodyAuthType string
-
-// SetMailConfigJSONBodyProtocol defines parameters for SetMailConfig.
-type SetMailConfigJSONBodyProtocol string
 
 // SetSenderAddressJSONBody defines parameters for SetSenderAddress.
 type SetSenderAddressJSONBody = string
@@ -8378,13 +8459,6 @@ type GetImportJobMessagesParams struct {
 
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
-// StartMeshMigrationJSONBody defines parameters for StartMeshMigration.
-type StartMeshMigrationJSONBody struct {
-	All           *bool   `json:"all,omitempty"`
-	ProjectIds    []int32 `json:"projectIds"`
-	RepositoryIds []int32 `json:"repositoryIds"`
 }
 
 // SearchMeshMigrationReposParams defines parameters for SearchMeshMigrationRepos.
@@ -8754,14 +8828,14 @@ type GetCommitParams struct {
 	Path *string `form:"path,omitempty" json:"path,omitempty"`
 }
 
-// DeleteParams defines parameters for Delete.
-type DeleteParams struct {
+// DeleteRepositoryBuildStatusParams defines parameters for DeleteRepositoryBuildStatus.
+type DeleteRepositoryBuildStatusParams struct {
 	// Key the key of the build status
 	Key string `form:"key" json:"key"`
 }
 
-// GetParams defines parameters for Get.
-type GetParams struct {
+// GetRepositoryBuildStatusParams defines parameters for GetRepositoryBuildStatus.
+type GetRepositoryBuildStatusParams struct {
 	// Key the key of the build status
 	Key string `form:"key" json:"key"`
 }
@@ -8808,8 +8882,8 @@ type DeleteCommentParams struct {
 	Version *string `form:"version,omitempty" json:"version,omitempty"`
 }
 
-// Delete1Params defines parameters for Delete1.
-type Delete1Params struct {
+// DeleteParams defines parameters for Delete.
+type DeleteParams struct {
 	// DeploymentSequenceNumber the sequence number of the deployment, as detailed by the query parameter
 	DeploymentSequenceNumber *string `form:"deploymentSequenceNumber,omitempty" json:"deploymentSequenceNumber,omitempty"`
 
@@ -8820,8 +8894,8 @@ type Delete1Params struct {
 	EnvironmentKey *string `form:"environmentKey,omitempty" json:"environmentKey,omitempty"`
 }
 
-// Get1Params defines parameters for Get1.
-type Get1Params struct {
+// GetParams defines parameters for Get.
+type GetParams struct {
 	// DeploymentSequenceNumber the sequence number of the deployment, as detailed by the query param
 	DeploymentSequenceNumber *string `form:"deploymentSequenceNumber,omitempty" json:"deploymentSequenceNumber,omitempty"`
 
@@ -9264,8 +9338,8 @@ type GetPageParams struct {
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// Get3Params defines parameters for Get3.
-type Get3Params struct {
+// Get2Params defines parameters for Get2.
+type Get2Params struct {
 	// WithProperties (optional) defaults to false, whether to return additional pull request properties
 	WithProperties *string `form:"withProperties,omitempty" json:"withProperties,omitempty"`
 }
@@ -9748,8 +9822,8 @@ type Search1Params struct {
 // Search1ParamsOrder defines parameters for Search1.
 type Search1ParamsOrder string
 
-// Delete11Params defines parameters for Delete11.
-type Delete11Params struct {
+// Delete10Params defines parameters for Delete10.
+type Delete10Params struct {
 	// Namespace A namespace used to identify the provider of the feature
 	Namespace string `form:"namespace" json:"namespace"`
 
@@ -9760,8 +9834,8 @@ type Delete11Params struct {
 	FeatureKey string `form:"featureKey" json:"featureKey"`
 }
 
-// Get9Params defines parameters for Get9.
-type Get9Params struct {
+// Get8Params defines parameters for Get8.
+type Get8Params struct {
 	// Namespace The namespace used to identify the provider of the feature
 	Namespace string `form:"namespace" json:"namespace"`
 
@@ -9928,11 +10002,6 @@ type Search4Params struct {
 // Search4ParamsOrder defines parameters for Search4.
 type Search4ParamsOrder string
 
-// UpdateSystemSigningConfigurationJSONBody defines parameters for UpdateSystemSigningConfiguration.
-type UpdateSystemSigningConfigurationJSONBody struct {
-	Enabled *bool `json:"enabled,omitempty"`
-}
-
 // GetUsers2Params defines parameters for GetUsers2.
 type GetUsers2Params struct {
 	// Filter Return only users, whose username, name or email address <i>contain</i> the <code> filter</code> value
@@ -10055,25 +10124,6 @@ type GetBuildStatusParams struct {
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
-
-// UpdatePullRequestCondition1JSONBody defines parameters for UpdatePullRequestCondition1.
-type UpdatePullRequestCondition1JSONBody struct {
-	RequiredApprovals *int32                 `json:"requiredApprovals,omitempty"`
-	ReviewerGroups    *[]RestReviewerGroup   `json:"reviewerGroups,omitempty"`
-	Reviewers         *[]RestApplicationUser `json:"reviewers,omitempty"`
-	SourceMatcher     *struct {
-		DisplayId *string `json:"displayId,omitempty"`
-		Id        *string `json:"id,omitempty"`
-		Type      *struct {
-			Id   UpdatePullRequestCondition1JSONBodySourceMatcherTypeId `json:"id"`
-			Name string                                                 `json:"name"`
-		} `json:"type,omitempty"`
-	} `json:"sourceMatcher,omitempty"`
-	TargetMatcher *RestRefMatcher `json:"targetMatcher,omitempty"`
-}
-
-// UpdatePullRequestCondition1JSONBodySourceMatcherTypeId defines parameters for UpdatePullRequestCondition1.
-type UpdatePullRequestCondition1JSONBodySourceMatcherTypeId string
 
 // GetReviewersParams defines parameters for GetReviewers.
 type GetReviewersParams struct {
@@ -10364,24 +10414,6 @@ type GetSshKeysParams struct {
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// AddSshKeyJSONBody defines parameters for AddSshKey.
-type AddSshKeyJSONBody struct {
-	AlgorithmType *string `json:"algorithmType,omitempty"`
-	BitLength     *int32  `json:"bitLength,omitempty"`
-
-	// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
-	CreatedDate       *int64  `json:"createdDate,omitempty"`
-	ExpiryDays        *int32  `json:"expiryDays,omitempty"`
-	Fingerprint       *string `json:"fingerprint,omitempty"`
-	Id                *int32  `json:"id,omitempty"`
-	Label             *string `json:"label,omitempty"`
-	LastAuthenticated *string `json:"lastAuthenticated,omitempty"`
-	Text              *string `json:"text,omitempty"`
-
-	// Warning Contains a warning about the key, for example that it's deprecated
-	Warning *string `json:"warning,omitempty"`
-}
-
 // AddSshKeyParams defines parameters for AddSshKey.
 type AddSshKeyParams struct {
 	// User the username of the user to add the SSH key for. If no username is specified, the SSH key will be added for the current authenticated user.
@@ -10452,10 +10484,10 @@ type UpdateAccessToken2JSONRequestBody = RestAccessTokenRequest
 type UpdateGlobalSettingsJSONRequestBody = RestSshKeySettings
 
 // SetBannerJSONRequestBody defines body for SetBanner for application/json ContentType.
-type SetBannerJSONRequestBody SetBannerJSONBody
+type SetBannerJSONRequestBody = RestAnnouncementBanner
 
 // SetDefaultBranchJSONRequestBody defines body for SetDefaultBranch for application/json ContentType.
-type SetDefaultBranchJSONRequestBody SetDefaultBranchJSONBody
+type SetDefaultBranchJSONRequestBody = RestDefaultBranch
 
 // RegisterNewMeshNodeJSONRequestBody defines body for RegisterNewMeshNode for application/json ContentType.
 type RegisterNewMeshNodeJSONRequestBody = RestMeshNode
@@ -10476,7 +10508,7 @@ type RemoveUserFromGroupJSONRequestBody = UserPickerContext
 type UpdateLicenseJSONRequestBody = RestBitbucketLicense
 
 // SetMailConfigJSONRequestBody defines body for SetMailConfig for application/json ContentType.
-type SetMailConfigJSONRequestBody SetMailConfigJSONBody
+type SetMailConfigJSONRequestBody = RestMailConfiguration
 
 // SetSenderAddressJSONRequestBody defines body for SetSenderAddress for application/json ContentType.
 type SetSenderAddressJSONRequestBody = SetSenderAddressJSONBody
@@ -10527,7 +10559,7 @@ type PreviewExportJSONRequestBody = RestExportRequest
 type StartImportJSONRequestBody = RestImportRequest
 
 // StartMeshMigrationJSONRequestBody defines body for StartMeshMigration for application/json ContentType.
-type StartMeshMigrationJSONRequestBody StartMeshMigrationJSONBody
+type StartMeshMigrationJSONRequestBody = RestMeshMigrationRequest
 
 // PreviewMeshMigrationJSONRequestBody defines body for PreviewMeshMigration for application/json ContentType.
 type PreviewMeshMigrationJSONRequestBody = RestMeshMigrationRequest
@@ -10552,6 +10584,9 @@ type ForkRepositoryJSONRequestBody = RestRepository
 
 // UpdateRepositoryJSONRequestBody defines body for UpdateRepository for application/json ContentType.
 type UpdateRepositoryJSONRequestBody = RestRepository
+
+// SaveAttachmentMultipartRequestBody defines body for SaveAttachment for multipart/form-data ContentType.
+type SaveAttachmentMultipartRequestBody = ExampleAttachmentMultipartFormData
 
 // SaveAttachmentMetadataJSONRequestBody defines body for SaveAttachmentMetadata for application/json ContentType.
 type SaveAttachmentMetadataJSONRequestBody = SaveAttachmentMetadataJSONBody
@@ -10583,8 +10618,8 @@ type AddLabelJSONRequestBody = RestLabel
 // CreateJSONRequestBody defines body for Create for application/json ContentType.
 type CreateJSONRequestBody = RestPullRequest
 
-// Delete3JSONRequestBody defines body for Delete3 for application/json ContentType.
-type Delete3JSONRequestBody = RestPullRequestDeleteRequest
+// Delete2JSONRequestBody defines body for Delete2 for application/json ContentType.
+type Delete2JSONRequestBody = RestPullRequestDeleteRequest
 
 // UpdateJSONRequestBody defines body for Update for application/json ContentType.
 type UpdateJSONRequestBody = RestPullRequest
@@ -10695,7 +10730,7 @@ type UpdateWebhookJSONRequestBody = RestWebhook
 type CreateCertificateMultipartRequestBody = ExampleCertificateMultipartFormData
 
 // UpdateSystemSigningConfigurationJSONRequestBody defines body for UpdateSystemSigningConfiguration for application/json ContentType.
-type UpdateSystemSigningConfigurationJSONRequestBody UpdateSystemSigningConfigurationJSONBody
+type UpdateSystemSigningConfigurationJSONRequestBody = RestSystemSigningConfiguration
 
 // UpdateUserDetails1JSONRequestBody defines body for UpdateUserDetails1 for application/json ContentType.
 type UpdateUserDetails1JSONRequestBody = UserUpdateWithCredentials
@@ -10752,7 +10787,7 @@ type UpdatePullRequestConditionJSONRequestBody = RestDefaultReviewersRequest
 type CreatePullRequestCondition1JSONRequestBody = RestDefaultReviewersRequest
 
 // UpdatePullRequestCondition1JSONRequestBody defines body for UpdatePullRequestCondition1 for application/json ContentType.
-type UpdatePullRequestCondition1JSONRequestBody UpdatePullRequestCondition1JSONBody
+type UpdatePullRequestCondition1JSONRequestBody = RestDefaultReviewersRequest
 
 // AddDefaultTask1JSONRequestBody defines body for AddDefaultTask1 for application/json ContentType.
 type AddDefaultTask1JSONRequestBody = RestDefaultTaskRequest
@@ -10839,7 +10874,7 @@ type SetRepositoryArchivePolicyJSONRequestBody = RestRepositoryPolicy
 type SetRepositoryDeletePolicyJSONRequestBody = RestRepositoryPolicy
 
 // AddSshKeyJSONRequestBody defines body for AddSshKey for application/json ContentType.
-type AddSshKeyJSONRequestBody AddSshKeyJSONBody
+type AddSshKeyJSONRequestBody = RestSshKey
 
 // SetEnabledJSONRequestBody defines body for SetEnabled for application/json ContentType.
 type SetEnabledJSONRequestBody = RestRefSyncStatus
@@ -11148,8 +11183,8 @@ type ClientInterface interface {
 
 	RegisterNewMeshNode(ctx context.Context, body RegisterNewMeshNodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete2 request
-	Delete2(ctx context.Context, id int64, params *Delete2Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete1 request
+	Delete1(ctx context.Context, id int64, params *Delete1Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetRegisteredMeshNodeById request
 	GetRegisteredMeshNodeById(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11195,8 +11230,8 @@ type ClientInterface interface {
 
 	RemoveUserFromGroup(ctx context.Context, body RemoveUserFromGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get2 request
-	Get2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get1 request
+	Get1(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateLicenseWithBody request with any body
 	UpdateLicenseWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11276,11 +11311,11 @@ type ClientInterface interface {
 
 	Set4(ctx context.Context, body Set4JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete10 request
-	Delete10(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete9 request
+	Delete9(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get8 request
-	Get8(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get7 request
+	Get7(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Set5WithBody request with any body
 	Set5WithBody(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11584,6 +11619,9 @@ type ClientInterface interface {
 	// GetArchive request
 	GetArchive(ctx context.Context, projectKey string, repositorySlug string, params *GetArchiveParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SaveAttachmentWithBody request with any body
+	SaveAttachmentWithBody(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteAttachment request
 	DeleteAttachment(ctx context.Context, projectKey string, repositorySlug string, attachmentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -11635,14 +11673,14 @@ type ClientInterface interface {
 	// GetCommit request
 	GetCommit(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetCommitParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete request
-	Delete(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeleteRepositoryBuildStatus request
+	DeleteRepositoryBuildStatus(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteRepositoryBuildStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get request
-	Get(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetRepositoryBuildStatus request
+	GetRepositoryBuildStatus(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetRepositoryBuildStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AddWithBody request with any body
-	AddWithBody(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// AddRepositoryBuildStatusWithBody request with any body
+	AddRepositoryBuildStatusWithBody(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetChanges request
 	GetChanges(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11666,11 +11704,11 @@ type ClientInterface interface {
 
 	UpdateComment(ctx context.Context, projectKey string, repositorySlug string, commitId string, commentId string, body UpdateCommentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete1 request
-	Delete1(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *Delete1Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete request
+	Delete(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get1 request
-	Get1(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *Get1Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get request
+	Get(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateOrUpdateDeploymentWithBody request with any body
 	CreateOrUpdateDeploymentWithBody(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11806,13 +11844,13 @@ type ClientInterface interface {
 
 	Create(ctx context.Context, projectKey string, repositorySlug string, body CreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete3WithBody request with any body
-	Delete3WithBody(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete2WithBody request with any body
+	Delete2WithBody(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	Delete3(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete3JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	Delete2(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get3 request
-	Get3(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get2 request
+	Get2(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get2Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateWithBody request with any body
 	UpdateWithBody(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12026,22 +12064,22 @@ type ClientInterface interface {
 
 	SetAutoDeclineSettings1(ctx context.Context, projectKey string, repositorySlug string, body SetAutoDeclineSettings1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete5 request
-	Delete5(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete4 request
+	Delete4(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get5 request
-	Get5(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get4 request
+	Get4(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Set1WithBody request with any body
 	Set1WithBody(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	Set1(ctx context.Context, projectKey string, repositorySlug string, body Set1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete7 request
-	Delete7(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete6 request
+	Delete6(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get7 request
-	Get7(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get6 request
+	Get6(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Set3WithBody request with any body
 	Set3WithBody(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12087,8 +12125,8 @@ type ClientInterface interface {
 
 	Create2(ctx context.Context, projectKey string, repositorySlug string, body Create2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete9 request
-	Delete9(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete8 request
+	Delete8(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReviewerGroup1 request
 	GetReviewerGroup1(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12192,11 +12230,11 @@ type ClientInterface interface {
 	// EditRuleWithBody request with any body
 	EditRuleWithBody(ctx context.Context, projectKey string, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete11 request
-	Delete11(ctx context.Context, projectKey string, params *Delete11Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete10 request
+	Delete10(ctx context.Context, projectKey string, params *Delete10Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get9 request
-	Get9(ctx context.Context, projectKey string, params *Get9Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get8 request
+	Get8(ctx context.Context, projectKey string, params *Get8Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Create3WithBody request with any body
 	Create3WithBody(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12217,22 +12255,22 @@ type ClientInterface interface {
 
 	SetAutoDeclineSettings(ctx context.Context, projectKey string, body SetAutoDeclineSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete4 request
-	Delete4(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete3 request
+	Delete3(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get4 request
-	Get4(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get3 request
+	Get3(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetWithBody request with any body
 	SetWithBody(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	Set(ctx context.Context, projectKey string, body SetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete6 request
-	Delete6(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete5 request
+	Delete5(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get6 request
-	Get6(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get5 request
+	Get5(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// Set2WithBody request with any body
 	Set2WithBody(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12275,8 +12313,8 @@ type ClientInterface interface {
 
 	Create1(ctx context.Context, projectKey string, body Create1JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Delete8 request
-	Delete8(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Delete7 request
+	Delete7(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReviewerGroup request
 	GetReviewerGroup(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -12363,6 +12401,9 @@ type ClientInterface interface {
 
 	UpdateSystemSigningConfiguration(ctx context.Context, body UpdateSystemSigningConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteX509Certificate request
+	DeleteX509Certificate(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetUsers2 request
 	GetUsers2(ctx context.Context, params *GetUsers2Params, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -12435,8 +12476,8 @@ type ClientInterface interface {
 
 	UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Get10 request
-	Get10(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Get9 request
+	Get9(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PutWithBody request with any body
 	PutWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -13516,8 +13557,8 @@ func (c *Client) RegisterNewMeshNode(ctx context.Context, body RegisterNewMeshNo
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete2(ctx context.Context, id int64, params *Delete2Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete2Request(c.Server, id, params)
+func (c *Client) Delete1(ctx context.Context, id int64, params *Delete1Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete1Request(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -13720,8 +13761,8 @@ func (c *Client) RemoveUserFromGroup(ctx context.Context, body RemoveUserFromGro
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get2(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet2Request(c.Server)
+func (c *Client) Get1(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet1Request(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -14068,8 +14109,8 @@ func (c *Client) Set4(ctx context.Context, body Set4JSONRequestBody, reqEditors 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete10(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete10Request(c.Server, userSlug)
+func (c *Client) Delete9(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete9Request(c.Server, userSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -14080,8 +14121,8 @@ func (c *Client) Delete10(ctx context.Context, userSlug string, reqEditors ...Re
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get8(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet8Request(c.Server, userSlug)
+func (c *Client) Get7(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet7Request(c.Server, userSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -15376,6 +15417,18 @@ func (c *Client) GetArchive(ctx context.Context, projectKey string, repositorySl
 	return c.Client.Do(req)
 }
 
+func (c *Client) SaveAttachmentWithBody(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSaveAttachmentRequestWithBody(c.Server, projectKey, repositorySlug, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) DeleteAttachment(ctx context.Context, projectKey string, repositorySlug string, attachmentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteAttachmentRequest(c.Server, projectKey, repositorySlug, attachmentId)
 	if err != nil {
@@ -15592,8 +15645,8 @@ func (c *Client) GetCommit(ctx context.Context, projectKey string, repositorySlu
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteRequest(c.Server, projectKey, repositorySlug, commitId, params)
+func (c *Client) DeleteRepositoryBuildStatus(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteRepositoryBuildStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRepositoryBuildStatusRequest(c.Server, projectKey, repositorySlug, commitId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15604,8 +15657,8 @@ func (c *Client) Delete(ctx context.Context, projectKey string, repositorySlug s
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetRequest(c.Server, projectKey, repositorySlug, commitId, params)
+func (c *Client) GetRepositoryBuildStatus(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetRepositoryBuildStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRepositoryBuildStatusRequest(c.Server, projectKey, repositorySlug, commitId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15616,8 +15669,8 @@ func (c *Client) Get(ctx context.Context, projectKey string, repositorySlug stri
 	return c.Client.Do(req)
 }
 
-func (c *Client) AddWithBody(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAddRequestWithBody(c.Server, projectKey, repositorySlug, commitId, contentType, body)
+func (c *Client) AddRepositoryBuildStatusWithBody(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddRepositoryBuildStatusRequestWithBody(c.Server, projectKey, repositorySlug, commitId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15724,8 +15777,8 @@ func (c *Client) UpdateComment(ctx context.Context, projectKey string, repositor
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete1(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *Delete1Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete1Request(c.Server, projectKey, repositorySlug, commitId, params)
+func (c *Client) Delete(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRequest(c.Server, projectKey, repositorySlug, commitId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15736,8 +15789,8 @@ func (c *Client) Delete1(ctx context.Context, projectKey string, repositorySlug 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get1(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *Get1Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet1Request(c.Server, projectKey, repositorySlug, commitId, params)
+func (c *Client) Get(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRequest(c.Server, projectKey, repositorySlug, commitId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16300,8 +16353,8 @@ func (c *Client) Create(ctx context.Context, projectKey string, repositorySlug s
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete3WithBody(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete3RequestWithBody(c.Server, projectKey, repositorySlug, pullRequestId, contentType, body)
+func (c *Client) Delete2WithBody(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete2RequestWithBody(c.Server, projectKey, repositorySlug, pullRequestId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16312,8 +16365,8 @@ func (c *Client) Delete3WithBody(ctx context.Context, projectKey string, reposit
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete3(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete3JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete3Request(c.Server, projectKey, repositorySlug, pullRequestId, body)
+func (c *Client) Delete2(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete2Request(c.Server, projectKey, repositorySlug, pullRequestId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16324,8 +16377,8 @@ func (c *Client) Delete3(ctx context.Context, projectKey string, repositorySlug 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get3(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet3Request(c.Server, projectKey, repositorySlug, pullRequestId, params)
+func (c *Client) Get2(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get2Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet2Request(c.Server, projectKey, repositorySlug, pullRequestId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17236,8 +17289,8 @@ func (c *Client) SetAutoDeclineSettings1(ctx context.Context, projectKey string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete5(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete5Request(c.Server, projectKey, repositorySlug)
+func (c *Client) Delete4(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete4Request(c.Server, projectKey, repositorySlug)
 	if err != nil {
 		return nil, err
 	}
@@ -17248,8 +17301,8 @@ func (c *Client) Delete5(ctx context.Context, projectKey string, repositorySlug 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get5(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet5Request(c.Server, projectKey, repositorySlug)
+func (c *Client) Get4(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet4Request(c.Server, projectKey, repositorySlug)
 	if err != nil {
 		return nil, err
 	}
@@ -17284,8 +17337,8 @@ func (c *Client) Set1(ctx context.Context, projectKey string, repositorySlug str
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete7(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete7Request(c.Server, projectKey, repositorySlug)
+func (c *Client) Delete6(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete6Request(c.Server, projectKey, repositorySlug)
 	if err != nil {
 		return nil, err
 	}
@@ -17296,8 +17349,8 @@ func (c *Client) Delete7(ctx context.Context, projectKey string, repositorySlug 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get7(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet7Request(c.Server, projectKey, repositorySlug)
+func (c *Client) Get6(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet6Request(c.Server, projectKey, repositorySlug)
 	if err != nil {
 		return nil, err
 	}
@@ -17500,8 +17553,8 @@ func (c *Client) Create2(ctx context.Context, projectKey string, repositorySlug 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete9(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete9Request(c.Server, projectKey, repositorySlug, id)
+func (c *Client) Delete8(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete8Request(c.Server, projectKey, repositorySlug, id)
 	if err != nil {
 		return nil, err
 	}
@@ -17944,8 +17997,8 @@ func (c *Client) EditRuleWithBody(ctx context.Context, projectKey string, id str
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete11(ctx context.Context, projectKey string, params *Delete11Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete11Request(c.Server, projectKey, params)
+func (c *Client) Delete10(ctx context.Context, projectKey string, params *Delete10Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete10Request(c.Server, projectKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17956,8 +18009,8 @@ func (c *Client) Delete11(ctx context.Context, projectKey string, params *Delete
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get9(ctx context.Context, projectKey string, params *Get9Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet9Request(c.Server, projectKey, params)
+func (c *Client) Get8(ctx context.Context, projectKey string, params *Get8Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet8Request(c.Server, projectKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -18052,8 +18105,8 @@ func (c *Client) SetAutoDeclineSettings(ctx context.Context, projectKey string, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete4(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete4Request(c.Server, projectKey)
+func (c *Client) Delete3(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete3Request(c.Server, projectKey)
 	if err != nil {
 		return nil, err
 	}
@@ -18064,8 +18117,8 @@ func (c *Client) Delete4(ctx context.Context, projectKey string, reqEditors ...R
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get4(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet4Request(c.Server, projectKey)
+func (c *Client) Get3(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet3Request(c.Server, projectKey)
 	if err != nil {
 		return nil, err
 	}
@@ -18100,8 +18153,8 @@ func (c *Client) Set(ctx context.Context, projectKey string, body SetJSONRequest
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete6(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete6Request(c.Server, projectKey)
+func (c *Client) Delete5(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete5Request(c.Server, projectKey)
 	if err != nil {
 		return nil, err
 	}
@@ -18112,8 +18165,8 @@ func (c *Client) Delete6(ctx context.Context, projectKey string, reqEditors ...R
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get6(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet6Request(c.Server, projectKey)
+func (c *Client) Get5(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet5Request(c.Server, projectKey)
 	if err != nil {
 		return nil, err
 	}
@@ -18304,8 +18357,8 @@ func (c *Client) Create1(ctx context.Context, projectKey string, body Create1JSO
 	return c.Client.Do(req)
 }
 
-func (c *Client) Delete8(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDelete8Request(c.Server, projectKey, id)
+func (c *Client) Delete7(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelete7Request(c.Server, projectKey, id)
 	if err != nil {
 		return nil, err
 	}
@@ -18676,6 +18729,18 @@ func (c *Client) UpdateSystemSigningConfiguration(ctx context.Context, body Upda
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteX509Certificate(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteX509CertificateRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetUsers2(ctx context.Context, params *GetUsers2Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetUsers2Request(c.Server, params)
 	if err != nil {
@@ -18988,8 +19053,8 @@ func (c *Client) UpdateConfig(ctx context.Context, body UpdateConfigJSONRequestB
 	return c.Client.Do(req)
 }
 
-func (c *Client) Get10(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGet10Request(c.Server)
+func (c *Client) Get9(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGet9Request(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -22882,8 +22947,8 @@ func NewRegisterNewMeshNodeRequestWithBody(server string, contentType string, bo
 	return req, nil
 }
 
-// NewDelete2Request generates requests for Delete2
-func NewDelete2Request(server string, id int64, params *Delete2Params) (*http.Request, error) {
+// NewDelete1Request generates requests for Delete1
+func NewDelete1Request(server string, id int64, params *Delete1Params) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -23557,8 +23622,8 @@ func NewRemoveUserFromGroupRequestWithBody(server string, contentType string, bo
 	return req, nil
 }
 
-// NewGet2Request generates requests for Get2
-func NewGet2Request(server string) (*http.Request, error) {
+// NewGet1Request generates requests for Get1
+func NewGet1Request(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -24690,8 +24755,8 @@ func NewSet4RequestWithBody(server string, contentType string, body io.Reader) (
 	return req, nil
 }
 
-// NewDelete10Request generates requests for Delete10
-func NewDelete10Request(server string, userSlug string) (*http.Request, error) {
+// NewDelete9Request generates requests for Delete9
+func NewDelete9Request(server string, userSlug string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24724,8 +24789,8 @@ func NewDelete10Request(server string, userSlug string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGet8Request generates requests for Get8
-func NewGet8Request(server string, userSlug string) (*http.Request, error) {
+// NewGet7Request generates requests for Get7
+func NewGet7Request(server string, userSlug string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -29769,6 +29834,49 @@ func NewGetArchiveRequest(server string, projectKey string, repositorySlug strin
 	return req, nil
 }
 
+// NewSaveAttachmentRequestWithBody generates requests for SaveAttachment with any type of body
+func NewSaveAttachmentRequestWithBody(server string, projectKey string, repositorySlug string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "projectKey", runtime.ParamLocationPath, projectKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repositorySlug", runtime.ParamLocationPath, repositorySlug)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/projects/%s/repos/%s/attachments", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewDeleteAttachmentRequest generates requests for DeleteAttachment
 func NewDeleteAttachmentRequest(server string, projectKey string, repositorySlug string, attachmentId string) (*http.Request, error) {
 	var err error
@@ -31087,8 +31195,8 @@ func NewGetCommitRequest(server string, projectKey string, repositorySlug string
 	return req, nil
 }
 
-// NewDeleteRequest generates requests for Delete
-func NewDeleteRequest(server string, projectKey string, repositorySlug string, commitId string, params *DeleteParams) (*http.Request, error) {
+// NewDeleteRepositoryBuildStatusRequest generates requests for DeleteRepositoryBuildStatus
+func NewDeleteRepositoryBuildStatusRequest(server string, projectKey string, repositorySlug string, commitId string, params *DeleteRepositoryBuildStatusParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -31153,8 +31261,8 @@ func NewDeleteRequest(server string, projectKey string, repositorySlug string, c
 	return req, nil
 }
 
-// NewGetRequest generates requests for Get
-func NewGetRequest(server string, projectKey string, repositorySlug string, commitId string, params *GetParams) (*http.Request, error) {
+// NewGetRepositoryBuildStatusRequest generates requests for GetRepositoryBuildStatus
+func NewGetRepositoryBuildStatusRequest(server string, projectKey string, repositorySlug string, commitId string, params *GetRepositoryBuildStatusParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -31219,8 +31327,8 @@ func NewGetRequest(server string, projectKey string, repositorySlug string, comm
 	return req, nil
 }
 
-// NewAddRequestWithBody generates requests for Add with any type of body
-func NewAddRequestWithBody(server string, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewAddRepositoryBuildStatusRequestWithBody generates requests for AddRepositoryBuildStatus with any type of body
+func NewAddRepositoryBuildStatusRequestWithBody(server string, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -31788,8 +31896,8 @@ func NewUpdateCommentRequestWithBody(server string, projectKey string, repositor
 	return req, nil
 }
 
-// NewDelete1Request generates requests for Delete1
-func NewDelete1Request(server string, projectKey string, repositorySlug string, commitId string, params *Delete1Params) (*http.Request, error) {
+// NewDeleteRequest generates requests for Delete
+func NewDeleteRequest(server string, projectKey string, repositorySlug string, commitId string, params *DeleteParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -31890,8 +31998,8 @@ func NewDelete1Request(server string, projectKey string, repositorySlug string, 
 	return req, nil
 }
 
-// NewGet1Request generates requests for Get1
-func NewGet1Request(server string, projectKey string, repositorySlug string, commitId string, params *Get1Params) (*http.Request, error) {
+// NewGetRequest generates requests for Get
+func NewGetRequest(server string, projectKey string, repositorySlug string, commitId string, params *GetParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -35809,19 +35917,19 @@ func NewCreateRequestWithBody(server string, projectKey string, repositorySlug s
 	return req, nil
 }
 
-// NewDelete3Request calls the generic Delete3 builder with application/json body
-func NewDelete3Request(server string, projectKey string, repositorySlug string, pullRequestId string, body Delete3JSONRequestBody) (*http.Request, error) {
+// NewDelete2Request calls the generic Delete2 builder with application/json body
+func NewDelete2Request(server string, projectKey string, repositorySlug string, pullRequestId string, body Delete2JSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewDelete3RequestWithBody(server, projectKey, repositorySlug, pullRequestId, "application/json", bodyReader)
+	return NewDelete2RequestWithBody(server, projectKey, repositorySlug, pullRequestId, "application/json", bodyReader)
 }
 
-// NewDelete3RequestWithBody generates requests for Delete3 with any type of body
-func NewDelete3RequestWithBody(server string, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewDelete2RequestWithBody generates requests for Delete2 with any type of body
+func NewDelete2RequestWithBody(server string, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -35870,8 +35978,8 @@ func NewDelete3RequestWithBody(server string, projectKey string, repositorySlug 
 	return req, nil
 }
 
-// NewGet3Request generates requests for Get3
-func NewGet3Request(server string, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params) (*http.Request, error) {
+// NewGet2Request generates requests for Get2
+func NewGet2Request(server string, projectKey string, repositorySlug string, pullRequestId string, params *Get2Params) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -40555,8 +40663,8 @@ func NewSetAutoDeclineSettings1RequestWithBody(server string, projectKey string,
 	return req, nil
 }
 
-// NewDelete5Request generates requests for Delete5
-func NewDelete5Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
+// NewDelete4Request generates requests for Delete4
+func NewDelete4Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -40596,8 +40704,8 @@ func NewDelete5Request(server string, projectKey string, repositorySlug string) 
 	return req, nil
 }
 
-// NewGet5Request generates requests for Get5
-func NewGet5Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
+// NewGet4Request generates requests for Get4
+func NewGet4Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -40691,8 +40799,8 @@ func NewSet1RequestWithBody(server string, projectKey string, repositorySlug str
 	return req, nil
 }
 
-// NewDelete7Request generates requests for Delete7
-func NewDelete7Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
+// NewDelete6Request generates requests for Delete6
+func NewDelete6Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -40732,8 +40840,8 @@ func NewDelete7Request(server string, projectKey string, repositorySlug string) 
 	return req, nil
 }
 
-// NewGet7Request generates requests for Get7
-func NewGet7Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
+// NewGet6Request generates requests for Get6
+func NewGet6Request(server string, projectKey string, repositorySlug string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -41466,8 +41574,8 @@ func NewCreate2RequestWithBody(server string, projectKey string, repositorySlug 
 	return req, nil
 }
 
-// NewDelete9Request generates requests for Delete9
-func NewDelete9Request(server string, projectKey string, repositorySlug string, id string) (*http.Request, error) {
+// NewDelete8Request generates requests for Delete8
+func NewDelete8Request(server string, projectKey string, repositorySlug string, id string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -43352,8 +43460,8 @@ func NewEditRuleRequestWithBody(server string, projectKey string, id string, con
 	return req, nil
 }
 
-// NewDelete11Request generates requests for Delete11
-func NewDelete11Request(server string, projectKey string, params *Delete11Params) (*http.Request, error) {
+// NewDelete10Request generates requests for Delete10
+func NewDelete10Request(server string, projectKey string, params *Delete10Params) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -43432,8 +43540,8 @@ func NewDelete11Request(server string, projectKey string, params *Delete11Params
 	return req, nil
 }
 
-// NewGet9Request generates requests for Get9
-func NewGet9Request(server string, projectKey string, params *Get9Params) (*http.Request, error) {
+// NewGet8Request generates requests for Get8
+func NewGet8Request(server string, projectKey string, params *Get8Params) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -43770,8 +43878,8 @@ func NewSetAutoDeclineSettingsRequestWithBody(server string, projectKey string, 
 	return req, nil
 }
 
-// NewDelete4Request generates requests for Delete4
-func NewDelete4Request(server string, projectKey string) (*http.Request, error) {
+// NewDelete3Request generates requests for Delete3
+func NewDelete3Request(server string, projectKey string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -43804,8 +43912,8 @@ func NewDelete4Request(server string, projectKey string) (*http.Request, error) 
 	return req, nil
 }
 
-// NewGet4Request generates requests for Get4
-func NewGet4Request(server string, projectKey string) (*http.Request, error) {
+// NewGet3Request generates requests for Get3
+func NewGet3Request(server string, projectKey string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -43885,8 +43993,8 @@ func NewSetRequestWithBody(server string, projectKey string, contentType string,
 	return req, nil
 }
 
-// NewDelete6Request generates requests for Delete6
-func NewDelete6Request(server string, projectKey string) (*http.Request, error) {
+// NewDelete5Request generates requests for Delete5
+func NewDelete5Request(server string, projectKey string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -43919,8 +44027,8 @@ func NewDelete6Request(server string, projectKey string) (*http.Request, error) 
 	return req, nil
 }
 
-// NewGet6Request generates requests for Get6
-func NewGet6Request(server string, projectKey string) (*http.Request, error) {
+// NewGet5Request generates requests for Get5
+func NewGet5Request(server string, projectKey string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -44535,8 +44643,8 @@ func NewCreate1RequestWithBody(server string, projectKey string, contentType str
 	return req, nil
 }
 
-// NewDelete8Request generates requests for Delete8
-func NewDelete8Request(server string, projectKey string, id string) (*http.Request, error) {
+// NewDelete7Request generates requests for Delete7
+func NewDelete7Request(server string, projectKey string, id string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -45940,6 +46048,33 @@ func NewUpdateSystemSigningConfigurationRequestWithBody(server string, contentTy
 	return req, nil
 }
 
+// NewDeleteX509CertificateRequest generates requests for DeleteX509Certificate
+func NewDeleteX509CertificateRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/latest/system-signing/x509/certificate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetUsers2Request generates requests for GetUsers2
 func NewGetUsers2Request(server string, params *GetUsers2Params) (*http.Request, error) {
 	var err error
@@ -46777,8 +46912,8 @@ func NewUpdateConfigRequestWithBody(server string, contentType string, body io.R
 	return req, nil
 }
 
-// NewGet10Request generates requests for Get10
-func NewGet10Request(server string) (*http.Request, error) {
+// NewGet9Request generates requests for Get9
+func NewGet9Request(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -55187,8 +55322,8 @@ type ClientWithResponsesInterface interface {
 
 	RegisterNewMeshNodeWithResponse(ctx context.Context, body RegisterNewMeshNodeJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterNewMeshNodeResponse, error)
 
-	// Delete2WithResponse request
-	Delete2WithResponse(ctx context.Context, id int64, params *Delete2Params, reqEditors ...RequestEditorFn) (*Delete2Response, error)
+	// Delete1WithResponse request
+	Delete1WithResponse(ctx context.Context, id int64, params *Delete1Params, reqEditors ...RequestEditorFn) (*Delete1Response, error)
 
 	// GetRegisteredMeshNodeByIdWithResponse request
 	GetRegisteredMeshNodeByIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetRegisteredMeshNodeByIdResponse, error)
@@ -55234,8 +55369,8 @@ type ClientWithResponsesInterface interface {
 
 	RemoveUserFromGroupWithResponse(ctx context.Context, body RemoveUserFromGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*RemoveUserFromGroupResponse, error)
 
-	// Get2WithResponse request
-	Get2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get2Response, error)
+	// Get1WithResponse request
+	Get1WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get1Response, error)
 
 	// UpdateLicenseWithBodyWithResponse request with any body
 	UpdateLicenseWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateLicenseResponse, error)
@@ -55315,11 +55450,11 @@ type ClientWithResponsesInterface interface {
 
 	Set4WithResponse(ctx context.Context, body Set4JSONRequestBody, reqEditors ...RequestEditorFn) (*Set4Response, error)
 
-	// Delete10WithResponse request
-	Delete10WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Delete10Response, error)
+	// Delete9WithResponse request
+	Delete9WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Delete9Response, error)
 
-	// Get8WithResponse request
-	Get8WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Get8Response, error)
+	// Get7WithResponse request
+	Get7WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Get7Response, error)
 
 	// Set5WithBodyWithResponse request with any body
 	Set5WithBodyWithResponse(ctx context.Context, userSlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set5Response, error)
@@ -55623,6 +55758,9 @@ type ClientWithResponsesInterface interface {
 	// GetArchiveWithResponse request
 	GetArchiveWithResponse(ctx context.Context, projectKey string, repositorySlug string, params *GetArchiveParams, reqEditors ...RequestEditorFn) (*GetArchiveResponse, error)
 
+	// SaveAttachmentWithBodyWithResponse request with any body
+	SaveAttachmentWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SaveAttachmentResponse, error)
+
 	// DeleteAttachmentWithResponse request
 	DeleteAttachmentWithResponse(ctx context.Context, projectKey string, repositorySlug string, attachmentId string, reqEditors ...RequestEditorFn) (*DeleteAttachmentResponse, error)
 
@@ -55674,14 +55812,14 @@ type ClientWithResponsesInterface interface {
 	// GetCommitWithResponse request
 	GetCommitWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetCommitParams, reqEditors ...RequestEditorFn) (*GetCommitResponse, error)
 
-	// DeleteWithResponse request
-	DeleteWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteParams, reqEditors ...RequestEditorFn) (*DeleteResponse, error)
+	// DeleteRepositoryBuildStatusWithResponse request
+	DeleteRepositoryBuildStatusWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteRepositoryBuildStatusParams, reqEditors ...RequestEditorFn) (*DeleteRepositoryBuildStatusResponse, error)
 
-	// GetWithResponse request
-	GetWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetParams, reqEditors ...RequestEditorFn) (*GetResponse, error)
+	// GetRepositoryBuildStatusWithResponse request
+	GetRepositoryBuildStatusWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetRepositoryBuildStatusParams, reqEditors ...RequestEditorFn) (*GetRepositoryBuildStatusResponse, error)
 
-	// AddWithBodyWithResponse request with any body
-	AddWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddResponse, error)
+	// AddRepositoryBuildStatusWithBodyWithResponse request with any body
+	AddRepositoryBuildStatusWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddRepositoryBuildStatusResponse, error)
 
 	// GetChangesWithResponse request
 	GetChangesWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetChangesParams, reqEditors ...RequestEditorFn) (*GetChangesResponse, error)
@@ -55705,11 +55843,11 @@ type ClientWithResponsesInterface interface {
 
 	UpdateCommentWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, commentId string, body UpdateCommentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCommentResponse, error)
 
-	// Delete1WithResponse request
-	Delete1WithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *Delete1Params, reqEditors ...RequestEditorFn) (*Delete1Response, error)
+	// DeleteWithResponse request
+	DeleteWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteParams, reqEditors ...RequestEditorFn) (*DeleteResponse, error)
 
-	// Get1WithResponse request
-	Get1WithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *Get1Params, reqEditors ...RequestEditorFn) (*Get1Response, error)
+	// GetWithResponse request
+	GetWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetParams, reqEditors ...RequestEditorFn) (*GetResponse, error)
 
 	// CreateOrUpdateDeploymentWithBodyWithResponse request with any body
 	CreateOrUpdateDeploymentWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrUpdateDeploymentResponse, error)
@@ -55845,13 +55983,13 @@ type ClientWithResponsesInterface interface {
 
 	CreateWithResponse(ctx context.Context, projectKey string, repositorySlug string, body CreateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateResponse, error)
 
-	// Delete3WithBodyWithResponse request with any body
-	Delete3WithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Delete3Response, error)
+	// Delete2WithBodyWithResponse request with any body
+	Delete2WithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Delete2Response, error)
 
-	Delete3WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete3JSONRequestBody, reqEditors ...RequestEditorFn) (*Delete3Response, error)
+	Delete2WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete2JSONRequestBody, reqEditors ...RequestEditorFn) (*Delete2Response, error)
 
-	// Get3WithResponse request
-	Get3WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params, reqEditors ...RequestEditorFn) (*Get3Response, error)
+	// Get2WithResponse request
+	Get2WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get2Params, reqEditors ...RequestEditorFn) (*Get2Response, error)
 
 	// UpdateWithBodyWithResponse request with any body
 	UpdateWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateResponse, error)
@@ -56065,22 +56203,22 @@ type ClientWithResponsesInterface interface {
 
 	SetAutoDeclineSettings1WithResponse(ctx context.Context, projectKey string, repositorySlug string, body SetAutoDeclineSettings1JSONRequestBody, reqEditors ...RequestEditorFn) (*SetAutoDeclineSettings1Response, error)
 
-	// Delete5WithResponse request
-	Delete5WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete5Response, error)
+	// Delete4WithResponse request
+	Delete4WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete4Response, error)
 
-	// Get5WithResponse request
-	Get5WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get5Response, error)
+	// Get4WithResponse request
+	Get4WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get4Response, error)
 
 	// Set1WithBodyWithResponse request with any body
 	Set1WithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set1Response, error)
 
 	Set1WithResponse(ctx context.Context, projectKey string, repositorySlug string, body Set1JSONRequestBody, reqEditors ...RequestEditorFn) (*Set1Response, error)
 
-	// Delete7WithResponse request
-	Delete7WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete7Response, error)
+	// Delete6WithResponse request
+	Delete6WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete6Response, error)
 
-	// Get7WithResponse request
-	Get7WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get7Response, error)
+	// Get6WithResponse request
+	Get6WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get6Response, error)
 
 	// Set3WithBodyWithResponse request with any body
 	Set3WithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set3Response, error)
@@ -56126,8 +56264,8 @@ type ClientWithResponsesInterface interface {
 
 	Create2WithResponse(ctx context.Context, projectKey string, repositorySlug string, body Create2JSONRequestBody, reqEditors ...RequestEditorFn) (*Create2Response, error)
 
-	// Delete9WithResponse request
-	Delete9WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*Delete9Response, error)
+	// Delete8WithResponse request
+	Delete8WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*Delete8Response, error)
 
 	// GetReviewerGroup1WithResponse request
 	GetReviewerGroup1WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*GetReviewerGroup1Response, error)
@@ -56231,11 +56369,11 @@ type ClientWithResponsesInterface interface {
 	// EditRuleWithBodyWithResponse request with any body
 	EditRuleWithBodyWithResponse(ctx context.Context, projectKey string, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EditRuleResponse, error)
 
-	// Delete11WithResponse request
-	Delete11WithResponse(ctx context.Context, projectKey string, params *Delete11Params, reqEditors ...RequestEditorFn) (*Delete11Response, error)
+	// Delete10WithResponse request
+	Delete10WithResponse(ctx context.Context, projectKey string, params *Delete10Params, reqEditors ...RequestEditorFn) (*Delete10Response, error)
 
-	// Get9WithResponse request
-	Get9WithResponse(ctx context.Context, projectKey string, params *Get9Params, reqEditors ...RequestEditorFn) (*Get9Response, error)
+	// Get8WithResponse request
+	Get8WithResponse(ctx context.Context, projectKey string, params *Get8Params, reqEditors ...RequestEditorFn) (*Get8Response, error)
 
 	// Create3WithBodyWithResponse request with any body
 	Create3WithBodyWithResponse(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Create3Response, error)
@@ -56256,22 +56394,22 @@ type ClientWithResponsesInterface interface {
 
 	SetAutoDeclineSettingsWithResponse(ctx context.Context, projectKey string, body SetAutoDeclineSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAutoDeclineSettingsResponse, error)
 
-	// Delete4WithResponse request
-	Delete4WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete4Response, error)
+	// Delete3WithResponse request
+	Delete3WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete3Response, error)
 
-	// Get4WithResponse request
-	Get4WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get4Response, error)
+	// Get3WithResponse request
+	Get3WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get3Response, error)
 
 	// SetWithBodyWithResponse request with any body
 	SetWithBodyWithResponse(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResponse, error)
 
 	SetWithResponse(ctx context.Context, projectKey string, body SetJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResponse, error)
 
-	// Delete6WithResponse request
-	Delete6WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete6Response, error)
+	// Delete5WithResponse request
+	Delete5WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete5Response, error)
 
-	// Get6WithResponse request
-	Get6WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get6Response, error)
+	// Get5WithResponse request
+	Get5WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get5Response, error)
 
 	// Set2WithBodyWithResponse request with any body
 	Set2WithBodyWithResponse(ctx context.Context, projectKey string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Set2Response, error)
@@ -56314,8 +56452,8 @@ type ClientWithResponsesInterface interface {
 
 	Create1WithResponse(ctx context.Context, projectKey string, body Create1JSONRequestBody, reqEditors ...RequestEditorFn) (*Create1Response, error)
 
-	// Delete8WithResponse request
-	Delete8WithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*Delete8Response, error)
+	// Delete7WithResponse request
+	Delete7WithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*Delete7Response, error)
 
 	// GetReviewerGroupWithResponse request
 	GetReviewerGroupWithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*GetReviewerGroupResponse, error)
@@ -56402,6 +56540,9 @@ type ClientWithResponsesInterface interface {
 
 	UpdateSystemSigningConfigurationWithResponse(ctx context.Context, body UpdateSystemSigningConfigurationJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSystemSigningConfigurationResponse, error)
 
+	// DeleteX509CertificateWithResponse request
+	DeleteX509CertificateWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteX509CertificateResponse, error)
+
 	// GetUsers2WithResponse request
 	GetUsers2WithResponse(ctx context.Context, params *GetUsers2Params, reqEditors ...RequestEditorFn) (*GetUsers2Response, error)
 
@@ -56474,8 +56615,8 @@ type ClientWithResponsesInterface interface {
 
 	UpdateConfigWithResponse(ctx context.Context, body UpdateConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateConfigResponse, error)
 
-	// Get10WithResponse request
-	Get10WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get10Response, error)
+	// Get9WithResponse request
+	Get9WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get9Response, error)
 
 	// PutWithBodyWithResponse request with any body
 	PutWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutResponse, error)
@@ -57883,13 +58024,13 @@ func (r RegisterNewMeshNodeResponse) StatusCode() int {
 	return 0
 }
 
-type Delete2Response struct {
+type Delete1Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete2Response) Status() string {
+func (r Delete1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -57897,7 +58038,7 @@ func (r Delete2Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete2Response) StatusCode() int {
+func (r Delete1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -58259,7 +58400,7 @@ func (r RemoveUserFromGroupResponse) StatusCode() int {
 	return 0
 }
 
-type Get2Response struct {
+type Get1Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestBitbucketLicense
@@ -58272,7 +58413,7 @@ type Get2Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get2Response) Status() string {
+func (r Get1Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -58280,7 +58421,7 @@ func (r Get2Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get2Response) StatusCode() int {
+func (r Get1Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -58943,7 +59084,7 @@ func (r Set4Response) StatusCode() int {
 	return 0
 }
 
-type Delete10Response struct {
+type Delete9Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -58955,7 +59096,7 @@ type Delete10Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete10Response) Status() string {
+func (r Delete9Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -58963,14 +59104,14 @@ func (r Delete10Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete10Response) StatusCode() int {
+func (r Delete9Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get8Response struct {
+type Get7Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestUserRateLimitSettings
@@ -58983,7 +59124,7 @@ type Get8Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get8Response) Status() string {
+func (r Get7Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -58991,7 +59132,7 @@ func (r Get8Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get8Response) StatusCode() int {
+func (r Get7Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -61422,6 +61563,9 @@ type ModifyAllUserPermissionResponse struct {
 	JSON401 *struct {
 		Errors *[]RestErrorMessage `json:"errors,omitempty"`
 	}
+	JSON403 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
 	JSON404 *struct {
 		Errors *[]RestErrorMessage `json:"errors,omitempty"`
 	}
@@ -61656,6 +61800,34 @@ func (r GetArchiveResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetArchiveResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SaveAttachmentResponse struct {
+	Body                          []byte
+	HTTPResponse                  *http.Response
+	ApplicationjsonCharsetUTF8201 *RestAttachment
+	JSON400                       *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+	JSON401 *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r SaveAttachmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SaveAttachmentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -62120,7 +62292,7 @@ func (r GetCommitResponse) StatusCode() int {
 	return 0
 }
 
-type DeleteResponse struct {
+type DeleteRepositoryBuildStatusResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *struct {
@@ -62135,7 +62307,7 @@ type DeleteResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r DeleteResponse) Status() string {
+func (r DeleteRepositoryBuildStatusResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -62143,14 +62315,14 @@ func (r DeleteResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeleteResponse) StatusCode() int {
+func (r DeleteRepositoryBuildStatusResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type GetResponse struct {
+type GetRepositoryBuildStatusResponse struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestBuildStatus
@@ -62166,7 +62338,7 @@ type GetResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetResponse) Status() string {
+func (r GetRepositoryBuildStatusResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -62174,14 +62346,14 @@ func (r GetResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetResponse) StatusCode() int {
+func (r GetRepositoryBuildStatusResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type AddResponse struct {
+type AddRepositoryBuildStatusResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *struct {
@@ -62196,7 +62368,7 @@ type AddResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r AddResponse) Status() string {
+func (r AddRepositoryBuildStatusResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -62204,7 +62376,7 @@ func (r AddResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r AddResponse) StatusCode() int {
+func (r AddRepositoryBuildStatusResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -62413,7 +62585,7 @@ func (r UpdateCommentResponse) StatusCode() int {
 	return 0
 }
 
-type Delete1Response struct {
+type DeleteResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *struct {
@@ -62428,7 +62600,7 @@ type Delete1Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete1Response) Status() string {
+func (r DeleteResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -62436,14 +62608,14 @@ func (r Delete1Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete1Response) StatusCode() int {
+func (r DeleteResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get1Response struct {
+type GetResponse struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestDeployment
@@ -62459,7 +62631,7 @@ type Get1Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get1Response) Status() string {
+func (r GetResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -62467,7 +62639,7 @@ func (r Get1Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get1Response) StatusCode() int {
+func (r GetResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -63779,7 +63951,7 @@ func (r CreateResponse) StatusCode() int {
 	return 0
 }
 
-type Delete3Response struct {
+type Delete2Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -63794,7 +63966,7 @@ type Delete3Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete3Response) Status() string {
+func (r Delete2Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -63802,14 +63974,14 @@ func (r Delete3Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete3Response) StatusCode() int {
+func (r Delete2Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get3Response struct {
+type Get2Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestPullRequest
@@ -63822,7 +63994,7 @@ type Get3Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get3Response) Status() string {
+func (r Get2Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -63830,7 +64002,7 @@ func (r Get3Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get3Response) StatusCode() int {
+func (r Get2Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -65726,7 +65898,7 @@ func (r SetAutoDeclineSettings1Response) StatusCode() int {
 	return 0
 }
 
-type Delete5Response struct {
+type Delete4Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -65741,7 +65913,7 @@ type Delete5Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete5Response) Status() string {
+func (r Delete4Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -65749,14 +65921,14 @@ func (r Delete5Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete5Response) StatusCode() int {
+func (r Delete4Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get5Response struct {
+type Get4Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestAutoMergeRestrictedSettings
@@ -65769,7 +65941,7 @@ type Get5Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get5Response) Status() string {
+func (r Get4Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -65777,7 +65949,7 @@ func (r Get5Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get5Response) StatusCode() int {
+func (r Get4Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -65818,7 +65990,7 @@ func (r Set1Response) StatusCode() int {
 	return 0
 }
 
-type Delete7Response struct {
+type Delete6Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -65833,7 +66005,7 @@ type Delete7Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete7Response) Status() string {
+func (r Delete6Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -65841,14 +66013,14 @@ func (r Delete7Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete7Response) StatusCode() int {
+func (r Delete6Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get7Response struct {
+type Get6Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestChangePullRequestAuthorRestrictedSettings
@@ -65861,7 +66033,7 @@ type Get7Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get7Response) Status() string {
+func (r Get6Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -65869,7 +66041,7 @@ func (r Get7Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get7Response) StatusCode() int {
+func (r Get6Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -66246,7 +66418,7 @@ func (r Create2Response) StatusCode() int {
 	return 0
 }
 
-type Delete9Response struct {
+type Delete8Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -66258,7 +66430,7 @@ type Delete9Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete9Response) Status() string {
+func (r Delete8Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -66266,7 +66438,7 @@ func (r Delete9Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete9Response) StatusCode() int {
+func (r Delete8Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -67126,7 +67298,7 @@ func (r EditRuleResponse) StatusCode() int {
 	return 0
 }
 
-type Delete11Response struct {
+type Delete10Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *struct {
@@ -67141,7 +67313,7 @@ type Delete11Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete11Response) Status() string {
+func (r Delete10Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -67149,14 +67321,14 @@ func (r Delete11Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete11Response) StatusCode() int {
+func (r Delete10Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get9Response struct {
+type Get8Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestProjectSettingsRestriction
@@ -67172,7 +67344,7 @@ type Get9Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get9Response) Status() string {
+func (r Get8Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -67180,7 +67352,7 @@ func (r Get9Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get9Response) StatusCode() int {
+func (r Get8Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -67345,7 +67517,7 @@ func (r SetAutoDeclineSettingsResponse) StatusCode() int {
 	return 0
 }
 
-type Delete4Response struct {
+type Delete3Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -67357,7 +67529,7 @@ type Delete4Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete4Response) Status() string {
+func (r Delete3Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -67365,14 +67537,14 @@ func (r Delete4Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete4Response) StatusCode() int {
+func (r Delete3Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get4Response struct {
+type Get3Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestAutoMergeRestrictedSettings
@@ -67385,7 +67557,7 @@ type Get4Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get4Response) Status() string {
+func (r Get3Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -67393,7 +67565,7 @@ func (r Get4Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get4Response) StatusCode() int {
+func (r Get3Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -67431,7 +67603,7 @@ func (r SetResponse) StatusCode() int {
 	return 0
 }
 
-type Delete6Response struct {
+type Delete5Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -67443,7 +67615,7 @@ type Delete6Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete6Response) Status() string {
+func (r Delete5Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -67451,14 +67623,14 @@ func (r Delete6Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete6Response) StatusCode() int {
+func (r Delete5Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
-type Get6Response struct {
+type Get5Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
 	ApplicationjsonCharsetUTF8200 *RestChangePullRequestAuthorRestrictedSettings
@@ -67471,7 +67643,7 @@ type Get6Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Get6Response) Status() string {
+func (r Get5Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -67479,7 +67651,7 @@ func (r Get6Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get6Response) StatusCode() int {
+func (r Get5Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -67826,7 +67998,7 @@ func (r Create1Response) StatusCode() int {
 	return 0
 }
 
-type Delete8Response struct {
+type Delete7Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON401      *struct {
@@ -67838,7 +68010,7 @@ type Delete8Response struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r Delete8Response) Status() string {
+func (r Delete7Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -67846,7 +68018,7 @@ func (r Delete8Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Delete8Response) StatusCode() int {
+func (r Delete7Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -68563,6 +68735,30 @@ func (r UpdateSystemSigningConfigurationResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteX509CertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *struct {
+		Errors *[]RestErrorMessage `json:"errors,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteX509CertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteX509CertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetUsers2Response struct {
 	Body                          []byte
 	HTTPResponse                  *http.Response
@@ -69060,14 +69256,14 @@ func (r UpdateConfigResponse) StatusCode() int {
 	return 0
 }
 
-type Get10Response struct {
+type Get9Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *BasicAuthConfigEntity
 }
 
 // Status returns HTTPResponse.Status
-func (r Get10Response) Status() string {
+func (r Get9Response) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -69075,7 +69271,7 @@ func (r Get10Response) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r Get10Response) StatusCode() int {
+func (r Get9Response) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -73873,13 +74069,13 @@ func (c *ClientWithResponses) RegisterNewMeshNodeWithResponse(ctx context.Contex
 	return ParseRegisterNewMeshNodeResponse(rsp)
 }
 
-// Delete2WithResponse request returning *Delete2Response
-func (c *ClientWithResponses) Delete2WithResponse(ctx context.Context, id int64, params *Delete2Params, reqEditors ...RequestEditorFn) (*Delete2Response, error) {
-	rsp, err := c.Delete2(ctx, id, params, reqEditors...)
+// Delete1WithResponse request returning *Delete1Response
+func (c *ClientWithResponses) Delete1WithResponse(ctx context.Context, id int64, params *Delete1Params, reqEditors ...RequestEditorFn) (*Delete1Response, error) {
+	rsp, err := c.Delete1(ctx, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete2Response(rsp)
+	return ParseDelete1Response(rsp)
 }
 
 // GetRegisteredMeshNodeByIdWithResponse request returning *GetRegisteredMeshNodeByIdResponse
@@ -74022,13 +74218,13 @@ func (c *ClientWithResponses) RemoveUserFromGroupWithResponse(ctx context.Contex
 	return ParseRemoveUserFromGroupResponse(rsp)
 }
 
-// Get2WithResponse request returning *Get2Response
-func (c *ClientWithResponses) Get2WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get2Response, error) {
-	rsp, err := c.Get2(ctx, reqEditors...)
+// Get1WithResponse request returning *Get1Response
+func (c *ClientWithResponses) Get1WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get1Response, error) {
+	rsp, err := c.Get1(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet2Response(rsp)
+	return ParseGet1Response(rsp)
 }
 
 // UpdateLicenseWithBodyWithResponse request with arbitrary body returning *UpdateLicenseResponse
@@ -74277,22 +74473,22 @@ func (c *ClientWithResponses) Set4WithResponse(ctx context.Context, body Set4JSO
 	return ParseSet4Response(rsp)
 }
 
-// Delete10WithResponse request returning *Delete10Response
-func (c *ClientWithResponses) Delete10WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Delete10Response, error) {
-	rsp, err := c.Delete10(ctx, userSlug, reqEditors...)
+// Delete9WithResponse request returning *Delete9Response
+func (c *ClientWithResponses) Delete9WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Delete9Response, error) {
+	rsp, err := c.Delete9(ctx, userSlug, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete10Response(rsp)
+	return ParseDelete9Response(rsp)
 }
 
-// Get8WithResponse request returning *Get8Response
-func (c *ClientWithResponses) Get8WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Get8Response, error) {
-	rsp, err := c.Get8(ctx, userSlug, reqEditors...)
+// Get7WithResponse request returning *Get7Response
+func (c *ClientWithResponses) Get7WithResponse(ctx context.Context, userSlug string, reqEditors ...RequestEditorFn) (*Get7Response, error) {
+	rsp, err := c.Get7(ctx, userSlug, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet8Response(rsp)
+	return ParseGet7Response(rsp)
 }
 
 // Set5WithBodyWithResponse request with arbitrary body returning *Set5Response
@@ -75239,6 +75435,15 @@ func (c *ClientWithResponses) GetArchiveWithResponse(ctx context.Context, projec
 	return ParseGetArchiveResponse(rsp)
 }
 
+// SaveAttachmentWithBodyWithResponse request with arbitrary body returning *SaveAttachmentResponse
+func (c *ClientWithResponses) SaveAttachmentWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SaveAttachmentResponse, error) {
+	rsp, err := c.SaveAttachmentWithBody(ctx, projectKey, repositorySlug, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSaveAttachmentResponse(rsp)
+}
+
 // DeleteAttachmentWithResponse request returning *DeleteAttachmentResponse
 func (c *ClientWithResponses) DeleteAttachmentWithResponse(ctx context.Context, projectKey string, repositorySlug string, attachmentId string, reqEditors ...RequestEditorFn) (*DeleteAttachmentResponse, error) {
 	rsp, err := c.DeleteAttachment(ctx, projectKey, repositorySlug, attachmentId, reqEditors...)
@@ -75398,31 +75603,31 @@ func (c *ClientWithResponses) GetCommitWithResponse(ctx context.Context, project
 	return ParseGetCommitResponse(rsp)
 }
 
-// DeleteWithResponse request returning *DeleteResponse
-func (c *ClientWithResponses) DeleteWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteParams, reqEditors ...RequestEditorFn) (*DeleteResponse, error) {
-	rsp, err := c.Delete(ctx, projectKey, repositorySlug, commitId, params, reqEditors...)
+// DeleteRepositoryBuildStatusWithResponse request returning *DeleteRepositoryBuildStatusResponse
+func (c *ClientWithResponses) DeleteRepositoryBuildStatusWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteRepositoryBuildStatusParams, reqEditors ...RequestEditorFn) (*DeleteRepositoryBuildStatusResponse, error) {
+	rsp, err := c.DeleteRepositoryBuildStatus(ctx, projectKey, repositorySlug, commitId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteResponse(rsp)
+	return ParseDeleteRepositoryBuildStatusResponse(rsp)
 }
 
-// GetWithResponse request returning *GetResponse
-func (c *ClientWithResponses) GetWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetParams, reqEditors ...RequestEditorFn) (*GetResponse, error) {
-	rsp, err := c.Get(ctx, projectKey, repositorySlug, commitId, params, reqEditors...)
+// GetRepositoryBuildStatusWithResponse request returning *GetRepositoryBuildStatusResponse
+func (c *ClientWithResponses) GetRepositoryBuildStatusWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetRepositoryBuildStatusParams, reqEditors ...RequestEditorFn) (*GetRepositoryBuildStatusResponse, error) {
+	rsp, err := c.GetRepositoryBuildStatus(ctx, projectKey, repositorySlug, commitId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetResponse(rsp)
+	return ParseGetRepositoryBuildStatusResponse(rsp)
 }
 
-// AddWithBodyWithResponse request with arbitrary body returning *AddResponse
-func (c *ClientWithResponses) AddWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddResponse, error) {
-	rsp, err := c.AddWithBody(ctx, projectKey, repositorySlug, commitId, contentType, body, reqEditors...)
+// AddRepositoryBuildStatusWithBodyWithResponse request with arbitrary body returning *AddRepositoryBuildStatusResponse
+func (c *ClientWithResponses) AddRepositoryBuildStatusWithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddRepositoryBuildStatusResponse, error) {
+	rsp, err := c.AddRepositoryBuildStatusWithBody(ctx, projectKey, repositorySlug, commitId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAddResponse(rsp)
+	return ParseAddRepositoryBuildStatusResponse(rsp)
 }
 
 // GetChangesWithResponse request returning *GetChangesResponse
@@ -75495,22 +75700,22 @@ func (c *ClientWithResponses) UpdateCommentWithResponse(ctx context.Context, pro
 	return ParseUpdateCommentResponse(rsp)
 }
 
-// Delete1WithResponse request returning *Delete1Response
-func (c *ClientWithResponses) Delete1WithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *Delete1Params, reqEditors ...RequestEditorFn) (*Delete1Response, error) {
-	rsp, err := c.Delete1(ctx, projectKey, repositorySlug, commitId, params, reqEditors...)
+// DeleteWithResponse request returning *DeleteResponse
+func (c *ClientWithResponses) DeleteWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *DeleteParams, reqEditors ...RequestEditorFn) (*DeleteResponse, error) {
+	rsp, err := c.Delete(ctx, projectKey, repositorySlug, commitId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete1Response(rsp)
+	return ParseDeleteResponse(rsp)
 }
 
-// Get1WithResponse request returning *Get1Response
-func (c *ClientWithResponses) Get1WithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *Get1Params, reqEditors ...RequestEditorFn) (*Get1Response, error) {
-	rsp, err := c.Get1(ctx, projectKey, repositorySlug, commitId, params, reqEditors...)
+// GetWithResponse request returning *GetResponse
+func (c *ClientWithResponses) GetWithResponse(ctx context.Context, projectKey string, repositorySlug string, commitId string, params *GetParams, reqEditors ...RequestEditorFn) (*GetResponse, error) {
+	rsp, err := c.Get(ctx, projectKey, repositorySlug, commitId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet1Response(rsp)
+	return ParseGetResponse(rsp)
 }
 
 // CreateOrUpdateDeploymentWithBodyWithResponse request with arbitrary body returning *CreateOrUpdateDeploymentResponse
@@ -75923,30 +76128,30 @@ func (c *ClientWithResponses) CreateWithResponse(ctx context.Context, projectKey
 	return ParseCreateResponse(rsp)
 }
 
-// Delete3WithBodyWithResponse request with arbitrary body returning *Delete3Response
-func (c *ClientWithResponses) Delete3WithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Delete3Response, error) {
-	rsp, err := c.Delete3WithBody(ctx, projectKey, repositorySlug, pullRequestId, contentType, body, reqEditors...)
+// Delete2WithBodyWithResponse request with arbitrary body returning *Delete2Response
+func (c *ClientWithResponses) Delete2WithBodyWithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*Delete2Response, error) {
+	rsp, err := c.Delete2WithBody(ctx, projectKey, repositorySlug, pullRequestId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete3Response(rsp)
+	return ParseDelete2Response(rsp)
 }
 
-func (c *ClientWithResponses) Delete3WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete3JSONRequestBody, reqEditors ...RequestEditorFn) (*Delete3Response, error) {
-	rsp, err := c.Delete3(ctx, projectKey, repositorySlug, pullRequestId, body, reqEditors...)
+func (c *ClientWithResponses) Delete2WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, body Delete2JSONRequestBody, reqEditors ...RequestEditorFn) (*Delete2Response, error) {
+	rsp, err := c.Delete2(ctx, projectKey, repositorySlug, pullRequestId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete3Response(rsp)
+	return ParseDelete2Response(rsp)
 }
 
-// Get3WithResponse request returning *Get3Response
-func (c *ClientWithResponses) Get3WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get3Params, reqEditors ...RequestEditorFn) (*Get3Response, error) {
-	rsp, err := c.Get3(ctx, projectKey, repositorySlug, pullRequestId, params, reqEditors...)
+// Get2WithResponse request returning *Get2Response
+func (c *ClientWithResponses) Get2WithResponse(ctx context.Context, projectKey string, repositorySlug string, pullRequestId string, params *Get2Params, reqEditors ...RequestEditorFn) (*Get2Response, error) {
+	rsp, err := c.Get2(ctx, projectKey, repositorySlug, pullRequestId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet3Response(rsp)
+	return ParseGet2Response(rsp)
 }
 
 // UpdateWithBodyWithResponse request with arbitrary body returning *UpdateResponse
@@ -76611,22 +76816,22 @@ func (c *ClientWithResponses) SetAutoDeclineSettings1WithResponse(ctx context.Co
 	return ParseSetAutoDeclineSettings1Response(rsp)
 }
 
-// Delete5WithResponse request returning *Delete5Response
-func (c *ClientWithResponses) Delete5WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete5Response, error) {
-	rsp, err := c.Delete5(ctx, projectKey, repositorySlug, reqEditors...)
+// Delete4WithResponse request returning *Delete4Response
+func (c *ClientWithResponses) Delete4WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete4Response, error) {
+	rsp, err := c.Delete4(ctx, projectKey, repositorySlug, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete5Response(rsp)
+	return ParseDelete4Response(rsp)
 }
 
-// Get5WithResponse request returning *Get5Response
-func (c *ClientWithResponses) Get5WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get5Response, error) {
-	rsp, err := c.Get5(ctx, projectKey, repositorySlug, reqEditors...)
+// Get4WithResponse request returning *Get4Response
+func (c *ClientWithResponses) Get4WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get4Response, error) {
+	rsp, err := c.Get4(ctx, projectKey, repositorySlug, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet5Response(rsp)
+	return ParseGet4Response(rsp)
 }
 
 // Set1WithBodyWithResponse request with arbitrary body returning *Set1Response
@@ -76646,22 +76851,22 @@ func (c *ClientWithResponses) Set1WithResponse(ctx context.Context, projectKey s
 	return ParseSet1Response(rsp)
 }
 
-// Delete7WithResponse request returning *Delete7Response
-func (c *ClientWithResponses) Delete7WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete7Response, error) {
-	rsp, err := c.Delete7(ctx, projectKey, repositorySlug, reqEditors...)
+// Delete6WithResponse request returning *Delete6Response
+func (c *ClientWithResponses) Delete6WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Delete6Response, error) {
+	rsp, err := c.Delete6(ctx, projectKey, repositorySlug, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete7Response(rsp)
+	return ParseDelete6Response(rsp)
 }
 
-// Get7WithResponse request returning *Get7Response
-func (c *ClientWithResponses) Get7WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get7Response, error) {
-	rsp, err := c.Get7(ctx, projectKey, repositorySlug, reqEditors...)
+// Get6WithResponse request returning *Get6Response
+func (c *ClientWithResponses) Get6WithResponse(ctx context.Context, projectKey string, repositorySlug string, reqEditors ...RequestEditorFn) (*Get6Response, error) {
+	rsp, err := c.Get6(ctx, projectKey, repositorySlug, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet7Response(rsp)
+	return ParseGet6Response(rsp)
 }
 
 // Set3WithBodyWithResponse request with arbitrary body returning *Set3Response
@@ -76804,13 +77009,13 @@ func (c *ClientWithResponses) Create2WithResponse(ctx context.Context, projectKe
 	return ParseCreate2Response(rsp)
 }
 
-// Delete9WithResponse request returning *Delete9Response
-func (c *ClientWithResponses) Delete9WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*Delete9Response, error) {
-	rsp, err := c.Delete9(ctx, projectKey, repositorySlug, id, reqEditors...)
+// Delete8WithResponse request returning *Delete8Response
+func (c *ClientWithResponses) Delete8WithResponse(ctx context.Context, projectKey string, repositorySlug string, id string, reqEditors ...RequestEditorFn) (*Delete8Response, error) {
+	rsp, err := c.Delete8(ctx, projectKey, repositorySlug, id, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete9Response(rsp)
+	return ParseDelete8Response(rsp)
 }
 
 // GetReviewerGroup1WithResponse request returning *GetReviewerGroup1Response
@@ -77131,22 +77336,22 @@ func (c *ClientWithResponses) EditRuleWithBodyWithResponse(ctx context.Context, 
 	return ParseEditRuleResponse(rsp)
 }
 
-// Delete11WithResponse request returning *Delete11Response
-func (c *ClientWithResponses) Delete11WithResponse(ctx context.Context, projectKey string, params *Delete11Params, reqEditors ...RequestEditorFn) (*Delete11Response, error) {
-	rsp, err := c.Delete11(ctx, projectKey, params, reqEditors...)
+// Delete10WithResponse request returning *Delete10Response
+func (c *ClientWithResponses) Delete10WithResponse(ctx context.Context, projectKey string, params *Delete10Params, reqEditors ...RequestEditorFn) (*Delete10Response, error) {
+	rsp, err := c.Delete10(ctx, projectKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete11Response(rsp)
+	return ParseDelete10Response(rsp)
 }
 
-// Get9WithResponse request returning *Get9Response
-func (c *ClientWithResponses) Get9WithResponse(ctx context.Context, projectKey string, params *Get9Params, reqEditors ...RequestEditorFn) (*Get9Response, error) {
-	rsp, err := c.Get9(ctx, projectKey, params, reqEditors...)
+// Get8WithResponse request returning *Get8Response
+func (c *ClientWithResponses) Get8WithResponse(ctx context.Context, projectKey string, params *Get8Params, reqEditors ...RequestEditorFn) (*Get8Response, error) {
+	rsp, err := c.Get8(ctx, projectKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet9Response(rsp)
+	return ParseGet8Response(rsp)
 }
 
 // Create3WithBodyWithResponse request with arbitrary body returning *Create3Response
@@ -77210,22 +77415,22 @@ func (c *ClientWithResponses) SetAutoDeclineSettingsWithResponse(ctx context.Con
 	return ParseSetAutoDeclineSettingsResponse(rsp)
 }
 
-// Delete4WithResponse request returning *Delete4Response
-func (c *ClientWithResponses) Delete4WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete4Response, error) {
-	rsp, err := c.Delete4(ctx, projectKey, reqEditors...)
+// Delete3WithResponse request returning *Delete3Response
+func (c *ClientWithResponses) Delete3WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete3Response, error) {
+	rsp, err := c.Delete3(ctx, projectKey, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete4Response(rsp)
+	return ParseDelete3Response(rsp)
 }
 
-// Get4WithResponse request returning *Get4Response
-func (c *ClientWithResponses) Get4WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get4Response, error) {
-	rsp, err := c.Get4(ctx, projectKey, reqEditors...)
+// Get3WithResponse request returning *Get3Response
+func (c *ClientWithResponses) Get3WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get3Response, error) {
+	rsp, err := c.Get3(ctx, projectKey, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet4Response(rsp)
+	return ParseGet3Response(rsp)
 }
 
 // SetWithBodyWithResponse request with arbitrary body returning *SetResponse
@@ -77245,22 +77450,22 @@ func (c *ClientWithResponses) SetWithResponse(ctx context.Context, projectKey st
 	return ParseSetResponse(rsp)
 }
 
-// Delete6WithResponse request returning *Delete6Response
-func (c *ClientWithResponses) Delete6WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete6Response, error) {
-	rsp, err := c.Delete6(ctx, projectKey, reqEditors...)
+// Delete5WithResponse request returning *Delete5Response
+func (c *ClientWithResponses) Delete5WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Delete5Response, error) {
+	rsp, err := c.Delete5(ctx, projectKey, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete6Response(rsp)
+	return ParseDelete5Response(rsp)
 }
 
-// Get6WithResponse request returning *Get6Response
-func (c *ClientWithResponses) Get6WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get6Response, error) {
-	rsp, err := c.Get6(ctx, projectKey, reqEditors...)
+// Get5WithResponse request returning *Get5Response
+func (c *ClientWithResponses) Get5WithResponse(ctx context.Context, projectKey string, reqEditors ...RequestEditorFn) (*Get5Response, error) {
+	rsp, err := c.Get5(ctx, projectKey, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet6Response(rsp)
+	return ParseGet5Response(rsp)
 }
 
 // Set2WithBodyWithResponse request with arbitrary body returning *Set2Response
@@ -77394,13 +77599,13 @@ func (c *ClientWithResponses) Create1WithResponse(ctx context.Context, projectKe
 	return ParseCreate1Response(rsp)
 }
 
-// Delete8WithResponse request returning *Delete8Response
-func (c *ClientWithResponses) Delete8WithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*Delete8Response, error) {
-	rsp, err := c.Delete8(ctx, projectKey, id, reqEditors...)
+// Delete7WithResponse request returning *Delete7Response
+func (c *ClientWithResponses) Delete7WithResponse(ctx context.Context, projectKey string, id string, reqEditors ...RequestEditorFn) (*Delete7Response, error) {
+	rsp, err := c.Delete7(ctx, projectKey, id, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDelete8Response(rsp)
+	return ParseDelete7Response(rsp)
 }
 
 // GetReviewerGroupWithResponse request returning *GetReviewerGroupResponse
@@ -77668,6 +77873,15 @@ func (c *ClientWithResponses) UpdateSystemSigningConfigurationWithResponse(ctx c
 	return ParseUpdateSystemSigningConfigurationResponse(rsp)
 }
 
+// DeleteX509CertificateWithResponse request returning *DeleteX509CertificateResponse
+func (c *ClientWithResponses) DeleteX509CertificateWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteX509CertificateResponse, error) {
+	rsp, err := c.DeleteX509Certificate(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteX509CertificateResponse(rsp)
+}
+
 // GetUsers2WithResponse request returning *GetUsers2Response
 func (c *ClientWithResponses) GetUsers2WithResponse(ctx context.Context, params *GetUsers2Params, reqEditors ...RequestEditorFn) (*GetUsers2Response, error) {
 	rsp, err := c.GetUsers2(ctx, params, reqEditors...)
@@ -77896,13 +78110,13 @@ func (c *ClientWithResponses) UpdateConfigWithResponse(ctx context.Context, body
 	return ParseUpdateConfigResponse(rsp)
 }
 
-// Get10WithResponse request returning *Get10Response
-func (c *ClientWithResponses) Get10WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get10Response, error) {
-	rsp, err := c.Get10(ctx, reqEditors...)
+// Get9WithResponse request returning *Get9Response
+func (c *ClientWithResponses) Get9WithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Get9Response, error) {
+	rsp, err := c.Get9(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGet10Response(rsp)
+	return ParseGet9Response(rsp)
 }
 
 // PutWithBodyWithResponse request with arbitrary body returning *PutResponse
@@ -80986,15 +81200,15 @@ func ParseRegisterNewMeshNodeResponse(rsp *http.Response) (*RegisterNewMeshNodeR
 	return response, nil
 }
 
-// ParseDelete2Response parses an HTTP response from a Delete2WithResponse call
-func ParseDelete2Response(rsp *http.Response) (*Delete2Response, error) {
+// ParseDelete1Response parses an HTTP response from a Delete1WithResponse call
+func ParseDelete1Response(rsp *http.Response) (*Delete1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete2Response{
+	response := &Delete1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -81537,15 +81751,15 @@ func ParseRemoveUserFromGroupResponse(rsp *http.Response) (*RemoveUserFromGroupR
 	return response, nil
 }
 
-// ParseGet2Response parses an HTTP response from a Get2WithResponse call
-func ParseGet2Response(rsp *http.Response) (*Get2Response, error) {
+// ParseGet1Response parses an HTTP response from a Get1WithResponse call
+func ParseGet1Response(rsp *http.Response) (*Get1Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get2Response{
+	response := &Get1Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -82553,15 +82767,15 @@ func ParseSet4Response(rsp *http.Response) (*Set4Response, error) {
 	return response, nil
 }
 
-// ParseDelete10Response parses an HTTP response from a Delete10WithResponse call
-func ParseDelete10Response(rsp *http.Response) (*Delete10Response, error) {
+// ParseDelete9Response parses an HTTP response from a Delete9WithResponse call
+func ParseDelete9Response(rsp *http.Response) (*Delete9Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete10Response{
+	response := &Delete9Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -82590,15 +82804,15 @@ func ParseDelete10Response(rsp *http.Response) (*Delete10Response, error) {
 	return response, nil
 }
 
-// ParseGet8Response parses an HTTP response from a Get8WithResponse call
-func ParseGet8Response(rsp *http.Response) (*Get8Response, error) {
+// ParseGet7Response parses an HTTP response from a Get7WithResponse call
+func ParseGet7Response(rsp *http.Response) (*Get7Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get8Response{
+	response := &Get7Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -86310,6 +86524,15 @@ func ParseModifyAllUserPermissionResponse(rsp *http.Response) (*ModifyAllUserPer
 		}
 		response.JSON401 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest struct {
 			Errors *[]RestErrorMessage `json:"errors,omitempty"`
@@ -86673,6 +86896,50 @@ func ParseGetArchiveResponse(rsp *http.Response) (*GetArchiveResponse, error) {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSaveAttachmentResponse parses an HTTP response from a SaveAttachmentWithResponse call
+func ParseSaveAttachmentResponse(rsp *http.Response) (*SaveAttachmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SaveAttachmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest RestAttachment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationjsonCharsetUTF8201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
 
 	}
 
@@ -87383,15 +87650,15 @@ func ParseGetCommitResponse(rsp *http.Response) (*GetCommitResponse, error) {
 	return response, nil
 }
 
-// ParseDeleteResponse parses an HTTP response from a DeleteWithResponse call
-func ParseDeleteResponse(rsp *http.Response) (*DeleteResponse, error) {
+// ParseDeleteRepositoryBuildStatusResponse parses an HTTP response from a DeleteRepositoryBuildStatusWithResponse call
+func ParseDeleteRepositoryBuildStatusResponse(rsp *http.Response) (*DeleteRepositoryBuildStatusResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeleteResponse{
+	response := &DeleteRepositoryBuildStatusResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -87429,15 +87696,15 @@ func ParseDeleteResponse(rsp *http.Response) (*DeleteResponse, error) {
 	return response, nil
 }
 
-// ParseGetResponse parses an HTTP response from a GetWithResponse call
-func ParseGetResponse(rsp *http.Response) (*GetResponse, error) {
+// ParseGetRepositoryBuildStatusResponse parses an HTTP response from a GetRepositoryBuildStatusWithResponse call
+func ParseGetRepositoryBuildStatusResponse(rsp *http.Response) (*GetRepositoryBuildStatusResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetResponse{
+	response := &GetRepositoryBuildStatusResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -87482,15 +87749,15 @@ func ParseGetResponse(rsp *http.Response) (*GetResponse, error) {
 	return response, nil
 }
 
-// ParseAddResponse parses an HTTP response from a AddWithResponse call
-func ParseAddResponse(rsp *http.Response) (*AddResponse, error) {
+// ParseAddRepositoryBuildStatusResponse parses an HTTP response from a AddRepositoryBuildStatusWithResponse call
+func ParseAddRepositoryBuildStatusResponse(rsp *http.Response) (*AddRepositoryBuildStatusResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &AddResponse{
+	response := &AddRepositoryBuildStatusResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -87862,15 +88129,15 @@ func ParseUpdateCommentResponse(rsp *http.Response) (*UpdateCommentResponse, err
 	return response, nil
 }
 
-// ParseDelete1Response parses an HTTP response from a Delete1WithResponse call
-func ParseDelete1Response(rsp *http.Response) (*Delete1Response, error) {
+// ParseDeleteResponse parses an HTTP response from a DeleteWithResponse call
+func ParseDeleteResponse(rsp *http.Response) (*DeleteResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete1Response{
+	response := &DeleteResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -87908,15 +88175,15 @@ func ParseDelete1Response(rsp *http.Response) (*Delete1Response, error) {
 	return response, nil
 }
 
-// ParseGet1Response parses an HTTP response from a Get1WithResponse call
-func ParseGet1Response(rsp *http.Response) (*Get1Response, error) {
+// ParseGetResponse parses an HTTP response from a GetWithResponse call
+func ParseGetResponse(rsp *http.Response) (*GetResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get1Response{
+	response := &GetResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -89947,15 +90214,15 @@ func ParseCreateResponse(rsp *http.Response) (*CreateResponse, error) {
 	return response, nil
 }
 
-// ParseDelete3Response parses an HTTP response from a Delete3WithResponse call
-func ParseDelete3Response(rsp *http.Response) (*Delete3Response, error) {
+// ParseDelete2Response parses an HTTP response from a Delete2WithResponse call
+func ParseDelete2Response(rsp *http.Response) (*Delete2Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete3Response{
+	response := &Delete2Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -89993,15 +90260,15 @@ func ParseDelete3Response(rsp *http.Response) (*Delete3Response, error) {
 	return response, nil
 }
 
-// ParseGet3Response parses an HTTP response from a Get3WithResponse call
-func ParseGet3Response(rsp *http.Response) (*Get3Response, error) {
+// ParseGet2Response parses an HTTP response from a Get2WithResponse call
+func ParseGet2Response(rsp *http.Response) (*Get2Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get3Response{
+	response := &Get2Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -92987,15 +93254,15 @@ func ParseSetAutoDeclineSettings1Response(rsp *http.Response) (*SetAutoDeclineSe
 	return response, nil
 }
 
-// ParseDelete5Response parses an HTTP response from a Delete5WithResponse call
-func ParseDelete5Response(rsp *http.Response) (*Delete5Response, error) {
+// ParseDelete4Response parses an HTTP response from a Delete4WithResponse call
+func ParseDelete4Response(rsp *http.Response) (*Delete4Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete5Response{
+	response := &Delete4Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -93033,15 +93300,15 @@ func ParseDelete5Response(rsp *http.Response) (*Delete5Response, error) {
 	return response, nil
 }
 
-// ParseGet5Response parses an HTTP response from a Get5WithResponse call
-func ParseGet5Response(rsp *http.Response) (*Get5Response, error) {
+// ParseGet4Response parses an HTTP response from a Get4WithResponse call
+func ParseGet4Response(rsp *http.Response) (*Get4Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get5Response{
+	response := &Get4Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -93139,15 +93406,15 @@ func ParseSet1Response(rsp *http.Response) (*Set1Response, error) {
 	return response, nil
 }
 
-// ParseDelete7Response parses an HTTP response from a Delete7WithResponse call
-func ParseDelete7Response(rsp *http.Response) (*Delete7Response, error) {
+// ParseDelete6Response parses an HTTP response from a Delete6WithResponse call
+func ParseDelete6Response(rsp *http.Response) (*Delete6Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete7Response{
+	response := &Delete6Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -93185,15 +93452,15 @@ func ParseDelete7Response(rsp *http.Response) (*Delete7Response, error) {
 	return response, nil
 }
 
-// ParseGet7Response parses an HTTP response from a Get7WithResponse call
-func ParseGet7Response(rsp *http.Response) (*Get7Response, error) {
+// ParseGet6Response parses an HTTP response from a Get6WithResponse call
+func ParseGet6Response(rsp *http.Response) (*Get6Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get7Response{
+	response := &Get6Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -93827,15 +94094,15 @@ func ParseCreate2Response(rsp *http.Response) (*Create2Response, error) {
 	return response, nil
 }
 
-// ParseDelete9Response parses an HTTP response from a Delete9WithResponse call
-func ParseDelete9Response(rsp *http.Response) (*Delete9Response, error) {
+// ParseDelete8Response parses an HTTP response from a Delete8WithResponse call
+func ParseDelete8Response(rsp *http.Response) (*Delete8Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete9Response{
+	response := &Delete8Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -95143,15 +95410,15 @@ func ParseEditRuleResponse(rsp *http.Response) (*EditRuleResponse, error) {
 	return response, nil
 }
 
-// ParseDelete11Response parses an HTTP response from a Delete11WithResponse call
-func ParseDelete11Response(rsp *http.Response) (*Delete11Response, error) {
+// ParseDelete10Response parses an HTTP response from a Delete10WithResponse call
+func ParseDelete10Response(rsp *http.Response) (*Delete10Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete11Response{
+	response := &Delete10Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -95189,15 +95456,15 @@ func ParseDelete11Response(rsp *http.Response) (*Delete11Response, error) {
 	return response, nil
 }
 
-// ParseGet9Response parses an HTTP response from a Get9WithResponse call
-func ParseGet9Response(rsp *http.Response) (*Get9Response, error) {
+// ParseGet8Response parses an HTTP response from a Get8WithResponse call
+func ParseGet8Response(rsp *http.Response) (*Get8Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get9Response{
+	response := &Get8Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -95498,15 +95765,15 @@ func ParseSetAutoDeclineSettingsResponse(rsp *http.Response) (*SetAutoDeclineSet
 	return response, nil
 }
 
-// ParseDelete4Response parses an HTTP response from a Delete4WithResponse call
-func ParseDelete4Response(rsp *http.Response) (*Delete4Response, error) {
+// ParseDelete3Response parses an HTTP response from a Delete3WithResponse call
+func ParseDelete3Response(rsp *http.Response) (*Delete3Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete4Response{
+	response := &Delete3Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -95535,15 +95802,15 @@ func ParseDelete4Response(rsp *http.Response) (*Delete4Response, error) {
 	return response, nil
 }
 
-// ParseGet4Response parses an HTTP response from a Get4WithResponse call
-func ParseGet4Response(rsp *http.Response) (*Get4Response, error) {
+// ParseGet3Response parses an HTTP response from a Get3WithResponse call
+func ParseGet3Response(rsp *http.Response) (*Get3Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get4Response{
+	response := &Get3Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -95632,15 +95899,15 @@ func ParseSetResponse(rsp *http.Response) (*SetResponse, error) {
 	return response, nil
 }
 
-// ParseDelete6Response parses an HTTP response from a Delete6WithResponse call
-func ParseDelete6Response(rsp *http.Response) (*Delete6Response, error) {
+// ParseDelete5Response parses an HTTP response from a Delete5WithResponse call
+func ParseDelete5Response(rsp *http.Response) (*Delete5Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete6Response{
+	response := &Delete5Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -95669,15 +95936,15 @@ func ParseDelete6Response(rsp *http.Response) (*Delete6Response, error) {
 	return response, nil
 }
 
-// ParseGet6Response parses an HTTP response from a Get6WithResponse call
-func ParseGet6Response(rsp *http.Response) (*Get6Response, error) {
+// ParseGet5Response parses an HTTP response from a Get5WithResponse call
+func ParseGet5Response(rsp *http.Response) (*Get5Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get6Response{
+	response := &Get5Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -96265,15 +96532,15 @@ func ParseCreate1Response(rsp *http.Response) (*Create1Response, error) {
 	return response, nil
 }
 
-// ParseDelete8Response parses an HTTP response from a Delete8WithResponse call
-func ParseDelete8Response(rsp *http.Response) (*Delete8Response, error) {
+// ParseDelete7Response parses an HTTP response from a Delete7WithResponse call
+func ParseDelete7Response(rsp *http.Response) (*Delete7Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Delete8Response{
+	response := &Delete7Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -97370,6 +97637,34 @@ func ParseUpdateSystemSigningConfigurationResponse(rsp *http.Response) (*UpdateS
 	return response, nil
 }
 
+// ParseDeleteX509CertificateResponse parses an HTTP response from a DeleteX509CertificateWithResponse call
+func ParseDeleteX509CertificateResponse(rsp *http.Response) (*DeleteX509CertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteX509CertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest struct {
+			Errors *[]RestErrorMessage `json:"errors,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetUsers2Response parses an HTTP response from a GetUsers2WithResponse call
 func ParseGetUsers2Response(rsp *http.Response) (*GetUsers2Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -98019,15 +98314,15 @@ func ParseUpdateConfigResponse(rsp *http.Response) (*UpdateConfigResponse, error
 	return response, nil
 }
 
-// ParseGet10Response parses an HTTP response from a Get10WithResponse call
-func ParseGet10Response(rsp *http.Response) (*Get10Response, error) {
+// ParseGet9Response parses an HTTP response from a Get9WithResponse call
+func ParseGet9Response(rsp *http.Response) (*Get9Response, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &Get10Response{
+	response := &Get9Response{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

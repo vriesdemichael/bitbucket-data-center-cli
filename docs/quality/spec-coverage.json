@@ -2,8 +2,8 @@
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-openapi.json",
   "covered": 227,
-  "total": 572,
-  "coverage_percent": 39.68531468531469,
+  "total": 574,
+  "coverage_percent": 39.54703832752614,
   "by_tag": [
     {
       "tag": "",
@@ -78,7 +78,7 @@
     {
       "tag": "Repository",
       "covered": 63,
-      "total": 99
+      "total": 100
     },
     {
       "tag": "SAML certificate configuration",
@@ -93,7 +93,7 @@
     {
       "tag": "Security",
       "covered": 4,
-      "total": 45
+      "total": 46
     },
     {
       "tag": "System Maintenance",
@@ -829,6 +829,12 @@
       "summary": "Get repositories for project"
     },
     {
+      "method": "POST",
+      "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/attachments",
+      "tag": "Repository",
+      "summary": "Create an attachment"
+    },
+    {
       "method": "DELETE",
       "path": "/api/latest/projects/{projectKey}/repos/{repositorySlug}/attachments/{attachmentId}",
       "tag": "Repository",
@@ -1469,6 +1475,12 @@
       "path": "/api/latest/system-signing/configuration",
       "tag": "Security",
       "summary": "Update system signing configuration"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/latest/system-signing/x509/certificate",
+      "tag": "Security",
+      "summary": "Delete X.509 system signing certificate"
     },
     {
       "method": "PUT",
