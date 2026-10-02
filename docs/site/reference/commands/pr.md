@@ -1359,37 +1359,43 @@ Also takes the [global flags](global-flags.md).
 <details class="note" data-search-exclude>
 <summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
 <pre><code>data
-  defaultReviewers     list of object or null                              Conditions that would apply to a pull request
-                                                                           between the given refs.
-    id?                integer                                             Condition identifier, which update and delete
-                                                                           address.
-    requiredApprovals  integer                                             How many of the named reviewers must approve
-                                                                           before the pull request can merge.
-    sourceRefMatcher?  object                                              Which source branches the condition applies
-                                                                           to.
-      id?              string                                              Matcher value: a branch name, a pattern, or a
-                                                                           model branch id depending on type.
-      displayId?       string                                              Human-readable form of the same thing.
-      type?            ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                           MODEL_CATEGORY, which decides how id is read.
-    targetRefMatcher?  object                                              Which target branches the condition applies
-                                                                           to.
-      id?              string                                              Matcher value: a branch name, a pattern, or a
-                                                                           model branch id depending on type.
-      displayId?       string                                              Human-readable form of the same thing.
-      type?            ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH or
-                                                                           MODEL_CATEGORY, which decides how id is read.
-    reviewers?         list of object                                      Individual users added as default reviewers.
-      id?              integer                                             Identifier, unique among users or among
-                                                                           groups.
-      name?            string                                              Username for a user, group name for a group.
-    reviewerGroups?    list of object                                      Groups added as default reviewers.
-      id?              integer                                             Identifier, unique among users or among
-                                                                           groups.
-      name?            string                                              Username for a user, group name for a group.
-    scope?             PROJECT|REPOSITORY                                  PROJECT when the condition is inherited from
-                                                                           the project, REPOSITORY when it is set on the
-                                                                           repository itself.
+  defaultReviewers     list of object or null                                             Conditions that would apply to a pull
+                                                                                          request between the given refs.
+    id?                integer                                                            Condition identifier, which update and
+                                                                                          delete address.
+    requiredApprovals  integer                                                            How many of the named reviewers must
+                                                                                          approve before the pull request can
+                                                                                          merge.
+    sourceRefMatcher?  object                                                             Which source branches the condition
+                                                                                          applies to.
+      id?              string                                                             Matcher value: a branch name, a pattern,
+                                                                                          or a model branch id depending on type.
+      displayId?       string                                                             Human-readable form of the same thing.
+      type?            ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
+    targetRefMatcher?  object                                                             Which target branches the condition
+                                                                                          applies to.
+      id?              string                                                             Matcher value: a branch name, a pattern,
+                                                                                          or a model branch id depending on type.
+      displayId?       string                                                             Human-readable form of the same thing.
+      type?            ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH  ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
+    reviewers?         list of object                                                     Individual users added as default
+                                                                                          reviewers.
+      id?              integer                                                            Identifier, unique among users or among
+                                                                                          groups.
+      name?            string                                                             Username for a user, group name for a
+                                                                                          group.
+    reviewerGroups?    list of object                                                     Groups added as default reviewers.
+      id?              integer                                                            Identifier, unique among users or among
+                                                                                          groups.
+      name?            string                                                             Username for a user, group name for a
+                                                                                          group.
+    scope?             PROJECT|REPOSITORY                                                 PROJECT when the condition is inherited
+                                                                                          from the project, REPOSITORY when it is
+                                                                                          set on the repository itself.
 </code></pre>
 </details>
 
