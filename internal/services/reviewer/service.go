@@ -91,15 +91,57 @@ func (service *Service) DeleteRepositoryCondition(ctx context.Context, projectKe
 	return openapi.MapStatusError(response.StatusCode(), response.Body)
 }
 
-// RefuseReviewerGroups refuses a condition naming reviewer groups on a release
-// that would drop them (compat.ConditionReviewerGroups), before anything is
-// sent. Only a condition that names groups asks for the release.
-func (service *Service) RefuseReviewerGroups(ctx context.Context, groups *[]openapigenerated.RestReviewerGroup) error {
-	if groups == nil || len(*groups) == 0 {
-		return nil
+// RefuseCondition refuses a condition the instance's release lacks what it
+// asks for, before anything is sent: reviewer groups, which a release before
+// compat.ConditionReviewerGroups drops, or a DEFAULT_BRANCH matcher, which a
+// release before compat.DefaultBranchMatcher fails on. Only a condition that
+// asks for one of them asks for the release.
+func (service *Service) RefuseCondition(ctx context.Context, condition any) error {
+	body, err := conditionBody(condition)
+	if err != nil {
+		return err
 	}
 
-	return compat.ConditionReviewerGroups.Require(ctx, service.client)
+	if groups, _ := body["reviewerGroups"].([]any); len(groups) > 0 {
+		if err := compat.ConditionReviewerGroups.Require(ctx, service.client); err != nil {
+			return err
+		}
+	}
+	if compat.NamesDefaultBranchMatcher(body, "sourceMatcher", "targetMatcher") {
+		return compat.DefaultBranchMatcher.Require(ctx, service.client)
+	}
+
+	return nil
+}
+
+// OlderConditionChecks reports whether the instance's release checks this
+// condition's reviewers as a release before compat.ConditionReviewerChecks
+// does, which decides what a dry run predicts. Only a condition the two
+// check differently asks for the release.
+func (service *Service) OlderConditionChecks(ctx context.Context, condition any) (bool, error) {
+	body, err := conditionBody(condition)
+	if err != nil {
+		return false, err
+	}
+	if !compat.ConditionCheckedDifferently(body) {
+		return false, nil
+	}
+
+	return compat.ConditionReviewerChecks.LackedBy(ctx, service.client)
+}
+
+// conditionBody is a condition as the JSON object it is sent as.
+func conditionBody(condition any) (map[string]any, error) {
+	encoded, err := json.Marshal(condition)
+	if err != nil {
+		return nil, apperrors.New(apperrors.KindInternal, "failed to encode the condition", err)
+	}
+	body := map[string]any{}
+	if err := json.Unmarshal(encoded, &body); err != nil {
+		return nil, apperrors.New(apperrors.KindInternal, "failed to read the condition back", err)
+	}
+
+	return body, nil
 }
 
 func (service *Service) CreateProjectCondition(ctx context.Context, projectKey string, condition openapigenerated.RestDefaultReviewersRequest) (openapigenerated.RestPullRequestCondition, error) {
@@ -107,7 +149,7 @@ func (service *Service) CreateProjectCondition(ctx context.Context, projectKey s
 		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindValidation, "project key is required", nil)
 	}
 
-	if err := service.RefuseReviewerGroups(ctx, condition.ReviewerGroups); err != nil {
+	if err := service.RefuseCondition(ctx, condition); err != nil {
 		return openapigenerated.RestPullRequestCondition{}, err
 	}
 
@@ -139,7 +181,7 @@ func (service *Service) CreateRepositoryCondition(ctx context.Context, projectKe
 		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindValidation, "project key and repository slug are required", nil)
 	}
 
-	if err := service.RefuseReviewerGroups(ctx, condition.ReviewerGroups); err != nil {
+	if err := service.RefuseCondition(ctx, condition); err != nil {
 		return openapigenerated.RestPullRequestCondition{}, err
 	}
 
@@ -171,7 +213,7 @@ func (service *Service) UpdateProjectCondition(ctx context.Context, projectKey s
 		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindValidation, "project key and condition ID are required", nil)
 	}
 
-	if err := service.RefuseReviewerGroups(ctx, condition.ReviewerGroups); err != nil {
+	if err := service.RefuseCondition(ctx, condition); err != nil {
 		return openapigenerated.RestPullRequestCondition{}, err
 	}
 
@@ -195,7 +237,7 @@ func (service *Service) UpdateRepositoryCondition(ctx context.Context, projectKe
 		return openapigenerated.RestPullRequestCondition{}, apperrors.New(apperrors.KindValidation, "project key, repository slug, and condition ID are required", nil)
 	}
 
-	if err := service.RefuseReviewerGroups(ctx, condition.ReviewerGroups); err != nil {
+	if err := service.RefuseCondition(ctx, condition); err != nil {
 		return openapigenerated.RestPullRequestCondition{}, err
 	}
 

@@ -343,7 +343,7 @@ the project. --project deletes it there.`,
 					if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, pk, slug, openapi.RepoAdmin); err != nil {
 						return err
 					}
-					if err := service.RefuseReviewerGroups(cmd.Context(), condition.ReviewerGroups); err != nil {
+					if err := service.RefuseCondition(cmd.Context(), condition); err != nil {
 						return err
 					}
 
@@ -351,7 +351,8 @@ the project. --project deletes it there.`,
 					if err != nil {
 						return err
 					}
-					item, err := conditionCreateOutcome(conditions, condition)
+					olderChecks := func() (bool, error) { return service.OlderConditionChecks(cmd.Context(), condition) }
+					item, err := conditionCreateOutcome(conditions, condition, olderChecks)
 					if err != nil {
 						return err
 					}
@@ -386,7 +387,7 @@ the project. --project deletes it there.`,
 				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, projectKey); err != nil {
 					return err
 				}
-				if err := service.RefuseReviewerGroups(cmd.Context(), condition.ReviewerGroups); err != nil {
+				if err := service.RefuseCondition(cmd.Context(), condition); err != nil {
 					return err
 				}
 
@@ -394,7 +395,8 @@ the project. --project deletes it there.`,
 				if err != nil {
 					return err
 				}
-				item, err := conditionCreateOutcome(conditions, condition)
+				olderChecks := func() (bool, error) { return service.OlderConditionChecks(cmd.Context(), condition) }
+				item, err := conditionCreateOutcome(conditions, condition, olderChecks)
 				if err != nil {
 					return err
 				}
@@ -482,7 +484,7 @@ With --repo, a condition the repository inherits from its project is refused;
 					if err := preflight.RepoPermission(cmd.Context(), d.PermissionChecker, client, pk, slug, openapi.RepoAdmin); err != nil {
 						return err
 					}
-					if err := service.RefuseReviewerGroups(cmd.Context(), condition.ReviewerGroups); err != nil {
+					if err := service.RefuseCondition(cmd.Context(), condition); err != nil {
 						return err
 					}
 
@@ -493,7 +495,8 @@ With --repo, a condition the repository inherits from its project is refused;
 					if err := refuseInheritedCondition(conditions, id, pk, "update"); err != nil {
 						return err
 					}
-					item, err := conditionUpdateOutcome(conditions, id, condition, "repository")
+					olderChecks := func() (bool, error) { return service.OlderConditionChecks(cmd.Context(), condition) }
+					item, err := conditionUpdateOutcome(conditions, id, condition, "repository", olderChecks)
 					if err != nil {
 						return err
 					}
@@ -535,7 +538,7 @@ With --repo, a condition the repository inherits from its project is refused;
 				if err := preflight.ProjectAdmin(cmd.Context(), d.PermissionChecker, client, projectKey); err != nil {
 					return err
 				}
-				if err := service.RefuseReviewerGroups(cmd.Context(), condition.ReviewerGroups); err != nil {
+				if err := service.RefuseCondition(cmd.Context(), condition); err != nil {
 					return err
 				}
 
@@ -543,7 +546,8 @@ With --repo, a condition the repository inherits from its project is refused;
 				if err != nil {
 					return err
 				}
-				item, err := conditionUpdateOutcome(conditions, id, condition, "project")
+				olderChecks := func() (bool, error) { return service.OlderConditionChecks(cmd.Context(), condition) }
+				item, err := conditionUpdateOutcome(conditions, id, condition, "project", olderChecks)
 				if err != nil {
 					return err
 				}
@@ -690,17 +694,26 @@ func reviewerConditionEquivalentExists(conditions []openapigenerated.RestPullReq
 // Bitbucket checks the body before it looks at anything else, the condition an
 // update names included, so a preview that does not has predicted a create or
 // an update the real run is refused -- and "not found" for an update the real
-// run is refused as invalid. The rules and their wording are the ones 10.4.3
-// applies, each seen refusing a request: an id and a type on both matchers, a
-// reviewer or a reviewer group, and a count of required approvals. A reviewer
-// named without an id is looked up as user -1 and answered with a 404.
+// run is refused as invalid. The rules, their order and their wording are the
+// ones each release applies, each seen refusing a request: an id and a type on
+// both matchers, then a count of required approvals, then the reviewers.
+//
+// From 9.5 a condition names reviewers or reviewer groups. It is refused when
+// it sends neither, or sends both empty; one sent empty on its own is stored.
+// A reviewer named without an id is looked up as user -1 and answered with a
+// 404. An earlier release (compat.ConditionReviewerChecks) stores a condition
+// with no reviewers when it requires an approval, refuses one that requires
+// none, and refuses a reviewer without an id as invalid. olderChecks says which
+// the instance is, and is only asked once the checks every release makes have
+// passed, so a body refused by those is refused without asking anything.
 //
 // condition is the body as the command sends it, so what is checked is what
-// would be sent rather than what was typed.
-func conditionRefusal(condition any) error {
+// would be sent rather than what was typed. failure is an error reaching no
+// verdict: the body could not be read, or the release could not be asked.
+func conditionRefusal(condition any, olderChecks func() (bool, error)) (refusal, failure error) {
 	encoded, err := json.Marshal(condition)
 	if err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to encode the condition", err)
+		return nil, apperrors.New(apperrors.KindInternal, "failed to encode the condition", err)
 	}
 
 	type matcher struct {
@@ -709,39 +722,65 @@ func conditionRefusal(condition any) error {
 			ID string `json:"id"`
 		} `json:"type"`
 	}
+	type reviewer struct {
+		ID *int64 `json:"id"`
+	}
 	var body struct {
-		SourceMatcher *matcher `json:"sourceMatcher"`
-		TargetMatcher *matcher `json:"targetMatcher"`
-		Reviewers     []struct {
-			ID *int64 `json:"id"`
-		} `json:"reviewers"`
-		ReviewerGroups    []json.RawMessage `json:"reviewerGroups"`
-		RequiredApprovals *int64            `json:"requiredApprovals"`
+		SourceMatcher     *matcher           `json:"sourceMatcher"`
+		TargetMatcher     *matcher           `json:"targetMatcher"`
+		Reviewers         *[]reviewer        `json:"reviewers"`
+		ReviewerGroups    *[]json.RawMessage `json:"reviewerGroups"`
+		RequiredApprovals *int64             `json:"requiredApprovals"`
 	}
 	if err := json.Unmarshal(encoded, &body); err != nil {
-		return apperrors.New(apperrors.KindInternal, "failed to read the condition back", err)
+		return nil, apperrors.New(apperrors.KindInternal, "failed to read the condition back", err)
 	}
 
 	complete := func(m *matcher) bool { return m != nil && m.ID != nil && m.Type != nil }
 	switch {
 	case !complete(body.SourceMatcher):
-		return apperrors.New(apperrors.KindValidation, "A sourceMatcher with ID and type is required when creating or updating a new condition.", nil)
+		return apperrors.New(apperrors.KindValidation, "A sourceMatcher with ID and type is required when creating or updating a new condition.", nil), nil
 	case !complete(body.TargetMatcher):
-		return apperrors.New(apperrors.KindValidation, "A targetMatcher with an ID and type is required when creating or updating a new condition.", nil)
-	case len(body.Reviewers)+len(body.ReviewerGroups) == 0:
-		return apperrors.New(apperrors.KindValidation, "Reviewers or reviewer groups are required.", nil)
+		return apperrors.New(apperrors.KindValidation, "A targetMatcher with an ID and type is required when creating or updating a new condition.", nil), nil
 	case body.RequiredApprovals == nil || *body.RequiredApprovals < 0:
-		return apperrors.New(apperrors.KindValidation, "Required approvals must be >= 0.", nil)
+		return apperrors.New(apperrors.KindValidation, "Required approvals must be >= 0.", nil), nil
 	}
 
-	for _, reviewer := range body.Reviewers {
-		if reviewer.ID == nil {
+	older, err := olderChecks()
+	if err != nil {
+		return nil, err
+	}
+	var reviewers []reviewer
+	if body.Reviewers != nil {
+		reviewers = *body.Reviewers
+	}
+	if older {
+		if len(reviewers) == 0 && *body.RequiredApprovals == 0 {
+			return apperrors.New(apperrors.KindValidation, "Required approvals must be > 0 if no reviewers are provided", nil), nil
+		}
+		for _, named := range reviewers {
+			if named.ID == nil {
+				return apperrors.New(apperrors.KindValidation,
+					"a reviewer is named without an id, which Bitbucket looks up as user -1: No user exists for identifier -1. Name reviewers by their numeric id", nil), nil
+			}
+		}
+
+		return nil, nil
+	}
+
+	neither := body.Reviewers == nil && body.ReviewerGroups == nil
+	bothEmpty := body.Reviewers != nil && body.ReviewerGroups != nil && len(*body.Reviewers)+len(*body.ReviewerGroups) == 0
+	if neither || bothEmpty {
+		return apperrors.New(apperrors.KindValidation, "Reviewers or reviewer groups are required.", nil), nil
+	}
+	for _, named := range reviewers {
+		if named.ID == nil {
 			return apperrors.New(apperrors.KindNotFound,
-				"a reviewer is named without an id, which Bitbucket looks up as user -1: User with ID -1 does not exist. Name reviewers by their numeric id", nil)
+				"a reviewer is named without an id, which Bitbucket looks up as user -1: User with ID -1 does not exist. Name reviewers by their numeric id", nil), nil
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 // conditionCreateOutcome is what creating condition would come to, beside the
@@ -750,8 +789,12 @@ func conditionRefusal(condition any) error {
 // An equivalent condition does not stop it. Bitbucket stores a second
 // condition identical to the first rather than refusing it, so the preview
 // predicts the create the real run makes, and says what it duplicates.
-func conditionCreateOutcome(conditions []openapigenerated.RestPullRequestCondition, condition openapigenerated.RestDefaultReviewersRequest) (dryrunpreview.Item, error) {
-	if refusal := conditionRefusal(condition); refusal != nil {
+func conditionCreateOutcome(conditions []openapigenerated.RestPullRequestCondition, condition openapigenerated.RestDefaultReviewersRequest, olderChecks func() (bool, error)) (dryrunpreview.Item, error) {
+	refusal, err := conditionRefusal(condition, olderChecks)
+	if err != nil {
+		return dryrunpreview.Item{}, err
+	}
+	if refusal != nil {
 		return refusedOutcome(refusal)
 	}
 
@@ -767,8 +810,12 @@ func conditionCreateOutcome(conditions []openapigenerated.RestPullRequestConditi
 
 // conditionUpdateOutcome is what updating condition id to body would come to.
 // where names the scope it was looked for in, for the reason.
-func conditionUpdateOutcome(conditions []openapigenerated.RestPullRequestCondition, id string, body any, where string) (dryrunpreview.Item, error) {
-	if refusal := conditionRefusal(body); refusal != nil {
+func conditionUpdateOutcome(conditions []openapigenerated.RestPullRequestCondition, id string, body any, where string, olderChecks func() (bool, error)) (dryrunpreview.Item, error) {
+	refusal, err := conditionRefusal(body, olderChecks)
+	if err != nil {
+		return dryrunpreview.Item{}, err
+	}
+	if refusal != nil {
 		return refusedOutcome(refusal)
 	}
 

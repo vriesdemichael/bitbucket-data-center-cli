@@ -11,9 +11,15 @@ import (
 	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/compat"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 )
+
+// conditionReviewerChecksSince is the first release that requires a default
+// reviewer condition to name reviewers or reviewer groups
+// (compat.ConditionReviewerChecks).
+var conditionReviewerChecksSince = compat.Release{Major: 9, Minor: 5}
 
 // TestLiveDryRunPredictionsReadRealState covers the previews whose answer is not
 // a property of the command but of what the server currently holds.
@@ -561,20 +567,52 @@ func TestLiveDryRunRefusalsFailAsTheRealRunDoes(t *testing.T) {
 
 	t.Run("a reviewer condition Bitbucket will not store", func(t *testing.T) {
 		before := mustLiveCLI(t, "reviewer", "condition", "list", "--project", seeded.Key)
+		checksReviewers := !harness.release(t).Before(conditionReviewerChecksSince)
+		withReviewers := func(reviewers string) string {
+			return strings.Replace(condition, fmt.Sprintf(`"reviewers":[{"id":%d}]`, reviewerID), reviewers, 1)
+		}
+		withoutReviewers := strings.Replace(condition, fmt.Sprintf(`"reviewers":[{"id":%d}],`, reviewerID), "", 1)
 
 		// Checked before anything else, the condition an update names included:
 		// a body without its matchers is invalid whether or not 999999 exists.
 		liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "update", "999999", `{"requiredApprovals":2}`, "--repo", repoRef)
 		liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "create",
-			strings.Replace(condition, fmt.Sprintf(`"reviewers":[{"id":%d}],`, reviewerID), "", 1), "--project", seeded.Key)
-		liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "create",
 			strings.Replace(condition, `,"requiredApprovals":1`, "", 1), "--project", seeded.Key)
-		// A reviewer by name is looked up as user -1.
-		liveVerdictHolds(t, apperrors.KindNotFound, "reviewer", "condition", "create",
-			strings.Replace(condition, fmt.Sprintf(`{"id":%d}`, reviewerID), fmt.Sprintf(`{"name":%q}`, harness.username()), 1), "--project", seeded.Key)
+		// The count of approvals is checked before the reviewers.
+		liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "create",
+			strings.Replace(withoutReviewers, `,"requiredApprovals":1`, "", 1), "--project", seeded.Key)
+		// A reviewer by name is looked up as user -1: not found from 9.5, invalid
+		// before it.
+		byName := withReviewers(fmt.Sprintf(`"reviewers":[{"name":%q}]`, harness.username()))
+		if checksReviewers {
+			liveVerdictHolds(t, apperrors.KindNotFound, "reviewer", "condition", "create", byName, "--project", seeded.Key)
+			// From 9.5 a condition names reviewers or reviewer groups: neither,
+			// or both empty, is refused.
+			liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "create", withoutReviewers, "--project", seeded.Key)
+			liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "create",
+				withReviewers(`"reviewers":[],"reviewerGroups":[]`), "--project", seeded.Key)
+		} else {
+			liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "create", byName, "--project", seeded.Key)
+			// Before it a condition may name no reviewers, but not and also
+			// require no approvals.
+			liveVerdictHolds(t, apperrors.KindValidation, "reviewer", "condition", "create",
+				strings.Replace(withoutReviewers, `"requiredApprovals":1`, `"requiredApprovals":0`, 1), "--project", seeded.Key)
+		}
 
 		if after := mustLiveCLI(t, "reviewer", "condition", "list", "--project", seeded.Key); after != before {
 			t.Fatalf("a refused condition was stored\nbefore: %s\nafter:  %s", before, after)
+		}
+
+		// An empty list of reviewers sent on its own is stored on every release,
+		// and before 9.5 so is a condition with no reviewers at all. The second
+		// asks for another count, so it is not the first one again.
+		stored := []string{withReviewers(`"reviewers":[]`)}
+		if !checksReviewers {
+			stored = append(stored, strings.Replace(withoutReviewers, `"requiredApprovals":1`, `"requiredApprovals":2`, 1))
+		}
+		for _, body := range stored {
+			liveGoesThroughAsPredicted(t, jsonoutput.OutcomeWouldApply, "reviewer condition will be created",
+				"reviewer", "condition", "create", body, "--project", seeded.Key)
 		}
 	})
 
