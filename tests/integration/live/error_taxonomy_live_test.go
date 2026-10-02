@@ -60,12 +60,17 @@ func TestLiveErrorTaxonomy404NotFound(t *testing.T) {
 // Bitbucket answers a request it cannot route with an HTML error page, and bb
 // reports it by its title (#704). Cut to its first characters the page was all
 // markup; the title is the line that says what happened.
+//
+// A REST path no plugin serves is answered with the "can't find that" page on
+// every release served. A project key holding an encoded slash is not: 10.1.5
+// and 10.5.0 refuse it with an HTML "Bad request" page, and 9.3.2 to 9.6.5
+// look the project up and answer a JSON 404.
 func TestLiveErrorTaxonomyAnHTMLPageIsReportedByItsTitle(t *testing.T) {
 	t.Parallel()
 
 	_ = newLiveHarness(t)
 
-	output, err := executeLiveCLIUnscoped(t, "project", "get", "..%2F..")
+	output, err := executeLiveCLIUnscoped(t, "api", "/rest/no-such-plugin/1.0/anything")
 	if err == nil {
 		t.Fatalf("expected Bitbucket to refuse the request, got success:\n%s", output)
 	}
