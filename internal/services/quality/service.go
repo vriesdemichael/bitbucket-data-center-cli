@@ -197,15 +197,22 @@ func (service *Service) ListRequiredBuildChecks(ctx context.Context, repo Reposi
 	return checks, nil
 }
 
-// RefuseRequiredBuildScope refuses a required build body that asks for a scope
-// the instance's release would silently ignore (compat.RequiredBuildScope). The
-// release is only asked when the body asks for a scope.
-func (service *Service) RefuseRequiredBuildScope(ctx context.Context, payload map[string]any) error {
-	if !compat.AsksForRequiredBuildScope(payload) {
-		return nil
+// RefuseRequiredBuildRequest refuses a required build body that asks for what
+// the instance's release lacks: a scope it would silently ignore
+// (compat.RequiredBuildScope), or a DEFAULT_BRANCH matcher it refuses
+// (compat.DefaultBranchMatcher). The release is only asked when the body asks
+// for one of them.
+func (service *Service) RefuseRequiredBuildRequest(ctx context.Context, payload map[string]any) error {
+	if compat.AsksForRequiredBuildScope(payload) {
+		if err := compat.RequiredBuildScope.Require(ctx, service.client); err != nil {
+			return err
+		}
+	}
+	if compat.NamesDefaultBranchMatcher(payload, "refMatcher", "exemptRefMatcher") {
+		return compat.DefaultBranchMatcher.Require(ctx, service.client)
 	}
 
-	return compat.RequiredBuildScope.Require(ctx, service.client)
+	return nil
 }
 
 // reportRequiredBuildScope fills in the scope a release without it enforces,
@@ -255,7 +262,7 @@ func (service *Service) CreateRequiredBuildCheck(ctx context.Context, repo Repos
 		return nil, err
 	}
 
-	if err := service.RefuseRequiredBuildScope(ctx, payload); err != nil {
+	if err := service.RefuseRequiredBuildRequest(ctx, payload); err != nil {
 		return nil, err
 	}
 
@@ -289,7 +296,7 @@ func (service *Service) UpdateRequiredBuildCheck(ctx context.Context, repo Repos
 		return nil, apperrors.New(apperrors.KindValidation, "required build merge check id must be > 0", nil)
 	}
 
-	if err := service.RefuseRequiredBuildScope(ctx, payload); err != nil {
+	if err := service.RefuseRequiredBuildRequest(ctx, payload); err != nil {
 		return nil, err
 	}
 

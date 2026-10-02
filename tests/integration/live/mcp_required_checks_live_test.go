@@ -144,6 +144,11 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 		if condition.mergeQueueOnly && harness.release(t).Before(requiredBuildScopeSince) {
 			continue
 		}
+		// Nor does one have the DEFAULT_BRANCH matcher, and bb refuses it
+		// (TestLiveDefaultBranchMatcher).
+		if condition.target.kind == "DEFAULT_BRANCH" && harness.release(t).Before(defaultBranchMatcherSince) {
+			continue
+		}
 		body := map[string]any{"buildParentKeys": []string{key(condition.code)}, "refMatcher": condition.target.body()}
 		description := condition.target.String()
 		if condition.exempt != nil {
@@ -208,7 +213,10 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 		}
 		wanted := map[string]string{}
 		for code, state := range want {
-			wanted[key(code)] = state
+			// A condition the release could not store requires nothing.
+			if _, made := wantStored[key(code)]; made {
+				wanted[key(code)] = state
+			}
 		}
 		if !maps.Equal(got, wanted) {
 			t.Errorf("%s: bb says the pull request requires %v, want %v", name, got, wanted)
@@ -296,6 +304,9 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 			{Key: key("exc"), Unparented: true},
 			{Key: key("brn"), Name: "Unit tests", State: "SUCCESSFUL", URL: "https://ci.example.com/" + key("brn") + "-unit"},
 		}
+		if _, made := wantStored[key("dfl")]; !made {
+			want = want[1:]
+		}
 		if !slices.Equal(checks, want) {
 			t.Errorf("the checks into master read\n%+v\nwant the missing first, each said to have reported without a parent\n%+v", checks, want)
 		}
@@ -329,10 +340,14 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 				got = append(got, asString(check["key"])+"="+asString(check["state"]))
 			}
 			want := []string{key("dfl") + "=", key("exc") + "=", key("brn") + "=SUCCESSFUL"}
+			if _, made := wantStored[key("dfl")]; !made {
+				want = want[1:]
+			}
 			if !slices.Equal(got, want) {
 				t.Errorf("the card lists required builds %v, want %v", got, want)
 			}
-			if text := mcpResultText(result); !strings.Contains(text, "Required builds: 2 missing, 0 failed, of 3.") {
+			summary := fmt.Sprintf("Required builds: %d missing, 0 failed, of %d.", len(want)-1, len(want))
+			if text := mcpResultText(result); !strings.Contains(text, summary) {
 				t.Errorf("the model reads %q, want the required builds still missing", text)
 			}
 
