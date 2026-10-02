@@ -50,6 +50,20 @@ const (
 	ElevationMethodRestDTOElevationMethodsTOTP     ElevationMethodRestDTOElevationMethods = "TOTP"
 )
 
+// Defines values for EnrichedRepositoryOriginOriginProjectType.
+const (
+	EnrichedRepositoryOriginOriginProjectTypeNORMAL   EnrichedRepositoryOriginOriginProjectType = "NORMAL"
+	EnrichedRepositoryOriginOriginProjectTypePERSONAL EnrichedRepositoryOriginOriginProjectType = "PERSONAL"
+)
+
+// Defines values for EnrichedRepositoryOriginOriginState.
+const (
+	EnrichedRepositoryOriginOriginStateAVAILABLE            EnrichedRepositoryOriginOriginState = "AVAILABLE"
+	EnrichedRepositoryOriginOriginStateINITIALISATIONFAILED EnrichedRepositoryOriginOriginState = "INITIALISATION_FAILED"
+	EnrichedRepositoryOriginOriginStateINITIALISING         EnrichedRepositoryOriginOriginState = "INITIALISING"
+	EnrichedRepositoryOriginOriginStateOFFLINE              EnrichedRepositoryOriginOriginState = "OFFLINE"
+)
+
 // Defines values for EnrichedRepositoryOriginProjectType.
 const (
 	EnrichedRepositoryOriginProjectTypeNORMAL   EnrichedRepositoryOriginProjectType = "NORMAL"
@@ -166,8 +180,8 @@ const (
 
 // Defines values for RestAnnouncementBannerAudience.
 const (
-	RestAnnouncementBannerAudienceALL           RestAnnouncementBannerAudience = "ALL"
-	RestAnnouncementBannerAudienceAUTHENTICATED RestAnnouncementBannerAudience = "AUTHENTICATED"
+	ALL           RestAnnouncementBannerAudience = "ALL"
+	AUTHENTICATED RestAnnouncementBannerAudience = "AUTHENTICATED"
 )
 
 // Defines values for RestApplicationUserType.
@@ -982,6 +996,20 @@ const (
 	RestLabelableLabelableTypeREPOSITORY RestLabelableLabelableType = "REPOSITORY"
 )
 
+// Defines values for RestLabelableOriginOriginProjectType.
+const (
+	RestLabelableOriginOriginProjectTypeNORMAL   RestLabelableOriginOriginProjectType = "NORMAL"
+	RestLabelableOriginOriginProjectTypePERSONAL RestLabelableOriginOriginProjectType = "PERSONAL"
+)
+
+// Defines values for RestLabelableOriginOriginState.
+const (
+	RestLabelableOriginOriginStateAVAILABLE            RestLabelableOriginOriginState = "AVAILABLE"
+	RestLabelableOriginOriginStateINITIALISATIONFAILED RestLabelableOriginOriginState = "INITIALISATION_FAILED"
+	RestLabelableOriginOriginStateINITIALISING         RestLabelableOriginOriginState = "INITIALISING"
+	RestLabelableOriginOriginStateOFFLINE              RestLabelableOriginOriginState = "OFFLINE"
+)
+
 // Defines values for RestLabelableOriginProjectType.
 const (
 	RestLabelableOriginProjectTypeNORMAL   RestLabelableOriginProjectType = "NORMAL"
@@ -1012,14 +1040,14 @@ const (
 
 // Defines values for RestMailConfigurationAuthType.
 const (
-	RestMailConfigurationAuthTypeBASIC  RestMailConfigurationAuthType = "BASIC"
-	RestMailConfigurationAuthTypeOAUTH2 RestMailConfigurationAuthType = "OAUTH2"
+	BASIC  RestMailConfigurationAuthType = "BASIC"
+	OAUTH2 RestMailConfigurationAuthType = "OAUTH2"
 )
 
 // Defines values for RestMailConfigurationProtocol.
 const (
-	RestMailConfigurationProtocolSMTP  RestMailConfigurationProtocol = "SMTP"
-	RestMailConfigurationProtocolSMTPS RestMailConfigurationProtocol = "SMTPS"
+	SMTP  RestMailConfigurationProtocol = "SMTP"
+	SMTPS RestMailConfigurationProtocol = "SMTPS"
 )
 
 // Defines values for RestMeshNodeState.
@@ -1664,13 +1692,13 @@ const (
 	RestRequiredBuildConditionRefMatcherTypeIdPATTERN       RestRequiredBuildConditionRefMatcherTypeId = "PATTERN"
 )
 
-// Defines values for RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId.
+// Defines values for RestRequiredBuildConditionSetRequestRefMatcherTypeId.
 const (
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdANYREF        RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "ANY_REF"
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdBRANCH        RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "BRANCH"
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdMODELBRANCH   RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "MODEL_BRANCH"
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdMODELCATEGORY RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "MODEL_CATEGORY"
-	RestRequiredBuildConditionSetRequestExemptRefMatcherTypeIdPATTERN       RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId = "PATTERN"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdANYREF        RestRequiredBuildConditionSetRequestRefMatcherTypeId = "ANY_REF"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdBRANCH        RestRequiredBuildConditionSetRequestRefMatcherTypeId = "BRANCH"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdMODELBRANCH   RestRequiredBuildConditionSetRequestRefMatcherTypeId = "MODEL_BRANCH"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdMODELCATEGORY RestRequiredBuildConditionSetRequestRefMatcherTypeId = "MODEL_CATEGORY"
+	RestRequiredBuildConditionSetRequestRefMatcherTypeIdPATTERN       RestRequiredBuildConditionSetRequestRefMatcherTypeId = "PATTERN"
 )
 
 // Defines values for RestRestrictionRequestMatcherTypeId.
@@ -1752,6 +1780,12 @@ const (
 	RestSshAccessKeyRepositoryStateINITIALISATIONFAILED RestSshAccessKeyRepositoryState = "INITIALISATION_FAILED"
 	RestSshAccessKeyRepositoryStateINITIALISING         RestSshAccessKeyRepositoryState = "INITIALISING"
 	RestSshAccessKeyRepositoryStateOFFLINE              RestSshAccessKeyRepositoryState = "OFFLINE"
+)
+
+// Defines values for RestSystemSigningConfigurationFormat.
+const (
+	GPG  RestSystemSigningConfigurationFormat = "GPG"
+	X509 RestSystemSigningConfigurationFormat = "X509"
 )
 
 // Defines values for RestTagType.
@@ -2111,24 +2145,6 @@ const (
 	SERVICE RestUserReactionUserType = "SERVICE"
 )
 
-// Defines values for SetBannerJSONBodyAudience.
-const (
-	SetBannerJSONBodyAudienceALL           SetBannerJSONBodyAudience = "ALL"
-	SetBannerJSONBodyAudienceAUTHENTICATED SetBannerJSONBodyAudience = "AUTHENTICATED"
-)
-
-// Defines values for SetMailConfigJSONBodyAuthType.
-const (
-	SetMailConfigJSONBodyAuthTypeBASIC  SetMailConfigJSONBodyAuthType = "BASIC"
-	SetMailConfigJSONBodyAuthTypeOAUTH2 SetMailConfigJSONBodyAuthType = "OAUTH2"
-)
-
-// Defines values for SetMailConfigJSONBodyProtocol.
-const (
-	SetMailConfigJSONBodyProtocolSMTP  SetMailConfigJSONBodyProtocol = "SMTP"
-	SetMailConfigJSONBodyProtocolSMTPS SetMailConfigJSONBodyProtocol = "SMTPS"
-)
-
 // Defines values for SetPermissionForGroupsParamsPermission.
 const (
 	SetPermissionForGroupsParamsPermissionADMIN         SetPermissionForGroupsParamsPermission = "ADMIN"
@@ -2271,10 +2287,10 @@ const (
 
 // Defines values for GetRestrictionsParamsMatcherType.
 const (
-	GetRestrictionsParamsMatcherTypeBRANCH        GetRestrictionsParamsMatcherType = "BRANCH"
-	GetRestrictionsParamsMatcherTypeMODELBRANCH   GetRestrictionsParamsMatcherType = "MODEL_BRANCH"
-	GetRestrictionsParamsMatcherTypeMODELCATEGORY GetRestrictionsParamsMatcherType = "MODEL_CATEGORY"
-	GetRestrictionsParamsMatcherTypePATTERN       GetRestrictionsParamsMatcherType = "PATTERN"
+	BRANCH        GetRestrictionsParamsMatcherType = "BRANCH"
+	MODELBRANCH   GetRestrictionsParamsMatcherType = "MODEL_BRANCH"
+	MODELCATEGORY GetRestrictionsParamsMatcherType = "MODEL_CATEGORY"
+	PATTERN       GetRestrictionsParamsMatcherType = "PATTERN"
 )
 
 // Defines values for GetRestrictionsParamsType.
@@ -2284,15 +2300,6 @@ const (
 	GetRestrictionsParamsTypeNoDeletes       GetRestrictionsParamsType = "no-deletes"
 	GetRestrictionsParamsTypePullRequestOnly GetRestrictionsParamsType = "pull-request-only"
 	GetRestrictionsParamsTypeReadOnly        GetRestrictionsParamsType = "read-only"
-)
-
-// Defines values for UpdatePullRequestCondition1JSONBodySourceMatcherTypeId.
-const (
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdANYREF        UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "ANY_REF"
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdBRANCH        UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "BRANCH"
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdMODELBRANCH   UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "MODEL_BRANCH"
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdMODELCATEGORY UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "MODEL_CATEGORY"
-	UpdatePullRequestCondition1JSONBodySourceMatcherTypeIdPATTERN       UpdatePullRequestCondition1JSONBodySourceMatcherTypeId = "PATTERN"
 )
 
 // Defines values for GetAllReposForProjectParamsIncludeDefaultBranch.
@@ -2336,7 +2343,7 @@ const (
 
 // AdminPasswordUpdate defines model for AdminPasswordUpdate.
 type AdminPasswordUpdate struct {
-	Name            *string `json:"name,omitempty"`
+	Name            string  `json:"name"`
 	Password        *string `json:"password,omitempty"`
 	PasswordConfirm *string `json:"passwordConfirm,omitempty"`
 }
@@ -2475,8 +2482,38 @@ type EnrichedRepository struct {
 		Id            *int32                  `json:"id,omitempty"`
 		Links         *map[string]interface{} `json:"links,omitempty"`
 		Name          *string                 `json:"name,omitempty"`
-		Partition     *int32                  `json:"partition,omitempty"`
-		Project       *struct {
+		Origin        *struct {
+			Archived      *bool                   `json:"archived,omitempty"`
+			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
+			Description   *string                 `json:"description,omitempty"`
+			Forkable      *bool                   `json:"forkable,omitempty"`
+			HierarchyId   *string                 `json:"hierarchyId,omitempty"`
+			Id            *int32                  `json:"id,omitempty"`
+			Links         *map[string]interface{} `json:"links,omitempty"`
+			Name          *string                 `json:"name,omitempty"`
+			Partition     *int32                  `json:"partition,omitempty"`
+			Project       *struct {
+				Avatar      *string                                    `json:"avatar,omitempty"`
+				AvatarUrl   *string                                    `json:"avatarUrl,omitempty"`
+				Description *string                                    `json:"description,omitempty"`
+				Id          *int32                                     `json:"id,omitempty"`
+				Key         string                                     `json:"key"`
+				Links       *map[string]interface{}                    `json:"links,omitempty"`
+				Name        *string                                    `json:"name,omitempty"`
+				Public      *bool                                      `json:"public,omitempty"`
+				Scope       *string                                    `json:"scope,omitempty"`
+				Type        *EnrichedRepositoryOriginOriginProjectType `json:"type,omitempty"`
+			} `json:"project,omitempty"`
+			Public        *bool                                `json:"public,omitempty"`
+			RelatedLinks  *map[string]interface{}              `json:"relatedLinks,omitempty"`
+			ScmId         *string                              `json:"scmId,omitempty"`
+			Scope         *string                              `json:"scope,omitempty"`
+			Slug          *string                              `json:"slug,omitempty"`
+			State         *EnrichedRepositoryOriginOriginState `json:"state,omitempty"`
+			StatusMessage *string                              `json:"statusMessage,omitempty"`
+		} `json:"origin,omitempty"`
+		Partition *int32 `json:"partition,omitempty"`
+		Project   *struct {
 			Avatar      *string                              `json:"avatar,omitempty"`
 			AvatarUrl   *string                              `json:"avatarUrl,omitempty"`
 			Description *string                              `json:"description,omitempty"`
@@ -2523,6 +2560,12 @@ type EnrichedRepository struct {
 	StatusMessage *string                  `json:"statusMessage,omitempty"`
 }
 
+// EnrichedRepositoryOriginOriginProjectType defines model for EnrichedRepository.Origin.Origin.Project.Type.
+type EnrichedRepositoryOriginOriginProjectType string
+
+// EnrichedRepositoryOriginOriginState defines model for EnrichedRepository.Origin.Origin.State.
+type EnrichedRepositoryOriginOriginState string
+
 // EnrichedRepositoryOriginProjectType defines model for EnrichedRepository.Origin.Project.Type.
 type EnrichedRepositoryOriginProjectType string
 
@@ -2538,6 +2581,12 @@ type EnrichedRepositoryState string
 // ErrorEntity defines model for ErrorEntity.
 type ErrorEntity struct {
 	Message *string `json:"message,omitempty"`
+}
+
+// ExampleAttachmentMultipartFormData defines model for ExampleAttachmentMultipartFormData.
+type ExampleAttachmentMultipartFormData struct {
+	// File The file to attach.
+	File openapi_types.File `json:"file"`
 }
 
 // ExampleAvatarMultipartFormData defines model for ExampleAvatarMultipartFormData.
@@ -2686,7 +2735,7 @@ type FileListResource = interface{}
 
 // GroupAndUsers defines model for GroupAndUsers.
 type GroupAndUsers struct {
-	Group *string  `json:"group,omitempty"`
+	Group string   `json:"group"`
 	Users []string `json:"users"`
 }
 
@@ -2797,8 +2846,8 @@ type NextLoginStepDTONextLoginStep string
 type Project struct {
 	Description *string     `json:"description,omitempty"`
 	Id          *int32      `json:"id,omitempty"`
-	Key         *string     `json:"key,omitempty"`
-	Name        *string     `json:"name,omitempty"`
+	Key         string      `json:"key"`
+	Name        string      `json:"name"`
 	Public      *bool       `json:"public,omitempty"`
 	Type        ProjectType `json:"type"`
 }
@@ -2957,10 +3006,17 @@ type RestApplicationUserWithPermissionsType string
 
 // RestApplySuggestionRequest defines model for RestApplySuggestionRequest.
 type RestApplySuggestionRequest struct {
-	CommentVersion     int32  `json:"commentVersion"`
-	Message            string `json:"message"`
-	PullRequestVersion int32  `json:"pullRequestVersion"`
-	SuggestionIndex    int32  `json:"suggestionIndex"`
+	CommentVersion     int32   `json:"commentVersion"`
+	Message            *string `json:"message"`
+	PullRequestVersion int32   `json:"pullRequestVersion"`
+	SuggestionIndex    int32   `json:"suggestionIndex"`
+}
+
+// RestAttachment defines model for RestAttachment.
+type RestAttachment struct {
+	Id   *int64  `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Url  *string `json:"url,omitempty"`
 }
 
 // RestAttachmentMetadata defines model for RestAttachmentMetadata.
@@ -4236,7 +4292,6 @@ type RestComment struct {
 			Slug         string                      `json:"slug"`
 			Type         RestCommentParentAuthorType `json:"type"`
 		} `json:"author,omitempty"`
-		Comments     *[]RestComment          `json:"comments,omitempty"`
 		CreatedDate  *int64                  `json:"createdDate,omitempty"`
 		Html         *string                 `json:"html,omitempty"`
 		Id           *int64                  `json:"id,omitempty"`
@@ -4508,6 +4563,11 @@ type RestCspSettings struct {
 
 // RestCspSettingsStrictness defines model for RestCspSettings.Strictness.
 type RestCspSettingsStrictness string
+
+// RestDefaultBranch defines model for RestDefaultBranch.
+type RestDefaultBranch struct {
+	Id *string `json:"id,omitempty"`
+}
 
 // RestDefaultReviewersRequest defines model for RestDefaultReviewersRequest.
 type RestDefaultReviewersRequest struct {
@@ -4905,7 +4965,7 @@ type RestHookScriptTriggers struct {
 
 // RestImportRequest defines model for RestImportRequest.
 type RestImportRequest struct {
-	ArchivePath *string `json:"archivePath,omitempty"`
+	ArchivePath string `json:"archivePath"`
 }
 
 // RestIndexingIsRepositoryQueued defines model for RestIndexingIsRepositoryQueued.
@@ -5122,8 +5182,38 @@ type RestLabelable struct {
 		Id            *int32                  `json:"id,omitempty"`
 		Links         *map[string]interface{} `json:"links,omitempty"`
 		Name          *string                 `json:"name,omitempty"`
-		Partition     *int32                  `json:"partition,omitempty"`
-		Project       *struct {
+		Origin        *struct {
+			Archived      *bool                   `json:"archived,omitempty"`
+			DefaultBranch *string                 `json:"defaultBranch,omitempty"`
+			Description   *string                 `json:"description,omitempty"`
+			Forkable      *bool                   `json:"forkable,omitempty"`
+			HierarchyId   *string                 `json:"hierarchyId,omitempty"`
+			Id            *int32                  `json:"id,omitempty"`
+			Links         *map[string]interface{} `json:"links,omitempty"`
+			Name          *string                 `json:"name,omitempty"`
+			Partition     *int32                  `json:"partition,omitempty"`
+			Project       *struct {
+				Avatar      *string                               `json:"avatar,omitempty"`
+				AvatarUrl   *string                               `json:"avatarUrl,omitempty"`
+				Description *string                               `json:"description,omitempty"`
+				Id          *int32                                `json:"id,omitempty"`
+				Key         string                                `json:"key"`
+				Links       *map[string]interface{}               `json:"links,omitempty"`
+				Name        *string                               `json:"name,omitempty"`
+				Public      *bool                                 `json:"public,omitempty"`
+				Scope       *string                               `json:"scope,omitempty"`
+				Type        *RestLabelableOriginOriginProjectType `json:"type,omitempty"`
+			} `json:"project,omitempty"`
+			Public        *bool                           `json:"public,omitempty"`
+			RelatedLinks  *map[string]interface{}         `json:"relatedLinks,omitempty"`
+			ScmId         *string                         `json:"scmId,omitempty"`
+			Scope         *string                         `json:"scope,omitempty"`
+			Slug          *string                         `json:"slug,omitempty"`
+			State         *RestLabelableOriginOriginState `json:"state,omitempty"`
+			StatusMessage *string                         `json:"statusMessage,omitempty"`
+		} `json:"origin,omitempty"`
+		Partition *int32 `json:"partition,omitempty"`
+		Project   *struct {
 			Avatar      *string                         `json:"avatar,omitempty"`
 			AvatarUrl   *string                         `json:"avatarUrl,omitempty"`
 			Description *string                         `json:"description,omitempty"`
@@ -5167,6 +5257,12 @@ type RestLabelable struct {
 
 // RestLabelableLabelableType defines model for RestLabelable.LabelableType.
 type RestLabelableLabelableType string
+
+// RestLabelableOriginOriginProjectType defines model for RestLabelable.Origin.Origin.Project.Type.
+type RestLabelableOriginOriginProjectType string
+
+// RestLabelableOriginOriginState defines model for RestLabelable.Origin.Origin.State.
+type RestLabelableOriginOriginState string
 
 // RestLabelableOriginProjectType defines model for RestLabelable.Origin.Project.Type.
 type RestLabelableOriginProjectType string
@@ -5381,8 +5477,8 @@ type RestMirrorServerMirrorType string
 
 // RestMirrorUpgradeRequest defines model for RestMirrorUpgradeRequest.
 type RestMirrorUpgradeRequest struct {
-	BaseUrl        *string `json:"baseUrl,omitempty"`
-	ProductVersion *string `json:"productVersion,omitempty"`
+	BaseUrl        string `json:"baseUrl"`
+	ProductVersion string `json:"productVersion"`
 }
 
 // RestMirroredRepository defines model for RestMirroredRepository.
@@ -6646,16 +6742,16 @@ type RestRequiredBuildConditionRefMatcherTypeId string
 // RestRequiredBuildConditionSetRequest defines model for RestRequiredBuildConditionSetRequest.
 type RestRequiredBuildConditionSetRequest struct {
 	// BuildParentKeys A non-empty list of build parent keys that require green builds for this merge check to pass
-	BuildParentKeys  []string `json:"buildParentKeys"`
-	ExemptRefMatcher *struct {
+	BuildParentKeys  []string        `json:"buildParentKeys"`
+	ExemptRefMatcher *RestRefMatcher `json:"exemptRefMatcher,omitempty"`
+	RefMatcher       struct {
 		DisplayId *string `json:"displayId,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Type      *struct {
-			Id   RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId `json:"id"`
-			Name string                                                     `json:"name"`
+			Id   RestRequiredBuildConditionSetRequestRefMatcherTypeId `json:"id"`
+			Name string                                               `json:"name"`
 		} `json:"type,omitempty"`
-	} `json:"exemptRefMatcher,omitempty"`
-	RefMatcher RestRefMatcher `json:"refMatcher"`
+	} `json:"refMatcher"`
 
 	// RequiredForMergeQueue Indicates whether this required build condition is enforced for merges via the merge queue. If not specified, defaults to true.
 	RequiredForMergeQueue *bool `json:"requiredForMergeQueue,omitempty"`
@@ -6664,8 +6760,8 @@ type RestRequiredBuildConditionSetRequest struct {
 	RequiredForPullRequest *bool `json:"requiredForPullRequest,omitempty"`
 }
 
-// RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId defines model for RestRequiredBuildConditionSetRequest.ExemptRefMatcher.Type.Id.
-type RestRequiredBuildConditionSetRequestExemptRefMatcherTypeId string
+// RestRequiredBuildConditionSetRequestRefMatcherTypeId defines model for RestRequiredBuildConditionSetRequest.RefMatcher.Type.Id.
+type RestRequiredBuildConditionSetRequestRefMatcherTypeId string
 
 // RestRestrictionRequest defines model for RestRestrictionRequest.
 type RestRestrictionRequest struct {
@@ -6979,8 +7075,30 @@ type RestSyncProgress struct {
 
 // RestSystemSigningConfiguration defines model for RestSystemSigningConfiguration.
 type RestSystemSigningConfiguration struct {
-	Enabled *bool `json:"enabled,omitempty"`
+	// Certificate PEM-encoded X.509 certificate (write-only, only used when format is X509)
+	Certificate *string                               `json:"certificate,omitempty"`
+	Enabled     *bool                                 `json:"enabled,omitempty"`
+	Format      *RestSystemSigningConfigurationFormat `json:"format,omitempty"`
+
+	// Passphrase Passphrase for the encrypted private key (write-only)
+	Passphrase *string `json:"passphrase,omitempty"`
+
+	// PrivateKey PEM-encoded encrypted private key (write-only, only used when format is X509)
+	PrivateKey *string `json:"privateKey,omitempty"`
+
+	// X509Certificate Stored X.509 certificate metadata (read-only, only present when a certificate is stored)
+	X509Certificate *struct {
+		Certificate *string `json:"certificate,omitempty"`
+		Fingerprint *string `json:"fingerprint,omitempty"`
+		Issuer      *string `json:"issuer,omitempty"`
+		NotAfter    *int64  `json:"notAfter,omitempty"`
+		NotBefore   *int64  `json:"notBefore,omitempty"`
+		Subject     *string `json:"subject,omitempty"`
+	} `json:"x509Certificate,omitempty"`
 }
+
+// RestSystemSigningConfigurationFormat defines model for RestSystemSigningConfiguration.Format.
+type RestSystemSigningConfigurationFormat string
 
 // RestTag defines model for RestTag.
 type RestTag struct {
@@ -7534,7 +7652,6 @@ type RestUserReaction struct {
 				Slug         string                                  `json:"slug"`
 				Type         RestUserReactionCommentParentAuthorType `json:"type"`
 			} `json:"author,omitempty"`
-			Comments     *[]RestComment          `json:"comments,omitempty"`
 			CreatedDate  *int64                  `json:"createdDate,omitempty"`
 			Html         *string                 `json:"html,omitempty"`
 			Id           *int64                  `json:"id,omitempty"`
@@ -7870,12 +7987,12 @@ type TotpUserEnrollmentDTO struct {
 // UserAndGroups defines model for UserAndGroups.
 type UserAndGroups struct {
 	Groups []string `json:"groups"`
-	User   *string  `json:"user,omitempty"`
+	User   string   `json:"user"`
 }
 
 // UserPasswordUpdate defines model for UserPasswordUpdate.
 type UserPasswordUpdate struct {
-	OldPassword     *string `json:"oldPassword,omitempty"`
+	OldPassword     string  `json:"oldPassword"`
 	Password        *string `json:"password,omitempty"`
 	PasswordConfirm *string `json:"passwordConfirm,omitempty"`
 }
@@ -7888,22 +8005,22 @@ type UserPickerContext struct {
 
 // UserRename defines model for UserRename.
 type UserRename struct {
-	Name    *string `json:"name,omitempty"`
-	NewName *string `json:"newName,omitempty"`
+	Name    string `json:"name"`
+	NewName string `json:"newName"`
 }
 
 // UserUpdate defines model for UserUpdate.
 type UserUpdate struct {
-	DisplayName *string `json:"displayName,omitempty"`
-	Email       *string `json:"email,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	DisplayName string `json:"displayName"`
+	Email       string `json:"email"`
+	Name        string `json:"name"`
 }
 
 // UserUpdateWithCredentials defines model for UserUpdateWithCredentials.
 type UserUpdateWithCredentials struct {
-	DisplayName *string `json:"displayName,omitempty"`
-	Email       *string `json:"email,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	DisplayName string `json:"displayName"`
+	Email       string `json:"email"`
+	Name        string `json:"name"`
 
 	// Password The user's password, which the system may require when users update their email.
 	Password *string `json:"password,omitempty"`
@@ -7936,23 +8053,8 @@ type GetAllAccessTokens2Params struct {
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// SetBannerJSONBody defines parameters for SetBanner.
-type SetBannerJSONBody struct {
-	Audience SetBannerJSONBodyAudience `json:"audience"`
-	Enabled  *bool                     `json:"enabled,omitempty"`
-	Message  *string                   `json:"message,omitempty"`
-}
-
-// SetBannerJSONBodyAudience defines parameters for SetBanner.
-type SetBannerJSONBodyAudience string
-
-// SetDefaultBranchJSONBody defines parameters for SetDefaultBranch.
-type SetDefaultBranchJSONBody struct {
-	Id *string `json:"id,omitempty"`
-}
-
-// Delete2Params defines parameters for Delete2.
-type Delete2Params struct {
+// Delete1Params defines parameters for Delete1.
+type Delete1Params struct {
 	Force *bool `form:"force,omitempty" json:"force,omitempty"`
 }
 
@@ -8009,27 +8111,6 @@ type FindUsersNotInGroupParams struct {
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
-
-// SetMailConfigJSONBody defines parameters for SetMailConfig.
-type SetMailConfigJSONBody struct {
-	AuthType         *SetMailConfigJSONBodyAuthType `json:"authType,omitempty"`
-	Hostname         *string                        `json:"hostname,omitempty"`
-	Oauth2ProviderId *string                        `json:"oauth2ProviderId,omitempty"`
-	Password         *string                        `json:"password,omitempty"`
-	Port             *int32                         `json:"port,omitempty"`
-	Protocol         *SetMailConfigJSONBodyProtocol `json:"protocol,omitempty"`
-	RequireStartTls  *bool                          `json:"requireStartTls,omitempty"`
-	SenderAddress    *string                        `json:"senderAddress,omitempty"`
-	TokenId          *string                        `json:"tokenId,omitempty"`
-	UseStartTls      *bool                          `json:"useStartTls,omitempty"`
-	Username         *string                        `json:"username,omitempty"`
-}
-
-// SetMailConfigJSONBodyAuthType defines parameters for SetMailConfig.
-type SetMailConfigJSONBodyAuthType string
-
-// SetMailConfigJSONBodyProtocol defines parameters for SetMailConfig.
-type SetMailConfigJSONBodyProtocol string
 
 // SetSenderAddressJSONBody defines parameters for SetSenderAddress.
 type SetSenderAddressJSONBody = string
@@ -8371,13 +8452,6 @@ type GetImportJobMessagesParams struct {
 
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
-// StartMeshMigrationJSONBody defines parameters for StartMeshMigration.
-type StartMeshMigrationJSONBody struct {
-	All           *bool   `json:"all,omitempty"`
-	ProjectIds    []int32 `json:"projectIds"`
-	RepositoryIds []int32 `json:"repositoryIds"`
 }
 
 // SearchMeshMigrationReposParams defines parameters for SearchMeshMigrationRepos.
@@ -8747,14 +8821,14 @@ type GetCommitParams struct {
 	Path *string `form:"path,omitempty" json:"path,omitempty"`
 }
 
-// DeleteParams defines parameters for Delete.
-type DeleteParams struct {
+// DeleteRepositoryBuildStatusParams defines parameters for DeleteRepositoryBuildStatus.
+type DeleteRepositoryBuildStatusParams struct {
 	// Key the key of the build status
 	Key string `form:"key" json:"key"`
 }
 
-// GetParams defines parameters for Get.
-type GetParams struct {
+// GetRepositoryBuildStatusParams defines parameters for GetRepositoryBuildStatus.
+type GetRepositoryBuildStatusParams struct {
 	// Key the key of the build status
 	Key string `form:"key" json:"key"`
 }
@@ -8801,8 +8875,8 @@ type DeleteCommentParams struct {
 	Version *string `form:"version,omitempty" json:"version,omitempty"`
 }
 
-// Delete1Params defines parameters for Delete1.
-type Delete1Params struct {
+// DeleteParams defines parameters for Delete.
+type DeleteParams struct {
 	// DeploymentSequenceNumber the sequence number of the deployment, as detailed by the query parameter
 	DeploymentSequenceNumber *string `form:"deploymentSequenceNumber,omitempty" json:"deploymentSequenceNumber,omitempty"`
 
@@ -8813,8 +8887,8 @@ type Delete1Params struct {
 	EnvironmentKey *string `form:"environmentKey,omitempty" json:"environmentKey,omitempty"`
 }
 
-// Get1Params defines parameters for Get1.
-type Get1Params struct {
+// GetParams defines parameters for Get.
+type GetParams struct {
 	// DeploymentSequenceNumber the sequence number of the deployment, as detailed by the query param
 	DeploymentSequenceNumber *string `form:"deploymentSequenceNumber,omitempty" json:"deploymentSequenceNumber,omitempty"`
 
@@ -9257,8 +9331,8 @@ type GetPageParams struct {
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// Get3Params defines parameters for Get3.
-type Get3Params struct {
+// Get2Params defines parameters for Get2.
+type Get2Params struct {
 	// WithProperties (optional) defaults to false, whether to return additional pull request properties
 	WithProperties *string `form:"withProperties,omitempty" json:"withProperties,omitempty"`
 }
@@ -9741,8 +9815,8 @@ type Search1Params struct {
 // Search1ParamsOrder defines parameters for Search1.
 type Search1ParamsOrder string
 
-// Delete11Params defines parameters for Delete11.
-type Delete11Params struct {
+// Delete10Params defines parameters for Delete10.
+type Delete10Params struct {
 	// Namespace A namespace used to identify the provider of the feature
 	Namespace string `form:"namespace" json:"namespace"`
 
@@ -9753,8 +9827,8 @@ type Delete11Params struct {
 	FeatureKey string `form:"featureKey" json:"featureKey"`
 }
 
-// Get9Params defines parameters for Get9.
-type Get9Params struct {
+// Get8Params defines parameters for Get8.
+type Get8Params struct {
 	// Namespace The namespace used to identify the provider of the feature
 	Namespace string `form:"namespace" json:"namespace"`
 
@@ -9921,11 +9995,6 @@ type Search4Params struct {
 // Search4ParamsOrder defines parameters for Search4.
 type Search4ParamsOrder string
 
-// UpdateSystemSigningConfigurationJSONBody defines parameters for UpdateSystemSigningConfiguration.
-type UpdateSystemSigningConfigurationJSONBody struct {
-	Enabled *bool `json:"enabled,omitempty"`
-}
-
 // GetUsers2Params defines parameters for GetUsers2.
 type GetUsers2Params struct {
 	// Filter Return only users, whose username, name or email address <i>contain</i> the <code> filter</code> value
@@ -10048,25 +10117,6 @@ type GetBuildStatusParams struct {
 	// Limit Number of items to return. If not passed, a page size of 25 is used.
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
-
-// UpdatePullRequestCondition1JSONBody defines parameters for UpdatePullRequestCondition1.
-type UpdatePullRequestCondition1JSONBody struct {
-	RequiredApprovals *int32                 `json:"requiredApprovals,omitempty"`
-	ReviewerGroups    *[]RestReviewerGroup   `json:"reviewerGroups,omitempty"`
-	Reviewers         *[]RestApplicationUser `json:"reviewers,omitempty"`
-	SourceMatcher     *struct {
-		DisplayId *string `json:"displayId,omitempty"`
-		Id        *string `json:"id,omitempty"`
-		Type      *struct {
-			Id   UpdatePullRequestCondition1JSONBodySourceMatcherTypeId `json:"id"`
-			Name string                                                 `json:"name"`
-		} `json:"type,omitempty"`
-	} `json:"sourceMatcher,omitempty"`
-	TargetMatcher *RestRefMatcher `json:"targetMatcher,omitempty"`
-}
-
-// UpdatePullRequestCondition1JSONBodySourceMatcherTypeId defines parameters for UpdatePullRequestCondition1.
-type UpdatePullRequestCondition1JSONBodySourceMatcherTypeId string
 
 // GetReviewersParams defines parameters for GetReviewers.
 type GetReviewersParams struct {
@@ -10357,24 +10407,6 @@ type GetSshKeysParams struct {
 	Limit *float32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// AddSshKeyJSONBody defines parameters for AddSshKey.
-type AddSshKeyJSONBody struct {
-	AlgorithmType *string `json:"algorithmType,omitempty"`
-	BitLength     *int32  `json:"bitLength,omitempty"`
-
-	// CreatedDate Epoch milliseconds. Upstream spec declares string/date-time; the server returns a number.
-	CreatedDate       *int64  `json:"createdDate,omitempty"`
-	ExpiryDays        *int32  `json:"expiryDays,omitempty"`
-	Fingerprint       *string `json:"fingerprint,omitempty"`
-	Id                *int32  `json:"id,omitempty"`
-	Label             *string `json:"label,omitempty"`
-	LastAuthenticated *string `json:"lastAuthenticated,omitempty"`
-	Text              *string `json:"text,omitempty"`
-
-	// Warning Contains a warning about the key, for example that it's deprecated
-	Warning *string `json:"warning,omitempty"`
-}
-
 // AddSshKeyParams defines parameters for AddSshKey.
 type AddSshKeyParams struct {
 	// User the username of the user to add the SSH key for. If no username is specified, the SSH key will be added for the current authenticated user.
@@ -10445,10 +10477,10 @@ type UpdateAccessToken2JSONRequestBody = RestAccessTokenRequest
 type UpdateGlobalSettingsJSONRequestBody = RestSshKeySettings
 
 // SetBannerJSONRequestBody defines body for SetBanner for application/json ContentType.
-type SetBannerJSONRequestBody SetBannerJSONBody
+type SetBannerJSONRequestBody = RestAnnouncementBanner
 
 // SetDefaultBranchJSONRequestBody defines body for SetDefaultBranch for application/json ContentType.
-type SetDefaultBranchJSONRequestBody SetDefaultBranchJSONBody
+type SetDefaultBranchJSONRequestBody = RestDefaultBranch
 
 // RegisterNewMeshNodeJSONRequestBody defines body for RegisterNewMeshNode for application/json ContentType.
 type RegisterNewMeshNodeJSONRequestBody = RestMeshNode
@@ -10469,7 +10501,7 @@ type RemoveUserFromGroupJSONRequestBody = UserPickerContext
 type UpdateLicenseJSONRequestBody = RestBitbucketLicense
 
 // SetMailConfigJSONRequestBody defines body for SetMailConfig for application/json ContentType.
-type SetMailConfigJSONRequestBody SetMailConfigJSONBody
+type SetMailConfigJSONRequestBody = RestMailConfiguration
 
 // SetSenderAddressJSONRequestBody defines body for SetSenderAddress for application/json ContentType.
 type SetSenderAddressJSONRequestBody = SetSenderAddressJSONBody
@@ -10520,7 +10552,7 @@ type PreviewExportJSONRequestBody = RestExportRequest
 type StartImportJSONRequestBody = RestImportRequest
 
 // StartMeshMigrationJSONRequestBody defines body for StartMeshMigration for application/json ContentType.
-type StartMeshMigrationJSONRequestBody StartMeshMigrationJSONBody
+type StartMeshMigrationJSONRequestBody = RestMeshMigrationRequest
 
 // PreviewMeshMigrationJSONRequestBody defines body for PreviewMeshMigration for application/json ContentType.
 type PreviewMeshMigrationJSONRequestBody = RestMeshMigrationRequest
@@ -10545,6 +10577,9 @@ type ForkRepositoryJSONRequestBody = RestRepository
 
 // UpdateRepositoryJSONRequestBody defines body for UpdateRepository for application/json ContentType.
 type UpdateRepositoryJSONRequestBody = RestRepository
+
+// SaveAttachmentMultipartRequestBody defines body for SaveAttachment for multipart/form-data ContentType.
+type SaveAttachmentMultipartRequestBody = ExampleAttachmentMultipartFormData
 
 // SaveAttachmentMetadataJSONRequestBody defines body for SaveAttachmentMetadata for application/json ContentType.
 type SaveAttachmentMetadataJSONRequestBody = SaveAttachmentMetadataJSONBody
@@ -10576,8 +10611,8 @@ type AddLabelJSONRequestBody = RestLabel
 // CreateJSONRequestBody defines body for Create for application/json ContentType.
 type CreateJSONRequestBody = RestPullRequest
 
-// Delete3JSONRequestBody defines body for Delete3 for application/json ContentType.
-type Delete3JSONRequestBody = RestPullRequestDeleteRequest
+// Delete2JSONRequestBody defines body for Delete2 for application/json ContentType.
+type Delete2JSONRequestBody = RestPullRequestDeleteRequest
 
 // UpdateJSONRequestBody defines body for Update for application/json ContentType.
 type UpdateJSONRequestBody = RestPullRequest
@@ -10688,7 +10723,7 @@ type UpdateWebhookJSONRequestBody = RestWebhook
 type CreateCertificateMultipartRequestBody = ExampleCertificateMultipartFormData
 
 // UpdateSystemSigningConfigurationJSONRequestBody defines body for UpdateSystemSigningConfiguration for application/json ContentType.
-type UpdateSystemSigningConfigurationJSONRequestBody UpdateSystemSigningConfigurationJSONBody
+type UpdateSystemSigningConfigurationJSONRequestBody = RestSystemSigningConfiguration
 
 // UpdateUserDetails1JSONRequestBody defines body for UpdateUserDetails1 for application/json ContentType.
 type UpdateUserDetails1JSONRequestBody = UserUpdateWithCredentials
@@ -10745,7 +10780,7 @@ type UpdatePullRequestConditionJSONRequestBody = RestDefaultReviewersRequest
 type CreatePullRequestCondition1JSONRequestBody = RestDefaultReviewersRequest
 
 // UpdatePullRequestCondition1JSONRequestBody defines body for UpdatePullRequestCondition1 for application/json ContentType.
-type UpdatePullRequestCondition1JSONRequestBody UpdatePullRequestCondition1JSONBody
+type UpdatePullRequestCondition1JSONRequestBody = RestDefaultReviewersRequest
 
 // AddDefaultTask1JSONRequestBody defines body for AddDefaultTask1 for application/json ContentType.
 type AddDefaultTask1JSONRequestBody = RestDefaultTaskRequest
@@ -10832,7 +10867,7 @@ type SetRepositoryArchivePolicyJSONRequestBody = RestRepositoryPolicy
 type SetRepositoryDeletePolicyJSONRequestBody = RestRepositoryPolicy
 
 // AddSshKeyJSONRequestBody defines body for AddSshKey for application/json ContentType.
-type AddSshKeyJSONRequestBody AddSshKeyJSONBody
+type AddSshKeyJSONRequestBody = RestSshKey
 
 // SetEnabledJSONRequestBody defines body for SetEnabled for application/json ContentType.
 type SetEnabledJSONRequestBody = RestRefSyncStatus

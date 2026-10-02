@@ -2475,12 +2475,11 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 			prID := target.PullRequestID
 			commentID := args[1]
 
-			req := openapigenerated.RestApplySuggestionRequest{
-				Message: fmt.Sprintf("Apply suggestion from comment %s", commentID),
-			}
+			message := fmt.Sprintf("Apply suggestion from comment %s", commentID)
 			if strings.TrimSpace(commentSuggestionMsg) != "" {
-				req.Message = commentSuggestionMsg
+				message = commentSuggestionMsg
 			}
+			req := openapigenerated.RestApplySuggestionRequest{Message: &message}
 			if cmd.Flags().Changed("index") {
 				req.SuggestionIndex = commentSuggestionIdx
 			}

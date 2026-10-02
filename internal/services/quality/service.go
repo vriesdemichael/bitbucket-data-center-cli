@@ -595,7 +595,7 @@ func (service *Service) AddScopedBuildStatus(ctx context.Context, repo Repositor
 		return apperrors.New(apperrors.KindValidation, "invalid build status payload", err)
 	}
 
-	response, err := service.client.AddWithBodyWithResponse(
+	response, err := service.client.AddRepositoryBuildStatusWithBodyWithResponse(
 		ctx,
 		repo.ProjectKey,
 		repo.Slug,
@@ -623,8 +623,8 @@ func (service *Service) GetScopedBuildStatus(ctx context.Context, repo Repositor
 		return openapigenerated.RestBuildStatus{}, apperrors.New(apperrors.KindValidation, "build status key is required", nil)
 	}
 
-	params := &openapigenerated.GetParams{Key: trimmedKey}
-	response, err := service.client.GetWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, params)
+	params := &openapigenerated.GetRepositoryBuildStatusParams{Key: trimmedKey}
+	response, err := service.client.GetRepositoryBuildStatusWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, params)
 	if err != nil {
 		return openapigenerated.RestBuildStatus{}, apperrors.Transport("failed to get build status", err)
 	}
@@ -669,8 +669,8 @@ func (service *Service) DeleteScopedBuildStatus(ctx context.Context, repo Reposi
 		return apperrors.New(apperrors.KindValidation, "build status key is required", nil)
 	}
 
-	params := &openapigenerated.DeleteParams{Key: trimmedKey}
-	response, err := service.client.DeleteWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, params)
+	params := &openapigenerated.DeleteRepositoryBuildStatusParams{Key: trimmedKey}
+	response, err := service.client.DeleteRepositoryBuildStatusWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, params)
 	if err != nil {
 		return apperrors.Transport("failed to delete build status", err)
 	}
@@ -753,7 +753,7 @@ func (service *Service) CreateOrUpdateDeployment(ctx context.Context, repo Repos
 	return openapigenerated.RestDeployment{}, nil
 }
 
-func (service *Service) GetDeployment(ctx context.Context, repo RepositoryRef, commitID string, params openapigenerated.Get1Params) (openapigenerated.RestDeployment, error) {
+func (service *Service) GetDeployment(ctx context.Context, repo RepositoryRef, commitID string, params openapigenerated.GetParams) (openapigenerated.RestDeployment, error) {
 	if err := validateRepositoryRef(repo); err != nil {
 		return openapigenerated.RestDeployment{}, err
 	}
@@ -762,7 +762,7 @@ func (service *Service) GetDeployment(ctx context.Context, repo RepositoryRef, c
 		return openapigenerated.RestDeployment{}, apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
 
-	response, err := service.client.Get1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, &params)
+	response, err := service.client.GetWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, &params)
 	if err != nil {
 		return openapigenerated.RestDeployment{}, apperrors.Transport("failed to get deployment", err)
 	}
@@ -777,7 +777,7 @@ func (service *Service) GetDeployment(ctx context.Context, repo RepositoryRef, c
 	return openapigenerated.RestDeployment{}, nil
 }
 
-func (service *Service) DeleteDeployment(ctx context.Context, repo RepositoryRef, commitID string, params openapigenerated.Delete1Params) error {
+func (service *Service) DeleteDeployment(ctx context.Context, repo RepositoryRef, commitID string, params openapigenerated.DeleteParams) error {
 	if err := validateRepositoryRef(repo); err != nil {
 		return err
 	}
@@ -786,7 +786,7 @@ func (service *Service) DeleteDeployment(ctx context.Context, repo RepositoryRef
 		return apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
 
-	response, err := service.client.Delete1WithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, &params)
+	response, err := service.client.DeleteWithResponse(ctx, repo.ProjectKey, repo.Slug, trimmedCommitID, &params)
 	if err != nil {
 		return apperrors.Transport("failed to delete deployment", err)
 	}

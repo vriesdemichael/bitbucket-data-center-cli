@@ -341,7 +341,7 @@ func (service *Service) DeleteRepositoryReviewerGroup(ctx context.Context, proje
 
 	// Delete9, not Delete7: these names are collision suffixes assigned in spec
 	// order, so upstream additions renumber them. Pinned by TestGeneratedOperationPaths.
-	response, err := service.client.Delete9WithResponse(ctx, projectKey, repositorySlug, id)
+	response, err := service.client.Delete8WithResponse(ctx, projectKey, repositorySlug, id)
 	if err != nil {
 		return apperrors.Transport("failed to delete repository reviewer group", err)
 	}
@@ -494,7 +494,7 @@ func (service *Service) DeleteProjectReviewerGroup(ctx context.Context, projectK
 	}
 
 	// Delete8, not Delete6: see the note on DeleteRepositoryReviewerGroup.
-	response, err := service.client.Delete8WithResponse(ctx, projectKey, id)
+	response, err := service.client.Delete7WithResponse(ctx, projectKey, id)
 	if err != nil {
 		return apperrors.Transport("failed to delete project reviewer group", err)
 	}

@@ -348,18 +348,18 @@ func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
 		}
 
 		// GetDeployment
-		if _, err := service.GetDeployment(context.Background(), emptyRepo, "abc", openapigenerated.Get1Params{}); err == nil {
+		if _, err := service.GetDeployment(context.Background(), emptyRepo, "abc", openapigenerated.GetParams{}); err == nil {
 			t.Fatal("expected empty repo error")
 		}
-		if _, err := service.GetDeployment(context.Background(), repo, "", openapigenerated.Get1Params{}); err == nil {
+		if _, err := service.GetDeployment(context.Background(), repo, "", openapigenerated.GetParams{}); err == nil {
 			t.Fatal("expected empty commit error")
 		}
 
 		// DeleteDeployment
-		if err := service.DeleteDeployment(context.Background(), emptyRepo, "abc", openapigenerated.Delete1Params{}); err == nil {
+		if err := service.DeleteDeployment(context.Background(), emptyRepo, "abc", openapigenerated.DeleteParams{}); err == nil {
 			t.Fatal("expected empty repo error")
 		}
-		if err := service.DeleteDeployment(context.Background(), repo, "", openapigenerated.Delete1Params{}); err == nil {
+		if err := service.DeleteDeployment(context.Background(), repo, "", openapigenerated.DeleteParams{}); err == nil {
 			t.Fatal("expected empty commit error")
 		}
 
@@ -425,13 +425,13 @@ func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
 
 		// GetDeployment mapping
 		depKey := "k"
-		_, err = service.GetDeployment(context.Background(), repo, "abc", openapigenerated.Get1Params{Key: &depKey})
+		_, err = service.GetDeployment(context.Background(), repo, "abc", openapigenerated.GetParams{Key: &depKey})
 		if err == nil || apperrors.ExitCode(err) != 4 {
 			t.Fatalf("expected 404 exit code 4, got: %v", err)
 		}
 
 		// DeleteDeployment mapping
-		err = service.DeleteDeployment(context.Background(), repo, "abc", openapigenerated.Delete1Params{Key: &depKey})
+		err = service.DeleteDeployment(context.Background(), repo, "abc", openapigenerated.DeleteParams{Key: &depKey})
 		if err == nil || apperrors.ExitCode(err) != 4 {
 			t.Fatalf("expected 404 exit code 4, got: %v", err)
 		}
@@ -476,10 +476,10 @@ func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
 		if _, err := service.CreateOrUpdateDeployment(context.Background(), repo, "abc", openapigenerated.RestDeploymentSetRequest{Key: "k"}); err == nil || apperrors.ExitCode(err) != 10 {
 			t.Fatalf("expected transient error, got: %v", err)
 		}
-		if _, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.Get1Params{Key: &depKey}); err == nil || apperrors.ExitCode(err) != 10 {
+		if _, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.GetParams{Key: &depKey}); err == nil || apperrors.ExitCode(err) != 10 {
 			t.Fatalf("expected transient error, got: %v", err)
 		}
-		if err := service.DeleteDeployment(context.Background(), repo, "abc", openapigenerated.Delete1Params{Key: &depKey}); err == nil || apperrors.ExitCode(err) != 10 {
+		if err := service.DeleteDeployment(context.Background(), repo, "abc", openapigenerated.DeleteParams{Key: &depKey}); err == nil || apperrors.ExitCode(err) != 10 {
 			t.Fatalf("expected transient error, got: %v", err)
 		}
 		if _, err := service.SetAnnotation(context.Background(), repo, "abc", "r", "a", openapigenerated.RestSingleAddInsightAnnotationRequest{}); err == nil || apperrors.ExitCode(err) != 10 {
@@ -537,7 +537,7 @@ func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
 		}
 
 		depKey := "k"
-		depGet, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.Get1Params{Key: &depKey})
+		depGet, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.GetParams{Key: &depKey})
 		if err != nil || depGet.Key != nil {
 			t.Fatalf("expected empty deployment, got: err=%v depGet=%v", err, depGet)
 		}
@@ -561,7 +561,7 @@ func TestQualityServiceScopedAndDeploymentsErrorPaths(t *testing.T) {
 		}
 
 		depKey := "k"
-		depGet, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.Get1Params{Key: &depKey})
+		depGet, err := service.GetDeployment(context.Background(), repo, "abc", openapigenerated.GetParams{Key: &depKey})
 		if err != nil || depGet.Key != nil {
 			t.Fatalf("expected empty deployment, got: err=%v depGet=%v", err, depGet)
 		}

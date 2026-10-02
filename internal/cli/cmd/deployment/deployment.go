@@ -140,7 +140,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				gotDep, err := service.GetDeployment(cmd.Context(), repo, args[0], openapigenerated.Get1Params{
+				gotDep, err := service.GetDeployment(cmd.Context(), repo, args[0], openapigenerated.GetParams{
 					Key: &key,
 				})
 				predicted := "create"
@@ -217,7 +217,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			params := openapigenerated.Get1Params{}
+			params := openapigenerated.GetParams{}
 			if getSeqNum != "" {
 				params.DeploymentSequenceNumber = &getSeqNum
 			}
@@ -276,7 +276,7 @@ func New(deps Dependencies) *cobra.Command {
 				return err
 			}
 
-			params := openapigenerated.Delete1Params{}
+			params := openapigenerated.DeleteParams{}
 			if getSeqNum != "" {
 				params.DeploymentSequenceNumber = &getSeqNum
 			}
@@ -292,7 +292,7 @@ func New(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				getParams := openapigenerated.Get1Params{}
+				getParams := openapigenerated.GetParams{}
 				if getSeqNum != "" {
 					getParams.DeploymentSequenceNumber = &getSeqNum
 				}
