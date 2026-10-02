@@ -2569,8 +2569,8 @@ rules differ from Go's, and an explicit <code>http.proxy</code> removes the ambi
 <h2 id="how-bb-names-itself">How bb names itself<a class="headerlink" href="#how-bb-names-itself" title="Permanent link">&para;</a></h2>
 <p>Every request <code>bb</code> sends carries a <code>User-Agent</code> naming its release and platform,
 and the MCP server's end in <code>mcp</code>:</p>
-<div class="highlight"><pre><span></span><code>bb/5.0.0 (linux/amd64)
-bb/5.0.0 (linux/amd64) mcp
+<div class="highlight"><pre><span></span><code>bb/5.0.1 (linux/amd64)
+bb/5.0.1 (linux/amd64) mcp
 </code></pre></div>
 <p>A proxy, a WAF or Bitbucket's access log can pick out <code>bb</code>'s traffic by the
 <code>bb/</code> prefix, and an agent's by the <code>mcp</code> at the end. <code>git</code>, which <code>bb repo

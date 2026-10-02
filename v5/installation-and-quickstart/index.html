@@ -2672,7 +2672,7 @@
 <h2 id="which-bitbucket-versions-work">Which Bitbucket versions work<a class="headerlink" href="#which-bitbucket-versions-work" title="Permanent link">&para;</a></h2>
 <p><code>bb</code> works with the Bitbucket Data Center releases in
 <a href="../reference/bitbucket-versions/">Bitbucket Versions</a>, and is tested against
-10.4.3 on every pull request. A newer release is adopted once
+10.5.0 on every pull request. A newer release is adopted once
 the suite passes against it.</p>
 <div class="admonition warning">
 <p class="admonition-title">Data Center only — Bitbucket Cloud is not supported</p>
@@ -2700,7 +2700,7 @@ curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;ht
 sudo<span class="w"> </span>rpm<span class="w"> </span>-i<span class="w"> </span>bb_linux_amd64.rpm
 </code></pre></div>
 <p>To install a specific release rather than the newest, use the versioned name and
-a release tag: <code>.../releases/download/v5.0.0/bb_5.0.0_linux_amd64.deb</code>.</p>
+a release tag: <code>.../releases/download/v5.0.1/bb_5.0.1_linux_amd64.deb</code>.</p>
 <h2 id="install-from-release-artifacts">Install from release artifacts<a class="headerlink" href="#install-from-release-artifacts" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Download the platform archive, <code>sha256sums.txt</code>, and <code>sha256sums.txt.sigstore.json</code> from GitHub Releases.</li>
@@ -2722,7 +2722,7 @@ bb<span class="w"> </span>--help
 </code></pre></div>
 <p><code>sha256sums.txt</code> lists both the version-less and the versioned filename for every
 artifact, so <code>--ignore-missing</code> verifies whichever you downloaded. To pin a
-release, swap <code>latest/download</code> for <code>download/v5.0.0</code> and use the
+release, swap <code>latest/download</code> for <code>download/v5.0.1</code> and use the
 versioned names.</p>
 <p>Per-archive signatures, build provenance and SBOMs are covered in
 <a href="../advanced/release-verification/">Release Verification</a>.</p>

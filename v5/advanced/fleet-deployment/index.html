@@ -2538,7 +2538,7 @@ sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">644</sp
 <span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">workstations</span>
 <span class="w">  </span><span class="nt">become</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">vars</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">bb_version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5.0.0&quot;</span>
+<span class="w">    </span><span class="nt">bb_version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5.0.1&quot;</span>
 <span class="w">  </span><span class="nt">tasks</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deploy Corporate Root CA bundle</span>
 <span class="w">      </span><span class="nt">copy</span><span class="p">:</span>
@@ -2579,7 +2579,7 @@ sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">644</sp
 <h2 id="windows-workstations-microsoft-intune-powershell-gpo">Windows Workstations (Microsoft Intune / PowerShell / GPO)<a class="headerlink" href="#windows-workstations-microsoft-intune-powershell-gpo" title="Permanent link">&para;</a></h2>
 <p>Windows workstations authenticate through <strong>Windows Credential Manager</strong> (DPAPI). Administrators can deploy system configuration via <code>%ProgramData%\bb\config.yaml</code> or through native Windows Group Policy / Intune CSP targeting the Windows Registry (<code>HKLM\Software\Policies\bb</code>):</p>
 <div class="highlight"><pre><span></span><code><span class="c"># Run as Administrator via Intune or administrative PowerShell</span>
-<span class="nv">$Version</span> <span class="p">=</span> <span class="s2">&quot;5.0.0&quot;</span>
+<span class="nv">$Version</span> <span class="p">=</span> <span class="s2">&quot;5.0.1&quot;</span>
 
 <span class="c"># 1. Install via WinGet</span>
 <span class="n">winget</span> <span class="n">install</span> <span class="p">-</span><span class="n">-id</span> <span class="n">vriesdemichael</span><span class="p">.</span><span class="n">bb</span> <span class="p">-</span><span class="o">-exact</span> <span class="p">-</span><span class="n">-version</span> <span class="nv">$Version</span> <span class="p">-</span><span class="n">-accept-source-agreements</span> <span class="p">-</span><span class="n">-accept-package-agreements</span>
@@ -2634,7 +2634,7 @@ sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">644</sp
 <div class="highlight"><pre><span></span><code><span class="c"># Hardened CI Container Pattern</span>
 <span class="k">FROM</span><span class="w"> </span><span class="s">alpine:3.21</span>
 
-<span class="k">ARG</span><span class="w"> </span><span class="nv">BB_VERSION</span><span class="o">=</span><span class="m">5</span>.0.0
+<span class="k">ARG</span><span class="w"> </span><span class="nv">BB_VERSION</span><span class="o">=</span><span class="m">5</span>.0.1
 
 <span class="c"># Install runtime dependencies (ca-certificates and git)</span>
 <span class="k">RUN</span><span class="w"> </span>apk<span class="w"> </span>add<span class="w"> </span>--no-cache<span class="w"> </span>ca-certificates<span class="w"> </span>git<span class="w"> </span>curl

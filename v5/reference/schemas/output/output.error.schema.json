@@ -1,5 +1,5 @@
 {
-  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/v5.0.0/reference/schemas/output/output.error.schema.json",
+  "$id": "https://vriesdemichael.github.io/bitbucket-data-center-cli/v5.0.1/reference/schemas/output/output.error.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Emitted on stdout by any bb command that fails while --json is set. The presence of error rather than data marks the run as failed; exitCode matches the process exit status.",

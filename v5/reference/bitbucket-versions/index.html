@@ -2375,8 +2375,8 @@
 <h1 id="bitbucket-versions">Bitbucket Versions<a class="headerlink" href="#bitbucket-versions" title="Permanent link">&para;</a></h1>
 <p><code>bb</code> works with Bitbucket Data Center 9.2 and every release after it. A release
 stays supported after Atlassian ends its support; it is only no longer tested.</p>
-<p>The newest release, 10.4.3, is tested on every pull request.
-Every other release in the window — 9.2.1, 9.3.2, 9.4.24, 9.5.2, 9.6.5, 10.0.2, 10.1.5, 10.2.7 and 10.3.2 — is
+<p>The newest release, 10.5.0, is tested on every pull request.
+Every other release in the window — 9.3.2, 9.4.24, 9.5.2, 9.6.5, 10.0.2, 10.1.5, 10.2.7, 10.3.2 and 10.4.3 — is
 checked by running that same suite against a real instance of it.</p>
 <h2 id="where-an-older-release-differs">Where an older release differs<a class="headerlink" href="#where-an-older-release-differs" title="Permanent link">&para;</a></h2>
 <p><code>bb</code> is built against the newest release, and an older one behaves the same
@@ -2399,9 +2399,19 @@ gives the same answer as its verdict: the run would fail, as <code>unsupported</
 <td>Refused. Bitbucket would store the check and ignore both fields, so it would block every pull request. A check reads back as applying to pull requests and not to a merge queue, which that release does not have.</td>
 </tr>
 <tr>
+<td>A required build or default reviewer condition matching the default branch: a <code>DEFAULT_BRANCH</code> ref matcher in <code>bb build required create</code> or <code>update</code>, or in <code>bb reviewer condition create</code> or <code>update</code></td>
+<td>10.2</td>
+<td>Refused. Bitbucket refuses the required build and fails on the condition with a server error.</td>
+</tr>
+<tr>
 <td>A default reviewer condition naming reviewer groups: <code>reviewerGroups</code> in <code>bb reviewer condition create</code> or <code>update</code></td>
 <td>9.5</td>
 <td>Refused. Bitbucket would store the condition without the groups.</td>
+</tr>
+<tr>
+<td>A default reviewer condition required to name reviewers or reviewer groups, in <code>bb reviewer condition create</code> or <code>update</code></td>
+<td>9.5</td>
+<td>A condition naming no reviewers is stored if it requires at least one approval, and refused if it requires none. A reviewer named without an id is refused as invalid rather than not found. A dry run predicts what that release does.</td>
 </tr>
 <tr>
 <td>A <code>no-creates</code> branch restriction: <code>--type no-creates</code> on <code>bb branch restriction</code> and <code>bb project branch-restriction</code></td>

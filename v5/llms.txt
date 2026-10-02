@@ -159,7 +159,7 @@ Pass `--json` whenever another system parses the output. Every command that supp
 emits a single bb.machine envelope on stdout (`--yaml` emits the same document as YAML):
 
 ```json
-{"data": {}, "meta": {"bbVersion": "v5.0.0"}}
+{"data": {}, "meta": {"bbVersion": "v5.0.1"}}
 ```
 
 There is no envelope version field. The release version is the compatibility

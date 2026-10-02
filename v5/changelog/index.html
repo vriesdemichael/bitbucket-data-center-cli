@@ -2271,6 +2271,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v501" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v5.0.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v500" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3592,6 +3603,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v501" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v5.0.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v500" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4899,6 +4921,22 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="v501"><a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/tag/v5.0.1">v5.0.1</a><a class="headerlink" href="#v501" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-10-02</p>
+<p>Changes since v5.0.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/compare/v5.0.0...v5.0.1">v5.0.0...v5.0.1</a></p>
+<p><strong>Fixes</strong>
+- reviewer: predict and refuse what each Bitbucket release does with a condition's reviewers and a DEFAULT_BRANCH matcher (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/e2b7a3b">e2b7a3b</a>)
+- output: name DEFAULT_BRANCH among the ref matcher types (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/55adb0d">55adb0d</a>)</p>
+<p><strong>Tests</strong>
+- reviewer: pin each release's condition rules without a server (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/c596c82">c596c82</a>)
+- live: reach Bitbucket's HTML error page by a path every release answers with one (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/f261c3e">f261c3e</a>)
+- live: stop testing Bitbucket 9.2, which Atlassian no longer supports (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/c382f63">c382f63</a>)</p>
+<p><strong>Build</strong>
+- openapi: adopt Bitbucket 10.5: vendor its reference and test against 10.5.0 (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/4ea9654">4ea9654</a>)
+- openapi: keep unset nullable fields out of generated request bodies (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/9bf7781">9bf7781</a>)</p>
+<p><strong>Chores</strong>
+- deps: Bump atlassian/bitbucket in /docker/harness (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/f028a35">f028a35</a>)</p>
 <h2 id="v500"><a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/tag/v5.0.0">v5.0.0</a><a class="headerlink" href="#v500" title="Permanent link">&para;</a></h2>
 <p>Published: 2026-10-01</p>
 <p>bb v5.0.0 works with every Bitbucket Data Center release Atlassian supports, completes what you type from your own Bitbucket, and makes its MCP server something you work with: it asks you before it merges, takes the pull request or file you hand it, and shows what it found as a view in your client.</p>

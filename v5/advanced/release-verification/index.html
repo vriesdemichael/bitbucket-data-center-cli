@@ -2397,10 +2397,10 @@
 
 
 <h1 id="release-verification">Release Verification<a class="headerlink" href="#release-verification" title="Permanent link">&para;</a></h1>
-<p>Before packaging or mirroring <code>bb</code> into internal registries (e.g. Artifactory, Nexus, internal apt/yum/winget repos), verify the authenticity and build provenance of the downloaded release artifacts. Set the target version (e.g. <code>5.0.0</code>) in your verification environment:</p>
+<p>Before packaging or mirroring <code>bb</code> into internal registries (e.g. Artifactory, Nexus, internal apt/yum/winget repos), verify the authenticity and build provenance of the downloaded release artifacts. Set the target version (e.g. <code>5.0.1</code>) in your verification environment:</p>
 <h2 id="sigstore-keyless-signature-verification">Sigstore Keyless Signature Verification<a class="headerlink" href="#sigstore-keyless-signature-verification" title="Permanent link">&para;</a></h2>
 <p>Every release publishes keyless OIDC signatures bound to the official GitHub Actions release workflow on <code>refs/heads/main</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;5.0.0&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;5.0.1&quot;</span>
 cosign<span class="w"> </span>verify-blob<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--bundle<span class="w"> </span><span class="s2">&quot;bb_</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">_linux_amd64.tar.gz.sigstore.json&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--certificate-identity<span class="w"> </span><span class="s1">&#39;https://github.com/vriesdemichael/bitbucket-data-center-cli/.github/workflows/release.yml@refs/heads/main&#39;</span><span class="w"> </span><span class="se">\</span>
@@ -2409,19 +2409,19 @@ cosign<span class="w"> </span>verify-blob<span class="w"> </span><span class="se
 </code></pre></div>
 <h2 id="github-build-provenance-attestation">GitHub Build Provenance Attestation<a class="headerlink" href="#github-build-provenance-attestation" title="Permanent link">&para;</a></h2>
 <p>Verify that the binary was built on official GitHub-hosted runners directly from the source repository:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;5.0.0&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;5.0.1&quot;</span>
 gh<span class="w"> </span>attestation<span class="w"> </span>verify<span class="w"> </span><span class="s2">&quot;bb_</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">_linux_amd64.tar.gz&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--repo<span class="w"> </span>vriesdemichael/bitbucket-data-center-cli
 </code></pre></div>
 <h2 id="software-bill-of-materials-spdx-23-sbom">Software Bill of Materials (SPDX 2.3 SBOM)<a class="headerlink" href="#software-bill-of-materials-spdx-23-sbom" title="Permanent link">&para;</a></h2>
 <p>Each archive has its own SBOM, generated from the binary inside it and named after the archive (<code>bb_${VERSION}_linux_amd64.spdx.json</code>). It lists the Go modules that binary links, the Go standard library it was linked with, and each module's licence. Dependencies differ by platform, so an SBOM describes one platform only. The <code>.deb</code> and <code>.rpm</code> install the <code>_noupdate</code> binary and are attested with its SBOM (<code>bb_${VERSION}_linux_amd64_noupdate.spdx.json</code>). Before a release is published, each SBOM is checked against the build information the Go linker wrote into its binary. Verify that the released archive is attested with its SBOM:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;5.0.0&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;5.0.1&quot;</span>
 gh<span class="w"> </span>attestation<span class="w"> </span>verify<span class="w"> </span><span class="s2">&quot;bb_</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">_linux_amd64.tar.gz&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--repo<span class="w"> </span>vriesdemichael/bitbucket-data-center-cli<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--predicate-type<span class="w"> </span>https://spdx.dev/Document/v2.3
 </code></pre></div>
 <p>To inspect an SBOM itself, download it and verify its signature like any other artifact:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;5.0.0&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nv">VERSION</span><span class="o">=</span><span class="s2">&quot;5.0.1&quot;</span>
 curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/v</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">/bb_</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">_linux_amd64.spdx.json&quot;</span>
 curl<span class="w"> </span>-LO<span class="w"> </span><span class="s2">&quot;https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/download/v</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">/bb_</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">_linux_amd64.spdx.json.sigstore.json&quot;</span>
 cosign<span class="w"> </span>verify-blob<span class="w"> </span><span class="se">\</span>
