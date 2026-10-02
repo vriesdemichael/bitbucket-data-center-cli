@@ -479,9 +479,9 @@ Also takes the [global flags](global-flags.md).
       id?            string                                                               Matcher value: a branch name, a pattern,
                                                                                           or a model branch id depending on type.
       displayId?     string                                                               Human-readable form of the same thing.
-      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY                   ANY_REF, BRANCH, PATTERN, MODEL_BRANCH
-                                                                                          or MODEL_CATEGORY, which decides how id
-                                                                                          is read.
+      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH    ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
     users?           list of object                                                       Users exempt from the restriction.
       id?            integer                                                              User identifier.
       name?          string                                                               Username.
@@ -589,9 +589,9 @@ Also takes the [global flags](global-flags.md).
       id?            string                                                               Matcher value: a branch name, a pattern,
                                                                                           or a model branch id depending on type.
       displayId?     string                                                               Human-readable form of the same thing.
-      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY                   ANY_REF, BRANCH, PATTERN, MODEL_BRANCH
-                                                                                          or MODEL_CATEGORY, which decides how id
-                                                                                          is read.
+      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH    ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
     users?           list of object                                                       Users exempt from the restriction.
       id?            integer                                                              User identifier.
       name?          string                                                               Username.
@@ -676,9 +676,9 @@ Also takes the [global flags](global-flags.md).
       id?            string                                                               Matcher value: a branch name, a pattern,
                                                                                           or a model branch id depending on type.
       displayId?     string                                                               Human-readable form of the same thing.
-      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY                   ANY_REF, BRANCH, PATTERN, MODEL_BRANCH
-                                                                                          or MODEL_CATEGORY, which decides how id
-                                                                                          is read.
+      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH    ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
     users?           list of object                                                       Users exempt from the restriction.
       id?            integer                                                              User identifier.
       name?          string                                                               Username.
@@ -766,9 +766,9 @@ Also takes the [global flags](global-flags.md).
       id?            string                                                               Matcher value: a branch name, a pattern,
                                                                                           or a model branch id depending on type.
       displayId?     string                                                               Human-readable form of the same thing.
-      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY                   ANY_REF, BRANCH, PATTERN, MODEL_BRANCH
-                                                                                          or MODEL_CATEGORY, which decides how id
-                                                                                          is read.
+      type?          ANY_REF|BRANCH|PATTERN|MODEL_BRANCH|MODEL_CATEGORY|DEFAULT_BRANCH    ANY_REF, BRANCH, PATTERN, MODEL_BRANCH,
+                                                                                          MODEL_CATEGORY or DEFAULT_BRANCH, which
+                                                                                          decides how id is read.
     users?           list of object                                                       Users exempt from the restriction.
       id?            integer                                                              User identifier.
       name?          string                                                               Username.
