@@ -122,6 +122,7 @@ func sanitize(inputPath, outputPath string) error {
 	removedIgnoredProperties := removeIgnoredRequestProperties(spec)
 	removedUnsentProperties := removeUnsentResponseProperties(spec)
 	requiredProperties := requireRequestProperties(spec)
+	omittedNullables := omitUnsetNullableProperties(spec)
 
 	output, err := json.MarshalIndent(spec, "", "  ")
 	if err != nil {
@@ -133,8 +134,8 @@ func sanitize(inputPath, outputPath string) error {
 	}
 
 	fmt.Printf(
-		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d fixed path params=%d renamed properties=%d fixed array properties=%d fixed array responses=%d fixed scalar items=%d removed ignored properties=%d removed unsent properties=%d required properties=%d\n",
-		fixedOperations, renamedOperationIDs, fixedSchemaFields, fixedPathParams, renamedProperties, fixedArrayProperties, fixedArrayResponses, fixedScalarItems, removedIgnoredProperties, removedUnsentProperties, requiredProperties,
+		"sanitized OpenAPI spec; fixed operations=%d renamed operationIds=%d fixed schema fields=%d fixed path params=%d renamed properties=%d fixed array properties=%d fixed array responses=%d fixed scalar items=%d removed ignored properties=%d removed unsent properties=%d required properties=%d omitted nullables=%d\n",
+		fixedOperations, renamedOperationIDs, fixedSchemaFields, fixedPathParams, renamedProperties, fixedArrayProperties, fixedArrayResponses, fixedScalarItems, removedIgnoredProperties, removedUnsentProperties, requiredProperties, omittedNullables,
 	)
 	return nil
 }
@@ -852,6 +853,46 @@ func requireRequestProperties(spec map[string]any) int {
 	}
 
 	return added
+}
+
+// omitUnsetNullableProperties marks every optional nullable property
+// x-omitempty, wherever it appears, inline copies included.
+//
+// oapi-codegen drops omitempty from a nullable property, so a request built
+// from the generated model sends an unset field as an explicit null rather than
+// leaving it out. The published document declared no property nullable until
+// Bitbucket 10.5, which declares nearly two hundred, so bb had only ever been
+// tested leaving unset fields out. Whether a release reads null as absent is
+// up to the release and the field. A property the schema requires is left
+// alone: it is always sent.
+func omitUnsetNullableProperties(node any) int {
+	marked := 0
+	switch value := node.(type) {
+	case map[string]any:
+		if properties, ok := value["properties"].(map[string]any); ok {
+			required, _ := value["required"].([]any)
+			for name, rawProperty := range properties {
+				property, ok := rawProperty.(map[string]any)
+				if !ok || property["nullable"] != true || slices.Contains(required, any(name)) {
+					continue
+				}
+				if _, set := property["x-omitempty"]; set {
+					continue
+				}
+				property["x-omitempty"] = true
+				marked++
+			}
+		}
+		for _, child := range value {
+			marked += omitUnsetNullableProperties(child)
+		}
+	case []any:
+		for _, child := range value {
+			marked += omitUnsetNullableProperties(child)
+		}
+	}
+
+	return marked
 }
 
 // componentSchema returns a component schema, or nil when it is missing.

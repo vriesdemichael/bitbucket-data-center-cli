@@ -659,6 +659,53 @@ func TestRequireRequestPropertiesAddsThemToRequired(t *testing.T) {
 	}
 }
 
+func TestOmitUnsetNullablePropertiesKeepsUnsetFieldsOutOfTheRequest(t *testing.T) {
+	t.Parallel()
+
+	spec := map[string]any{
+		"components": map[string]any{
+			"schemas": map[string]any{
+				"RestWebhook": map[string]any{
+					"type":     "object",
+					"required": []any{"name"},
+					"properties": map[string]any{
+						"active": map[string]any{"type": "boolean", "nullable": true},
+						"name":   map[string]any{"type": "string", "nullable": true},
+						"url":    map[string]any{"type": "string"},
+						"author": map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"emailAddress": map[string]any{"type": "string", "nullable": true},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	if marked := omitUnsetNullableProperties(spec); marked != 2 {
+		t.Fatalf("marked = %d, want 2 (active and the inline emailAddress)", marked)
+	}
+	properties := schemaProperties(spec, "RestWebhook")
+	if properties["active"].(map[string]any)["x-omitempty"] != true {
+		t.Fatal("an optional nullable property is not marked x-omitempty")
+	}
+	inline := properties["author"].(map[string]any)["properties"].(map[string]any)
+	if inline["emailAddress"].(map[string]any)["x-omitempty"] != true {
+		t.Fatal("an inline optional nullable property is not marked x-omitempty")
+	}
+	if _, set := properties["name"].(map[string]any)["x-omitempty"]; set {
+		t.Fatal("a required nullable property is marked x-omitempty; it must always be sent")
+	}
+	if _, set := properties["url"].(map[string]any)["x-omitempty"]; set {
+		t.Fatal("a property that is not nullable is marked x-omitempty")
+	}
+
+	if marked := omitUnsetNullableProperties(spec); marked != 0 {
+		t.Fatalf("second pass marked = %d, want 0", marked)
+	}
+}
+
 func TestFixSchemaPropertyNamesReadsTheDefaultBranchFlagAsItIsSent(t *testing.T) {
 	t.Parallel()
 

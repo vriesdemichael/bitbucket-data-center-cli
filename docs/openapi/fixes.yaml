@@ -1,5 +1,5 @@
 version: 1
-updated_at: "2026-08-27"
+updated_at: "2026-10-02"
 source_openapi: docs/reference/atlassian/bitbucket-openapi.json
 
 # What belongs here: a place where the published specification is wrong about the
@@ -1547,3 +1547,35 @@ fixes:
         - task models:verify
         - task client:verify
         - go test -tags=live ./tests/integration/live -run TestLiveCLIBranchLifecycle
+
+  - id: OPENAPI-036
+    area: generated-nullable-serialization
+    source: generator-or-language-limit
+    status: active
+    status_evidence: >
+      The 10.5 document declares 196 properties nullable and the 10.4 document declared none.
+      Without the rule, regenerating against 10.5 dropped omitempty from every one of them.
+    description: >
+      An unset optional field stays out of a request body, rather than going out as null.
+    reference:
+      type: generation
+      value: every optional property declared nullable
+      upstream_issue: >
+        oapi-codegen leaves omitempty off a nullable property, so a request built from a
+        generated model sends each unset nullable field as an explicit null. The live suite has
+        only ever run with unset fields left out, and whether a release reads null as absent
+        depends on the release and the field.
+    change:
+      files:
+        - tools/openapi-sanitize/main.go
+        - internal/models/generated/bitbucket_types.gen.go
+        - internal/openapi/generated/bitbucket_client.gen.go
+      detail: >
+        The sanitizer marks every optional nullable property x-omitempty, inline copies
+        included. The type stays a pointer, so a response that carries null still decodes. A
+        nullable property the schema requires is left alone, because it is always sent.
+    verification:
+      commands:
+        - go test ./tools/openapi-sanitize -run TestOmitUnsetNullablePropertiesKeepsUnsetFieldsOutOfTheRequest
+        - task models:verify
+        - task client:verify
