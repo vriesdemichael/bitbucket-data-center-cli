@@ -92,21 +92,23 @@ func capture(page, dir string, count int, bare bool) error {
 	defer cancel()
 
 	viewportHeight := 6000
-	var pageHeight int
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.EmulateViewport(1400, int64(viewportHeight), chromedp.EmulateScale(2)),
 		chromedp.Navigate("file:///"+filepath.ToSlash(absolute)),
 		chromedp.WaitVisible("section.frame"),
 		// The views draw once the stand-in host has answered them.
 		chromedp.Sleep(2*time.Second),
-		chromedp.Evaluate(`document.documentElement.scrollHeight`, &pageHeight),
 	); err != nil {
+		return err
+	}
+	pageHeight, err := chromedp.Run(ctx, chromedp.Evaluate[int](`document.documentElement.scrollHeight`))
+	if err != nil {
 		return err
 	}
 	// Tall frames make a page longer than the viewport: it grows to hold them.
 	if pageHeight > viewportHeight {
 		viewportHeight = pageHeight + 400
-		if err := chromedp.Run(ctx,
+		if err := chromedp.Do(ctx,
 			chromedp.EmulateViewport(1400, int64(viewportHeight), chromedp.EmulateScale(2)),
 			chromedp.Sleep(2*time.Second),
 		); err != nil {
@@ -117,11 +119,11 @@ func capture(page, dir string, count int, bare bool) error {
 	if bare {
 		selector = "#frames > section > .stage"
 	}
-	var boxes []struct{ X, Y, Width, Height float64 }
-	if err := chromedp.Run(ctx, chromedp.Evaluate(fmt.Sprintf(`[...document.querySelectorAll(%q)].map((frame) => {
+	boxes, err := chromedp.Run(ctx, chromedp.Evaluate[[]struct{ X, Y, Width, Height float64 }](fmt.Sprintf(`[...document.querySelectorAll(%q)].map((frame) => {
 		const box = frame.getBoundingClientRect();
 		return { X: box.left, Y: box.top, Width: box.width, Height: box.height };
-	})`, selector), &boxes)); err != nil {
+	})`, selector)))
+	if err != nil {
 		return err
 	}
 	if len(boxes) != count {
@@ -131,17 +133,13 @@ func capture(page, dir string, count int, bare bool) error {
 		if box.Y+box.Height > float64(viewportHeight) {
 			return fmt.Errorf("frame %d ends %.0fpx down, past the %dpx the capture holds", i+1, box.Y+box.Height, viewportHeight)
 		}
-		var shot []byte
-		if err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
-			var err error
-			shot, err = cdppage.CaptureScreenshot().
-				WithClip(&cdppage.Viewport{X: box.X, Y: box.Y, Width: box.Width, Height: box.Height, Scale: 1}).
-				Do(ctx)
-			return err
-		})); err != nil {
+		shot, err := chromedp.Call(ctx, cdppage.CaptureScreenshot, cdppage.CaptureScreenshotParams{
+			Clip: &cdppage.Viewport{X: box.X, Y: box.Y, Width: box.Width, Height: box.Height, Scale: 1},
+		})
+		if err != nil {
 			return fmt.Errorf("frame %d: %w", i+1, err)
 		}
-		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("view-%02d.png", i+1)), shot, 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("view-%02d.png", i+1)), shot.Data, 0o600); err != nil {
 			return err
 		}
 	}

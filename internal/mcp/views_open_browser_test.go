@@ -142,7 +142,7 @@ func TestAViewOffersToOpenOnlyWhatWorksHere(t *testing.T) {
 	if !clicked {
 		t.Fatal("the list has no row")
 	}
-	if err := chromedp.Run(ctx, chromedp.Sleep(300*time.Millisecond)); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Sleep(300*time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	if opened := hostMessages(t, ctx, 2, "ui/open-link"); len(opened) != 1 || !strings.Contains(messageText(opened[0]), "/pull-requests/42/") {

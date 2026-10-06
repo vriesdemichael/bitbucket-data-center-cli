@@ -140,7 +140,7 @@ func TestAViewOffersToCommentOnlyWhereItCan(t *testing.T) {
 		{Title: "a host that passes no tool calls", Mode: "fullscreen", Fullscreen: true,
 			Result: fixtureResult(t, overviewPayload(fixtureActivity(), commenting, "one"))},
 	})
-	if err := chromedp.Run(ctx, chromedp.Sleep(200*time.Millisecond)); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Sleep(200*time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	for frame := range 2 {

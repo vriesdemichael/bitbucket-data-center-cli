@@ -72,15 +72,14 @@ func answers(results ...json.RawMessage) map[string][]json.RawMessage {
 func waitInFrame(t *testing.T, ctx context.Context, frame int, condition, what string) {
 	t.Helper()
 	script := fmt.Sprintf(`(() => { const d = window.bbHost.frames[%d].iframe.contentDocument; return Boolean(%s); })()`, frame, condition)
-	var held bool
-	if err := chromedp.Run(ctx, chromedp.Poll(script, &held, chromedp.WithPollingTimeout(10*time.Second))); err != nil {
+	if _, err := chromedp.Run(ctx, chromedp.Poll[chromedp.Void](script, chromedp.WithPollingTimeout(10*time.Second))); err != nil {
 		t.Fatalf("frame %d: %s: %v", frame, what, err)
 	}
 }
 
 func scrollToFrame(t *testing.T, ctx context.Context, frame int) {
 	t.Helper()
-	if err := chromedp.Run(ctx, chromedp.Evaluate(fmt.Sprintf(`window.bbHost.frames[%d].iframe.scrollIntoView({ block: "center" })`, frame), nil)); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Evaluate[chromedp.Void](fmt.Sprintf(`window.bbHost.frames[%d].iframe.scrollIntoView({ block: "center" })`, frame))); err != nil {
 		t.Fatalf("scroll to frame %d: %v", frame, err)
 	}
 }
@@ -89,9 +88,9 @@ func scrollToFrame(t *testing.T, ctx context.Context, frame int) {
 // a view asked nothing is not passed by a view that could not have asked.
 func onScreen(t *testing.T, ctx context.Context, frame int) bool {
 	t.Helper()
-	var visible bool
 	script := fmt.Sprintf(`(() => { const r = window.bbHost.frames[%d].iframe.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight; })()`, frame)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &visible)); err != nil {
+	visible, err := chromedp.Run(ctx, chromedp.Evaluate[bool](script))
+	if err != nil {
 		t.Fatalf("frame %d: %v", frame, err)
 	}
 	return visible
@@ -146,7 +145,7 @@ func TestAViewReadAWhileAgoRefreshesOnScreen(t *testing.T) {
 	if !onScreen(t, ctx, 1) {
 		t.Fatal("the fresh card is off screen, so it could not have asked anyway")
 	}
-	if err := chromedp.Run(ctx, chromedp.Sleep(1500*time.Millisecond)); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Sleep(1500*time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	if calls := refreshCalls(t, ctx, 1); len(calls) != 0 {
@@ -253,8 +252,8 @@ func TestAViewAsksNothingOffScreenOrAfterTeardown(t *testing.T) {
 	if onScreen(t, ctx, 1) || onScreen(t, ctx, 2) {
 		t.Fatal("the cards start on screen; the test needs them below it")
 	}
-	if err := chromedp.Run(ctx,
-		chromedp.Evaluate(`window.bbHost.frames[2].teardown()`, nil),
+	if err := chromedp.Do(ctx,
+		chromedp.Evaluate[chromedp.Void](`window.bbHost.frames[2].teardown()`),
 		chromedp.Sleep(1500*time.Millisecond),
 	); err != nil {
 		t.Fatal(err)
@@ -262,8 +261,8 @@ func TestAViewAsksNothingOffScreenOrAfterTeardown(t *testing.T) {
 	if calls := append(refreshCalls(t, ctx, 1), refreshCalls(t, ctx, 2)...); len(calls) != 0 {
 		t.Fatalf("views off screen asked: %v", calls)
 	}
-	var answered bool
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.bbHost.frames[2].messages.some((m) => m.id === "teardown-2" && m.result)`, &answered)); err != nil || !answered {
+	answered, err := chromedp.Run(ctx, chromedp.Evaluate[bool](`window.bbHost.frames[2].messages.some((m) => m.id === "teardown-2" && m.result)`))
+	if err != nil || !answered {
 		t.Fatalf("the view did not answer its teardown: %v", err)
 	}
 
@@ -272,7 +271,7 @@ func TestAViewAsksNothingOffScreenOrAfterTeardown(t *testing.T) {
 	if !onScreen(t, ctx, 2) {
 		t.Fatal("the torn-down card is not on screen next to the other")
 	}
-	if err := chromedp.Run(ctx, chromedp.Sleep(1500*time.Millisecond)); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Sleep(1500*time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	if calls := refreshCalls(t, ctx, 2); len(calls) != 0 {
