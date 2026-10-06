@@ -430,7 +430,7 @@ func TestAFormInAHostWithoutToolCallsSaysSo(t *testing.T) {
 	ctx := browser(t, []viewhost.Frame{
 		{Title: "form", Mode: "inline", Fullscreen: true, Result: fixtureResult(t, formPayload(newForm(), creating))},
 	})
-	if err := chromedp.Run(ctx, chromedp.Sleep(150*time.Millisecond)); err != nil {
+	if err := chromedp.Do(ctx, chromedp.Sleep(150*time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	text := frameText(t, ctx, 0)

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/cdp"
 	cdppage "github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/viewhost"
@@ -33,7 +34,7 @@ func resultWaits(t *testing.T) (slow, none int) {
 
 // heldWaits keeps the page's timers of those lengths from running on their
 // own: each is held in bbWaits, by its length, for the test to run.
-func heldWaits(waits ...int) chromedp.Action {
+func heldWaits(waits ...int) chromedp.Action[chromedp.Void] {
 	lengths := make([]string, len(waits))
 	for index, wait := range waits {
 		lengths[index] = strconv.Itoa(wait)
@@ -50,8 +51,8 @@ func heldWaits(waits ...int) chromedp.Action {
 			return later.call(window, callback, ms, ...args);
 		};
 	})()`, strings.Join(lengths, ", "))
-	return chromedp.ActionFunc(func(ctx context.Context) error {
-		_, err := cdppage.AddScriptToEvaluateOnNewDocument(script).Do(ctx)
+	return chromedp.Func(func(ctx context.Context, target *chromedp.Target) error {
+		_, err := cdp.Call(ctx, target, cdppage.AddScriptToEvaluateOnNewDocument, cdppage.AddScriptToEvaluateOnNewDocumentParams{Source: script})
 		return err
 	})
 }
@@ -66,7 +67,7 @@ func TestAViewWhoseResultDoesNotComeSaysSo(t *testing.T) {
 		const d = window.bbHost.frames[0].iframe.contentDocument;
 		return d && d.querySelector("#app [aria-busy]") && d.defaultView.bbWaits && Object.keys(d.defaultView.bbWaits).length === 2;
 	})()`
-	ctx := openHost(t, []viewhost.Frame{{Title: "no result", Mode: "inline"}}, []chromedp.Action{heldWaits(slow, none)}, started)
+	ctx := openHost(t, []viewhost.Frame{{Title: "no result", Mode: "inline"}}, []chromedp.Action[chromedp.Void]{heldWaits(slow, none)}, started)
 
 	type state struct {
 		Busy bool   `json:"busy"`

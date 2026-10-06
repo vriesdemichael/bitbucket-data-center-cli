@@ -157,8 +157,8 @@ func TestTheActivityDrawsTextOthersWroteAsText(t *testing.T) {
 		t.Errorf("a thread with a javascript: link has %d buttons to open it, want none", buttons)
 	}
 
-	var pwned any
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.bbHost.pwned || null`, &pwned)); err != nil {
+	pwned, err := chromedp.Run(ctx, chromedp.Evaluate[any](`window.bbHost.pwned || null`))
+	if err != nil {
 		t.Fatal(err)
 	}
 	if pwned != nil {
@@ -237,7 +237,7 @@ func valueAt(values []string, i int) string {
 
 func TestTheActivityStaysInBounds(t *testing.T) {
 	ctx := browser(t, activityFrames(t))
-	chromedp.Run(ctx, chromedp.Sleep(300*time.Millisecond))
+	chromedp.Do(ctx, chromedp.Sleep(300*time.Millisecond))
 
 	for frame := range len(activityFrames(t)) {
 		var wide bool

@@ -166,15 +166,13 @@ func TestDetailsAskAHostThatDoesNotSay(t *testing.T) {
 	ctx := browser(t, fixtureFrames(t))
 
 	clickButton(t, ctx, fixtureUnsaidGrants, "Overview")
-	var header bool
-	if err := chromedp.Run(ctx, chromedp.Poll(fmt.Sprintf(`window.bbHost.frames[%d].iframe.contentDocument.querySelector(".fullscreen-header") !== null`, fixtureUnsaidGrants), &header,
+	if _, err := chromedp.Run(ctx, chromedp.Poll[chromedp.Void](fmt.Sprintf(`window.bbHost.frames[%d].iframe.contentDocument.querySelector(".fullscreen-header") !== null`, fixtureUnsaidGrants),
 		chromedp.WithPollingTimeout(5*time.Second))); err != nil {
 		t.Errorf("a host that grants fullscreen without saying so did not get the overview in fullscreen: %v", err)
 	}
 
 	clickButton(t, ctx, fixtureUnsaidInline, "Overview")
-	var inPlace bool
-	if err := chromedp.Run(ctx, chromedp.Poll(fmt.Sprintf(`window.bbHost.frames[%d].iframe.contentDocument.querySelector(".inline-details .markdown") !== null`, fixtureUnsaidInline), &inPlace,
+	if _, err := chromedp.Run(ctx, chromedp.Poll[chromedp.Void](fmt.Sprintf(`window.bbHost.frames[%d].iframe.contentDocument.querySelector(".inline-details .markdown") !== null`, fixtureUnsaidInline),
 		chromedp.WithPollingTimeout(5*time.Second))); err != nil {
 		t.Errorf("a host that answers with inline did not get the overview in place: %v", err)
 	}
@@ -191,8 +189,7 @@ func TestLinksTheHostRefusesAreShown(t *testing.T) {
 	ctx := browser(t, fixtureFrames(t))
 
 	clickButton(t, ctx, fixtureRefusesLinks, "Open in Bitbucket")
-	var shown string
-	err := chromedp.Run(ctx, chromedp.Poll(fmt.Sprintf(`(() => { const n = window.bbHost.frames[%d].iframe.contentDocument.querySelector(".link-notice"); return n ? n.textContent : ""; })()`, fixtureRefusesLinks), &shown,
+	shown, err := chromedp.Run(ctx, chromedp.Poll[string](fmt.Sprintf(`(() => { const n = window.bbHost.frames[%d].iframe.contentDocument.querySelector(".link-notice"); return n ? n.textContent : ""; })()`, fixtureRefusesLinks),
 		chromedp.WithPollingTimeout(5*time.Second)))
 	if err != nil || !strings.Contains(shown, plainCardURL) || !strings.Contains(shown, "did not open") {
 		t.Errorf("a refused link reads %q, want it shown to open by hand: %v", shown, err)
@@ -225,7 +222,7 @@ func browser(t *testing.T, frames []viewhost.Frame) context.Context {
 
 // openHost opens the stand-in host with frames, after running before, and
 // waits until ready holds on the host page.
-func openHost(t *testing.T, frames []viewhost.Frame, before []chromedp.Action, ready string) context.Context {
+func openHost(t *testing.T, frames []viewhost.Frame, before []chromedp.Action[chromedp.Void], ready string) context.Context {
 	t.Helper()
 
 	page, err := viewhost.Page(viewPage(), frames, viewhost.Options{SameOrigin: true})
@@ -237,23 +234,20 @@ func openHost(t *testing.T, frames []viewhost.Frame, before []chromedp.Action, r
 		t.Fatalf("write the host page: %v", err)
 	}
 
-	// A CI runner's first Chrome can take longer to start than the 20 seconds
-	// chromedp waits by default, and the first test failed that way; a minute
-	// covers a cold start.
 	allocator, cancelAllocator := chromedp.NewExecAllocator(context.Background(),
-		append(chromedp.DefaultExecAllocatorOptions[:], chromedp.NoSandbox, chromedp.WSURLReadTimeout(time.Minute))...)
+		append(chromedp.DefaultExecAllocatorOptions[:], chromedp.NoSandbox)...)
 	t.Cleanup(cancelAllocator)
 	ctx, cancelBrowser := chromedp.NewContext(allocator)
 	t.Cleanup(cancelBrowser)
 	ctx, cancelTimeout := context.WithTimeout(ctx, 2*time.Minute)
 	t.Cleanup(cancelTimeout)
 
-	actions := append(append([]chromedp.Action{}, before...),
+	steps := append(append([]chromedp.Action[chromedp.Void]{}, before...),
 		chromedp.EmulateViewport(1280, 900),
 		chromedp.Navigate("file:///"+filepath.ToSlash(path)),
-		chromedp.Poll(ready, nil, chromedp.WithPollingTimeout(30*time.Second)),
+		chromedp.Poll[chromedp.Void](ready, chromedp.WithPollingTimeout(30*time.Second)),
 	)
-	if err := chromedp.Run(ctx, actions...); err != nil {
+	if err := chromedp.Do(ctx, steps...); err != nil {
 		t.Fatalf("the views did not draw (is Chrome installed?): %v", err)
 	}
 	return ctx
@@ -264,7 +258,11 @@ func openHost(t *testing.T, frames []viewhost.Frame, before []chromedp.Action, r
 func inFrame(t *testing.T, ctx context.Context, frame int, script string, result any) {
 	t.Helper()
 	wrapped := fmt.Sprintf(`(() => { const f = window.bbHost.frames[%d]; const d = f.iframe.contentDocument; const w = f.iframe.contentWindow; %s })()`, frame, script)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(wrapped, result)); err != nil {
+	raw, err := chromedp.Run(ctx, chromedp.Evaluate[[]byte](wrapped))
+	if err == nil && result != nil {
+		err = json.Unmarshal(raw, result)
+	}
+	if err != nil {
 		t.Fatalf("frame %d: %v\nscript: %s", frame, err, script)
 	}
 }
@@ -272,9 +270,9 @@ func inFrame(t *testing.T, ctx context.Context, frame int, script string, result
 // hostMessages are the view's messages the stand-in host received, by method.
 func hostMessages(t *testing.T, ctx context.Context, frame int, method string) []map[string]any {
 	t.Helper()
-	var messages []map[string]any
 	script := fmt.Sprintf(`window.bbHost.frames[%d].messages.filter((m) => m.method === %q)`, frame, method)
-	if err := chromedp.Run(ctx, chromedp.Evaluate(script, &messages)); err != nil {
+	messages, err := chromedp.Run(ctx, chromedp.Evaluate[[]map[string]any](script))
+	if err != nil {
 		t.Fatalf("read the host's messages: %v", err)
 	}
 	return messages
@@ -322,8 +320,8 @@ func TestViewsDrawTextOthersWroteAsText(t *testing.T) {
 		t.Errorf("the diff does not show the line as written:\n%s", diff)
 	}
 
-	var pwned any
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.bbHost.pwned || null`, &pwned)); err != nil {
+	pwned, err := chromedp.Run(ctx, chromedp.Evaluate[any](`window.bbHost.pwned || null`))
+	if err != nil {
 		t.Fatal(err)
 	}
 	if pwned != nil {
@@ -357,8 +355,7 @@ func TestInlineViewsReportTheirSize(t *testing.T) {
 
 	// The size arrives a frame after the card draws, and the host applies it
 	// when the message lands.
-	var sized bool
-	if err := chromedp.Run(ctx, chromedp.Poll(`window.bbHost.frames[0].iframe.getBoundingClientRect().height > 150`, &sized,
+	if _, err := chromedp.Run(ctx, chromedp.Poll[chromedp.Void](`window.bbHost.frames[0].iframe.getBoundingClientRect().height > 150`,
 		chromedp.WithPollingTimeout(5*time.Second))); err != nil {
 		var height float64
 		inFrame(t, ctx, 0, `return f.iframe.getBoundingClientRect().height;`, &height)
@@ -374,7 +371,7 @@ func TestViewsOpenLinksThroughTheHostAndNeverOthers(t *testing.T) {
 
 	inFrame(t, ctx, 1, `d.querySelector(".row-button").click(); return null;`, nil)
 	clickButton(t, ctx, 0, "Open in Bitbucket")
-	chromedp.Run(ctx, chromedp.Sleep(200*time.Millisecond))
+	chromedp.Do(ctx, chromedp.Sleep(200*time.Millisecond))
 
 	for frame, want := range map[int]string{
 		0: "https://bitbucket.example.com/projects/PAY/repos/ledger/pull-requests/42/overview",
@@ -391,8 +388,7 @@ func TestDetailsGoFullscreenWhereTheHostHasIt(t *testing.T) {
 	ctx := browser(t, fixtureFrames(t))
 
 	inFrame(t, ctx, 0, `[...d.querySelectorAll("button")].find((b) => b.textContent.includes("Overview")).click(); return null;`, nil)
-	var header bool
-	if err := chromedp.Run(ctx, chromedp.Poll(`window.bbHost.frames[0].iframe.contentDocument.querySelector(".fullscreen-header") !== null`, &header,
+	if _, err := chromedp.Run(ctx, chromedp.Poll[chromedp.Void](`window.bbHost.frames[0].iframe.contentDocument.querySelector(".fullscreen-header") !== null`,
 		chromedp.WithPollingTimeout(5*time.Second))); err != nil {
 		t.Fatalf("the card did not open to fullscreen: %v", err)
 	}
@@ -445,7 +441,7 @@ func TestSelectedLinesGoToTheModelOnlyWhenAsked(t *testing.T) {
 	}
 
 	inFrame(t, ctx, 3, `[...d.querySelectorAll(".selection-bar button")].find((b) => b.textContent.includes("chat context")).click(); return null;`, nil)
-	chromedp.Run(ctx, chromedp.Sleep(200*time.Millisecond))
+	chromedp.Do(ctx, chromedp.Sleep(200*time.Millisecond))
 	sent := hostMessages(t, ctx, 3, "ui/update-model-context")
 	if len(sent) != 1 {
 		t.Fatalf("the diff sent the model context %d times, want once", len(sent))
@@ -744,7 +740,7 @@ func TestViewsNeverHideWhatNeedsAttention(t *testing.T) {
 	}
 	// And links to the file's diff in Bitbucket, as Bitbucket links one.
 	inFrame(t, ctx, stressDiff, `d.querySelector(".notice.omitted .omitted-link").click(); return null;`, nil)
-	chromedp.Run(ctx, chromedp.Sleep(200*time.Millisecond))
+	chromedp.Do(ctx, chromedp.Sleep(200*time.Millisecond))
 	if opened := hostMessages(t, ctx, stressDiff, "ui/open-link"); len(opened) != 1 ||
 		messageText(opened[0]) != "https://bitbucket.example.com/projects/PAY/repos/ledger/pull-requests/42/diff#big/huge.txt" {
 		t.Errorf("the file too large to show links to %v, want its diff in Bitbucket", opened)
@@ -812,7 +808,7 @@ func TestViewsKeepWhatIdentifies(t *testing.T) {
 // more, and then a step at a time.
 func TestInlineViewsStayInBounds(t *testing.T) {
 	ctx := browser(t, stressFrames(t))
-	chromedp.Run(ctx, chromedp.Sleep(300*time.Millisecond))
+	chromedp.Do(ctx, chromedp.Sleep(300*time.Millisecond))
 
 	for frame := range len(stressFrames(t)) {
 		var wide bool
@@ -983,12 +979,12 @@ func TestDescriptionsDrawTheirMarkdown(t *testing.T) {
 	}
 
 	clickButton(t, ctx, 0, "Design")
-	chromedp.Run(ctx, chromedp.Sleep(200*time.Millisecond))
+	chromedp.Do(ctx, chromedp.Sleep(200*time.Millisecond))
 	if opened := hostMessages(t, ctx, 0, "ui/open-link"); len(opened) != 1 || messageText(opened[0]) != "https://confluence.example.com/x" {
 		t.Errorf("the link asked the host to open %v, want the design record", opened)
 	}
-	var pwned any
-	if err := chromedp.Run(ctx, chromedp.Evaluate(`window.bbHost.pwned || null`, &pwned)); err != nil {
+	pwned, err := chromedp.Run(ctx, chromedp.Evaluate[any](`window.bbHost.pwned || null`))
+	if err != nil {
 		t.Fatal(err)
 	}
 	if pwned != nil {
