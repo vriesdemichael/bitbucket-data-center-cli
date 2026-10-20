@@ -7,7 +7,7 @@ toolchain go1.27.2
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/chromedp/cdproto v0.158.0
+	github.com/chromedp/cdproto v0.158.1
 	github.com/chromedp/chromedp v0.21.0
 	github.com/go-openapi/runtime v0.33.3
 	github.com/google/jsonschema-go v0.4.3
@@ -48,7 +48,7 @@ require (
 	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/digitorus/pkcs7 v0.0.0-20230818184609-3a137a874352 // indirect
 	github.com/digitorus/timestamp v0.0.0-20231217203849-220c5c2851b7 // indirect
-	github.com/dlclark/regexp2/v2 v2.9.0 // indirect
+	github.com/dlclark/regexp2/v2 v2.9.1 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
