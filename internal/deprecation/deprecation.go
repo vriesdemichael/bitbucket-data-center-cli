@@ -96,6 +96,15 @@ var Entries = []Entry{
 		Reason:       "it lists the tools a read-only server exposes unless --allow-writes is passed",
 		Advice:       "Remove it.",
 	},
+	// get_pull_request named its pull request id while every other pull
+	// request tool said pr_id (#768). It still takes id, which warns nobody: the
+	// tool's schema describes it as the former name.
+	{
+		Name:         "bb ai mcp serve tool get_pull_request argument id",
+		DeprecatedIn: "v6.0.0",
+		Reason:       "pr_id names the pull request, as it does on every pull request tool",
+		Advice:       "Send pr_id.",
+	},
 	{
 		Name:         "bb ai mcp tools --json field safe",
 		DeprecatedIn: "v5.0.0",
