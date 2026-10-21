@@ -67,7 +67,7 @@ what it can reach:
 
 The strongest limit is not a flag: a read-only personal access token in
 `BITBUCKET_TOKEN` makes every write fail at the server regardless of which tools
-are exposed. [Enterprise Hardening](advanced/mcp-governance.md)
+are exposed. [MCP Server Governance](advanced/mcp-governance.md)
 covers scoping, token restriction and mandating an audit trail by policy.
 
 ### Tools and views
