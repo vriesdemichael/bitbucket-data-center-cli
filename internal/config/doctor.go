@@ -704,9 +704,10 @@ func (r resolution) host() DiagnosedSetting {
 		candidate.value = normalizeURL(candidate.value)
 		candidates = append(candidates, candidate)
 	}
-	candidates = append(candidates, r.defaultHost(TierWorkspace, r.workspace.DefaultHost, r.workspace.Hosts, r.stored.Hosts, r.system.Hosts)...)
-	candidates = append(candidates, r.defaultHost(TierStored, r.stored.DefaultHost, r.stored.Hosts, r.system.Hosts, r.workspace.Hosts)...)
-	candidates = append(candidates, r.defaultHost(TierSystem, r.system.DefaultHost, r.system.Hosts, r.stored.Hosts, r.workspace.Hosts)...)
+	// The workspace file's default_host is not read, and it shows among the
+	// file's ignored keys; its hosts resolve no other file's name (#770).
+	candidates = append(candidates, r.defaultHost(TierStored, r.stored.DefaultHost, r.stored.Hosts, r.system.Hosts)...)
+	candidates = append(candidates, r.defaultHost(TierSystem, r.system.DefaultHost, r.system.Hosts, r.stored.Hosts)...)
 	for index := range candidates {
 		if candidates[index].source.Kind == SourceOverride {
 			candidates[index].value = normalizeURL(candidates[index].value)
@@ -721,7 +722,36 @@ func (r resolution) host() DiagnosedSetting {
 		setting.Problem = "not permitted by the allowed_hosts policy; commands refuse to reach it"
 	}
 
+	// A host a repository's .env names is not used. Said here, because the
+	// variable it would have set is not in the environment for a row to show.
+	problems := []string{}
+	if setting.Problem != "" {
+		problems = append(problems, setting.Problem)
+	}
+	for _, ignored := range r.in.ignoredDotenv() {
+		problems = append(problems, fmt.Sprintf("%s in %s is not read, because a repository's files do not choose the host", ignored.Name, ignored.Path))
+	}
+	setting.Problem = strings.Join(problems, "; ")
+
 	return setting
+}
+
+// ignoredDotenv are the host-choosing variables a .env file names that the
+// environment did not already carry, which loadDotEnv leaves unset.
+func (in diagnosisInputs) ignoredDotenv() []IgnoredSetting {
+	ignored := []IgnoredSetting{}
+	for _, name := range hostChoosingVariables {
+		if in.ambient(name) {
+			continue
+		}
+		for _, file := range in.dotenv {
+			if _, ok := file.values[name]; ok {
+				ignored = append(ignored, IgnoredSetting{Name: name, Path: file.path})
+			}
+		}
+	}
+
+	return ignored
 }
 
 // defaultHost is a file's default_host, which wins whether or not it resolves:

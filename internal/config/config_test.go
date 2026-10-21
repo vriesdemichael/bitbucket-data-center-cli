@@ -123,6 +123,8 @@ func TestLoadFromEnvFindsRepositoryDotenvFromNestedWorkingDirectory(t *testing.T
 		"BB_LOG_LEVEL",
 		"BB_LOG_FORMAT",
 	)
+	// The host comes from the environment: a .env does not choose it (#770).
+	t.Setenv("BITBUCKET_URL", "http://localhost:7990")
 
 	loaded, err := LoadFromEnv()
 	if err != nil {
@@ -1499,9 +1501,10 @@ update_base_url: https://workspace-mirror.corp.internal
 		t.Fatalf("LoadFromEnv failed: %v", err)
 	}
 
-	// Workspace takes highest precedence
-	if cfg.BitbucketURL != "https://workspace.corp.internal" {
-		t.Fatalf("expected workspace URL, got: %s", cfg.BitbucketURL)
+	// The workspace file names the project and not the host: its
+	// default_host is not read (#770), so the user's file chooses it.
+	if cfg.BitbucketURL != "https://user.corp.internal" {
+		t.Fatalf("expected the user's URL over the workspace file's, got: %s", cfg.BitbucketURL)
 	}
 	if cfg.ProjectKey != "WORKSPACE" {
 		t.Fatalf("expected workspace project key, got: %s", cfg.ProjectKey)

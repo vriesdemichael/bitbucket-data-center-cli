@@ -295,8 +295,9 @@ func TestDiagnoseTakesTheHostFromTheStrongestSource(t *testing.T) {
 		shadowed    int
 		permitted   bool
 	}{
-		{"the environment outranks every file", map[string]string{"BITBUCKET_URL": "https://env.example.com"}, nil, "https://env.example.com", SourceEnvironment, 3, false},
-		{"the workspace outranks the stored and system files", nil, nil, "https://workspace.example.com", TierWorkspace, 2, false},
+		{"the environment outranks every file", map[string]string{"BITBUCKET_URL": "https://env.example.com"}, nil, "https://env.example.com", SourceEnvironment, 2, false},
+		// A workspace file does not choose the host (#770).
+		{"the workspace file chooses no host", nil, nil, "https://stored.example.com", TierStored, 1, true},
 		{"the stored file resolves a name through its hosts", nil, []string{TierWorkspace}, "https://stored.example.com", TierStored, 1, true},
 		{"the system file comes last", nil, []string{TierWorkspace, TierStored}, "https://system.example.com", TierSystem, 0, false},
 	}
@@ -849,5 +850,45 @@ func TestAnUnreadableConfigurationPointsAtBBDoctor(t *testing.T) {
 		if !strings.Contains(message, "run 'bb doctor' to list every problem in it") {
 			t.Errorf("the message does not point at bb doctor: %s", message)
 		}
+	}
+}
+
+// A repository's files do not choose the host (#770). The doctor names a host a
+// .env gives as unused, beside the host bb does use, and a workspace file's
+// default_host as a key that file does not read.
+func TestDiagnoseNamesTheHostARepositoryGaveAsUnused(t *testing.T) {
+	t.Parallel()
+
+	inputs := doctorInputs(t, map[string]string{
+		TierWorkspace: "default_host: https://workspace.example.com\nproject_key: PAY\n",
+		TierStored:    "default_host: https://stored.example.com\n",
+	}, nil)
+	dotenvPath := filepath.Join(t.TempDir(), ".env")
+	inputs.dotenv = []dotenvFile{{path: dotenvPath, values: map[string]string{"BITBUCKET_URL": "https://dotenv.example.com", "BITBUCKET_PROJECT_KEY": "PAY"}}}
+	diagnosis := diagnose(inputs)
+
+	host := diagnosedSetting(t, diagnosis, "host")
+	if host.Value != "https://stored.example.com" || host.Source.Kind != TierStored {
+		t.Errorf("host = %+v, want the stored file's", host)
+	}
+	if want := "BITBUCKET_URL in " + dotenvPath + " is not read"; !strings.Contains(host.Problem, want) {
+		t.Errorf("host problem = %q, want it to say %q", host.Problem, want)
+	}
+
+	workspace := diagnosedFile(t, diagnosis, TierWorkspace)
+	if len(workspace.Ignored) != 1 || workspace.Ignored[0].Key != "default_host" {
+		t.Errorf("the workspace file's ignored keys are %+v, want default_host alone", workspace.Ignored)
+	}
+
+	// A variable the environment carried was never the .env's to give.
+	inputs.ambient = func(name string) bool { return name == "BITBUCKET_URL" }
+	inputs.getenv = func(name string) string {
+		if name == "BITBUCKET_URL" {
+			return "https://env.example.com"
+		}
+		return ""
+	}
+	if host := diagnosedSetting(t, diagnose(inputs), "host"); host.Problem != "" {
+		t.Errorf("a host the environment gave is reported unused: %q", host.Problem)
 	}
 }

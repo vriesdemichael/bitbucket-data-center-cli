@@ -18,6 +18,7 @@ import (
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // TestLiveEnterprisePolicyAllowedHosts verifies machine-level allowed_hosts policy
@@ -117,8 +118,13 @@ func TestLiveEnterprisePolicyInsecureSkipVerifyRefusal(t *testing.T) {
 	}
 }
 
-// TestLiveWorkspaceConfigResolution asserts that .bb/config.yaml workspace configuration
-// successfully scopes live CLI operations to the right default host and project key.
+// TestLiveWorkspaceConfigResolution holds what a workspace .bb/config.yaml is
+// for: the project a command uses when nothing names one. It does not choose
+// the host (#770): its default_host here names a port nothing listens on, and
+// the command reaches the live server the environment names.
+//
+// A reviewer group made in the seeded project is listed without --project, so
+// the listing holds it only if the project came from the workspace file.
 func TestLiveWorkspaceConfigResolution(t *testing.T) {
 	harness := newLiveHarness(t)
 
@@ -131,45 +137,39 @@ func TestLiveWorkspaceConfigResolution(t *testing.T) {
 	}
 	repo := seeded.Repos[0]
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
-	// A repository in another project, which the --project filter below has to
-	// leave out.
-	if _, err := harness.seedRepo(ctx, repoSeed{}); err != nil {
-		t.Fatalf("seed another project failed: %v", err)
-	}
+	// No repository context: the command has to take its project from the
+	// workspace file, not from a --repo the suite would add.
+	setLiveRepoContext(t, "", "")
 
-	tempDir := t.TempDir()
-	wsPath := filepath.Join(tempDir, "config.yaml")
-	wsYAML := fmt.Sprintf("default_host: %q\nproject_key: %q\n", harness.config.BitbucketURL, seeded.Key)
+	groupName := testsupport.UniqueName("lt-ws-")
+	mustLiveCLI(t, "reviewer-group", "create", groupName, "--project", seeded.Key, "--users", harness.username())
+
+	wsPath := filepath.Join(t.TempDir(), "config.yaml")
+	wsYAML := fmt.Sprintf("default_host: %q\nproject_key: %q\n", "http://127.0.0.1:9", seeded.Key)
 	if err := os.WriteFile(wsPath, []byte(wsYAML), 0o600); err != nil {
 		t.Fatalf("write workspace config: %v", err)
 	}
-
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", wsPath)
-	t.Setenv("BITBUCKET_URL", "")
+	t.Setenv("BITBUCKET_URL", harness.config.BitbucketURL)
 	t.Setenv("BITBUCKET_PROJECT_KEY", "")
 
-	// The command has to reach the live server named by the workspace config
-	// and find the seeded repository on it.
-	//
-	// This used to ask for the first result of an unscoped listing and expect
-	// the seeded repository to be it. `repo list` filters by project only when
-	// --project says so, so that held while the instance had almost nothing on
-	// it and stopped the moment it had a dozen repositories -- a test passing
-	// for a reason it never stated.
-	output, err := executeLiveCLI(t, "--json", "repo", "list", "--project", seeded.Key, "--all")
+	output, err := executeLiveCLI(t, "--json", "reviewer-group", "list")
 	if err != nil {
-		t.Fatalf("expected workspace config to resolve the host against the live server: %v\noutput: %s", err, output)
+		t.Fatalf("reviewer-group list with the project from the workspace file failed: %v\noutput: %s", err, output)
 	}
-	if !strings.Contains(output, repo.Slug) {
-		t.Fatalf("expected repo slug in live output: %s", output)
-	}
-	var listed []struct {
-		ProjectKey string `json:"projectKey"`
-		Slug       string `json:"slug"`
+	var listed struct {
+		ReviewerGroups []struct {
+			Name  string `json:"name"`
+			Scope string `json:"scope"`
+		} `json:"reviewerGroups"`
 	}
 	decodeJSONData(t, output, &listed)
-	if len(listed) != 1 || listed[0].ProjectKey != seeded.Key || listed[0].Slug != repo.Slug {
-		t.Fatalf("repo list --project %s = %+v, want only %s/%s", seeded.Key, listed, seeded.Key, repo.Slug)
+	found := false
+	for _, group := range listed.ReviewerGroups {
+		found = found || (group.Name == groupName && group.Scope == "PROJECT")
+	}
+	if !found {
+		t.Fatalf("the listing does not hold %s, made in %s, the workspace file's project: %s", groupName, seeded.Key, output)
 	}
 }
 
