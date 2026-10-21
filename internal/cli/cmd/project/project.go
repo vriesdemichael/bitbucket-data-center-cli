@@ -134,7 +134,7 @@ func New(deps Dependencies) *cobra.Command {
 	// On the leaf, not the parent: every other projectCmd subcommand advertised
 	// these and ignored them (#476).
 	listPaging.Register(listCmd, 25)
-	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
+	paging.RegisterStart(listCmd, &start)
 	projectCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{

@@ -182,7 +182,7 @@ func New(deps Dependencies) *cobra.Command {
 	// On the leaf, not the parent: every other repoCmd subcommand advertised
 	// these and ignored them (#476).
 	listPaging.Register(listCmd, 25)
-	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
+	paging.RegisterStart(listCmd, &start)
 	repoCmd.AddCommand(listCmd)
 	repoCmd.AddCommand(newRepoGetCommand(d))
 	repoCmd.AddCommand(newRepoCreateCommand(d, false))

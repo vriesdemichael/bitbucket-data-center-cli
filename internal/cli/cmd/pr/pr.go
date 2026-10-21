@@ -236,7 +236,7 @@ pull request when it has one; or its URL, which names the repository too, so
 	listCmd.Flags().BoolVar(&listWithReviewStatus, "with-review-status", false, "Resolve unresolved comment threads per pull request (walks each activity timeline; slower)")
 	enumflag.Register(listCmd.Flags(), &state, "state", "open", openapi.PullRequestStateFilters, "Pull request state filter")
 	listPaging.Register(listCmd, 25)
-	listCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
+	paging.RegisterStart(listCmd, &start)
 	listCmd.Flags().StringVar(&sourceBranch, "source-branch", "", "Optional source branch filter")
 	listCmd.Flags().StringVar(&targetBranch, "target-branch", "", "Optional target branch filter")
 	prCmd.AddCommand(listCmd)
@@ -372,7 +372,7 @@ pull request when it has one; or its URL, which names the repository too, so
 		},
 	}
 	commitsPaging.Register(commitsCmd, 25)
-	commitsCmd.Flags().IntVar(&commitsStart, "start", 0, "Start offset for list operations")
+	paging.RegisterStart(commitsCmd, &commitsStart)
 	prCmd.AddCommand(commitsCmd)
 
 	var filesPaging paging.Options
@@ -426,7 +426,7 @@ pull request when it has one; or its URL, which names the repository too, so
 		},
 	}
 	filesPaging.Register(filesCmd, 25)
-	filesCmd.Flags().IntVar(&filesStart, "start", 0, "Start offset for list operations")
+	paging.RegisterStart(filesCmd, &filesStart)
 	prCmd.AddCommand(filesCmd)
 
 	mergeBaseCmd := &cobra.Command{

@@ -49,9 +49,6 @@ Inherited from [`bb branch`](#bb-branch):
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
-`--start int`
-:   Start offset for list operations
-
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
@@ -98,9 +95,6 @@ Inherited from [`bb branch`](#bb-branch):
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
-`--start int`
-:   Start offset for list operations
-
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Runs as usual: this command changes nothing, so there is nothing to hold back
@@ -135,9 +129,6 @@ Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 
@@ -180,9 +171,6 @@ Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 
@@ -243,13 +231,13 @@ bb branch list --repo PROJ/repo --base release/2.4
 `--order-by string`
 :   Branch ordering (one of: ALPHABETICAL, MODIFICATION)
 
+`--start int`
+:   Start offset for list operations
+
 Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 
@@ -334,9 +322,6 @@ Inherited from [`bb branch`](#bb-branch):
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
-`--start int`
-:   Start offset for list operations
-
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Runs as usual: this command changes nothing, so there is nothing to hold back
@@ -372,9 +357,6 @@ Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 
@@ -456,9 +438,6 @@ Inherited from [`bb branch`](#bb-branch):
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
-`--start int`
-:   Start offset for list operations
-
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
@@ -530,9 +509,6 @@ Inherited from [`bb branch`](#bb-branch):
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
-`--start int`
-:   Start offset for list operations
-
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
@@ -565,9 +541,6 @@ Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 
@@ -652,9 +625,6 @@ Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 
@@ -742,9 +712,6 @@ Inherited from [`bb branch`](#bb-branch):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 

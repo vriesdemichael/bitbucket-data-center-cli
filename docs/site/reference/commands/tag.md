@@ -46,9 +46,6 @@ bb tag create v1.2.0 --start-point a1b2c3d --message "Release 1.2.0" --repo PROJ
 
 Inherited from [`bb tag`](#bb-tag):
 
-`--filter string`
-:   Filter text for tag names
-
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
@@ -89,9 +86,6 @@ bb tag delete v1.2.0 --repo PROJ/repo --yes
 
 Inherited from [`bb tag`](#bb-tag):
 
-`--filter string`
-:   Filter text for tag names
-
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
@@ -126,6 +120,9 @@ bb tag list --repo PROJ/repo --filter v1. --order-by MODIFICATION
 `--all`
 :   Return every result rather than the first --limit
 
+`--filter string`
+:   Filter text for tag names
+
 `--limit int`
 :   Maximum number of results to return (default 25)
 
@@ -136,9 +133,6 @@ bb tag list --repo PROJ/repo --filter v1. --order-by MODIFICATION
 :   Start offset for list operations
 
 Inherited from [`bb tag`](#bb-tag):
-
-`--filter string`
-:   Filter text for tag names
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
@@ -173,9 +167,6 @@ bb tag view v1.2.0 --repo PROJ/repo
 ```
 
 Inherited from [`bb tag`](#bb-tag):
-
-`--filter string`
-:   Filter text for tag names
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)

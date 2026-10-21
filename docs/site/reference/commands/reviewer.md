@@ -38,7 +38,7 @@ Create, list, update and delete default reviewer conditions
 Create a default reviewer condition
 
 ```text
-bb reviewer condition create [json-config]
+bb reviewer condition create [json-config] [flags]
 ```
 
 Create a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)
@@ -52,10 +52,10 @@ bb reviewer condition create --repo PROJ/repo \
 bb reviewer condition create --project PROJ --config-file condition.json
 ```
 
-Inherited from [`bb reviewer`](#bb-reviewer):
-
 `--config-file string`
 :   JSON file containing condition settings
+
+Inherited from [`bb reviewer`](#bb-reviewer):
 
 `--project string`
 :   Project key
@@ -130,9 +130,6 @@ bb reviewer condition delete 9 --repo PROJ/repo
 
 Inherited from [`bb reviewer`](#bb-reviewer):
 
-`--config-file string`
-:   JSON file containing condition settings
-
 `--project string`
 :   Project key
 
@@ -170,9 +167,6 @@ bb reviewer condition list --project PROJ
 ```
 
 Inherited from [`bb reviewer`](#bb-reviewer):
-
-`--config-file string`
-:   JSON file containing condition settings
 
 `--project string`
 :   Project key
@@ -231,7 +225,7 @@ Also takes the [global flags](global-flags.md).
 Update a default reviewer condition
 
 ```text
-bb reviewer condition update <condition-id> [json-config]
+bb reviewer condition update <condition-id> [json-config] [flags]
 ```
 
 Update a default reviewer condition using JSON from argument, file (--config-file), or stdin (-)
@@ -243,10 +237,10 @@ With --repo, a condition the repository inherits from its project is refused; --
 bb reviewer condition update 9 --repo PROJ/repo --config-file condition.json
 ```
 
-Inherited from [`bb reviewer`](#bb-reviewer):
-
 `--config-file string`
 :   JSON file containing condition settings
+
+Inherited from [`bb reviewer`](#bb-reviewer):
 
 `--project string`
 :   Project key

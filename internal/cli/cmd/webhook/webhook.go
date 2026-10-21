@@ -384,7 +384,7 @@ func New(deps Dependencies) *cobra.Command {
 		},
 	}
 	listPaging.Register(listCmd, 25)
-	listCmd.Flags().IntVar(&listStart, "start", 0, "Start offset for list operations")
+	paging.RegisterStart(listCmd, &listStart)
 
 	var createEvents []string
 	var createActive bool

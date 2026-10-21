@@ -81,7 +81,6 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	commitCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-	commitCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var listPath string
 	var listJira string
@@ -149,6 +148,7 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd.Flags().StringVar(&listPath, "path", "", "Filter commits by file path")
 	listCmd.Flags().StringVar(&listJira, "jira", "", "List commits associated with a Jira issue key")
 	listPaging.Register(listCmd, 25)
+	paging.RegisterStart(listCmd, &start)
 	commitCmd.AddCommand(listCmd)
 
 	getCmd := &cobra.Command{

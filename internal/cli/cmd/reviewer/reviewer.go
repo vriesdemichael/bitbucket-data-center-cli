@@ -89,7 +89,10 @@ func New(deps Dependencies) *cobra.Command {
 	reviewerCmd.PersistentFlags().StringVar(&projectKey, "project", "", "Project key")
 	reviewerCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug")
 	reposel.MarkInsteadOfRepo(reviewerCmd.PersistentFlags(), "project")
-	reviewerCmd.PersistentFlags().StringVar(&configFile, "config-file", "", "JSON file containing condition settings")
+	// Only create and update read a condition from a file (#722).
+	registerConfigFile := func(command *cobra.Command) {
+		command.Flags().StringVar(&configFile, "config-file", "", "JSON file containing condition settings")
+	}
 
 	conditionCmd := &cobra.Command{
 		Use:   "condition",
@@ -418,6 +421,7 @@ the project. --project deletes it there.`,
 			return nil
 		},
 	}
+	registerConfigFile(createCmd)
 	conditionCmd.AddCommand(createCmd)
 
 	updateCmd := &cobra.Command{
@@ -568,6 +572,7 @@ With --repo, a condition the repository inherits from its project is refused;
 			return nil
 		},
 	}
+	registerConfigFile(updateCmd)
 	conditionCmd.AddCommand(updateCmd)
 
 	reviewerCmd.AddCommand(conditionCmd)

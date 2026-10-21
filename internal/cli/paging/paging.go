@@ -42,6 +42,13 @@ func (options *Options) RegisterPersistent(command *cobra.Command, defaultLimit 
 	options.register(command, command.PersistentFlags(), defaultLimit)
 }
 
+// RegisterStart adds --start to the command's own flags, for a listing that
+// takes an offset. Declared here once, so the commands that read it describe it
+// alike; on a command group it reached commands that never read it (#722).
+func RegisterStart(command *cobra.Command, start *int) {
+	command.Flags().IntVar(start, "start", 0, "Start offset for list operations")
+}
+
 func (options *Options) register(command *cobra.Command, flags *pflag.FlagSet, defaultLimit int) {
 	if defaultLimit <= 0 {
 		defaultLimit = DefaultLimit
