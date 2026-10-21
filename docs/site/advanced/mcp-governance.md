@@ -37,15 +37,14 @@ bb ends every comment, pull request description and tag message written through 
 Where the line cannot be used, turn it off with `--ai-disclosure=false` or `mcp_ai_disclosure: false` in your own configuration file; an administrator decides it for every server with the `mcp_ai_disclosure` policy key. Without the line, nothing the agent writes is published under your name without you: comments still wait in your review, a tag is created without a message, and the server offers no tool that creates or edits a pull request, whose title and description Bitbucket would publish at once ([ADR-104](../adr/104-what-passes-for-the-persons-own-is-marked-as-the-agents-or-left-to-them.md)).
 
 ## Dedicated Read-Only Token Scoping
-Never run IDE MCP servers under personal developer credentials. Generate a dedicated read-only PAT and bind the MCP server to it:
+Never run IDE MCP servers under personal developer credentials. Generate a dedicated read-only PAT, log it in to a configuration file of its own, and name that file in the client's entry, so the agent runs on the read-only token while your own shell keeps a wider one, and no secret is in the client's file:
 
 ```bash
-# Give the agent its own PAT through the MCP client's env block:
-#   "env": { "BITBUCKET_TOKEN": "${BB_MCP_TOKEN}" }
-# The ${VAR} form keeps it out of the config file, and lets the agent run on a
-# read-only token while your own shell keeps a wider one.
-bb ai mcp serve --host https://bitbucket.example.com
+export BB_CONFIG_PATH="$HOME/.config/bb/agent.yaml"
+printf '%s' "$AGENT_TOKEN" | bb auth login https://bitbucket.example.com --token-stdin
 ```
+
+The entry then carries `"env": { "BB_CONFIG_PATH": "/home/alice/.config/bb/agent.yaml" }`. [Set Up the MCP Server in Your Client](../how-to/mcp-clients.md) has the entry for each client.
 
 ## Workspace Scoping
 
@@ -169,32 +168,40 @@ sequenceDiagram
 
 There is no other channel: the view reaches nothing the client does not pass on, and nothing reaches Bitbucket but bb. `--exclude show` turns views off, with the tools only views call. A server that may not write keeps the views that read, without the buttons and the form whose tools write.
 
-## Recommended IDE Configuration (`.vscode/settings.json`)
+## Recommended IDE Configuration (`.vscode/mcp.json`)
+
+A server confined to one project, offering the tools that read and the one that
+comments, behind the corporate CA, with a token VS Code asks for once and keeps:
 
 ```json
 {
-  "mcp": {
-    "servers": {
-      "bitbucket": {
-        "type": "stdio",
-        "command": "bb",
-        "args": [
-          "ai",
-          "mcp",
-          "serve",
-          "--host",
-          "https://bitbucket.example.com",
-          "--tools",
-          "get_pull_request,list_pull_requests,get_pr_diff,list_pr_comments,add_pr_comment"
-        ],
-        "env": {
-          "BITBUCKET_TOKEN": "${env:BITBUCKET_RO_TOKEN}",
-          "BB_CA_FILE": "/Library/Application Support/Corporate/Certs/corp-root-ca.pem"
-        }
+  "inputs": [
+    { "type": "promptString", "id": "bb-token", "description": "Bitbucket token for the agent", "password": true }
+  ],
+  "servers": {
+    "bitbucket": {
+      "type": "stdio",
+      "command": "bb",
+      "args": [
+        "ai",
+        "mcp",
+        "serve",
+        "--host",
+        "https://bitbucket.example.com",
+        "--project",
+        "PAYMENTS",
+        "--allow-writes",
+        "--tools",
+        "get_pull_request,list_pull_requests,get_pr_diff,list_pr_comments,add_pr_comment"
+      ],
+      "env": {
+        "BITBUCKET_TOKEN": "${input:bb-token}",
+        "BB_CA_FILE": "/Library/Application Support/Corporate/Certs/corp-root-ca.pem"
       }
     }
   }
 }
 ```
 
-
+[Set Up the MCP Server in Your Client](../how-to/mcp-clients.md) has the entry
+for the other clients.

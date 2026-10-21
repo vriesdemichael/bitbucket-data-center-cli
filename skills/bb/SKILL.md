@@ -506,30 +506,34 @@ bb ai mcp tools
 # invoked manually)
 bb ai mcp serve --project PROJ
 
-# Restrict to a read-only PAT: set BITBUCKET_TOKEN in the MCP client's env
-# block rather than on the command line. "env": { "BITBUCKET_TOKEN":
-# "${BB_MCP_TOKEN}" } keeps the agent on its own PAT while your interactive
-# shell keeps a wider one, and puts neither in the config file.
+# Restrict the agent to a read-only PAT of its own: log it in to a configuration
+# file of its own, and name that file in the client's env block, as
+# "env": { "BB_CONFIG_PATH": "/home/alice/.config/bb/agent.yaml" }. The agent
+# runs on that PAT while the person's shell keeps a wider one, and no secret
+# goes in the client's file.
+BB_CONFIG_PATH="$HOME/.config/bb/agent.yaml" bb auth login https://bitbucket.example.com --token-stdin < agent-token.txt
 
 # Expose only specific tools
 bb ai mcp serve --tools get_pull_request,list_pr_comments,get_build_status
 ```
 
-### VS Code MCP configuration (`settings.json`)
+### VS Code MCP configuration (`.vscode/mcp.json`)
 
 ```json
 {
-  "mcp": {
-    "servers": {
-      "bb": {
-        "type": "stdio",
-        "command": "bb",
-        "args": ["ai", "mcp", "serve", "--project", "PROJ"]
-      }
+  "servers": {
+    "bb": {
+      "type": "stdio",
+      "command": "bb",
+      "args": ["ai", "mcp", "serve", "--project", "PROJ"]
     }
   }
 }
 ```
+
+Claude Code, Claude Desktop and Cursor take the same command, arguments and
+`env` under `mcpServers`; for Claude Code, `claude mcp add bb -- bb ai mcp serve --project PROJ`
+writes the entry.
 
 ### Which tools you actually get
 

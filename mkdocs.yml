@@ -85,6 +85,9 @@ nav:
   - Installation and Quickstart: installation-and-quickstart.md
   - Developer Cheatsheet: cheatsheet.md
   - How Do I...:
+      - how-to/index.md
+      - Use bb in a CI Pipeline: how-to/ci-pipeline.md
+      - Set Up the MCP Server in Your Client: how-to/mcp-clients.md
       - Change Many Repositories: how-to/many-repositories.md
   - Basic Usage: basic-usage.md
   - Troubleshooting: troubleshooting.md

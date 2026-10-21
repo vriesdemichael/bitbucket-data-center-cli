@@ -257,17 +257,16 @@ Commands, flags and the values they take — pull requests, branches, repositori
 
 ### Recipe 9: MCP Server in Your IDE
 
-`bb` includes an MCP server that lets an AI assistant, such as GitHub Copilot, Cursor or Claude Desktop, read and act on pull requests, builds and files. Add this server entry to your client's MCP configuration, confined to the project the assistant works in and with a token of its own:
+`bb` includes an MCP server that lets an AI assistant, such as GitHub Copilot, Cursor or Claude Desktop, read and act on pull requests, builds and files. Add this server entry to your client's MCP configuration, confined to the project the assistant works in:
 
 ```json
 "bb": {
   "command": "bb",
-  "args": ["ai", "mcp", "serve", "--project", "PLAT"],
-  "env": { "BITBUCKET_TOKEN": "${BB_MCP_TOKEN}" }
+  "args": ["ai", "mcp", "serve", "--project", "PLAT"]
 }
 ```
 
-The server offers only the tools that read; add `"--allow-writes"` to `args` to let the assistant make changes in Bitbucket too. The rights of that token bound it either way: give it a read-only one if the assistant should only read. [The MCP server](ai-and-llms.md#the-mcp-server) covers the flags that narrow it further, and the views it shows.
+It uses the credential `bb auth login` stored. The server offers only the tools that read; add `"--allow-writes"` to `args` to let the assistant make changes in Bitbucket too. The rights of the token bound it either way. [Set Up the MCP Server in Your Client](how-to/mcp-clients.md) has the entry for each client, and how to give the assistant a read-only token of its own.
 
 ---
 

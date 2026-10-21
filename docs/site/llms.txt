@@ -125,7 +125,8 @@ choose, not yours. Ask them, and write the entry with what they answer:
 - whether the agent may change Bitbucket (`--allow-writes`), or only read, the default;
 - which project or repository to confine it to (`--project`, `--repo`);
 - whether it should run on a token of its own with fewer rights than theirs, such as a
-  read-only one;
+  read-only one: log it in to a configuration file of its own and name that file with
+  `BB_CONFIG_PATH` in the entry, which keeps the secret out of the client's file;
 - whether the tools that decide a merge should ask them in the client first
   (`--elicitation-opt-in`);
 - whether to offer only some tools (`--tools`) or leave some out (`--exclude`);
@@ -160,8 +161,9 @@ Things worth knowing before you wire it up:
 
 The audit trail covers this server only. An agent that can also run shell commands can
 invoke `bb` directly and bypass it. The control that survives that is the token the
-server runs under -- give it a read-only PAT via `BITBUCKET_TOKEN` in the client's `env`
-block -- which binds at the Bitbucket server.
+server runs under -- a read-only PAT logged in to a configuration file of its own, named
+with `BB_CONFIG_PATH` in the client's `env` block -- which binds at the Bitbucket server.
+The per-client setup page has the entry for Claude Code, Claude Desktop, Cursor and VS Code.
 
 ## 5. Which one to enable
 
