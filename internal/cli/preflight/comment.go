@@ -2,12 +2,15 @@ package preflight
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
 
 // CommentDeletion is what deleting a comment would do, for --dry-run: delete
@@ -35,6 +38,7 @@ func PredictCommentDeletion[C RepoChecker](
 	service *commentservice.Service,
 	target commentservice.Target,
 	commentID string,
+	expectedVersion *int32,
 	currentUser string,
 ) (CommentDeletion, error) {
 	prediction := CommentDeletion{
@@ -71,6 +75,13 @@ func PredictCommentDeletion[C RepoChecker](
 			return CommentDeletion{}, adminErr
 		}
 	}
+	// A delete naming a version is refused with a 409 when the comment has
+	// moved on from it.
+	if prediction.Predicted == "delete" && expectedVersion != nil && current.Version != nil && *current.Version != *expectedVersion {
+		prediction.Predicted = "blocked"
+		prediction.Reason = fmt.Sprintf("comment is at version %d, not %d: it changed after it was read", *current.Version, *expectedVersion)
+		prediction.Blocking = []string{prediction.Reason}
+	}
 	if prediction.Predicted == "delete" && current.Comments != nil && len(*current.Comments) > 0 {
 		prediction.Predicted = "blocked"
 		prediction.Reason = "comment has replies, which have to be deleted first"
@@ -78,6 +89,18 @@ func PredictCommentDeletion[C RepoChecker](
 	}
 
 	return prediction, nil
+}
+
+// CommentDeleter is the name Bitbucket knows the caller by, which a comment's
+// author is compared with. A token carries no configured username, and without
+// one somebody else's comment was not told from the caller's own, so the delete
+// was predicted to go through; Bitbucket names the caller on any answer.
+func CommentDeleter(ctx context.Context, cfg config.AppConfig) string {
+	if name, err := httpclient.NewFromConfig(cfg).CurrentUserName(ctx); err == nil && strings.TrimSpace(name) != "" {
+		return strings.TrimSpace(name)
+	}
+
+	return strings.TrimSpace(cfg.BitbucketUsername)
 }
 
 // CommentOwnedBy reports whether username wrote the comment, by the author's

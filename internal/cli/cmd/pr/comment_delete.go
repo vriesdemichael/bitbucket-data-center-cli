@@ -52,12 +52,17 @@ func newPullRequestCommentDeleteCommand(deps Dependencies, repository *string) *
 			}
 			service := commentservice.NewService(client)
 
+			var expected *int32
+			if cmd.Flags().Changed("version") {
+				expected = &version
+			}
+
 			if deps.DryRunEnabled() {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 
-				prediction, err := preflight.PredictCommentDeletion(cmd.Context(), deps.PermissionChecker, client, service, target, commentID, cfg.BitbucketUsername)
+				prediction, err := preflight.PredictCommentDeletion(cmd.Context(), deps.PermissionChecker, client, service, target, commentID, expected, preflight.CommentDeleter(cmd.Context(), cfg))
 				if err != nil {
 					return err
 				}
@@ -74,11 +79,6 @@ func newPullRequestCommentDeleteCommand(deps Dependencies, repository *string) *
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
-			}
-
-			var expected *int32
-			if cmd.Flags().Changed("version") {
-				expected = &version
 			}
 
 			deletedAt, err := service.Delete(cmd.Context(), target, commentID, expected)

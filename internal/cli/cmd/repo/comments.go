@@ -305,12 +305,16 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 			}
 
 			service := commentservice.NewService(client)
+			var version *int32
+			if cmd.Flags().Changed("version") {
+				version = &deleteVersion
+			}
 			if deps.DryRunEnabled() {
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
 
-				prediction, err := preflight.PredictCommentDeletion(cmd.Context(), deps.PermissionChecker, client, service, target, deleteCommentID, cfg.BitbucketUsername)
+				prediction, err := preflight.PredictCommentDeletion(cmd.Context(), deps.PermissionChecker, client, service, target, deleteCommentID, version, preflight.CommentDeleter(cmd.Context(), cfg))
 				if err != nil {
 					return err
 				}
@@ -327,11 +331,6 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)
-			}
-
-			var version *int32
-			if cmd.Flags().Changed("version") {
-				version = &deleteVersion
 			}
 
 			resolvedVersion, err := service.Delete(cmd.Context(), target, deleteCommentID, version)
