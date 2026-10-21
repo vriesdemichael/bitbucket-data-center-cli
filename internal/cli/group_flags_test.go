@@ -112,6 +112,11 @@ func TestAFlagACommandNeverReadIsRefused(t *testing.T) {
 			t.Parallel()
 
 			root := NewRootCommand()
+			// The command has to be there: one renamed away refuses every flag
+			// as unknown, and the refusal would pass for this one.
+			if command, _, err := root.Find(args); err != nil || !command.Runnable() || command.HasSubCommands() {
+				t.Fatalf("bb %s names no command: found %q (%v)", strings.Join(args, " "), command.CommandPath(), err)
+			}
 			root.SetArgs(args)
 			root.SetOut(&strings.Builder{})
 			root.SetErr(&strings.Builder{})
