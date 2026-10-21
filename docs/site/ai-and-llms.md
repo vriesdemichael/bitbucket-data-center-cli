@@ -46,7 +46,7 @@ environment block, rather than on the command line:
 }
 ```
 
-The server offers only the tools that read until you let it write. Four flags decide
+The server offers only the tools that read until you let it write. Five flags decide
 what it can reach:
 
 | Flag | Effect |
@@ -54,6 +54,7 @@ what it can reach:
 | `--allow-writes` | Expose the tools that change Bitbucket too: create and update pull requests, comment, merge, tag. `mcp_allow_writes: true` in your configuration file does the same |
 | `--project`, `--repo` | Confine the server to one project or repository; calls aimed elsewhere are refused |
 | `--audit-file` | Append a JSON Lines record per tool call, to a path or to `stderr` |
+| `--ai-disclosure=false` | Leave out the line saying an AI agent wrote a comment, description or tag message. The server then offers no tool that publishes such text under your name at once. `mcp_ai_disclosure: false` in your configuration file does the same |
 
 The strongest limit is not a flag: a read-only personal access token in
 `BITBUCKET_TOKEN` makes every write fail at the server regardless of which tools

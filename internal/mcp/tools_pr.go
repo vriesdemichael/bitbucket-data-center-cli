@@ -228,8 +228,9 @@ type CreatePullRequestInput struct {
 
 func specCreatePullRequest() Spec {
 	tool := &mcp.Tool{
-		Name:        "create_pull_request",
-		Description: "Create a new pull request. When the person asks for one, create it, filling in what they left to you.",
+		Name: "create_pull_request",
+		Description: "Create a new pull request. When the person asks for one, create it, filling in what they left to you. " +
+			"bb ends the description with a line saying an AI agent wrote it for the person; do not add one yourself.",
 		// Not idempotent: once the first pull request closes, the same call
 		// opens another.
 		Annotations: writes("Create pull request", false, false),
@@ -243,7 +244,7 @@ func specCreatePullRequest() Spec {
 					FromRef:     in.FromRef,
 					ToRef:       in.ToRef,
 					Title:       in.Title,
-					Description: in.Description,
+					Description: disclosed(ctx, c, in.Description),
 					Reviewers:   parseCommaList(in.Reviewers),
 					Draft:       in.Draft,
 				},
@@ -377,7 +378,8 @@ func specAddPRComment() Spec {
 		Name: "add_pr_comment",
 		Description: "Add a comment to the person's review of a pull request. It stays pending, seen only by the person, " +
 			"until they publish the review in Bitbucket with Finish review; prepare_pr_review says where. Provide path and line to create an inline " +
-			"comment on a specific file line. Provide parent_id to reply to an existing comment.",
+			"comment on a specific file line. Provide parent_id to reply to an existing comment. bb ends the text with a line " +
+			"saying an AI agent wrote it for the person; do not add one yourself.",
 		// No enum on line_type: commentanchor.Validate owns that vocabulary and
 		// reports a better message than a schema violation would.
 		//
@@ -398,6 +400,11 @@ func specAddPRComment() Spec {
 				ParentID: in.ParentID,
 			}, commentanchor.APINames); err != nil {
 				return nil, AddPRCommentOutput{}, fmt.Errorf("add_pr_comment: %w", err)
+			}
+
+			// Empty text stays empty, for the service to refuse.
+			if strings.TrimSpace(in.Text) != "" {
+				in.Text = disclosed(ctx, c, in.Text)
 			}
 
 			ref := pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}
@@ -712,13 +719,18 @@ func specUpdatePullRequest() Spec {
 		Name: "update_pull_request",
 		Description: "Update a pull request's title, description, or draft state. Use draft=false to mark a " +
 			"draft pull request ready for review. Requires the current version from get_pull_request for optimistic " +
-			"locking; a stale version is rejected rather than overwriting someone else's edit.",
+			"locking; a stale version is rejected rather than overwriting someone else's edit. bb ends a description it sends " +
+			"with a line saying an AI agent wrote it for the person, once; do not add one yourself.",
 		// Destructive: it overwrites the title and description.
 		Annotations: writes("Update pull request", true, true),
 	}
 	return askingSpec(tool, AsksWhenSettingDraft, askUpdatePullRequest(), func(c Clients) mcp.ToolHandlerFor[UpdatePullRequestInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in UpdatePullRequestInput) (*mcp.CallToolResult, PullRequestOutput, error) {
+			// An omitted description is left as it is, and so carries no line.
+			if in.Description != "" {
+				in.Description = disclosed(ctx, c, in.Description)
+			}
 			pr, err := svc.Update(ctx,
 				pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				in.PRID,

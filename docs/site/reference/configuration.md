@@ -80,6 +80,7 @@ ignored, and `bb doctor` names it.
 | `update_base_url` | read | read | read | The release mirror `bb update` fetches from. |
 | `mcp_allow_writes` | read | | | `true` lets `bb ai mcp serve` expose the tools that change Bitbucket, as `--allow-writes` does. The `read_only` policy key outranks it. |
 | `mcp_elicitation_opt_in` | read | | | `true` makes `bb ai mcp serve` ask you in the MCP client before each call of a tool that decides a merge, as `--elicitation-opt-in` does. The system file reads it as a policy key. |
+| `mcp_ai_disclosure` | read | | | `false` turns off the line `bb ai mcp serve` ends what an agent writes with, as `--ai-disclosure=false` does; the server then offers no tool that publishes it under your name at once. The system file reads it as a policy key. |
 | The [policy keys](system-policy.md#keys) | | | read | Mandates, at the top level of the file or under `policies:` or `policy:`. |
 
 `$schema` is read by every file and ignored by `bb`: it is there for an editor.

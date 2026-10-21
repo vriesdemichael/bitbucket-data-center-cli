@@ -116,6 +116,8 @@ func parseRegistryPolicy(k registryReader) (PolicyConfig, []PolicyProblem) {
 		{"DisableMCPServer", true, &policy.DisableMCPServer},
 		{"ReadOnly", true, &policy.ReadOnly},
 		{"MCPElicitationOptIn", true, &policy.ElicitationOptIn},
+		// A value bb cannot read keeps the line, the side that hides nothing.
+		{"MCPAIDisclosure", true, &policy.AIDisclosure},
 	} {
 		value, problem := registryBool(k, flag.name, flag.restrictive)
 		if value != nil {

@@ -1211,14 +1211,16 @@ func TestLiveMCPReviewWaitsForThePersonToPublish(t *testing.T) {
 	// The comments wait in the reviewer's draft, the reply inside the thread it
 	// answers, and none is published.
 	drafts := prReviewDrafts(t, pullRequestID)
+	// Each as bb stores it, with the line saying an agent wrote it (#797).
 	for _, text := range []string{remark, reply, inline} {
+		text = mcpDisclosed(text, reviewer.Username)
 		matching := prReviewWithText(drafts, text)
 		if len(matching) != 1 || matching[0]["state"] != "PENDING" || matching[0]["pending"] != true {
 			t.Errorf("the draft review holds %v for %q, want one pending comment", matching, text)
 		}
 		prReviewAssertNotPublished(t, pullRequestID, text)
 	}
-	if replies := prReviewWithText(drafts, reply); len(replies) == 1 && replies[0]["parentId"] != remarkID {
+	if replies := prReviewWithText(drafts, mcpDisclosed(reply, reviewer.Username)); len(replies) == 1 && replies[0]["parentId"] != remarkID {
 		t.Errorf("the reply sits under %v, want the remark %v it answered", replies[0]["parentId"], remarkID)
 	}
 
@@ -1235,6 +1237,7 @@ func TestLiveMCPReviewWaitsForThePersonToPublish(t *testing.T) {
 	}
 	published := prReviewPublished(t, pullRequestID)
 	for _, text := range []string{remark, reply, inline} {
+		text = mcpDisclosed(text, reviewer.Username)
 		if matching := prReviewWithText(published, text); len(matching) != 1 || matching[0]["pending"] != false {
 			t.Errorf("want one published comment reading %q after the review was published, got %v", text, matching)
 		}
@@ -1329,6 +1332,7 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 			}
 		}
 		for id, text := range map[float64]string{plainID: plainText, inlineID: inlineText, replyID: replyText} {
+			text = mcpDisclosed(text, harness.username())
 			draft, ok := drafts[id]
 			if !ok {
 				t.Errorf("comment %v (%q) is not in the draft review: %v", id, text, drafts)

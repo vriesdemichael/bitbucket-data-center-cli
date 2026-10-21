@@ -109,6 +109,10 @@
       "description": "Plaintext fallback secrets store.",
       "type": "object"
     },
+    "mcp_ai_disclosure": {
+      "description": "Whether 'bb ai mcp serve' ends the comments, pull request descriptions and tag messages an agent writes with a line saying an AI agent wrote them; on unless set to false. Read from your own configuration file, and from system configuration or registry policy, where it decides for every server either way. Off, the server offers no tool that publishes what the agent wrote under your name at once.",
+      "type": "boolean"
+    },
     "mcp_allow_writes": {
       "description": "Let 'bb ai mcp serve' expose the tools that change Bitbucket, as --allow-writes does; without it the server offers only the tools that read. Read from your own configuration file only. The read_only policy key keeps the server read-only whatever this says.",
       "type": "boolean"
@@ -158,6 +162,10 @@
         },
         "disable_update": {
           "description": "Disable CLI self-update command (bb update) machine-wide.",
+          "type": "boolean"
+        },
+        "mcp_ai_disclosure": {
+          "description": "Whether 'bb ai mcp serve' ends the comments, pull request descriptions and tag messages an agent writes with a line saying an AI agent wrote them; on unless set to false. Read from your own configuration file, and from system configuration or registry policy, where it decides for every server either way. Off, the server offers no tool that publishes what the agent wrote under your name at once.",
           "type": "boolean"
         },
         "mcp_audit_file": {
@@ -236,6 +244,10 @@
         },
         "disable_update": {
           "description": "Disable CLI self-update command (bb update) machine-wide.",
+          "type": "boolean"
+        },
+        "mcp_ai_disclosure": {
+          "description": "Whether 'bb ai mcp serve' ends the comments, pull request descriptions and tag messages an agent writes with a line saying an AI agent wrote them; on unless set to false. Read from your own configuration file, and from system configuration or registry policy, where it decides for every server either way. Off, the server offers no tool that publishes what the agent wrote under your name at once.",
           "type": "boolean"
         },
         "mcp_audit_file": {

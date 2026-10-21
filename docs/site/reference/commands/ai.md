@@ -70,6 +70,9 @@ bb ai mcp serve --tools get_pull_request,list_pull_requests,get_pr_diff \
   --audit-file /var/log/bb/mcp-audit.jsonl
 ```
 
+`--ai-disclosure`
+:   End the comments, pull request descriptions and tag messages the agent writes with a line saying an AI agent wrote them; with --ai-disclosure=false the server offers no tool that publishes them under your name at once (default true)
+
 `--allow-writes`
 :   Expose the tools that change Bitbucket too; without it the server offers only the tools that read
 
@@ -135,6 +138,9 @@ bb ai mcp tools
 # Every tool, as a server started with --allow-writes exposes them
 bb ai mcp tools --allow-writes
 ```
+
+`--ai-disclosure`
+:   List the tools a server with this --ai-disclosure exposes; false leaves out the ones that publish what the agent writes under your name at once (default true)
 
 `--allow-writes`
 :   List the tools 'bb ai mcp serve --allow-writes' exposes, which change Bitbucket too
