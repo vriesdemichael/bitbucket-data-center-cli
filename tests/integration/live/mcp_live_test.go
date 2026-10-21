@@ -418,7 +418,7 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 				return payload.ReviewSummary.CountsSource
 			}
 
-			base := map[string]any{"project": seeded.Key, "repo": repo.Slug, "id": pullRequestID}
+			base := map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID}
 			if got := countsSource(t, base); got == "none" || got == "" {
 				t.Errorf("counts_source = %q without skip_review_summary, want the summary to have been read", got)
 			}
@@ -430,6 +430,37 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 			skipped["skip_review_summary"] = true
 			if got := countsSource(t, skipped); got != "none" {
 				t.Errorf("counts_source = %q with skip_review_summary, want %q", got, "none")
+			}
+
+			// pr_id, as every other pull request tool names it, and id, the
+			// name this tool had, read the same pull request; the two naming
+			// different ones is refused rather than one of them chosen (#768).
+			readID := func(t *testing.T, arguments map[string]any) string {
+				t.Helper()
+
+				var payload struct {
+					PullRequest struct {
+						ID any `json:"id"`
+					} `json:"pull_request"`
+				}
+				callAndDecode(t, session, callCtx, "get_pull_request", arguments, &payload)
+				id, _ := numericOrStringID(payload.PullRequest.ID)
+
+				return id
+			}
+			if got := readID(t, base); got != pullRequestID {
+				t.Errorf("get_pull_request with pr_id %s read pull request %s", pullRequestID, got)
+			}
+			if got := readID(t, map[string]any{"project": seeded.Key, "repo": repo.Slug, "id": pullRequestID}); got != pullRequestID {
+				t.Errorf("get_pull_request with id %s read pull request %s", pullRequestID, got)
+			}
+			conflicting, err := session.CallTool(callCtx, &mcp.CallToolParams{Name: "get_pull_request", Arguments: map[string]any{
+				"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "id": pullRequestID + "0",
+			}})
+			if err != nil || conflicting == nil || !conflicting.IsError {
+				t.Errorf("get_pull_request with pr_id and id naming different pull requests was not refused: %+v, %v", conflicting, err)
+			} else if text := mcpResultText(conflicting); !strings.Contains(text, "name different pull requests") {
+				t.Errorf("the refusal does not say why: %s", text)
 			}
 
 			// list_pr_comments against a timeline Bitbucket built. A unit test
@@ -1123,10 +1154,8 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 	executeLiveMCPServerAs(t, person, func(session *mcp.ClientSession) {
 		callCtx := context.Background()
 
-		// The two tools spell the same argument differently: submit_pr_review
-		// takes pr_id, get_pull_request takes id.
 		reviewArguments := map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID}
-		readArguments := map[string]any{"project": seeded.Key, "repo": repo.Slug, "id": pullRequestID}
+		readArguments := reviewArguments
 
 		submit := func(t *testing.T, action string) {
 			t.Helper()

@@ -265,7 +265,7 @@ func TestAToolThatNeverAsksCannotBeSteeredToAnotherEndpoint(t *testing.T) {
 	for name, arguments := range map[string]map[string]any{
 		"add_pr_comment":      {"project": "PROJ", "repo": "payments/pull-requests/7/merge?version=3#", "pr_id": "7", "text": "hi"},
 		"create_pull_request": {"project": "PROJ", "repo": "payments/pull-requests/7/approve?x=", "from_ref": "feature", "title": "t"},
-		"get_pull_request":    {"project": "PROJ/repos/other", "repo": "payments", "id": "7"},
+		"get_pull_request":    {"project": "PROJ/repos/other", "repo": "payments", "pr_id": "7"},
 	} {
 		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: arguments})
 		if err != nil {
@@ -277,5 +277,32 @@ func TestAToolThatNeverAsksCannotBeSteeredToAnotherEndpoint(t *testing.T) {
 	}
 	if asked := answers.questions(); len(asked) != 0 {
 		t.Errorf("a refused call asked the person: %q", asked[0].Message)
+	}
+}
+
+// get_pull_request takes the pull request as pr_id, as the other pull request
+// tools do, and still as id, the name it had; the two naming different pull
+// requests is refused rather than one chosen (#768).
+func TestGetPullRequestTakesPRIDAndItsFormerName(t *testing.T) {
+	t.Parallel()
+
+	for name, testCase := range map[string]struct {
+		input GetPullRequestInput
+		want  string
+		fails string
+	}{
+		"pr_id":             {input: GetPullRequestInput{PRID: "42"}, want: "42"},
+		"the former name":   {input: GetPullRequestInput{ID: "42"}, want: "42"},
+		"both, agreeing":    {input: GetPullRequestInput{PRID: "42", ID: "42"}, want: "42"},
+		"both, disagreeing": {input: GetPullRequestInput{PRID: "42", ID: "43"}, fails: "name different pull requests"},
+		"neither":           {input: GetPullRequestInput{}, fails: "pr_id is required"},
+	} {
+		got, err := testCase.input.pullRequestID()
+		switch {
+		case testCase.fails != "" && (err == nil || !strings.Contains(err.Error(), testCase.fails)):
+			t.Errorf("%s: got %q, %v; want an error saying %q", name, got, err, testCase.fails)
+		case testCase.fails == "" && (err != nil || got != testCase.want):
+			t.Errorf("%s: got %q, %v; want %q", name, got, err, testCase.want)
+		}
 	}
 }

@@ -435,7 +435,7 @@ func resourceError(uri string, err error) error {
 }
 
 func readPullRequestResource(ctx context.Context, c Clients, ref resourceRef) ([]*mcp.ResourceContents, error) {
-	out, err := pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: ref.project, Repo: ref.repo, ID: ref.id})
+	out, err := pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: ref.project, Repo: ref.repo, PRID: ref.id})
 	if err != nil {
 		return nil, err
 	}
@@ -610,6 +610,9 @@ func listedResources(ctx context.Context, c Clients, scope Scope) ([]*mcp.Resour
 type resourceLink struct {
 	kind                        string
 	project, repo, id, path, at string
+	// formerID is a name the id argument had, read when the call sends that
+	// instead (#768).
+	formerID string
 }
 
 // toolResourceLinks are the tools whose result is one resource. The link comes
@@ -617,7 +620,7 @@ type resourceLink struct {
 // offer the resource to attach or read it again. list_pr_comments is not one:
 // its result depends on filters the open threads resource does not take.
 var toolResourceLinks = map[string]resourceLink{
-	"get_pull_request": {kind: pullRequestKind, project: "project", repo: "repo", id: "id"},
+	"get_pull_request": {kind: pullRequestKind, project: "project", repo: "repo", id: "pr_id", formerID: "id"},
 	"get_pr_diff":      {kind: pullRequestDiffKind, project: "project", repo: "repo", id: "pr_id"},
 	"get_file_content": {kind: fileKind, project: "project", repo: "repo", path: "path", at: "at"},
 	"get_commit":       {kind: commitKind, project: "project", repo: "repo", id: "commit_id"},
@@ -664,11 +667,16 @@ func linkResource(tool string, arguments json.RawMessage, result *mcp.CallToolRe
 		return strings.TrimSpace(value)
 	}
 
+	id := argument(link.id)
+	if id == "" {
+		id = argument(link.formerID)
+	}
+
 	uri := resourceURI(resourceRef{
 		kind:    link.kind,
 		project: argument(link.project),
 		repo:    argument(link.repo),
-		id:      argument(link.id),
+		id:      id,
 		path:    argument(link.path),
 		at:      argument(link.at),
 	})

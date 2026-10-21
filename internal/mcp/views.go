@@ -755,7 +755,7 @@ func pullRequestForView(ctx context.Context, c Clients, in ShowInput, offers vie
 	if offers.comments {
 		out, activity, people, err = pullRequestWithActivity(ctx, c, in)
 	} else {
-		out, err = pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: in.Project, Repo: in.Repo, ID: in.ID})
+		out, err = pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: in.Project, Repo: in.Repo, PRID: in.ID})
 	}
 	if err != nil {
 		return viewPullRequest{}, nil, nil, err
@@ -808,7 +808,7 @@ func pullRequestWithActivity(ctx context.Context, c Clients, in ShowInput) (GetP
 		return GetPullRequestOutput{}, nil, nil, err
 	}
 	if !available {
-		out, err := pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: in.Project, Repo: in.Repo, ID: in.ID})
+		out, err := pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: in.Project, Repo: in.Repo, PRID: in.ID})
 		return out, nil, nil, err
 	}
 	threads, summary := pullrequestactivityservice.ExtractThreads(activities, pullrequestactivityservice.ThreadOptions{
