@@ -2,11 +2,13 @@ package prcmd
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
@@ -33,6 +35,10 @@ type createInference struct {
 	service *pullrequestservice.Service
 	repo    pullrequestservice.RepositoryRef
 	loaded  bool
+
+	// checkedBranch is the source branch requireSourceBranch has already
+	// asked Bitbucket about, so the second call costs nothing.
+	checkedBranch string
 }
 
 // target is the repository the pull request would be opened in. The
@@ -109,6 +115,63 @@ func (inference *createInference) title() prompt.Inferred {
 	}
 
 	return prompt.Inferred{Value: subject, Source: "the branch's only commit", Unattended: true}
+}
+
+// requireSourceBranch refuses a source branch Bitbucket does not have, before
+// anything is inferred from it (#767).
+//
+// The branch the pull request would come from is checked once it is known:
+// --from-ref, or the checked-out branch where that stands in for it. A branch
+// pushed nowhere yields no title, no default reviewers and no code owners, and
+// each said so its own way -- the title as a missing flag -- while none said
+// to push it. Where Bitbucket cannot be asked, nothing is refused here, and the
+// create reports what it meets.
+//
+// pr create calls it before inferring, when something is to be inferred,
+// since inferring asks Bitbucket anyway; and after its permission check, which
+// a dry run makes before asking anything else.
+func (inference *createInference) requireSourceBranch() error {
+	branch := branchName(*inference.fromRef)
+	if branch == "" {
+		if inferred := inference.sourceBranch(); inferred.Unattended {
+			branch = branchName(inferred.Value)
+		}
+	}
+	if branch == "" {
+		return nil
+	}
+
+	service, repo, ok := inference.target()
+	if !ok {
+		return nil
+	}
+	source, err := resolveSourceRepository(inference.fromRepo, repo)
+	if err != nil {
+		return nil
+	}
+	if source == nil {
+		source = &repo
+	}
+
+	if inference.checkedBranch == branch {
+		return nil
+	}
+	exists, err := service.HasBranch(inference.ctx, *source, branch)
+	if err != nil || exists {
+		inference.checkedBranch = branch
+		return nil
+	}
+
+	remote := "origin"
+	if inference.deps.InferredRemote != nil {
+		if inferred := strings.TrimSpace(inference.deps.InferredRemote()); inferred != "" {
+			remote = inferred
+		}
+	}
+
+	return apperrors.New(apperrors.KindNotFound, fmt.Sprintf(
+		"branch %s is not on Bitbucket in %s/%s, so there is nothing to open a pull request from. Push it first:\n  git push -u %s %s",
+		branch, source.ProjectKey, source.Slug, remote, branch), nil)
 }
 
 // branchName is a branch as it is named, whichever way the ref was written.

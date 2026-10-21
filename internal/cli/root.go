@@ -291,6 +291,7 @@ your behalf using the link above.`,
 			return options.permissionCheckerFor(client)
 		},
 		RepositoryWasInferred: func() bool { return options.repositoryInferred },
+		InferredRemote:        func() string { return options.inferredRemote },
 	}))
 	rootCmd.AddCommand(admincmd.New(admincmd.Dependencies{
 		JSONEnabled: options.machineOutput,
@@ -446,7 +447,9 @@ type rootOptions struct {
 	// rather than named by the caller. A destructive command needs the
 	// difference; see applyInferredRepositoryContext.
 	repositoryInferred bool
-	permissionChecker  *PermissionChecker
+	// inferredRemote is the git remote the repository was inferred from.
+	inferredRemote    string
+	permissionChecker *PermissionChecker
 }
 
 // machineOutput reports whether the invocation asked for the machine document,

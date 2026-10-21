@@ -583,6 +583,37 @@ func (service *Service) OnlyCommitSubject(ctx context.Context, target Repository
 	return subject, subject != "", nil
 }
 
+// HasBranch reports whether the repository has the branch, named either way.
+//
+// Bitbucket's filter matches every branch whose name contains the text, so a
+// branch is found only by its exact name; boostMatches puts that one first,
+// ahead of the others the filter also matches.
+func (service *Service) HasBranch(ctx context.Context, repository RepositoryRef, branch string) (bool, error) {
+	if err := validateRepositoryRef(repository); err != nil {
+		return false, err
+	}
+
+	name := strings.TrimPrefix(strings.TrimSpace(branch), "refs/heads/")
+	var page struct {
+		Values []struct {
+			ID string `json:"id"`
+		} `json:"values"`
+	}
+	path := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/branches",
+		url.PathEscape(repository.ProjectKey), url.PathEscape(repository.Slug))
+	query := map[string]string{"filterText": name, "boostMatches": "true", "limit": "25"}
+	if err := service.client.GetJSON(ctx, path, query, &page); err != nil {
+		return false, err
+	}
+	for _, found := range page.Values {
+		if found.ID == "refs/heads/"+name {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // EnabledMergeStrategies are the merge strategies a repository lets a pull
 // request be merged with, as its pull request settings report them. Anyone who
 // can read the repository can read them.

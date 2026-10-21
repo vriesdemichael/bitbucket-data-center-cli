@@ -64,6 +64,10 @@ type Dependencies struct {
 	// the checked-out branch as its source unattended only then. Optional: nil
 	// reads as not inferred.
 	RepositoryWasInferred func() bool
+	// InferredRemote is the git remote the repository was inferred from, for
+	// a message that tells someone to push to it. Optional: nil or empty
+	// reads as unknown.
+	InferredRemote func() string
 }
 
 func New(deps Dependencies) *cobra.Command {
@@ -504,6 +508,11 @@ pull request when it has one; or its URL, which names the repository too, so
 				ctx: cmd.Context(), deps: deps, repository: repository,
 				fromRepo: createFromRepo, fromRef: &createFromRef, toRef: &createToRef,
 			}
+			if strings.TrimSpace(createFromRef) == "" || strings.TrimSpace(createToRef) == "" || strings.TrimSpace(createTitle) == "" {
+				if err := inference.requireSourceBranch(); err != nil {
+					return err
+				}
+			}
 			if err := prompt.FillMissing(prompt.RequestFor(cmd, deps.JSONEnabled()), []prompt.Missing{
 				{Flag: "--from-ref", Question: "Source branch", Value: &createFromRef, Infer: inference.sourceBranch},
 				{Flag: "--to-ref", Question: "Target branch", Value: &createToRef, Infer: inference.targetBranch},
@@ -542,6 +551,9 @@ pull request when it has one; or its URL, which names the repository too, so
 				if err := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, apiClient, repo.ProjectKey, repo.Slug, openapi.RepoRead); err != nil {
 					return err
 				}
+			}
+			if err := inference.requireSourceBranch(); err != nil {
+				return err
 			}
 
 			rawClient := httpclient.NewFromConfig(cfg)
