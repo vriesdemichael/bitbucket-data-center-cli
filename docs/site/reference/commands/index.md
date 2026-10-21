@@ -6,7 +6,7 @@ search:
 
 # All Commands
 
-237 commands, on a page per top-level command. <a id="global-flags"></a>Each also takes the [global flags](global-flags.md).
+238 commands, on a page per top-level command. <a id="global-flags"></a>Each also takes the [global flags](global-flags.md).
 
 [`bb admin`](admin.md)
 :   Check that the configured Bitbucket answers and accepts your credentials (1 command)
@@ -54,7 +54,7 @@ search:
 :   Publish and read Code Insights reports and annotations (8 commands)
 
 [`bb pr`](pr.md)
-:   Create, review, merge and inspect pull requests (41 commands)
+:   Create, review, merge and inspect pull requests (42 commands)
 
 [`bb project`](project.md)
 :   Create and change projects, and the settings their repositories inherit (30 commands)
@@ -346,6 +346,9 @@ search:
 
 <a id="bb-pr-comment-apply-suggestion"></a>[`pr comment apply-suggestion`](pr.md#bb-pr-comment-apply-suggestion)
 :   Apply a suggested change from a comment
+
+<a id="bb-pr-comment-delete"></a>[`pr comment delete`](pr.md#bb-pr-comment-delete)
+:   Delete a pull request comment or task
 
 <a id="bb-pr-comment-get"></a>[`pr comment get`](pr.md#bb-pr-comment-get)
 :   Get a pull request comment

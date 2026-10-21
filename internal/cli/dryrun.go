@@ -144,6 +144,7 @@ var dryRunProfiles = map[string]dryRunProfile{
 	"pr comment react":            {Intent: "pr.comment.react", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"pr comment resolve":          {Intent: "pr.comment.resolve", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"pr comment reopen":           {Intent: "pr.comment.reopen", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
+	"pr comment delete":           {Intent: "pr.comment.delete", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"pr comment apply-suggestion": {Intent: "pr.comment.apply-suggestion", Action: "update", Stateful: true, Tier: dryrunpreview.TierPredicted},
 	"pr auto-merge enable":        {Intent: "pr.auto-merge.enable", Action: "update", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},
 	"pr auto-merge disable":       {Intent: "pr.auto-merge.disable", Action: "delete", Stateful: true, Tier: dryrunpreview.TierPreconditionsChecked},

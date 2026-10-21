@@ -285,6 +285,15 @@ type AddedComment struct {
 	ParentID      int64             `json:"parentId,omitempty" jsonschema:"Comment it was posted as a reply to, when --parent was given."`
 }
 
+// CommentDeletion is what `bb pr comment delete` reports.
+type CommentDeletion struct {
+	result.Status
+	Repository    result.Repository `json:"repository"`
+	PullRequestID string            `json:"pullRequestId" jsonschema:"Pull request the comment belonged to."`
+	CommentID     string            `json:"commentId" jsonschema:"Identifier of the comment that was deleted, as it was given on the command line."`
+	Version       *int              `json:"version,omitempty" jsonschema:"Version the delete was performed against. Absent when Bitbucket did not report one."`
+}
+
 // Reaction is what `bb pr comment react` reports.
 //
 // One shape for adding and removing. Bitbucket answers an add with a reaction

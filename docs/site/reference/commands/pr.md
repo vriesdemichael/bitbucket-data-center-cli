@@ -10,7 +10,7 @@ Create, review, merge and inspect pull requests
 
 A command that takes &lt;pr-id&gt; takes a pull request in any of three forms: its number, as 42 or #42; the branch it comes from, which picks that branch's open pull request when it has one; or its URL, which names the repository too, so --repo is not needed with it.
 
-41 commands.
+42 commands.
 
 [`bb pr activity`](#bb-pr-activity)
 :   List what happened on a pull request (1 command)
@@ -28,7 +28,7 @@ A command that takes &lt;pr-id&gt; takes a pull request in any of three forms: i
 :   Show build statuses for a pull request's source commit (alias for bb pr build status)
 
 [`bb pr comment`](#bb-pr-comment)
-:   Add, list, resolve and react to pull request comments (7 commands)
+:   Add, list, resolve and react to pull request comments (8 commands)
 
 [`bb pr commits`](#bb-pr-commits)
 :   List the commits in a pull request
@@ -478,6 +478,9 @@ Add, list, resolve and react to pull request comments
 [`apply-suggestion`](#bb-pr-comment-apply-suggestion)
 :   Apply a suggested change from a comment
 
+[`delete`](#bb-pr-comment-delete)
+:   Delete a pull request comment or task
+
 [`get`](#bb-pr-comment-get)
 :   Get a pull request comment
 
@@ -652,6 +655,54 @@ Also takes the [global flags](global-flags.md).
     slug         string  Repository slug.
   pullRequestId  string  Pull request the suggestion was applied to.
   commentId      string  Comment carrying the suggestion that was applied.
+</code></pre>
+</details>
+
+### `bb pr comment delete`
+
+Delete a pull request comment or task
+
+```text
+bb pr comment delete <pr-id> <comment-id> [flags]
+```
+
+Delete a pull request comment, or a task, which Bitbucket keeps as a comment.
+
+Bitbucket lets the comment's author delete it, and anyone who administers the repository. It refuses a comment that has replies: delete the replies first. The comment's current version is read unless --version names the one you expect, and then a comment that changed since is refused rather than deleted.
+
+```bash
+# A comment, or a task, by the id bb pr comment list prints
+bb pr comment delete 42 1389396 --repo PROJ/repo
+
+# Refused if the comment changed since you read version 3
+bb pr comment delete 42 1389396 --repo PROJ/repo --version 3
+```
+
+`--version int32`
+:   Expected comment version; a comment that changed since is refused
+
+`-y, --yes`
+:   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
+
+Inherited from [`bb pr`](#bb-pr):
+
+`--repo string`
+:   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
+
+Also takes the [global flags](global-flags.md).
+
+**Dry run:** Checks your permission and the current state this depends on, without changing anything (preconditions-checked)
+
+<details class="note" data-search-exclude>
+<summary>Output with <code>--json</code>, where <code>?</code> marks a field that can be absent</summary>
+<pre><code>data
+  status         string   Outcome of the command.
+  repository     object
+    projectKey   string   Project key the repository belongs to.
+    slug         string   Repository slug.
+  pullRequestId  string   Pull request the comment belonged to.
+  commentId      string   Identifier of the comment that was deleted, as it was given on the command line.
+  version?       integer  Version the delete was performed against.
 </code></pre>
 </details>
 
