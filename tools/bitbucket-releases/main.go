@@ -10,9 +10,12 @@
 //
 // docs/quality/bitbucket-releases.json is the window. It is a baseline in the
 // sense ADR-045 means: an assertion about what must remain true, verified by
-// reading sources rather than by running anything. Which releases passed on
-// which day is a measurement, and stays out of the repository -- `task
-// test:live:matrix` produces it into .tmp/ for whoever wants to see it again.
+// reading sources rather than by running anything. It also holds when each
+// release last passed the live suite by hand, because the versions page tells
+// readers that: CI runs only the newest release, and a page that says the rest
+// are verified by hand owes the reader when. `task test:live:matrix` records a
+// release as it passes, at a commit on next, since a commit on any other
+// branch does not survive the rebase that lands it.
 package main
 
 import (
@@ -23,11 +26,13 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/compat"
 )
@@ -45,6 +50,17 @@ type window struct {
 	// the repository can derive this list: which patch of 9.4 to run is a
 	// choice, and it is made here.
 	Releases []string `json:"releases"`
+	// Verified is when each release last passed the live suite by hand, keyed
+	// by release. A release with no entry has no recorded pass.
+	Verified map[string]verification `json:"verified,omitempty"`
+}
+
+// verification is one pass of the live suite against a release.
+type verification struct {
+	// Date is the day it passed, as YYYY-MM-DD in UTC.
+	Date string `json:"date"`
+	// Commit is the commit on next the suite ran from.
+	Commit string `json:"commit"`
 }
 
 // difference is one compat.Difference as the package declares it.
@@ -71,6 +87,7 @@ func main() {
 	verify := flag.Bool("verify", false, "Fail when the window, internal/compat and the versions page disagree")
 	list := flag.Bool("list", false, "Print one release per line, oldest first, for a script to loop over")
 	ends := flag.Bool("ends", false, "With -list, print only the oldest and newest release")
+	record := flag.String("record", "", "Record that this release has just passed the live suite, at the checked-out commit on next")
 	flag.Parse()
 
 	recorded, err := readWindow(*path)
@@ -79,6 +96,20 @@ func main() {
 	}
 
 	switch {
+	case *record != "":
+		commit, err := checkedOutOnNext(*path)
+		if err != nil {
+			fail(fmt.Errorf("%s passed, and is not recorded: %w", *record, err))
+		}
+		date := time.Now().UTC().Format(time.DateOnly)
+		updated, err := recordPass(recorded, *record, date, commit)
+		if err != nil {
+			fail(err)
+		}
+		if err := writeWindow(*path, updated); err != nil {
+			fail(err)
+		}
+		fmt.Printf("%s: %s passed on %s at %s\n", *path, *record, date, commit)
 	case *list:
 		sortReleases(recorded.Releases)
 		releases := recorded.Releases
@@ -142,6 +173,8 @@ func check(recorded window) ([]string, error) {
 		}
 	}
 
+	problems = append(problems, checkVerified(recorded)...)
+
 	oldest, newest := sorted[0], sorted[len(sorted)-1]
 
 	// A release past Atlassian's support stops being tested, not served
@@ -179,6 +212,95 @@ func check(recorded window) ([]string, error) {
 	problems = append(problems, compareToPage(differences, string(page), recorded, floor, newest)...)
 
 	return problems, nil
+}
+
+// commitPattern is an abbreviated or full commit id.
+var commitPattern = regexp.MustCompile(`^[0-9a-f]{7,40}$`)
+
+// checkVerified reports a recorded pass the versions page could not state
+// truthfully: one for a release outside the window, or one whose date or
+// commit is not one.
+func checkVerified(recorded window) []string {
+	problems := []string{}
+
+	inWindow := map[string]bool{}
+	for _, release := range recorded.Releases {
+		inWindow[release] = true
+	}
+
+	releases := make([]string, 0, len(recorded.Verified))
+	for release := range recorded.Verified {
+		releases = append(releases, release)
+	}
+	sort.Strings(releases)
+
+	for _, release := range releases {
+		pass := recorded.Verified[release]
+		if !inWindow[release] {
+			problems = append(problems, fmt.Sprintf("%s records a pass of %s, which is not in the window", windowPath, release))
+		}
+		if _, err := time.Parse(time.DateOnly, pass.Date); err != nil {
+			problems = append(problems, fmt.Sprintf("%s records %s as passing on %q, which is not a YYYY-MM-DD date", windowPath, release, pass.Date))
+		}
+		if !commitPattern.MatchString(pass.Commit) {
+			problems = append(problems, fmt.Sprintf("%s records %s as passing at %q, which is not a commit", windowPath, release, pass.Commit))
+		}
+	}
+
+	return problems
+}
+
+// recordPass is the window with release recorded as passing on date at commit,
+// in place of any earlier pass.
+func recordPass(recorded window, release, date, commit string) (window, error) {
+	found := false
+	for _, candidate := range recorded.Releases {
+		found = found || candidate == release
+	}
+	if !found {
+		return window{}, fmt.Errorf("%s is not in the window: %s", release, strings.Join(recorded.Releases, ", "))
+	}
+
+	updated := recorded
+	updated.Verified = map[string]verification{}
+	for key, value := range recorded.Verified {
+		updated.Verified[key] = value
+	}
+	updated.Verified[release] = verification{Date: date, Commit: commit}
+
+	return updated, nil
+}
+
+// checkedOutOnNext is the checked-out commit, when the suite that just passed
+// ran from exactly that commit and the commit is on next.
+//
+// A change in the working tree means no commit names what ran, and a commit
+// that is not on next is rewritten by the rebase that lands it, so the record
+// would name a commit nobody can find. The window file itself is left out of
+// the first check: an earlier release in the same run records into it.
+func checkedOutOnNext(windowFile string) (string, error) {
+	changes, err := gitOutput("status", "--porcelain", "--", ".", ":(exclude)"+windowFile)
+	if err != nil {
+		return "", err
+	}
+	if changes != "" {
+		return "", fmt.Errorf("the working tree has changes, so no commit names what ran:\n%s", changes)
+	}
+
+	if _, err := gitOutput("merge-base", "--is-ancestor", "HEAD", "origin/next"); err != nil {
+		return "", fmt.Errorf("the checked-out commit is not on origin/next, and a rebase onto next would rewrite it; run the matrix from next (git fetch first)")
+	}
+
+	return gitOutput("rev-parse", "--short=12", "HEAD")
+}
+
+func gitOutput(args ...string) (string, error) {
+	output, err := exec.Command("git", args...).Output()
+	if err != nil {
+		return "", fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
+	}
+
+	return strings.TrimSpace(string(output)), nil
 }
 
 // servedPattern is the form of oldestServed: a major and a minor release.

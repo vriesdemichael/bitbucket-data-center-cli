@@ -266,3 +266,69 @@ func TestTheCommittedWindowHoldsTogether(t *testing.T) {
 		t.Errorf("the committed window does not hold together:\n%s", strings.Join(problems, "\n"))
 	}
 }
+
+// TestAPassIsRecordedForAReleaseInTheWindow: a pass replaces the release's
+// earlier one, leaves the others alone, and is refused for a release the
+// window does not run.
+func TestAPassIsRecordedForAReleaseInTheWindow(t *testing.T) {
+	t.Parallel()
+
+	recorded := window{
+		OldestServed: "9.2",
+		Releases:     []string{"9.3.2", "10.4.3", "10.5.1"},
+		Verified: map[string]verification{
+			"9.3.2":  {Date: "2026-09-01", Commit: "aaaaaaaaaaaa"},
+			"10.4.3": {Date: "2026-09-02", Commit: "bbbbbbbbbbbb"},
+		},
+	}
+
+	updated, err := recordPass(recorded, "9.3.2", "2026-10-21", "cccccccccccc")
+	if err != nil {
+		t.Fatalf("record a release in the window: %v", err)
+	}
+	if got := updated.Verified["9.3.2"]; got != (verification{Date: "2026-10-21", Commit: "cccccccccccc"}) {
+		t.Errorf("9.3.2 is recorded as %+v, want the new pass", got)
+	}
+	if got := updated.Verified["10.4.3"]; got != (verification{Date: "2026-09-02", Commit: "bbbbbbbbbbbb"}) {
+		t.Errorf("10.4.3 is recorded as %+v, want its earlier pass untouched", got)
+	}
+	if got := recorded.Verified["9.3.2"]; got.Date != "2026-09-01" {
+		t.Errorf("recording changed the window it was given: 9.3.2 is %+v", got)
+	}
+
+	if _, err := recordPass(recorded, "9.2.1", "2026-10-21", "cccccccccccc"); err == nil {
+		t.Error("a pass of a release outside the window was recorded")
+	}
+
+	// A window with nothing recorded yet takes its first pass.
+	first, err := recordPass(window{Releases: []string{"10.5.1"}}, "10.5.1", "2026-10-21", "dddddddddddd")
+	if err != nil || first.Verified["10.5.1"].Commit != "dddddddddddd" {
+		t.Errorf("the first pass was not recorded: %+v, %v", first.Verified, err)
+	}
+}
+
+// TestARecordedPassThePageCouldNotStateIsReported: the versions page prints
+// each recorded pass, so one for a release outside the window, or with a date
+// or commit that is not one, is a problem, and a well-formed one is not.
+func TestARecordedPassThePageCouldNotStateIsReported(t *testing.T) {
+	t.Parallel()
+
+	for name, testCase := range map[string]struct {
+		verified map[string]verification
+		want     string
+	}{
+		"well formed":            {map[string]verification{"9.3.2": {Date: "2026-10-21", Commit: "fb692d64ded1"}}, ""},
+		"a release out of range": {map[string]verification{"9.2.1": {Date: "2026-10-21", Commit: "fb692d64ded1"}}, "not in the window"},
+		"a date that is not one": {map[string]verification{"9.3.2": {Date: "21-10-2026", Commit: "fb692d64ded1"}}, "not a YYYY-MM-DD date"},
+		"no commit":              {map[string]verification{"9.3.2": {Date: "2026-10-21"}}, "not a commit"},
+		"a branch, not a commit": {map[string]verification{"9.3.2": {Date: "2026-10-21", Commit: "next"}}, "not a commit"},
+	} {
+		problems := checkVerified(window{Releases: []string{"9.3.2", "10.5.1"}, Verified: testCase.verified})
+		switch {
+		case testCase.want == "" && len(problems) != 0:
+			t.Errorf("%s: reported %v", name, problems)
+		case testCase.want != "" && (len(problems) != 1 || !strings.Contains(problems[0], testCase.want)):
+			t.Errorf("%s: reported %v, want one problem saying %q", name, problems, testCase.want)
+		}
+	}
+}

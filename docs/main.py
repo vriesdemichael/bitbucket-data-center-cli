@@ -90,6 +90,40 @@ def resolve_bitbucket_releases_tested() -> str:
     return ", ".join(releases[:-1]) + " and " + releases[-1]
 
 
+# Where a recorded commit links to, so a reader can see what was run.
+REPOSITORY_URL = "https://github.com/vriesdemichael/bitbucket-data-center-cli"
+
+
+def resolve_bitbucket_releases_verified() -> str:
+    """A table of when each release but the newest last passed by hand.
+
+    CI runs only the newest release; the others pass when someone runs the
+    matrix, which records the day and the commit on next in the baseline. A
+    release with no recorded pass says so rather than being left out, so the
+    table never reads as covering more than it does.
+    """
+    try:
+        recorded = json.loads(RELEASES_BASELINE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return FALLBACK_VERSION
+
+    releases = [str(release) for release in recorded.get("releases", [])][:-1]
+    if not releases:
+        return FALLBACK_VERSION
+
+    verified = recorded.get("verified", {})
+    rows = ["| Release | Last passed | At commit |", "|---|---|---|"]
+    for release in releases:
+        passed = verified.get(release)
+        if not passed:
+            rows.append(f"| {release} | not recorded | |")
+            continue
+        commit = passed.get("commit", "")
+        rows.append(f"| {release} | {passed.get('date', '')} | [{commit}]({REPOSITORY_URL}/commit/{commit}) |")
+
+    return "\n".join(rows)
+
+
 def _from_environment() -> str | None:
     value = os.environ.get(VERSION_ENV_VAR, "").strip()
     return value or None
@@ -140,6 +174,7 @@ def define_env(env) -> None:
     env.variables["bb_version_tag"] = tag
     env.variables["bitbucket_version"] = resolve_bitbucket_version()
     env.variables["bitbucket_releases_tested"] = resolve_bitbucket_releases_tested()
+    env.variables["bitbucket_releases_verified"] = resolve_bitbucket_releases_verified()
 
 
 # Files mkdocs copies verbatim instead of running through the macro engine.
