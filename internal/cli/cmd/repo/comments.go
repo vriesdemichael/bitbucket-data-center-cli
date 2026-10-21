@@ -44,17 +44,7 @@ func resolveCommentTarget(selector string, commitID string, pullRequestID string
 }
 
 func commentOwnedByUser(comment openapigenerated.RestComment, username string) bool {
-	trimmed := strings.TrimSpace(username)
-	if trimmed == "" || comment.Author == nil {
-		return false
-	}
-	if strings.EqualFold(strings.TrimSpace(comment.Author.Name), trimmed) {
-		return true
-	}
-	if strings.EqualFold(strings.TrimSpace(comment.Author.Slug), trimmed) {
-		return true
-	}
-	return false
+	return preflight.CommentOwnedBy(comment, username)
 }
 
 func commentIDString(comment openapigenerated.RestComment) string {
@@ -320,59 +310,20 @@ func newRepoCommentCommand(deps Dependencies) *cobra.Command {
 					return err
 				}
 
-				current, err := service.Get(cmd.Context(), target, deleteCommentID)
-				currentUser := strings.TrimSpace(cfg.BitbucketUsername)
-				predicted := "delete"
-				reason := "comment will be deleted"
-				blocking := []string{}
-				fails := apperrors.KindConflict
+				prediction, err := preflight.PredictCommentDeletion(cmd.Context(), deps.PermissionChecker, client, service, target, deleteCommentID, cfg.BitbucketUsername)
 				if err != nil {
-					if apperrors.ExitCode(err) == 4 {
-						// Deleting a comment that is not there is a 404.
-						predicted = "blocked"
-						reason = "comment was not found"
-						fails = apperrors.KindNotFound
-					} else {
-						return err
-					}
-				} else {
-					// Bitbucket lets the author delete a comment, and anyone who
-					// administers the repository: a repository admin deleting
-					// somebody else's comment succeeds, so being somebody else
-					// is only a refusal without admin. It asks that first, and
-					// only then refuses a comment that still has replies.
-					if currentUser != "" && !commentOwnedByUser(current, currentUser) {
-						adminErr := preflight.RepoPermission(cmd.Context(), deps.PermissionChecker, client, target.Repository.ProjectKey, target.Repository.Slug, openapi.RepoAdmin)
-						switch {
-						case adminErr == nil:
-						case apperrors.IsKind(adminErr, apperrors.KindAuthorization):
-							predicted = "blocked"
-							reason = "comment is owned by another user, and only its author or a repository admin may delete it"
-							blocking = []string{reason}
-							fails = apperrors.KindAuthorization
-						default:
-							return adminErr
-						}
-					}
-					if predicted == "delete" && current.Comments != nil && len(*current.Comments) > 0 {
-						predicted = "blocked"
-						reason = "comment has replies, which have to be deleted first"
-						blocking = []string{reason}
-					}
+					return err
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.Item{
 					Intent:          "repo.comment.delete",
 					Target:          map[string]any{"context": target.Context(), "id": deleteCommentID},
 					Action:          "delete",
-					PredictedAction: predicted,
+					PredictedAction: prediction.Predicted,
 					Tier:            dryrunpreview.TierPreconditionsChecked,
-					Reason:          reason,
-					BlockingReasons: blocking,
-					// authorization for somebody else's comment, which Bitbucket
-					// refuses with a 401 AuthorisationException; conflict, its
-					// 409 CommentDeletionException, for one with replies.
-					Fails: fails,
+					Reason:          prediction.Reason,
+					BlockingReasons: prediction.Blocking,
+					Fails:           prediction.Fails,
 				})
 
 				return dryrunpreview.Write(cmd.OutOrStdout(), deps.JSONEnabled(), preview)

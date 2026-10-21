@@ -2460,6 +2460,7 @@ appears in the pull request diff, so the line has to be inside a changed hunk an
 	for _, stateCommand := range newPullRequestCommentStateCommands(deps, &repository) {
 		commentCmd.AddCommand(stateCommand)
 	}
+	commentCmd.AddCommand(newPullRequestCommentDeleteCommand(deps, &repository))
 
 	var commentSuggestionMsg string
 	var commentSuggestionIdx int32

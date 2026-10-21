@@ -1,8 +1,8 @@
 {
   "version": 2,
   "summary": {
-    "runnable_commands": 235,
-    "covered_commands": 235,
+    "runnable_commands": 236,
+    "covered_commands": 236,
     "covered_percent": 100,
     "masked_commands": 0,
     "dry_run_only_commands": 0,
@@ -90,6 +90,7 @@
     "pr checks",
     "pr comment add",
     "pr comment apply-suggestion",
+    "pr comment delete",
     "pr comment get",
     "pr comment list",
     "pr comment react",

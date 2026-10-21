@@ -78,6 +78,7 @@ func init() {
 		"lineType":      openapi.DiffLineTypes,
 	}))
 	result.Declare("pr comment react", result.For[Reaction](map[string][]string{"action": {"added", "removed"}}))
+	result.Declare("pr comment delete", result.For[CommentDeletion](nil))
 	result.Declare("pr comment apply-suggestion", result.For[AppliedSuggestion](nil))
 
 	result.Declare("pr activity list", result.For[Activities](nil))
