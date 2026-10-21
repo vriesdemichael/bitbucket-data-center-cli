@@ -238,11 +238,24 @@ func specCreatePullRequest() Spec {
 	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[CreatePullRequestInput, PullRequestOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in CreatePullRequestInput) (*mcp.CallToolResult, PullRequestOutput, error) {
-			pr, err := svc.Create(ctx,
-				pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
+			ref := pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}
+			// Bitbucket needs a target, and the schema promises the
+			// repository's default branch when none is given.
+			toRef := strings.TrimSpace(in.ToRef)
+			if toRef == "" {
+				branch, err := svc.DefaultBranch(ctx, ref)
+				if err != nil {
+					return nil, PullRequestOutput{}, fmt.Errorf("create_pull_request: no to_ref was given, and the repository's default branch could not be read: %w", err)
+				}
+				if branch == "" {
+					return nil, PullRequestOutput{}, fmt.Errorf("create_pull_request: no to_ref was given, and the repository has no default branch; name the target branch in to_ref")
+				}
+				toRef = branch
+			}
+			pr, err := svc.Create(ctx, ref,
 				pullrequestservice.CreateInput{
 					FromRef:     in.FromRef,
-					ToRef:       in.ToRef,
+					ToRef:       toRef,
 					Title:       in.Title,
 					Description: disclosed(ctx, c, in.Description),
 					Reviewers:   parseCommaList(in.Reviewers),
