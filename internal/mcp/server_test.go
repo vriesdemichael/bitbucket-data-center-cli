@@ -166,6 +166,35 @@ func TestEveryToolDeclaresItsHintsAndTitle(t *testing.T) {
 	}
 }
 
+// TestEveryToolSendsAllFourHints holds the hints as tools/list sends them, not
+// as the struct holds them (#798). A client takes a hint that is not there as
+// its default, and clients disagree about the defaults: Claude Code and VS Code
+// read a missing destructiveHint as false, the specification as true. The SDK
+// leaves a false readOnlyHint and idempotentHint out of what it sends when
+// MCPGODEBUG=hintomitempty=1, and did by default before, which the struct
+// check cannot see.
+func TestEveryToolSendsAllFourHints(t *testing.T) {
+	t.Parallel()
+
+	for _, spec := range AllSpecs() {
+		encoded, err := json.Marshal(spec.Tool)
+		if err != nil {
+			t.Fatalf("encode %s: %v", spec.Tool.Name, err)
+		}
+		var sent struct {
+			Annotations map[string]any `json:"annotations"`
+		}
+		if err := json.Unmarshal(encoded, &sent); err != nil {
+			t.Fatalf("decode %s: %v", spec.Tool.Name, err)
+		}
+		for _, hint := range []string{"readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"} {
+			if _, ok := sent.Annotations[hint].(bool); !ok {
+				t.Errorf("tool %q is sent without %s: %s", spec.Tool.Name, hint, encoded)
+			}
+		}
+	}
+}
+
 // TestNoToolIsOpenWorld: bb talks to one Bitbucket Data Center instance, which
 // is a closed domain. readOnly says when that would change.
 func TestNoToolIsOpenWorld(t *testing.T) {

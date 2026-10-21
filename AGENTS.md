@@ -348,6 +348,7 @@ The governance guards, so the set is knowable:
 | `TestToolsThatAskAreTheOnesThatDecideAMerge` | the tools that ask the person before they run are exactly the ones that decide a merge, and `create_tag` |
 | `TestReadOnlyToolsDoNotAsk` | a tool annotated read-only asks nothing — either it writes after all, or there is nothing to confirm |
 | `TestEveryToolDeclaresItsHintsAndTitle` | every MCP tool states all four hints and a title, rather than leaving a hint to its default |
+| `TestEveryToolSendsAllFourHints` | `tools/list` carries all four hints for every MCP tool, as the SDK encodes them |
 | `TestLiveMCPEveryToolReturnsAClientCompatibleResult` | every MCP tool is actually called, and its result is a JSON object with a text fallback |
 | `TestTheStatusMappingIsOnlyTestedWhereItLives` | no package outside `internal/openapi` tests the status-to-kind mapping |
 | `TestNoServiceOptionIsCalledLimit` | no service option names a limit the call site cannot act on |

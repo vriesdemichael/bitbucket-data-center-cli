@@ -10,7 +10,9 @@ Every tool is exposed, and the ones that decide whether code merges ask the pers
 
 The confirmation is an MCP elicitation: the client shows what the call will do, and the tool acts only when the person accepts. A client that cannot show one gets error -32021 for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself, through a hook or an automatic approval, is the client's decision, so this control is as strong as the client you choose.
 
-For a client you do not trust with the tool annotations and those confirmations, start the server with `--read-only`, which exposes only the tools that read. A client that cannot be trusted with them should not make changes in Bitbucket; make them yourself.
+Every tool carries the four MCP annotation hints, `readOnlyHint` true only where the tool changes nothing in Bitbucket. They are hints, not a control: clients act on them differently, and some run a tool annotated read-only without asking anyone. What bb enforces is the confirmation above, `--read-only`, scoping and policy.
+
+For a client you do not trust with those confirmations, start the server with `--read-only`, which exposes only the tools that read. A client that cannot be trusted with them should not make changes in Bitbucket; make them yourself.
 
 An administrator can decide this for every client on a machine. `read_only: true` in system policy starts every server read-only whatever its client configuration says, and `disable_mcp_server: true` refuses to start one at all ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)).
 
