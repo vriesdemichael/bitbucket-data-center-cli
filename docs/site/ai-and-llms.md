@@ -27,8 +27,12 @@ right in the chat: [views in your agent](#views-in-your-agent).
 [**MCP Reference**](reference/mcp-tools.md) lists every tool, which of them
 write and which ask, and every resource and prompt.
 
+Start it confined to the project the agent works in. Unconfined, it reaches every
+repository your token can read, and an agent misled by what it reads can copy a
+file from one of them into a pull request others read:
+
 ```bash
-bb ai mcp serve
+bb ai mcp serve --project PLAT
 ```
 
 Wire it into a client by giving it that command and a token in the client's own

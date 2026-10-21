@@ -257,12 +257,12 @@ Commands, flags and the values they take — pull requests, branches, repositori
 
 ### Recipe 9: MCP Server in Your IDE
 
-`bb` includes an MCP server that lets an AI assistant, such as GitHub Copilot, Cursor or Claude Desktop, read and act on pull requests, builds and files. Add this server entry to your client's MCP configuration, giving it a token of its own:
+`bb` includes an MCP server that lets an AI assistant, such as GitHub Copilot, Cursor or Claude Desktop, read and act on pull requests, builds and files. Add this server entry to your client's MCP configuration, confined to the project the assistant works in and with a token of its own:
 
 ```json
 "bb": {
   "command": "bb",
-  "args": ["ai", "mcp", "serve"],
+  "args": ["ai", "mcp", "serve", "--project", "PLAT"],
   "env": { "BITBUCKET_TOKEN": "${BB_MCP_TOKEN}" }
 }
 ```
