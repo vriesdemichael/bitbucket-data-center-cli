@@ -53,9 +53,6 @@ Inherited from [`bb commit`](#bb-commit):
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
-`--start int`
-:   Start offset for list operations
-
 Also takes the [global flags](global-flags.md).
 
 **Dry run:** Runs as usual: this command changes nothing, so there is nothing to hold back
@@ -101,9 +98,6 @@ Inherited from [`bb commit`](#bb-commit):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 
@@ -164,13 +158,13 @@ bb commit list --repo PROJ/repo --jira PAY-128
 `--path string`
 :   Filter commits by file path
 
+`--start int`
+:   Start offset for list operations
+
 Inherited from [`bb commit`](#bb-commit):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 
@@ -217,9 +211,6 @@ Inherited from [`bb commit`](#bb-commit):
 
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
-
-`--start int`
-:   Start offset for list operations
 
 Also takes the [global flags](global-flags.md).
 

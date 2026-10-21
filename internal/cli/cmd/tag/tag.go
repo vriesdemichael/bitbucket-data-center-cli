@@ -91,7 +91,6 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	tagCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-	tagCmd.PersistentFlags().StringVar(&filterText, "filter", "", "Filter text for tag names")
 
 	listTagsCmd := &cobra.Command{
 		Use:   "list",
@@ -142,7 +141,8 @@ func New(deps Dependencies) *cobra.Command {
 	// On the leaf, not on tagCmd, which also holds create, delete and view --
 	// none of which paged or ordered anything (#476).
 	listPaging.Register(listTagsCmd, 25)
-	listTagsCmd.Flags().IntVar(&start, "start", 0, "Start offset for list operations")
+	paging.RegisterStart(listTagsCmd, &start)
+	listTagsCmd.Flags().StringVar(&filterText, "filter", "", "Filter text for tag names")
 	enumflag.Register(listTagsCmd.Flags(), &orderBy, "order-by", "", openapi.RefOrderings, "Tag ordering")
 	tagCmd.AddCommand(listTagsCmd)
 

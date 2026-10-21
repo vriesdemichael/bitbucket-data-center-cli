@@ -235,7 +235,6 @@ func New(deps Dependencies) *cobra.Command {
 	}
 
 	branchCmd.PersistentFlags().StringVar(&repositorySelector, "repo", "", "Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET_PROJECT_KEY + BITBUCKET_REPO_SLUG)")
-	branchCmd.PersistentFlags().IntVar(&start, "start", 0, "Start offset for list operations")
 
 	var orderBy string
 	var filterText string
@@ -331,6 +330,7 @@ func New(deps Dependencies) *cobra.Command {
 	listCmd.Flags().BoolVar(&details, "details", false, "Show what Bitbucket's branch list shows beside each branch: how far it is ahead of and behind --base, its last commit, its builds and its pull requests")
 	listCmd.Flags().StringVar(&base, "base", "", "Branch, tag or commit the ahead and behind counts are measured against (defaults to the default branch); implies --details")
 	listPaging.Register(listCmd, 25)
+	paging.RegisterStart(listCmd, &start)
 	branchCmd.AddCommand(listCmd)
 
 	var createStartPoint string
