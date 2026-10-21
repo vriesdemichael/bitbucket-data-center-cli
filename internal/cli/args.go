@@ -33,14 +33,21 @@ func nameTheMissingArgument(root *cobra.Command) {
 			command := cmd
 			cmd.Args = func(c *cobra.Command, args []string) error {
 				if err := original(c, args); err != nil {
+					// Named as the person typed it: pr view is pr get, and a
+					// message naming pr get names a command they did not run
+					// (#766).
+					path := dryRunCommandPath(command)
+					if called := c.CalledAs(); called != "" && called != command.Name() {
+						path = strings.TrimSuffix(path, command.Name()) + called
+					}
 					return apperrors.New(
 						apperrors.KindValidation,
 						fmt.Sprintf(
 							"%s takes %s; %s given. See 'bb %s --help'",
-							dryRunCommandPath(command),
+							path,
 							strings.Join(placeholders, " "),
 							countOfArguments(len(args)),
-							dryRunCommandPath(command),
+							path,
 						),
 						// Not wrapped: Cobra's own text is what this replaces, and
 						// AppError appends a cause, so keeping it would print the

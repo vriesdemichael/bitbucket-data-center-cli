@@ -30,6 +30,7 @@ var exampleFiles = map[string]string{
 // not refuse there is an excuse for nothing.
 var examplesThatNeedACheckout = map[string]bool{
 	"bb pr create": true,
+	"bb pr view":   true,
 }
 
 // TestEveryExampleIsAnInvocationBBAccepts runs each example a command's help
