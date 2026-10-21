@@ -15,23 +15,6 @@ import (
 var deprecatedFlagRuns = map[string][]string{
 	"bb ai mcp tools --read-only": {"ai", "mcp", "tools", "--read-only"},
 
-	"bb branch restriction create --matcher-display": {
-		"branch", "restriction", "create", "--repo", "PROJ/repo", "--type", "no-deletes",
-		"--matcher-id", "refs/heads/main", "--matcher-display", "main",
-	},
-	"bb branch restriction update --matcher-display": {
-		"branch", "restriction", "update", "7", "--repo", "PROJ/repo", "--type", "no-deletes",
-		"--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main", "--matcher-display", "main",
-	},
-	"bb project branch-restriction create --matcher-display": {
-		"project", "branch-restriction", "create", "PROJ", "--type", "no-deletes",
-		"--matcher-id", "refs/heads/main", "--matcher-display", "main",
-	},
-	"bb project branch-restriction update --matcher-display": {
-		"project", "branch-restriction", "update", "PROJ", "7", "--type", "no-deletes",
-		"--matcher-type", "BRANCH", "--matcher-id", "refs/heads/main", "--matcher-display", "main",
-	},
-
 	"bb build required delete --limit":       {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--limit", "1"},
 	"bb build required delete --all":         {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--all"},
 	"bb build status stats --include-unique": {"build", "status", "stats", "a1b2c3d", "--include-unique"},
@@ -125,8 +108,11 @@ func TestEveryDeprecatedFlagIsStillTakenAndSaysSo(t *testing.T) {
 		})
 	}
 
-	if checked < 10 {
-		t.Fatalf("checked only %d deprecated flags; the registry's names no longer read as flags", checked)
+	// Every flag this file runs or leaves to its package is one checked: fewer
+	// means the registry's names no longer read as flags, or one here outlived
+	// its entry.
+	if want := len(deprecatedFlagRuns) + len(deprecatedFlagsThatAreNotRunHere); checked != want {
+		t.Fatalf("checked %d deprecated flags, and this file names %d", checked, want)
 	}
 }
 

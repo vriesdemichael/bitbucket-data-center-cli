@@ -64,35 +64,6 @@ var Entries = []Entry{
 	// Flags that mirrored a Bitbucket request parameter and changed nothing a
 	// caller could see.
 	//
-	// Bitbucket derives a matcher's display name from its id and type: main
-	// for refs/heads/main, the pattern for a pattern, Release for the RELEASE
-	// category. A display name sent with the restriction is dropped, in every
-	// release bb serves.
-	{
-		Name:         "bb branch restriction create --matcher-display",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "Bitbucket works out a matcher's display name itself and ignores the one it is sent",
-		Advice:       "Remove it.",
-	},
-	{
-		Name:         "bb branch restriction update --matcher-display",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "Bitbucket works out a matcher's display name itself and ignores the one it is sent",
-		Advice:       "Remove it.",
-	},
-	{
-		Name:         "bb project branch-restriction create --matcher-display",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "Bitbucket works out a matcher's display name itself and ignores the one it is sent",
-		Advice:       "Remove it.",
-	},
-	{
-		Name:         "bb project branch-restriction update --matcher-display",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "Bitbucket works out a matcher's display name itself and ignores the one it is sent",
-		Advice:       "Remove it.",
-	},
-
 	// --include-unique asked Bitbucket to name the build when only one had
 	// failed, was running or had passed. bb printed the five counts either
 	// way, and bb build status get and set, which inherited the flag, never

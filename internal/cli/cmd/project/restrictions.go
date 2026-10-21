@@ -13,7 +13,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/preflight"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -121,7 +120,6 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	var createType string
 	var createMatcherID string
 	var createMatcherType string
-	var createMatcherDisplay string
 	var createUsers []string
 	var createGroups []string
 	var createAccessKeyIDs []int
@@ -143,8 +141,6 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
     --matcher-type MODEL_BRANCH --matcher-id development`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb project branch-restriction create", "matcher-display")
-
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -201,13 +197,12 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			}
 
 			created, err := service.CreateRestriction(cmd.Context(), args[0], projectservice.RestrictionUpsertInput{
-				Type:           createType,
-				MatcherID:      createMatcherID,
-				MatcherType:    createMatcherType,
-				MatcherDisplay: createMatcherDisplay,
-				Users:          createUsers,
-				Groups:         createGroups,
-				AccessKeyIDs:   accessKeyIDs,
+				Type:         createType,
+				MatcherID:    createMatcherID,
+				MatcherType:  createMatcherType,
+				Users:        createUsers,
+				Groups:       createGroups,
+				AccessKeyIDs: accessKeyIDs,
 			})
 			if err != nil {
 				return err
@@ -224,9 +219,6 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	enumflag.Register(createCmd.Flags(), &createType, "type", "", result.RestrictionTypes, "Restriction type")
 	createCmd.Flags().StringVar(&createMatcherID, "matcher-id", "", "Matcher id value")
 	enumflag.Register(createCmd.Flags(), &createMatcherType, "matcher-type", "BRANCH", openapi.RestrictionMatcherTypes, "Matcher type")
-	// Accepted, and inert: Bitbucket derives the display name (ADR-084).
-	createCmd.Flags().StringVar(&createMatcherDisplay, "matcher-display", "", "Deprecated: has no effect")
-	_ = createCmd.Flags().MarkHidden("matcher-display")
 	createCmd.Flags().StringSliceVar(&createUsers, "user", nil, "Allowed user slugs")
 	createCmd.Flags().StringSliceVar(&createGroups, "group", nil, "Allowed group names")
 	createCmd.Flags().IntSliceVar(&createAccessKeyIDs, "access-key-id", nil, "Allowed SSH access key IDs")
@@ -237,7 +229,6 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	var updateType string
 	var updateMatcherID string
 	var updateMatcherType string
-	var updateMatcherDisplay string
 	var updateUsers []string
 	var updateGroups []string
 	var updateAccessKeyIDs []int
@@ -250,8 +241,6 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
     --matcher-type BRANCH --matcher-id refs/heads/main --user alice`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb project branch-restriction update", "matcher-display")
-
 			_, client, err := deps.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -295,13 +284,12 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 			}
 
 			updated, err := service.UpdateRestriction(cmd.Context(), args[0], args[1], projectservice.RestrictionUpsertInput{
-				Type:           updateType,
-				MatcherID:      updateMatcherID,
-				MatcherType:    updateMatcherType,
-				MatcherDisplay: updateMatcherDisplay,
-				Users:          updateUsers,
-				Groups:         updateGroups,
-				AccessKeyIDs:   accessKeyIDs,
+				Type:         updateType,
+				MatcherID:    updateMatcherID,
+				MatcherType:  updateMatcherType,
+				Users:        updateUsers,
+				Groups:       updateGroups,
+				AccessKeyIDs: accessKeyIDs,
 			})
 			if err != nil {
 				return err
@@ -327,9 +315,6 @@ func newProjectBranchRestrictionCommand(deps Dependencies) *cobra.Command {
 	_ = updateCmd.MarkFlagRequired("type")
 	_ = updateCmd.MarkFlagRequired("matcher-id")
 	_ = updateCmd.MarkFlagRequired("matcher-type")
-	// Accepted, and inert: Bitbucket derives the display name (ADR-084).
-	updateCmd.Flags().StringVar(&updateMatcherDisplay, "matcher-display", "", "Deprecated: has no effect")
-	_ = updateCmd.Flags().MarkHidden("matcher-display")
 	updateCmd.Flags().StringSliceVar(&updateUsers, "user", nil, "Allowed user slugs")
 	updateCmd.Flags().StringSliceVar(&updateGroups, "group", nil, "Allowed group names")
 	updateCmd.Flags().IntSliceVar(&updateAccessKeyIDs, "access-key-id", nil, "Allowed SSH access key IDs")

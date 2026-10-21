@@ -184,19 +184,15 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 
 	// Create restriction
 	//
-	// --matcher-display is deprecated and still taken: Bitbucket ignores the
-	// name it is sent and derives one from the matcher, which is read back
-	// below. The warning goes to stderr, so stdout is still one document.
-	createOutput, createWarning, err := executeLiveCLISplit(
-		t, "", "--json", "branch", "restriction", "create",
+	// Bitbucket derives the matcher's display name from the matcher, which is
+	// read back below.
+	createOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "create",
 		"--type", "read-only",
 		"--matcher-id", "refs/heads/master",
-		"--matcher-display", "Not the name Bitbucket derives",
 	)
 	if err != nil {
 		t.Fatalf("restriction create failed: %v\noutput: %s", err, createOutput)
 	}
-	assertDeprecationWarned(t, createWarning, "bb branch restriction create --matcher-display")
 	createPayload := decodeJSONMap(t, createOutput)
 	restrictionID := ""
 	if restriction, ok := createPayload["restriction"].(map[string]any); ok {
@@ -213,7 +209,7 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 	stored := restrictionPayload(t, mustLiveCLI(t, "branch", "restriction", "get", restrictionID))
 	assertRestrictionStored(t, stored, created)
 	if matcher, _ := stored["matcher"].(map[string]any); matcher["displayId"] != "master" {
-		t.Errorf("matcher.displayId = %v, want master, which Bitbucket derives from the branch while ignoring --matcher-display", matcher["displayId"])
+		t.Errorf("matcher.displayId = %v, want master, which Bitbucket derives from the branch", matcher["displayId"])
 	}
 	// The listing as well: Bitbucket answers a get for a restriction id through
 	// any repository's path, so only the listing shows it was stored on this one.
@@ -230,17 +226,14 @@ func TestLiveCLIBranchRestrictionLifecycle(t *testing.T) {
 
 	// PATTERN rather than the BRANCH the restriction was created with, so the
 	// matcher type read back is the one this update sent.
-	updateOutput, updateWarning, err := executeLiveCLISplit(
-		t, "", "--json", "branch", "restriction", "update", restrictionID,
+	updateOutput, err := executeLiveCLI(t, "--json", "branch", "restriction", "update", restrictionID,
 		"--type", "no-deletes",
 		"--matcher-type", "PATTERN",
 		"--matcher-id", "refs/heads/master",
-		"--matcher-display", "Not the name Bitbucket derives",
 	)
 	if err != nil {
 		t.Fatalf("restriction update failed: %v\noutput: %s", err, updateOutput)
 	}
-	assertDeprecationWarned(t, updateWarning, "bb branch restriction update --matcher-display")
 
 	// Another type is another restriction: the update created one and removed
 	// the restriction it replaces, so the id to follow is the new one.

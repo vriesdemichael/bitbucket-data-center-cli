@@ -43,13 +43,12 @@ type RestrictionListOptions struct {
 }
 
 type RestrictionUpsertInput struct {
-	Type           string
-	MatcherType    string
-	MatcherID      string
-	MatcherDisplay string
-	Users          []string
-	Groups         []string
-	AccessKeyIDs   []int32
+	Type         string
+	MatcherType  string
+	MatcherID    string
+	Users        []string
+	Groups       []string
+	AccessKeyIDs []int32
 }
 
 type Service struct {
@@ -940,10 +939,6 @@ func mapRestrictionInput(input RestrictionUpsertInput) (openapigenerated.RestRes
 			Id   openapigenerated.RestRestrictionRequestMatcherTypeId `json:"id"`
 			Name string                                               `json:"name"`
 		}{Id: matcherType},
-	}
-
-	if trimmedMatcherID != "" && input.MatcherDisplay != "" {
-		bodyEntry.Matcher.DisplayId = &input.MatcherDisplay
 	}
 
 	// Exemptions go by name and by access key id: Bitbucket refuses users sent as
