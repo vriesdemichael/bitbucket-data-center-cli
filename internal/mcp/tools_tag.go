@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -64,6 +65,17 @@ type CreateTagOutput struct {
 	Tag openapigenerated.RestTag `json:"tag"`
 }
 
+// refuseTagMessage turns down a tag message on a server that adds no line
+// saying an AI agent wrote it: an annotated tag's message is published under
+// the person's name (ADR-105).
+func refuseTagMessage(c Clients, in CreateTagInput) error {
+	if strings.TrimSpace(in.Message) != "" && c.WithoutAIDisclosure {
+		return errors.New("this server adds no line saying an AI agent wrote a tag message, so it creates a tag without one; leave message out")
+	}
+
+	return nil
+}
+
 func specCreateTag() Spec {
 	tool := &mcp.Tool{
 		Name:        "create_tag",
@@ -75,11 +87,10 @@ func specCreateTag() Spec {
 	return askingSpec(tool, AsksAlways, askCreateTag(), func(c Clients) mcp.ToolHandlerFor[CreateTagInput, CreateTagOutput] {
 		svc := tagservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in CreateTagInput) (*mcp.CallToolResult, CreateTagOutput, error) {
-			// An annotated tag's message is published under the person's name.
+			if err := refuseTagMessage(c, in); err != nil {
+				return nil, CreateTagOutput{}, fmt.Errorf("create_tag: %w", err)
+			}
 			if strings.TrimSpace(in.Message) != "" {
-				if c.WithoutAIDisclosure {
-					return nil, CreateTagOutput{}, fmt.Errorf("create_tag: this server adds no line saying an AI agent wrote a tag message, so it creates a tag without one; leave message out")
-				}
 				in.Message = disclosed(ctx, c, in.Message)
 			}
 			tag, err := svc.Create(ctx,

@@ -60,6 +60,11 @@ type ask[In any] struct {
 	// when reports whether a call asks. Nil means every call does.
 	when func(In) bool
 
+	// refuse is a call the tool turns down whatever the person says, which is
+	// said before they are asked: asking first would have them approve a call
+	// that then fails. Nil when the tool turns none down.
+	refuse func(c Clients, in In) error
+
 	// confirm reads what the person needs to see and returns the confirmation.
 	// It may call Bitbucket; an error ends the call before anyone is asked.
 	confirm func(ctx context.Context, c Clients, in In) (confirmation, error)
@@ -103,6 +108,11 @@ func confirmed[In, Out any](tool string, policy ask[In], clients Clients, handle
 	return func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, Out, error) {
 		var none Out
 
+		if policy.refuse != nil {
+			if err := policy.refuse(clients, in); err != nil {
+				return nil, none, fmt.Errorf("%s: %w", tool, err)
+			}
+		}
 		if policy.when != nil && !policy.when(in) {
 			return handler(ctx, req, in)
 		}
