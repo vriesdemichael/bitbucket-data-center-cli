@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -23,7 +25,6 @@ import (
 
 type usersClient interface {
 	GetUsers2WithResponse(ctx context.Context, params *openapigenerated.GetUsers2Params, reqEditors ...openapigenerated.RequestEditorFn) (*openapigenerated.GetUsers2Response, error)
-	GetUserWithResponse(ctx context.Context, userSlug string, reqEditors ...openapigenerated.RequestEditorFn) (*openapigenerated.GetUserResponse, error)
 }
 
 type repositoriesClient interface {
@@ -715,46 +716,70 @@ plaintext even with --allow-insecure-storage.`,
 	return authCmd
 }
 
+// resolveIdentity is who the configured credential authenticates as.
+//
+// Bitbucket names the caller of every authenticated request in X-AUSERNAME, by
+// login name, percent-encoded. That name is not the slug for a name with an @ or
+// a + in it (#807), so the user is found by name among those the users list
+// returns for it. A project or repository access token's user is no Bitbucket
+// user and has no record there, so it is named and nothing more.
 func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient func(config.AppConfig) (usersClient, error)) (result.User, error) {
 	client, err := newUsersClient(cfg)
 	if err != nil {
 		return result.User{}, apperrors.New(apperrors.KindInternal, "failed to initialize API client", err)
 	}
 
-	response, err := client.GetUsers2WithResponse(ctx, nil)
+	oneUser := func(_ context.Context, request *http.Request) error {
+		query := request.URL.Query()
+		query.Set("limit", "1")
+		request.URL.RawQuery = query.Encode()
+		return nil
+	}
+	response, err := client.GetUsers2WithResponse(ctx, nil, oneUser)
 	if err != nil {
 		return result.User{}, apperrors.Transport("identity lookup failed", err)
 	}
-
 	if response.StatusCode() < 200 || response.StatusCode() >= 300 {
 		return result.User{}, openapi.MapStatusError(response.StatusCode(), response.Body)
 	}
 
-	// Try to get authenticated username from the X-AUSERNAME header
-	var username string
+	name := ""
 	if response.HTTPResponse != nil {
-		username = strings.TrimSpace(response.HTTPResponse.Header.Get("X-AUSERNAME"))
+		name, _ = url.PathUnescape(strings.TrimSpace(response.HTTPResponse.Header.Get("X-AUSERNAME")))
+	}
+	if name == "" {
+		return result.User{}, apperrors.New(apperrors.KindAuthentication, "failed to resolve identity: Bitbucket did not name the authenticated user", nil)
 	}
 
-	if username != "" {
-		userResponse, err := client.GetUserWithResponse(ctx, username)
-		if err == nil && userResponse.StatusCode() == 200 && userResponse.ApplicationjsonCharsetUTF8200 != nil {
-			user := userResponse.ApplicationjsonCharsetUTF8200
-			return result.User{
-				Name:         strings.TrimSpace(safederef.String(user.Name)),
-				Slug:         strings.TrimSpace(safederef.String(user.Slug)),
-				DisplayName:  strings.TrimSpace(safederef.String(user.DisplayName)),
-				EmailAddress: strings.TrimSpace(safederef.String(user.EmailAddress)),
-				ID:           safederef.Int32(user.Id),
-				Type:         strings.TrimSpace(safeStringFromEnum(user.Type)),
-				Active:       safeBool(user.Active),
-			}, nil
+	// The filter matches any name, display name or email address containing
+	// the text, so the person can be pages in for a common name.
+	found, err := openapi.PageThrough(ctx, 0, 1, func(ctx context.Context, start, limit int) (openapi.Page[openapigenerated.RestApplicationUser], error) {
+		named, err := client.GetUsers2WithResponse(ctx, &openapigenerated.GetUsers2Params{Filter: &name}, openapi.PageQuery(start, limit))
+		if err != nil {
+			return openapi.Page[openapigenerated.RestApplicationUser]{}, apperrors.Transport("identity lookup failed", err)
 		}
-	}
+		if named.StatusCode() < 200 || named.StatusCode() >= 300 {
+			return openapi.Page[openapigenerated.RestApplicationUser]{}, openapi.MapStatusError(named.StatusCode(), named.Body)
+		}
+		var page struct {
+			Values        []openapigenerated.RestApplicationUser `json:"values"`
+			IsLastPage    *bool                                  `json:"isLastPage"`
+			NextPageStart *int                                   `json:"nextPageStart"`
+		}
+		if err := json.Unmarshal(named.Body, &page); err != nil {
+			return openapi.Page[openapigenerated.RestApplicationUser]{}, apperrors.New(apperrors.KindInternal, "failed to decode the users list", err)
+		}
+		exact := slices.DeleteFunc(page.Values, func(user openapigenerated.RestApplicationUser) bool {
+			return !strings.EqualFold(safederef.String(user.Name), name)
+		})
 
-	// Fallback to the old logic (parsing response directly as RestApplicationUser, which works for some mocks/servers)
-	if response.ApplicationjsonCharsetUTF8200 != nil {
-		user := response.ApplicationjsonCharsetUTF8200
+		return openapi.Page[openapigenerated.RestApplicationUser]{Values: exact, IsLastPage: page.IsLastPage, NextPageStart: page.NextPageStart}, nil
+	})
+	if err != nil {
+		return result.User{}, err
+	}
+	if len(found) == 1 {
+		user := found[0]
 		return result.User{
 			Name:         strings.TrimSpace(safederef.String(user.Name)),
 			Slug:         strings.TrimSpace(safederef.String(user.Slug)),
@@ -766,7 +791,7 @@ func resolveIdentity(ctx context.Context, cfg config.AppConfig, newUsersClient f
 		}, nil
 	}
 
-	return result.User{}, apperrors.New(apperrors.KindAuthentication, "failed to resolve identity: authenticated username not found", nil)
+	return result.User{Name: name}, nil
 }
 
 func identityHumanSummary(identity result.User) string {

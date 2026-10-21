@@ -3477,11 +3477,13 @@ func partialReviewerAddError(added, failed []string, causes []error) error {
 // caller: the author it stamps on a pull request, and the participant whose
 // review status is the caller's own.
 //
-// The server's own slug is preferred over the configured username: the latter
-// is whatever the user typed when configuring the CLI and may be an email
-// address or differ in case, and a mismatch means the author survives the
-// reviewer filter and Bitbucket rejects the whole create with "author cannot be
-// a reviewer".
+// The server's own name for the caller is preferred over the configured
+// username: the latter is whatever the user typed when configuring the CLI and
+// may be an email address or differ in case, and a mismatch means the author
+// survives the reviewer filter and Bitbucket rejects the whole create with
+// "author cannot be a reviewer". It is the login name, which reviewers are named
+// by, and not the slug, which differs from it for a name with an @ or a + in it
+// (#807).
 //
 // Under a token there may be no configured username at all, which is why the
 // review dry runs ask here rather than reading the config directly. Without it
@@ -3489,8 +3491,8 @@ func partialReviewerAddError(added, failed []string, causes []error) error {
 // where the status is already what was asked for. Safe, but wrong, and the
 // server will say so for free: X-AUSERNAME rides on any authenticated response.
 func resolveCurrentUsername(ctx context.Context, client *httpclient.Client, cfg config.AppConfig) string {
-	if slug, err := client.CurrentUserSlug(ctx); err == nil {
-		if trimmed := strings.TrimSpace(slug); trimmed != "" {
+	if name, err := client.CurrentUserName(ctx); err == nil {
+		if trimmed := strings.TrimSpace(name); trimmed != "" {
 			return trimmed
 		}
 	}

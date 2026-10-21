@@ -6,9 +6,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -115,21 +118,51 @@ func (client *Client) GetRaw(ctx context.Context, path string, query map[string]
 	return body, nil
 }
 
-// CurrentUserSlug returns the authenticated user's slug. Bitbucket echoes the
-// authenticated username in the X-AUSERNAME response header on every
-// authenticated request, so a cheap GET is enough to resolve it without the
-// side effects of writing anything to the server.
+// CurrentUserSlug returns the authenticated user's slug, for a URL path that
+// names them.
+//
+// X-AUSERNAME names the caller by login name, which differs from the slug for
+// a name with an @ or a + in it (#807), so the name is looked up among the
+// users whose name contains it. A project or repository access token's user is
+// no Bitbucket user and has no slug, and is refused as not found.
 func (client *Client) CurrentUserSlug(ctx context.Context) (string, error) {
-	_, header, err := client.do(ctx, http.MethodGet, "/rest/api/latest/users", map[string]string{"limit": "1"}, nil, true)
+	name, err := client.CurrentUserName(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	slug := strings.TrimSpace(header.Get("X-AUSERNAME"))
-	if slug == "" {
-		return "", apperrors.New(apperrors.KindAuthentication, "could not determine the authenticated user: no X-AUSERNAME header in the response", nil)
+	type user struct {
+		Name string `json:"name"`
+		Slug string `json:"slug"`
 	}
-	return slug, nil
+	// The filter matches any name, display name or email address containing
+	// the text, so the person can be pages in for a common name.
+	found, err := openapi.PageThrough(ctx, 0, 1, func(ctx context.Context, start, limit int) (openapi.Page[user], error) {
+		var page struct {
+			Values        []user `json:"values"`
+			IsLastPage    *bool  `json:"isLastPage"`
+			NextPageStart *int   `json:"nextPageStart"`
+		}
+		query := map[string]string{"filter": name, "start": strconv.Itoa(start), "limit": strconv.Itoa(limit)}
+		if err := client.GetJSON(ctx, "/rest/api/latest/users", query, &page); err != nil {
+			return openapi.Page[user]{}, err
+		}
+		// Bitbucket matches a login name without regard to case.
+		named := slices.DeleteFunc(page.Values, func(candidate user) bool {
+			return !strings.EqualFold(candidate.Name, name) || strings.TrimSpace(candidate.Slug) == ""
+		})
+
+		return openapi.Page[user]{Values: named, IsLastPage: page.IsLastPage, NextPageStart: page.NextPageStart}, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	if len(found) == 1 {
+		return found[0].Slug, nil
+	}
+
+	return "", apperrors.New(apperrors.KindNotFound,
+		fmt.Sprintf("the authenticated user %q has no slug: a project or repository access token's user is not a Bitbucket user", name), nil)
 }
 
 // CurrentUserName returns the login name Bitbucket authenticated the request
