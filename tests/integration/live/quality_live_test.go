@@ -1138,8 +1138,7 @@ func TestLiveQualityEmptyAnswers(t *testing.T) {
 	commitID := repo.CommitIDs[0]
 
 	t.Run("build status stats for a commit nobody built", func(t *testing.T) {
-		// includeUnique is not read back: it adds a result only on a built commit, and RestBuildStats has no field to carry one.
-		stats, err := service.GetBuildStatusStats(ctx, commitID, true)
+		stats, err := service.GetBuildStatusStats(ctx, commitID)
 		if err != nil {
 			t.Fatalf("stats for an unbuilt commit must not fail: %v", err)
 		}

@@ -15,14 +15,8 @@ import (
 var deprecatedFlagRuns = map[string][]string{
 	"bb ai mcp tools --read-only": {"ai", "mcp", "tools", "--read-only"},
 
-	"bb build required delete --limit":       {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--limit", "1"},
-	"bb build required delete --all":         {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--all"},
-	"bb build status stats --include-unique": {"build", "status", "stats", "a1b2c3d", "--include-unique"},
-	"bb build status get --include-unique":   {"build", "status", "get", "a1b2c3d", "--repo", "PROJ/repo", "--include-unique"},
-	"bb build status set --include-unique": {
-		"build", "status", "set", "a1b2c3d", "--repo", "PROJ/repo", "--key", "ci", "--state", "INPROGRESS",
-		"--url", "https://ci.example.com/builds/128", "--include-unique",
-	},
+	"bb build required delete --limit": {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--limit", "1"},
+	"bb build required delete --all":   {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--all"},
 }
 
 // deprecatedFlagsThatAreNotRunHere serve until stopped, so the package that

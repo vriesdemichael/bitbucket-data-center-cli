@@ -158,8 +158,6 @@ func New(deps Dependencies) *cobra.Command {
     --name "Unit tests" --description "3 of 412 tests failed"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb build status set", "include-unique")
-
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -241,8 +239,6 @@ func New(deps Dependencies) *cobra.Command {
   bb build status get a1b2c3d --repo PROJ/repo --order-by NEWEST`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb build status get", "include-unique")
-
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -284,7 +280,6 @@ func New(deps Dependencies) *cobra.Command {
 	enumflag.Register(getStatusCmd.Flags(), &getOrderBy, "order-by", "", buildOrderings, "Build status ordering")
 	statusCmd.AddCommand(getStatusCmd)
 
-	var includeUnique bool
 	statusCmd.AddCommand(&cobra.Command{
 		Use:   "stats <commit>...",
 		Short: "Get build status summary counts for one or more commits",
@@ -292,8 +287,6 @@ func New(deps Dependencies) *cobra.Command {
   bb build status stats a1b2c3d e4f5a6b`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb build status stats", "include-unique")
-
 			_, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -308,7 +301,7 @@ func New(deps Dependencies) *cobra.Command {
 
 			service := qualityservice.NewService(client)
 			if len(args) == 1 {
-				stats, err := service.GetBuildStatusStats(cmd.Context(), args[0], includeUnique)
+				stats, err := service.GetBuildStatusStats(cmd.Context(), args[0])
 				if err != nil {
 					return err
 				}
@@ -363,10 +356,6 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	})
-	// Accepted, and inert: bb prints the counts whether or not Bitbucket names
-	// the one build (ADR-084).
-	statusCmd.PersistentFlags().BoolVar(&includeUnique, "include-unique", false, "Deprecated: has no effect")
-	_ = statusCmd.PersistentFlags().MarkHidden("include-unique")
 
 	requiredCmd := &cobra.Command{
 		Use:   "required",
