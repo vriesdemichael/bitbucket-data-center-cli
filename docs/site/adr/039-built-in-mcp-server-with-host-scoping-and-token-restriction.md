@@ -5,7 +5,7 @@ search:
 
 # ADR-039: Built-in MCP server with explicit host scoping and token capability restriction
 
-`bb ai mcp serve` is an MCP server over stdio, and it serves one Bitbucket instance. When more than one is configured, `--host` is required, and without it the server exits at once with an error saying so rather than pick one. It acts with the credential its environment supplies: an MCP client that sets a read-only token as `BITBUCKET_TOKEN` in the server's env block gets a server with that token's rights and no more. No flag takes the credential (ADR-083). `--tools` and `--exclude` narrow the tools it offers, and `bb ai mcp tools` lists them with whether each writes and whether it asks. Which tools ask the person, and what `--read-only` leaves, is ADR-098.
+`bb ai mcp serve` is an MCP server over stdio, and it serves one Bitbucket instance. When more than one is configured, `--host` is required, and without it the server exits at once with an error saying so rather than pick one. It acts with the credential its environment supplies: an MCP client that sets a read-only token as `BITBUCKET_TOKEN` in the server's env block gets a server with that token's rights and no more. No flag takes the credential (ADR-083). `--tools` and `--exclude` narrow the tools it offers, and `bb ai mcp tools` lists them with whether each writes and whether it asks. Which tools ask the person, and what `--read-only` leaves, is ADR-103.
 
 No record or hand-written page lists the tools. `mcp.AllSpecs()` is the catalogue, `bb ai mcp tools` prints it, and a client receives it when it connects. `TestADRDoesNotNameToolsThatDoNotExist` fails when a record names a tool the server does not have.
 

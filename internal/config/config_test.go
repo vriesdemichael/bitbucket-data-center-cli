@@ -2606,3 +2606,64 @@ func TestPolicyOriginDescription(t *testing.T) {
 		})
 	}
 }
+
+// MCPElicitationOptIn reads mcp_elicitation_opt_in from your own configuration
+// file, which the schema has to accept at the top level, and from policy,
+// where it can switch asking on and never off (ADR-103).
+func TestMCPElicitationOptInReadsYourOwnFileAndPolicy(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
+
+	if asks, err := MCPElicitationOptIn(false); err != nil || asks {
+		t.Fatalf("with nothing set: asks %v, %v; want false", asks, err)
+	}
+	if asks, err := MCPElicitationOptIn(true); err != nil || !asks {
+		t.Fatalf("with the flag: asks %v, %v; want true", asks, err)
+	}
+
+	if err := os.WriteFile(configPath, []byte("mcp_elicitation_opt_in: true\n"), 0o600); err != nil {
+		t.Fatalf("write the configuration file: %v", err)
+	}
+	if asks, err := MCPElicitationOptIn(false); err != nil || !asks {
+		t.Fatalf("with mcp_elicitation_opt_in in your own file: asks %v, %v; want true", asks, err)
+	}
+}
+
+// Policy requires asking whatever the flag and your own file say, and a file
+// bb cannot read is an error rather than a quiet "no".
+func TestMCPElicitationOptInFollowsPolicyAndRefusesAnUnreadableFile(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	systemPath := filepath.Join(t.TempDir(), "system.yaml")
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", systemPath)
+
+	if err := os.WriteFile(systemPath, []byte("mcp_elicitation_opt_in: true\n"), 0o600); err != nil {
+		t.Fatalf("write the system file: %v", err)
+	}
+	if err := os.WriteFile(configPath, []byte("mcp_elicitation_opt_in: false\n"), 0o600); err != nil {
+		t.Fatalf("write your own file: %v", err)
+	}
+	if asks, err := MCPElicitationOptIn(false); err != nil || !asks {
+		t.Fatalf("with the policy key set: asks %v, %v; want true", asks, err)
+	}
+
+	if err := os.WriteFile(systemPath, []byte("hosts: 5\n"), 0o600); err != nil {
+		t.Fatalf("write the system file: %v", err)
+	}
+	if _, err := MCPElicitationOptIn(false); err == nil {
+		t.Fatal("a system file bb cannot read answered as though it said nothing")
+	}
+
+	if err := os.WriteFile(systemPath, []byte("{}\n"), 0o600); err != nil {
+		t.Fatalf("write the system file: %v", err)
+	}
+	if err := os.WriteFile(configPath, []byte("hosts: 5\n"), 0o600); err != nil {
+		t.Fatalf("write your own file: %v", err)
+	}
+	if _, err := MCPElicitationOptIn(false); err == nil {
+		t.Fatal("your own file, unreadable, answered as though it said nothing")
+	}
+}

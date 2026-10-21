@@ -57,6 +57,10 @@ func ConfigJSONSchema() map[string]any {
 			"type":        "boolean",
 			"description": "Make bb read-only machine-wide: every command that changes something in Bitbucket is refused and 'bb ai mcp serve' offers only the tools that read, while reads, --dry-run and changes to the local machine still run. System configuration or registry policy only.",
 		},
+		"mcp_elicitation_opt_in": map[string]any{
+			"type":        "boolean",
+			"description": "Make 'bb ai mcp serve' ask the person in the MCP client before each call of a tool that decides a merge, as --elicitation-opt-in does. Read from your own configuration file, and from system configuration or registry policy, where true requires it for every server and false does not switch it off.",
+		},
 		"update_base_url": map[string]any{
 			"type":        "string",
 			"description": "Base URL of internal release manifest and asset mirror.",
@@ -170,6 +174,7 @@ func ConfigJSONSchema() map[string]any {
 			"update_base_url":            policyProps["update_base_url"],
 			"allow_http_update":          policyProps["allow_http_update"],
 			"mcp_audit_file":             policyProps["mcp_audit_file"],
+			"mcp_elicitation_opt_in":     policyProps["mcp_elicitation_opt_in"],
 			"update_trusted_root":        policyProps["update_trusted_root"],
 			"update_tuf_url":             policyProps["update_tuf_url"],
 			"update_signature_identity":  policyProps["update_signature_identity"],

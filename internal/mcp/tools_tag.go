@@ -65,9 +65,8 @@ type CreateTagOutput struct {
 
 func specCreateTag() Spec {
 	tool := &mcp.Tool{
-		Name: "create_tag",
-		Description: "Create a tag on a specific commit or ref. Use for release tagging after a PR is merged. " +
-			"Asks the person to confirm in the client before it runs.",
+		Name:        "create_tag",
+		Description: "Create a tag on a specific commit or ref. Use for release tagging after a PR is merged.",
 		// Not destructive, since it only adds, though it asks. Idempotent: a
 		// second call finds the tag there and changes nothing.
 		Annotations: writes("Create tag", false, true),

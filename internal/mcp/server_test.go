@@ -359,8 +359,13 @@ func TestServerAdvertisesWhatItServesAndNothingElse(t *testing.T) {
 func TestInstructionsFollowTheConfiguration(t *testing.T) {
 	t.Parallel()
 
-	if text := instructions(ServerOptions{}); !strings.Contains(text, "confirm") || strings.Contains(text, "read-only") {
+	// Nothing asks by default, so the instructions say nothing about asking
+	// (ADR-103).
+	if text := instructions(ServerOptions{}); strings.Contains(text, "confirm") || strings.Contains(text, "read-only") {
 		t.Errorf("default instructions: %q", text)
+	}
+	if text := instructions(ServerOptions{ElicitationOptIn: true}); !strings.Contains(text, "confirm") || strings.Contains(text, "read-only") {
+		t.Errorf("instructions of a server that asks: %q", text)
 	}
 	if text := instructions(ServerOptions{ReadOnly: true}); !strings.Contains(text, "read-only") || strings.Contains(text, "confirm") {
 		t.Errorf("read-only instructions: %q", text)

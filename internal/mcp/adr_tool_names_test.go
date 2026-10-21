@@ -22,7 +22,8 @@ var toolNamePattern = regexp.MustCompile(`\b[a-z]+(?:_[a-z]+){1,3}\b`)
 // into a policy file. The list is exhaustive on purpose — anything not on it is
 // still required to be a real tool.
 var prosePermitted = map[string]bool{
-	"mcp_audit_file": true,
+	"mcp_audit_file":         true,
+	"mcp_elicitation_opt_in": true,
 }
 
 // TestADRDoesNotNameToolsThatDoNotExist guards the drift that made ADR-039

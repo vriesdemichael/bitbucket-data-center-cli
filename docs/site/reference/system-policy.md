@@ -51,6 +51,7 @@ a different name and a registry type. The names are not the YAML spellings:
 | `DisableBB` | boolean | `disable_bb` |
 | `DisableMCPServer` | boolean | `disable_mcp_server` |
 | `ReadOnly` | boolean | `read_only` |
+| `MCPElicitationOptIn` | boolean | `mcp_elicitation_opt_in` |
 
 A **boolean** is a `REG_DWORD` of `0` or `1`, or a `REG_SZ`. A `REG_DWORD` other
 than `0` reads as true. The string form takes the spellings an administrator is
@@ -105,6 +106,7 @@ writes its audit trail on Windows needs `%ProgramData%\bb\config.yaml`.
 | `disable_bb` | boolean | Switch `bb` off: every command is refused except the few that only explain it. See [below](#switching-bb-off-or-part-of-it). |
 | `disable_mcp_server` | boolean | Refuse `bb ai mcp serve`, so no MCP client can use `bb`; the rest of `bb` keeps working. |
 | `read_only` | boolean | Refuse every command that changes something in Bitbucket, and start `bb ai mcp serve` read-only. |
+| `mcp_elicitation_opt_in` | boolean | Make every `bb ai mcp serve` ask the person in the MCP client before each call of a tool that decides a merge, as `--elicitation-opt-in` does. `false` does not switch asking off. |
 
 !!! warning "`allowed_hosts` constrains the host, not the port or the path"
 

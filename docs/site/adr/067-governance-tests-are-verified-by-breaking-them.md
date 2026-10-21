@@ -82,7 +82,7 @@ A governance test asserts an invariant over everything of one kind the repositor
 - TestTheServerListsEveryTemplateAndPrompt: a read-only server lists every resource template, with a name, title and description, and every prompt, with a title and description.
 - TestToolsThatAskAreTheOnesThatDecideAMerge: the tools that ask the person are exactly the ones that decide a merge, and create_tag.
 - TestReadOnlyToolsDoNotAsk: a tool annotated read-only asks nothing.
-- TestLiveMCPToolsThatAskChangeNothingUnlessAccepted: every MCP tool that asks is refused with -32021 to a client that cannot ask and stopped when the person declines, and Bitbucket reads back unchanged.
+- TestLiveMCPToolsThatAskChangeNothingUnlessAccepted: on a server started with --elicitation-opt-in, every MCP tool that asks is refused with -32021 to a client that cannot ask and stopped when the person declines, and Bitbucket reads back unchanged.
 - TestEveryToolDeclaresItsHintsAndTitle: every MCP tool states all four hints and a title.
 - TestEveryToolSendsAllFourHints: tools/list carries all four hints for every MCP tool, as the SDK encodes them.
 - TestNoToolIsOpenWorld: no MCP tool is annotated open-world.

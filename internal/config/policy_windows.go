@@ -115,6 +115,7 @@ func parseRegistryPolicy(k registryReader) (PolicyConfig, []PolicyProblem) {
 		{"DisableBB", true, &policy.DisableBB},
 		{"DisableMCPServer", true, &policy.DisableMCPServer},
 		{"ReadOnly", true, &policy.ReadOnly},
+		{"MCPElicitationOptIn", true, &policy.ElicitationOptIn},
 	} {
 		value, problem := registryBool(k, flag.name, flag.restrictive)
 		if value != nil {

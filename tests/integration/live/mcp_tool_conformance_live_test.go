@@ -139,7 +139,7 @@ func TestLiveMCPEveryToolReturnsAClientCompatibleResult(t *testing.T) {
 				assertMCPToolAnswer(t, fixture, name, answer)
 			})
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--elicitation-opt-in")
 
 	// Every tool that always asks asked, once: the sweep calls each tool once.
 	// Its update_pull_request renames a pull request, which does not ask.

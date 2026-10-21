@@ -99,10 +99,14 @@ var (
 // adrSkippedDirectories hold nothing a reader follows: git's own data, scratch
 // output, other checkouts, and the vendored Atlassian specification.
 var adrSkippedDirectories = map[string]bool{
-	".git":         true,
-	".tmp":         true,
-	".claude":      true,
-	"node_modules": true,
+	".git": true,
+	".tmp": true,
+	// A released note says what was true when it shipped, and is not edited
+	// afterwards: a record it cites may since have been deleted, and the
+	// site's versioned docs keep that record for the release.
+	filepath.FromSlash("docs/release-notes"): true,
+	".claude":                                true,
+	"node_modules":                           true,
 	filepath.FromSlash("docs/reference/atlassian"): true,
 }
 
