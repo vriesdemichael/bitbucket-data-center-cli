@@ -439,6 +439,12 @@ func specAddPRComment() Spec {
 			if err != nil {
 				return nil, AddPRCommentOutput{}, fmt.Errorf("add_pr_comment failed: %w", err)
 			}
+			// Bitbucket ignores a field it does not take, so a release that
+			// keeps no new comment pending publishes it at once. Said, rather
+			// than told to the person as waiting for them.
+			if !strings.EqualFold(comment.State, "PENDING") {
+				return nil, AddPRCommentOutput{}, fmt.Errorf("add_pr_comment: Bitbucket published comment %d at once instead of keeping it in the person's pending review, so everyone can read it now. Tell the person, and do not post it again", comment.ID)
+			}
 			return nil, AddPRCommentOutput{Comment: comment}, nil
 		}
 	})
