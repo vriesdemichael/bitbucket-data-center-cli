@@ -211,7 +211,7 @@ func TestASelectedLineIsCommentedOn(t *testing.T) {
 	if len(calls) != 1 {
 		t.Fatalf("the view called add_pr_comment %d times, want once: %v", len(calls), calls)
 	}
-	for key, want := range map[string]any{"project": "PAY", "repo": "ledger", "pr_id": "42", "path": "internal/ledger/ledger.go", "line": float64(10), "line_type": "ADDED", "text": "Say which rounding."} {
+	for key, want := range map[string]any{"project": "PAY", "repo": "ledger", "pr_id": float64(42), "path": "internal/ledger/ledger.go", "line": float64(10), "line_type": "ADDED", "text": "Say which rounding."} {
 		if calls[0][key] != want {
 			t.Errorf("the comment sent %s = %v, want %v (all: %v)", key, calls[0][key], want, calls[0])
 		}

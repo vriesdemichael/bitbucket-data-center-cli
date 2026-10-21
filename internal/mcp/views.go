@@ -133,10 +133,10 @@ func (offers viewOffers) kind(kind string) bool {
 
 // ShowInput is the argument set for show.
 type ShowInput struct {
-	Kind    string `json:"kind"`
-	Project string `json:"project,omitempty" jsonschema:"Bitbucket project key"`
-	Repo    string `json:"repo,omitempty" jsonschema:"Repository slug"`
-	ID      string `json:"id,omitempty" jsonschema:"Pull request ID, for kind pull_request and diff"`
+	Kind    string        `json:"kind"`
+	Project string        `json:"project,omitempty" jsonschema:"Bitbucket project key"`
+	Repo    string        `json:"repo,omitempty" jsonschema:"Repository slug"`
+	ID      PullRequestID `json:"id,omitempty" jsonschema:"Pull request ID, for kind pull_request and diff"`
 	// State's description is set in specShow, from the values the service
 	// accepts, as list_pull_requests does.
 	State string `json:"state,omitempty"`
@@ -344,15 +344,15 @@ func checkShowInput(in ShowInput) error {
 		if in.Project == "" || in.Repo == "" {
 			return fmt.Errorf("kind pull_request_form needs project and repo")
 		}
-		if in.ID == "" && strings.TrimSpace(in.FromRef) == "" {
+		if in.ID == 0 && strings.TrimSpace(in.FromRef) == "" {
 			return fmt.Errorf("kind pull_request_form needs from_ref for a new pull request, or id to edit one")
 		}
 	case showKindPullRequest, showKindDiff:
-		if in.Project == "" || in.Repo == "" || in.ID == "" {
+		if in.Project == "" || in.Repo == "" || in.ID == 0 {
 			return fmt.Errorf("kind %s needs project, repo and id", in.Kind)
 		}
 	case showKindPullRequests:
-		if in.ID != "" {
+		if in.ID != 0 {
 			return fmt.Errorf("kind pull_requests takes no id; use kind pull_request to show one")
 		}
 	}
@@ -361,8 +361,8 @@ func checkShowInput(in ShowInput) error {
 
 func showTarget(in ShowInput) string {
 	switch {
-	case in.ID != "":
-		return fmt.Sprintf("%s/%s#%s", in.Project, in.Repo, in.ID)
+	case in.ID != 0:
+		return fmt.Sprintf("%s/%s#%d", in.Project, in.Repo, in.ID)
 	case in.Repo != "":
 		return in.Project + "/" + in.Repo
 	default:
@@ -632,13 +632,13 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 		}
 		summary = summarizePullRequests(payload.PullRequests, list.LimitReached)
 	case showKindDiff:
-		pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+		pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID.String())
 		if err != nil {
 			return viewPayload{}, nil, viewSummary{}, err
 		}
 		result, err := diffservice.NewService(c.OpenAPI).DiffPR(ctx, diffservice.DiffPRInput{
 			Repository:    diffservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-			PullRequestID: in.ID,
+			PullRequestID: in.ID.String(),
 			Output:        diffservice.OutputKindRaw,
 		})
 		if err != nil {
@@ -659,7 +659,7 @@ func buildView(ctx context.Context, c Clients, in ShowInput, offers viewOffers) 
 			}
 		}
 		files, kept, truncated := splitPatch(result.Patch, maxViewFileBytes, maxViewPatchBytes)
-		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
+		payload.PullRequest = &viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID.String())}
 		payload.Diff = &viewDiff{Files: files, Patch: kept, Truncated: truncated}
 		payload.Me = meFor(currentUsername(ctx, c), pr)
 		summary = summarizeDiff(in, pr, result.Patch)
@@ -747,7 +747,7 @@ func pullRequestForView(ctx context.Context, c Clients, in ShowInput, offers vie
 
 	view := viewPullRequest{
 		PullRequest:   out.PullRequest,
-		URL:           pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID),
+		URL:           pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID.String()),
 		ReviewSummary: &out.ReviewSummary,
 	}
 
@@ -770,7 +770,7 @@ func pullRequestForView(ctx context.Context, c Clients, in ShowInput, offers vie
 	view.RequiredChecks, view.RequiredKnown = requiredChecksForView(ctx, c, in.Project, in.Repo, out.PullRequest, listing)
 
 	ref := pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}
-	if autoMerge, err := pullrequestservice.NewService(c.HTTP).GetAutoMerge(ctx, ref, in.ID); err == nil && autoMerge.Enabled {
+	if autoMerge, err := pullrequestservice.NewService(c.HTTP).GetAutoMerge(ctx, ref, in.ID.String()); err == nil && autoMerge.Enabled {
 		view.AutoMerge = &autoMerge
 	}
 
@@ -782,12 +782,12 @@ func pullRequestForView(ctx context.Context, c Clients, in ShowInput, offers vie
 // both. A Bitbucket whose timeline cannot be read here gets the summary
 // get_pull_request falls back to, and no activity.
 func pullRequestWithActivity(ctx context.Context, c Clients, in ShowInput) (GetPullRequestOutput, *viewActivity, map[string]string, error) {
-	pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+	pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID.String())
 	if err != nil {
 		return GetPullRequestOutput{}, nil, nil, err
 	}
 	activities, available, err := pullrequestactivityservice.NewService(c.OpenAPI).TryList(ctx,
-		pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+		pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID.String())
 	if err != nil {
 		return GetPullRequestOutput{}, nil, nil, err
 	}
@@ -796,7 +796,7 @@ func pullRequestWithActivity(ctx context.Context, c Clients, in ShowInput) (GetP
 		return out, nil, nil, err
 	}
 	threads, summary := pullrequestactivityservice.ExtractThreads(activities, pullrequestactivityservice.ThreadOptions{
-		WithReplies: true, BaseURL: c.BaseURL, ProjectKey: in.Project, Slug: in.Repo, PullRequestID: in.ID,
+		WithReplies: true, BaseURL: c.BaseURL, ProjectKey: in.Project, Slug: in.Repo, PullRequestID: in.ID.String(),
 	})
 	byID := make(map[int64]pullrequestactivityservice.Thread, len(threads))
 	for _, thread := range threads {
@@ -1153,7 +1153,7 @@ func summarizePullRequests(prs []viewPullRequest, limitReached bool) viewSummary
 func summarizeDiff(in ShowInput, pr pullrequestservice.PullRequest, patch string) viewSummary {
 	files, additions, deletions := diffCounts(patch)
 	return viewSummary{
-		subject: fmt.Sprintf("the diff of %s/%s#%s %q", in.Project, in.Repo, in.ID, pr.Title),
+		subject: fmt.Sprintf("the diff of %s/%s#%d %q", in.Project, in.Repo, in.ID, pr.Title),
 		form:    "an interactive view",
 		state:   fmt.Sprintf("%d files, +%d -%d.", files, additions, deletions),
 	}

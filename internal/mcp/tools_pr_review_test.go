@@ -87,7 +87,7 @@ func TestListPRCommentsRejectsUnknownState(t *testing.T) {
 		t.Fatalf("ClientsFromConfig failed: %v", err)
 	}
 
-	result := callTool(t, specListPRComments(), clients, map[string]any{"project": "TEST", "repo": "demo", "pr_id": "7", "state": "nonsense"})
+	result := callTool(t, specListPRComments(), clients, map[string]any{"project": "TEST", "repo": "demo", "pr_id": 7, "state": "nonsense"})
 	if !result.IsError {
 		t.Fatalf("expected an error result for an unknown state, got: %s", resultText(result))
 	}

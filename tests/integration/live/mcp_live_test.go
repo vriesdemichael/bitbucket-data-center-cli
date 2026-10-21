@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -432,7 +433,7 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 				return payload.ReviewSummary.CountsSource
 			}
 
-			base := map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID}
+			base := map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID)}
 			if got := countsSource(t, base); got == "none" || got == "" {
 				t.Errorf("counts_source = %q without skip_review_summary, want the summary to have been read", got)
 			}
@@ -469,7 +470,7 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 				t.Errorf("get_pull_request with id %s read pull request %s", pullRequestID, got)
 			}
 			conflicting, err := session.CallTool(callCtx, &mcp.CallToolParams{Name: "get_pull_request", Arguments: map[string]any{
-				"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "id": pullRequestID + "0",
+				"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "id": pullRequestID + "0",
 			}})
 			if err != nil || conflicting == nil || !conflicting.IsError {
 				t.Errorf("get_pull_request with pr_id and id naming different pull requests was not refused: %+v, %v", conflicting, err)
@@ -502,7 +503,7 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 				} `json:"threads"`
 			}
 			raw := callAndDecode(t, session, callCtx, "list_pr_comments", map[string]any{
-				"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID,
+				"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID),
 			}, &comments)
 
 			if len(comments.Threads) == 0 {
@@ -543,7 +544,7 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 				} `json:"threads"`
 			}
 			scopedRaw := callAndDecode(t, session, callCtx, "list_pr_comments", map[string]any{
-				"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "path": "mcp-skip.txt",
+				"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "path": "mcp-skip.txt",
 			}, &scoped)
 
 			var sawAnchored, sawPlain bool
@@ -580,7 +581,7 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 					} `json:"threads"`
 				}
 				stateRaw := callAndDecode(t, session, callCtx, "list_pr_comments", map[string]any{
-					"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "state": state,
+					"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "state": state,
 				}, &payload)
 
 				texts := make([]string, 0, len(payload.Threads))
@@ -1181,17 +1182,17 @@ func TestLiveMCPReviewWaitsForThePersonToPublish(t *testing.T) {
 			} `json:"comment"`
 		}
 		callAndDecode(t, session, callCtx, "add_pr_comment",
-			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "text": remark}, &added)
+			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "text": remark}, &added)
 		remarkID = added.Comment.ID
 		callAndDecode(t, session, callCtx, "add_pr_comment",
-			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "text": reply, "parent_id": remarkID}, &added)
+			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "text": reply, "parent_id": remarkID}, &added)
 		// On a line too: Bitbucket sends an inline draft's path in a shape of its
 		// own, which the count has to read (OPENAPI-037).
 		callAndDecode(t, session, callCtx, "add_pr_comment",
-			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "text": inline, "path": "mcp-review.txt", "line": 1}, &added)
+			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "text": inline, "path": "mcp-review.txt", "line": 1}, &added)
 
 		callAndDecode(t, session, callCtx, "prepare_pr_review",
-			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "suggested_status": "needs_work"}, &prepared)
+			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "suggested_status": "needs_work"}, &prepared)
 	}, "ai", "mcp", "serve", "--allow-writes", "--elicitation-opt-in")
 
 	if asked := answers.questions(); len(asked) != 0 {
@@ -1286,7 +1287,7 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 
 	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
 		callCtx := context.Background()
-		base := map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID}
+		base := map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID)}
 
 		add := func(t *testing.T, extra map[string]any) float64 {
 			t.Helper()
@@ -1405,4 +1406,17 @@ func TestLiveMCPCreatePullRequestTargetsTheDefaultBranch(t *testing.T) {
 			t.Errorf("the pull request targets %v, want the default branch mcp-default-base", read["targetBranch"])
 		}
 	}, "ai", "mcp", "serve", "--allow-writes")
+}
+
+// liveID is a pull request's ID, which the harness hands out as a string, as
+// the MCP tools take it: an integer (#809).
+func liveID(t *testing.T, id string) int64 {
+	t.Helper()
+
+	number, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		t.Fatalf("%q is not a pull request ID: %v", id, err)
+	}
+
+	return number
 }

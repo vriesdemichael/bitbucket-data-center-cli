@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"unicode"
@@ -84,6 +85,14 @@ type resourceRef struct {
 	id      string
 	path    string
 	at      string
+}
+
+// pullRequestID is the ref's id as the pull request tools take it. validate
+// holds it to at most 18 digits, which an int64 always holds.
+func (ref resourceRef) pullRequestID() PullRequestID {
+	id, _ := strconv.ParseInt(ref.id, 10, 64)
+
+	return PullRequestID(id)
 }
 
 // AllResourceSpecs returns every resource template bb has. A server serves
@@ -435,7 +444,7 @@ func resourceError(uri string, err error) error {
 }
 
 func readPullRequestResource(ctx context.Context, c Clients, ref resourceRef) ([]*mcp.ResourceContents, error) {
-	out, err := pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: ref.project, Repo: ref.repo, PRID: ref.id})
+	out, err := pullRequestWithReviewSummary(ctx, c, GetPullRequestInput{Project: ref.project, Repo: ref.repo, PRID: ref.pullRequestID()})
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +482,7 @@ func readPullRequestThreadsResource(ctx context.Context, c Clients, ref resource
 	out, err := pullRequestThreads(ctx, c, ListPRCommentsInput{
 		Project: ref.project,
 		Repo:    ref.repo,
-		PRID:    ref.id,
+		PRID:    ref.pullRequestID(),
 		State:   "open",
 		Limit:   threadResourceLimit,
 	})
@@ -660,11 +669,14 @@ func linkResource(tool string, arguments json.RawMessage, result *mcp.CallToolRe
 		return
 	}
 	argument := func(name string) string {
-		if name == "" {
-			return ""
+		switch value := decoded[name].(type) {
+		case string:
+			return strings.TrimSpace(value)
+		case float64:
+			// A pull request ID, which the tools take as an integer (#809).
+			return strconv.FormatFloat(value, 'f', -1, 64)
 		}
-		value, _ := decoded[name].(string)
-		return strings.TrimSpace(value)
+		return ""
 	}
 
 	id := argument(link.id)

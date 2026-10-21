@@ -94,7 +94,7 @@ func TestLiveMCPWritesCarryTheAIDisclosure(t *testing.T) {
 		// carries is kept, not added twice.
 		edited := strings.Replace(held, "Adds retries.", "Adds retries, and logs each one.", 1)
 		callAndDecode(t, session, callCtx, "update_pull_request",
-			with(map[string]any{"pr_id": id, "version": version, "description": edited}), new(map[string]any))
+			with(map[string]any{"pr_id": liveID(t, id), "version": version, "description": edited}), new(map[string]any))
 		held, version = description(t, id)
 		if held != "Adds retries, and logs each one.\n\n"+line {
 			t.Errorf("a description sent back with its line reads %q, want the line once", held)
@@ -102,7 +102,7 @@ func TestLiveMCPWritesCarryTheAIDisclosure(t *testing.T) {
 
 		// Rewritten without it, it comes back.
 		callAndDecode(t, session, callCtx, "update_pull_request",
-			with(map[string]any{"pr_id": id, "version": version, "description": "Retries refunds."}), new(map[string]any))
+			with(map[string]any{"pr_id": liveID(t, id), "version": version, "description": "Retries refunds."}), new(map[string]any))
 		if held, _ = description(t, id); held != "Retries refunds.\n\n"+line {
 			t.Errorf("a description rewritten without its line reads %q, want the line added", held)
 		}
@@ -112,7 +112,7 @@ func TestLiveMCPWritesCarryTheAIDisclosure(t *testing.T) {
 				ID float64 `json:"id"`
 			} `json:"comment"`
 		}
-		callAndDecode(t, session, callCtx, "add_pr_comment", with(map[string]any{"pr_id": id, "text": "Looks fine."}), &commented)
+		callAndDecode(t, session, callCtx, "add_pr_comment", with(map[string]any{"pr_id": liveID(t, id), "text": "Looks fine."}), &commented)
 		commentID := fmt.Sprintf("%d", int64(commented.Comment.ID))
 		if stored := repoCLIPRComment(t, id, commentID); stored["text"] != "Looks fine.\n\n"+line {
 			t.Errorf("the comment reads %q, want the text and then %q", stored["text"], line)
@@ -167,7 +167,7 @@ func TestLiveMCPWithoutTheLineNothingIsPublishedUnderThePersonsName(t *testing.T
 			} `json:"comment"`
 		}
 		callAndDecode(t, session, context.Background(), "add_pr_comment",
-			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "text": "Looks fine."}, &commented)
+			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "text": "Looks fine."}, &commented)
 		stored := repoCLIPRComment(t, pullRequestID, fmt.Sprintf("%d", int64(commented.Comment.ID)))
 		if stored["text"] != "Looks fine." || stored["pending"] != true {
 			t.Errorf("the comment reads %q, pending %v; want it as written, waiting in the review", stored["text"], stored["pending"])

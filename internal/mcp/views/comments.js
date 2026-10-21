@@ -129,7 +129,7 @@ function fileCrumb(path, pr, view, threadId) {
     type: "button",
     class: "file-crumb",
     title: "Open " + path + " in the diff",
-    onclick: () => openInView(view, { kind: "diff", project: pr.repository.project_key, repo: pr.repository.slug, id: String(pr.id) },
+    onclick: () => openInView(view, { kind: "diff", project: pr.repository.project_key, repo: pr.repository.slug, id: pr.id },
       false, null, { path, thread: threadId }),
   }, label);
 }

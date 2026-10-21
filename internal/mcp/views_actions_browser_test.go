@@ -104,7 +104,7 @@ func TestAReplyGoesThroughTheModelsToolIntoTheReview(t *testing.T) {
 	if len(calls) != 2 {
 		t.Fatalf("the view called add_pr_comment %d times, want twice: %v", len(calls), calls)
 	}
-	for key, want := range map[string]any{"project": "PAY", "repo": "ledger", "pr_id": "42", "text": "Capped at thirty seconds.", "parent_id": float64(1)} {
+	for key, want := range map[string]any{"project": "PAY", "repo": "ledger", "pr_id": float64(42), "text": "Capped at thirty seconds.", "parent_id": float64(1)} {
 		if calls[1][key] != want {
 			t.Errorf("the reply sent %s = %v, want %v (all: %v)", key, calls[1][key], want, calls[1])
 		}

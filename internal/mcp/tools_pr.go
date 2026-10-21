@@ -17,27 +17,44 @@ import (
 	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
+// PullRequestID is a pull request's ID as the tools take it: the integer every
+// answer carries, so an ID copied from one is taken as it is (#809).
+type PullRequestID int64
+
+// String is the ID as Bitbucket's paths take it, or empty when none was sent.
+func (id PullRequestID) String() string {
+	if id == 0 {
+		return ""
+	}
+
+	return strconv.FormatInt(int64(id), 10)
+}
+
 // GetPullRequestInput is the argument set for get_pull_request.
 //
 // PRID names the pull request as every other pull request tool does. ID is the
 // name this tool had, still taken so a client that learned it keeps working
-// (#768). Neither is required in the schema, which would refuse a call that
-// sends the other; pullRequestID requires one.
+// (#768), as the string it was then. Neither is required in the schema, which
+// would refuse a call that sends the other; pullRequestID requires one.
 type GetPullRequestInput struct {
-	Project           string `json:"project" jsonschema:"Bitbucket project key (e.g. MYPROJECT)"`
-	Repo              string `json:"repo" jsonschema:"Repository slug"`
-	PRID              string `json:"pr_id,omitempty" jsonschema:"Pull request ID (required)"`
-	ID                string `json:"id,omitempty" jsonschema:"The former name of pr_id, still accepted; send pr_id"`
-	SkipReviewSummary bool   `json:"skip_review_summary,omitempty" jsonschema:"Skip the activity timeline lookup used to count unresolved comment threads"`
+	Project           string        `json:"project" jsonschema:"Bitbucket project key (e.g. MYPROJECT)"`
+	Repo              string        `json:"repo" jsonschema:"Repository slug"`
+	PRID              PullRequestID `json:"pr_id,omitempty" jsonschema:"Pull request ID (required)"`
+	ID                string        `json:"id,omitempty" jsonschema:"The former name of pr_id, still accepted as a string; send pr_id"`
+	SkipReviewSummary bool          `json:"skip_review_summary,omitempty" jsonschema:"Skip the activity timeline lookup used to count unresolved comment threads"`
 }
 
 // pullRequestID is the pull request the call names, by either name.
 func (in GetPullRequestInput) pullRequestID() (string, error) {
-	named, former := strings.TrimSpace(in.PRID), strings.TrimSpace(in.ID)
+	named, former := in.PRID.String(), strings.TrimSpace(in.ID)
+	// The former name is a string, so 042 names the pull request 42 does.
+	if number, err := strconv.ParseInt(former, 10, 64); err == nil && in.PRID != 0 && PullRequestID(number) == in.PRID {
+		former = named
+	}
 	switch {
 	case named != "" && former != "" && named != former:
 		return "", apperrors.New(apperrors.KindValidation,
-			fmt.Sprintf("pr_id %q and id %q name different pull requests; send pr_id alone", named, former), nil)
+			fmt.Sprintf("pr_id %s and id %q name different pull requests; send pr_id alone", named, former), nil)
 	case named != "":
 		return named, nil
 	case former != "":
@@ -272,14 +289,14 @@ func specCreatePullRequest() Spec {
 
 // ListPRCommentsInput is the argument set for list_pr_comments.
 type ListPRCommentsInput struct {
-	Project     string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo        string `json:"repo" jsonschema:"Repository slug"`
-	PRID        string `json:"pr_id" jsonschema:"Pull request ID"`
-	Path        string `json:"path,omitempty" jsonschema:"Optional file path to restrict comments to a single diff path"`
-	State       string `json:"state,omitempty" jsonschema:"Filter threads by resolution state: open, resolved, pending, or all (default)"`
-	TasksOnly   bool   `json:"tasks_only,omitempty" jsonschema:"Return only threads Bitbucket tracks as tasks (blocker comments)"`
-	WithReplies bool   `json:"with_replies,omitempty" jsonschema:"Include the full text of every reply instead of only the most recent one"`
-	Limit       int    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 25)"`
+	Project     string        `json:"project" jsonschema:"Bitbucket project key"`
+	Repo        string        `json:"repo" jsonschema:"Repository slug"`
+	PRID        PullRequestID `json:"pr_id" jsonschema:"Pull request ID"`
+	Path        string        `json:"path,omitempty" jsonschema:"Optional file path to restrict comments to a single diff path"`
+	State       string        `json:"state,omitempty" jsonschema:"Filter threads by resolution state: open, resolved, pending, or all (default)"`
+	TasksOnly   bool          `json:"tasks_only,omitempty" jsonschema:"Return only threads Bitbucket tracks as tasks (blocker comments)"`
+	WithReplies bool          `json:"with_replies,omitempty" jsonschema:"Include the full text of every reply instead of only the most recent one"`
+	Limit       int           `json:"limit,omitempty" jsonschema:"Maximum number of results (default 25)"`
 }
 
 // ListPRCommentsOutput carries the thread list and its summary. Both names
@@ -334,7 +351,7 @@ func pullRequestThreads(ctx context.Context, c Clients, in ListPRCommentsInput) 
 		BaseURL:       c.BaseURL,
 		ProjectKey:    in.Project,
 		Slug:          in.Repo,
-		PullRequestID: in.PRID,
+		PullRequestID: in.PRID.String(),
 	}
 
 	// The limit counts threads, and the grouping happens here, so the whole
@@ -346,7 +363,7 @@ func pullRequestThreads(ctx context.Context, c Clients, in ListPRCommentsInput) 
 	var threads []pullrequestactivityservice.Thread
 	var summary pullrequestactivityservice.Summary
 	if in.Path == "" {
-		activities, err := pullrequestactivityservice.NewService(c.OpenAPI).List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID,
+		activities, err := pullrequestactivityservice.NewService(c.OpenAPI).List(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID.String(),
 			pullrequestactivityservice.ListOptions{MaxResults: pullrequestactivityservice.AllResults})
 		if err != nil {
 			return ListPRCommentsOutput{}, err
@@ -355,7 +372,7 @@ func pullRequestThreads(ctx context.Context, c Clients, in ListPRCommentsInput) 
 	} else {
 		target := commentservice.Target{
 			Repository:    commentservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-			PullRequestID: in.PRID,
+			PullRequestID: in.PRID.String(),
 		}
 		comments, err := commentservice.NewService(c.OpenAPI).List(ctx, target, in.Path, commentservice.AllResults)
 		if err != nil {
@@ -371,14 +388,14 @@ func pullRequestThreads(ctx context.Context, c Clients, in ListPRCommentsInput) 
 
 // AddPRCommentInput is the argument set for add_pr_comment.
 type AddPRCommentInput struct {
-	Project  string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo     string `json:"repo" jsonschema:"Repository slug"`
-	PRID     string `json:"pr_id" jsonschema:"Pull request ID"`
-	Text     string `json:"text" jsonschema:"Comment text (Markdown supported)"`
-	Path     string `json:"path,omitempty" jsonschema:"File path for inline comment (e.g. src/main.go)"`
-	Line     int    `json:"line,omitempty" jsonschema:"Line number for inline comment"`
-	LineType string `json:"line_type,omitempty" jsonschema:"Diff side for inline comment: ADDED (default), REMOVED, or CONTEXT"`
-	ParentID int64  `json:"parent_id,omitempty" jsonschema:"Parent comment ID to reply to"`
+	Project  string        `json:"project" jsonschema:"Bitbucket project key"`
+	Repo     string        `json:"repo" jsonschema:"Repository slug"`
+	PRID     PullRequestID `json:"pr_id" jsonschema:"Pull request ID"`
+	Text     string        `json:"text" jsonschema:"Comment text (Markdown supported)"`
+	Path     string        `json:"path,omitempty" jsonschema:"File path for inline comment (e.g. src/main.go)"`
+	Line     int           `json:"line,omitempty" jsonschema:"Line number for inline comment"`
+	LineType string        `json:"line_type,omitempty" jsonschema:"Diff side for inline comment: ADDED (default), REMOVED, or CONTEXT"`
+	ParentID int64         `json:"parent_id,omitempty" jsonschema:"Parent comment ID to reply to"`
 }
 
 // AddPRCommentOutput names the created comment.
@@ -425,7 +442,7 @@ func specAddPRComment() Spec {
 			var comment pullrequestservice.Comment
 			var err error
 			if inline {
-				comment, err = svc.AddInlineComment(ctx, ref, in.PRID, in.Text,
+				comment, err = svc.AddInlineComment(ctx, ref, in.PRID.String(), in.Text,
 					pullrequestservice.InlineCommentAnchor{
 						Line:     in.Line,
 						Path:     filePath,
@@ -434,7 +451,7 @@ func specAddPRComment() Spec {
 					true,
 				)
 			} else {
-				comment, err = svc.AddComment(ctx, ref, in.PRID, in.Text, in.ParentID, true)
+				comment, err = svc.AddComment(ctx, ref, in.PRID.String(), in.Text, in.ParentID, true)
 			}
 			if err != nil {
 				return nil, AddPRCommentOutput{}, fmt.Errorf("add_pr_comment failed: %w", err)
@@ -446,10 +463,10 @@ func specAddPRComment() Spec {
 
 // PreparePRReviewInput is the argument set for prepare_pr_review.
 type PreparePRReviewInput struct {
-	Project         string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo            string `json:"repo" jsonschema:"Repository slug"`
-	PRID            string `json:"pr_id" jsonschema:"Pull request ID"`
-	SuggestedStatus string `json:"suggested_status,omitempty" jsonschema:"The status you suggest the person publishes the review with; omit to suggest none"`
+	Project         string        `json:"project" jsonschema:"Bitbucket project key"`
+	Repo            string        `json:"repo" jsonschema:"Repository slug"`
+	PRID            PullRequestID `json:"pr_id" jsonschema:"Pull request ID"`
+	SuggestedStatus string        `json:"suggested_status,omitempty" jsonschema:"The status you suggest the person publishes the review with; omit to suggest none"`
 }
 
 // PreparedReview is the person's draft review of a pull request, and where
@@ -490,7 +507,7 @@ func specPreparePRReview() Spec {
 	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[PreparePRReviewInput, PreparePRReviewOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in PreparePRReviewInput) (*mcp.CallToolResult, PreparePRReviewOutput, error) {
-			pr, err := svc.Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID)
+			pr, err := svc.Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID.String())
 			if err != nil {
 				return nil, PreparePRReviewOutput{}, fmt.Errorf("prepare_pr_review failed: %w", err)
 			}
@@ -543,10 +560,10 @@ func countPending(comments []openapigenerated.RestComment) int {
 // Version is a pointer so that an omitted version means "skip the optimistic
 // locking check" rather than "assert version 0", which is a real version.
 type MergePullRequestInput struct {
-	Project string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo    string `json:"repo" jsonschema:"Repository slug"`
-	PRID    string `json:"pr_id" jsonschema:"Pull request ID"`
-	Version *int   `json:"version,omitempty" jsonschema:"PR version for optimistic locking (omit to use the version the confirmation shows)"`
+	Project string        `json:"project" jsonschema:"Bitbucket project key"`
+	Repo    string        `json:"repo" jsonschema:"Repository slug"`
+	PRID    PullRequestID `json:"pr_id" jsonschema:"Pull request ID"`
+	Version *int          `json:"version,omitempty" jsonschema:"PR version for optimistic locking (omit to use the version the confirmation shows)"`
 }
 
 func specMergePullRequest() Spec {
@@ -564,7 +581,7 @@ func specMergePullRequest() Spec {
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in MergePullRequestInput) (*mcp.CallToolResult, PullRequestOutput, error) {
 			pr, err := svc.Merge(ctx,
 				pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-				in.PRID,
+				in.PRID.String(),
 				in.Version,
 			)
 			if err != nil {
@@ -577,11 +594,11 @@ func specMergePullRequest() Spec {
 
 // EnableAutoMergeInput is the argument set for enable_auto_merge.
 type EnableAutoMergeInput struct {
-	Project  string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo     string `json:"repo" jsonschema:"Repository slug"`
-	PRID     string `json:"pr_id" jsonschema:"Pull request ID"`
-	Strategy string `json:"strategy,omitempty" jsonschema:"Merge strategy: no-ff (default), ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only"`
-	Version  *int   `json:"version,omitempty" jsonschema:"PR version for optimistic locking (omit to use the version the confirmation shows)"`
+	Project  string        `json:"project" jsonschema:"Bitbucket project key"`
+	Repo     string        `json:"repo" jsonschema:"Repository slug"`
+	PRID     PullRequestID `json:"pr_id" jsonschema:"Pull request ID"`
+	Strategy string        `json:"strategy,omitempty" jsonschema:"Merge strategy: no-ff (default), ff, ff-only, rebase-no-ff, rebase-ff-only, squash, squash-ff-only"`
+	Version  *int          `json:"version,omitempty" jsonschema:"PR version for optimistic locking (omit to use the version the confirmation shows)"`
 }
 
 // AutoMergeOutput names the auto-merge state it holds.
@@ -607,7 +624,7 @@ func specEnableAutoMerge() Spec {
 			}
 			autoMerge, err := svc.EnableAutoMerge(ctx,
 				pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-				in.PRID,
+				in.PRID.String(),
 				strategy,
 				in.Version,
 			)
@@ -621,9 +638,9 @@ func specEnableAutoMerge() Spec {
 
 // DisableAutoMergeInput is the argument set for disable_auto_merge.
 type DisableAutoMergeInput struct {
-	Project string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo    string `json:"repo" jsonschema:"Repository slug"`
-	PRID    string `json:"pr_id" jsonschema:"Pull request ID"`
+	Project string        `json:"project" jsonschema:"Bitbucket project key"`
+	Repo    string        `json:"repo" jsonschema:"Repository slug"`
+	PRID    PullRequestID `json:"pr_id" jsonschema:"Pull request ID"`
 }
 
 func specDisableAutoMerge() Spec {
@@ -636,7 +653,7 @@ func specDisableAutoMerge() Spec {
 	return askingSpec(tool, AsksAlways, askDisableAutoMerge(), func(c Clients) mcp.ToolHandlerFor[DisableAutoMergeInput, AutoMergeOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in DisableAutoMergeInput) (*mcp.CallToolResult, AutoMergeOutput, error) {
-			if err := svc.DisableAutoMerge(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID); err != nil {
+			if err := svc.DisableAutoMerge(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID.String()); err != nil {
 				return nil, AutoMergeOutput{}, fmt.Errorf("disable_auto_merge failed: %w", err)
 			}
 			return nil, AutoMergeOutput{AutoMerge: pullrequestservice.AutoMerge{Enabled: false}}, nil
@@ -667,9 +684,9 @@ func parseCommaList(s string) []string {
 
 // GetPRDiffInput is the argument set for get_pr_diff.
 type GetPRDiffInput struct {
-	Project string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo    string `json:"repo" jsonschema:"Repository slug"`
-	PRID    string `json:"pr_id" jsonschema:"Pull request ID"`
+	Project string        `json:"project" jsonschema:"Bitbucket project key"`
+	Repo    string        `json:"repo" jsonschema:"Repository slug"`
+	PRID    PullRequestID `json:"pr_id" jsonschema:"Pull request ID"`
 }
 
 // GetPRDiffOutput names the diff it holds.
@@ -688,7 +705,7 @@ func specGetPRDiff() Spec {
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in GetPRDiffInput) (*mcp.CallToolResult, GetPRDiffOutput, error) {
 			result, err := svc.DiffPR(ctx, diffservice.DiffPRInput{
 				Repository:    diffservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-				PullRequestID: in.PRID,
+				PullRequestID: in.PRID.String(),
 				Output:        diffservice.OutputKindRaw,
 			})
 			if err != nil {
@@ -715,13 +732,13 @@ func specGetPRDiff() Spec {
 // version is required rather than looked up here: fetching it inside the tool
 // would reintroduce the lost update the version exists to prevent.
 type UpdatePullRequestInput struct {
-	Project     string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo        string `json:"repo" jsonschema:"Repository slug"`
-	PRID        string `json:"pr_id" jsonschema:"Pull request ID"`
-	Version     int    `json:"version" jsonschema:"Current pull request version, from get_pull_request"`
-	Title       string `json:"title,omitempty" jsonschema:"New title; omit to leave unchanged"`
-	Description string `json:"description,omitempty" jsonschema:"New description; omit to leave unchanged"`
-	Draft       *bool  `json:"draft,omitempty" jsonschema:"Set or clear the draft flag; omit to leave unchanged"`
+	Project     string        `json:"project" jsonschema:"Bitbucket project key"`
+	Repo        string        `json:"repo" jsonschema:"Repository slug"`
+	PRID        PullRequestID `json:"pr_id" jsonschema:"Pull request ID"`
+	Version     int           `json:"version" jsonschema:"Current pull request version, from get_pull_request"`
+	Title       string        `json:"title,omitempty" jsonschema:"New title; omit to leave unchanged"`
+	Description string        `json:"description,omitempty" jsonschema:"New description; omit to leave unchanged"`
+	Draft       *bool         `json:"draft,omitempty" jsonschema:"Set or clear the draft flag; omit to leave unchanged"`
 }
 
 // specUpdatePullRequest completes the draft workflow the agent skill documents:
@@ -746,7 +763,7 @@ func specUpdatePullRequest() Spec {
 			}
 			pr, err := svc.Update(ctx,
 				pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
-				in.PRID,
+				in.PRID.String(),
 				pullrequestservice.UpdateInput{
 					Title:       in.Title,
 					Description: in.Description,

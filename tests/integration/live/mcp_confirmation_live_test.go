@@ -156,12 +156,12 @@ func TestLiveMCPToolsThatAskChangeNothingUnlessAccepted(t *testing.T) {
 	tagName := testsupport.UniqueName("mcp-ask-")
 
 	arguments := map[string]map[string]any{
-		"merge_pull_request":  {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
-		"enable_auto_merge":   {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
-		"disable_auto_merge":  {"project": seeded.Key, "repo": repo.Slug, "pr_id": armedID},
+		"merge_pull_request":  {"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID)},
+		"enable_auto_merge":   {"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID)},
+		"disable_auto_merge":  {"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, armedID)},
 		"set_build_status":    {"commit_id": commitID, "key": buildKey, "state": "FAILED", "url": "https://ci.example.com/ask"},
 		"create_tag":          {"project": seeded.Key, "repo": repo.Slug, "name": tagName, "start_point": "master"},
-		"update_pull_request": {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "version": version, "draft": true},
+		"update_pull_request": {"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "version": version, "draft": true},
 	}
 	for _, name := range asking {
 		if _, ok := arguments[name]; !ok {
@@ -274,7 +274,7 @@ func TestLiveMCPMergeAsksAboutWhatItMerges(t *testing.T) {
 			var callErr error
 			result, callErr = session.CallTool(context.Background(), &mcp.CallToolParams{
 				Name:      tool,
-				Arguments: map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
+				Arguments: map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID)},
 			})
 			if callErr != nil {
 				t.Fatalf("%s: %v", tool, callErr)
@@ -455,7 +455,7 @@ func TestLiveMCPTitleChangeOnADraftDoesNotAsk(t *testing.T) {
 		result, callErr := session.CallTool(context.Background(), &mcp.CallToolParams{
 			Name: "update_pull_request",
 			Arguments: map[string]any{
-				"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "version": version, "title": title,
+				"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "version": version, "title": title,
 			},
 		})
 		if callErr != nil {
@@ -588,7 +588,7 @@ func TestLiveMCPAnUnansweredConfirmationIsAudited(t *testing.T) {
 		for range 3 {
 			result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
 				Name:      "merge_pull_request",
-				Arguments: map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
+				Arguments: map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID)},
 			})
 			if err != nil || result == nil || result.InputRequests == nil {
 				t.Fatalf("want merge_pull_request to ask, got %+v, %v", result, err)
@@ -628,7 +628,7 @@ func TestLiveMCPAnUnansweredConfirmationIsAudited(t *testing.T) {
 		if record.Tool != "merge_pull_request" || record.Status != "asked" || record.Confirmation != "" {
 			t.Errorf("want merge_pull_request, asked, and no outcome yet; got:\n%s", line)
 		}
-		if record.Project != seeded.Key || record.Repo != repo.Slug || record.Arguments["pr_id"] != pullRequestID {
+		if record.Project != seeded.Key || record.Repo != repo.Slug || record.Arguments["pr_id"] != float64(liveID(t, pullRequestID)) {
 			t.Errorf("the record does not say which pull request was asked about:\n%s", line)
 		}
 	}
@@ -692,7 +692,7 @@ func TestLiveMCPNothingAsksUnlessTheServerOptsIn(t *testing.T) {
 		}
 
 		result, callErr := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "merge_pull_request", Arguments: map[string]any{
-			"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "version": version,
+			"project": seeded.Key, "repo": repo.Slug, "pr_id": liveID(t, pullRequestID), "version": version,
 		}})
 		if callErr != nil || result == nil || result.IsError {
 			t.Fatalf("merge_pull_request on a server that does not ask: %v %q", callErr, mcpResultText(result))

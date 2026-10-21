@@ -92,7 +92,7 @@ func TestAddPRCommentRejectsPartialAnchors(t *testing.T) {
 
 	clients := newUnreachedClients(t)
 
-	base := map[string]any{"project": "TEST", "repo": "demo", "pr_id": "30", "text": "hi"}
+	base := map[string]any{"project": "TEST", "repo": "demo", "pr_id": 30, "text": "hi"}
 
 	cases := []struct {
 		name string
@@ -156,7 +156,7 @@ func TestAddPRCommentRejectsAnUnknownLineType(t *testing.T) {
 	clients := newUnreachedClients(t)
 
 	result := callTool(t, specAddPRComment(), clients, map[string]any{
-		"project": "TEST", "repo": "demo", "pr_id": "30", "text": "nit",
+		"project": "TEST", "repo": "demo", "pr_id": 30, "text": "nit",
 		"path": "src/main.go", "line": 12, "line_type": "SIDEWAYS",
 	})
 	if !result.IsError {
@@ -200,7 +200,7 @@ func TestPreparePRReviewRejectsAnUnknownSuggestedStatus(t *testing.T) {
 	clients := newUnreachedClients(t)
 
 	result := callTool(t, specPreparePRReview(), clients, map[string]any{
-		"project": "TEST", "repo": "demo", "pr_id": "30", "suggested_status": "merge",
+		"project": "TEST", "repo": "demo", "pr_id": 30, "suggested_status": "merge",
 	})
 	if !result.IsError {
 		t.Fatalf("expected an error result, got: %+v", result)
@@ -237,7 +237,7 @@ func TestAddPRCommentRejectsLineTypeWithoutAnchor(t *testing.T) {
 	clients := newUnreachedClients(t)
 
 	result := callTool(t, specAddPRComment(), clients, map[string]any{
-		"project": "TEST", "repo": "demo", "pr_id": "30", "text": "hi",
+		"project": "TEST", "repo": "demo", "pr_id": 30, "text": "hi",
 		"line_type": "ADDED",
 	})
 	if !result.IsError {
@@ -258,9 +258,9 @@ func TestAToolThatNeverAsksCannotBeSteeredToAnotherEndpoint(t *testing.T) {
 
 	session, answers := connectAsking(t, testServer(t), "", accept)
 	for name, arguments := range map[string]map[string]any{
-		"add_pr_comment":      {"project": "PROJ", "repo": "payments/pull-requests/7/merge?version=3#", "pr_id": "7", "text": "hi"},
+		"add_pr_comment":      {"project": "PROJ", "repo": "payments/pull-requests/7/merge?version=3#", "pr_id": 7, "text": "hi"},
 		"create_pull_request": {"project": "PROJ", "repo": "payments/pull-requests/7/approve?x=", "from_ref": "feature", "title": "t"},
-		"get_pull_request":    {"project": "PROJ/repos/other", "repo": "payments", "pr_id": "7"},
+		"get_pull_request":    {"project": "PROJ/repos/other", "repo": "payments", "pr_id": 7},
 	} {
 		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: arguments})
 		if err != nil {
@@ -286,10 +286,11 @@ func TestGetPullRequestTakesPRIDAndItsFormerName(t *testing.T) {
 		want  string
 		fails string
 	}{
-		"pr_id":             {input: GetPullRequestInput{PRID: "42"}, want: "42"},
+		"pr_id":             {input: GetPullRequestInput{PRID: 42}, want: "42"},
 		"the former name":   {input: GetPullRequestInput{ID: "42"}, want: "42"},
-		"both, agreeing":    {input: GetPullRequestInput{PRID: "42", ID: "42"}, want: "42"},
-		"both, disagreeing": {input: GetPullRequestInput{PRID: "42", ID: "43"}, fails: "name different pull requests"},
+		"both, agreeing":    {input: GetPullRequestInput{PRID: 42, ID: "42"}, want: "42"},
+		"both, spelt apart": {input: GetPullRequestInput{PRID: 42, ID: "042"}, want: "42"},
+		"both, disagreeing": {input: GetPullRequestInput{PRID: 42, ID: "43"}, fails: "name different pull requests"},
 		"neither":           {input: GetPullRequestInput{}, fails: "pr_id is required"},
 	} {
 		got, err := testCase.input.pullRequestID()
@@ -299,5 +300,35 @@ func TestGetPullRequestTakesPRIDAndItsFormerName(t *testing.T) {
 		case testCase.fails == "" && (err != nil || got != testCase.want):
 			t.Errorf("%s: got %q, %v; want %q", name, got, err, testCase.want)
 		}
+	}
+}
+
+// TestEveryToolTakesIDsAsTheAnswersCarryThem is #809: every answer carries an
+// ID as an integer, so a tool that takes one as a string refuses an ID copied
+// from an answer. get_pull_request's id is the exception: the name it had
+// before pr_id, taken as the string it was then.
+func TestEveryToolTakesIDsAsTheAnswersCarryThem(t *testing.T) {
+	t.Parallel()
+
+	listed, err := connect(t, testClients(t), nil, nil).ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("tools/list: %v", err)
+	}
+
+	checked := 0
+	for _, tool := range listed.Tools {
+		for name, property := range schemaOf(t, tool.Name, tool.InputSchema).Properties {
+			if (name != "pr_id" && name != "parent_id" && name != "id") || (tool.Name == "get_pull_request" && name == "id") {
+				continue
+			}
+			checked++
+			if property.Type != "integer" {
+				t.Errorf("%s takes %s as %s, want integer", tool.Name, name, property.Type)
+			}
+		}
+	}
+	// A walk that stopped finding the IDs would pass for every tool agreeing.
+	if checked < 12 {
+		t.Fatalf("found only %d ID properties; the tools that take one are at least twelve", checked)
 	}
 }

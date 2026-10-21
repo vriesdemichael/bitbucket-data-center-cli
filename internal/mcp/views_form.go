@@ -79,7 +79,7 @@ type formPerson struct {
 func formForView(ctx context.Context, c Clients, in ShowInput) (viewForm, *viewPullRequest, map[string]string, viewSummary, error) {
 	repository := fmt.Sprintf("%s/%s", in.Project, in.Repo)
 	repositoryURL := fmt.Sprintf("%s/projects/%s/repos/%s", strings.TrimRight(c.BaseURL, "/"), url.PathEscape(in.Project), url.PathEscape(in.Repo))
-	if in.ID == "" {
+	if in.ID == 0 {
 		form := viewForm{
 			Mode:          "create",
 			RepositoryURL: repositoryURL,
@@ -120,7 +120,7 @@ func formForView(ctx context.Context, c Clients, in ShowInput) (viewForm, *viewP
 		}, nil
 	}
 
-	pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+	pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID.String())
 	if err != nil {
 		return viewForm{}, nil, nil, viewSummary{}, err
 	}
@@ -153,9 +153,9 @@ func formForView(ctx context.Context, c Clients, in ShowInput) (viewForm, *viewP
 	if in.Draft {
 		form.Draft = true
 	}
-	view := viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID)}
+	view := viewPullRequest{PullRequest: pr, URL: pullRequestURL(c.BaseURL, in.Project, in.Repo, in.ID.String())}
 	return form, &view, slugs, viewSummary{
-		subject: fmt.Sprintf("pull request %s#%s to edit", repository, in.ID),
+		subject: fmt.Sprintf("pull request %s#%d to edit", repository, in.ID),
 		form:    "a form they can edit and save",
 		state:   fmt.Sprintf("titled %q. Nothing changes until they save it.", form.Title),
 	}, nil
