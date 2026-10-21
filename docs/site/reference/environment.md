@@ -26,18 +26,21 @@ of the `bb` configuration keys work in it. Write variable names, as they appear
 in the tables below:
 
 ```bash
-BITBUCKET_URL=https://bitbucket.example.com
+BITBUCKET_PROJECT_KEY=PAY
 BB_RETRY_COUNT=5
 ```
+
+**A `.env` does not choose the host.** `bb` leaves `BITBUCKET_URL` and
+`BB_CONFIG_PATH` unset when a `.env` names them, warns once naming the file, and
+talks to the host your environment or your own configuration file names.
 
 !!! warning "A `.env` arrives with a clone"
 
     It is a file in a repository, so anyone who can open a pull request can add
-    one, and it is read by the next `bb` command run in that checkout. `bb` does
-    not hand a stored credential to a host a `.env` names — a credential is
-    released only for the host it was stored for — but everything else in the
-    file applies. Read the `.env` in an unfamiliar repository before running
-    `bb` in it.
+    one, and it is read by the next `bb` command run in that checkout. It cannot
+    choose the host, and a credential is released only for the host it was
+    stored for, but everything else in the file applies. Read the `.env` in an
+    unfamiliar repository before running `bb` in it.
 
 **`bb update` does not read `.env`.** It resolves its own settings without going
 through the configuration layer, so `BB_UPDATE_BASE_URL`, `BB_DISABLE_UPDATE`

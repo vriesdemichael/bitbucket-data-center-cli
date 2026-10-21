@@ -12,9 +12,10 @@ import (
 // whom.
 //
 // The user logged in to their own Bitbucket, so the keyring holds a token for
-// it. A workspace file arrives with a clone. It may name a host, and a command
-// then talks to that host with no stored credential, which
-// TestACredentialDoesNotFollowAHostTheRepositoryChose holds. But it may also
+// it. A workspace file arrives with a clone. It does not choose the host
+// (#770), but an agent the clone's content steers can, with --host, and a
+// command then talks to that host with no stored credential, which
+// TestACredentialDoesNotFollowAHostTheRepositoryChose holds. The file may also
 // declare host profiles, and a profile decided which keyring entry was read:
 // one keyed to the author's host with its url pointing at the user's
 // Bitbucket, or one for the user's Bitbucket claiming the author's host as an
@@ -38,9 +39,8 @@ func TestAWorkspaceProfileReleasesNoStoredCredential(t *testing.T) {
 	}
 
 	for name, testCase := range map[string]struct {
-		// host names the author's host when the workspace file does not: a
-		// .env in the clone, or --host given by an agent the clone's content
-		// steers. It is passed the way --host is.
+		// host is the author's host, given with --host by an agent the clone's
+		// content steers.
 		host      string
 		workspace []string
 	}{
@@ -53,8 +53,8 @@ func TestAWorkspaceProfileReleasesNoStoredCredential(t *testing.T) {
 			},
 		},
 		"a profile for the user's host claiming another host as an alias": {
+			host: attacker,
 			workspace: []string{
-				"default_host: " + attacker,
 				"hosts:",
 				"  " + trusted + ":",
 				"    url: " + trusted,
@@ -63,8 +63,8 @@ func TestAWorkspaceProfileReleasesNoStoredCredential(t *testing.T) {
 			},
 		},
 		"a profile naming the user's client certificate for another host": {
+			host: attacker,
 			workspace: []string{
-				"default_host: " + attacker,
 				"hosts:",
 				"  " + attacker + ":",
 				"    url: " + attacker,
@@ -125,7 +125,6 @@ func TestAWorkspaceProfileStillNamesItsUsername(t *testing.T) {
 
 	workspacePath := filepath.Join(t.TempDir(), "workspace.yaml")
 	workspace := strings.Join([]string{
-		"default_host: " + host,
 		"hosts:",
 		"  " + host + ":",
 		"    url: " + host,
@@ -138,7 +137,9 @@ func TestAWorkspaceProfileStillNamesItsUsername(t *testing.T) {
 	t.Setenv("BB_WORKSPACE_CONFIG_PATH", workspacePath)
 	t.Chdir(t.TempDir())
 
-	cfg, err := LoadWithOverrides(Overrides{Password: "supplied-by-the-caller"})
+	// The host comes from the command line: a workspace file does not choose
+	// it (#770), and its profile still describes it.
+	cfg, err := LoadWithOverrides(Overrides{Host: host, Password: "supplied-by-the-caller"})
 	if err != nil {
 		t.Fatalf("LoadWithOverrides: %v", err)
 	}

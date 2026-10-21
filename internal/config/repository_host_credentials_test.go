@@ -37,13 +37,15 @@ func storedWithDefaultHostCredential(t *testing.T, token string) string {
 //
 // When no stored host matches, credentials resolve to the default host's, which
 // is what lets `bb pr list` work against the active server without repeating
-// --host. A cloned repository carries .bb/config.yaml and .env, and either can
-// name a host: the fallback then sent the user's token for their own Bitbucket
-// to a server the repository author chose.
+// --host. A cloned repository carries .bb/config.yaml and .env, and either
+// could name a host: the fallback then sent the user's token for their own
+// Bitbucket to a server the repository author chose. Neither chooses the host
+// now (#770), and bb names what it left unused; a host named on the command
+// line still meets the fallback, and gets no credential.
 func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 	const storedToken = "stored-default-host-token"
 
-	t.Run("a workspace file naming another host gets no credential", func(t *testing.T) {
+	t.Run("a workspace file naming another host does not move bb", func(t *testing.T) {
 		workspacePath := filepath.Join(t.TempDir(), "workspace.yaml")
 		workspace := strings.Join([]string{
 			"default_host: https://attacker.example.net",
@@ -67,18 +69,13 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 			t.Fatalf("LoadFromEnv: %v", err)
 		}
 
-		if cfg.BitbucketURL != "https://attacker.example.net" {
-			t.Fatalf("the workspace host is still the host bb talks to: %s", cfg.BitbucketURL)
+		if cfg.BitbucketURL != "https://trusted.example.com" {
+			t.Fatalf("the workspace file chose the host bb talks to: %s", cfg.BitbucketURL)
 		}
-		if cfg.BitbucketToken == storedToken {
-			t.Fatal("the stored token for another host followed a host the workspace file named")
-		}
-		if cfg.BitbucketUsername == "alice" {
-			t.Errorf("the stored username followed it too: %q", cfg.BitbucketUsername)
-		}
+		assertIgnoredHostSetting(t, cfg, "default_host", workspacePath)
 	})
 
-	t.Run("a .env naming another host gets no credential", func(t *testing.T) {
+	t.Run("a .env naming another host does not move bb", func(t *testing.T) {
 		working := t.TempDir()
 		dotenv := "BITBUCKET_URL=https://attacker.example.net\n"
 		if err := os.WriteFile(filepath.Join(working, ".env"), []byte(dotenv), 0o600); err != nil {
@@ -99,12 +96,13 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 			t.Fatalf("LoadFromEnv: %v", err)
 		}
 
-		if cfg.BitbucketURL != "https://attacker.example.net" {
-			t.Fatalf("the .env host is still the host bb talks to: %s", cfg.BitbucketURL)
+		if cfg.BitbucketURL != "https://trusted.example.com" {
+			t.Fatalf("the .env chose the host bb talks to: %s", cfg.BitbucketURL)
 		}
-		if cfg.BitbucketToken == storedToken {
-			t.Fatal("the stored token for another host followed a host a .env file named")
+		if _, set := os.LookupEnv("BITBUCKET_URL"); set {
+			t.Error("the .env still set BITBUCKET_URL")
 		}
+		assertIgnoredHostSetting(t, cfg, "BITBUCKET_URL", filepath.Join(working, ".env"))
 	})
 
 	t.Run("a host named on the command line gets no credential either", func(t *testing.T) {
@@ -129,7 +127,7 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		}
 	})
 
-	t.Run("a workspace file naming a stored host keeps its credential", func(t *testing.T) {
+	t.Run("a workspace file naming the stored host changes nothing", func(t *testing.T) {
 		workspacePath := filepath.Join(t.TempDir(), "workspace.yaml")
 		workspace := strings.Join([]string{
 			"default_host: https://trusted.example.com",
@@ -154,7 +152,7 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 		}
 	})
 
-	t.Run("a .env naming the stored host over plain http gets no credential", func(t *testing.T) {
+	t.Run("a .env cannot move the stored host to plain http", func(t *testing.T) {
 		// #730. The destination is the user's own host, so the host check
 		// passes; the scheme is what the file changed. A credential stored
 		// for https://host sent to http://host crosses the network in the
@@ -178,15 +176,10 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 			t.Fatalf("LoadFromEnv: %v", err)
 		}
 
-		if cfg.BitbucketURL != "http://trusted.example.com" {
-			t.Fatalf("the .env host is not the host bb talks to: %s", cfg.BitbucketURL)
+		if cfg.BitbucketURL != "https://trusted.example.com" {
+			t.Fatalf("the .env moved bb to %s", cfg.BitbucketURL)
 		}
-		if cfg.BitbucketToken == storedToken {
-			t.Fatal("the token stored for https was handed to plain http")
-		}
-		if cfg.BitbucketUsername == "alice" {
-			t.Errorf("the stored username followed it too: %q", cfg.BitbucketUsername)
-		}
+		assertIgnoredHostSetting(t, cfg, "BITBUCKET_URL", filepath.Join(working, ".env"))
 	})
 
 	t.Run("a credential stored for http is sent over https", func(t *testing.T) {
@@ -222,4 +215,25 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 			t.Fatalf("the token stored for http was not sent over https: %q", cfg.BitbucketToken)
 		}
 	})
+}
+
+// assertIgnoredHostSetting fails unless the load names the host setting it left
+// unused, and the file it was in.
+func assertIgnoredHostSetting(t *testing.T, cfg AppConfig, name, path string) {
+	t.Helper()
+
+	// Resolved, because a temporary directory can sit behind a symlink, and the
+	// working directory bb searched from names it by its real path.
+	resolved := func(path string) string {
+		if real, err := filepath.EvalSymlinks(path); err == nil {
+			return real
+		}
+		return filepath.Clean(path)
+	}
+	for _, ignored := range cfg.IgnoredHostSettings {
+		if ignored.Name == name && resolved(ignored.Path) == resolved(path) {
+			return
+		}
+	}
+	t.Errorf("the load does not name %s in %s as ignored: %+v", name, path, cfg.IgnoredHostSettings)
 }

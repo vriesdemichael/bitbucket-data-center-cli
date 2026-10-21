@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -64,6 +65,9 @@ type AppConfig struct {
 	// plaintext config fallback rather than the OS keyring. It is set only when
 	// such a credential is actually used, not merely present in the file.
 	UsedInsecureStorage bool
+	// IgnoredHostSettings are the settings a repository's .env or workspace
+	// file gave for the Bitbucket host, which bb does not take from there.
+	IgnoredHostSettings []IgnoredSetting
 
 	// flagSourced records which settings arrived from a command-line flag,
 	// keyed by the environment variable that would otherwise have supplied
@@ -298,11 +302,25 @@ func (sys SystemConfigFile) PolicyConfig() PolicyConfig {
 }
 
 type WorkspaceConfigFile struct {
-	DefaultHost   string                   `yaml:"default_host,omitempty"`
 	ProjectKey    string                   `yaml:"project_key,omitempty"`
 	Hosts         map[string]StoredProfile `yaml:"hosts,omitempty"`
 	UpdateBaseURL string                   `yaml:"update_base_url,omitempty"`
+	// IgnoredDefaultHost is a default_host the file names. It is not read: a
+	// workspace file arrives with a repository, and does not choose the
+	// Bitbucket host (#770). It is kept to say so.
+	IgnoredDefaultHost string `yaml:"-"`
 }
+
+// IgnoredSetting is a setting bb found and did not use, and the file it was in.
+type IgnoredSetting struct {
+	Name string
+	Path string
+}
+
+// hostChoosingVariables decide which Bitbucket bb talks to: directly, or
+// through the file it takes its default host from. A .env file is part of a
+// repository, so it does not set them (#770).
+var hostChoosingVariables = []string{"BITBUCKET_URL", "BB_CONFIG_PATH"}
 
 type StoredProfile struct {
 	URL        string   `yaml:"url"`
@@ -459,7 +477,7 @@ func firstNonEmpty(values ...string) string {
 // LoadWithOverrides resolves configuration the same way LoadFromEnv does, with
 // the given per-invocation values taking precedence.
 func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
-	loadDotEnv()
+	ignoredHostSettings := loadDotEnv()
 
 	// flagSourced records which settings a flag supplied, so every message
 	// below can name the input the user actually used rather than the variable
@@ -492,6 +510,10 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	workspaceConfig, err := LoadWorkspaceConfig()
 	if err != nil {
 		return AppConfig{}, unreadableConfig(WorkspaceConfigPath, "workspace configuration", err)
+	}
+	if workspaceConfig.IgnoredDefaultHost != "" {
+		path, _ := WorkspaceConfigPath()
+		ignoredHostSettings = append(ignoredHostSettings, IgnoredSetting{Name: "default_host", Path: path})
 	}
 
 	// BB_DISABLE_STORED_CONFIG promises the stored file is ignored entirely, so
@@ -549,15 +571,19 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	resolvedURL := ""
 	if envHost != "" {
 		resolvedURL = normalizeURL(envHost)
-	} else if workspaceConfig.DefaultHost != "" {
-		resolvedURL = resolveDefaultHostURL(workspaceConfig.DefaultHost, workspaceConfig.Hosts, storedConfig.Hosts, sysConfig.Hosts)
 	} else if storedConfig.DefaultHost != "" {
-		resolvedURL = resolveDefaultHostURL(storedConfig.DefaultHost, storedConfig.Hosts, sysConfig.Hosts, workspaceConfig.Hosts)
+		// A workspace file's hosts do not resolve the name either: they would
+		// choose the URL behind it.
+		resolvedURL = resolveDefaultHostURL(storedConfig.DefaultHost, storedConfig.Hosts, sysConfig.Hosts)
 	} else if sysConfig.DefaultHost != "" {
-		resolvedURL = resolveDefaultHostURL(sysConfig.DefaultHost, sysConfig.Hosts, storedConfig.Hosts, workspaceConfig.Hosts)
+		resolvedURL = resolveDefaultHostURL(sysConfig.DefaultHost, sysConfig.Hosts, storedConfig.Hosts)
 	}
 	if resolvedURL == "" {
-		return AppConfig{}, apperrors.New(apperrors.KindValidation, "no Bitbucket host configured: set BITBUCKET_URL or run 'bb auth login <host>'", nil)
+		message := "no Bitbucket host configured: set BITBUCKET_URL or run 'bb auth login <host>'"
+		for _, ignored := range ignoredHostSettings {
+			message += fmt.Sprintf("; %s in %s was not used, because a repository's files do not choose the host", ignored.Name, ignored.Path)
+		}
+		return AppConfig{}, apperrors.New(apperrors.KindValidation, message, nil)
 	}
 
 	if len(policy.AllowedHosts) > 0 && !IsHostAllowed(resolvedURL, policy.AllowedHosts) {
@@ -598,6 +624,7 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		LogFormat:              strings.ToLower(strings.TrimSpace(logFormat)),
 		DiagnosticsEnabled:     diagnosticsEnabled,
 		AuthSource:             "env/default",
+		IgnoredHostSettings:    ignoredHostSettings,
 		flagSourced:            flagSourced,
 	}
 
@@ -669,14 +696,38 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	return config, nil
 }
 
-func loadDotEnv() {
+// loadDotEnv applies the .env files from the working directory up to the
+// repository root, nearest first, without overriding a variable already set.
+// It returns the host-choosing variables it found and left unset.
+func loadDotEnv() []IgnoredSetting {
+	ignored := []IgnoredSetting{}
 	for _, candidate := range dotenvCandidates() {
 		info, err := os.Stat(candidate)
 		if err != nil || info.IsDir() {
 			continue
 		}
-		_ = godotenv.Load(candidate)
+		values, err := godotenv.Read(candidate)
+		if err != nil {
+			continue
+		}
+		names := make([]string, 0, len(values))
+		for name := range values {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			if _, set := os.LookupEnv(name); set {
+				continue
+			}
+			if slices.Contains(hostChoosingVariables, name) {
+				ignored = append(ignored, IgnoredSetting{Name: name, Path: candidate})
+				continue
+			}
+			_ = os.Setenv(name, values[name])
+		}
 	}
+
+	return ignored
 }
 
 func dotenvCandidates() []string {
@@ -1370,6 +1421,12 @@ func LoadWorkspaceConfig() (WorkspaceConfigFile, error) {
 	var ws WorkspaceConfigFile
 	if err := yaml.Unmarshal(raw, &ws); err != nil {
 		return WorkspaceConfigFile{Hosts: map[string]StoredProfile{}}, err
+	}
+	var named struct {
+		DefaultHost string `yaml:"default_host"`
+	}
+	if err := yaml.Unmarshal(raw, &named); err == nil {
+		ws.IgnoredDefaultHost = strings.TrimSpace(named.DefaultHost)
 	}
 	if ws.Hosts == nil {
 		ws.Hosts = map[string]StoredProfile{}
