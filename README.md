@@ -182,10 +182,11 @@ each problem with its line, needing no host and no network.
 
 ## Compatibility and contracts
 
-- Supported versions: every Bitbucket Data Center release Atlassian supports, each tested
-  against a real instance of it. A release keeps working after Atlassian's support for it ends.
-  [Bitbucket Versions](docs/site/reference/bitbucket-versions.md) lists where an older release
-  differs.
+- Supported versions: every Bitbucket Data Center release Atlassian supports. The newest is
+  tested on every pull request, and the older ones are verified by hand against a real instance.
+  A release keeps working after Atlassian's support for it ends.
+  [Bitbucket Versions](docs/site/reference/bitbucket-versions.md) says when each older release
+  last passed and lists where one differs.
 - API contract source: a version-pinned Atlassian OpenAPI artifact
   (`docs/reference/atlassian/bitbucket-openapi.json`). This fixes the endpoint and payload
   shapes the generated client is built from — it is the provenance of the spec, not a statement

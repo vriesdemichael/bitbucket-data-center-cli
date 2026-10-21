@@ -561,9 +561,12 @@ tasks:
     # that needs what the newest release has fails on the oldest. The window in
     # full is what ADR-088 asks for before a release, and RELEASES=all runs it.
     #
-    # Which releases passed is a measurement, so it lands in .tmp rather than
-    # in the repository (ADR-045). An instance is stopped after its release
-    # passes and left up after a failure, which is what a re-run needs.
+    # Which releases passed in this run lands in .tmp. A release that passes is
+    # also recorded in the window, with the day and the commit, because the
+    # versions page states when each older release last passed; the record is
+    # refused from a changed working tree or a commit that is not on next,
+    # which a rebase would rewrite (ADR-088). An instance is stopped after its
+    # release passes and left up after a failure, which is what a re-run needs.
     cmds:
       - mkdir -p .tmp
       - |
@@ -575,6 +578,7 @@ tasks:
         for release in $(go run ./tools/bitbucket-releases -list $selection); do
           if task test:live RELEASE="$release"; then
             echo "$release: passed" >> "$summary"
+            go run ./tools/bitbucket-releases -record "$release" || echo "$release: passed, not recorded (see above)" >> "$summary"
             task stack:down RELEASE="$release"
           else
             echo "$release: FAILED" >> "$summary"

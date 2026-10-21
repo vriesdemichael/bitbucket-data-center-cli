@@ -4,8 +4,11 @@
 stays supported after Atlassian ends its support; it is only no longer tested.
 
 The newest release, [[ bitbucket_version ]], is tested on every pull request.
-Every other release in the window — [[ bitbucket_releases_tested ]] — is
-checked by running that same suite against a real instance of it.
+The others in the window, [[ bitbucket_releases_tested ]], are verified by
+hand, by running the same suite against a real instance of each with
+`task test:live:matrix`. Each one last passed:
+
+[[ bitbucket_releases_verified ]]
 
 ## Where an older release differs
 
