@@ -37,36 +37,6 @@ type Entry struct {
 
 // Entries is the registry.
 var Entries = []Entry{
-	// The bb update fields that described a swap left for a helper to finish
-	// after bb had exited. bb update installs the new binary before it exits
-	// on every operating system (ADR-092), so they are always false or empty.
-	// An output field warns nobody at runtime (ADR-084): its schema description
-	// and the release notes say it is deprecated.
-	{
-		Name:         "bb update --json field scheduled",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "bb update replaces the binary itself before it exits, on every operating system",
-		Advice:       "Read the applied field instead.",
-	},
-	{
-		Name:         "bb update --json field staged",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "bb update replaces the binary itself before it exits, on every operating system",
-		Advice:       "Read the applied field instead.",
-	},
-	{
-		Name:         "bb update --json field paths.staged",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "bb update replaces the binary itself before it exits, on every operating system",
-		Advice:       "Read the applied field instead.",
-	},
-	{
-		Name:         "bb update --json field paths.swapResult",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "bb update replaces the binary itself before it exits, on every operating system",
-		Advice:       "Read the applied field instead.",
-	},
-
 	// bb ai mcp serve withheld the tools that change whether a pull request
 	// merges unless --yolo was passed. Every tool is exposed now, and those
 	// tools ask the person to confirm each call through the MCP client (#620),

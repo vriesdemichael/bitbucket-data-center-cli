@@ -51,10 +51,6 @@ Also takes the [global flags](global-flags.md).
   latestVersionComparable      boolean  Whether the published version parsed as semver.
   dryRun                       boolean  Whether this run verified the latest release and installed nothing.
   applied                      boolean  Whether the new binary is now in place.
-  scheduled                    boolean  Deprecated, and always false: bb update replaces the binary itself, before it
-                                        exits, on every operating system.
-  staged                       boolean  Deprecated, and always false: the run that downloads a verified binary puts it
-                                        in place.
   plannedAction?               string   What the run would do, or did.
   release?                     object   Where the release was fetched from.
     url?                       string   Release page for the selected version.
@@ -75,10 +71,6 @@ Also takes the [global flags](global-flags.md).
     issuer?                    string   OIDC issuer that vouched for that identity.
   paths?                       object   Filesystem locations involved in the swap.
     install?                   string   Where the running binary lives, and where a new one is written.
-    staged?                    string   Deprecated, and always empty: no verified binary waits to be swapped in after bb
-                                        update exits.
-    swapResult?                string   Deprecated, and always empty: bb update reports the outcome of the swap itself,
-                                        in this result or as an error.
   platform?                    string   Operating system and architecture the asset targets.
 </code></pre>
 </details>
