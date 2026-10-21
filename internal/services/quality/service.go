@@ -134,14 +134,13 @@ func (service *Service) GetBuildStatuses(ctx context.Context, commitID string, m
 		})
 }
 
-func (service *Service) GetBuildStatusStats(ctx context.Context, commitID string, includeUnique bool) (openapigenerated.RestBuildStats, error) {
+func (service *Service) GetBuildStatusStats(ctx context.Context, commitID string) (openapigenerated.RestBuildStats, error) {
 	trimmedCommitID := strings.TrimSpace(commitID)
 	if trimmedCommitID == "" {
 		return openapigenerated.RestBuildStats{}, apperrors.New(apperrors.KindValidation, "commit id is required", nil)
 	}
 
-	params := &openapigenerated.GetBuildStatusStatsParams{IncludeUnique: &includeUnique}
-	response, err := service.client.GetBuildStatusStatsWithResponse(ctx, trimmedCommitID, params)
+	response, err := service.client.GetBuildStatusStatsWithResponse(ctx, trimmedCommitID, &openapigenerated.GetBuildStatusStatsParams{})
 	if err != nil {
 		return openapigenerated.RestBuildStats{}, apperrors.Transport("failed to get build status stats", err)
 	}

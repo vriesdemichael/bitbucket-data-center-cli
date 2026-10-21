@@ -61,31 +61,6 @@ var Entries = []Entry{
 		Advice:       "Send pr_id.",
 	},
 
-	// Flags that mirrored a Bitbucket request parameter and changed nothing a
-	// caller could see.
-	//
-	// --include-unique asked Bitbucket to name the build when only one had
-	// failed, was running or had passed. bb printed the five counts either
-	// way, and bb build status get and set, which inherited the flag, never
-	// sent it.
-	{
-		Name:         "bb build status stats --include-unique",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "bb prints the same counts with it and without it",
-		Advice:       "Remove it. bb build status get lists each build with its state.",
-	},
-	{
-		Name:         "bb build status get --include-unique",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "the command never read it",
-		Advice:       "Remove it.",
-	},
-	{
-		Name:         "bb build status set --include-unique",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "the command never read it",
-		Advice:       "Remove it.",
-	},
 	// bb build required delete took --limit and --all for its preview, which
 	// looked the check up among as many as they allowed. A check past the
 	// cap was predicted not found and deleted by the real run (#728), so the

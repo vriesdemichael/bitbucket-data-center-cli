@@ -55,7 +55,7 @@ func TestQualityServiceValidationGuards(t *testing.T) {
 		t.Fatalf("expected get statuses validation error, got %v", err)
 	}
 
-	_, err = service.GetBuildStatusStats(context.Background(), "", false)
+	_, err = service.GetBuildStatusStats(context.Background(), "")
 	if err == nil || !strings.Contains(err.Error(), "commit id is required") {
 		t.Fatalf("expected get stats validation error, got %v", err)
 	}
@@ -270,7 +270,7 @@ func TestBuildStatusFocusedErrorAndFallbackBranches(t *testing.T) {
 		}
 
 		service := NewService(client)
-		_, err = service.GetBuildStatusStats(context.Background(), "abc", true)
+		_, err = service.GetBuildStatusStats(context.Background(), "abc")
 		if err == nil {
 			t.Fatal("expected transient transport error")
 		}

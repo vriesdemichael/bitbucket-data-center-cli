@@ -817,7 +817,7 @@ func pullRequestWithActivity(ctx context.Context, c Clients, in ShowInput) (GetP
 func buildsForView(ctx context.Context, c Clients, commit string) (*viewCheckCounts, []viewCheck, bool) {
 	quality := qualityservice.NewService(c.OpenAPI)
 	var counts *viewCheckCounts
-	if stats, err := quality.GetBuildStatusStats(ctx, commit, false); err == nil {
+	if stats, err := quality.GetBuildStatusStats(ctx, commit); err == nil {
 		counts = checkCountsOf(stats)
 	}
 

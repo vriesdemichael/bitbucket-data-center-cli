@@ -18,15 +18,13 @@ import (
 // and a command added under the group fails the test below until it reads the
 // flag and is listed, or the flag moves onto the commands that read it.
 var groupFlagReaders = map[string][]string{
-	"bb auth token --user":    {"bb auth token create", "bb auth token get", "bb auth token list", "bb auth token revoke", "bb auth token update"},
-	"bb auth token --project": {"bb auth token create", "bb auth token get", "bb auth token list", "bb auth token revoke", "bb auth token update"},
-	// Read to warn: deprecated on all three, and removed with the v5 deprecations.
-	"bb build status --include-unique": {"bb build status get", "bb build status set", "bb build status stats"},
-	"bb repo comment --commit":         {"bb repo comment create", "bb repo comment delete", "bb repo comment list", "bb repo comment update"},
-	"bb repo comment --pr":             {"bb repo comment create", "bb repo comment delete", "bb repo comment list", "bb repo comment update"},
-	"bb repo ssh-key --project":        {"bb repo ssh-key add", "bb repo ssh-key list", "bb repo ssh-key remove"},
-	"bb reviewer --project":            {"bb reviewer condition create", "bb reviewer condition delete", "bb reviewer condition list", "bb reviewer condition update"},
-	"bb reviewer-group --project":      {"bb reviewer-group create", "bb reviewer-group delete", "bb reviewer-group list", "bb reviewer-group update", "bb reviewer-group users"},
+	"bb auth token --user":        {"bb auth token create", "bb auth token get", "bb auth token list", "bb auth token revoke", "bb auth token update"},
+	"bb auth token --project":     {"bb auth token create", "bb auth token get", "bb auth token list", "bb auth token revoke", "bb auth token update"},
+	"bb repo comment --commit":    {"bb repo comment create", "bb repo comment delete", "bb repo comment list", "bb repo comment update"},
+	"bb repo comment --pr":        {"bb repo comment create", "bb repo comment delete", "bb repo comment list", "bb repo comment update"},
+	"bb repo ssh-key --project":   {"bb repo ssh-key add", "bb repo ssh-key list", "bb repo ssh-key remove"},
+	"bb reviewer --project":       {"bb reviewer condition create", "bb reviewer condition delete", "bb reviewer condition list", "bb reviewer condition update"},
+	"bb reviewer-group --project": {"bb reviewer-group create", "bb reviewer-group delete", "bb reviewer-group list", "bb reviewer-group update", "bb reviewer-group users"},
 }
 
 // TestAGroupFlagReachesOnlyTheCommandsThatReadIt walks the command tree for
