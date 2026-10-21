@@ -328,23 +328,23 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 	}
 
 	fixture.arguments = map[string]map[string]any{
-		"get_pull_request":   repoArgs(map[string]any{"pr_id": fixture.mainPR}),
+		"get_pull_request":   repoArgs(map[string]any{"pr_id": liveID(t, fixture.mainPR)}),
 		"list_pull_requests": repoArgs(nil),
 		"create_pull_request": repoArgs(map[string]any{
 			"from_ref": "feature/mcp-create", "to_ref": "mcp-create-base", "title": "Opened by the conformance sweep",
 			"description": "Opened with a description of its own",
 		}),
 		"update_pull_request": repoArgs(map[string]any{
-			"pr_id": fixture.mainPR, "version": mainVersion, "title": "Renamed by the conformance sweep",
+			"pr_id": liveID(t, fixture.mainPR), "version": mainVersion, "title": "Renamed by the conformance sweep",
 		}),
-		"list_pr_comments":          repoArgs(map[string]any{"pr_id": fixture.mainPR}),
-		"get_pr_diff":               repoArgs(map[string]any{"pr_id": fixture.mainPR}),
+		"list_pr_comments":          repoArgs(map[string]any{"pr_id": liveID(t, fixture.mainPR)}),
+		"get_pr_diff":               repoArgs(map[string]any{"pr_id": liveID(t, fixture.mainPR)}),
 		"get_file_content":          repoArgs(map[string]any{"path": "mcp-main.txt", "at": "feature/mcp-main"}),
-		"add_pr_comment":            repoArgs(map[string]any{"pr_id": fixture.mainPR, "text": "left by the conformance sweep"}),
-		"prepare_pr_review":         repoArgs(map[string]any{"pr_id": fixture.reviewPR, "suggested_status": "approve"}),
-		"merge_pull_request":        repoArgs(map[string]any{"pr_id": fixture.mergePR}),
-		"enable_auto_merge":         {"project": seeded.Key, "repo": autoMergeRepo.Slug, "pr_id": fixture.armPR},
-		"disable_auto_merge":        {"project": seeded.Key, "repo": autoMergeRepo.Slug, "pr_id": fixture.cancelPR},
+		"add_pr_comment":            repoArgs(map[string]any{"pr_id": liveID(t, fixture.mainPR), "text": "left by the conformance sweep"}),
+		"prepare_pr_review":         repoArgs(map[string]any{"pr_id": liveID(t, fixture.reviewPR), "suggested_status": "approve"}),
+		"merge_pull_request":        repoArgs(map[string]any{"pr_id": liveID(t, fixture.mergePR)}),
+		"enable_auto_merge":         {"project": seeded.Key, "repo": autoMergeRepo.Slug, "pr_id": liveID(t, fixture.armPR)},
+		"disable_auto_merge":        {"project": seeded.Key, "repo": autoMergeRepo.Slug, "pr_id": liveID(t, fixture.cancelPR)},
 		"search_repositories":       {"project": seeded.Key},
 		"get_repository_clone_info": repoArgs(nil),
 		"list_branches":             repoArgs(nil),
@@ -359,8 +359,8 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 		"list_commits":         repoArgs(nil),
 		"get_commit":           repoArgs(map[string]any{"commit_id": fixture.commitID}),
 		"compare_refs":         repoArgs(map[string]any{"from": "feature/mcp-main", "to": "master"}),
-		"show":                 repoArgs(map[string]any{"kind": "pull_request", "id": fixture.mainPR}),
-		"refresh_view":         repoArgs(map[string]any{"kind": "pull_request", "id": fixture.mainPR}),
+		"show":                 repoArgs(map[string]any{"kind": "pull_request", "id": liveID(t, fixture.mainPR)}),
+		"refresh_view":         repoArgs(map[string]any{"kind": "pull_request", "id": liveID(t, fixture.mainPR)}),
 		"suggest_form_values":  repoArgs(map[string]any{"field": "branch", "text": "feature"}),
 	}
 

@@ -90,7 +90,7 @@ Resource reads, the resource list and prompts are recorded too, as `mcp_resource
 A declined confirmation looks like this:
 
 ```json
-{"timestamp":"2026-08-29T09:31:12Z","event":"mcp_tool_invocation","tool":"merge_pull_request","project":"PAYMENTS","repo":"ledger","status":"denied","confirmation":"declined","duration_ms":14,"user_identity":"alice","host":"https://bitbucket.example.com","scope":"PAYMENTS","arguments":{"pr_id":"42","project":"PAYMENTS","repo":"ledger"},"error_message":"merge_pull_request did not run: the person declined. Do not call it again unless they ask"}
+{"timestamp":"2026-08-29T09:31:12Z","event":"mcp_tool_invocation","tool":"merge_pull_request","project":"PAYMENTS","repo":"ledger","status":"denied","confirmation":"declined","duration_ms":14,"user_identity":"alice","host":"https://bitbucket.example.com","scope":"PAYMENTS","arguments":{"pr_id":42,"project":"PAYMENTS","repo":"ledger"},"error_message":"merge_pull_request did not run: the person declined. Do not call it again unless they ask"}
 ```
 
 Argument values, resource URIs and error messages are recorded, with tokens, passwords and URL credentials redacted: an argument named for a secret entirely, and anywhere else a credential appears in the text, such as a URL with a password in it or `token=` in a ref. When the client sends W3C trace context, `trace_id` carries it so a record correlates with the agent's own trace.

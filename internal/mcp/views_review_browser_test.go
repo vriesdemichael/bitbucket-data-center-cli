@@ -44,7 +44,7 @@ func TestAReviewerApprovesFromTheOverview(t *testing.T) {
 	if len(calls) != 1 {
 		t.Fatalf("the view called prepare_pr_review %d times, want once: %v", len(calls), calls)
 	}
-	for key, want := range map[string]any{"project": "PAY", "repo": "ledger", "pr_id": "42", "suggested_status": "approve"} {
+	for key, want := range map[string]any{"project": "PAY", "repo": "ledger", "pr_id": float64(42), "suggested_status": "approve"} {
 		if calls[0][key] != want {
 			t.Errorf("the review sent %s = %v, want %v (all: %v)", key, calls[0][key], want, calls[0])
 		}

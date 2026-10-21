@@ -124,7 +124,7 @@ func fixtureFrames(t *testing.T) []viewhost.Frame {
 	plainCard := card
 	plainCard.URL = plainCardURL
 
-	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": "42"}
+	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": 42}
 	return []viewhost.Frame{
 		{Title: "card", Mode: "inline", Fullscreen: true, Arguments: arguments,
 			Result: fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &card, Avatars: avatars})},
@@ -567,7 +567,7 @@ func stressFrames(t *testing.T) []viewhost.Frame {
 	longFiles, longCarried, longTruncated := splitPatch(long, maxViewFileBytes, maxViewPatchBytes)
 	longDiff := viewPayload{Kind: showKindDiff, PullRequest: &card, Diff: &viewDiff{Files: longFiles, Patch: longCarried, Truncated: longTruncated}}
 
-	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": "42"}
+	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": 42}
 	frame := func(title, mode string, fullscreen bool, width, height int, payload viewPayload) viewhost.Frame {
 		return viewhost.Frame{Title: title, Mode: mode, Fullscreen: fullscreen, Width: width, Height: height, Arguments: arguments, Result: fixtureResult(t, payload)}
 	}

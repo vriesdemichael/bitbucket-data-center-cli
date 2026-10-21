@@ -226,7 +226,7 @@ func TestAClientThatCannotAskGetsMissingRequiredClientCapability(t *testing.T) {
 func TestUpdatePullRequestAsksOnlyWhenItSetsTheDraftFlag(t *testing.T) {
 	t.Parallel()
 
-	arguments := map[string]any{"project": "PROJ", "repo": "payments", "pr_id": "7", "version": 3, "title": "A new title"}
+	arguments := map[string]any{"project": "PROJ", "repo": "payments", "pr_id": 7, "version": 3, "title": "A new title"}
 
 	session, answers := connectAsking(t, testServer(t), "", accept)
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "update_pull_request", Arguments: arguments})

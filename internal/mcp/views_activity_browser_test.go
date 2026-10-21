@@ -113,13 +113,13 @@ func overviewPayload(activity viewActivity, offers *viewOffers, fingerprint stri
 	return viewPayload{
 		Kind: showKindPullRequest, GeneratedAt: time.Now().UTC().Format(time.RFC3339), PullRequest: &pr, Activity: &activity,
 		Avatars: map[string]string{"bob": onePixelPNG, "carol": onePixelPNG},
-		Show:    &ShowInput{Kind: showKindPullRequest, Project: "PAY", Repo: "ledger", ID: "42"}, Fingerprint: fingerprint, Offers: offers,
+		Show:    &ShowInput{Kind: showKindPullRequest, Project: "PAY", Repo: "ledger", ID: 42}, Fingerprint: fingerprint, Offers: offers,
 	}
 }
 
 func activityFrames(t *testing.T) []viewhost.Frame {
 	t.Helper()
-	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": "42"}
+	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": 42}
 	payload := fixtureResult(t, overviewPayload(fixtureActivity(), everyKind, "one"))
 	return []viewhost.Frame{
 		{Title: "card", Mode: "inline", Fullscreen: true, Arguments: arguments, Result: payload},
@@ -283,7 +283,7 @@ func TestAFileInTheActivityOpensTheDiffAtIt(t *testing.T) {
 	}
 	waitInFrame(t, ctx, 0, `d.getElementById("diff-file-0") && d.getElementById("thread-2")`, "the diff did not open at ledger.go and its comment")
 	calls := refreshCalls(t, ctx, 0)
-	if len(calls) == 0 || calls[len(calls)-1]["kind"] != "diff" || calls[len(calls)-1]["id"] != "42" {
+	if len(calls) == 0 || calls[len(calls)-1]["kind"] != "diff" || calls[len(calls)-1]["id"] != float64(42) {
 		t.Errorf("opening the file asked %v, want the pull request's diff", calls)
 	}
 }
@@ -300,7 +300,7 @@ func TestTheCardCountsATaskOnce(t *testing.T) {
 			UnresolvedThreads: count(7), OpenTasks: count(2), ResolvedThreads: count(2), ResolvedTasks: count(1),
 		},
 	}
-	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": "42"}
+	arguments := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": 42}
 	payload := fixtureResult(t, viewPayload{Kind: showKindPullRequest, PullRequest: &pr})
 	ctx := browser(t, []viewhost.Frame{
 		{Title: "card", Mode: "inline", Fullscreen: true, Arguments: arguments, Result: payload},

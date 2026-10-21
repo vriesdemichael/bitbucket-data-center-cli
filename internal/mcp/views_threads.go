@@ -279,7 +279,7 @@ func fileDiffWithComments(ctx context.Context, c Clients, in ShowInput, file vie
 		segments[i] = url.PathEscape(segment)
 	}
 	path := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/diff/%s",
-		url.PathEscape(in.Project), url.PathEscape(in.Repo), url.PathEscape(in.ID), strings.Join(segments, "/"))
+		url.PathEscape(in.Project), url.PathEscape(in.Repo), in.ID.String(), strings.Join(segments, "/"))
 	query := map[string]string{"withComments": "true"}
 	if file.OldPath != "" && file.OldPath != file.Path {
 		query["srcPath"] = file.OldPath

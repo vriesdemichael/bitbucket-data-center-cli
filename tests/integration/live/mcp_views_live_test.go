@@ -91,7 +91,7 @@ func TestLiveMCPShowCarriesWhatItsViewDraws(t *testing.T) {
 			return payload
 		}
 
-		card := show(map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": id})
+		card := show(map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)})
 		pr, _ := card["pull_request"].(map[string]any)
 		if pr["title"] != title {
 			t.Errorf("the card shows %q, want %q", pr["title"], title)
@@ -116,7 +116,7 @@ func TestLiveMCPShowCarriesWhatItsViewDraws(t *testing.T) {
 			}
 		}
 
-		diff := show(map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": id})
+		diff := show(map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)})
 		patch := asString(diff["diff"].(map[string]any)["patch"])
 		if !strings.Contains(patch, "shown.txt") || !strings.Contains(patch, "+shown in a view") {
 			t.Errorf("the diff does not carry the change:\n%s", patch)
@@ -140,7 +140,7 @@ func TestLiveMCPShowCarriesWhatItsViewDraws(t *testing.T) {
 
 	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
 		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "show",
-			Arguments: map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": id}})
+			Arguments: map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)}})
 		if err != nil || result.IsError {
 			t.Fatalf("show in a client without views: %v %s", err, mcpResultText(result))
 		}
@@ -210,7 +210,7 @@ func TestLiveMCPShowCountsEveryBuild(t *testing.T) {
 	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
 	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
 		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "show",
-			Arguments: map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": id}})
+			Arguments: map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)}})
 		if err != nil || result.IsError {
 			t.Fatalf("show: %v %s", err, mcpResultText(result))
 		}
@@ -384,7 +384,7 @@ func TestLiveMCPShowPutsCommentsWhereBitbucketDoes(t *testing.T) {
 		show := func(kind string) (*mcp.CallToolResult, map[string]any) {
 			t.Helper()
 			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show",
-				Arguments: map[string]any{"kind": kind, "project": seeded.Key, "repo": repo.Slug, "id": id}})
+				Arguments: map[string]any{"kind": kind, "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)}})
 			if err != nil || result.IsError {
 				t.Fatalf("show %s: %v %s", kind, err, mcpResultText(result))
 			}
@@ -636,9 +636,9 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 		}
 
 		for _, arguments := range []map[string]any{
-			{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": id},
+			{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)},
 			{"kind": "pull_requests", "project": seeded.Key, "repo": repo.Slug},
-			{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": id},
+			{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)},
 		} {
 			payload := show(arguments)
 			fingerprint := asString(payload["fingerprint"])
@@ -652,7 +652,7 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 			}
 		}
 
-		card := show(map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": id})
+		card := show(map[string]any{"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)})
 		before := asString(card["fingerprint"])
 		comments := fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests/%s/comments", seeded.Key, repo.Slug, id)
 		if _, err := harness.liveJSON(ctx, http.MethodPost, comments, map[string]any{"text": "a comment after the view was drawn"}); err != nil {
@@ -685,7 +685,7 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 		// A view opening something it does not hold yet, such as a card
 		// opening its diff, is sent the data, with what the server lets the
 		// view do there; the model is told what the person opened.
-		opened, answer := refresh(map[string]any{"show": map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": id}}, "")
+		opened, answer := refresh(map[string]any{"show": map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)}}, "")
 		diff, _ := opened.Meta[viewPayloadKey].(map[string]any)
 		if answer["changed"] != true || diff == nil || diff["kind"] != "diff" {
 			t.Fatalf("opening the diff answered changed=%v with %v, want the diff", answer["changed"], diff)
@@ -905,7 +905,7 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 		}
 
 		// Shown again to edit, the form starts from the pull request as it is.
-		edit := call("show", map[string]any{"kind": "pull_request_form", "project": seeded.Key, "repo": repo.Slug, "id": id})
+		edit := call("show", map[string]any{"kind": "pull_request_form", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, id)})
 		editPayload, _ := edit.Meta[viewPayloadKey].(map[string]any)
 		editForm, _ := editPayload["form"].(map[string]any)
 		if editForm["mode"] != "edit" || editForm["title"] != "Made with the form, finished" || editForm["version"] != readPR["version"] {
@@ -947,7 +947,7 @@ func TestLiveMCPShowsADiffHighlighted(t *testing.T) {
 	capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
 	executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
 		result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "show",
-			Arguments: map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": fmt.Sprint(created["id"])}})
+			Arguments: map[string]any{"kind": "diff", "project": seeded.Key, "repo": repo.Slug, "id": created["id"]}})
 		if err != nil || result.IsError {
 			t.Fatalf("show diff: %v %s", err, mcpResultText(result))
 		}

@@ -17,7 +17,7 @@ import (
 )
 
 // The show call every card here answers, as the payload carries it.
-var refreshedCardCall = &ShowInput{Kind: showKindPullRequest, Project: "PAY", Repo: "ledger", ID: "42"}
+var refreshedCardCall = &ShowInput{Kind: showKindPullRequest, Project: "PAY", Repo: "ledger", ID: 42}
 
 func refreshCardPayload(title, state string, readAt time.Time, fingerprint string) viewPayload {
 	pr := fixturePullRequest()
@@ -40,7 +40,7 @@ func refreshDiffPayload(patch string, readAt time.Time, fingerprint string) view
 	pr.Title = "Round refunds to the cent"
 	return viewPayload{
 		Kind: showKindDiff, GeneratedAt: readAt.UTC().Format(time.RFC3339), PullRequest: &pr, Diff: &viewDiff{Patch: patch},
-		Show: &ShowInput{Kind: showKindDiff, Project: "PAY", Repo: "ledger", ID: "42"}, Fingerprint: fingerprint,
+		Show: &ShowInput{Kind: showKindDiff, Project: "PAY", Repo: "ledger", ID: 42}, Fingerprint: fingerprint,
 	}
 }
 
@@ -129,7 +129,7 @@ func TestAViewReadAWhileAgoRefreshesOnScreen(t *testing.T) {
 	if len(calls) != 1 {
 		t.Fatalf("the view asked %d times, want once", len(calls))
 	}
-	for key, want := range map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": "42", "since": "one"} {
+	for key, want := range map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": float64(42), "since": "one"} {
 		if calls[0][key] != want {
 			t.Errorf("the refresh sent %s = %v, want %v (all: %v)", key, calls[0][key], want, calls[0])
 		}

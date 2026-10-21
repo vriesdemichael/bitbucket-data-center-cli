@@ -113,7 +113,7 @@ func TestLiveACallerWhoseNameIsNotTheirSlug(t *testing.T) {
 		capabilities.AddExtension("io.modelcontextprotocol/ui", map[string]any{"mimeTypes": []string{"text/html;profile=mcp-app"}})
 		executeLiveMCPServerAs(t, &mcp.ClientOptions{Capabilities: capabilities}, func(session *mcp.ClientSession) {
 			result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "show", Arguments: map[string]any{
-				"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": pullRequestID,
+				"kind": "pull_request", "project": seeded.Key, "repo": repo.Slug, "id": liveID(t, pullRequestID),
 			}})
 			if err != nil || result.IsError {
 				t.Fatalf("show: %v %s", err, mcpResultText(result))

@@ -809,7 +809,7 @@ async function submitForm(payload, view, kind) {
   try {
     let id = show.id;
     if (editing) {
-      const args = { project: show.project, repo: show.repo, pr_id: String(show.id), version: form.version, title, description: draft.description };
+      const args = { project: show.project, repo: show.repo, pr_id: show.id, version: form.version, title, description: draft.description };
       // Only a change to the draft flag is sent: setting it asks the person.
       if (draft.draft !== Boolean(form.draft)) args.draft = draft.draft;
       await callForPerson(view, "update_pull_request", args);
@@ -832,7 +832,7 @@ async function submitForm(payload, view, kind) {
     const lead = "The person " + (editing ? "saved pull request " : "created pull request ") + target + " with the form you showed them.";
     view.drafts.delete(FORM_DRAFT);
     if (id && canOpen(view, "pull_request")) {
-      await openInView(view, { kind: "pull_request", project: show.project, repo: show.repo, id: String(id) }, true, lead);
+      await openInView(view, { kind: "pull_request", project: show.project, repo: show.repo, id }, true, lead);
       return;
     }
     view.formDone = { id, url: form.repository_url && id ? form.repository_url + "/pull-requests/" + id + "/overview" : "" };

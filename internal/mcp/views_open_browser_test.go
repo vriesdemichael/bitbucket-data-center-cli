@@ -40,7 +40,7 @@ func TestACardOpensItsDiffAndGoesBack(t *testing.T) {
 	if len(calls) != 1 {
 		t.Fatalf("the view asked %d times, want once: %v", len(calls), calls)
 	}
-	for key, want := range map[string]any{"kind": "diff", "project": "PAY", "repo": "ledger", "id": "42"} {
+	for key, want := range map[string]any{"kind": "diff", "project": "PAY", "repo": "ledger", "id": float64(42)} {
 		if calls[0][key] != want {
 			t.Errorf("opening the diff sent %s = %v, want %v (all: %v)", key, calls[0][key], want, calls[0])
 		}
@@ -86,7 +86,7 @@ func TestAListOpensACardAndAsksAgain(t *testing.T) {
 	}
 	waitInFrame(t, ctx, 0, `d.body.innerText.includes("Back to the list")`, "the row did not open its card")
 	calls := refreshCalls(t, ctx, 0)
-	if len(calls) != 1 || calls[0]["kind"] != "pull_request" || calls[0]["project"] != "PAY" || calls[0]["repo"] != "ledger" || calls[0]["id"] != "42" {
+	if len(calls) != 1 || calls[0]["kind"] != "pull_request" || calls[0]["project"] != "PAY" || calls[0]["repo"] != "ledger" || calls[0]["id"] != float64(42) {
 		t.Fatalf("opening the row sent %v, want the pull request PAY/ledger#42", calls)
 	}
 

@@ -166,7 +166,7 @@ function pullRequestTabs(pr, current, view) {
       type: "button",
       class: "button" + (view.opening === tab.kind ? " busy" : ""),
       disabled: Boolean(view.opening),
-      onclick: () => openInView(view, { kind: tab.kind, project: pr.repository.project_key, repo: pr.repository.slug, id: String(pr.id) }),
+      onclick: () => openInView(view, { kind: tab.kind, project: pr.repository.project_key, repo: pr.repository.slug, id: pr.id }),
     }, tab.label));
 }
 
@@ -174,7 +174,7 @@ function pullRequestTabs(pr, current, view) {
 // where the view cannot.
 function openPullRequest(pr, view) {
   if (pr.repository && canOpen(view, "pull_request")) {
-    openInView(view, { kind: "pull_request", project: pr.repository.project_key, repo: pr.repository.slug, id: String(pr.id) });
+    openInView(view, { kind: "pull_request", project: pr.repository.project_key, repo: pr.repository.slug, id: pr.id });
     return;
   }
   openLink(view.bridge, pr.url);

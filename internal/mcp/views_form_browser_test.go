@@ -26,7 +26,7 @@ func formPayload(form viewForm, offers *viewOffers) viewPayload {
 	payload := viewPayload{Kind: showKindPullRequestForm, GeneratedAt: time.Now().UTC().Format(time.RFC3339), Form: &form, Show: show, Fingerprint: "form", Offers: offers,
 		Avatars: map[string]string{"bob": onePixelPNG, "carol": onePixelPNG}}
 	if form.Mode == "edit" {
-		show.ID = "42"
+		show.ID = 42
 		pr := viewPullRequest{PullRequest: fixturePullRequest(), URL: "https://bitbucket.example.com/projects/PAY/repos/ledger/pull-requests/42/overview"}
 		payload.PullRequest = &pr
 	}
@@ -153,7 +153,7 @@ func TestAFormCreatesThePullRequestThePersonFinished(t *testing.T) {
 			t.Errorf("the form sent %s = %v, want %v (all: %v)", key, calls[1][key], want, calls[1])
 		}
 	}
-	if opened := refreshCalls(t, ctx, 0); len(opened) != 1 || opened[0]["kind"] != "pull_request" || opened[0]["id"] != "43" {
+	if opened := refreshCalls(t, ctx, 0); len(opened) != 1 || opened[0]["kind"] != "pull_request" || opened[0]["id"] != float64(43) {
 		t.Errorf("after creating it the view opened %v, want PAY/ledger#43", opened)
 	}
 	told := hostMessages(t, ctx, 0, "ui/update-model-context")
@@ -413,7 +413,7 @@ func TestAFormSavesAnExistingPullRequest(t *testing.T) {
 	if len(calls) != 1 {
 		t.Fatalf("the form called update_pull_request %d times, want once: %v", len(calls), calls)
 	}
-	for key, want := range map[string]any{"project": "PAY", "repo": "ledger", "pr_id": "42", "version": float64(7), "title": "Fix rounding in refunds", "description": "Old."} {
+	for key, want := range map[string]any{"project": "PAY", "repo": "ledger", "pr_id": float64(42), "version": float64(7), "title": "Fix rounding in refunds", "description": "Old."} {
 		if calls[0][key] != want {
 			t.Errorf("the save sent %s = %v, want %v (all: %v)", key, calls[0][key], want, calls[0])
 		}

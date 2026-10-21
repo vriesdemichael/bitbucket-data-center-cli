@@ -92,7 +92,7 @@ func TestShowInAClientWithoutViewsShowsNothing(t *testing.T) {
 	session := connect(t, testClients(t), nil, nil)
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
 		Name:      "show",
-		Arguments: map[string]any{"kind": "pull_request", "project": "PROJ", "repo": "app", "id": "7"},
+		Arguments: map[string]any{"kind": "pull_request", "project": "PROJ", "repo": "app", "id": 7},
 	})
 	if err != nil {
 		t.Fatalf("show: %v", err)
@@ -123,7 +123,7 @@ func TestShowInAClientWithViewsFetchesWhatItShows(t *testing.T) {
 	session := connectClient(t, ServerOptions{Name: "bb", Version: "test", Clients: testClients(t)}, viewClient(), "")
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
 		Name:      "show",
-		Arguments: map[string]any{"kind": "pull_request", "project": "PROJ", "repo": "app", "id": "7"},
+		Arguments: map[string]any{"kind": "pull_request", "project": "PROJ", "repo": "app", "id": 7},
 	})
 	if err != nil {
 		t.Fatalf("show: %v", err)
@@ -139,8 +139,8 @@ func TestShowNeedsWhatItsKindNeeds(t *testing.T) {
 	session := connect(t, testClients(t), nil, nil)
 	for _, arguments := range []map[string]any{
 		{"kind": "pull_request", "project": "PROJ", "repo": "app"},
-		{"kind": "diff", "project": "PROJ", "id": "7"},
-		{"kind": "pull_requests", "id": "7"},
+		{"kind": "diff", "project": "PROJ", "id": 7},
+		{"kind": "pull_requests", "id": 7},
 	} {
 		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "show", Arguments: arguments})
 		if err != nil {
@@ -168,7 +168,7 @@ func TestShowKindsFollowTheirTools(t *testing.T) {
 	}
 	result, err := withoutDiff.CallTool(context.Background(), &mcp.CallToolParams{
 		Name:      "show",
-		Arguments: map[string]any{"kind": "diff", "project": "PROJ", "repo": "app", "id": "7"},
+		Arguments: map[string]any{"kind": "diff", "project": "PROJ", "repo": "app", "id": 7},
 	})
 	if err == nil && !result.IsError {
 		t.Error("show showed a diff while get_pr_diff is excluded")
@@ -525,7 +525,7 @@ func TestShowRefusesAKindItDoesNotOffer(t *testing.T) {
 	t.Parallel()
 
 	handler := showHandler(testClients(t), viewOffers{Kinds: []string{showKindPullRequest}})
-	_, _, err := handler(context.Background(), nil, ShowInput{Kind: showKindDiff, Project: "PROJ", Repo: "app", ID: "7"})
+	_, _, err := handler(context.Background(), nil, ShowInput{Kind: showKindDiff, Project: "PROJ", Repo: "app", ID: 7})
 	if err == nil || !strings.Contains(err.Error(), "cannot show") {
 		t.Errorf("show accepted a kind it does not offer: %v", err)
 	}

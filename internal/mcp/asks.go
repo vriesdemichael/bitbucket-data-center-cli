@@ -31,7 +31,7 @@ func repoName(project, repo string) string {
 func askMergePullRequest() ask[MergePullRequestInput] {
 	return ask[MergePullRequestInput]{
 		confirm: func(ctx context.Context, c Clients, in MergePullRequestInput) (confirmation, error) {
-			pr, err := pullRequestToConfirm(ctx, c, in.Project, in.Repo, in.PRID, "merge")
+			pr, err := pullRequestToConfirm(ctx, c, in.Project, in.Repo, in.PRID.String(), "merge")
 			if err != nil {
 				return confirmation{}, err
 			}
@@ -57,7 +57,7 @@ func askMergePullRequest() ask[MergePullRequestInput] {
 func askEnableAutoMerge() ask[EnableAutoMergeInput] {
 	return ask[EnableAutoMergeInput]{
 		confirm: func(ctx context.Context, c Clients, in EnableAutoMergeInput) (confirmation, error) {
-			pr, err := pullRequestToConfirm(ctx, c, in.Project, in.Repo, in.PRID, "set auto-merge on")
+			pr, err := pullRequestToConfirm(ctx, c, in.Project, in.Repo, in.PRID.String(), "set auto-merge on")
 			if err != nil {
 				return confirmation{}, err
 			}
@@ -114,8 +114,8 @@ func askDisableAutoMerge() ask[DisableAutoMergeInput] {
 		confirm: func(_ context.Context, _ Clients, in DisableAutoMergeInput) (confirmation, error) {
 			return confirmation{
 				Message: fmt.Sprintf("Turn off auto-merge for pull request %s in %s? It will no longer merge by itself.",
-					prNumber(in.PRID), repoName(in.Project, in.Repo)),
-				Label: fmt.Sprintf("Stop auto-merging %s", prNumber(in.PRID)),
+					prNumber(in.PRID.String()), repoName(in.Project, in.Repo)),
+				Label: fmt.Sprintf("Stop auto-merging %s", prNumber(in.PRID.String())),
 			}, nil
 		},
 	}
@@ -159,7 +159,7 @@ func askUpdatePullRequest() ask[UpdatePullRequestInput] {
 		// merges. A title or a description does not.
 		when: func(in UpdatePullRequestInput) bool { return in.Draft != nil },
 		confirm: func(_ context.Context, _ Clients, in UpdatePullRequestInput) (confirmation, error) {
-			pr, repo := prNumber(in.PRID), repoName(in.Project, in.Repo)
+			pr, repo := prNumber(in.PRID.String()), repoName(in.Project, in.Repo)
 
 			c := confirmation{
 				Message: fmt.Sprintf("Mark pull request %s in %s ready for review? It can then be merged, and its reviewers are told.", pr, repo),

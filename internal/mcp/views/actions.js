@@ -19,7 +19,7 @@ async function callForPerson(view, tool, args) {
 // pullRequestArgs are the project, repository and id a pull request's tools
 // take.
 function pullRequestArgs(pr) {
-  return { project: pr.repository.project_key, repo: pr.repository.slug, pr_id: String(pr.id) };
+  return { project: pr.repository.project_key, repo: pr.repository.slug, pr_id: pr.id };
 }
 
 // Drafts: what the person is writing, kept in the view by where it is, so a

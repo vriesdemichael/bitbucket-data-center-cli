@@ -98,7 +98,7 @@ func TestRefreshViewOffersTheKindsShowOffers(t *testing.T) {
 	}
 
 	handler := refreshViewHandler(testClients(t), viewOffers{Kinds: []string{showKindPullRequest}})
-	if _, _, err := handler(context.Background(), nil, RefreshViewInput{ShowInput: ShowInput{Kind: showKindDiff, Project: "PROJ", Repo: "app", ID: "7"}}); err == nil ||
+	if _, _, err := handler(context.Background(), nil, RefreshViewInput{ShowInput: ShowInput{Kind: showKindDiff, Project: "PROJ", Repo: "app", ID: 7}}); err == nil ||
 		!strings.Contains(err.Error(), "cannot refresh") {
 		t.Errorf("refresh_view accepted a kind it does not offer: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestRefreshViewIsBoundByTheScope(t *testing.T) {
 		t.Helper()
 		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
 			Name:      "refresh_view",
-			Arguments: map[string]any{"kind": "pull_request", "project": project, "repo": "payments", "id": "7", "since": "0"},
+			Arguments: map[string]any{"kind": "pull_request", "project": project, "repo": "payments", "id": 7, "since": "0"},
 		})
 		if err != nil {
 			t.Fatalf("tools/call returned a protocol error: %v", err)
@@ -149,7 +149,7 @@ func TestTheFingerprintIsWhatTheViewShows(t *testing.T) {
 	pr := viewPullRequest{PullRequest: pullrequestservice.PullRequest{ID: 7, Title: "Retry payments", State: "OPEN"}}
 	payload := viewPayload{
 		Version: viewPayloadVersion, Kind: showKindPullRequest, GeneratedAt: "2026-09-29T10:00:00Z",
-		PullRequest: &pr, Show: &ShowInput{Kind: showKindPullRequest, Project: "PAY", Repo: "ledger", ID: "7"},
+		PullRequest: &pr, Show: &ShowInput{Kind: showKindPullRequest, Project: "PAY", Repo: "ledger", ID: 7},
 	}
 	first := fingerprintOf(payload)
 	if first == "" {
@@ -233,7 +233,7 @@ func TestAViewIsOfferedWhatTheServerExposes(t *testing.T) {
 func TestTheModelIsToldWhatThePersonOpened(t *testing.T) {
 	t.Parallel()
 
-	summary := summarizeDiff(ShowInput{Project: "PAY", Repo: "ledger", ID: "7"}, pullrequestservice.PullRequest{Title: "Retry payments"}, "diff --git a/x b/x\n+new\n")
+	summary := summarizeDiff(ShowInput{Project: "PAY", Repo: "ledger", ID: 7}, pullrequestservice.PullRequest{Title: "Retry payments"}, "diff --git a/x b/x\n+new\n")
 	if got := summary.opened(); !strings.HasPrefix(got, `The person opened the diff of PAY/ledger#7 "Retry payments" in a view: 1 files`) {
 		t.Errorf("opening reads %q", got)
 	}
