@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -397,5 +398,50 @@ func TestSetupGitDefaultsToGlobalScope(t *testing.T) {
 	}
 	if !gotGlobal {
 		t.Fatal("expected setup-git to default to global scope")
+	}
+}
+
+// setup-git names bb by the path the user reaches it by when that is the
+// running binary under another name, as Homebrew's bin/bb is a symlink into a
+// versioned directory an upgrade removes (#777); and by the running binary's
+// own path when bb on PATH is another file, such as Scoop's shim, or there is
+// none. The second name is a hard link, which every file system the tests run
+// on can make without privileges, and which os.SameFile reads as one file the
+// way it reads a symlink and its target.
+func TestHelperExecutableIsThePathTheUserReachesBBBy(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	running := filepath.Join(dir, "Cellar", "bb", "5.0.1", "bin", "bb")
+	other := filepath.Join(dir, "shims", "bb")
+	linked := filepath.Join(dir, "bin", "bb")
+	for _, path := range []string{running, other} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			t.Fatalf("make %s: %v", filepath.Dir(path), err)
+		}
+		if err := os.WriteFile(path, []byte(path), 0o700); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(linked), 0o700); err != nil {
+		t.Fatalf("make %s: %v", filepath.Dir(linked), err)
+	}
+	if err := os.Link(running, linked); err != nil {
+		t.Fatalf("link %s to %s: %v", linked, running, err)
+	}
+
+	executable := func() (string, error) { return running, nil }
+	for name, testCase := range map[string]struct {
+		lookPath func(string) (string, error)
+		want     string
+	}{
+		"the running binary under another name": {func(string) (string, error) { return linked, nil }, linked},
+		"another bb on PATH":                    {func(string) (string, error) { return other, nil }, running},
+		"no bb on PATH":                         {func(string) (string, error) { return "", errors.New("not found") }, running},
+	} {
+		got, err := helperExecutable(executable, testCase.lookPath)
+		if err != nil || got != testCase.want {
+			t.Errorf("%s: got %q, %v; want %q", name, got, err, testCase.want)
+		}
 	}
 }

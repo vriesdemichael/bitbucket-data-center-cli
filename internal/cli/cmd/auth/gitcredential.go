@@ -7,8 +7,10 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -326,7 +328,7 @@ credentials to any other remote.`,
 				)
 			}
 
-			executable, err := os.Executable()
+			executable, err := helperExecutable(os.Executable, exec.LookPath)
 			if err != nil {
 				return apperrors.New(apperrors.KindInternal, "failed to resolve the bb executable path", err)
 			}
@@ -454,6 +456,57 @@ func configureGitCredentialHelperIn(ctx context.Context, backend git.Backend, wo
 
 	options.Append = true
 	return backend.SetConfig(ctx, options)
+}
+
+// helperExecutable is the path the helper line runs bb by.
+//
+// It is absolute, because git runs the helper through a shell whose PATH may
+// not be the user's. It is the path the user reaches bb by, where that is the
+// running binary under another name: on Linux os.Executable resolves symlinks,
+// and Homebrew installs bin/bb as a symlink into a versioned Cellar directory
+// that an upgrade removes, which left git a helper it could not start and a
+// password prompt that read as a credential problem (#777). A bb on PATH that
+// is another file, such as Scoop's shim, is not the running binary, and the
+// running binary's own path is kept.
+func helperExecutable(executable func() (string, error), lookPath func(string) (string, error)) (string, error) {
+	running, err := executable()
+	if err != nil {
+		return "", err
+	}
+
+	onPath, err := lookPath("bb")
+	if err != nil {
+		return running, nil
+	}
+	onPath, err = filepath.Abs(onPath)
+	if err != nil {
+		return running, nil
+	}
+	runningInfo, err := os.Stat(running)
+	if err != nil {
+		return running, nil
+	}
+	onPathInfo, err := os.Stat(onPath)
+	if err != nil || !os.SameFile(runningInfo, onPathInfo) {
+		return running, nil
+	}
+
+	return onPath, nil
+}
+
+// helperLine reads the executable out of a helper line bb auth setup-git
+// wrote: !"<path>" auth git-credential, the path quoted as Go quotes it. A
+// line naming bb on PATH, or another helper, names no path to check.
+var helperLine = regexp.MustCompile(`^!("(?:[^"\\]|\\.)*")\s+auth git-credential\b`)
+
+func helperLinePath(line string) (string, bool) {
+	match := helperLine.FindStringSubmatch(strings.TrimSpace(line))
+	if match == nil {
+		return "", false
+	}
+	path, err := strconv.Unquote(match[1])
+
+	return path, err == nil
 }
 
 // pinnedConfigPath is the configuration file the helper line names: the one

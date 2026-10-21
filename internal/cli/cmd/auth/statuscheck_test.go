@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -111,7 +113,11 @@ func TestGitCredentialHelperState(t *testing.T) {
 	t.Parallel()
 
 	t.Run("configured", func(t *testing.T) {
-		stub := &gitConfigStub{value: `!"/usr/local/bin/bb" auth git-credential`}
+		binary := filepath.Join(t.TempDir(), "bb")
+		if err := os.WriteFile(binary, []byte("bb"), 0o700); err != nil {
+			t.Fatalf("write the binary: %v", err)
+		}
+		stub := &gitConfigStub{value: fmt.Sprintf("!%q auth git-credential --config %q", binary, filepath.Join(t.TempDir(), "config.yaml"))}
 		check := gitCredentialHelperState(context.Background(), stub, "https://bitbucket.example.com/context")
 
 		if !check.OK {
@@ -124,6 +130,29 @@ func TestGitCredentialHelperState(t *testing.T) {
 		}
 		if check.Remedy != "" {
 			t.Fatalf("expected no remedy when it passes, got %q", check.Remedy)
+		}
+	})
+
+	// An upgrade that removes the binary the helper line names leaves git a
+	// helper it cannot start, and a password prompt (#777).
+	t.Run("a helper whose binary is gone names the fix", func(t *testing.T) {
+		gone := filepath.Join(t.TempDir(), "Cellar", "bb", "5.0.1", "bin", "bb")
+		check := gitCredentialHelperState(context.Background(), &gitConfigStub{value: fmt.Sprintf("!%q auth git-credential", gone)}, "https://bitbucket.example.com")
+
+		if check.OK {
+			t.Fatalf("expected a helper naming a missing binary to fail the check, got %#v", check)
+		}
+		if !strings.Contains(check.Detail, gone) || !strings.Contains(check.Remedy, "bb auth setup-git") {
+			t.Fatalf("expected the missing path and setup-git named, got %#v", check)
+		}
+	})
+
+	// A line written by hand naming bb on PATH names no path to check.
+	t.Run("a helper naming bb on PATH", func(t *testing.T) {
+		check := gitCredentialHelperState(context.Background(), &gitConfigStub{value: "!bb auth git-credential"}, "https://bitbucket.example.com")
+
+		if !check.OK {
+			t.Fatalf("expected a helper naming bb on PATH to pass, got %#v", check)
 		}
 	})
 

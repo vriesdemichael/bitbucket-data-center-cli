@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -72,6 +73,17 @@ func gitCredentialHelperState(ctx context.Context, backend git.Backend, bitbucke
 		check.Detail = fmt.Sprintf("not configured for %s", scope)
 		check.Remedy = "run 'bb auth setup-git' so git push and git pull authenticate too"
 		return check
+	}
+
+	// A helper line naming a bb that is gone, as an upgrade that removes the
+	// old version leaves one, makes git ask for a password, which reads as a
+	// credential problem (#777).
+	if path, ok := helperLinePath(value); ok {
+		if _, err := os.Stat(path); err != nil {
+			check.Detail = fmt.Sprintf("configured for %s, and runs %s, which does not exist", scope, path)
+			check.Remedy = "run 'bb auth setup-git' again so git can start the helper"
+			return check
+		}
 	}
 
 	check.OK = true
