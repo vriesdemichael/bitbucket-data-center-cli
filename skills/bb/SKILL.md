@@ -450,7 +450,10 @@ credential `bb auth login` stored:
 }
 ```
 
-For an agent that should only read, see the read-only token below.
+The server offers only the tools that read, so its views change nothing. For
+them to comment or create a pull request as well, add `"--allow-writes"` to
+`args` when the person wants that. For an agent that
+should only read, see the read-only token below.
 
 ```bash
 # List all available MCP tools
@@ -508,13 +511,15 @@ call runs. A call that asks waits on the person. If they decline or close the
 confirmation, the call fails and says so: do not call it again unless they ask.
 A client that cannot show a confirmation gets error -32021 for those tools.
 
-A server started with `--read-only` exposes only the tools that read, and
-`--tools` or `--exclude` can narrow it further, so the connected server's
-advertised list is the reliable answer.
+A server offers only the tools that read unless it was started with
+`--allow-writes`, and `--tools` or `--exclude` can narrow it further, so the
+connected server's advertised list is the reliable answer. When a tool you need
+to make a change is not there, tell the person that the server has to be
+started with `--allow-writes`.
 
 ```bash
-# Just the tools a read-only server exposes
-bb ai mcp tools --read-only
+# Every tool, as a server started with --allow-writes exposes them
+bb ai mcp tools --allow-writes
 ```
 
 ## Output Modes

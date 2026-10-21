@@ -50,7 +50,7 @@ Every MCP client has that block: Claude Code and Claude Desktop (.mcp.json, clau
 
 Your MCP client decides whether a call runs, through its own prompts, rules or auto mode. What holds whatever it decides is Bitbucket's: its merge checks, the version a merge or an update names, and the token's permissions. --elicitation-opt-in, or mcp\_elicitation\_opt\_in in your configuration file, makes the tools that decide whether or when a pull request merges also ask you in the client before each call: merging, enabling or disabling auto-merge, submitting a review, reporting a build status, creating a tag, and changing a pull request's draft flag. A client that cannot ask is then refused those tools with error -32021. It is a convenience in a client that shows the question, not a control: a client can answer it without you. bb ai mcp tools lists which tools ask.
 
---read-only exposes only the tools that read, for a client you do not trust to make changes. --tools exposes only the tools you name, and --exclude leaves tools out; neither brings back a tool that --read-only or a scope withholds. refresh\_view and suggest\_form\_values, which only the views of show call, go with show.
+The server offers only the tools that read unless --allow-writes, or mcp\_allow\_writes: true in your configuration file, lets it make changes in Bitbucket: you decide once, when you configure it, whether this server may write. Administrative policy can keep it read-only whatever those say. --tools exposes only the tools you name, and --exclude leaves tools out; neither brings back a tool that a read-only server or a scope withholds. refresh\_view and suggest\_form\_values, which only the views of show call, go with show.
 
 --project or --repo confines the server to one project or repository, and a call aimed elsewhere is refused. Build statuses, which hang off a commit rather than a project, are withheld while a scope is set. The server is never scoped by the directory it starts in. --host is required when more than one Bitbucket instance is configured.
 
@@ -59,16 +59,19 @@ A view is drawn from show's result and has no network of its own: its buttons ca
 --audit-file records every tool call as JSON Lines, to a path or to stderr for a log collector that reads the process streams. When a record cannot be written the call is refused; --audit-failure=warn relaxes that. The trail covers this server only: an agent that can run shell commands can run bb directly. What holds either way is the token, so give this server a narrower PAT than your own.
 
 ```bash
-# Serve every tool over stdio, for an MCP client to launch
+# Serve the tools that read over stdio, for an MCP client to launch
 bb ai mcp serve
 
-# Only the tools that read, confined to one repository
-bb ai mcp serve --read-only --repo PROJ/repo
+# Let it make changes in Bitbucket too, confined to one repository
+bb ai mcp serve --allow-writes --repo PROJ/repo
 
 # Name the tools to expose, and record every call
 bb ai mcp serve --tools get_pull_request,list_pull_requests,get_pr_diff \
   --audit-file /var/log/bb/mcp-audit.jsonl
 ```
+
+`--allow-writes`
+:   Expose the tools that change Bitbucket too; without it the server offers only the tools that read
 
 `--audit-failure string`
 :   What to do when an audit record cannot be written (one of: deny, warn) (default "deny")
@@ -90,9 +93,6 @@ bb ai mcp serve --tools get_pull_request,list_pull_requests,get_pr_diff \
 
 `--project string`
 :   Confine the server to this project key; calls aimed elsewhere are refused
-
-`--read-only`
-:   Expose only the tools that read, for a client you do not trust to make changes
 
 `--repo string`
 :   Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)
@@ -126,18 +126,18 @@ when-setting-draft   a call that sets the pull request's draft flag asks
 never                the tool runs when called
 ```
 
-On a server that asks, a client that cannot show a confirmation gets error -32021 for a call that asks. Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.
+On a server that asks, a client that cannot show a confirmation gets error -32021 for a call that asks. It lists what bb ai mcp serve exposes with the same flags: the tools that read, and with --allow-writes every tool.
 
 ```bash
 # Every tool, with whether it changes anything and whether it asks first
 bb ai mcp tools
 
-# The tools a read-only server exposes
-bb ai mcp tools --read-only
+# Every tool, as a server started with --allow-writes exposes them
+bb ai mcp tools --allow-writes
 ```
 
-`--read-only`
-:   List only the tools 'bb ai mcp serve --read-only' exposes
+`--allow-writes`
+:   List the tools 'bb ai mcp serve --allow-writes' exposes, which change Bitbucket too
 
 Also takes the [global flags](global-flags.md).
 

@@ -82,6 +82,28 @@ type StoredConfig struct {
 	// file arrives with a clone, and how the MCP server treats a call is not
 	// the repository's to decide.
 	ElicitationOptIn *bool `yaml:"mcp_elicitation_opt_in,omitempty"`
+	// AllowWrites is --allow-writes for every bb ai mcp serve this
+	// configuration file starts. Only your own file reads it, for the same
+	// reason as ElicitationOptIn; the read_only policy key outranks it.
+	AllowWrites *bool `yaml:"mcp_allow_writes,omitempty"`
+}
+
+// MCPAllowWrites reports whether bb ai mcp serve may expose the tools that
+// change Bitbucket: when the flag says so, or when your own configuration file
+// does. The read_only policy key, which the caller applies, outranks both.
+func MCPAllowWrites(flag bool) (bool, error) {
+	if flag {
+		return true, nil
+	}
+	if os.Getenv("BB_DISABLE_STORED_CONFIG") == "1" {
+		return false, nil
+	}
+	stored, err := LoadStoredConfig()
+	if err != nil {
+		return false, err
+	}
+
+	return stored.AllowWrites != nil && *stored.AllowWrites, nil
 }
 
 // MCPElicitationOptIn reports whether bb ai mcp serve asks the person through

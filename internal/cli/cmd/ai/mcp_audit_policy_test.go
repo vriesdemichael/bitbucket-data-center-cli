@@ -133,18 +133,40 @@ func TestParseAuditFailure(t *testing.T) {
 	}
 }
 
-// Under the read_only policy lever the server runs read-only whatever
-// --read-only says; without it, the flag decides.
-func TestReadOnlyPolicyMakesTheServerReadOnly(t *testing.T) {
+// The server is read-only unless --allow-writes, or mcp_allow_writes in your own
+// configuration file, lets it write (#799). The read_only policy lever keeps it
+// read-only whatever those say, and says that it is why; so does the
+// deprecated --read-only, without saying so.
+func TestTheServerIsReadOnlyUnlessItMayWrite(t *testing.T) {
+	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "config.yaml"))
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
 	writeSystemPolicy(t, "policy:\n  read_only: true\n")
-	if got, err := readOnlyByPolicy(false); err != nil || !got {
-		t.Errorf("under read_only the server runs read-only = %v, %v; want true", got, err)
+	if readOnly, byPolicy, err := mcpReadOnly(true, false); err != nil || !readOnly || !byPolicy {
+		t.Errorf("under read_only with --allow-writes: read-only %v, by policy %v, %v; want both true", readOnly, byPolicy, err)
 	}
 
 	writeSystemPolicy(t, "default_host: https://bitbucket.example.com\n")
-	for _, flag := range []bool{false, true} {
-		if got, err := readOnlyByPolicy(flag); err != nil || got != flag {
-			t.Errorf("without the lever, --read-only=%v gives %v, %v", flag, got, err)
+	for _, testCase := range []struct {
+		allowWrites, readOnly, want bool
+	}{
+		{false, false, true},
+		{true, false, false},
+		{true, true, true},
+		{false, true, true},
+	} {
+		readOnly, byPolicy, err := mcpReadOnly(testCase.allowWrites, testCase.readOnly)
+		if err != nil || readOnly != testCase.want || byPolicy {
+			t.Errorf("--allow-writes=%v --read-only=%v gives read-only %v, by policy %v, %v; want %v, not by policy",
+				testCase.allowWrites, testCase.readOnly, readOnly, byPolicy, err, testCase.want)
 		}
+	}
+
+	// Your own configuration file lets it write, as --allow-writes does.
+	if err := os.WriteFile(os.Getenv("BB_CONFIG_PATH"), []byte("mcp_allow_writes: true\n"), 0o600); err != nil {
+		t.Fatalf("write the configuration file: %v", err)
+	}
+	if readOnly, _, err := mcpReadOnly(false, false); err != nil || readOnly {
+		t.Errorf("with mcp_allow_writes in the configuration file: read-only %v, %v; want false", readOnly, err)
 	}
 }

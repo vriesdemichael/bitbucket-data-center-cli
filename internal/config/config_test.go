@@ -2667,3 +2667,38 @@ func TestMCPElicitationOptInFollowsPolicyAndRefusesAnUnreadableFile(t *testing.T
 		t.Fatal("your own file, unreadable, answered as though it said nothing")
 	}
 }
+
+// Your own file lets the server write, and a file bb cannot read is an error
+// rather than a quiet "no".
+func TestMCPAllowWritesReadsYourOwnFile(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
+	if writes, err := MCPAllowWrites(false); err != nil || writes {
+		t.Fatalf("with nothing set: writes %v, %v; want false", writes, err)
+	}
+	if writes, err := MCPAllowWrites(true); err != nil || !writes {
+		t.Fatalf("with the flag: writes %v, %v; want true", writes, err)
+	}
+
+	if err := os.WriteFile(configPath, []byte("mcp_allow_writes: true\n"), 0o600); err != nil {
+		t.Fatalf("write your own file: %v", err)
+	}
+	if writes, err := MCPAllowWrites(false); err != nil || !writes {
+		t.Fatalf("with mcp_allow_writes in your own file: writes %v, %v; want true", writes, err)
+	}
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	if writes, err := MCPAllowWrites(false); err != nil || writes {
+		t.Fatalf("with your own file left unread: writes %v, %v; want false", writes, err)
+	}
+
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+	if err := os.WriteFile(configPath, []byte("hosts: 5\n"), 0o600); err != nil {
+		t.Fatalf("write your own file: %v", err)
+	}
+	if _, err := MCPAllowWrites(false); err == nil {
+		t.Fatal("your own file, unreadable, answered as though it said nothing")
+	}
+}

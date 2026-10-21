@@ -12,7 +12,7 @@ func TestMCPToolsSayWhichWriteApartFromWhichAsk(t *testing.T) {
 	t.Parallel()
 
 	byName := map[string]listedTool{}
-	for _, tool := range listToolsJSON(t) {
+	for _, tool := range listToolsJSON(t, "--allow-writes") {
 		byName[tool.Name] = tool
 	}
 
@@ -30,7 +30,7 @@ func TestMCPToolsSayWhichWriteApartFromWhichAsk(t *testing.T) {
 		}
 	}
 
-	stdout, _ := runAI(t, "mcp", "tools")
+	stdout, _ := runAI(t, "mcp", "tools", "--allow-writes")
 	for _, line := range strings.Split(stdout, "\n") {
 		fields := strings.Fields(line)
 		if len(fields) >= 2 && fields[0] == "create_tag" && fields[1] != "writes" {

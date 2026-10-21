@@ -136,7 +136,7 @@ func TestLiveMCPShowCarriesWhatItsViewDraws(t *testing.T) {
 		if counts, _ := found["check_counts"].(map[string]any); counts["failed"] != float64(1) {
 			t.Errorf("the list counts builds %v for #%s, want one failed", found["check_counts"], id)
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 
 	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
 		result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "show",
@@ -147,7 +147,7 @@ func TestLiveMCPShowCarriesWhatItsViewDraws(t *testing.T) {
 		if !strings.Contains(mcpResultText(result), "displays no views") || result.Meta[viewPayloadKey] != nil {
 			t.Errorf("a client without views got %q with payload %v", mcpResultText(result), result.Meta[viewPayloadKey] != nil)
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 // TestLiveMCPShowCountsEveryBuild: a pull request whose commit has more
@@ -240,7 +240,7 @@ func TestLiveMCPShowCountsEveryBuild(t *testing.T) {
 		if text := mcpResultText(result); !strings.Contains(text, "Builds: 4 failed, 1 in progress, 1 canceled, 1 unknown, 113 passed.") {
 			t.Errorf("the model is told %q, want every build counted", text)
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 // TestLiveMCPShowPutsCommentsWhereBitbucketDoes: a pull request's comments
@@ -509,7 +509,7 @@ func TestLiveMCPShowPutsCommentsWhereBitbucketDoes(t *testing.T) {
 		if text := mcpResultText(result); !strings.Contains(text, "Comments: 7 unresolved (1 of them open tasks), 0 resolved.") {
 			t.Errorf("the model reads %q, want the comments counted", text)
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 // pushOnTop commits content to a file on top of a branch as it is, as a
@@ -703,7 +703,7 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 		if !everyKind || !containsAny(tools, "add_pr_comment") || !containsAny(tools, "submit_pr_review") {
 			t.Errorf("a server with every tool offers its views %v, want every kind and the actions", offers)
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 func valueOf(values []any, index int) any {
@@ -911,7 +911,7 @@ func TestLiveMCPShowsAPullRequestFormAndCreatesWhatItSends(t *testing.T) {
 		if editForm["mode"] != "edit" || editForm["title"] != "Made with the form, finished" || editForm["version"] != readPR["version"] {
 			t.Errorf("the edit form starts with %v, want the pull request's title and version %v", editForm, readPR["version"])
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 // TestLiveMCPShowsADiffHighlighted: code in a diff comes highlighted, keyed by
@@ -965,5 +965,5 @@ func TestLiveMCPShowsADiffHighlighted(t *testing.T) {
 		if index < 0 || len(spans) != 4 || !strings.HasPrefix(asString(spans[0]), "k7") || len(highlighted) != 1 {
 			t.Errorf("the diff is highlighted as %v, want ledger.go's four added lines alone, package a keyword", highlighted)
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }

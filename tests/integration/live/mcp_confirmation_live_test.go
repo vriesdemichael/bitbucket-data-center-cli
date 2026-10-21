@@ -213,7 +213,7 @@ func TestLiveMCPToolsThatAskChangeNothingUnlessAccepted(t *testing.T) {
 					t.Errorf("%s: want error -32021, got %v (result %q)", name, callErr, mcpResultText(result))
 				}
 			}
-		}, "ai", "mcp", "serve", "--elicitation-opt-in")
+		}, "ai", "mcp", "serve", "--allow-writes", "--elicitation-opt-in")
 	})
 
 	t.Run("a person who declines stops the call", func(t *testing.T) {
@@ -229,7 +229,7 @@ func TestLiveMCPToolsThatAskChangeNothingUnlessAccepted(t *testing.T) {
 					t.Errorf("%s: want the call refused as declined, got %q", name, text)
 				}
 			}
-		}, "ai", "mcp", "serve", "--elicitation-opt-in")
+		}, "ai", "mcp", "serve", "--allow-writes", "--elicitation-opt-in")
 
 		if asked := answers.questions(); len(asked) != len(asking) {
 			t.Errorf("the person was asked %d times, want once for each of the %d tools that ask", len(asked), len(asking))
@@ -303,7 +303,7 @@ func TestLiveMCPMergeAsksAboutWhatItMerges(t *testing.T) {
 			if callErr != nil {
 				t.Fatalf("%s: %v", tool, callErr)
 			}
-		}, "ai", "mcp", "serve", "--elicitation-opt-in")
+		}, "ai", "mcp", "serve", "--allow-writes", "--elicitation-opt-in")
 		return result
 	}
 	merge := func(t *testing.T, person *mcp.ClientOptions, pullRequestID string) *mcp.CallToolResult {
@@ -488,7 +488,7 @@ func TestLiveMCPTitleChangeOnADraftDoesNotAsk(t *testing.T) {
 		if result.IsError {
 			t.Fatalf("the title change failed: %s", mcpResultText(result))
 		}
-	}, "ai", "mcp", "serve", "--elicitation-opt-in")
+	}, "ai", "mcp", "serve", "--allow-writes", "--elicitation-opt-in")
 
 	if asked := answers.questions(); len(asked) != 0 {
 		t.Errorf("a title change asked the person: %q", asked[0].Message)
@@ -618,7 +618,7 @@ func TestLiveMCPAnUnansweredConfirmationIsAudited(t *testing.T) {
 				t.Fatalf("want merge_pull_request to ask, got %+v, %v", result, err)
 			}
 		}
-	}, "ai", "mcp", "serve", "--elicitation-opt-in", "--project", seeded.Key, "--audit-file", auditPath)
+	}, "ai", "mcp", "serve", "--allow-writes", "--elicitation-opt-in", "--project", seeded.Key, "--audit-file", auditPath)
 
 	if state := mcpLivePullRequest(t, repoRef, pullRequestID)["state"]; state != "OPEN" {
 		t.Fatalf("pull request %s is %v after questions nobody answered, want OPEN", pullRequestID, state)
@@ -721,7 +721,7 @@ func TestLiveMCPNothingAsksUnlessTheServerOptsIn(t *testing.T) {
 		if callErr != nil || result == nil || result.IsError {
 			t.Fatalf("merge_pull_request on a server that does not ask: %v %q", callErr, mcpResultText(result))
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 
 	if state := mcpLivePullRequest(t, repoRef, pullRequestID)["state"]; state != "MERGED" {
 		t.Fatalf("pull request %s reads back as %v after the merge, want MERGED", pullRequestID, state)
@@ -732,5 +732,5 @@ func TestLiveMCPNothingAsksUnlessTheServerOptsIn(t *testing.T) {
 		if description := mergeDescription(t, session); !strings.Contains(description, "Asks the person to confirm in the client before it runs.") {
 			t.Errorf("merge_pull_request does not say it asks on a server that does: %q", description)
 		}
-	}, "ai", "mcp", "serve", "--elicitation-opt-in")
+	}, "ai", "mcp", "serve", "--allow-writes", "--elicitation-opt-in")
 }

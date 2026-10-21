@@ -7,7 +7,7 @@ search:
 
 This page is generated from the server's registries by `task docs:export-mcp-tools`. Do not edit manually.
 
-`bb ai mcp serve` registers 27 tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. On a server started with `--elicitation-opt-in`, 7 ask the person to confirm a call in the MCP client before they run.
+`bb ai mcp serve` registers 27 tools. It exposes the 18 that only read, and with `--allow-writes` every one, unless `--tools`, `--exclude` or a scope withholds it. On a server started with `--elicitation-opt-in`, 7 ask the person to confirm a call in the MCP client before they run.
 
 The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.
 
@@ -137,9 +137,9 @@ A tool asks when it merges, changes whether or when a pull request merges, or fe
 
 They ask only on a server started with `--elicitation-opt-in`, or with `mcp_elicitation_opt_in` set in your own configuration file or by policy. Everywhere else the client decides whether a call runs. The confirmation is an MCP elicitation. The client shows what the call will do, with one box to tick, and the tool acts only once the person accepts. A client that cannot show a confirmation gets error -32021 (missing required client capability) for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself is the client's to decide.
 
-## Read-only
+## Writes
 
-`bb ai mcp serve --read-only` exposes only the read-only tools. It is for a client you do not trust with the tool annotations and the confirmations: a client that cannot be trusted with them should not make changes in Bitbucket, so make them yourself.
+`bb ai mcp serve` exposes only the tools that read unless `--allow-writes`, or `mcp_allow_writes: true` in your own configuration file, lets it write, and the `read_only` policy key keeps it from writing whatever they say. Leave writes off for a client you do not trust to make changes: a client that cannot be trusted with them should not make changes in Bitbucket, so make them yourself.
 
 ## Resources
 

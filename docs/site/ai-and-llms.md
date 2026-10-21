@@ -6,9 +6,10 @@ server the CLI ships.
 ## The MCP server
 
 `bb ai mcp serve` speaks the Model Context Protocol over stdio, so an IDE or
-agent framework calls typed tools instead of parsing command output. Every
-tool is exposed, and your client decides whether a call runs, as it does for its
-own tools. With `--elicitation-opt-in`, the ones that change whether or when a
+agent framework calls typed tools instead of parsing command output. It offers
+the tools that read, and with `--allow-writes` the ones that change Bitbucket
+too; your client decides whether a call runs, as it does for its own tools. With
+`--elicitation-opt-in`, the ones that change whether or when a
 pull request merges, and creating a tag, also ask you to confirm each call in
 the client before they run, and a client that cannot show that confirmation
 cannot use them.
@@ -45,11 +46,12 @@ environment block, rather than on the command line:
 }
 ```
 
-Three flags decide what the server can reach:
+The server offers only the tools that read until you let it write. Four flags decide
+what it can reach:
 
 | Flag | Effect |
 |---|---|
-| `--read-only` | Expose only the tools that read, for a client you do not trust to make changes |
+| `--allow-writes` | Expose the tools that change Bitbucket too: create and update pull requests, comment, merge, tag. `mcp_allow_writes: true` in your configuration file does the same |
 | `--project`, `--repo` | Confine the server to one project or repository; calls aimed elsewhere are refused |
 | `--audit-file` | Append a JSON Lines record per tool call, to a path or to `stderr` |
 

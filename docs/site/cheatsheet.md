@@ -267,7 +267,7 @@ Commands, flags and the values they take — pull requests, branches, repositori
 }
 ```
 
-The rights of that token are what bound the server: give it a read-only one if the assistant should only read. [The MCP server](ai-and-llms.md#the-mcp-server) covers the flags that narrow it further, and the views it shows.
+The server offers only the tools that read; add `"--allow-writes"` to `args` to let the assistant make changes in Bitbucket too. The rights of that token bound it either way: give it a read-only one if the assistant should only read. [The MCP server](ai-and-llms.md#the-mcp-server) covers the flags that narrow it further, and the views it shows.
 
 ---
 

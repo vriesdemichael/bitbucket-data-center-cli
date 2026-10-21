@@ -108,7 +108,7 @@ func TestLiveMCPServeIsNotScopedByTheDirectoryItStartsIn(t *testing.T) {
 				t.Errorf("%q is missing from the catalogue, so the server is scoped: %v", name, listed)
 			}
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 // TestLiveMCPServeStillHonoursAnExplicitScope is the other side of the same
@@ -148,5 +148,5 @@ func TestLiveMCPServeStillHonoursAnExplicitScope(t *testing.T) {
 		if text := mcpResultText(result); !strings.Contains(text, "outside the scope") {
 			t.Errorf("the refusal does not say the call is out of scope: %s", text)
 		}
-	}, "ai", "mcp", "serve", "--repo", seeded.Key+"/"+confined.Slug)
+	}, "ai", "mcp", "serve", "--allow-writes", "--repo", seeded.Key+"/"+confined.Slug)
 }

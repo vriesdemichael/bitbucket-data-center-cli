@@ -183,6 +183,10 @@ func ConfigJSONSchema() map[string]any {
 			"disable_bb":                 policyProps["disable_bb"],
 			"disable_mcp_server":         policyProps["disable_mcp_server"],
 			"read_only":                  policyProps["read_only"],
+			"mcp_allow_writes": map[string]any{
+				"type":        "boolean",
+				"description": "Let 'bb ai mcp serve' expose the tools that change Bitbucket, as --allow-writes does; without it the server offers only the tools that read. Read from your own configuration file only. The read_only policy key keeps the server read-only whatever this says.",
+			},
 			"policies": map[string]any{
 				"type":                 "object",
 				"additionalProperties": false,

@@ -33,6 +33,7 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	var toolsFlag string
 	var excludeFlag string
 	var readOnly bool
+	var allowWrites bool
 	var yolo bool
 	var projectScope string
 	var repoScope string
@@ -44,11 +45,11 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Start the MCP server (stdio transport)",
-		Example: `  # Serve every tool over stdio, for an MCP client to launch
+		Example: `  # Serve the tools that read over stdio, for an MCP client to launch
   bb ai mcp serve
 
-  # Only the tools that read, confined to one repository
-  bb ai mcp serve --read-only --repo PROJ/repo
+  # Let it make changes in Bitbucket too, confined to one repository
+  bb ai mcp serve --allow-writes --repo PROJ/repo
 
   # Name the tools to expose, and record every call
   bb ai mcp serve --tools get_pull_request,list_pull_requests,get_pr_diff \
@@ -90,11 +91,14 @@ error -32021. It is a convenience in a client that shows the question, not a
 control: a client can answer it without you. bb ai mcp tools lists which tools
 ask.
 
---read-only exposes only the tools that read, for a client you do not trust to
-make changes. --tools exposes only the tools you name, and
---exclude leaves tools out; neither brings back a tool that --read-only or a
-scope withholds. refresh_view and suggest_form_values, which only the views of
-show call, go with show.
+The server offers only the tools that read unless --allow-writes, or
+mcp_allow_writes: true in your configuration file, lets it make changes in
+Bitbucket: you decide once, when you configure it, whether this server may
+write. Administrative policy can keep it read-only whatever those say.
+--tools exposes only the tools you name, and --exclude leaves tools out;
+neither brings back a tool that a read-only server or a scope withholds.
+refresh_view and suggest_form_values, which only the views of show call, go
+with show.
 
 --project or --repo confines the server to one project or repository, and a
 call aimed elsewhere is refused. Build statuses, which hang off a commit rather
@@ -116,8 +120,9 @@ covers this server only: an agent that can run shell commands can run bb
 directly. What holds either way is the token, so give this server a narrower
 PAT than your own.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Accepted, and inert: nothing is withheld for them to expose.
-			warnDeprecatedFlags(cmd, "bb ai mcp serve", "yolo", "allow-writes")
+			// --yolo is accepted and inert. --read-only is accepted and still
+			// keeps the server read-only, which it is by default.
+			warnDeprecatedFlags(cmd, "bb ai mcp serve", "yolo", "read-only")
 
 			// Multi-instance host enforcement.
 			if strings.TrimSpace(host) == "" {
@@ -184,7 +189,7 @@ PAT than your own.`,
 				audit.Scope = scope.String()
 			}
 
-			serveReadOnly, err := readOnlyByPolicy(readOnly)
+			serveReadOnly, byPolicy, err := mcpReadOnly(allowWrites, readOnly)
 			if err != nil {
 				return err
 			}
@@ -200,6 +205,7 @@ PAT than your own.`,
 				Allow:              splitCSV(toolsFlag),
 				Exclude:            splitCSV(excludeFlag),
 				ReadOnly:           serveReadOnly,
+				ReadOnlyByPolicy:   byPolicy,
 				ElicitationOptIn:   asks,
 				Scope:              scope,
 				Audit:              audit,
@@ -227,13 +233,14 @@ PAT than your own.`,
 	cmd.Flags().StringVar(&host, "host", "", "Target Bitbucket instance URL; required when multiple instances are configured")
 	cmd.Flags().StringVar(&toolsFlag, "tools", "", "Comma-separated allowlist of tool names to expose")
 	cmd.Flags().StringVar(&excludeFlag, "exclude", "", "Comma-separated denylist of tool names to suppress")
-	cmd.Flags().BoolVar(&readOnly, "read-only", false, "Expose only the tools that read, for a client you do not trust to make changes")
+	cmd.Flags().BoolVar(&allowWrites, "allow-writes", false, "Expose the tools that change Bitbucket too; without it the server offers only the tools that read")
 	// Deprecated (ADR-084): still accepted, so an existing client configuration
-	// keeps starting, and hidden, since there is nothing left for them to do.
+	// keeps starting, and hidden. --yolo has nothing left to do; --read-only is
+	// the default, and still keeps a server read-only whatever --allow-writes says.
+	cmd.Flags().BoolVar(&readOnly, "read-only", false, "Deprecated: the server is read-only unless --allow-writes is passed")
 	cmd.Flags().BoolVar(&yolo, "yolo", false, "Deprecated: has no effect")
-	cmd.Flags().BoolVar(&yolo, "allow-writes", false, "Deprecated: has no effect")
+	_ = cmd.Flags().MarkHidden("read-only")
 	_ = cmd.Flags().MarkHidden("yolo")
-	_ = cmd.Flags().MarkHidden("allow-writes")
 	cmd.Flags().StringVar(&projectScope, "project", "", "Confine the server to this project key; calls aimed elsewhere are refused")
 	cmd.Flags().StringVar(&repoScope, "repo", "", "Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)")
 	cmd.Flags().StringVar(&auditFile, "audit-file", "", "Append a JSON Lines audit record per tool call to this path, or to 'stderr'")
@@ -288,6 +295,7 @@ func parseAuditFailure(value string) (bbmcp.AuditFailureMode, error) {
 
 func newMCPToolsCommand(deps Dependencies) *cobra.Command {
 	var readOnly bool
+	var allowWrites bool
 	var safeOnly bool
 
 	cmd := &cobra.Command{
@@ -296,8 +304,8 @@ func newMCPToolsCommand(deps Dependencies) *cobra.Command {
 		Example: `  # Every tool, with whether it changes anything and whether it asks first
   bb ai mcp tools
 
-  # The tools a read-only server exposes
-  bb ai mcp tools --read-only`,
+  # Every tool, as a server started with --allow-writes exposes them
+  bb ai mcp tools --allow-writes`,
 		Long: `Print every MCP tool the serve command exposes.
 
 Use this output to build --tools and --exclude allowlists and denylists.
@@ -312,14 +320,21 @@ started with --elicitation-opt-in; without it, no tool asks:
 
 On a server that asks, a client that cannot show a confirmation gets error
 -32021 for a call that asks.
-Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.`,
+It lists what bb ai mcp serve exposes with the same flags: the tools that read,
+and with --allow-writes every tool.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Accepted, and inert: every tool is exposed without --yolo, which
 			// is the set it used to narrow the listing to.
-			warnDeprecatedFlags(cmd, "bb ai mcp tools", "safe-only")
+			warnDeprecatedFlags(cmd, "bb ai mcp tools", "safe-only", "read-only")
 
+			// What bb ai mcp serve exposes with the same flags, configuration
+			// and policy.
+			listReadOnly, _, err := mcpReadOnly(allowWrites, readOnly)
+			if err != nil {
+				return err
+			}
 			specs := bbmcp.AllSpecs()
-			if readOnly {
+			if listReadOnly {
 				filtered := make([]bbmcp.Spec, 0, len(specs))
 				for _, spec := range specs {
 					if spec.ReadOnly() {
@@ -355,24 +370,40 @@ Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.`,
 		},
 	}
 
-	cmd.Flags().BoolVar(&readOnly, "read-only", false, "List only the tools 'bb ai mcp serve --read-only' exposes")
+	cmd.Flags().BoolVar(&allowWrites, "allow-writes", false, "List the tools 'bb ai mcp serve --allow-writes' exposes, which change Bitbucket too")
 	// Deprecated (ADR-084): still accepted, and hidden.
-	cmd.Flags().BoolVar(&safeOnly, "safe-only", false, "Deprecated: lists every tool")
+	cmd.Flags().BoolVar(&readOnly, "read-only", false, "Deprecated: the listing is of a read-only server unless --allow-writes is passed")
+	cmd.Flags().BoolVar(&safeOnly, "safe-only", false, "Deprecated: has no effect")
+	_ = cmd.Flags().MarkHidden("read-only")
 	_ = cmd.Flags().MarkHidden("safe-only")
 
 	return cmd
 }
 
-// readOnlyByPolicy is whether the server runs read-only: when --read-only
-// asks, or when the read_only policy lever says so, whatever the client's
-// configuration passes (ADR-100).
-func readOnlyByPolicy(flag bool) (bool, error) {
+// mcpReadOnly is whether the server runs read-only, and whether policy is why.
+//
+// Read-only unless --allow-writes, or mcp_allow_writes in your own configuration
+// file, lets it write (ADR-103). The read_only policy lever keeps it read-only
+// whatever the client's configuration passes (ADR-100), and so does the
+// deprecated --read-only.
+func mcpReadOnly(allowWrites, readOnly bool) (bool, bool, error) {
 	restrictions, err := config.LoadRestrictions()
 	if err != nil {
-		return false, err
+		return false, false, err
+	}
+	if restrictions.ReadOnly {
+		return true, true, nil
+	}
+	if readOnly {
+		return true, false, nil
 	}
 
-	return flag || restrictions.ReadOnly, nil
+	writes, err := config.MCPAllowWrites(allowWrites)
+	if err != nil {
+		return false, false, err
+	}
+
+	return !writes, false, nil
 }
 
 // warnDeprecatedFlags prints the registered warning for each deprecated flag
