@@ -104,7 +104,7 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
     :   List tags in a repository. Use to find the latest release baseline or versioning information.
 
     `merge_pull_request`
-    :   Merge a pull request. All required build checks must pass and all reviewers must have approved. Asks the person to confirm in the client before it runs.
+    :   Merge a pull request. Bitbucket refuses the merge while one of the repository's merge checks fails: each repository sets its own, which may require approvals, passing builds or resolved tasks, or nothing at all. get_pull_request lists what blocks the merge in pull_request.mergeability.blockers. Asks the person to confirm in the client before it runs.
 
     `refresh_view`
     :   Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.

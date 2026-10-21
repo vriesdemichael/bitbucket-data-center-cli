@@ -449,7 +449,9 @@ type MergePullRequestInput struct {
 func specMergePullRequest() Spec {
 	tool := &mcp.Tool{
 		Name: "merge_pull_request",
-		Description: "Merge a pull request. All required build checks must pass and all reviewers must have approved. " +
+		Description: "Merge a pull request. Bitbucket refuses the merge while one of the repository's merge checks fails: " +
+			"each repository sets its own, which may require approvals, passing builds or resolved tasks, or nothing at all. " +
+			"get_pull_request lists what blocks the merge in pull_request.mergeability.blockers. " +
 			"Asks the person to confirm in the client before it runs.",
 		// Idempotent: a second call finds the pull request merged and changes
 		// nothing.
