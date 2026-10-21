@@ -170,7 +170,8 @@ func TestAuthCommandAdditionalBranches(t *testing.T) {
 
 	t.Run("login with positional host arg stores credentials", func(t *testing.T) {
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
+			NewUsersClient: offlineUsersClient,
+			JSONEnabled:    func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
 				return config.AppConfig{BitbucketURL: "http://resolved.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
@@ -194,7 +195,8 @@ func TestAuthCommandAdditionalBranches(t *testing.T) {
 
 	t.Run("login with client cert and key stores in profile", func(t *testing.T) {
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return false },
+			NewUsersClient: offlineUsersClient,
+			JSONEnabled:    func() bool { return false },
 			LoadConfig: func() (config.AppConfig, error) {
 				return config.AppConfig{BitbucketURL: "http://mtls.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
@@ -883,7 +885,8 @@ func TestAuthNonJSONHumanOutputPaths(t *testing.T) {
 
 	t.Run("auth login JSON output", func(t *testing.T) {
 		cmd := New(Dependencies{
-			JSONEnabled: func() bool { return true },
+			NewUsersClient: offlineUsersClient,
+			JSONEnabled:    func() bool { return true },
 			LoadConfig: func() (config.AppConfig, error) {
 				return config.AppConfig{BitbucketURL: "http://login-json.local:7990", RequestTimeout: unreachableTimeout}, nil
 			},
@@ -975,7 +978,8 @@ func TestAuthAliasCommandsAndDiscovery(t *testing.T) {
 	}
 
 	cmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
+		NewUsersClient: offlineUsersClient,
+		JSONEnabled:    func() bool { return true },
 		LoadConfig: func() (config.AppConfig, error) {
 			return config.LoadFromEnv()
 		},
@@ -1100,6 +1104,7 @@ func TestAuthJSONOutputsUseEmptyAliasArrays(t *testing.T) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
 	cmd := New(Dependencies{
+		NewUsersClient:          offlineUsersClient,
 		JSONEnabled:             func() bool { return true },
 		LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
 		LoadConfigWithOverrides: config.LoadWithOverrides,
@@ -1438,6 +1443,7 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 
 	t.Run("login without discovery has no alias line", func(t *testing.T) {
 		cmd := New(Dependencies{
+			NewUsersClient:          offlineUsersClient,
 			JSONEnabled:             func() bool { return false },
 			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
 			LoadConfigWithOverrides: config.LoadWithOverrides,
@@ -1562,6 +1568,7 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 		}
 
 		cmd := New(Dependencies{
+			NewUsersClient:          offlineUsersClient,
 			JSONEnabled:             func() bool { return false },
 			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
 			LoadConfigWithOverrides: config.LoadWithOverrides,
@@ -1657,6 +1664,7 @@ func TestAuthAliasHumanAndErrorBranches(t *testing.T) {
 
 	t.Run("login ignores discovery failure and still stores credentials", func(t *testing.T) {
 		cmd := New(Dependencies{
+			NewUsersClient:          offlineUsersClient,
 			JSONEnabled:             func() bool { return false },
 			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
 			LoadConfigWithOverrides: config.LoadWithOverrides,
@@ -1780,6 +1788,7 @@ func TestAliasDiscoverPreservesManualAliases(t *testing.T) {
 
 	newAuthCommand := func() *cobra.Command {
 		return New(Dependencies{
+			NewUsersClient:          offlineUsersClient,
 			JSONEnabled:             func() bool { return true },
 			LoadConfig:              func() (config.AppConfig, error) { return config.LoadFromEnv() },
 			LoadConfigWithOverrides: config.LoadWithOverrides,
@@ -1885,3 +1894,31 @@ func TestNoGlobalCertificateFallsBackToTheEnvironment(t *testing.T) {
 // TestLiveAuthIdentityAndTokenURL: `auth token-url` with no --host, whose
 // per-user path can only be built from the slug the server reports. The unit
 // version wrote the users payload the command then read back.
+
+// offlineUsersClient stands in for Bitbucket where a test logs in with a
+// token: the login asks who owns the token, and a unit test must not reach the
+// network to be told. What Bitbucket answers is TestLiveGitCredentialHelperSendsWhatBitbucketTakes's.
+func offlineUsersClient(config.AppConfig) (usersClient, error) {
+	return nil, errors.New("users client unavailable in test")
+}
+
+// A login Bitbucket cannot be asked about still stores the token, with no
+// owner: git 2.46 and later send it as Bearer, which needs none.
+func TestLoginWithoutAnAnswerStoresNoTokenOwner(t *testing.T) {
+	cmd, _, stderr := newLoginCommand(t)
+	cmd.SetIn(strings.NewReader("piped-token\n"))
+	cmd.SetArgs([]string{"login", "https://no-owner.example.invalid", "--token-stdin", "--discover-aliases=false"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("login failed: %v (stderr: %s)", err, stderr.String())
+	}
+
+	stored, err := config.LoadStoredConfig()
+	if err != nil {
+		t.Fatalf("load stored config: %v", err)
+	}
+	profile := stored.Hosts[stored.DefaultHost]
+	if profile.AuthMode != "token" || profile.Username != "" {
+		t.Fatalf("expected a token login with no owner, got %+v", profile)
+	}
+}

@@ -736,6 +736,37 @@ func TestSaveLoginTokenAndMapInitialization(t *testing.T) {
 	}
 }
 
+// The token owner's name is stored as the profile's username, where git's
+// credential helper reads it (#801), and a later login with a token that has
+// none does not inherit it.
+func TestSaveLoginStoresTheTokenOwner(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+
+	if _, err := SaveLogin(LoginInput{Host: "https://owner.local", Token: "personal-token", TokenOwner: "Jane.Doe+ci@example.com"}); err != nil {
+		t.Fatalf("save token login failed: %v", err)
+	}
+	resolved, ok, err := LoadStoredAuthForHostStrict("https://owner.local")
+	if err != nil || !ok {
+		t.Fatalf("load stored login: %v (found %v)", err, ok)
+	}
+	if resolved.BitbucketUsername != "Jane.Doe+ci@example.com" || resolved.BitbucketToken != "personal-token" {
+		t.Fatalf("expected the token beside its owner, got %q / %q", resolved.BitbucketUsername, resolved.BitbucketToken)
+	}
+
+	if _, err := SaveLogin(LoginInput{Host: "https://owner.local", Token: "repository-token"}); err != nil {
+		t.Fatalf("save second token login failed: %v", err)
+	}
+	resolved, _, err = LoadStoredAuthForHostStrict("https://owner.local")
+	if err != nil {
+		t.Fatalf("load stored login: %v", err)
+	}
+	if resolved.BitbucketUsername != "" || resolved.BitbucketToken != "repository-token" {
+		t.Fatalf("expected the new token with no owner, got %q / %q", resolved.BitbucketUsername, resolved.BitbucketToken)
+	}
+}
+
 func TestLoadStoredConfigInvalidYAML(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "bb", "config.yaml")
 	t.Setenv("BB_CONFIG_PATH", configPath)

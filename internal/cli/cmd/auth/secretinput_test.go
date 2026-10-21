@@ -139,9 +139,10 @@ func newLoginCommand(t *testing.T) (*cobra.Command, *bytes.Buffer, *bytes.Buffer
 	stderr := &bytes.Buffer{}
 
 	cmd := New(Dependencies{
-		JSONEnabled: func() bool { return true },
-		LoadConfig:  func() (config.AppConfig, error) { return config.LoadFromEnv() },
-		WriteJSON:   func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		JSONEnabled:    func() bool { return true },
+		LoadConfig:     func() (config.AppConfig, error) { return config.LoadFromEnv() },
+		WriteJSON:      func(writer io.Writer, payload any) error { return jsonoutput.Write(writer, payload) },
+		NewUsersClient: offlineUsersClient,
 	})
 	cmd.SetOut(stdout)
 	cmd.SetErr(stderr)

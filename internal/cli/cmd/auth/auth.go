@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/safederef"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -287,20 +288,26 @@ plaintext even with --allow-insecure-storage.`,
 			clientCert := firstNonBlank(loginClientCert, derefString(globals.ClientCert), os.Getenv("BB_CLIENT_CERT"))
 			clientKey := firstNonBlank(loginClientKey, derefString(globals.ClientKey), os.Getenv("BB_CLIENT_KEY"))
 
+			probeCfg := config.AppConfig{
+				BitbucketURL:      resolvedHost,
+				BitbucketToken:    token,
+				BitbucketUsername: strings.TrimSpace(loginUsername),
+				BitbucketPassword: password,
+				ClientCertFile:    clientCert,
+				ClientKeyFile:     clientKey,
+			}
+
 			aliases := []string(nil)
 			if loginDiscoverAliases {
-				probeCfg := config.AppConfig{
-					BitbucketURL:      resolvedHost,
-					BitbucketToken:    token,
-					BitbucketUsername: strings.TrimSpace(loginUsername),
-					BitbucketPassword: password,
-					ClientCertFile:    clientCert,
-					ClientKeyFile:     clientKey,
-				}
 				discoveredAliases, err := discoverAliases(cmd.Context(), probeCfg, deps.NewReposClient)
 				if err == nil {
 					aliases = discoveredAliases
 				}
+			}
+
+			owner := ""
+			if strings.TrimSpace(token) != "" {
+				owner = tokenOwner(cmd.Context(), probeCfg, deps.NewUsersClient)
 			}
 
 			stored, err := config.SaveLogin(config.LoginInput{
@@ -309,6 +316,7 @@ plaintext even with --allow-insecure-storage.`,
 				Username:             loginUsername,
 				Password:             password,
 				Token:                token,
+				TokenOwner:           owner,
 				ClientCert:           clientCert,
 				ClientKey:            clientKey,
 				SetDefault:           loginSetDefault,
@@ -804,6 +812,64 @@ func safeStringFromEnum(value *openapigenerated.RestApplicationUserType) string 
 		return ""
 	}
 	return string(*value)
+}
+
+// tokenOwner is the login name git has to send beside token over Basic auth,
+// or "" when the token has no such name or Bitbucket could not be asked.
+//
+// Over Basic auth Bitbucket takes a personal access token only beside its
+// owner's login name -- not the slug, which differs from it for a name with
+// an @ or a + in it -- and a project or repository token only beside
+// x-token-auth (#801). Bitbucket names the caller of every authenticated
+// request in X-AUSERNAME, a project or repository token's user included, so
+// the name is tried over Basic auth and kept only if Bitbucket takes it there.
+//
+// Best effort, as alias discovery is: a login with no answer stores no name,
+// and git 2.46 and later send the token as Bearer, which needs none.
+func tokenOwner(ctx context.Context, cfg config.AppConfig, newUsersClient func(config.AppConfig) (usersClient, error)) string {
+	name := authenticatedName(ctx, cfg, newUsersClient)
+	if name == "" {
+		return ""
+	}
+
+	basic := cfg
+	basic.BitbucketToken = ""
+	basic.BitbucketUsername = name
+	basic.BitbucketPassword = cfg.BitbucketToken
+	if authenticatedName(ctx, basic, newUsersClient) != name {
+		return ""
+	}
+
+	return name
+}
+
+// authenticatedName is the login name Bitbucket authenticated a request as,
+// from X-AUSERNAME, which carries it percent-encoded. "" when it was not
+// authenticated.
+func authenticatedName(ctx context.Context, cfg config.AppConfig, newUsersClient func(config.AppConfig) (usersClient, error)) string {
+	client, err := newUsersClient(cfg)
+	if err != nil {
+		return ""
+	}
+
+	// One user rather than the default page of 25: only the header is read.
+	oneUser := func(_ context.Context, request *http.Request) error {
+		query := request.URL.Query()
+		query.Set("limit", "1")
+		request.URL.RawQuery = query.Encode()
+		return nil
+	}
+	response, err := client.GetUsers2WithResponse(ctx, nil, oneUser)
+	if err != nil || response.HTTPResponse == nil || response.StatusCode() != http.StatusOK {
+		return ""
+	}
+
+	name, err := url.PathUnescape(strings.TrimSpace(response.HTTPResponse.Header.Get("X-AUSERNAME")))
+	if err != nil {
+		return ""
+	}
+
+	return name
 }
 
 func discoverAliases(ctx context.Context, cfg config.AppConfig, newReposClient func(config.AppConfig) (repositoriesClient, error)) ([]string, error) {

@@ -45,6 +45,26 @@ func TestParseCredentialRequestIgnoresUnknownKeys(t *testing.T) {
 	}
 }
 
+// capability[]=authtype is what lets the helper answer with a Bearer token;
+// another capability alone does not.
+func TestParseCredentialRequestReadsTheAuthtypeCapability(t *testing.T) {
+	t.Parallel()
+
+	for input, want := range map[string]bool{
+		"capability[]=authtype\ncapability[]=state\nprotocol=https\nhost=bitbucket.example.com\n\n": true,
+		"capability[]=state\nprotocol=https\nhost=bitbucket.example.com\n\n":                        false,
+		"protocol=https\nhost=bitbucket.example.com\n\n":                                            false,
+	} {
+		request, err := parseCredentialRequest(strings.NewReader(input))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if request.AuthType != want {
+			t.Fatalf("AuthType = %v for %q, want %v", request.AuthType, input, want)
+		}
+	}
+}
+
 // A blank line terminates the request. Anything after it belongs to the next
 // exchange and must not leak into this one.
 func TestParseCredentialRequestStopsAtBlankLine(t *testing.T) {

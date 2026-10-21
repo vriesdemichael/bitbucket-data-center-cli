@@ -67,23 +67,113 @@ func writeStoredConfig(t *testing.T, hostURL, token string, aliases ...string) {
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 }
 
+// writeStoredTokenOwnerConfig is writeStoredConfig with the token owner's
+// login name stored beside the token, as bb auth login stores it for a
+// personal access token.
+func writeStoredTokenOwnerConfig(t *testing.T, hostURL, token, owner string) {
+	t.Helper()
+
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	key := "\"" + hostURL + "\""
+	contents := "default_host: " + key + "\n" +
+		"hosts:\n" +
+		"  " + key + ":\n" +
+		"    url: " + hostURL + "\n" +
+		"    auth_mode: token\n" +
+		"    username: " + owner + "\n" +
+		"insecure_secrets:\n" +
+		"  " + key + ":\n" +
+		"    token: " + token + "\n"
+	if err := os.WriteFile(configPath, []byte(contents), 0o600); err != nil {
+		t.Fatalf("write stored config: %v", err)
+	}
+
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+}
+
+// With no owner stored, the token goes beside x-token-auth: what Bitbucket
+// takes over Basic auth for a project or repository token (#801).
 func TestResolveGitCredentialReturnsStoredToken(t *testing.T) {
 	writeStoredConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token")
 
-	username, password, ok, _ := resolveGitCredential(credentialRequest{
+	credential, ok, _ := resolveGitCredential(credentialRequest{
 		Protocol: "https",
 		Host:     "bb-credhelper-fixture.invalid",
 	})
 	if !ok {
 		t.Fatal("expected credentials for the configured host")
 	}
-	if password != "secret-token" {
-		t.Fatalf("unexpected password: %q", password)
+	if credential != (gitCredential{Username: "x-token-auth", Password: "secret-token"}) {
+		t.Fatalf("unexpected credential: %+v", credential)
 	}
-	// Bitbucket ignores the username when the password is a valid access token,
-	// but git requires the field to be present.
-	if strings.TrimSpace(username) == "" {
-		t.Fatal("expected a non-empty username")
+}
+
+// A personal token goes beside its owner's login name, which is the only
+// username Bitbucket takes it with over Basic auth (#801).
+func TestResolveGitCredentialSendsTheTokenOwnersName(t *testing.T) {
+	writeStoredTokenOwnerConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token", "alice")
+
+	for _, requested := range []string{"", "bob"} {
+		credential, ok, _ := resolveGitCredential(credentialRequest{
+			Protocol: "https",
+			Host:     "bb-credhelper-fixture.invalid",
+			Username: requested,
+		})
+		if !ok {
+			t.Fatal("expected credentials for the configured host")
+		}
+		if credential != (gitCredential{Username: "alice", Password: "secret-token"}) {
+			t.Fatalf("with git asking for %q, got %+v", requested, credential)
+		}
+	}
+}
+
+// The username git names, from the remote URL or credential.username, is
+// sent when no owner is stored.
+func TestResolveGitCredentialSendsTheUsernameGitNames(t *testing.T) {
+	writeStoredConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token")
+
+	credential, ok, _ := resolveGitCredential(credentialRequest{
+		Protocol: "https",
+		Host:     "bb-credhelper-fixture.invalid",
+		Username: "alice",
+	})
+	if !ok {
+		t.Fatal("expected credentials for the configured host")
+	}
+	if credential != (gitCredential{Username: "alice", Password: "secret-token"}) {
+		t.Fatalf("unexpected credential: %+v", credential)
+	}
+}
+
+// git 2.46 and later can take the token as Bearer, which needs no username
+// and is how every kind of token authenticates (#801).
+func TestResolveGitCredentialSendsATokenAsBearerWhenGitCanTakeOne(t *testing.T) {
+	for name, write := range map[string]func(t *testing.T){
+		"no owner stored": func(t *testing.T) {
+			writeStoredConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token")
+		},
+		"owner stored": func(t *testing.T) {
+			writeStoredTokenOwnerConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token", "alice")
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			write(t)
+
+			credential, ok, _ := resolveGitCredential(credentialRequest{
+				Protocol: "https",
+				Host:     "bb-credhelper-fixture.invalid",
+				Username: "bob",
+				AuthType: true,
+			})
+			if !ok {
+				t.Fatal("expected credentials for the configured host")
+			}
+			if credential != (gitCredential{AuthType: "Bearer", Credential: "secret-token"}) {
+				t.Fatalf("unexpected credential: %+v", credential)
+			}
+		})
 	}
 }
 
@@ -92,7 +182,7 @@ func TestResolveGitCredentialReturnsStoredToken(t *testing.T) {
 func TestResolveGitCredentialMatchesConfiguredAlias(t *testing.T) {
 	writeStoredConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token", "git.example.com")
 
-	if _, _, ok, _ := resolveGitCredential(credentialRequest{Protocol: "https", Host: "git.example.com"}); !ok {
+	if _, ok, _ := resolveGitCredential(credentialRequest{Protocol: "https", Host: "git.example.com"}); !ok {
 		t.Fatal("expected a configured alias to resolve")
 	}
 }
@@ -104,7 +194,7 @@ func TestResolveGitCredentialRefusesUnconfiguredHosts(t *testing.T) {
 	writeStoredConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token")
 
 	for _, host := range []string{"github.com", "gitlab.com", "bb-credhelper-fixture.invalid.attacker.test"} {
-		if _, _, ok, _ := resolveGitCredential(credentialRequest{Protocol: "https", Host: host}); ok {
+		if _, ok, _ := resolveGitCredential(credentialRequest{Protocol: "https", Host: host}); ok {
 			t.Fatalf("resolved credentials for unconfigured host %q", host)
 		}
 	}
@@ -114,7 +204,7 @@ func TestResolveGitCredentialWithNothingStored(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
-	if _, _, ok, _ := resolveGitCredential(credentialRequest{Protocol: "https", Host: "bb-credhelper-fixture.invalid"}); ok {
+	if _, ok, _ := resolveGitCredential(credentialRequest{Protocol: "https", Host: "bb-credhelper-fixture.invalid"}); ok {
 		t.Fatal("expected no credentials when nothing is stored")
 	}
 }
@@ -142,6 +232,30 @@ func TestGitCredentialGetEmitsGitProtocolResponse(t *testing.T) {
 	// git reads key=value lines terminated by a blank line.
 	if !strings.HasSuffix(response, "\n\n") {
 		t.Fatalf("response is not blank-line terminated: %q", response)
+	}
+}
+
+// The Bearer answer in the form git parses: the capability announced before
+// the values that depend on it, as git-credential(1) requires, and then the
+// scheme and credential git joins into the Authorization header. git sends
+// capability[]=state too, which the answer does not use.
+func TestGitCredentialGetEmitsBearerWhenGitOffersAuthtype(t *testing.T) {
+	writeStoredConfig(t, "https://bb-credhelper-fixture.invalid", "secret-token")
+
+	cmd := newGitCredentialCommand()
+	output := &strings.Builder{}
+	cmd.SetOut(output)
+	cmd.SetErr(output)
+	cmd.SetIn(strings.NewReader("capability[]=authtype\ncapability[]=state\nprotocol=https\nhost=bb-credhelper-fixture.invalid\nwwwauth[]=Basic realm=\"Atlassian Bitbucket\"\n\n"))
+	cmd.SetArgs([]string{"get"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	want := "capability[]=authtype\nauthtype=Bearer\ncredential=secret-token\n\n"
+	if output.String() != want {
+		t.Fatalf("response = %q, want %q", output.String(), want)
 	}
 }
 
@@ -335,15 +449,20 @@ func TestResolveGitCredentialReturnsStoredBasicAuth(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
-	username, password, ok, _ := resolveGitCredential(credentialRequest{
-		Protocol: "https",
-		Host:     "bb-basic-fixture.invalid",
-	})
-	if !ok {
-		t.Fatal("expected basic-auth credentials to resolve")
-	}
-	if username != "alice" || password != "hunter2" {
-		t.Fatalf("unexpected credentials: %q / %q", username, password)
+	// A password is no Bearer credential, so it goes as Basic whether or not
+	// git could take an authtype.
+	for _, authType := range []bool{false, true} {
+		credential, ok, _ := resolveGitCredential(credentialRequest{
+			Protocol: "https",
+			Host:     "bb-basic-fixture.invalid",
+			AuthType: authType,
+		})
+		if !ok {
+			t.Fatal("expected basic-auth credentials to resolve")
+		}
+		if credential != (gitCredential{Username: "alice", Password: "hunter2"}) {
+			t.Fatalf("with authtype offered %v, got %+v", authType, credential)
+		}
 	}
 }
 
@@ -362,7 +481,7 @@ func TestResolveGitCredentialWithHostButNoSecret(t *testing.T) {
 	t.Setenv("BB_CONFIG_PATH", configPath)
 	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 
-	if _, _, ok, _ := resolveGitCredential(credentialRequest{
+	if _, ok, _ := resolveGitCredential(credentialRequest{
 		Protocol: "https",
 		Host:     "bb-nosecret-fixture.invalid",
 	}); ok {

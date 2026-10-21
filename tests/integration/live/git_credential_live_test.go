@@ -67,13 +67,10 @@ func liveCLIBinaryPath(t *testing.T) (string, error) {
 }
 
 // TestLiveGitCredentialHelperAuthenticatesClone proves the credential helper
-// against a real Bitbucket.
-//
-// The helper can only supply a username and password, because that is all git's
-// credential protocol carries — it cannot send the Authorization: Bearer header
-// the REST client uses. Whether Bitbucket accepts a personal access token in the
-// password position over Basic auth is therefore the assumption the whole design
-// rests on, and it is only answerable against a running server.
+// against a real Bitbucket, with the login the suite runs as: a username and
+// password in CI. TestLiveGitCredentialHelperSendsWhatBitbucketTakes covers
+// access tokens, which Bitbucket takes over Basic auth only beside the right
+// username.
 func TestLiveGitCredentialHelperAuthenticatesClone(t *testing.T) {
 	harness := newLiveHarness(t)
 

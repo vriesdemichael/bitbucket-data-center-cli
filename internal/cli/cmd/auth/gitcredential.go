@@ -24,6 +24,29 @@ type credentialRequest struct {
 	Host     string
 	Path     string
 	Username string
+	// AuthType reports that git sent capability[]=authtype (git 2.46 and
+	// later): it takes an authentication scheme and a pre-encoded credential
+	// in place of a username and password.
+	AuthType bool
+}
+
+// gitCredential is the answer to a get: a username and password, or a scheme
+// and the credential git puts after it in the Authorization header.
+type gitCredential struct {
+	Username   string
+	Password   string
+	AuthType   string
+	Credential string
+}
+
+// format renders the answer in git's protocol. A capability is announced
+// before the values that depend on it, as git-credential(1) requires.
+func (credential gitCredential) format() string {
+	if credential.AuthType != "" {
+		return fmt.Sprintf("capability[]=authtype\nauthtype=%s\ncredential=%s\n\n", credential.AuthType, credential.Credential)
+	}
+
+	return fmt.Sprintf("username=%s\npassword=%s\n\n", credential.Username, credential.Password)
 }
 
 // URL reassembles the request into the form stored host configuration uses.
@@ -63,6 +86,10 @@ func parseCredentialRequest(reader io.Reader) (credentialRequest, error) {
 			request.Path = value
 		case "username":
 			request.Username = value
+		case "capability[]":
+			if strings.TrimSpace(value) == "authtype" {
+				request.AuthType = true
+			}
 		}
 	}
 
@@ -163,7 +190,7 @@ bb stay in agreement and no token is ever written into a repository.`,
 				return nil
 			}
 
-			username, password, ok, err := resolveGitCredential(request)
+			credential, ok, err := resolveGitCredential(request)
 			if err != nil {
 				// Nothing on stdout and exit 0, so git still falls through to its
 				// other helpers or a prompt, as the protocol expects. But said on
@@ -187,7 +214,7 @@ bb stay in agreement and no token is ever written into a repository.`,
 			}
 
 			out := cmd.OutOrStdout()
-			if _, err := fmt.Fprintf(out, "username=%s\npassword=%s\n\n", username, password); err != nil {
+			if _, err := io.WriteString(out, credential.format()); err != nil {
 				return apperrors.New(apperrors.KindInternal, "failed to write credential response", err)
 			}
 
@@ -200,42 +227,47 @@ bb stay in agreement and no token is ever written into a repository.`,
 	return cmd
 }
 
-// resolveGitCredential maps stored bb credentials onto the username/password
-// pair git expects.
+// resolveGitCredential maps stored bb credentials onto an answer git can use.
 //
-// git's credential protocol only carries username and password, so a stored
-// personal access token is supplied as the password. Bitbucket Data Center
-// accepts an HTTP access token in that position over Basic auth, which is what
-// makes this work without the Bearer header the REST client uses.
-func resolveGitCredential(request credentialRequest) (string, string, bool, error) {
+// A token goes as Bearer when git can send one, which is how the REST client
+// sends it and works for every kind of token. Older git carries only a
+// username and password, and over Basic auth Bitbucket Data Center takes an
+// access token only beside the right username: the login name of a personal
+// token's owner, or x-token-auth for a project or repository token, whose
+// user is not a person (#801). bb auth login stores the owner's name for a
+// personal token, so with no name stored the token is taken to be the other
+// kind.
+func resolveGitCredential(request credentialRequest) (gitCredential, bool, error) {
 	stored, ok, err := config.LoadStoredAuthForHostStrict(request.URL())
 	if err != nil {
-		return "", "", false, err
+		return gitCredential{}, false, err
 	}
 	if !ok {
-		return "", "", false, nil
+		return gitCredential{}, false, nil
 	}
 
 	if token := strings.TrimSpace(stored.BitbucketToken); token != "" {
+		if request.AuthType {
+			return gitCredential{AuthType: "Bearer", Credential: token}, true, nil
+		}
+
 		username := strings.TrimSpace(stored.BitbucketUsername)
 		if username == "" {
 			username = strings.TrimSpace(request.Username)
 		}
 		if username == "" {
-			// Bitbucket ignores the username when the password is a valid
-			// access token, but git requires the field to be present.
 			username = "x-token-auth"
 		}
-		return username, token, true, nil
+		return gitCredential{Username: username, Password: token}, true, nil
 	}
 
 	username := strings.TrimSpace(stored.BitbucketUsername)
 	password := stored.BitbucketPassword
 	if username != "" && password != "" {
-		return username, password, true, nil
+		return gitCredential{Username: username, Password: password}, true, nil
 	}
 
-	return "", "", false, nil
+	return gitCredential{}, false, nil
 }
 
 // newSetupGitCommand wires bb in as git's credential helper for a Bitbucket
