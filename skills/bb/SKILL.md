@@ -89,6 +89,27 @@ Commands that operate on pull requests (`bb pr get`, `bb pr checkout`, `bb pr di
 bb repo clone https://bitbucket.example.com/projects/MYPROJ/repos/payments
 ```
 
+## Acting for the Person
+
+bb acts with the person's credentials, so what you do carries their name.
+
+- **Say an AI agent wrote it.** End every comment, pull request description and
+  tag message you write with a line saying so, naming the person by the `name`
+  that `bb auth status` reports: `_Written by an AI agent for @alice, via bb._`.
+  Quote a name that holds anything but letters, digits, `_` and `-`, such as
+  `@"alice.smith@example.com"`, or Bitbucket does not link it. The CLI adds no
+  line; the MCP server adds this one itself. Where the person or their
+  organisation does not allow the line, publish nothing you wrote under their
+  name: add comments with `--pending` for them to publish, and leave pull
+  request titles, descriptions and tag messages to them.
+- **Leave the verdict on a review to the person.** An approval or a request for
+  changes carries no text, so one you make is indistinguishable from theirs, to
+  the other reviewers and to the merge checks that count approvals. Put your
+  findings in their draft review and tell them where it waits (workflow 5).
+- **Merging is not a question to stop for.** When the task calls for a merge,
+  merge: Bitbucket refuses one while a merge check fails, and `--version`
+  refuses one when the pull request changed since you read it.
+
 ## Common Workflows
 
 ### 1. Start a feature or check out a pull request
@@ -153,7 +174,8 @@ bb pr ready 42 --repo MYPROJ/payments --undo
 
 ### 4. Retrieve build status, mergeable state, and wait for CI
 
-Before merging or approving, verify CI build statuses and merge readiness:
+Before merging, or suggesting a verdict on a review, verify CI build statuses and
+merge readiness:
 
 ```bash
 # Check CI build statuses directly on the pull request (all pipeline stages)
@@ -191,24 +213,31 @@ open PRs need attention before opening any of them:
 bb pr list --repo MYPROJ/payments --with-review-status
 ```
 
-### 5. Conduct code reviews and submit feedback
+### 5. Review a pull request, and leave the verdict to the person
 
-As an autonomous agent performing code reviews or addressing comments:
+Put each finding in the person's draft review with `--pending`. Only they see
+it until they publish it:
 
 ```bash
-# Submit an approval once verified
-bb pr review approve 42 --repo MYPROJ/payments
+# A finding on the pull request, with the line saying who wrote it
+bb pr comment add 42 --repo MYPROJ/payments --pending --text "Unit tests fail in payment_test.go.
 
-# Request changes if issues were found, and post the summary as a comment
-bb pr review set 42 NEEDS_WORK --repo MYPROJ/payments
-bb pr comment add 42 --repo MYPROJ/payments --text "Unit tests failed in payment_test.go"
+_Written by an AI agent for @alice, via bb._"
 
-# Publish comments drafted with --pending as one review, optionally with a status
-bb pr review complete 42 --repo MYPROJ/payments --status NEEDS_WORK
+# One on a line of the diff
+bb pr comment add 42 --repo MYPROJ/payments --pending --path src/payment.go --line 57 --text "This retries forever.
+
+_Written by an AI agent for @alice, via bb._"
+
+# What the draft holds
+bb pr review get 42 --repo MYPROJ/payments
 ```
 
-`bb pr review complete` needs a draft review: without a comment added with
-`--pending` it fails and sets no status.
+Then tell the person where the review waits, the pull request's `url` from
+`bb pr get`, how many comments it holds, and whether you suggest approving it or
+requesting changes. They publish it in Bitbucket with Finish review.
+`bb pr review approve`, `bb pr review set` and `bb pr review complete` are for
+the person at the terminal; do not run them yourself.
 
 ### 6. Address review feedback and tasks
 
@@ -245,7 +274,9 @@ Then fix and report back:
 
 ```bash
 # Post a progress note on the pull request
-bb pr comment add 42 --repo MYPROJ/payments --text "Fixed in <commit>. Please re-review."
+bb pr comment add 42 --repo MYPROJ/payments --text "Fixed in <commit>. Please re-review.
+
+_Written by an AI agent for @alice, via bb._"
 
 # Close a task once it is addressed, or put it back if it was not
 bb pr comment resolve 42 131 --repo MYPROJ/payments
@@ -287,8 +318,9 @@ bb pr auto-merge enable --repo MYPROJ/payments 42 --strategy rebase-ff-only
 # Cancel auto-merge
 bb pr auto-merge disable --repo MYPROJ/payments 42
 
-# Or merge directly once all checks are green
-bb pr merge 42 --repo MYPROJ/payments
+# Or merge directly once all checks are green, refused if the pull request
+# changed since you read its version
+bb pr merge 42 --repo MYPROJ/payments --version 3
 ```
 
 ### 8. Diagnose a CI failure
