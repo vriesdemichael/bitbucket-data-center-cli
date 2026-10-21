@@ -9,7 +9,7 @@ Every MCP tool is exposed. Some tools ask the person to confirm each call in the
 
 `--read-only` exposes only the tools annotated read-only. `--yolo` and `--allow-writes` are deprecated and do nothing (ADR-084).
 
-Annotations say what the specification defines them to say, whether or not a tool asks. Every tool declares all four hints and a title. openWorldHint is false, because one configured Data Center instance is a closed domain.
+Annotations say what the specification defines them to say, whether or not a tool asks. Every tool declares all four hints and a title, and tools/list carries all four, because clients disagree about a missing hint's default. readOnlyHint is true only on a tool that changes nothing in Bitbucket, since some clients run such a tool without asking anyone. openWorldHint is false, because one configured Data Center instance is a closed domain. Annotations are hints a client may act on or ignore, never a control: what bb enforces is the confirmation, `--read-only`, scoping and policy.
 
 Declare a tool that decides a merge with `askingSpec`, and every other tool with `toolSpec`. `TestToolsThatAskAreTheOnesThatDecideAMerge` holds the set. Annotate a tool with readOnly or writes, and set each hint by its definition, never by whether the tool asks. Build a confirmation from the arguments, and read Bitbucket only for what the person must see that the call does not carry. Quote text other people wrote, and put no link in it. Never skip a confirmation for a client, and never make tools/list depend on what a client can do. If bb serves Bitbucket Cloud, set openWorldHint to true on the tools that read or publish content there.
 

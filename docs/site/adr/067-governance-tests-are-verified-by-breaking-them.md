@@ -84,6 +84,7 @@ A governance test asserts an invariant over everything of one kind the repositor
 - TestReadOnlyToolsDoNotAsk: a tool annotated read-only asks nothing.
 - TestLiveMCPToolsThatAskChangeNothingUnlessAccepted: every MCP tool that asks is refused with -32021 to a client that cannot ask and stopped when the person declines, and Bitbucket reads back unchanged.
 - TestEveryToolDeclaresItsHintsAndTitle: every MCP tool states all four hints and a title.
+- TestEveryToolSendsAllFourHints: tools/list carries all four hints for every MCP tool, as the SDK encodes them.
 - TestNoToolIsOpenWorld: no MCP tool is annotated open-world.
 - TestEveryLimitedToolSaysWhenItStopped: an MCP tool that takes a limit returns a required limit_reached.
 - TestLiveMCPEveryToolReturnsAClientCompatibleResult: every MCP tool is called, and its result is a JSON object with a text fallback.
