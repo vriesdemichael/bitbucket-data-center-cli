@@ -28,13 +28,12 @@ type RestrictionListOptions struct {
 }
 
 type RestrictionUpsertInput struct {
-	Type           string
-	MatcherID      string
-	MatcherType    string
-	MatcherDisplay string
-	Users          []string
-	Groups         []string
-	AccessKeyIDs   []int32
+	Type         string
+	MatcherID    string
+	MatcherType  string
+	Users        []string
+	Groups       []string
+	AccessKeyIDs []int32
 }
 
 func (service *Service) ListRestrictions(ctx context.Context, projectKey string, options RestrictionListOptions) ([]openapigenerated.RestRefRestriction, error) {
@@ -250,10 +249,6 @@ func mapRestrictionInput(input RestrictionUpsertInput) (openapigenerated.RestRes
 			Id   openapigenerated.RestRestrictionRequestMatcherTypeId `json:"id"`
 			Name string                                               `json:"name"`
 		}{Id: matcherType},
-	}
-
-	if trimmedMatcherID != "" && input.MatcherDisplay != "" {
-		bodyEntry.Matcher.DisplayId = &input.MatcherDisplay
 	}
 
 	// Exemptions go by name and by access key id: Bitbucket refuses users sent as

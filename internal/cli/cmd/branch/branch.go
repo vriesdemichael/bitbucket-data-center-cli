@@ -19,7 +19,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -804,7 +803,6 @@ an inherited one.`,
 	var createRestrictionType string
 	var createMatcherType string
 	var createMatcherID string
-	var createMatcherDisplay string
 	var createUsers []string
 	var createGroups []string
 	var createAccessKeyIDs []int
@@ -824,8 +822,6 @@ an inherited one.`,
   bb branch restriction create --repo PROJ/repo --type fast-forward-only \
     --matcher-type MODEL_BRANCH --matcher-id development`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb branch restriction create", "matcher-display")
-
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -891,13 +887,12 @@ an inherited one.`,
 			}
 
 			created, err := service.CreateRestriction(cmd.Context(), repo, branchservice.RestrictionUpsertInput{
-				Type:           createRestrictionType,
-				MatcherType:    createMatcherType,
-				MatcherID:      createMatcherID,
-				MatcherDisplay: createMatcherDisplay,
-				Users:          createUsers,
-				Groups:         createGroups,
-				AccessKeyIDs:   accessKeyIDs,
+				Type:         createRestrictionType,
+				MatcherType:  createMatcherType,
+				MatcherID:    createMatcherID,
+				Users:        createUsers,
+				Groups:       createGroups,
+				AccessKeyIDs: accessKeyIDs,
 			})
 			if err != nil {
 				return err
@@ -914,9 +909,6 @@ an inherited one.`,
 	enumflag.Register(restrictionCreateCmd.Flags(), &createRestrictionType, "type", "", result.RestrictionTypes, "Restriction type")
 	enumflag.Register(restrictionCreateCmd.Flags(), &createMatcherType, "matcher-type", "BRANCH", openapi.RestrictionMatcherTypes, "Matcher type")
 	restrictionCreateCmd.Flags().StringVar(&createMatcherID, "matcher-id", "", "Matcher id value")
-	// Accepted, and inert: Bitbucket derives the display name (ADR-084).
-	restrictionCreateCmd.Flags().StringVar(&createMatcherDisplay, "matcher-display", "", "Deprecated: has no effect")
-	_ = restrictionCreateCmd.Flags().MarkHidden("matcher-display")
 	restrictionCreateCmd.Flags().StringSliceVar(&createUsers, "user", nil, "User slug allowed by restriction (repeatable)")
 	restrictionCreateCmd.Flags().StringSliceVar(&createGroups, "group", nil, "Group name allowed by restriction (repeatable)")
 	restrictionCreateCmd.Flags().IntSliceVar(&createAccessKeyIDs, "access-key-id", nil, "SSH access key id allowed by restriction (repeatable)")
@@ -927,7 +919,6 @@ an inherited one.`,
 	var updateRestrictionType string
 	var updateMatcherType string
 	var updateMatcherID string
-	var updateMatcherDisplay string
 	var updateUsers []string
 	var updateGroups []string
 	var updateAccessKeyIDs []int
@@ -944,8 +935,6 @@ branch-restriction update changes it there, for every repository in the
 project.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb branch restriction update", "matcher-display")
-
 			cfg, client, err := d.LoadConfigAndClient()
 			if err != nil {
 				return err
@@ -997,13 +986,12 @@ project.`,
 			}
 
 			updated, err := service.UpdateRestriction(cmd.Context(), repo, args[0], branchservice.RestrictionUpsertInput{
-				Type:           updateRestrictionType,
-				MatcherType:    updateMatcherType,
-				MatcherID:      updateMatcherID,
-				MatcherDisplay: updateMatcherDisplay,
-				Users:          updateUsers,
-				Groups:         updateGroups,
-				AccessKeyIDs:   accessKeyIDs,
+				Type:         updateRestrictionType,
+				MatcherType:  updateMatcherType,
+				MatcherID:    updateMatcherID,
+				Users:        updateUsers,
+				Groups:       updateGroups,
+				AccessKeyIDs: accessKeyIDs,
 			})
 			if err != nil {
 				return err
@@ -1025,9 +1013,6 @@ project.`,
 	// already required.
 	enumflag.Register(restrictionUpdateCmd.Flags(), &updateMatcherType, "matcher-type", "", openapi.RestrictionMatcherTypes, "Matcher type")
 	restrictionUpdateCmd.Flags().StringVar(&updateMatcherID, "matcher-id", "", "Matcher id value")
-	// Accepted, and inert: Bitbucket derives the display name (ADR-084).
-	restrictionUpdateCmd.Flags().StringVar(&updateMatcherDisplay, "matcher-display", "", "Deprecated: has no effect")
-	_ = restrictionUpdateCmd.Flags().MarkHidden("matcher-display")
 	restrictionUpdateCmd.Flags().StringSliceVar(&updateUsers, "user", nil, "User slug allowed by restriction (repeatable)")
 	restrictionUpdateCmd.Flags().StringSliceVar(&updateGroups, "group", nil, "Group name allowed by restriction (repeatable)")
 	restrictionUpdateCmd.Flags().IntSliceVar(&updateAccessKeyIDs, "access-key-id", nil, "SSH access key id allowed by restriction (repeatable)")

@@ -300,13 +300,12 @@ func TestProjectRestrictionService(t *testing.T) {
 		})
 
 		res, err := service.CreateRestriction(context.Background(), "PRJ", RestrictionUpsertInput{
-			Type:           "read-only",
-			MatcherID:      "refs/heads/master",
-			MatcherType:    "BRANCH",
-			MatcherDisplay: "master",
-			Users:          []string{"user1"},
-			Groups:         []string{"group1"},
-			AccessKeyIDs:   []int32{456},
+			Type:         "read-only",
+			MatcherID:    "refs/heads/master",
+			MatcherType:  "BRANCH",
+			Users:        []string{"user1"},
+			Groups:       []string{"group1"},
+			AccessKeyIDs: []int32{456},
 		})
 		if err != nil {
 			t.Fatalf("unexpected create error: %v", err)

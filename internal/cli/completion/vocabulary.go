@@ -132,7 +132,6 @@ var flagKinds = map[string]Kind{
 	"link":                       KindFree,
 	"log-format":                 KindLogFormat,
 	"log-level":                  KindLogLevel,
-	"matcher-display":            KindFree,
 	"matcher-id":                 KindMatcherID,
 	"message":                    KindFree,
 	"name":                       KindFree,
