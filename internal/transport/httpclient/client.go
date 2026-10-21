@@ -132,6 +132,22 @@ func (client *Client) CurrentUserSlug(ctx context.Context) (string, error) {
 	return slug, nil
 }
 
+// CurrentUserName returns the login name Bitbucket authenticated the request
+// as. X-AUSERNAME carries it percent-encoded, and for a name with an @ or a +
+// in it, the name differs from the slug.
+func (client *Client) CurrentUserName(ctx context.Context) (string, error) {
+	_, header, err := client.do(ctx, http.MethodGet, "/rest/api/latest/users", map[string]string{"limit": "1"}, nil, true)
+	if err != nil {
+		return "", err
+	}
+
+	name, err := url.PathUnescape(strings.TrimSpace(header.Get("X-AUSERNAME")))
+	if err != nil || name == "" {
+		return "", apperrors.New(apperrors.KindAuthentication, "could not determine the authenticated user: no readable X-AUSERNAME header in the response", err)
+	}
+	return name, nil
+}
+
 func (client *Client) doJSON(ctx context.Context, method string, path string, query map[string]string, in any, out any) error {
 	var payload []byte
 	if in != nil {

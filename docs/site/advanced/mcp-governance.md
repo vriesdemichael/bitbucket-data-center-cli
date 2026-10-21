@@ -31,6 +31,11 @@ bb ai mcp tools
 ## Reviews Stay Yours
 No tool approves a pull request or requests changes on it: an approval carries no text, so one made with your token would look like yours to every other reviewer and to the merge checks that count approvals ([ADR-104](../adr/104-what-passes-for-the-persons-own-is-marked-as-the-agents-or-left-to-them.md)). A comment the agent adds is pending, in your review, which only you see. `prepare_pr_review` tells the agent where the review waits, how many comments it holds and the status it suggests; you publish it in Bitbucket with **Finish review**, and approve or request changes there.
 
+## What the Agent Writes Says So
+bb ends every comment, pull request description and tag message written through MCP with a line saying an AI agent wrote it for you, such as `_Written by an AI agent for @alice, via bb._` ([ADR-105](../adr/105-text-an-agent-writes-through-mcp-says-an-ai-agent-wrote-it.md)). Bitbucket has no mark of its own for text an AI wrote, and through MCP bb writes under your name. bb adds the line in code, so the model cannot leave it out, and once: a description sent back with its line keeps the one it has. Remove it when you adopt the text as your own, for example before you publish your review. A comment you write in a view carries it too, since bb cannot tell your call from the model's.
+
+Where the line cannot be used, turn it off with `--ai-disclosure=false` or `mcp_ai_disclosure: false` in your own configuration file; an administrator decides it for every server with the `mcp_ai_disclosure` policy key. Without the line, nothing the agent writes is published under your name without you: comments still wait in your review, a tag is created without a message, and the server offers no tool that creates or edits a pull request, whose title and description Bitbucket would publish at once ([ADR-104](../adr/104-what-passes-for-the-persons-own-is-marked-as-the-agents-or-left-to-them.md)).
+
 ## Dedicated Read-Only Token Scoping
 Never run IDE MCP servers under personal developer credentials. Generate a dedicated read-only PAT and bind the MCP server to it:
 

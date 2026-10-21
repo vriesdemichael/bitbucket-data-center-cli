@@ -61,6 +61,10 @@ func ConfigJSONSchema() map[string]any {
 			"type":        "boolean",
 			"description": "Make 'bb ai mcp serve' ask the person in the MCP client before each call of a tool that decides a merge, as --elicitation-opt-in does. Read from your own configuration file, and from system configuration or registry policy, where true requires it for every server and false does not switch it off.",
 		},
+		"mcp_ai_disclosure": map[string]any{
+			"type":        "boolean",
+			"description": "Whether 'bb ai mcp serve' ends the comments, pull request descriptions and tag messages an agent writes with a line saying an AI agent wrote them; on unless set to false. Read from your own configuration file, and from system configuration or registry policy, where it decides for every server either way. Off, the server offers no tool that publishes what the agent wrote under your name at once.",
+		},
 		"update_base_url": map[string]any{
 			"type":        "string",
 			"description": "Base URL of internal release manifest and asset mirror.",
@@ -175,6 +179,7 @@ func ConfigJSONSchema() map[string]any {
 			"allow_http_update":          policyProps["allow_http_update"],
 			"mcp_audit_file":             policyProps["mcp_audit_file"],
 			"mcp_elicitation_opt_in":     policyProps["mcp_elicitation_opt_in"],
+			"mcp_ai_disclosure":          policyProps["mcp_ai_disclosure"],
 			"update_trusted_root":        policyProps["update_trusted_root"],
 			"update_tuf_url":             policyProps["update_tuf_url"],
 			"update_signature_identity":  policyProps["update_signature_identity"],

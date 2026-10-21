@@ -50,13 +50,13 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
     The description a client hands the model with each tool, as the server sends it.
 
     `add_pr_comment`
-    :   Add a comment to the person's review of a pull request. It stays pending, seen only by the person, until they publish the review in Bitbucket with Finish review; prepare_pr_review says where. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment.
+    :   Add a comment to the person's review of a pull request. It stays pending, seen only by the person, until they publish the review in Bitbucket with Finish review; prepare_pr_review says where. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment. bb ends the text with a line saying an AI agent wrote it for the person; do not add one yourself.
 
     `compare_refs`
     :   List the commits reachable from 'from' but not from 'to': what one ref has that the other lacks. For the commits a feature branch adds, pass from=feature and to=main.
 
     `create_pull_request`
-    :   Create a new pull request. When the person asks for one, create it, filling in what they left to you.
+    :   Create a new pull request. When the person asks for one, create it, filling in what they left to you. bb ends the description with a line saying an AI agent wrote it for the person; do not add one yourself.
 
     `create_tag`
     :   Create a tag on a specific commit or ref. Use for release tagging after a PR is merged.
@@ -128,7 +128,7 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
     :   Called by bb's pull request form, not by the model: suggests the repository's branches, or the people who can read it as reviewers, matching what the person typed, and names the default reviewers and code owners for the branches they picked.
 
     `update_pull_request`
-    :   Update a pull request's title, description, or draft state. Use draft=false to mark a draft pull request ready for review. Requires the current version from get_pull_request for optimistic locking; a stale version is rejected rather than overwriting someone else's edit.
+    :   Update a pull request's title, description, or draft state. Use draft=false to mark a draft pull request ready for review. Requires the current version from get_pull_request for optimistic locking; a stale version is rejected rather than overwriting someone else's edit. bb ends a description it sends with a line saying an AI agent wrote it for the person, once; do not add one yourself.
 
 
 ## Tools that ask

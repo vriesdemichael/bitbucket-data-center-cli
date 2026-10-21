@@ -86,6 +86,38 @@ type StoredConfig struct {
 	// configuration file starts. Only your own file reads it, for the same
 	// reason as ElicitationOptIn; the read_only policy key outranks it.
 	AllowWrites *bool `yaml:"mcp_allow_writes,omitempty"`
+	// AIDisclosure is --ai-disclosure for every bb ai mcp serve this
+	// configuration file starts. Only your own file reads it, for the same
+	// reason as ElicitationOptIn; the mcp_ai_disclosure policy key outranks it.
+	AIDisclosure *bool `yaml:"mcp_ai_disclosure,omitempty"`
+}
+
+// MCPAIDisclosure reports whether bb ai mcp serve ends what an agent writes
+// with a line saying an AI agent wrote it (ADR-105). Administrative policy
+// decides it either way when it sets mcp_ai_disclosure; otherwise the flag when it
+// was given, then your own configuration file. It is on unless something turns
+// it off. flag is nil when the flag was not given.
+func MCPAIDisclosure(flag *bool) (bool, error) {
+	policy, err := LoadPolicy()
+	if err != nil {
+		return false, err
+	}
+	if policy.AIDisclosure != nil {
+		return *policy.AIDisclosure, nil
+	}
+	if flag != nil {
+		return *flag, nil
+	}
+
+	if os.Getenv("BB_DISABLE_STORED_CONFIG") == "1" {
+		return true, nil
+	}
+	stored, err := LoadStoredConfig()
+	if err != nil {
+		return false, err
+	}
+
+	return stored.AIDisclosure == nil || *stored.AIDisclosure, nil
 }
 
 // MCPAllowWrites reports whether bb ai mcp serve may expose the tools that
@@ -199,6 +231,11 @@ type PolicyConfig struct {
 	// the client before each call of a tool that decides a merge, as
 	// --elicitation-opt-in does (ADR-103). It can switch asking on, never off.
 	ElicitationOptIn *bool `yaml:"mcp_elicitation_opt_in,omitempty"`
+	// AIDisclosure decides for every `bb ai mcp serve` whether what an agent
+	// writes ends with a line saying an AI agent wrote it (ADR-105): true
+	// requires it, false switches it off, for an organisation that cannot
+	// allow it.
+	AIDisclosure *bool `yaml:"mcp_ai_disclosure,omitempty"`
 }
 
 type SystemConfigFile struct {
@@ -223,6 +260,7 @@ type SystemConfigFile struct {
 	DisableMCPServer        *bool                    `yaml:"disable_mcp_server,omitempty"`
 	ReadOnly                *bool                    `yaml:"read_only,omitempty"`
 	ElicitationOptIn        *bool                    `yaml:"mcp_elicitation_opt_in,omitempty"`
+	AIDisclosure            *bool                    `yaml:"mcp_ai_disclosure,omitempty"`
 	Policies                *PolicyConfig            `yaml:"policies,omitempty"`
 	Policy                  *PolicyConfig            `yaml:"policy,omitempty"`
 }
@@ -255,6 +293,7 @@ func (sys SystemConfigFile) PolicyConfig() PolicyConfig {
 		DisableMCPServer:        sys.DisableMCPServer,
 		ReadOnly:                sys.ReadOnly,
 		ElicitationOptIn:        sys.ElicitationOptIn,
+		AIDisclosure:            sys.AIDisclosure,
 	}
 }
 
@@ -1402,6 +1441,9 @@ func mergePolicy(target *PolicyConfig, source PolicyConfig) {
 	}
 	if source.ElicitationOptIn != nil {
 		target.ElicitationOptIn = source.ElicitationOptIn
+	}
+	if source.AIDisclosure != nil {
+		target.AIDisclosure = source.AIDisclosure
 	}
 }
 

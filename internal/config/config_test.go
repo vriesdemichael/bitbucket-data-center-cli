@@ -2702,3 +2702,45 @@ func TestMCPAllowWritesReadsYourOwnFile(t *testing.T) {
 		t.Fatal("your own file, unreadable, answered as though it said nothing")
 	}
 }
+
+// The line is on unless something turns it off. Your own file and the flag
+// decide for you; policy decides either way for everyone.
+func TestMCPAIDisclosureIsOnUnlessTurnedOff(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	systemPath := filepath.Join(t.TempDir(), "system.yaml")
+	t.Setenv("BB_CONFIG_PATH", configPath)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+	t.Setenv("BB_SYSTEM_CONFIG_PATH", systemPath)
+	on, off := true, false
+	write := func(path, content string) {
+		t.Helper()
+		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+			t.Fatalf("write %s: %v", path, err)
+		}
+	}
+	expect := func(flag *bool, want bool, situation string) {
+		t.Helper()
+		if got, err := MCPAIDisclosure(flag); err != nil || got != want {
+			t.Errorf("%s: disclosure %v, %v; want %v", situation, got, err, want)
+		}
+	}
+
+	expect(nil, true, "with nothing set")
+	write(configPath, "mcp_ai_disclosure: false\n")
+	expect(nil, false, "with mcp_ai_disclosure: false in your own file")
+	expect(&on, true, "with --ai-disclosure over your own file")
+
+	write(systemPath, "mcp_ai_disclosure: false\n")
+	expect(&on, false, "with the policy key false, whatever the flag says")
+	write(systemPath, "mcp_ai_disclosure: true\n")
+	expect(&off, true, "with the policy key true, whatever the flag says")
+
+	write(systemPath, "{}\n")
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
+	expect(nil, true, "with your own file left unread")
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
+	write(configPath, "hosts: 5\n")
+	if _, err := MCPAIDisclosure(nil); err == nil {
+		t.Error("your own file, unreadable, answered as though it said nothing")
+	}
+}

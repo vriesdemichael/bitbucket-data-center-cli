@@ -463,7 +463,7 @@ func assertMCPToolWritesStored(t *testing.T, fixture mcpToolFixture, answers map
 	if called("create_pull_request") {
 		if id, ok := answeredID("create_pull_request", "pull_request"); ok {
 			assertLifecyclePRStored(t, readLifecyclePR(t, id), map[string]any{
-				"title": "Opened by the conformance sweep", "description": "Opened with a description of its own",
+				"title": "Opened by the conformance sweep", "description": mcpDisclosed("Opened with a description of its own", fixture.username),
 				"sourceBranch": "feature/mcp-create", "targetBranch": "mcp-create-base",
 			})
 		}
@@ -480,8 +480,8 @@ func assertMCPToolWritesStored(t *testing.T, fixture mcpToolFixture, answers map
 	if called("add_pr_comment") {
 		if id, ok := answeredID("add_pr_comment", "comment"); ok {
 			stored := repoCLIPRComment(t, fixture.mainPR, id)
-			if stored["text"] != "left by the conformance sweep" {
-				t.Errorf("comment %s on pull request %s reads back as %q, want %q", id, fixture.mainPR, stored["text"], "left by the conformance sweep")
+			if want := mcpDisclosed("left by the conformance sweep", fixture.username); stored["text"] != want {
+				t.Errorf("comment %s on pull request %s reads back as %q, want %q", id, fixture.mainPR, stored["text"], want)
 			}
 			// A draft in the person's review, not published.
 			if stored["pending"] != true || stored["state"] != "PENDING" {

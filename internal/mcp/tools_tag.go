@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -74,6 +75,13 @@ func specCreateTag() Spec {
 	return askingSpec(tool, AsksAlways, askCreateTag(), func(c Clients) mcp.ToolHandlerFor[CreateTagInput, CreateTagOutput] {
 		svc := tagservice.NewService(c.OpenAPI)
 		return func(ctx context.Context, _ *mcp.CallToolRequest, in CreateTagInput) (*mcp.CallToolResult, CreateTagOutput, error) {
+			// An annotated tag's message is published under the person's name.
+			if strings.TrimSpace(in.Message) != "" {
+				if c.WithoutAIDisclosure {
+					return nil, CreateTagOutput{}, fmt.Errorf("create_tag: this server adds no line saying an AI agent wrote a tag message, so it creates a tag without one; leave message out")
+				}
+				in.Message = disclosed(ctx, c, in.Message)
+			}
 			tag, err := svc.Create(ctx,
 				tagservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo},
 				in.Name,

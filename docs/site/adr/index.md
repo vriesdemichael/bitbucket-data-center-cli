@@ -94,3 +94,4 @@ How this project is built and worked on, one rule to a record. Each record says 
 - [ADR-102: A value read from where a command runs may stand in for its flag](102-a-value-read-from-where-a-command-runs-may-stand-in-for-its-flag.md)
 - [ADR-103: MCP tools ask the person only on a server that opts in](103-mcp-tools-ask-the-person-only-on-a-server-that-opts-in.md)
 - [ADR-104: What passes for the person's own is marked as the agent's, or left to them](104-what-passes-for-the-persons-own-is-marked-as-the-agents-or-left-to-them.md)
+- [ADR-105: Text an agent writes through MCP says an AI agent wrote it](105-text-an-agent-writes-through-mcp-says-an-ai-agent-wrote-it.md)

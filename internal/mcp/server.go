@@ -18,6 +18,11 @@ type Clients struct {
 	HTTP    *httpclient.Client
 	OpenAPI *openapigenerated.ClientWithResponses
 	BaseURL string // normalised Bitbucket base URL (no trailing slash)
+	// WithoutAIDisclosure turns off the line bb ends what an agent writes
+	// with, for an organisation that cannot allow it (ADR-105). The server
+	// then publishes nothing the agent wrote under the person's name without
+	// them: see WithheldWithoutAIDisclosure.
+	WithoutAIDisclosure bool
 }
 
 // ClientsFromConfig builds both client types from a resolved AppConfig.
@@ -473,6 +478,9 @@ func exposedSpecs(opts ServerOptions) []Spec {
 		if opts.ReadOnly && !spec.ReadOnly() {
 			continue
 		}
+		if opts.Clients.WithoutAIDisclosure && WithheldWithoutAIDisclosure(spec) {
+			continue
+		}
 		if withheldUnderScope(toolName, opts.Scope) {
 			continue
 		}
@@ -531,6 +539,14 @@ func instructions(opts ServerOptions) string {
 	case opts.ElicitationOptIn:
 		paragraphs = append(paragraphs, "Some tools ask the person to confirm a call in the client before they run, and their descriptions say so. "+
 			"If the person declines or closes the confirmation, do not call the tool again unless they ask.")
+	}
+
+	// Without the line, the tools that would publish what the agent writes at
+	// once are not there, and the model learns why.
+	if opts.Clients.WithoutAIDisclosure && !opts.ReadOnly {
+		paragraphs = append(paragraphs, "This server adds no line saying an AI agent wrote what you write, so nothing you write is published "+
+			"under the person's name without them: comments wait in their review for them to publish, no tool creates or edits a pull "+
+			"request, and a tag is created without a message. When they ask for a pull request, tell them so.")
 	}
 
 	paragraphs = append(paragraphs, "A list tool stops at its limit. When limit_reached is true there may be more: call it again with a higher limit.")

@@ -52,6 +52,7 @@ a different name and a registry type. The names are not the YAML spellings:
 | `DisableMCPServer` | boolean | `disable_mcp_server` |
 | `ReadOnly` | boolean | `read_only` |
 | `MCPElicitationOptIn` | boolean | `mcp_elicitation_opt_in` |
+| `MCPAIDisclosure` | boolean | `mcp_ai_disclosure` |
 
 A **boolean** is a `REG_DWORD` of `0` or `1`, or a `REG_SZ`. A `REG_DWORD` other
 than `0` reads as true. The string form takes the spellings an administrator is
@@ -107,6 +108,7 @@ writes its audit trail on Windows needs `%ProgramData%\bb\config.yaml`.
 | `disable_mcp_server` | boolean | Refuse `bb ai mcp serve`, so no MCP client can use `bb`; the rest of `bb` keeps working. |
 | `read_only` | boolean | Refuse every command that changes something in Bitbucket, and start `bb ai mcp serve` read-only. |
 | `mcp_elicitation_opt_in` | boolean | Make every `bb ai mcp serve` ask the person in the MCP client before each call of a tool that decides a merge, as `--elicitation-opt-in` does. `false` does not switch asking off. |
+| `mcp_ai_disclosure` | boolean | Decide for every `bb ai mcp serve` whether what an agent writes ends with a line saying an AI agent wrote it. `false` switches the line off for an organisation that cannot allow it; the server then offers no tool that publishes what the agent writes under the person's name at once. `true` requires the line, whatever `--ai-disclosure` says. |
 
 !!! warning "`allowed_hosts` constrains the host, not the port or the path"
 

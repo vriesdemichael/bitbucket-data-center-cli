@@ -41,6 +41,7 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	var auditFailure string
 	var highlightTemplates bool
 	var elicitationOptIn bool
+	var aiDisclosure bool
 
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -197,6 +198,11 @@ PAT than your own.`,
 			if err != nil {
 				return err
 			}
+			disclosure, err := config.MCPAIDisclosure(givenBool(cmd, "ai-disclosure", aiDisclosure))
+			if err != nil {
+				return err
+			}
+			clients.WithoutAIDisclosure = !disclosure
 
 			s := bbmcp.NewServer(bbmcp.ServerOptions{
 				Name:               "bb",
@@ -247,6 +253,7 @@ PAT than your own.`,
 	enumflag.Register(cmd.Flags(), &auditFailure, "audit-failure", string(bbmcp.AuditFailureDeny), auditFailureModes, "What to do when an audit record cannot be written")
 	cmd.Flags().BoolVar(&highlightTemplates, "highlight-templates", false, "In views, highlight the code inside templates too, not only their markup")
 	cmd.Flags().BoolVar(&elicitationOptIn, "elicitation-opt-in", false, "Ask the person in the MCP client before each call of a tool that decides a merge; a client that cannot ask is refused those tools")
+	cmd.Flags().BoolVar(&aiDisclosure, "ai-disclosure", true, "End the comments, pull request descriptions and tag messages the agent writes with a line saying an AI agent wrote them; with --ai-disclosure=false the server offers no tool that publishes them under your name at once")
 
 	return cmd
 }
@@ -296,6 +303,7 @@ func parseAuditFailure(value string) (bbmcp.AuditFailureMode, error) {
 func newMCPToolsCommand(deps Dependencies) *cobra.Command {
 	var readOnly bool
 	var allowWrites bool
+	var aiDisclosure bool
 	var safeOnly bool
 
 	cmd := &cobra.Command{
@@ -333,16 +341,22 @@ and with --allow-writes every tool.`,
 			if err != nil {
 				return err
 			}
-			specs := bbmcp.AllSpecs()
-			if listReadOnly {
-				filtered := make([]bbmcp.Spec, 0, len(specs))
-				for _, spec := range specs {
-					if spec.ReadOnly() {
-						filtered = append(filtered, spec)
-					}
-				}
-				specs = filtered
+			disclosure, err := config.MCPAIDisclosure(givenBool(cmd, "ai-disclosure", aiDisclosure))
+			if err != nil {
+				return err
 			}
+			specs := bbmcp.AllSpecs()
+			filtered := make([]bbmcp.Spec, 0, len(specs))
+			for _, spec := range specs {
+				if listReadOnly && !spec.ReadOnly() {
+					continue
+				}
+				if !disclosure && bbmcp.WithheldWithoutAIDisclosure(spec) {
+					continue
+				}
+				filtered = append(filtered, spec)
+			}
+			specs = filtered
 
 			if deps.jsonEnabled() {
 				entries := make([]Tool, len(specs))
@@ -371,6 +385,7 @@ and with --allow-writes every tool.`,
 	}
 
 	cmd.Flags().BoolVar(&allowWrites, "allow-writes", false, "List the tools 'bb ai mcp serve --allow-writes' exposes, which change Bitbucket too")
+	cmd.Flags().BoolVar(&aiDisclosure, "ai-disclosure", true, "List the tools a server with this --ai-disclosure exposes; false leaves out the ones that publish what the agent writes under your name at once")
 	// Deprecated (ADR-084): still accepted, and hidden.
 	cmd.Flags().BoolVar(&readOnly, "read-only", false, "Deprecated: the listing is of a read-only server unless --allow-writes is passed")
 	cmd.Flags().BoolVar(&safeOnly, "safe-only", false, "Deprecated: has no effect")
@@ -480,4 +495,13 @@ func splitCSV(s string) []string {
 var auditFailureModes = []string{
 	string(bbmcp.AuditFailureDeny),
 	string(bbmcp.AuditFailureWarn),
+}
+
+// givenBool is a boolean flag's value when it was given, and nil when it was
+// not, so a setting further down can decide.
+func givenBool(cmd *cobra.Command, name string, value bool) *bool {
+	if !cmd.Flags().Changed(name) {
+		return nil
+	}
+	return &value
 }
