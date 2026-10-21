@@ -279,6 +279,8 @@ button {
 .review-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .details-side > .review-actions { margin-bottom: 4px; }
 .review-actions .form-error { flex-basis: 100%; }
+.review-prepared, .added-to-review { margin: 0; font-size: var(--bb-text-sm); overflow-wrap: anywhere; }
+.review-actions .review-prepared { flex-basis: 100%; }
 
 /* Read by a screen reader, not drawn. */
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

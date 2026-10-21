@@ -124,7 +124,7 @@ var scopeRules = map[string]scopeRule{
 	"get_pr_diff":               scopeProjectRepo,
 	"get_file_content":          scopeProjectRepo,
 	"add_pr_comment":            scopeProjectRepo,
-	"submit_pr_review":          scopeProjectRepo,
+	"prepare_pr_review":         scopeProjectRepo,
 	"merge_pull_request":        scopeProjectRepo,
 	"enable_auto_merge":         scopeProjectRepo,
 	"disable_auto_merge":        scopeProjectRepo,

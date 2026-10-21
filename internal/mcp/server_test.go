@@ -429,7 +429,7 @@ func TestToolNamesMatchExpected(t *testing.T) {
 		"get_pr_diff",
 		"get_file_content",
 		"add_pr_comment",
-		"submit_pr_review",
+		"prepare_pr_review",
 		"merge_pull_request",
 		"enable_auto_merge",
 		"disable_auto_merge",

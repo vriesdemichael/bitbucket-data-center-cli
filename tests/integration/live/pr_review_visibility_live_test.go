@@ -87,7 +87,7 @@ func TestLivePullRequestReviewVisibility(t *testing.T) {
 		Path:     "review-visibility.txt",
 		Line:     1,
 		LineType: "ADDED",
-	})
+	}, false)
 	if err != nil {
 		t.Fatalf("create inline comment failed: %v", err)
 	}

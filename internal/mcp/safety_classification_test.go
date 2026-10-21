@@ -7,10 +7,10 @@ import "testing"
 //
 // A tool asks when it merges, changes whether or when a pull request merges,
 // or feeds a check that decides whether one may. create_tag asks as well,
-// since release pipelines commonly act on a new tag. submit_pr_review is here
-// because it was once exposed as "like commenting": APPROVED is the input a
-// required-reviewer check consumes, so an agent able to submit it takes part
-// in the control it is meant to be subject to.
+// since release pipelines commonly act on a new tag. No tool approves or sets
+// needs-work: APPROVED is the input a required-reviewer check consumes, and an
+// approval made with the person's token is indistinguishable from theirs, so a
+// review is prepared as a draft the person publishes (#796).
 func TestToolsThatAskAreTheOnesThatDecideAMerge(t *testing.T) {
 	t.Parallel()
 
@@ -21,7 +21,6 @@ func TestToolsThatAskAreTheOnesThatDecideAMerge(t *testing.T) {
 		"merge_pull_request":  {AsksAlways, "merges now, and a merge cannot be undone"},
 		"enable_auto_merge":   {AsksAlways, "merges later, or at once when the checks already pass"},
 		"disable_auto_merge":  {AsksAlways, "changes when a pull request merges"},
-		"submit_pr_review":    {AsksAlways, "APPROVED is consumed by required-reviewer checks, NEEDS_WORK holds a merge back"},
 		"set_build_status":    {AsksAlways, "a successful required build can unblock a merge"},
 		"create_tag":          {AsksAlways, "release pipelines commonly act on a new tag, and no tool here deletes one"},
 		"update_pull_request": {AsksWhenSettingDraft, "a draft cannot merge, and making one a draft cancels its auto-merge"},

@@ -87,9 +87,9 @@ it, once an answer is ready, and never for an agent working on its own. A pull
 request you ask for is opened; the form is for when you want a say in it first.
 
 A button in a view is not a link into Bitbucket but a call of the tools the
-agent uses, through your client: **Reply** calls `add_pr_comment`, **Approve**
-calls `submit_pr_review` and asks you to confirm, **Create** calls
-`create_pull_request`. [How views work](advanced/mcp-governance.md#views-stay-inside-the-mcp-server)
+agent uses, through your client: **Reply** calls `add_pr_comment`, which adds the
+reply to your review, **Approve** calls `prepare_pr_review`, which links to that
+review in Bitbucket for you to publish, **Create** calls `create_pull_request`. [How views work](advanced/mcp-governance.md#views-stay-inside-the-mcp-server)
 shows the whole path.
 
 ### Views in your agent
@@ -114,8 +114,10 @@ one on a line with the lines of the diff it is on. Beside them are the
 reviewers by their decision, the builds the target branch requires before it
 merges, and every build by its state. Reply to a comment, or comment on the pull
 request, where it is; the count of open tasks opens the overview at them.
-**Approve** and **Request changes**, in the overview and over the diff, review
-the pull request once you confirm it in your client.
+**Approve** and **Request changes**, in the overview and over the diff, say where
+your review waits and link to it: you publish it in Bitbucket with **Finish
+review**. A comment or reply you send from a view goes into that review, which
+only you see until then.
 
 ![A pull request's overview: its description and activity, a comment on a line shown among the lines of the diff it is on, beside Approve and Request changes, the reviewers by decision and the builds by state](assets/views/overview-light.webp#only-light)
 ![A pull request's overview: its description and activity, a comment on a line shown among the lines of the diff it is on, beside Approve and Request changes, the reviewers by decision and the builds by state](assets/views/overview-dark.webp#only-dark)

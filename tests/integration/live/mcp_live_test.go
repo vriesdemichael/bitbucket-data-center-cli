@@ -1103,18 +1103,16 @@ func TestLiveMCPAuditTrailRedactsWhatBitbucketEchoes(t *testing.T) {
 	}
 }
 
-// TestLiveMCPSubmitReviewMutatesForReal covers submit_pr_review end to end.
+// TestLiveMCPReviewWaitsForThePersonToPublish covers a review through MCP end
+// to end (#796): the comments an agent adds wait in the person's draft review,
+// prepare_pr_review says where it waits and what it holds, and nothing is
+// approved until the person publishes it.
 //
-// This is the one review action with no other way in: there is no `bb pr review
-// needs-work`, so NeedsWork is reachable through MCP and nowhere else. The
-// command-reach report says every CLI command is asserted live, and this sits
-// outside what that report can see -- its only coverage was a unit test against
-// a participant payload the fixture wrote, which is a claim about how Bitbucket
-// records a review status, made without asking Bitbucket.
-//
-// All three actions run against the same pull request, and each is read back
-// through a second tool rather than trusted from the write's own answer.
-func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
+// The server is opted in to asking, so a tool on the way that asked would show
+// in the answers kept below; none of them may. Each claim is read back through
+// a request of its own: the draft through `bb pr review get`, the one read that
+// lists a comment nobody else can see yet, and the status through `bb pr get`.
+func TestLiveMCPReviewWaitsForThePersonToPublish(t *testing.T) {
 	t.Parallel()
 
 	harness := newLiveHarness(t)
@@ -1127,6 +1125,7 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 		t.Fatalf("seed project with repositories failed: %v", err)
 	}
 	repo := seeded.Repos[0]
+	repoRef := seeded.Key + "/" + repo.Slug
 	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
 
 	branch := testsupport.UniqueName("lt-mcp-review-")
@@ -1138,11 +1137,9 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 		t.Fatalf("create pull request failed: %v", err)
 	}
 
-	// A second account is not a convenience here. Bitbucket refuses the
-	// author's own review outright -- "Authors may not update their status",
-	// InvalidPullRequestRoleException, 400 -- so a test that reviews as the
-	// author proves nothing about the three actions, and a mock would never
-	// have said so.
+	// A second account, because Bitbucket refuses the author's own review --
+	// "Authors may not update their status", 400 -- and the person publishing
+	// the draft at the end would fail for that rather than for anything bb did.
 	reviewer, err := harness.createLicensedUser(ctx)
 	if err != nil {
 		t.Fatalf("create reviewer failed: %v", err)
@@ -1156,129 +1153,91 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 		map[string]any{"user": map[string]any{"name": reviewer.Username}, "role": "REVIEWER"}); err != nil {
 		t.Fatalf("add the reviewer failed: %v", err)
 	}
-
-	// Read back before any review: the reviewer the three actions act on, at
-	// UNAPPROVED, the status approve has to move.
-	added := mcpLiveReviewer(t, mcpLivePullRequest(t, seeded.Key+"/"+repo.Slug, pullRequestID), reviewer.Username)
-	if added["role"] != "REVIEWER" || added["status"] != "UNAPPROVED" {
+	pullRequest := mcpLivePullRequest(t, repoRef, pullRequestID)
+	if added := mcpLiveReviewer(t, pullRequest, reviewer.Username); added["role"] != "REVIEWER" || added["status"] != "UNAPPROVED" {
 		t.Fatalf("%s was added as %v/%v, want an UNAPPROVED REVIEWER", reviewer.Username, added["role"], added["status"])
 	}
 
-	// The server runs as the reviewer, because the review does. submit_pr_review
-	// asks, so the client is one that shows the confirmation and accepts it, as
-	// the person would.
 	configureLiveCLIEnvForUser(t, harness, seeded.Key, repo.Slug, reviewer)
 	person, answers := answeringClient(acceptConfirmation)
 
+	const remark = "the retry loop never gives up"
+	const reply = "and it sleeps a fixed second between tries"
+	const inline = "this file needs a header"
+	var remarkID float64
+	var prepared struct {
+		Review struct {
+			URL             string `json:"url"`
+			PendingComments int    `json:"pending_comments"`
+			SuggestedStatus string `json:"suggested_status"`
+		} `json:"review"`
+	}
 	executeLiveMCPServerAs(t, person, func(session *mcp.ClientSession) {
 		callCtx := context.Background()
 
-		reviewArguments := map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID}
-		readArguments := reviewArguments
-
-		submit := func(t *testing.T, action string) {
-			t.Helper()
-
-			args := map[string]any{}
-			for key, value := range reviewArguments {
-				args[key] = value
-			}
-			args["action"] = action
-
-			var payload struct {
-				PullRequest struct {
-					Reviewers []struct {
-						Name     string `json:"name"`
-						Status   string `json:"status"`
-						Approved bool   `json:"approved"`
-					} `json:"reviewers"`
-				} `json:"pull_request"`
-			}
-			callAndDecode(t, session, callCtx, "submit_pr_review", args, &payload)
+		var added struct {
+			Comment struct {
+				ID float64 `json:"id"`
+			} `json:"comment"`
 		}
+		callAndDecode(t, session, callCtx, "add_pr_comment",
+			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "text": remark}, &added)
+		remarkID = added.Comment.ID
+		callAndDecode(t, session, callCtx, "add_pr_comment",
+			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "text": reply, "parent_id": remarkID}, &added)
+		// On a line too: Bitbucket sends an inline draft's path in a shape of its
+		// own, which the count has to read (OPENAPI-037).
+		callAndDecode(t, session, callCtx, "add_pr_comment",
+			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "text": inline, "path": "mcp-review.txt", "line": 1}, &added)
 
-		statusOf := func(t *testing.T) (string, bool) {
-			t.Helper()
-
-			var payload struct {
-				PullRequest struct {
-					Reviewers []struct {
-						Name     string `json:"name"`
-						Role     string `json:"role"`
-						Status   string `json:"status"`
-						Approved bool   `json:"approved"`
-					} `json:"reviewers"`
-				} `json:"pull_request"`
-			}
-			raw := callAndDecode(t, session, callCtx, "get_pull_request", readArguments, &payload)
-
-			for _, participant := range payload.PullRequest.Reviewers {
-				if participant.Name == reviewer.Username {
-					// A review changes the status and never the role.
-					if participant.Role != "REVIEWER" {
-						t.Errorf("%s is read back as %q, want REVIEWER: %s", reviewer.Username, participant.Role, raw)
-					}
-					return participant.Status, participant.Approved
-				}
-			}
-
-			// Returning nothing would read as no approval and no request for
-			// changes, which is exactly what unapprove is checked for.
-			t.Fatalf("%s is not among the reviewers get_pull_request read back: %s", reviewer.Username, raw)
-
-			return "", false
-		}
-
-		t.Run("approve", func(t *testing.T) {
-			submit(t, "approve")
-
-			status, approved := statusOf(t)
-			if !approved || !strings.EqualFold(status, "APPROVED") {
-				t.Fatalf("after approve: status=%q approved=%v", status, approved)
-			}
-		})
-
-		t.Run("needs_work", func(t *testing.T) {
-			// The action with no direct CLI equivalent, and the reason this
-			// test exists.
-			//
-			// It runs after approve on purpose. A participant holds one status
-			// -- UNAPPROVED, APPROVED or NEEDS_WORK -- and `approved` is
-			// derived from it, so requesting changes does not sit alongside an
-			// approval, it replaces it. Reading approved as false here is what
-			// proves that rather than assuming it, and an agent that treats the
-			// three as independent flags would be wrong about the one state
-			// that blocks a merge.
-			submit(t, "needs_work")
-
-			status, approved := statusOf(t)
-			if approved || !strings.EqualFold(status, "NEEDS_WORK") {
-				t.Fatalf("after needs_work: status=%q approved=%v, want the approval replaced", status, approved)
-			}
-		})
-
-		t.Run("unapprove", func(t *testing.T) {
-			// Running after needs_work rather than after approve is the point:
-			// despite the name, this clears whichever status is held. There is
-			// no separate verb for withdrawing a request for changes, so a
-			// reviewer stepping back from one reaches for the command named
-			// after undoing an approval.
-			submit(t, "unapprove")
-
-			status, approved := statusOf(t)
-			if approved || strings.EqualFold(status, "NEEDS_WORK") {
-				t.Fatalf("after unapprove: status=%q approved=%v, want the request for changes cleared too",
-					status, approved)
-			}
-			if status != "UNAPPROVED" {
-				t.Errorf("after unapprove: status=%q, want UNAPPROVED", status)
-			}
-		})
+		callAndDecode(t, session, callCtx, "prepare_pr_review",
+			map[string]any{"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "suggested_status": "needs_work"}, &prepared)
 	}, "ai", "mcp", "serve", "--allow-writes", "--elicitation-opt-in")
 
-	// One confirmation per review: approve, needs_work and unapprove each asked.
-	if asked := answers.questions(); len(asked) != 3 {
-		t.Errorf("the person was asked %d times, want once for each of the three reviews", len(asked))
+	if asked := answers.questions(); len(asked) != 0 {
+		t.Errorf("the person was asked %d times; commenting and preparing a review ask nothing", len(asked))
+	}
+
+	// The answer names the pull request the way Bitbucket links to it, counts
+	// the reply and the inline comment as well as the remark, and carries the
+	// suggestion through.
+	if want := asString(pullRequest["url"]); want == "" || prepared.Review.URL != want {
+		t.Errorf("prepare_pr_review points to %q, want the pull request's own link %q", prepared.Review.URL, want)
+	}
+	if prepared.Review.PendingComments != 3 || prepared.Review.SuggestedStatus != "needs_work" {
+		t.Errorf("prepare_pr_review answered %+v, want 3 pending comments and needs_work suggested", prepared.Review)
+	}
+
+	// The comments wait in the reviewer's draft, the reply inside the thread it
+	// answers, and none is published.
+	drafts := prReviewDrafts(t, pullRequestID)
+	for _, text := range []string{remark, reply, inline} {
+		matching := prReviewWithText(drafts, text)
+		if len(matching) != 1 || matching[0]["state"] != "PENDING" || matching[0]["pending"] != true {
+			t.Errorf("the draft review holds %v for %q, want one pending comment", matching, text)
+		}
+		prReviewAssertNotPublished(t, pullRequestID, text)
+	}
+	if replies := prReviewWithText(drafts, reply); len(replies) == 1 && replies[0]["parentId"] != remarkID {
+		t.Errorf("the reply sits under %v, want the remark %v it answered", replies[0]["parentId"], remarkID)
+	}
+
+	// Nothing was approved or marked as needing work: that stays the person's.
+	if status := mcpLiveReviewer(t, mcpLivePullRequest(t, repoRef, pullRequestID), reviewer.Username)["status"]; status != "UNAPPROVED" {
+		t.Fatalf("%s's status is %v after the review was prepared, want UNAPPROVED", reviewer.Username, status)
+	}
+
+	// The person publishes the draft, as choosing Needs work in Bitbucket does:
+	// the comments are what a review holds, not orphans in a pending state.
+	mustLiveCLI(t, "pr", "review", "complete", pullRequestID, "--status", "NEEDS_WORK")
+	if status := mcpLiveReviewer(t, mcpLivePullRequest(t, repoRef, pullRequestID), reviewer.Username)["status"]; status != "NEEDS_WORK" {
+		t.Errorf("%s's status is %v after publishing, want NEEDS_WORK", reviewer.Username, status)
+	}
+	published := prReviewPublished(t, pullRequestID)
+	for _, text := range []string{remark, reply, inline} {
+		if matching := prReviewWithText(published, text); len(matching) != 1 || matching[0]["pending"] != false {
+			t.Errorf("want one published comment reading %q after the review was published, got %v", text, matching)
+		}
 	}
 }
 
@@ -1287,9 +1246,10 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 //
 // A unit test decoded the request body its own recording handler had just been
 // handed, which says what bb sends and not whether Bitbucket keeps it. Here
-// each comment is read back: the inline one has to come back anchored to the
-// file and line it named, and the reply has to come back inside the thread it
-// answered rather than as a comment of its own.
+// each comment is read back from the person's draft review, where comments
+// made through MCP wait (#796): the inline one has to come back anchored to
+// the file and line it named, and the reply has to come back inside the thread
+// it answered rather than as a comment of its own.
 func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 	t.Parallel()
 
@@ -1360,65 +1320,40 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 		const replyText = "agreed, will fix"
 		replyID := add(t, map[string]any{"text": replyText, "parent_id": plainID})
 
-		// Read back through the same surface an agent would use.
-		var listed struct {
-			Threads []struct {
-				ID     float64 `json:"id"`
-				Text   string  `json:"text"`
-				Anchor *struct {
-					Path     string  `json:"path"`
-					Line     float64 `json:"line"`
-					LineType string  `json:"line_type"`
-				} `json:"anchor"`
-				Replies []struct {
-					ID   float64 `json:"id"`
-					Text string  `json:"text"`
-				} `json:"replies"`
-			} `json:"threads"`
+		// Read back from the draft review: an agent's comments wait there, and
+		// it is the one read that lists a comment nobody else sees yet.
+		drafts := map[float64]map[string]any{}
+		for _, draft := range prReviewDrafts(t, pullRequestID) {
+			if id, ok := draft["id"].(float64); ok {
+				drafts[id] = draft
+			}
 		}
-		raw := callAndDecode(t, session, callCtx, "list_pr_comments", map[string]any{
-			"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "with_replies": true,
-		}, &listed)
+		for id, text := range map[float64]string{plainID: plainText, inlineID: inlineText, replyID: replyText} {
+			draft, ok := drafts[id]
+			if !ok {
+				t.Errorf("comment %v (%q) is not in the draft review: %v", id, text, drafts)
+				continue
+			}
+			if draft["text"] != text || draft["state"] != "PENDING" {
+				t.Errorf("comment %v came back as %q in state %v, want %q pending", id, draft["text"], draft["state"], text)
+			}
+			prReviewAssertNotPublished(t, pullRequestID, text)
+		}
 
-		var sawInline, sawReply bool
-		for _, thread := range listed.Threads {
-			if thread.ID == inlineID {
-				if thread.Anchor == nil || thread.Anchor.Path != anchoredFile || int(thread.Anchor.Line) != 1 {
-					t.Errorf("the inline comment did not come back anchored where it was put: %#v", thread.Anchor)
-				}
-				if thread.Anchor != nil && thread.Anchor.LineType != "REMOVED" {
-					t.Errorf("the inline comment came back on the %q side, want REMOVED: %s", thread.Anchor.LineType, raw)
-				}
-				if thread.Text != inlineText {
-					t.Errorf("the inline comment came back as %q, want %q", thread.Text, inlineText)
-				}
-				sawInline = true
+		if inline := drafts[inlineID]; inline != nil {
+			anchor, _ := inline["anchor"].(map[string]any)
+			if anchor == nil || anchor["path"] != anchoredFile || anchor["line"] != float64(1) {
+				t.Errorf("the inline comment did not come back anchored where it was put: %v", inline["anchor"])
 			}
-			if thread.ID == plainID {
-				if thread.Anchor != nil {
-					t.Errorf("a plain remark came back anchored: %#v", thread.Anchor)
-				}
-				if thread.Text != plainText {
-					t.Errorf("the plain remark came back as %q, want %q", thread.Text, plainText)
-				}
-				for _, reply := range thread.Replies {
-					if reply.ID == replyID {
-						if reply.Text != replyText {
-							t.Errorf("the reply came back as %q, want %q", reply.Text, replyText)
-						}
-						sawReply = true
-					}
-				}
-			}
-			if thread.ID == replyID {
-				t.Errorf("the reply came back as a thread of its own rather than inside the one it answered:\n%s", raw)
+			if anchor != nil && anchor["lineType"] != "REMOVED" {
+				t.Errorf("the inline comment came back on the %v side, want REMOVED: %v", anchor["lineType"], anchor)
 			}
 		}
-		if !sawInline {
-			t.Errorf("the inline comment is not in the listing:\n%s", raw)
+		if plain := drafts[plainID]; plain != nil && plain["anchor"] != nil {
+			t.Errorf("a plain remark came back anchored: %v", plain["anchor"])
 		}
-		if !sawReply {
-			t.Errorf("the reply is not inside the thread it answered:\n%s", raw)
+		if reply := drafts[replyID]; reply != nil && (reply["reply"] != true || reply["parentId"] != plainID) {
+			t.Errorf("the reply came back under %v rather than inside the thread it answered: %v", reply["parentId"], reply)
 		}
 	}, "ai", "mcp", "serve", "--allow-writes")
 }

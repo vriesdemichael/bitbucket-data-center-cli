@@ -3,11 +3,13 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commentanchor"
 	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
@@ -372,8 +374,10 @@ type AddPRCommentOutput struct {
 
 func specAddPRComment() Spec {
 	tool := &mcp.Tool{
-		Name:        "add_pr_comment",
-		Description: "Add a comment to a pull request. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment.",
+		Name: "add_pr_comment",
+		Description: "Add a comment to the person's review of a pull request. It stays pending, seen only by the person, " +
+			"until they publish the review in Bitbucket with Finish review; prepare_pr_review says where. Provide path and line to create an inline " +
+			"comment on a specific file line. Provide parent_id to reply to an existing comment.",
 		// No enum on line_type: commentanchor.Validate owns that vocabulary and
 		// reports a better message than a schema violation would.
 		//
@@ -407,9 +411,10 @@ func specAddPRComment() Spec {
 						Path:     filePath,
 						LineType: lineType,
 					},
+					true,
 				)
 			} else {
-				comment, err = svc.AddComment(ctx, ref, in.PRID, in.Text, in.ParentID)
+				comment, err = svc.AddComment(ctx, ref, in.PRID, in.Text, in.ParentID, true)
 			}
 			if err != nil {
 				return nil, AddPRCommentOutput{}, fmt.Errorf("add_pr_comment failed: %w", err)
@@ -419,46 +424,98 @@ func specAddPRComment() Spec {
 	})
 }
 
-// SubmitPRReviewInput is the argument set for submit_pr_review.
-type SubmitPRReviewInput struct {
-	Project string `json:"project" jsonschema:"Bitbucket project key"`
-	Repo    string `json:"repo" jsonschema:"Repository slug"`
-	PRID    string `json:"pr_id" jsonschema:"Pull request ID"`
-	Action  string `json:"action" jsonschema:"Action to take: approve, unapprove, or needs_work"`
+// PreparePRReviewInput is the argument set for prepare_pr_review.
+type PreparePRReviewInput struct {
+	Project         string `json:"project" jsonschema:"Bitbucket project key"`
+	Repo            string `json:"repo" jsonschema:"Repository slug"`
+	PRID            string `json:"pr_id" jsonschema:"Pull request ID"`
+	SuggestedStatus string `json:"suggested_status,omitempty" jsonschema:"The status you suggest the person publishes the review with; omit to suggest none"`
 }
 
-func specSubmitPRReview() Spec {
+// PreparedReview is the person's draft review of a pull request, and where
+// they publish it.
+type PreparedReview struct {
+	URL             string `json:"url" jsonschema:"The pull request in Bitbucket, where the person publishes the review with Finish review and approves or requests changes"`
+	PendingComments int    `json:"pending_comments" jsonschema:"Comments in the draft, replies included, which only the person sees until they publish it"`
+	SuggestedStatus string `json:"suggested_status,omitempty" jsonschema:"The status the review suggests: approve or needs_work"`
+}
+
+// PreparePRReviewOutput names the prepared review.
+type PreparePRReviewOutput struct {
+	Review PreparedReview `json:"review"`
+}
+
+// specPreparePRReview hands a review to the person to publish (#796).
+//
+// Through MCP bb acts with the person's token, so an approval made there
+// carries their name and nothing else: to every other reviewer, and to the
+// merge checks that count approvals, it is theirs. So nothing here approves or
+// sets needs-work. The comments add_pr_comment posts wait in the person's
+// draft review, which Bitbucket keeps one of per person per pull request, so a
+// draft they had already begun is added to rather than replaced. This reads
+// the draft and says where it waits; the person publishes it in Bitbucket.
+func specPreparePRReview() Spec {
 	tool := &mcp.Tool{
-		Name:        "submit_pr_review",
-		Description: "Set review status on a pull request: approve, unapprove, or request changes (needs_work).",
-		// Destructive: a review replaces the reviewer's previous status.
-		Annotations: writes("Review pull request", true, true),
-		InputSchema: enumInputSchema[SubmitPRReviewInput](map[string][]string{
-			"action": {"approve", "unapprove", "needs_work"},
+		Name: "prepare_pr_review",
+		Description: "Hand a review to the person to publish. The comments added with add_pr_comment wait in their draft review; " +
+			"this returns the pull request's URL, how many comments the draft holds, and the status you suggest. Nothing is approved " +
+			"or published here: the person publishes the review in Bitbucket with Finish review, and approves or requests changes. " +
+			"Tell them where it waits and what you suggest.",
+		// Read-only: it reads the draft, and changes nothing.
+		Annotations: readOnly("Prepare a review"),
+		InputSchema: enumInputSchema[PreparePRReviewInput](map[string][]string{
+			"suggested_status": {"approve", "needs_work"},
 		}),
 	}
-	return askingSpec(tool, AsksAlways, askSubmitPRReview(), func(c Clients) mcp.ToolHandlerFor[SubmitPRReviewInput, PullRequestOutput] {
+	return toolSpec(tool, func(c Clients) mcp.ToolHandlerFor[PreparePRReviewInput, PreparePRReviewOutput] {
 		svc := pullrequestservice.NewService(c.HTTP)
-		return func(ctx context.Context, _ *mcp.CallToolRequest, in SubmitPRReviewInput) (*mcp.CallToolResult, PullRequestOutput, error) {
-			ref := pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}
-			var pr pullrequestservice.PullRequest
-			var err error
-			switch in.Action {
-			case "approve":
-				pr, err = svc.Approve(ctx, ref, in.PRID)
-			case "unapprove":
-				pr, err = svc.Unapprove(ctx, ref, in.PRID)
-			case "needs_work":
-				pr, err = svc.NeedsWork(ctx, ref, in.PRID)
-			default:
-				return nil, PullRequestOutput{}, fmt.Errorf("submit_pr_review: unknown action %q", in.Action)
-			}
+		return func(ctx context.Context, _ *mcp.CallToolRequest, in PreparePRReviewInput) (*mcp.CallToolResult, PreparePRReviewOutput, error) {
+			pr, err := svc.Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.PRID)
 			if err != nil {
-				return nil, PullRequestOutput{}, fmt.Errorf("submit_pr_review failed: %w", err)
+				return nil, PreparePRReviewOutput{}, fmt.Errorf("prepare_pr_review failed: %w", err)
 			}
-			return nil, PullRequestOutput{PullRequest: pr}, nil
+			pending, err := pendingReviewComments(ctx, c, in.Project, in.Repo, strconv.FormatInt(pr.ID, 10))
+			if err != nil {
+				return nil, PreparePRReviewOutput{}, fmt.Errorf("prepare_pr_review failed: %w", err)
+			}
+
+			return nil, PreparePRReviewOutput{Review: PreparedReview{
+				URL:             pr.URL,
+				PendingComments: pending,
+				SuggestedStatus: strings.TrimSpace(in.SuggestedStatus),
+			}}, nil
 		}
 	})
+}
+
+// pendingReviewComments counts the comments in the caller's draft review.
+//
+// Bitbucket reads a review back as the threads holding a pending comment, and
+// a pending reply comes back inside the published thread it answers, so the
+// comments are counted by their state rather than by thread.
+func pendingReviewComments(ctx context.Context, c Clients, project, repo, pullRequestID string) (int, error) {
+	threads, err := pullrequestactivityservice.NewService(c.OpenAPI).Review(ctx,
+		pullrequestactivityservice.RepositoryRef{ProjectKey: project, Slug: repo}, pullRequestID,
+		pullrequestactivityservice.ListOptions{MaxResults: pullrequestactivityservice.AllResults})
+	if err != nil {
+		return 0, err
+	}
+
+	return countPending(threads), nil
+}
+
+func countPending(comments []openapigenerated.RestComment) int {
+	count := 0
+	for _, comment := range comments {
+		if comment.State != nil && *comment.State == "PENDING" {
+			count++
+		}
+		if comment.Comments != nil {
+			count += countPending(*comment.Comments)
+		}
+	}
+
+	return count
 }
 
 // MergePullRequestInput is the argument set for merge_pull_request.

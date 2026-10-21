@@ -192,13 +192,15 @@ func TestListPullRequestsRefusesARepositoryWithoutItsProject(t *testing.T) {
 	}
 }
 
-func TestSubmitPRReviewRejectsUnknownAction(t *testing.T) {
+// A suggested status outside the two the person publishes with is refused
+// before anything is asked of Bitbucket.
+func TestPreparePRReviewRejectsAnUnknownSuggestedStatus(t *testing.T) {
 	t.Parallel()
 
 	clients := newUnreachedClients(t)
 
-	result := callTool(t, specSubmitPRReview(), clients, map[string]any{
-		"project": "TEST", "repo": "demo", "pr_id": "30", "action": "merge",
+	result := callTool(t, specPreparePRReview(), clients, map[string]any{
+		"project": "TEST", "repo": "demo", "pr_id": "30", "suggested_status": "merge",
 	})
 	if !result.IsError {
 		t.Fatalf("expected an error result, got: %+v", result)
@@ -245,13 +247,6 @@ func TestAddPRCommentRejectsLineTypeWithoutAnchor(t *testing.T) {
 		t.Fatalf("expected a line_type message, got %q", text)
 	}
 }
-
-// TestSubmitPRReviewNeedsWorkAction is live now, in
-// TestLiveMCPSubmitReviewMutatesForReal, which submits all three actions as a
-// second account -- Bitbucket refuses the author's own review outright -- and
-// reads the participant status back after each. The unit version asserted the
-// PUT reached a participant path this file had written the reply for, which
-// says nothing about whether Bitbucket keeps a NEEDS_WORK sent that way.
 
 // A tool that never asks cannot be steered to an endpoint that would: a slug
 // carrying a path and a query once turned add_pr_comment into a merge, with

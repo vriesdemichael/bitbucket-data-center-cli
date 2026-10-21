@@ -269,7 +269,7 @@ func AllSpecs() []Spec {
 		specAddPRComment(),
 		// Asks: APPROVED is the input a required-reviewer check consumes, and
 		// NEEDS_WORK holds a merge back.
-		specSubmitPRReview(),
+		specPreparePRReview(),
 		// Asks: merges now, and cannot be undone.
 		specMergePullRequest(),
 		// Asks: merges later, or at once when the checks already pass.

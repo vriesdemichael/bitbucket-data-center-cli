@@ -113,30 +113,13 @@ func TestLiveMCPToolsThatAskChangeNothingUnlessAccepted(t *testing.T) {
 		}
 	}
 
-	// A pull request somebody else wrote, with the caller reviewing it:
-	// Bitbucket refuses an author's own review.
-	author, err := harness.createLicensedUser(ctx)
-	if err != nil {
-		t.Fatalf("create the pull request author failed: %v", err)
-	}
-	if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, author.Username, "REPO_WRITE"); err != nil {
-		t.Fatalf("grant the author write access failed: %v", err)
-	}
 	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, "feature/mcp-ask", "mcp-ask.txt"); err != nil {
 		t.Fatalf("push commit on branch failed: %v", err)
 	}
-	authored, err := harness.liveJSONAs(ctx, author, http.MethodPost,
-		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests", seeded.Key, repo.Slug),
-		map[string]any{
-			"title":     "Held back by the confirmation",
-			"fromRef":   map[string]any{"id": "refs/heads/feature/mcp-ask"},
-			"toRef":     map[string]any{"id": "refs/heads/master"},
-			"reviewers": []map[string]any{{"user": map[string]any{"name": harness.username()}}},
-		})
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, "feature/mcp-ask", "master")
 	if err != nil {
-		t.Fatalf("create the authored pull request failed: %v", err)
+		t.Fatalf("create the pull request failed: %v", err)
 	}
-	pullRequestID := fmt.Sprintf("%d", int64(authored["id"].(float64)))
 
 	// Auto-merge on, and one approval required, so a pull request with
 	// auto-merge set waits for it rather than merging at once.
@@ -164,9 +147,6 @@ func TestLiveMCPToolsThatAskChangeNothingUnlessAccepted(t *testing.T) {
 	}
 
 	before := mcpLivePullRequest(t, repoRef, pullRequestID)
-	if reviewer := mcpLiveReviewer(t, before, harness.username()); reviewer["role"] != "REVIEWER" || reviewer["status"] != "UNAPPROVED" {
-		t.Fatalf("the caller is %v/%v on pull request %s, want an UNAPPROVED REVIEWER", reviewer["role"], reviewer["status"], pullRequestID)
-	}
 	version, err := strconv.Atoi(currentLivePRVersion(t, pullRequestID))
 	if err != nil {
 		t.Fatalf("the pull request's version is not a number: %v", err)
@@ -176,7 +156,6 @@ func TestLiveMCPToolsThatAskChangeNothingUnlessAccepted(t *testing.T) {
 	tagName := testsupport.UniqueName("mcp-ask-")
 
 	arguments := map[string]map[string]any{
-		"submit_pr_review":    {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID, "action": "approve"},
 		"merge_pull_request":  {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
 		"enable_auto_merge":   {"project": seeded.Key, "repo": repo.Slug, "pr_id": pullRequestID},
 		"disable_auto_merge":  {"project": seeded.Key, "repo": repo.Slug, "pr_id": armedID},
@@ -243,9 +222,6 @@ func TestLiveMCPToolsThatAskChangeNothingUnlessAccepted(t *testing.T) {
 	}
 	if after["draft"] == true {
 		t.Errorf("pull request %s is a draft after a refused update_pull_request", pullRequestID)
-	}
-	if reviewer := mcpLiveReviewer(t, after, harness.username()); reviewer["status"] != "UNAPPROVED" {
-		t.Errorf("the caller's review of pull request %s is %v after a refused submit_pr_review", pullRequestID, reviewer["status"])
 	}
 	if autoMerge := mcpLiveAutoMerge(t, repoRef, pullRequestID); autoMerge["enabled"] != false {
 		t.Errorf("auto-merge on pull request %s is %v after a refused enable_auto_merge", pullRequestID, autoMerge)

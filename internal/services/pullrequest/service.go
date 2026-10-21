@@ -795,7 +795,10 @@ type Comment struct {
 	ID      int64  `json:"id"`
 	Version int    `json:"version"`
 	Text    string `json:"text"`
-	Author  struct {
+	// State is PENDING for a comment in its author's draft review, which only
+	// they see until they publish the review, and OPEN once others see it.
+	State  string `json:"state,omitempty"`
+	Author struct {
 		Name        string `json:"name"`
 		DisplayName string `json:"displayName"`
 		Slug        string `json:"slug"`
@@ -804,7 +807,9 @@ type Comment struct {
 
 // AddComment adds a general comment to a pull request.
 // If parentID is greater than zero the comment is posted as a reply to it.
-func (service *Service) AddComment(ctx context.Context, repository RepositoryRef, pullRequestID string, text string, parentID int64) (Comment, error) {
+// A pending comment goes into the caller's draft review, which only they see
+// until they publish it.
+func (service *Service) AddComment(ctx context.Context, repository RepositoryRef, pullRequestID string, text string, parentID int64, pending bool) (Comment, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return Comment{}, err
 	}
@@ -823,6 +828,7 @@ func (service *Service) AddComment(ctx context.Context, repository RepositoryRef
 	if parentID > 0 {
 		payload["parent"] = map[string]any{"id": parentID}
 	}
+	markPending(payload, pending)
 
 	path := fmt.Sprintf("%s/%s/comments", pullRequestPath(repository), resolvedID)
 
@@ -835,8 +841,8 @@ func (service *Service) AddComment(ctx context.Context, repository RepositoryRef
 }
 
 // AddInlineComment adds a comment on a specific line of a file in a pull
-// request diff.
-func (service *Service) AddInlineComment(ctx context.Context, repository RepositoryRef, pullRequestID string, text string, anchor InlineCommentAnchor) (Comment, error) {
+// request diff, pending as AddComment's is.
+func (service *Service) AddInlineComment(ctx context.Context, repository RepositoryRef, pullRequestID string, text string, anchor InlineCommentAnchor, pending bool) (Comment, error) {
 	if err := validateRepositoryRef(repository); err != nil {
 		return Comment{}, err
 	}
@@ -873,6 +879,7 @@ func (service *Service) AddInlineComment(ctx context.Context, repository Reposit
 	for key, value := range anchorFields {
 		payload[key] = value
 	}
+	markPending(payload, pending)
 
 	path := fmt.Sprintf("%s/%s/comments", pullRequestPath(repository), resolvedID)
 
@@ -1940,4 +1947,13 @@ func (service *Service) SearchParticipants(ctx context.Context, repository Repos
 		})
 	}
 	return results, nil
+}
+
+// markPending asks for the PENDING state, which is how a draft comment is
+// made: the pending flag is read-only in the schema and the server ignores it,
+// publishing the comment the caller meant to keep in their draft.
+func markPending(payload map[string]any, pending bool) {
+	if pending {
+		payload["state"] = "PENDING"
+	}
 }

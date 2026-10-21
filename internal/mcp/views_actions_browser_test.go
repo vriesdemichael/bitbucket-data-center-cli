@@ -54,12 +54,11 @@ func typeInto(t *testing.T, ctx context.Context, frame int, selector, text strin
 }
 
 // A reply goes to Bitbucket through add_pr_comment, with the comment it
-// answers, and the view reads itself again to show it. What the person wrote
-// survives a redraw, and stays where sending failed.
-func TestAReplyGoesThroughTheModelsToolAndShows(t *testing.T) {
-	replied := fixtureActivity()
-	replied.Items[3].Thread.Replies = append(replied.Items[3].Thread.Replies, viewReply{ID: 99, Author: "Alice Smith", AuthorUsername: "alice", Date: time.Now().UnixMilli(), Text: "Capped at thirty seconds."})
-	after := overviewPayload(replied, commenting, "two")
+// answers, into the person's review (#796). Nothing the view reads again shows
+// a pending comment, so it says where the reply went, in its place. What the
+// person wrote survives a redraw, and stays where sending failed.
+func TestAReplyGoesThroughTheModelsToolIntoTheReview(t *testing.T) {
+	after := overviewPayload(fixtureActivity(), commenting, "two")
 	ctx := browser(t, []viewhost.Frame{
 		{Title: "overview fullscreen", Mode: "fullscreen", Fullscreen: true, Result: fixtureResult(t, overviewPayload(fixtureActivity(), commenting, "one")),
 			ToolResults: map[string][]json.RawMessage{
@@ -92,9 +91,15 @@ func TestAReplyGoesThroughTheModelsToolAndShows(t *testing.T) {
 		t.Fatalf("after a failed reply the box reads %q, want what was written", kept)
 	}
 
-	// The second goes through, and the view reads itself again.
+	// The second goes through: the view says the reply waits in the review,
+	// links to it, and reads itself again.
 	inFrame(t, ctx, 0, `const b = d.querySelector("#thread-1 .send-button"); b.click(); return true;`, &clicked)
-	waitInFrame(t, ctx, 0, `!d.querySelector('[data-draft="reply-1"]') && d.querySelector("#thread-1").innerText.includes("Capped at thirty seconds.")`, "the reply is not shown once sent")
+	waitInFrame(t, ctx, 0, `!d.querySelector('[data-draft="reply-1"]') && d.querySelector("#thread-1 .added-to-review") && d.querySelector("#thread-1 .added-to-review").textContent.includes("Finish review")`, "a sent reply does not say it waits in the review")
+	var linked bool
+	inFrame(t, ctx, 0, `return [...d.querySelectorAll("#thread-1 .added-to-review button")].some((b) => b.textContent.includes("Open in Bitbucket"));`, &linked)
+	if !linked {
+		t.Error("the note on a sent reply has no link to the review")
+	}
 	calls := toolCalls(t, ctx, 0, "add_pr_comment")
 	if len(calls) != 2 {
 		t.Fatalf("the view called add_pr_comment %d times, want twice: %v", len(calls), calls)
@@ -107,6 +112,10 @@ func TestAReplyGoesThroughTheModelsToolAndShows(t *testing.T) {
 	if refreshes := refreshCalls(t, ctx, 0); len(refreshes) != 1 || refreshes[0]["since"] != "one" {
 		t.Errorf("after the reply the view asked %v, want one refresh from what it held", refreshes)
 	}
+
+	// Done puts Reply back, for another.
+	inFrame(t, ctx, 0, `const b = [...d.querySelectorAll("#thread-1 .added-to-review button")].find((b) => b.textContent === "Done"); if (b) b.click(); return Boolean(b);`, &clicked)
+	waitInFrame(t, ctx, 0, `!d.querySelector("#thread-1 .added-to-review") && d.querySelector("#thread-1 .text-action")`, "Done does not put Reply back")
 }
 
 // A comment on the pull request itself carries no comment to answer.
@@ -124,7 +133,7 @@ func TestACommentOnThePullRequestGoesThroughTheModelsTool(t *testing.T) {
 	typeInto(t, ctx, 0, `[data-draft="comment-pr"]`, "Looks good to me.")
 	var sent bool
 	inFrame(t, ctx, 0, `const i = d.querySelector('[data-draft="comment-pr"]'); i.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true, bubbles: true })); return true;`, &sent)
-	waitInFrame(t, ctx, 0, `!d.querySelector('[data-draft="comment-pr"]')`, "the comment box did not close once sent")
+	waitInFrame(t, ctx, 0, `!d.querySelector('[data-draft="comment-pr"]') && d.querySelector(".activity .added-to-review")`, "a sent comment does not say it waits in the review")
 	calls := toolCalls(t, ctx, 0, "add_pr_comment")
 	if len(calls) != 1 || calls[0]["text"] != "Looks good to me." || calls[0]["parent_id"] != nil {
 		t.Errorf("the comment sent %v, want its text and no comment it answers", calls)

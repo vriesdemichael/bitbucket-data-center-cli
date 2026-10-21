@@ -7,7 +7,7 @@ search:
 
 This page is generated from the server's registries by `task docs:export-mcp-tools`. Do not edit manually.
 
-`bb ai mcp serve` registers 27 tools. It exposes the 18 that only read, and with `--allow-writes` every one, unless `--tools`, `--exclude` or a scope withholds it. On a server started with `--elicitation-opt-in`, 7 ask the person to confirm a call in the MCP client before they run.
+`bb ai mcp serve` registers 27 tools. It exposes the 19 that only read, and with `--allow-writes` every one, unless `--tools`, `--exclude` or a scope withholds it. On a server started with `--elicitation-opt-in`, 6 ask the person to confirm a call in the MCP client before they run.
 
 The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.
 
@@ -36,12 +36,12 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
 | `list_required_builds` | List required builds | read-only | never |
 | `list_tags` | List tags | read-only | never |
 | `merge_pull_request` | Merge pull request | writes | always |
+| `prepare_pr_review` | Prepare a review | read-only | never |
 | `refresh_view` | Refresh a view | read-only | never |
 | `resolve_ref` | Resolve ref | read-only | never |
 | `search_repositories` | Search repositories | read-only | never |
 | `set_build_status` | Set build status | writes | always |
 | `show` | Show a view | read-only | never |
-| `submit_pr_review` | Review pull request | writes | always |
 | `suggest_form_values` | Suggest form values | read-only | never |
 | `update_pull_request` | Update pull request | writes | when-setting-draft |
 
@@ -50,7 +50,7 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
     The description a client hands the model with each tool, as the server sends it.
 
     `add_pr_comment`
-    :   Add a comment to a pull request. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment.
+    :   Add a comment to the person's review of a pull request. It stays pending, seen only by the person, until they publish the review in Bitbucket with Finish review; prepare_pr_review says where. Provide path and line to create an inline comment on a specific file line. Provide parent_id to reply to an existing comment.
 
     `compare_refs`
     :   List the commits reachable from 'from' but not from 'to': what one ref has that the other lacks. For the commits a feature branch adds, pass from=feature and to=main.
@@ -106,6 +106,9 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
     `merge_pull_request`
     :   Merge a pull request. Bitbucket refuses the merge while one of the repository's merge checks fails: each repository sets its own, which may require approvals, passing builds or resolved tasks, or nothing at all. get_pull_request lists what blocks the merge in pull_request.mergeability.blockers.
 
+    `prepare_pr_review`
+    :   Hand a review to the person to publish. The comments added with add_pr_comment wait in their draft review; this returns the pull request's URL, how many comments the draft holds, and the status you suggest. Nothing is approved or published here: the person publishes the review in Bitbucket with Finish review, and approves or requests changes. Tell them where it waits and what you suggest.
+
     `refresh_view`
     :   Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.
 
@@ -120,9 +123,6 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
 
     `show`
     :   Show the person a pull request, a list of pull requests or a pull request's diff as an interactive view, in clients that display MCP Apps views, or a pull request form for them to finish and submit. It is for the person, not for you: its answer says what was shown, not the data, so read with the other tools. Call it only when a person is there to see it, never when you work on your own, as in a scheduled, background or batch task; and once, after you have what you need and before your answer. Kind pull_request, for a pull request the person asked about or should watch, takes project, repo and id; its view keeps its builds and reviews current, and its overview has its comments and activity. Kind diff takes the same, for changes the person cannot open in their own editor, such as another repository's, and draws the comments on their lines. Kind pull_requests, for what needs the person, takes the filters list_pull_requests takes. Kind pull_request_form is for a person who wants a say in a pull request before it exists, being particular about its description or reviewers or asking to see the draft; for a clear request to open one, call create_pull_request instead. It takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), or an id to edit that pull request; nothing is created or changed until the person submits it. In a client that displays no views, it shows nothing and says so.
-
-    `submit_pr_review`
-    :   Set review status on a pull request: approve, unapprove, or request changes (needs_work).
 
     `suggest_form_values`
     :   Called by bb's pull request form, not by the model: suggests the repository's branches, or the people who can read it as reviewers, matching what the person typed, and names the default reviewers and code owners for the branches they picked.

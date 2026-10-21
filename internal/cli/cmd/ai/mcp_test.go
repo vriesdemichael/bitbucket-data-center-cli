@@ -292,7 +292,6 @@ var askingTools = map[string]string{
 	"merge_pull_request":  "always",
 	"enable_auto_merge":   "always",
 	"disable_auto_merge":  "always",
-	"submit_pr_review":    "always",
 	"set_build_status":    "always",
 	"create_tag":          "always",
 	"update_pull_request": "when-setting-draft",

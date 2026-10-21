@@ -26,7 +26,8 @@ function pullRequestArgs(pr) {
 // redraw, a refresh or a resize keeps it and the caret where it was.
 
 function openDraft(view, key, text) {
-  if (!view.drafts.has(key)) view.drafts.set(key, { text: text || "", busy: false, error: null });
+  const held = view.drafts.get(key);
+  if (!held || held.sent) view.drafts.set(key, { text: text || "", busy: false, error: null });
   view.focusDraft = key;
   render();
 }
@@ -53,7 +54,9 @@ async function submitDraft(view, key, send) {
   render();
   try {
     await send(text);
-    view.drafts.delete(key);
+    // A comment from a view waits in the person's review, which nothing the
+    // view reads shows them, so where it went is said in its place.
+    view.drafts.set(key, { text: "", busy: false, error: null, sent: true });
     render();
     refreshView(view, true);
   } catch (error) {
@@ -69,6 +72,7 @@ async function submitDraft(view, key, send) {
 // frame may be sandboxed without forms, where a form never submits.
 function commentForm(view, key, options) {
   const draft = view.drafts.get(key);
+  if (draft.sent) return addedToReview(view, key, options.reviewURL);
   const input = el("textarea", {
     class: "comment-input",
     rows: 3,
@@ -99,46 +103,70 @@ function commentForm(view, key, options) {
     el("span", { class: "faint form-hint" }, "Markdown · Ctrl+Enter sends")));
 }
 
-// reviewActions approve or request changes, as Bitbucket's pull request
-// page does, for someone other than the author while the pull request is
-// open. Pressed again, either takes the review back. submit_pr_review asks
-// the person to confirm in the client before it runs.
+// addedToReview says where a comment sent from the view went: into the
+// person's review, which only they see until they publish it (#796).
+function addedToReview(view, key, url) {
+  return el("p", { class: "added-to-review", role: "status" },
+    "Added to your review, which only you see until you publish it with Finish review in Bitbucket. ",
+    isWebURL(url) ? el("button", { type: "button", class: "button ghost", onclick: () => openLink(view.bridge, url) }, "Open in Bitbucket") : null,
+    el("button", { type: "button", class: "button ghost", onclick: () => closeDraft(view, key) }, "Done"));
+}
+
+// reviewActions are Bitbucket's Approve and Request changes, for someone
+// other than the author while the pull request is open. Nothing here approves:
+// an approval made with the person's token is indistinguishable from theirs,
+// so each button prepares the review with prepare_pr_review and shows where
+// the draft waits, for the person to publish it in Bitbucket (#796).
 function reviewActions(pr, payload, view) {
   const me = payload.me;
-  if (!me || me.author || !pr.repository || pr.state !== "OPEN" || !canCall(view, "submit_pr_review")) return null;
-  const approved = me.status === "APPROVED";
-  const changesRequested = me.status === "NEEDS_WORK";
+  if (!me || me.author || !pr.repository || pr.state !== "OPEN" || !canCall(view, "prepare_pr_review")) return null;
   const busy = Boolean(view.reviewing);
+  const status = me.status === "APPROVED" ? "You approved" : me.status === "NEEDS_WORK" ? "You requested changes" : null;
   return el("div", { class: "review-actions", role: "group", "aria-label": "Your review" },
+    status ? el("span", { class: "faint" }, status) : null,
     el("button", {
       type: "button",
-      class: "button" + (approved ? "" : " primary") + (view.reviewing === (approved ? "unapprove" : "approve") ? " busy" : ""),
-      "aria-pressed": approved ? "true" : "false",
-      title: approved ? "Take back your approval" : "Approve this pull request",
+      class: "button primary" + (view.reviewing === "approve" ? " busy" : ""),
+      title: "Prepare your review, to publish in Bitbucket as an approval",
       disabled: busy,
-      onclick: () => submitReview(pr, approved ? "unapprove" : "approve", view),
-    }, icon("approved"), approved ? "Approved" : "Approve"),
+      onclick: () => prepareReview(pr, "approve", view),
+    }, icon("approved"), "Approve"),
     el("button", {
       type: "button",
-      class: "button" + (view.reviewing === (changesRequested ? "unapprove" : "needs_work") ? " busy" : ""),
-      "aria-pressed": changesRequested ? "true" : "false",
-      title: changesRequested ? "Take back your request for changes" : "Request changes to this pull request",
+      class: "button" + (view.reviewing === "needs_work" ? " busy" : ""),
+      title: "Prepare your review, to publish in Bitbucket as needing work",
       disabled: busy,
-      onclick: () => submitReview(pr, changesRequested ? "unapprove" : "needs_work", view),
-    }, icon("changesRequested"), changesRequested ? "Changes requested" : "Request changes"),
+      onclick: () => prepareReview(pr, "needs_work", view),
+    }, icon("changesRequested"), "Request changes"),
+    preparedReview(view),
     view.reviewError ? el("p", { class: "form-error", role: "alert" }, view.reviewError) : null);
 }
 
-async function submitReview(pr, action, view) {
+// preparedReview says where the person's review waits, what it holds, and
+// what to choose when they publish it, in Bitbucket's words. With no comment
+// in it there is no review to finish, and the choice is made on its own.
+function preparedReview(view) {
+  const review = view.preparedReview;
+  if (!review) return null;
+  const choose = review.suggested_status === "needs_work" ? "Request changes" : "Approve";
+  const said = review.pending_comments > 0
+    ? "Your review waits in Bitbucket with " + plural(review.pending_comments, "comment") + " only you see. Publish it there with Finish review, and choose " + choose + ". "
+    : "No comments wait in your review. Choose " + choose + " in Bitbucket. ";
+  return el("p", { class: "review-prepared", role: "status" },
+    said,
+    isWebURL(review.url) ? el("button", { type: "button", class: "button ghost", onclick: () => openLink(view.bridge, review.url) }, "Open in Bitbucket") : null);
+}
+
+async function prepareReview(pr, suggested, view) {
   if (view.reviewing) return;
-  view.reviewing = action;
+  view.reviewing = suggested;
   view.reviewError = null;
   render();
   try {
-    await callForPerson(view, "submit_pr_review", Object.assign(pullRequestArgs(pr), { action }));
-    refreshView(view, true);
+    const result = await callForPerson(view, "prepare_pr_review", Object.assign(pullRequestArgs(pr), { suggested_status: suggested }));
+    view.preparedReview = (result.structuredContent && result.structuredContent.review) || null;
   } catch (error) {
-    view.reviewError = (error && error.message) || "The review did not go through.";
+    view.reviewError = (error && error.message) || "The review could not be prepared.";
   } finally {
     view.reviewing = null;
     render();
@@ -157,6 +185,7 @@ function newCommentArea(pr, view) {
     placeholder: "Comment on the pull request",
     submitLabel: "Comment",
     busyLabel: "Commenting…",
+    reviewURL: pr.url,
     send: (text) => callForPerson(view, "add_pr_comment", Object.assign(pullRequestArgs(pr), { text })),
   });
 }

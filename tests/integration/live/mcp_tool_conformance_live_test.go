@@ -179,11 +179,11 @@ type mcpToolFixture struct {
 // reads it back, and returns the argument set for each tool.
 //
 // Each mutating tool gets its own pull request, so no call depends on another
-// having run first. Three of them could not share one anyway: merging closes
-// the pull request it is given, arming auto-merge on one nothing blocks merges
-// it on the spot, and Bitbucket refuses the author's own review outright --
-// "Authors may not update their status", 400 -- so the pull request
-// submit_pr_review is given has to be somebody else's.
+// having run first. Two of them could not share one anyway: merging closes the
+// pull request it is given, and arming auto-merge on one nothing blocks merges
+// it on the spot. The pull request prepare_pr_review is given is somebody
+// else's, with the server's account reviewing it, so that an approval the tool
+// must not make would show.
 func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarness) mcpToolFixture {
 	t.Helper()
 
@@ -238,7 +238,8 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 	}
 	assertLifecyclePRHarnessStored(t, fixture.mergePR, "feature/mcp-merge", "mcp-merge-base")
 
-	// Somebody else's pull request, so the server's own account can review it.
+	// Somebody else's pull request, so the server's own account is a reviewer
+	// whose status an approval would change.
 	author, err := harness.createLicensedUser(ctx)
 	if err != nil {
 		t.Fatalf("create the pull request author failed: %v", err)
@@ -263,7 +264,7 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 	assertLifecyclePRStored(t, reviewed, map[string]any{
 		"title": "Reviewed by the MCP conformance sweep", "sourceBranch": "feature/mcp-review", "targetBranch": "master",
 	})
-	// Unapproved, so an approval that was not stored cannot pass for one.
+	// Unapproved, so an approval prepare_pr_review made would show.
 	if reviewer := mcpLiveReviewer(t, reviewed, fixture.username); reviewer["role"] != "REVIEWER" || reviewer["status"] != "UNAPPROVED" {
 		t.Fatalf("%s is %v/%v on pull request %s, want an UNAPPROVED REVIEWER", fixture.username, reviewer["role"], reviewer["status"], fixture.reviewPR)
 	}
@@ -340,7 +341,7 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 		"get_pr_diff":               repoArgs(map[string]any{"pr_id": fixture.mainPR}),
 		"get_file_content":          repoArgs(map[string]any{"path": "mcp-main.txt", "at": "feature/mcp-main"}),
 		"add_pr_comment":            repoArgs(map[string]any{"pr_id": fixture.mainPR, "text": "left by the conformance sweep"}),
-		"submit_pr_review":          repoArgs(map[string]any{"pr_id": fixture.reviewPR, "action": "approve"}),
+		"prepare_pr_review":         repoArgs(map[string]any{"pr_id": fixture.reviewPR, "suggested_status": "approve"}),
 		"merge_pull_request":        repoArgs(map[string]any{"pr_id": fixture.mergePR}),
 		"enable_auto_merge":         {"project": seeded.Key, "repo": autoMergeRepo.Slug, "pr_id": fixture.armPR},
 		"disable_auto_merge":        {"project": seeded.Key, "repo": autoMergeRepo.Slug, "pr_id": fixture.cancelPR},
@@ -478,15 +479,22 @@ func assertMCPToolWritesStored(t *testing.T, fixture mcpToolFixture, answers map
 
 	if called("add_pr_comment") {
 		if id, ok := answeredID("add_pr_comment", "comment"); ok {
-			if stored := repoCLIPRComment(t, fixture.mainPR, id); stored["text"] != "left by the conformance sweep" {
+			stored := repoCLIPRComment(t, fixture.mainPR, id)
+			if stored["text"] != "left by the conformance sweep" {
 				t.Errorf("comment %s on pull request %s reads back as %q, want %q", id, fixture.mainPR, stored["text"], "left by the conformance sweep")
+			}
+			// A draft in the person's review, not published.
+			if stored["pending"] != true || stored["state"] != "PENDING" {
+				t.Errorf("comment %s on pull request %s reads back as %v/%v, want a pending draft", id, fixture.mainPR, stored["state"], stored["pending"])
 			}
 		}
 	}
 
-	if called("submit_pr_review") {
-		if reviewer := mcpLiveReviewer(t, mcpLivePullRequest(t, fixture.repoRef, fixture.reviewPR), fixture.username); reviewer["status"] != "APPROVED" {
-			t.Errorf("%s's review of pull request %s reads back as %v after submit_pr_review approve", fixture.username, fixture.reviewPR, reviewer["status"])
+	if called("prepare_pr_review") {
+		// The review is the person's to publish: suggesting approve approves
+		// nothing.
+		if reviewer := mcpLiveReviewer(t, mcpLivePullRequest(t, fixture.repoRef, fixture.reviewPR), fixture.username); reviewer["status"] != "UNAPPROVED" {
+			t.Errorf("%s's review of pull request %s reads back as %v after prepare_pr_review suggested approve", fixture.username, fixture.reviewPR, reviewer["status"])
 		}
 	}
 

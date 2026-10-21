@@ -88,7 +88,7 @@ const commentsTool = "list_pr_comments"
 // viewActionTools are the model's tools a view calls for the person: what a
 // click in a view does goes through them, so the scope, the audit trail and
 // the confirmations of the tools that ask apply to it as to the model's call.
-var viewActionTools = []string{"add_pr_comment", "submit_pr_review", "create_pull_request", "update_pull_request"}
+var viewActionTools = []string{"add_pr_comment", "prepare_pr_review", "create_pull_request", "update_pull_request"}
 
 // viewOffers is what a server lets its views do beyond drawing: the kinds a
 // view can open in place, and the tools it can call for the person. A view

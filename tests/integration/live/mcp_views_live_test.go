@@ -700,7 +700,7 @@ func TestLiveMCPRefreshViewSendsTheDataOnlyWhenItChanged(t *testing.T) {
 		for _, kind := range []string{"pull_request", "pull_requests", "diff", "pull_request_form"} {
 			everyKind = everyKind && containsAny(kinds, kind)
 		}
-		if !everyKind || !containsAny(tools, "add_pr_comment") || !containsAny(tools, "submit_pr_review") {
+		if !everyKind || !containsAny(tools, "add_pr_comment") || !containsAny(tools, "prepare_pr_review") {
 			t.Errorf("a server with every tool offers its views %v, want every kind and the actions", offers)
 		}
 	}, "ai", "mcp", "serve", "--allow-writes")
