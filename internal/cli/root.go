@@ -539,14 +539,17 @@ func (options *rootOptions) loadConfigWithOverrides(overrides config.Overrides) 
 		})
 	}
 
-	// A repository's .env or workspace file named a host, and bb did not take
-	// it (#770). Said, because the person may have meant it.
-	if len(cfg.IgnoredHostSettings) > 0 {
-		ignoredHostWarningOnce.Do(func() {
-			for _, ignored := range cfg.IgnoredHostSettings {
-				fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf(
-					"Warning: ignored %s in %s: a repository's files do not choose the Bitbucket host. Set it in your environment, pass --host where a command takes it, or run 'bb auth server use'",
-					ignored.Name, ignored.Path)))
+	// A repository's .env or workspace file named a setting of bb's own that bb
+	// does not take from there (#770). Said, because the person may have
+	// meant it.
+	if len(cfg.IgnoredSettings) > 0 {
+		ignoredSettingWarningOnce.Do(func() {
+			for _, ignored := range cfg.IgnoredSettings {
+				advice := "a repository's .env sets only bb's credentials, repository context, timeouts, logging and prompts. Set it in your environment"
+				if ignored.ChoosesHost() {
+					advice = "a repository's files do not choose the Bitbucket host. Set it in your environment, pass --host where a command takes it, or run 'bb auth server use'"
+				}
+				fmt.Fprintln(os.Stderr, style.Warning.Render(fmt.Sprintf("Warning: ignored %s in %s: %s", ignored.Name, ignored.Path, advice)))
 			}
 		})
 	}
@@ -554,7 +557,7 @@ func (options *rootOptions) loadConfigWithOverrides(overrides config.Overrides) 
 	return cfg, nil
 }
 
-var ignoredHostWarningOnce sync.Once
+var ignoredSettingWarningOnce sync.Once
 
 var insecureTLSWarningOnce sync.Once
 

@@ -17,7 +17,9 @@ import (
 // Bitbucket: a checkout whose .env and .bb/config.yaml both name another host,
 // one nothing listens on. bb runs as a program of its own, from inside that
 // checkout, so it finds the files as it does in use, and its warnings reach
-// stderr as a person sees them.
+// stderr as a person sees them. The .env also names the host in lower case,
+// which Windows reads as the same variable, and sets BB_DISABLE_STORED_CONFIG,
+// which would set aside the person's own file.
 //
 // The answer has to come from the host the person's own file names, which is
 // the live instance; a command that went where the checkout pointed fails.
@@ -41,7 +43,7 @@ func TestLiveARepositoryDoesNotChooseTheHost(t *testing.T) {
 	// .git marks the repository root, which is as far up as bb looks.
 	for path, content := range map[string]string{
 		".git/HEAD":       "ref: refs/heads/master\n",
-		".env":            "BITBUCKET_URL=" + elsewhere + "\n",
+		".env":            "BITBUCKET_URL=" + elsewhere + "\nbitbucket_url=" + elsewhere + "\nBB_DISABLE_STORED_CONFIG=1\n",
 		".bb/config.yaml": "default_host: " + elsewhere + "\n",
 	} {
 		full := filepath.Join(checkout, filepath.FromSlash(path))
@@ -88,7 +90,7 @@ func TestLiveARepositoryDoesNotChooseTheHost(t *testing.T) {
 	if project := nestedJSONMap(t, stdout.String(), "project"); project["key"] != seeded.Key {
 		t.Errorf("the answer names project %v, want %s from the person's host", project["key"], seeded.Key)
 	}
-	for _, said := range []string{"ignored BITBUCKET_URL in ", ".env", "ignored default_host in ", "config.yaml"} {
+	for _, said := range []string{"ignored BITBUCKET_URL in ", "ignored bitbucket_url in ", "ignored BB_DISABLE_STORED_CONFIG in ", ".env", "ignored default_host in ", "config.yaml"} {
 		if !strings.Contains(stderr.String(), said) {
 			t.Errorf("stderr does not say %q:\n%s", said, stderr.String())
 		}

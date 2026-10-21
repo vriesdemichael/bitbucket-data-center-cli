@@ -145,12 +145,13 @@ func TestTheCommandsThatEditTheConfigNameTheDamagedFile(t *testing.T) {
 
 // bb update skipped a damaged file and took the next file's base URL.
 func TestUpdateDoesNotRunPastADamagedConfig(t *testing.T) {
-	path := writeMalformed(t, "workspace.yaml")
-	t.Setenv("BB_WORKSPACE_CONFIG_PATH", path)
+	path := writeMalformed(t, "stored.yaml")
+	t.Setenv("BB_CONFIG_PATH", path)
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "")
 	t.Setenv("BB_UPDATE_BASE_URL", "")
 
 	if _, err := ResolveUpdateBaseURL(""); err == nil || !strings.Contains(err.Error(), path) {
-		t.Fatalf("a damaged workspace config was skipped: %v", err)
+		t.Fatalf("a damaged config was skipped: %v", err)
 	}
 }
 

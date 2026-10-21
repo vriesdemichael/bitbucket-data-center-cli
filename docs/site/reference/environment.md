@@ -30,23 +30,38 @@ BITBUCKET_PROJECT_KEY=PAY
 BB_RETRY_COUNT=5
 ```
 
-**A `.env` does not choose the host.** `bb` leaves `BITBUCKET_URL` and
-`BB_CONFIG_PATH` unset when a `.env` names them, warns once naming the file, and
-talks to the host your environment or your own configuration file names.
+**A `.env` sets only these variables**, each written in capitals as here:
+
+| Kind | Variables |
+|---|---|
+| Credentials | `BITBUCKET_TOKEN`, `BITBUCKET_USERNAME`, `BITBUCKET_USER`, `BITBUCKET_PASSWORD`, `ADMIN_USER`, `ADMIN_PASSWORD` |
+| Repository | `BITBUCKET_PROJECT_KEY`, `BITBUCKET_REPO_SLUG`, `BITBUCKET_VERSION_TARGET` |
+| Waiting and retrying | `BB_REQUEST_TIMEOUT`, `BB_RETRY_COUNT`, `BB_RETRY_BACKOFF` |
+| Webhook secrets | `BB_WEBHOOK_SECRET`, `BB_WEBHOOK_PASSWORD` |
+| Output and prompts | `BB_LOG_LEVEL`, `BB_LOG_FORMAT`, `NO_COLOR`, `BB_NO_PROMPT`, `BB_NO_PROMPT_VARS` |
+| Stricter only | `BB_REQUIRE_KEYRING`, `BB_DISABLE_UPDATE` |
+
+Nothing else in a `.env` reaches `bb`: not the host or `BB_CONFIG_PATH`, not
+TLS or proxy settings, and not the variables git and other programs read. `bb`
+warns once for each of its own settings a `.env` names and it leaves unset,
+naming the file, and talks to the host your environment or your own
+configuration file names. Other names, such as your application's, it passes
+over without a word.
 
 !!! warning "A `.env` arrives with a clone"
 
     It is a file in a repository, so anyone who can open a pull request can add
     one, and it is read by the next `bb` command run in that checkout. It cannot
-    choose the host, and a credential is released only for the host it was
-    stored for, but everything else in the file applies. Read the `.env` in an
-    unfamiliar repository before running `bb` in it.
+    choose the host or how `bb` reaches it, and a credential is released only
+    for the host it was stored for, but a token in it makes `bb` act as that
+    token's user. Read the `.env` in an unfamiliar repository before running
+    `bb` in it.
 
 **`bb update` does not read `.env`.** It resolves its own settings without going
 through the configuration layer, so `BB_UPDATE_BASE_URL`, `BB_DISABLE_UPDATE`
-and `BB_ALLOW_HTTP_UPDATE` are taken from the real environment and from
-configuration files, never from a `.env`. A repository cannot redirect where the
-next `bb update` fetches a binary from.
+and `BB_ALLOW_HTTP_UPDATE` are taken from the real environment, your own file
+and the system file, never from a `.env` or a workspace file. A repository
+cannot redirect where the next `bb update` fetches a binary from.
 
 `bb doctor` shows which file every setting came from, naming the `.env` by path
 when that is where it was:

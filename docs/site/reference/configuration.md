@@ -14,8 +14,8 @@ For each setting, the first of these that has a value decides:
 
 1. A flag on the command line.
 2. The environment, including `.env` files, which `bb` reads without overriding
-   a variable that is already set. A `.env` does not set the host. See
-   [Environment Variables](environment.md).
+   a variable that is already set. A `.env` sets only some variables, and not
+   the host. See [Environment Variables](environment.md).
 3. The workspace file, `.bb/config.yaml`, in the repository you are in.
 4. Your own file, the `config.yaml` that `bb auth login` writes.
 5. The system file an administrator writes.
@@ -33,7 +33,7 @@ Some settings take fewer sources, or add one:
 | Repository | `--repo`, then the repository of the git checkout you are in, then `BITBUCKET_PROJECT_KEY` and `BITBUCKET_REPO_SLUG`. The workspace file's `project_key` stands in for the project. |
 | Credential | A credential in the environment: `BITBUCKET_TOKEN`, or `BITBUCKET_USERNAME` and `BITBUCKET_PASSWORD`. Otherwise the one stored for the host the command talks to, looked up in your own file, then the system file. A host profile in the workspace file can name a username, but never a stored credential or a client certificate. No flag takes a credential. |
 | CA bundle | `--ca-file`, `BB_CA_FILE`, then the system file's `ca_file`, which is a mandate: a different bundle is refused. |
-| Release mirror | `--base-url` on `bb update`, `BB_UPDATE_BASE_URL`, then `update_base_url` in the workspace file, your own file and the system file. `bb update` reads no `.env`. |
+| Release mirror | `--base-url` on `bb update`, `BB_UPDATE_BASE_URL`, then `update_base_url` in your own file and the system file. `bb update` reads no `.env` and no workspace file. |
 
 A stored credential goes only to the host it was stored for, whichever file holds
 it and whatever named the host. The token or password itself is in the operating
@@ -62,8 +62,8 @@ project_key: PAY
 
     Like a `.env`, it is a file in a repository, so anyone who can change the
     repository can change it, and the next `bb` command run in the checkout reads
-    it. It cannot choose the host `bb` talks to, and a stored credential is never
-    sent to a host it was not stored for.
+    it. It cannot choose the host `bb` talks to or where `bb update` fetches
+    from, and a stored credential is never sent to a host it was not stored for.
 
 ## What each file holds
 
@@ -77,7 +77,7 @@ ignored, and `bb doctor` names it.
 | `hosts` | read | read | read | Servers by their URL: `url`, `aliases` (other host names the server answers to, such as its SSH host), `username`, `auth_mode` (`token` or `basic`), `client_cert` and `client_key`. A workspace file's profile gives a host its `url` and `username` only: it never releases a stored credential, and its `client_cert` and `client_key` are ignored. |
 | `project_key` | | read | | The project a command uses when no repository names one. |
 | `insecure_secrets` | read | | read | Tokens and passwords by host, where no keyring could hold them and the login passed `--allow-insecure-storage`. |
-| `update_base_url` | read | read | read | The release mirror `bb update` fetches from. |
+| `update_base_url` | read | | read | The release mirror `bb update` fetches from. |
 | `mcp_allow_writes` | read | | | `true` lets `bb ai mcp serve` expose the tools that change Bitbucket, as `--allow-writes` does. The `read_only` policy key outranks it. |
 | `mcp_elicitation_opt_in` | read | | | `true` makes `bb ai mcp serve` ask you in the MCP client before each call of a tool that decides a merge, as `--elicitation-opt-in` does. The system file reads it as a policy key. |
 | `mcp_ai_disclosure` | read | | | `false` turns off the line `bb ai mcp serve` ends what an agent writes with, as `--ai-disclosure=false` does; the server then offers no tool that publishes it under your name at once. The system file reads it as a policy key. |

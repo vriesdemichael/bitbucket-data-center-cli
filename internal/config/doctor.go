@@ -352,6 +352,7 @@ func diagnose(in diagnosisInputs) Diagnosis {
 		storedRead: in.getenv("BB_DISABLE_STORED_CONFIG") != "1",
 	}
 	diagnosis.Settings = resolved.settings()
+	noteIgnoredDotenv(diagnosis.Settings, in.ignoredDotenv())
 
 	for _, setting := range diagnosis.Settings {
 		if setting.Name == "require_keyring" {
@@ -729,6 +730,9 @@ func (r resolution) host() DiagnosedSetting {
 		problems = append(problems, setting.Problem)
 	}
 	for _, ignored := range r.in.ignoredDotenv() {
+		if !ignored.ChoosesHost() {
+			continue
+		}
 		problems = append(problems, fmt.Sprintf("%s in %s is not read, because a repository's files do not choose the host", ignored.Name, ignored.Path))
 	}
 	setting.Problem = strings.Join(problems, "; ")
@@ -736,22 +740,57 @@ func (r resolution) host() DiagnosedSetting {
 	return setting
 }
 
-// ignoredDotenv are the host-choosing variables a .env file names that the
+// ignoredDotenv are the settings of bb's own a .env file names that the
 // environment did not already carry, which loadDotEnv leaves unset.
 func (in diagnosisInputs) ignoredDotenv() []IgnoredSetting {
 	ignored := []IgnoredSetting{}
-	for _, name := range hostChoosingVariables {
-		if in.ambient(name) {
-			continue
+	for _, file := range in.dotenv {
+		names := make([]string, 0, len(file.values))
+		for name := range file.values {
+			names = append(names, name)
 		}
-		for _, file := range in.dotenv {
-			if _, ok := file.values[name]; ok {
+		sort.Strings(names)
+		for _, name := range names {
+			if refusedDotenvVariable(name) && !in.ambient(name) {
 				ignored = append(ignored, IgnoredSetting{Name: name, Path: file.path})
 			}
 		}
 	}
 
 	return ignored
+}
+
+// dotenvRows are the rows a setting a .env may not give would have set, so the
+// row says the .env named it. The host's says so for itself; a setting with no
+// row is said by the warning every other command prints.
+var dotenvRows = map[string]string{
+	"BB_CA_FILE":              "ca_file",
+	"BB_INSECURE_SKIP_VERIFY": "insecure_skip_verify",
+	"BB_CLIENT_CERT":          "client_cert",
+	"BB_CLIENT_KEY":           "client_key",
+	"BB_UPDATE_BASE_URL":      "update_base_url",
+	"BB_ALLOW_HTTP_UPDATE":    "allow_http_update",
+}
+
+// noteIgnoredDotenv says on each setting's row that a .env named it and was not
+// read.
+func noteIgnoredDotenv(settings []DiagnosedSetting, ignored []IgnoredSetting) {
+	for _, setting := range ignored {
+		row, ok := dotenvRows[strings.ToUpper(setting.Name)]
+		if !ok {
+			continue
+		}
+		for index := range settings {
+			if settings[index].Name != row {
+				continue
+			}
+			note := fmt.Sprintf("%s in %s is not read, because a repository's .env does not set it", setting.Name, setting.Path)
+			if settings[index].Problem != "" {
+				note = settings[index].Problem + "; " + note
+			}
+			settings[index].Problem = note
+		}
+	}
 }
 
 // defaultHost is a file's default_host, which wins whether or not it resolves:
@@ -1011,7 +1050,6 @@ func (r resolution) diagnostics(name, variable, flag, fallback, allowed string, 
 // mandate. bb update's --base-url flag outranks all of them.
 func (r resolution) updateBaseURL() DiagnosedSetting {
 	candidates := r.in.fromProcessEnvironment("BB_UPDATE_BASE_URL")
-	candidates = append(candidates, r.fromFile(TierWorkspace, "update_base_url", r.workspace.UpdateBaseURL)...)
 	if r.storedRead {
 		candidates = append(candidates, r.fromFile(TierStored, "update_base_url", r.stored.UpdateBaseURL)...)
 	}
