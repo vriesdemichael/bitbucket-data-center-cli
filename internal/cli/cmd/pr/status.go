@@ -115,6 +115,8 @@ func collectCurrentBranchPullRequests(
 		State:        "open",
 		MaxResults:   limit,
 		SourceBranch: branch,
+		// From this repository's branch, wherever they go, as pr view finds it.
+		Outgoing: true,
 	})
 	if err != nil {
 		return empty(fmt.Sprintf("could not list pull requests for %s: %s", branch, err.Error()))

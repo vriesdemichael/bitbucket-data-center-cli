@@ -38,6 +38,11 @@ type ListOptions struct {
 	Start        int    `json:"start"`
 	SourceBranch string `json:"source_branch,omitempty"`
 	TargetBranch string `json:"target_branch,omitempty"`
+	// Outgoing lists the pull requests whose source is the repository, into it
+	// or into another, as a fork's into its upstream, rather than the ones into
+	// it, whose source may be a fork's branch of the same name. Bitbucket then
+	// lists SourceBranch's alone.
+	Outgoing bool `json:"-"`
 	// Period bounds the listing by one of a pull request's dates.
 	Period Period `json:"-"`
 	// No Role. The repository listing has no role parameter -- Bitbucket
@@ -335,6 +340,12 @@ func (service *Service) List(ctx context.Context, repository RepositoryRef, opti
 			if options.Period.Since > 0 {
 				// Named, because the early stop below rests on it.
 				query["order"] = "NEWEST"
+			}
+			if options.Outgoing {
+				query["direction"] = "OUTGOING"
+				if branch := strings.TrimSpace(options.SourceBranch); branch != "" {
+					query["at"] = normalizeBranchRef(branch)
+				}
 			}
 
 			var response pagedPullRequestResponse

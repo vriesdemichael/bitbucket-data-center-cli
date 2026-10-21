@@ -82,11 +82,20 @@ func currentBranchPullRequest(cmd *cobra.Command, deps Dependencies, repositoryS
 		return "", err
 	}
 
+	// The pull requests from this repository's branch, wherever they go: one
+	// from a fork's branch of the same name is not this checkout's, and one
+	// from a fork's checkout goes into its upstream.
 	open, err := pullrequestservice.NewService(httpclient.NewFromConfig(cfg)).List(cmd.Context(),
 		pullrequestservice.RepositoryRef{ProjectKey: projectKey, Slug: slug},
-		pullrequestservice.ListOptions{State: "open", MaxResults: openPullRequestsShown, SourceBranch: branch})
+		pullrequestservice.ListOptions{State: "open", MaxResults: openPullRequestsShown, SourceBranch: branch, Outgoing: true})
 	if err != nil {
 		return "", err
+	}
+	name := func(pullRequest pullrequestservice.PullRequest) string {
+		if target := pullRequest.Repository; target != nil && !(strings.EqualFold(target.ProjectKey, projectKey) && strings.EqualFold(target.Slug, slug)) {
+			return fmt.Sprintf("%s/%s#%d", target.ProjectKey, target.Slug, pullRequest.ID)
+		}
+		return fmt.Sprintf("#%d", pullRequest.ID)
 	}
 
 	switch len(open) {
@@ -94,17 +103,25 @@ func currentBranchPullRequest(cmd *cobra.Command, deps Dependencies, repositoryS
 		return "", apperrors.New(apperrors.KindNotFound, fmt.Sprintf(
 			"no open pull request comes from the checked-out branch %s in %s/%s. Pass the pull request's number", branch, projectKey, slug), nil)
 	case 1:
-		id := strconv.FormatInt(open[0].ID, 10)
 		if !deps.JSONEnabled() {
-			fmt.Fprintf(cmd.ErrOrStderr(), "Using pull request #%s (the open pull request from the checked-out branch, %s)\n", id, branch)
+			fmt.Fprintf(cmd.ErrOrStderr(), "Using pull request %s (the open pull request from the checked-out branch, %s)\n", name(open[0]), branch)
+		}
+		// A pull request into another repository is named by its address,
+		// which says the repository the number belongs to.
+		if name(open[0]) != fmt.Sprintf("#%d", open[0].ID) {
+			if open[0].URL == "" {
+				return "", apperrors.New(apperrors.KindNotFound, fmt.Sprintf(
+					"the open pull request from the checked-out branch %s is %s, and Bitbucket gave no address for it. Pass its address", branch, name(open[0])), nil)
+			}
+			return open[0].URL, nil
 		}
 
-		return id, nil
+		return strconv.FormatInt(open[0].ID, 10), nil
 	}
 
 	named := make([]string, 0, len(open))
 	for _, pullRequest := range open {
-		named = append(named, fmt.Sprintf("#%d into %s (%s)", pullRequest.ID, pullRequest.TargetBranch, pullRequest.Title))
+		named = append(named, fmt.Sprintf("%s into %s (%s)", name(pullRequest), pullRequest.TargetBranch, pullRequest.Title))
 	}
 	many := strconv.Itoa(len(open))
 	if len(open) == openPullRequestsShown {

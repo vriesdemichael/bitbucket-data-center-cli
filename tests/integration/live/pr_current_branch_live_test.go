@@ -4,12 +4,15 @@ package live_test
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
+	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/testsupport"
 )
 
 // The pr commands that only read a pull request take it from the checked-out
@@ -140,6 +143,95 @@ func TestLivePullRequestReadCommandsTakeTheCheckedOutBranch(t *testing.T) {
 		output, err := executeLiveCLI(t, "pr", "view", only, only)
 		if err == nil || !strings.Contains(err.Error(), "pr view takes [pr-id]") {
 			t.Fatalf("pr view with two numbers: want the message to name pr view, got %v\n%s", err, output)
+		}
+	})
+}
+
+// TestLiveTheCheckedOutBranchsPullRequestIsFromThisRepository holds the
+// inference to the checkout's own repository. It listed the pull requests into
+// the repository and matched the branch by name, so a fork's pull request from
+// a branch of the same name was read as the checkout's, and a fork's checkout,
+// whose pull request goes into its upstream, found none.
+func TestLiveTheCheckedOutBranchsPullRequestIsFromThisRepository(t *testing.T) {
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	if err != nil {
+		t.Fatalf("seed project failed: %v", err)
+	}
+	upstream := seeded.Repos[0]
+	configureLiveCLIEnvVars(t, "WRONG", "wrong")
+
+	forkOutput, err := executeLiveCLI(t, "--json", "repo", "admin", "fork",
+		"--repo", seeded.Key+"/"+upstream.Slug, "--name", testsupport.UniqueName("lt-fork-branch-"), "--project", seeded.Key)
+	if err != nil {
+		t.Fatalf("repo admin fork failed: %v\noutput: %s", err, forkOutput)
+	}
+	forkSlug := asString(nestedJSONMap(t, forkOutput, "repository")["slug"])
+	if forkSlug == "" {
+		t.Fatalf("the fork has no slug:\n%s", forkOutput)
+	}
+
+	const branch = "feature/shared-name"
+	for _, slug := range []string{upstream.Slug, forkSlug} {
+		if err := harness.pushCommitOnBranch(seeded.Key, slug, branch, "shared-name.txt"); err != nil {
+			t.Fatalf("push %s to %s failed: %v", branch, slug, err)
+		}
+	}
+	// From the fork's branch into the upstream: the upstream's own branch of
+	// the same name has none.
+	created, err := harness.liveJSON(ctx, http.MethodPost,
+		fmt.Sprintf("/rest/api/latest/projects/%s/repos/%s/pull-requests", seeded.Key, upstream.Slug),
+		map[string]any{
+			"title": "From the fork's branch",
+			"fromRef": map[string]any{
+				"id":         "refs/heads/" + branch,
+				"repository": map[string]any{"slug": forkSlug, "project": map[string]any{"key": seeded.Key}},
+			},
+			"toRef": map[string]any{"id": "refs/heads/master"},
+		})
+	if err != nil {
+		t.Fatalf("open the pull request from the fork failed: %v", err)
+	}
+	fromFork, _ := numericOrStringID(created["id"])
+
+	checkout := func(t *testing.T, slug string) {
+		t.Helper()
+		pushURL, err := repositoryPushURL(harness.config, seeded.Key, slug)
+		if err != nil {
+			t.Fatalf("build push url: %v", err)
+		}
+		directory := t.TempDir()
+		for _, args := range [][]string{{"init"}, {"remote", "add", "origin", pushURL}, {"fetch", "origin"}, {"checkout", "-B", branch, "origin/" + branch}} {
+			if err := runGit(directory, args...); err != nil {
+				t.Fatalf("git %s failed: %v", strings.Join(args, " "), err)
+			}
+		}
+		t.Chdir(directory)
+	}
+
+	t.Run("the upstream's branch does not take the fork's pull request", func(t *testing.T) {
+		checkout(t, upstream.Slug)
+
+		output, err := executeLiveCLI(t, "pr", "view")
+		if !apperrors.IsKind(err, apperrors.KindNotFound) {
+			t.Fatalf("pr view in the upstream on %s: want not_found, got %v\n%s", branch, err, output)
+		}
+	})
+
+	t.Run("the fork's branch finds its pull request into the upstream", func(t *testing.T) {
+		checkout(t, forkSlug)
+
+		var viewed struct {
+			PullRequest map[string]any `json:"pullRequest"`
+		}
+		decodeJSONData(t, mustLiveCLI(t, "pr", "view", "--no-review-summary"), &viewed)
+		repository, _ := viewed.PullRequest["repository"].(map[string]any)
+		if id, _ := numericOrStringID(viewed.PullRequest["id"]); id != fromFork || repository["slug"] != upstream.Slug {
+			t.Fatalf("pr view in the fork read pull request %v of %v, want %s of %s", viewed.PullRequest["id"], repository, fromFork, upstream.Slug)
 		}
 	})
 }
