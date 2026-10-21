@@ -2,7 +2,7 @@ module github.com/vriesdemichael/bitbucket-data-center-cli
 
 go 1.27.0
 
-toolchain go1.27.2
+toolchain go1.27.3
 
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
