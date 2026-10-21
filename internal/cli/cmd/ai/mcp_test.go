@@ -322,11 +322,9 @@ func runAI(t *testing.T, args ...string) (stdout, stderr string) {
 }
 
 type listedTool struct {
-	Name     string `json:"name"`
-	Writes   bool   `json:"writes"`
-	Asks     string `json:"asks"`
-	Safe     bool   `json:"safe"`
-	Exposure string `json:"exposure"`
+	Name   string `json:"name"`
+	Writes bool   `json:"writes"`
+	Asks   string `json:"asks"`
 }
 
 func listToolsJSON(t *testing.T, args ...string) []listedTool {
@@ -410,36 +408,29 @@ func TestMCPToolsListsWhatAReadOnlyServerExposesByDefault(t *testing.T) {
 	}
 }
 
-// TestMCPToolsDeprecatedFormsKeepWorkingAndWarn: --safe-only, safe and
-// exposure keep working until the next major (ADR-084). They describe exposure
-// without --yolo, which every tool has now.
+// TestMCPToolsDeprecatedFormsKeepWorkingAndWarn: --read-only keeps working
+// until the next major (ADR-084). The listing is of a read-only server without
+// it, so it changes nothing.
 func TestMCPToolsDeprecatedFormsKeepWorkingAndWarn(t *testing.T) {
 	t.Parallel()
 
-	stdout, stderr := runAI(t, "mcp", "tools", "--allow-writes", "--safe-only")
-	for _, spec := range bbmcp.AllSpecs() {
-		if !strings.Contains(stdout, spec.Tool.Name) {
-			t.Errorf("--safe-only narrows the listing to leave out %q; it has no effect", spec.Tool.Name)
-		}
+	without, _ := runAI(t, "mcp", "tools")
+	stdout, stderr := runAI(t, "mcp", "tools", "--read-only")
+	if stdout != without || stdout == "" {
+		t.Errorf("--read-only changes the listing:\n%s\nwant:\n%s", stdout, without)
 	}
-	entry, ok := deprecation.Named("bb ai mcp tools --safe-only")
+	entry, ok := deprecation.Named("bb ai mcp tools --read-only")
 	if !ok || !strings.Contains(stderr, entry.Warning()) {
-		t.Errorf("--safe-only did not print its registered warning; stderr: %q", stderr)
-	}
-
-	for _, tool := range listToolsJSON(t) {
-		if !tool.Safe || tool.Exposure != exposureSafe {
-			t.Errorf("%s: safe=%v exposure=%q, want true and %s", tool.Name, tool.Safe, tool.Exposure, exposureSafe)
-		}
+		t.Errorf("--read-only did not print its registered warning; stderr: %q", stderr)
 	}
 }
 
 // TestMCPServeDeprecatedFlagsAreAcceptedAndWarn: an existing client
-// configuration passing --yolo keeps starting, and says why it should stop.
+// configuration passing --read-only keeps starting, and says why it should stop.
 func TestMCPServeDeprecatedFlagsAreAcceptedAndWarn(t *testing.T) {
 	t.Parallel()
 
-	for _, flag := range []string{"yolo", "read-only"} {
+	for _, flag := range []string{"read-only"} {
 		t.Run(flag, func(t *testing.T) {
 			t.Parallel()
 
