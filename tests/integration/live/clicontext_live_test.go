@@ -317,5 +317,9 @@ func liveCLIOverrides(t *testing.T) config.Overrides {
 		return config.Overrides{}
 	}
 
+	if user.Token != "" {
+		return config.Overrides{Token: user.Token}
+	}
+
 	return config.Overrides{Username: user.Username, Password: user.Password}
 }

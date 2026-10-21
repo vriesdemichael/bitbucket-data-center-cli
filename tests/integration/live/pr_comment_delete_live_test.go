@@ -5,6 +5,8 @@ package live_test
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -105,10 +107,33 @@ func TestLivePullRequestCommentDelete(t *testing.T) {
 
 	t.Run("a stale version is refused", func(t *testing.T) {
 		id := add(t, "--text", "edited after it was read")
-		output, err := executeLiveCLI(t, "--json", "pr", "comment", "delete", prID, id, "--version", "7", "--yes")
-		if !apperrors.IsKind(err, apperrors.KindConflict) {
-			t.Fatalf("a delete naming version 7 of a comment at version 0: want conflict, got %v\n%s", err, output)
+		// Version 7 of a comment at version 0.
+		liveVerdictHolds(t, apperrors.KindConflict, "pr", "comment", "delete", prID, id, "--version", "7", "--yes")
+		if output, err := executeLiveCLI(t, "--json", "pr", "comment", "get", prID, id); err != nil {
+			t.Fatalf("the refused comment does not read back: %v\n%s", err, output)
 		}
+	})
+
+	// A token login has no configured username, so only Bitbucket can say the
+	// comment is somebody else's.
+	t.Run("somebody else's comment is refused to a non-admin on a token", func(t *testing.T) {
+		id := add(t, "--text", "the administrator's remark, for a token")
+
+		other, err := harness.createLicensedUser(ctx)
+		if err != nil {
+			t.Fatalf("create the other user failed: %v", err)
+		}
+		if err := harness.grantRepoPermission(ctx, seeded.Key, repo.Slug, other.Username, "REPO_WRITE"); err != nil {
+			t.Fatalf("grant the other user write access failed: %v", err)
+		}
+		token, err := harness.liveJSONAs(ctx, other, http.MethodPut, "/rest/access-tokens/latest/users/"+url.PathEscape(userSlug(ctx, t, harness, other.Username)),
+			map[string]any{"name": testsupport.UniqueName("lt-comment-delete-"), "permissions": []string{"REPO_WRITE"}, "expiryDays": 1})
+		if err != nil {
+			t.Fatalf("create the other user's token failed: %v", err)
+		}
+		setLiveCredentials(t, restrictedUser{Token: stringField(token, "token")})
+
+		liveVerdictHolds(t, apperrors.KindAuthorization, "pr", "comment", "delete", prID, id, "--yes")
 		if output, err := executeLiveCLI(t, "--json", "pr", "comment", "get", prID, id); err != nil {
 			t.Fatalf("the refused comment does not read back: %v\n%s", err, output)
 		}

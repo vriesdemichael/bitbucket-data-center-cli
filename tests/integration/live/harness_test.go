@@ -825,9 +825,12 @@ func retryAfterFromHeaders(headers http.Header, attempt int, fallbackBackoff tim
 }
 
 // restrictedUser holds the credentials of a temporarily created test user.
+// Token, when set, is used in place of the username and password: a token
+// login has no configured username.
 type restrictedUser struct {
 	Username string
 	Password string
+	Token    string
 }
 
 // createRestrictedUser creates a Bitbucket user via the admin API and registers a cleanup to delete it.
