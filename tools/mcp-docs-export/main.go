@@ -64,7 +64,7 @@ func exportToolReference(outputPath string) error {
 	out.WriteString("# MCP Tools, Resources and Prompts\n\n")
 	out.WriteString("This page is generated from the server's registries by `task docs:export-mcp-tools`. Do not edit manually.\n\n")
 
-	fmt.Fprintf(&out, "`bb ai mcp serve` registers %d tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. %d ask the person to confirm a call in the MCP client before they run.\n\n",
+	fmt.Fprintf(&out, "`bb ai mcp serve` registers %d tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. On a server started with `--elicitation-opt-in`, %d ask the person to confirm a call in the MCP client before they run.\n\n",
 		len(rows), asking)
 	out.WriteString("The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.\n\n")
 	out.WriteString("The tools answer the agent, and `show` is for the person: an agent uses the tools to find, read and change things, and `show` for someone who is there to see the result, never when it works on its own. [Tools and views](../ai-and-llms.md#tools-and-views) says which for what.\n\n")
@@ -90,7 +90,7 @@ func exportToolReference(outputPath string) error {
 
 	out.WriteString("\n## Tools that ask\n\n")
 	out.WriteString("A tool asks when it merges, changes whether or when a pull request merges, or feeds a check that decides whether one may. `create_tag` asks too, since release pipelines commonly act on a new tag. `update_pull_request` asks only for a call that sets the draft flag: a draft cannot be merged, and making a pull request a draft cancels its auto-merge.\n\n")
-	out.WriteString("The confirmation is an MCP elicitation. The client shows what the call will do, with one box to tick, and the tool acts only once the person accepts. A client that cannot show a confirmation gets error -32021 (missing required client capability) for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself is the client's to decide.\n\n")
+	out.WriteString("They ask only on a server started with `--elicitation-opt-in`, or with `mcp_elicitation_opt_in` set in your own configuration file or by policy. Everywhere else the client decides whether a call runs. The confirmation is an MCP elicitation. The client shows what the call will do, with one box to tick, and the tool acts only once the person accepts. A client that cannot show a confirmation gets error -32021 (missing required client capability) for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself is the client's to decide.\n\n")
 	out.WriteString("## Read-only\n\n")
 	out.WriteString("`bb ai mcp serve --read-only` exposes only the read-only tools. It is for a client you do not trust with the tool annotations and the confirmations: a client that cannot be trusted with them should not make changes in Bitbucket, so make them yourself.\n\n")
 	writeResources(&out)

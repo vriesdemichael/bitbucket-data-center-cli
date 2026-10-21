@@ -48,9 +48,9 @@ Configure the client to run bb ai mcp serve, with a token of the server's own in
 
 Every MCP client has that block: Claude Code and Claude Desktop (.mcp.json, claude\_desktop\_config.json), VS Code, Codex (\[mcp\_servers.bb.env\] in config.toml, or codex mcp add --env) and Antigravity (mcp\_config.json). The ${VAR} form keeps the agent on a PAT of its own, which can be read-only while yours can write, and writes neither into the file. No flag takes a token: a flag's value is readable in the process list for as long as the server runs.
 
-Tools that decide whether or when a pull request merges ask the person first, as an MCP elicitation in the client: merging, enabling or disabling auto-merge, submitting a review, reporting a build status, creating a tag, and changing a pull request's draft flag. A client that cannot ask gets error -32021 for them, and nothing reaches Bitbucket. bb ai mcp tools lists which tools ask.
+Your MCP client decides whether a call runs, through its own prompts, rules or auto mode. What holds whatever it decides is Bitbucket's: its merge checks, the version a merge or an update names, and the token's permissions. --elicitation-opt-in, or mcp\_elicitation\_opt\_in in your configuration file, makes the tools that decide whether or when a pull request merges also ask you in the client before each call: merging, enabling or disabling auto-merge, submitting a review, reporting a build status, creating a tag, and changing a pull request's draft flag. A client that cannot ask is then refused those tools with error -32021. It is a convenience in a client that shows the question, not a control: a client can answer it without you. bb ai mcp tools lists which tools ask.
 
---read-only exposes only the tools that read, for a client you do not trust with those confirmations. --tools exposes only the tools you name, and --exclude leaves tools out; neither brings back a tool that --read-only or a scope withholds. refresh\_view and suggest\_form\_values, which only the views of show call, go with show.
+--read-only exposes only the tools that read, for a client you do not trust to make changes. --tools exposes only the tools you name, and --exclude leaves tools out; neither brings back a tool that --read-only or a scope withholds. refresh\_view and suggest\_form\_values, which only the views of show call, go with show.
 
 --project or --repo confines the server to one project or repository, and a call aimed elsewhere is refused. Build statuses, which hang off a commit rather than a project, are withheld while a scope is set. The server is never scoped by the directory it starts in. --host is required when more than one Bitbucket instance is configured.
 
@@ -75,6 +75,9 @@ bb ai mcp serve --tools get_pull_request,list_pull_requests,get_pr_diff \
 
 `--audit-file string`
 :   Append a JSON Lines audit record per tool call to this path, or to 'stderr'
+
+`--elicitation-opt-in`
+:   Ask the person in the MCP client before each call of a tool that decides a merge; a client that cannot ask is refused those tools
 
 `--exclude string`
 :   Comma-separated denylist of tool names to suppress
@@ -115,7 +118,7 @@ Print every MCP tool the serve command exposes.
 
 Use this output to build --tools and --exclude allowlists and denylists.
 
-ACCESS says whether a tool changes anything in Bitbucket. ASKS says whether a call asks the person to confirm it in the MCP client before it runs:
+ACCESS says whether a tool changes anything in Bitbucket. ASKS says whether a call asks the person to confirm it in the MCP client before it runs, on a server started with --elicitation-opt-in; without it, no tool asks:
 
 ```text
 always               every call asks
@@ -123,7 +126,7 @@ when-setting-draft   a call that sets the pull request's draft flag asks
 never                the tool runs when called
 ```
 
-A client that cannot show a confirmation gets error -32021 for a call that asks. Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.
+On a server that asks, a client that cannot show a confirmation gets error -32021 for a call that asks. Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.
 
 ```bash
 # Every tool, with whether it changes anything and whether it asks first
@@ -147,8 +150,9 @@ Also takes the [global flags](global-flags.md).
   description?  string                           What the tool does.
   writes        boolean                          Whether the tool changes anything in Bitbucket.
   asks          always|when-setting-draft|never  Whether a call asks the person to confirm it in the MCP client before
-                                                 it runs: always, never, or when-setting-draft for a call that sets the
-                                                 pull request&#39;s draft flag.
+                                                 it runs, on a server started with --elicitation-opt-in; without it no
+                                                 tool asks. always, never, or when-setting-draft for a call that sets
+                                                 the pull request&#39;s draft flag.
   safe          boolean                          Deprecated: always true, since every tool is exposed without --yolo.
   exposure      SAFE|YOLO                        Deprecated: always SAFE, since every tool is exposed without --yolo.
 </code></pre>

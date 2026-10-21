@@ -105,8 +105,11 @@ func toolSpec[In, Out any](tool *mcp.Tool, handler func(Clients) mcp.ToolHandler
 	}
 }
 
-// askingSpec is toolSpec for a tool that asks the person to confirm a call
-// before it runs, through the client (see confirmed).
+// askingSpec is toolSpec for a tool that decides whether or when a pull
+// request merges. On a server started with --elicitation-opt-in it asks the
+// person to confirm a call through the client before it runs (see confirmed),
+// and its description says so. Otherwise it runs when called, like any other
+// tool, and the client decides whether a call runs (ADR-103).
 func askingSpec[In, Out any](tool *mcp.Tool, asking Asking, policy ask[In], handler func(Clients) mcp.ToolHandlerFor[In, Out]) Spec {
 	titled(tool)
 
@@ -114,9 +117,31 @@ func askingSpec[In, Out any](tool *mcp.Tool, asking Asking, policy ask[In], hand
 		Tool: tool,
 		Asks: asking,
 		Register: func(server *mcp.Server, clients Clients) {
-			mcp.AddTool(server, tool, confirmed(tool.Name, policy, clients, handler(clients)))
+			mcp.AddTool(server, tool, handler(clients))
+		},
+		RegisterExposed: func(server *mcp.Server, opts ServerOptions, _ map[string]bool) {
+			if !opts.ElicitationOptIn {
+				mcp.AddTool(server, tool, handler(opts.Clients))
+				return
+			}
+			asks := *tool
+			asks.Description = strings.TrimSpace(tool.Description + " " + askingNote(asking))
+			mcp.AddTool(server, &asks, confirmed(tool.Name, policy, opts.Clients, handler(opts.Clients)))
 		},
 	}
+}
+
+// askingNote is what a tool's description says about asking, on a server that
+// asks.
+func askingNote(asking Asking) string {
+	switch asking {
+	case AsksAlways:
+		return "Asks the person to confirm in the client before it runs."
+	case AsksWhenSettingDraft:
+		return "Setting draft asks the person to confirm in the client first."
+	}
+
+	return ""
 }
 
 // titled gives the tool the display title its annotations carry. Clients on
@@ -305,6 +330,13 @@ type ServerOptions struct {
 	// all; the person makes those changes themselves. Allow cannot override it.
 	ReadOnly bool
 
+	// ElicitationOptIn makes the tools that decide whether or when a pull
+	// request merges ask the person to confirm each call through the client,
+	// and refuse a client that cannot ask with -32021. Off, nothing asks and
+	// nothing is refused for lacking elicitation: the client decides whether a
+	// call runs (ADR-103).
+	ElicitationOptIn bool
+
 	// Scope confines the server to one project or repository. The zero value
 	// is unscoped.
 	Scope Scope
@@ -482,9 +514,10 @@ func anyExposed(tools []string, exposed map[string]bool) bool {
 func instructions(opts ServerOptions) string {
 	var paragraphs []string
 
-	if opts.ReadOnly {
+	switch {
+	case opts.ReadOnly:
 		paragraphs = append(paragraphs, "This server is read-only: it offers only the tools that read.")
-	} else {
+	case opts.ElicitationOptIn:
 		paragraphs = append(paragraphs, "Some tools ask the person to confirm a call in the client before they run, and their descriptions say so. "+
 			"If the person declines or closes the confirmation, do not call the tool again unless they ask.")
 	}

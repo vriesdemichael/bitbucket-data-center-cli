@@ -63,9 +63,8 @@ type SetBuildStatusOutput struct {
 
 func specSetBuildStatus() Spec {
 	tool := &mcp.Tool{
-		Name: "set_build_status",
-		Description: "Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views. " +
-			"Asks the person to confirm in the client before it runs.",
+		Name:        "set_build_status",
+		Description: "Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views.",
 		// Destructive: a status replaces the one reported earlier under the
 		// same key.
 		Annotations: writes("Set build status", true, true),

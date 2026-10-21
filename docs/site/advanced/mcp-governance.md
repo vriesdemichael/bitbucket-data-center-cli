@@ -2,19 +2,25 @@
 
 `bb` includes a built-in Model Context Protocol (MCP) server for integration with AI developer tools (VS Code Agent, Cursor, Claude Desktop).
 
-## Tools That Ask, and a Read-Only Server
-Every tool is exposed, and the ones that decide whether code merges ask the person before they run ([ADR-098](../adr/098-mcp-tools-that-decide-a-merge-ask-the-person.md)):
+## Who Decides a Call, and a Read-Only Server
+Your MCP client decides whether a call runs, through its own prompts, rules or auto mode. `bb` asks nothing by default, and controls what it enforces itself ([ADR-103](../adr/103-mcp-tools-ask-the-person-only-on-a-server-that-opts-in.md)). Whatever the client decides, these hold:
 
-- **Ask before every call**: `merge_pull_request` and `enable_auto_merge`, which merge now or later; `disable_auto_merge`, which changes when a pull request merges; `submit_pr_review` and `set_build_status`, which feed the checks that decide whether a merge is allowed; and `create_tag`, which release pipelines act on. `update_pull_request` asks when a call sets the draft flag. An agent cannot approve a pull request without the person confirming it.
+- **Bitbucket's merge checks.** A merge goes through only when the repository's required approvals, builds and other checks pass, and the token's permissions allow it.
+- **The version.** A merge or an update that names the pull request version it read is refused if the pull request changed since.
+- **What `bb` enforces.** `--read-only`, the scope, the audit trail and the policy keys below.
+
+`--elicitation-opt-in`, or `mcp_elicitation_opt_in: true` in your own configuration file, makes the tools that decide whether code merges also ask you in the client before each call:
+
+- **Ask before every call**: `merge_pull_request` and `enable_auto_merge`, which merge now or later; `disable_auto_merge`, which changes when a pull request merges; `submit_pr_review` and `set_build_status`, which feed the checks that decide whether a merge is allowed; and `create_tag`, which release pipelines act on. `update_pull_request` asks when a call sets the draft flag.
 - **Run when called**: every read tool, and the writes that decide nothing about a merge: `create_pull_request`, `add_pr_comment`, and `update_pull_request` for a title or a description.
 
-The confirmation is an MCP elicitation: the client shows what the call will do, and the tool acts only when the person accepts. A client that cannot show one gets error -32021 for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself, through a hook or an automatic approval, is the client's decision, so this control is as strong as the client you choose.
+The question is an MCP elicitation: the client shows what the call will do, and the tool acts only when it is accepted. A client that cannot show one gets error -32021 for those tools. It is a convenience in a client that shows it, not a control: nothing tells `bb` that a person answered, and some clients answer for themselves.
 
-Every tool carries the four MCP annotation hints, `readOnlyHint` true only where the tool changes nothing in Bitbucket. They are hints, not a control: clients act on them differently, and some run a tool annotated read-only without asking anyone. What bb enforces is the confirmation above, `--read-only`, scoping and policy.
+Every tool carries the four MCP annotation hints, `readOnlyHint` true only where the tool changes nothing in Bitbucket. They are hints, not a control: clients act on them differently, and some run a tool annotated read-only without asking anyone.
 
-For a client you do not trust with those confirmations, start the server with `--read-only`, which exposes only the tools that read. A client that cannot be trusted with them should not make changes in Bitbucket; make them yourself.
+For a client you do not trust to make changes, start the server with `--read-only`, which exposes only the tools that read. A client that cannot be trusted with them should not make changes in Bitbucket; make them yourself.
 
-An administrator can decide this for every client on a machine. `read_only: true` in system policy starts every server read-only whatever its client configuration says, and `disable_mcp_server: true` refuses to start one at all ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)).
+An administrator can decide this for every client on a machine. `read_only: true` in system policy starts every server read-only whatever its client configuration says, `mcp_elicitation_opt_in: true` makes every server ask, and `disable_mcp_server: true` refuses to start one at all ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)).
 
 The [MCP tool reference](../reference/mcp-tools.md) lists every tool with what it can change and whether it asks:
 ```bash

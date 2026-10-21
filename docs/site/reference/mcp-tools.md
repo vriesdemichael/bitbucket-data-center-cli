@@ -7,7 +7,7 @@ search:
 
 This page is generated from the server's registries by `task docs:export-mcp-tools`. Do not edit manually.
 
-`bb ai mcp serve` registers 27 tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. 7 ask the person to confirm a call in the MCP client before they run.
+`bb ai mcp serve` registers 27 tools and exposes every one of them unless `--read-only`, `--tools`, `--exclude` or a scope withholds it. On a server started with `--elicitation-opt-in`, 7 ask the person to confirm a call in the MCP client before they run.
 
 The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.
 
@@ -59,13 +59,13 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
     :   Create a new pull request. When the person asks for one, create it, filling in what they left to you.
 
     `create_tag`
-    :   Create a tag on a specific commit or ref. Use for release tagging after a PR is merged. Asks the person to confirm in the client before it runs.
+    :   Create a tag on a specific commit or ref. Use for release tagging after a PR is merged.
 
     `disable_auto_merge`
-    :   Disable auto-merge on a pull request. The PR will no longer be merged automatically. Asks the person to confirm in the client before it runs.
+    :   Disable auto-merge on a pull request. The PR will no longer be merged automatically.
 
     `enable_auto_merge`
-    :   Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved. Asks the person to confirm in the client before it runs.
+    :   Enable auto-merge on a pull request. The PR will be merged automatically once all required checks pass and reviewers have approved.
 
     `get_build_status`
     :   Get build/CI statuses for a specific commit. Use this to check whether CI passed before declaring a PR ready to merge.
@@ -104,7 +104,7 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
     :   List tags in a repository. Use to find the latest release baseline or versioning information.
 
     `merge_pull_request`
-    :   Merge a pull request. Bitbucket refuses the merge while one of the repository's merge checks fails: each repository sets its own, which may require approvals, passing builds or resolved tasks, or nothing at all. get_pull_request lists what blocks the merge in pull_request.mergeability.blockers. Asks the person to confirm in the client before it runs.
+    :   Merge a pull request. Bitbucket refuses the merge while one of the repository's merge checks fails: each repository sets its own, which may require approvals, passing builds or resolved tasks, or nothing at all. get_pull_request lists what blocks the merge in pull_request.mergeability.blockers.
 
     `refresh_view`
     :   Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.
@@ -116,26 +116,26 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
     :   Search for repositories by name, optionally filtered by project. Returns project key, slug, and display name.
 
     `set_build_status`
-    :   Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views. Asks the person to confirm in the client before it runs.
+    :   Report a build/CI status for a commit back to Bitbucket. Use this when running CI pipelines that should surface results in PR views.
 
     `show`
     :   Show the person a pull request, a list of pull requests or a pull request's diff as an interactive view, in clients that display MCP Apps views, or a pull request form for them to finish and submit. It is for the person, not for you: its answer says what was shown, not the data, so read with the other tools. Call it only when a person is there to see it, never when you work on your own, as in a scheduled, background or batch task; and once, after you have what you need and before your answer. Kind pull_request, for a pull request the person asked about or should watch, takes project, repo and id; its view keeps its builds and reviews current, and its overview has its comments and activity. Kind diff takes the same, for changes the person cannot open in their own editor, such as another repository's, and draws the comments on their lines. Kind pull_requests, for what needs the person, takes the filters list_pull_requests takes. Kind pull_request_form is for a person who wants a say in a pull request before it exists, being particular about its description or reviewers or asking to see the draft; for a clear request to open one, call create_pull_request instead. It takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), or an id to edit that pull request; nothing is created or changed until the person submits it. In a client that displays no views, it shows nothing and says so.
 
     `submit_pr_review`
-    :   Set review status on a pull request: approve, unapprove, or request changes (needs_work). Asks the person to confirm in the client before it runs.
+    :   Set review status on a pull request: approve, unapprove, or request changes (needs_work).
 
     `suggest_form_values`
     :   Called by bb's pull request form, not by the model: suggests the repository's branches, or the people who can read it as reviewers, matching what the person typed, and names the default reviewers and code owners for the branches they picked.
 
     `update_pull_request`
-    :   Update a pull request's title, description, or draft state. Use draft=false to mark a draft pull request ready for review. Requires the current version from get_pull_request for optimistic locking; a stale version is rejected rather than overwriting someone else's edit. Setting draft asks the person to confirm in the client first.
+    :   Update a pull request's title, description, or draft state. Use draft=false to mark a draft pull request ready for review. Requires the current version from get_pull_request for optimistic locking; a stale version is rejected rather than overwriting someone else's edit.
 
 
 ## Tools that ask
 
 A tool asks when it merges, changes whether or when a pull request merges, or feeds a check that decides whether one may. `create_tag` asks too, since release pipelines commonly act on a new tag. `update_pull_request` asks only for a call that sets the draft flag: a draft cannot be merged, and making a pull request a draft cancels its auto-merge.
 
-The confirmation is an MCP elicitation. The client shows what the call will do, with one box to tick, and the tool acts only once the person accepts. A client that cannot show a confirmation gets error -32021 (missing required client capability) for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself is the client's to decide.
+They ask only on a server started with `--elicitation-opt-in`, or with `mcp_elicitation_opt_in` set in your own configuration file or by policy. Everywhere else the client decides whether a call runs. The confirmation is an MCP elicitation. The client shows what the call will do, with one box to tick, and the tool acts only once the person accepts. A client that cannot show a confirmation gets error -32021 (missing required client capability) for those tools, and nothing reaches Bitbucket. Whether a client puts the question to the person or answers it itself is the client's to decide.
 
 ## Read-only
 

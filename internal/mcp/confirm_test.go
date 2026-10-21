@@ -69,7 +69,9 @@ func decline(*mcp.ElicitParams) *mcp.ElicitResult {
 func testServer(t *testing.T) ServerOptions {
 	t.Helper()
 
-	return ServerOptions{Name: "bb", Version: "test", Clients: testClients(t)}
+	// Opted in: the tests here are about what asking does, which only a server
+	// started with --elicitation-opt-in does (ADR-103).
+	return ServerOptions{Name: "bb", Version: "test", Clients: testClients(t), ElicitationOptIn: true}
 }
 
 // connectAsking connects a client that can show a confirmation and answers it

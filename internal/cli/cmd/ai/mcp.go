@@ -39,6 +39,7 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	var auditFile string
 	var auditFailure string
 	var highlightTemplates bool
+	var elicitationOptIn bool
 
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -77,15 +78,20 @@ ${VAR} form keeps the agent on a PAT of its own, which can be read-only while
 yours can write, and writes neither into the file. No flag takes a token: a
 flag's value is readable in the process list for as long as the server runs.
 
-Tools that decide whether or when a pull request merges ask the person first,
-as an MCP elicitation in the client: merging, enabling or disabling
-auto-merge, submitting a review, reporting a build status, creating a tag, and
-changing a pull request's draft flag. A client that cannot ask gets error
--32021 for them, and nothing reaches Bitbucket. bb ai mcp tools lists which
-tools ask.
+Your MCP client decides whether a call runs, through its own prompts, rules or
+auto mode. What holds whatever it decides is Bitbucket's: its merge checks, the
+version a merge or an update names, and the token's permissions.
+--elicitation-opt-in, or mcp_elicitation_opt_in in your configuration file, makes
+the tools that decide whether or when a pull request merges also ask you in the
+client before each call: merging, enabling or disabling auto-merge, submitting
+a review, reporting a build status, creating a tag, and changing a pull
+request's draft flag. A client that cannot ask is then refused those tools with
+error -32021. It is a convenience in a client that shows the question, not a
+control: a client can answer it without you. bb ai mcp tools lists which tools
+ask.
 
---read-only exposes only the tools that read, for a client you do not trust
-with those confirmations. --tools exposes only the tools you name, and
+--read-only exposes only the tools that read, for a client you do not trust to
+make changes. --tools exposes only the tools you name, and
 --exclude leaves tools out; neither brings back a tool that --read-only or a
 scope withholds. refresh_view and suggest_form_values, which only the views of
 show call, go with show.
@@ -182,6 +188,10 @@ PAT than your own.`,
 			if err != nil {
 				return err
 			}
+			asks, err := config.MCPElicitationOptIn(elicitationOptIn)
+			if err != nil {
+				return err
+			}
 
 			s := bbmcp.NewServer(bbmcp.ServerOptions{
 				Name:               "bb",
@@ -190,6 +200,7 @@ PAT than your own.`,
 				Allow:              splitCSV(toolsFlag),
 				Exclude:            splitCSV(excludeFlag),
 				ReadOnly:           serveReadOnly,
+				ElicitationOptIn:   asks,
 				Scope:              scope,
 				Audit:              audit,
 				AuditFailure:       failureMode,
@@ -228,6 +239,7 @@ PAT than your own.`,
 	cmd.Flags().StringVar(&auditFile, "audit-file", "", "Append a JSON Lines audit record per tool call to this path, or to 'stderr'")
 	enumflag.Register(cmd.Flags(), &auditFailure, "audit-failure", string(bbmcp.AuditFailureDeny), auditFailureModes, "What to do when an audit record cannot be written")
 	cmd.Flags().BoolVar(&highlightTemplates, "highlight-templates", false, "In views, highlight the code inside templates too, not only their markup")
+	cmd.Flags().BoolVar(&elicitationOptIn, "elicitation-opt-in", false, "Ask the person in the MCP client before each call of a tool that decides a merge; a client that cannot ask is refused those tools")
 
 	return cmd
 }
@@ -291,13 +303,15 @@ func newMCPToolsCommand(deps Dependencies) *cobra.Command {
 Use this output to build --tools and --exclude allowlists and denylists.
 
 ACCESS says whether a tool changes anything in Bitbucket. ASKS says whether a
-call asks the person to confirm it in the MCP client before it runs:
+call asks the person to confirm it in the MCP client before it runs, on a server
+started with --elicitation-opt-in; without it, no tool asks:
 
   always               every call asks
   when-setting-draft   a call that sets the pull request's draft flag asks
   never                the tool runs when called
 
-A client that cannot show a confirmation gets error -32021 for a call that asks.
+On a server that asks, a client that cannot show a confirmation gets error
+-32021 for a call that asks.
 Pass --read-only to list just the tools 'bb ai mcp serve --read-only' exposes.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Accepted, and inert: every tool is exposed without --yolo, which

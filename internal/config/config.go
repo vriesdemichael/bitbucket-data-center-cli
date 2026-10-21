@@ -77,6 +77,39 @@ type StoredConfig struct {
 	Hosts           map[string]StoredProfile `yaml:"hosts,omitempty"`
 	InsecureSecrets map[string]StoredSecret  `yaml:"insecure_secrets,omitempty"`
 	UpdateBaseURL   string                   `yaml:"update_base_url,omitempty"`
+	// ElicitationOptIn is --elicitation-opt-in for every bb ai mcp serve this
+	// configuration file starts. Only your own file reads it: a repository's
+	// file arrives with a clone, and how the MCP server treats a call is not
+	// the repository's to decide.
+	ElicitationOptIn *bool `yaml:"mcp_elicitation_opt_in,omitempty"`
+}
+
+// MCPElicitationOptIn reports whether bb ai mcp serve asks the person through
+// the client before each call of a tool that decides a merge (ADR-103): when
+// the flag says so, when administrative policy requires it, or when your own
+// configuration file opts in. Policy can require asking and never lift it.
+func MCPElicitationOptIn(flag bool) (bool, error) {
+	if flag {
+		return true, nil
+	}
+
+	policy, err := LoadPolicy()
+	if err != nil {
+		return false, err
+	}
+	if policy.ElicitationOptIn != nil && *policy.ElicitationOptIn {
+		return true, nil
+	}
+
+	if os.Getenv("BB_DISABLE_STORED_CONFIG") == "1" {
+		return false, nil
+	}
+	stored, err := LoadStoredConfig()
+	if err != nil {
+		return false, err
+	}
+
+	return stored.ElicitationOptIn != nil && *stored.ElicitationOptIn, nil
 }
 
 // PolicyProblem is an administrative policy value bb could not use.
@@ -140,6 +173,10 @@ type PolicyConfig struct {
 	DisableBB        *bool `yaml:"disable_bb,omitempty"`
 	DisableMCPServer *bool `yaml:"disable_mcp_server,omitempty"`
 	ReadOnly         *bool `yaml:"read_only,omitempty"`
+	// ElicitationOptIn makes every `bb ai mcp serve` ask the person through
+	// the client before each call of a tool that decides a merge, as
+	// --elicitation-opt-in does (ADR-103). It can switch asking on, never off.
+	ElicitationOptIn *bool `yaml:"mcp_elicitation_opt_in,omitempty"`
 }
 
 type SystemConfigFile struct {
@@ -163,6 +200,7 @@ type SystemConfigFile struct {
 	DisableBB               *bool                    `yaml:"disable_bb,omitempty"`
 	DisableMCPServer        *bool                    `yaml:"disable_mcp_server,omitempty"`
 	ReadOnly                *bool                    `yaml:"read_only,omitempty"`
+	ElicitationOptIn        *bool                    `yaml:"mcp_elicitation_opt_in,omitempty"`
 	Policies                *PolicyConfig            `yaml:"policies,omitempty"`
 	Policy                  *PolicyConfig            `yaml:"policy,omitempty"`
 }
@@ -194,6 +232,7 @@ func (sys SystemConfigFile) PolicyConfig() PolicyConfig {
 		DisableBB:               sys.DisableBB,
 		DisableMCPServer:        sys.DisableMCPServer,
 		ReadOnly:                sys.ReadOnly,
+		ElicitationOptIn:        sys.ElicitationOptIn,
 	}
 }
 
@@ -1338,6 +1377,9 @@ func mergePolicy(target *PolicyConfig, source PolicyConfig) {
 	}
 	if source.ReadOnly != nil {
 		target.ReadOnly = source.ReadOnly
+	}
+	if source.ElicitationOptIn != nil {
+		target.ElicitationOptIn = source.ElicitationOptIn
 	}
 }
 

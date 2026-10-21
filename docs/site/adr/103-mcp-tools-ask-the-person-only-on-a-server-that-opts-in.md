@@ -1,0 +1,26 @@
+---
+search:
+  boost: 0.3
+---
+
+# ADR-103: MCP tools ask the person only on a server that opts in
+
+`bb ai mcp serve` asks the person nothing by default. The MCP client decides whether a call runs, through its own prompts, rules or auto mode, and bb controls only what it enforces itself. `--elicitation-opt-in`, `mcp_elicitation_opt_in` in the person's own configuration file, or the `mcp_elicitation_opt_in` policy key makes the tools that decide whether or when a pull request merges ask the person through the client before each call: a tool that merges, one that changes whether or when a pull request merges, one that feeds a check deciding whether it may, and `create_tag`; `update_pull_request` asks only when a call sets the draft flag. Only then do their descriptions and the server's instructions say that they ask. Policy can require asking and never lift it.
+
+On a server that asks, the confirmation is an elicitation with one required, unticked checkbox that names the target, and the tool acts only when it is accepted. A client that cannot show one gets -32021 MissingRequiredClientCapability, whatever revision it speaks. An answer accepts only the call it was asked about. The request state is signed, and holds the tool, a digest of the scoped arguments, an expiry, and a nonce that can be used once. A merge and an auto-merge are held to the pull request version the person was shown. How the person answered goes into the audit record (ADR-062).
+
+`--read-only` exposes only the tools annotated read-only. `--yolo` and `--allow-writes` are deprecated and do nothing (ADR-084).
+
+Annotations say what the specification defines them to say, whether or not a tool asks. Every tool declares all four hints and a title, and tools/list carries all four, because clients disagree about a missing hint's default. readOnlyHint is true only on a tool that changes nothing in Bitbucket, since some clients run such a tool without asking anyone. openWorldHint is false, because one configured Data Center instance is a closed domain. Annotations are hints a client may act on or ignore, never a control.
+
+Asking is a convenience in a client that shows the question, never a control, and docs and tool descriptions present it that way. Clients implement no approval mechanism a server can enforce, so bb cannot reliably ask: the guards it has are not offering a tool, and leaving the call to the client. Nothing tells bb that a person answered: some clients decline a question nobody saw, some accept a form without fields on their own, an autopilot answers for itself, and the specification lets a client gather the answer from sources other than the user. Required, the question also refused every merge to a client that cannot ask. What holds whatever a client does is what bb and Bitbucket enforce: Bitbucket's merge checks, the version a merge or an update names, the token's permissions, `--read-only` and the policy keys (ADR-100), and the scope and audit trail (ADR-062).
+
+Declare a tool that decides a merge with `askingSpec`, and every other tool with `toolSpec`. `TestToolsThatAskAreTheOnesThatDecideAMerge` holds the set. Annotate a tool with readOnly or writes, and set each hint by its definition, never by whether the tool asks. Build a confirmation from the arguments, and read Bitbucket only for what the person must see that the call does not carry. Quote text other people wrote, and put no link in it. Never skip a confirmation for a client on a server that asks, and never make tools/list depend on what a client can do. If bb serves Bitbucket Cloud, set openWorldHint to true on the tools that read or publish content there. The confirmation is in the handler, one wrapper applied to every tool that asks, because go-sdk's bridge for handshake-era clients sits below the middleware and never sees an input request the middleware returns. The specification treats a request state as written by an attacker, hence the signature. Clients that approve on their own accept a form with no field, hence the checkbox.
+
+## Not chosen
+
+- **Ask by default**: It refuses every merge to a client that cannot ask, and in a client that answers for itself it is a control in name only.
+- **Withhold the tools that ask from a client that cannot elicit**: tools/list must not vary per connection, and a tool that is missing fails without saying why.
+- **A tool error instead of -32021 for clients on older revisions**: Two answers to one refusal. The code the current revision defines says what is missing.
+- **Derive destructiveHint from whether a tool asks**: It would call `create_tag` destructive, though it only adds, and `update_pull_request` additive, though it overwrites.
+- **Confirm by typing the pull request reference**: Merging is routine and no tool deletes anything. Typing is for a tool that removes what cannot be restored.

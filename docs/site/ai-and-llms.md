@@ -7,9 +7,11 @@ server the CLI ships.
 
 `bb ai mcp serve` speaks the Model Context Protocol over stdio, so an IDE or
 agent framework calls typed tools instead of parsing command output. Every
-tool is exposed. The ones that change whether or when a pull request merges,
-and creating a tag, ask you to confirm each call in the client before they run.
-A client that cannot show that confirmation cannot use them.
+tool is exposed, and your client decides whether a call runs, as it does for its
+own tools. With `--elicitation-opt-in`, the ones that change whether or when a
+pull request merges, and creating a tag, also ask you to confirm each call in
+the client before they run, and a client that cannot show that confirmation
+cannot use them.
 
 Pull requests, their diffs and open threads, files and commits are also
 resources you can attach in the client, and prompts such as "review a pull

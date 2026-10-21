@@ -495,15 +495,16 @@ bb ai mcp tools
 
 The `ASKS` column is the part that matters when planning:
 
-- `always` — the tool asks the person to confirm each call in the MCP client
-  before it runs. These are the tools that change whether or when a pull
-  request merges (merging, auto-merge, reviews, build statuses) and creating a
-  tag.
+- `always` — on a server started with `--elicitation-opt-in`, the tool asks the
+  person to confirm each call in the MCP client before it runs. These are the
+  tools that change whether or when a pull request merges (merging, auto-merge,
+  reviews, build statuses) and creating a tag.
 - `when-setting-draft` — only a call that sets a pull request's draft flag
   asks. A draft cannot merge, and making one a draft cancels its auto-merge.
 - `never` — the tool runs when called.
 
-A call that asks waits on the person. If they decline or close the
+Without `--elicitation-opt-in` no tool asks, and the client decides whether a
+call runs. A call that asks waits on the person. If they decline or close the
 confirmation, the call fails and says so: do not call it again unless they ask.
 A client that cannot show a confirmation gets error -32021 for those tools.
 

@@ -1255,7 +1255,7 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 				t.Errorf("after unapprove: status=%q, want UNAPPROVED", status)
 			}
 		})
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--elicitation-opt-in")
 
 	// One confirmation per review: approve, needs_work and unapprove each asked.
 	if asked := answers.questions(); len(asked) != 3 {
