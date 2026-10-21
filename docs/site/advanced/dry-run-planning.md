@@ -119,7 +119,8 @@ Permissions, webhooks, default tasks and branch restrictions can be set once on
 the project, and Bitbucket applies them to every repository in it: one
 `bb project` command, and one preview. Anything Bitbucket does not scope to a
 project is a loop over `bb repo list --project PROJ --json`, and the same loop
-with `--dry-run` previews each repository in turn.
+with `--dry-run` previews each repository in turn:
+[Change Many Repositories](../how-to/many-repositories.md) works one through.
 
 ## See also
 
