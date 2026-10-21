@@ -361,7 +361,7 @@ func TestAToolResultLinksTheResourceItCameFrom(t *testing.T) {
 		arguments map[string]any
 		want      string
 	}{
-		"get_pull_request": {map[string]any{"project": "PROJ", "repo": "app", "id": "42"}, "bitbucket://projects/PROJ/repos/app/pull-requests/42"},
+		"get_pull_request": {map[string]any{"project": "PROJ", "repo": "app", "pr_id": "42"}, "bitbucket://projects/PROJ/repos/app/pull-requests/42"},
 		"get_pr_diff":      {map[string]any{"project": "PROJ", "repo": "app", "pr_id": "42"}, "bitbucket://projects/PROJ/repos/app/pull-requests/42/diff"},
 		"get_file_content": {map[string]any{"project": "PROJ", "repo": "app", "path": "src/caf\u00e9 \ufffd.go", "at": "main"}, "bitbucket://projects/PROJ/repos/app/files/src/caf%C3%A9%20%EF%BF%BD.go?at=main"},
 		"get_commit":       {map[string]any{"project": "PROJ", "repo": "app", "commit_id": "0a1b2c3d4e5f"}, "bitbucket://projects/PROJ/repos/app/commits/0a1b2c3d4e5f"},
@@ -377,8 +377,18 @@ func TestAToolResultLinksTheResourceItCameFrom(t *testing.T) {
 		}
 	}
 
+	// The name get_pull_request had for its pull request, which it still
+	// takes, links the same resource (#768).
+	former := &mcp.CallToolResult{Content: []mcp.Content{text}}
+	linkResource("get_pull_request", arguments(map[string]any{"project": "PROJ", "repo": "app", "id": "42"}), former)
+	if len(former.Content) != 2 {
+		t.Errorf("get_pull_request called with id got no link: %+v", former.Content)
+	} else if link, ok := former.Content[1].(*mcp.ResourceLink); !ok || link.URI != "bitbucket://projects/PROJ/repos/app/pull-requests/42" {
+		t.Errorf("get_pull_request called with id linked %+v", former.Content[1])
+	}
+
 	failed := &mcp.CallToolResult{IsError: true, Content: []mcp.Content{text}}
-	linkResource("get_pull_request", arguments(map[string]any{"project": "PROJ", "repo": "app", "id": "42"}), failed)
+	linkResource("get_pull_request", arguments(map[string]any{"project": "PROJ", "repo": "app", "pr_id": "42"}), failed)
 	unnamed := &mcp.CallToolResult{Content: []mcp.Content{text}}
 	linkResource("get_pull_request", arguments(map[string]any{"project": "PROJ", "repo": "app", "id": "#42"}), unnamed)
 	other := &mcp.CallToolResult{Content: []mcp.Content{text}}

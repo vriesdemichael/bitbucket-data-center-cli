@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	commentservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/comment"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/commentanchor"
@@ -15,11 +16,33 @@ import (
 )
 
 // GetPullRequestInput is the argument set for get_pull_request.
+//
+// PRID names the pull request as every other pull request tool does. ID is the
+// name this tool had, still taken so a client that learned it keeps working
+// (#768). Neither is required in the schema, which would refuse a call that
+// sends the other; pullRequestID requires one.
 type GetPullRequestInput struct {
 	Project           string `json:"project" jsonschema:"Bitbucket project key (e.g. MYPROJECT)"`
 	Repo              string `json:"repo" jsonschema:"Repository slug"`
-	ID                string `json:"id" jsonschema:"Pull request ID"`
+	PRID              string `json:"pr_id,omitempty" jsonschema:"Pull request ID (required)"`
+	ID                string `json:"id,omitempty" jsonschema:"The former name of pr_id, still accepted; send pr_id"`
 	SkipReviewSummary bool   `json:"skip_review_summary,omitempty" jsonschema:"Skip the activity timeline lookup used to count unresolved comment threads"`
+}
+
+// pullRequestID is the pull request the call names, by either name.
+func (in GetPullRequestInput) pullRequestID() (string, error) {
+	named, former := strings.TrimSpace(in.PRID), strings.TrimSpace(in.ID)
+	switch {
+	case named != "" && former != "" && named != former:
+		return "", apperrors.New(apperrors.KindValidation,
+			fmt.Sprintf("pr_id %q and id %q name different pull requests; send pr_id alone", named, former), nil)
+	case named != "":
+		return named, nil
+	case former != "":
+		return former, nil
+	}
+
+	return "", apperrors.New(apperrors.KindValidation, "pr_id is required", nil)
 }
 
 // GetPullRequestOutput carries the pull request alongside the derived review
@@ -52,14 +75,18 @@ func specGetPullRequest() Spec {
 // pullRequestWithReviewSummary reads a pull request and derives its review
 // state, as get_pull_request and the pull request resource answer with it.
 func pullRequestWithReviewSummary(ctx context.Context, c Clients, in GetPullRequestInput) (GetPullRequestOutput, error) {
-	pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+	id, err := in.pullRequestID()
+	if err != nil {
+		return GetPullRequestOutput{}, err
+	}
+	pr, err := pullrequestservice.NewService(c.HTTP).Get(ctx, pullrequestservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, id)
 	if err != nil {
 		return GetPullRequestOutput{}, err
 	}
 
 	counts := pullrequestservice.ReviewCounts{}
 	if !in.SkipReviewSummary {
-		threads, err := pullrequestactivityservice.NewService(c.OpenAPI).TrySummarize(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID)
+		threads, err := pullrequestactivityservice.NewService(c.OpenAPI).TrySummarize(ctx, pullrequestactivityservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, id)
 		if err != nil {
 			return GetPullRequestOutput{}, err
 		}
@@ -70,7 +97,7 @@ func pullRequestWithReviewSummary(ctx context.Context, c Clients, in GetPullRequ
 			// Bitbucket 10.x omits the task counters on this endpoint, so
 			// fall back to the exact blocker-comment tally rather than
 			// reporting nothing.
-			if tasks, taskErr := commentservice.NewService(c.OpenAPI).CountTasks(ctx, commentservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, in.ID); taskErr == nil {
+			if tasks, taskErr := commentservice.NewService(c.OpenAPI).CountTasks(ctx, commentservice.RepositoryRef{ProjectKey: in.Project, Slug: in.Repo}, id); taskErr == nil {
 				counts.Tasks = &pullrequestservice.TaskCounts{Open: tasks.Open, Resolved: tasks.Resolved}
 			}
 		}

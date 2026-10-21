@@ -327,7 +327,7 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 	}
 
 	fixture.arguments = map[string]map[string]any{
-		"get_pull_request":   repoArgs(map[string]any{"id": fixture.mainPR}),
+		"get_pull_request":   repoArgs(map[string]any{"pr_id": fixture.mainPR}),
 		"list_pull_requests": repoArgs(nil),
 		"create_pull_request": repoArgs(map[string]any{
 			"from_ref": "feature/mcp-create", "to_ref": "mcp-create-base", "title": "Opened by the conformance sweep",
