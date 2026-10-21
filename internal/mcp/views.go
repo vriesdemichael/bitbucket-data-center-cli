@@ -430,27 +430,11 @@ func meFor(username string, pr pullrequestservice.PullRequest) *viewMe {
 	return me
 }
 
-// currentUsers caches who bb acts for on each Bitbucket, for the life of the
-// server: the credentials do not change while it runs.
-var currentUsers sync.Map
-
-// currentUsername is who bb acts for, as Bitbucket says on any answer, or
-// empty when it does not say.
+// currentUsername is the login name of the person bb acts for, which pull
+// requests name their author and reviewers by, or empty when Bitbucket does not
+// say. Not the slug, which differs from it for a name with an @ or a + (#807).
 func currentUsername(ctx context.Context, c Clients) string {
-	if cached, ok := currentUsers.Load(c.BaseURL); ok {
-		if username, isString := cached.(string); isString {
-			return username
-		}
-	}
-	if c.HTTP == nil {
-		return ""
-	}
-	username, err := c.HTTP.CurrentUserSlug(ctx)
-	if err != nil {
-		return ""
-	}
-	currentUsers.Store(c.BaseURL, username)
-	return username
+	return personName(ctx, c.HTTP)
 }
 
 type viewPullRequest struct {
