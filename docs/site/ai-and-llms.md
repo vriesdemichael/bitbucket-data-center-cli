@@ -35,8 +35,10 @@ file from one of them into a pull request others read:
 bb ai mcp serve --project PLAT
 ```
 
-Wire it into a client by giving it that command and a token in the client's own
-environment block, rather than on the command line:
+Wire it into a client by giving it that command. With no credential in the
+entry, it uses the one `bb auth login` stored; for a token of the agent's own,
+name a configuration file it logged in to, which keeps the secret out of the
+client's file:
 
 ```json
 {
@@ -44,11 +46,14 @@ environment block, rather than on the command line:
     "bitbucket": {
       "command": "bb",
       "args": ["ai", "mcp", "serve", "--project", "PLAT"],
-      "env": { "BITBUCKET_TOKEN": "${BB_MCP_TOKEN}" }
+      "env": { "BB_CONFIG_PATH": "/home/alice/.config/bb/agent.yaml" }
     }
   }
 }
 ```
+
+[Set Up the MCP Server in Your Client](how-to/mcp-clients.md) has the entry for
+Claude Code, Claude Desktop, Cursor and VS Code, and how to make that file.
 
 The server offers only the tools that read until you let it write. Five flags decide
 what it can reach:
