@@ -24,10 +24,10 @@ import (
 //
 // Over Basic auth Bitbucket takes a personal token only beside its owner's
 // login name -- not x-token-auth, and not the slug, which differs from the name
-// here -- and a repository token only beside x-token-auth. Bearer takes either.
-// Each answer is sent to Bitbucket's git endpoint the way git sends it, and a
-// real git, which takes an authtype from 2.46, lists the repository through the
-// helper.
+// here -- and a repository token beside x-token-auth, or on some releases
+// beside its user's name. Bearer takes either. Each answer is sent to
+// Bitbucket's git endpoint the way git sends it, and a real git, which takes an
+// authtype from 2.46, lists the repository through the helper.
 //
 // Not parallel: the login and the helper read the configuration file
 // BB_CONFIG_PATH names, which is one per process.
@@ -48,7 +48,8 @@ func TestLiveGitCredentialHelperSendsWhatBitbucketTakes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse bitbucket url: %v", err)
 	}
-	repoURL := strings.TrimRight(harness.config.BitbucketURL, "/") + "/scm/" + seeded.Key + "/" + repo.Slug + ".git"
+	base := strings.TrimRight(harness.config.BitbucketURL, "/")
+	repoURL := base + "/scm/" + seeded.Key + "/" + repo.Slug + ".git"
 
 	// A person whose login name has a + and an @ in it, so the slug differs
 	// from it and Bitbucket reports it percent-encoded.
@@ -81,17 +82,40 @@ func TestLiveGitCredentialHelperSendsWhatBitbucketTakes(t *testing.T) {
 		name string
 		// token is the secret Bitbucket answered the create with.
 		token string
-		// basicUsername is the name the token goes beside over Basic auth.
-		basicUsername string
-		// storedOwner is the name the login stores, if any.
-		storedOwner string
+		// person is the login name of the token's owner, for a token a person
+		// owns. A repository token's user is not a person.
+		person string
 	}{
-		{"personal token", stringField(personal, "token"), owner.Username, owner.Username},
-		{"repository token", stringField(repository, "token"), "x-token-auth", ""},
+		{"personal token", stringField(personal, "token"), owner.Username},
+		{"repository token", stringField(repository, "token"), ""},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			if testCase.token == "" {
 				t.Fatal("Bitbucket answered the token create with no token")
+			}
+
+			// Who Bitbucket says the token is, and whether it takes the token
+			// beside that name over Basic auth: what the login has to find
+			// out. A person's token is taken beside their login name on every
+			// release. A repository token's user is not a person, and the
+			// releases differ: 9.3.2 takes the token beside that user's name,
+			// 10.5.1 refuses it there and takes x-token-auth. Each side is
+			// asserted as Bitbucket answers it.
+			tokenUser := authenticatedName(ctx, t, base+"/rest/api/latest/users?limit=1", func(request *http.Request) {
+				request.Header.Set("Authorization", "Bearer "+testCase.token)
+			})
+			if testCase.person != "" && tokenUser != testCase.person {
+				t.Fatalf("Bitbucket names the token's owner %q, want the login name %q", tokenUser, testCase.person)
+			}
+			takesName := gitEndpointStatus(ctx, t, repoURL, func(request *http.Request) {
+				request.SetBasicAuth(tokenUser, testCase.token)
+			}) == http.StatusOK
+			if testCase.person != "" && !takesName {
+				t.Fatalf("Bitbucket refused a personal token beside its owner's login name %q", tokenUser)
+			}
+			storedOwner, basicUsername := "", "x-token-auth"
+			if takesName {
+				storedOwner, basicUsername = tokenUser, tokenUser
 			}
 
 			configPath := filepath.Join(t.TempDir(), "bb-config.yaml")
@@ -109,14 +133,14 @@ func TestLiveGitCredentialHelperSendsWhatBitbucketTakes(t *testing.T) {
 				t.Fatalf("read the stored configuration: %v", err)
 			}
 			profile := stored.Hosts[stored.DefaultHost]
-			if profile.AuthMode != "token" || profile.Username != testCase.storedOwner {
-				t.Fatalf("the login stored auth mode %q and username %q, want token and %q", profile.AuthMode, profile.Username, testCase.storedOwner)
+			if profile.AuthMode != "token" || profile.Username != storedOwner {
+				t.Fatalf("the login stored auth mode %q and username %q, want token and %q", profile.AuthMode, profile.Username, storedOwner)
 			}
 
 			// Older git: a username and password, which Bitbucket must take.
 			answer := askGitCredential(t, "protocol="+host.Scheme+"\nhost="+host.Host+"\n\n")
-			if answer["username"] != testCase.basicUsername || answer["password"] != testCase.token {
-				t.Fatalf("without authtype the helper answered username %q, want %q beside the token", answer["username"], testCase.basicUsername)
+			if answer["username"] != basicUsername || answer["password"] != testCase.token {
+				t.Fatalf("without authtype the helper answered username %q, want %q beside the token", answer["username"], basicUsername)
 			}
 			requireGitEndpointTakes(ctx, t, repoURL, func(request *http.Request) {
 				request.SetBasicAuth(answer["username"], answer["password"])
@@ -245,6 +269,42 @@ func redactedAnswer(answer map[string]string, token string) map[string]string {
 func requireGitEndpointTakes(ctx context.Context, t *testing.T, repoURL string, authorize func(*http.Request)) {
 	t.Helper()
 
+	if status := gitEndpointStatus(ctx, t, repoURL, authorize); status != http.StatusOK {
+		t.Fatalf("Bitbucket's git endpoint answered %d to the helper's credential", status)
+	}
+}
+
+// authenticatedName is the login name Bitbucket answers a request as, from
+// X-AUSERNAME, which carries it percent-encoded.
+func authenticatedName(ctx context.Context, t *testing.T, target string, authorize func(*http.Request)) string {
+	t.Helper()
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+	if err != nil {
+		t.Fatalf("build the request: %v", err)
+	}
+	authorize(request)
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatalf("ask Bitbucket who the token is: %v", err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("Bitbucket answered %d to the token", response.StatusCode)
+	}
+	name, err := url.PathUnescape(response.Header.Get("X-AUSERNAME"))
+	if err != nil || name == "" {
+		t.Fatalf("Bitbucket named the token's user %q: %v", response.Header.Get("X-AUSERNAME"), err)
+	}
+
+	return name
+}
+
+// gitEndpointStatus is Bitbucket's answer to the first request of a clone or
+// fetch, authorized as given.
+func gitEndpointStatus(ctx context.Context, t *testing.T, repoURL string, authorize func(*http.Request)) int {
+	t.Helper()
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, repoURL+"/info/refs?service=git-upload-pack", nil)
 	if err != nil {
 		t.Fatalf("build the request: %v", err)
@@ -256,7 +316,6 @@ func requireGitEndpointTakes(ctx context.Context, t *testing.T, repoURL string, 
 		t.Fatalf("ask Bitbucket's git endpoint: %v", err)
 	}
 	response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		t.Fatalf("Bitbucket's git endpoint answered %d to the helper's credential", response.StatusCode)
-	}
+
+	return response.StatusCode
 }
