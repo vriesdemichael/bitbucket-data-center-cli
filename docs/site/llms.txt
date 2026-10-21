@@ -113,14 +113,34 @@ The MCP server exposes Bitbucket operations as typed tools over stdio, for clien
 speak MCP natively rather than driving a shell:
 
 ```bash
-bb ai mcp serve
+bb ai mcp serve --project PLAT
 ```
 
-Configure it as a stdio server — command `bb`, args `["ai", "mcp", "serve"]`. It is not an
-HTTP server and there is no port to connect to.
+Configure it as a stdio server — command `bb`, args `["ai", "mcp", "serve", "--project", "PLAT"]`.
+It is not an HTTP server and there is no port to connect to.
+
+**Ask the person before you configure it.** How far the server lets an agent go is theirs to
+choose, not yours. Ask them, and write the entry with what they answer:
+
+- whether the agent may change Bitbucket (`--allow-writes`), or only read, the default;
+- which project or repository to confine it to (`--project`, `--repo`);
+- whether it should run on a token of its own with fewer rights than theirs, such as a
+  read-only one;
+- whether the tools that decide a merge should ask them in the client first
+  (`--elicitation-opt-in`);
+- whether to offer only some tools (`--tools`) or leave some out (`--exclude`);
+- whether to keep an audit trail of every call (`--audit-file`);
+- whether their organisation allows the line bb adds to what an agent writes, saying an AI
+  agent wrote it (`--ai-disclosure=false` turns it off, and with it the tools that would
+  publish the agent's text under their name at once).
+
+Then tell them what the entry allows.
 
 Things worth knowing before you wire it up:
 
+- Confine it with `--project` or `--repo` to where the agent works. Unconfined, it reaches every
+  repository the token can read, and an agent misled by what it reads can copy a file from one
+  of them into a pull request others read.
 - `--host` is required when more than one Bitbucket instance is configured; the server
   exits immediately if it is missing (ADR-039).
 - The server offers only the tools that read unless `--allow-writes` lets it make changes

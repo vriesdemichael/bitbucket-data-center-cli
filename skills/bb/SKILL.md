@@ -439,14 +439,25 @@ as `show` or `list_pull_requests`) are available to you:
 Do what they asked with the CLI first, as the workflows above show; never refuse
 or hold it back for want of the server. Then mention, once, that the bb MCP
 server would show this as a view they can act in, and offer to set it up. If they
-accept, add the server to their client's MCP configuration; the client connects
-to it once it reloads its servers. The entry needs only the command, and uses the
-credential `bb auth login` stored:
+accept, first ask them how far it may go, since that is theirs to choose: whether
+it may change Bitbucket (`--allow-writes`) or only read, which project to confine
+it to, whether it should run on a token of its own with fewer rights, whether the
+tools that decide a merge should ask them first (`--elicitation-opt-in`), which
+tools to offer (`--tools`, `--exclude`), whether to keep an audit trail
+(`--audit-file`), and whether their organisation allows the line saying an AI
+agent wrote a comment or description (`--ai-disclosure=false` turns it off). Then
+add the server to their client's MCP configuration with what they chose; the
+client connects to it once it reloads its servers. The entry needs only the command, confined to
+the project they work in, and uses the credential `bb auth login` stored.
+Unconfined, the server reaches every repository their token can read, and an
+agent misled by what it reads can copy a file from one into a pull request
+others read; leave `--project` out only when they want views of their work
+across projects.
 
 ```json
 {
   "command": "bb",
-  "args": ["ai", "mcp", "serve"]
+  "args": ["ai", "mcp", "serve", "--project", "PROJ"]
 }
 ```
 
@@ -459,8 +470,9 @@ should only read, see the read-only token below.
 # List all available MCP tools
 bb ai mcp tools
 
-# Start the server (used by IDE MCP clients, not invoked manually)
-bb ai mcp serve
+# Start the server confined to one project (used by IDE MCP clients, not
+# invoked manually)
+bb ai mcp serve --project PROJ
 
 # Restrict to a read-only PAT: set BITBUCKET_TOKEN in the MCP client's env
 # block rather than on the command line. "env": { "BITBUCKET_TOKEN":
@@ -480,7 +492,7 @@ bb ai mcp serve --tools get_pull_request,list_pr_comments,get_build_status
       "bb": {
         "type": "stdio",
         "command": "bb",
-        "args": ["ai", "mcp", "serve"]
+        "args": ["ai", "mcp", "serve", "--project", "PROJ"]
       }
     }
   }
