@@ -89,8 +89,25 @@ to that host.
 
 ## Tokens and SSH
 
-A personal access token works as the password for git over HTTPS, which is what
-the helper supplies. You do not need a separate credential for git.
+The token you logged in with is what git uses over HTTPS. You do not need a
+separate credential for git.
+
+Git 2.46 and later take the token from the helper as a Bearer token, which
+needs no username. Older git takes only a username and password, and Bitbucket
+accepts a token in the password only beside the right username:
+
+| Token | Username the helper sends |
+|---|---|
+| Personal access token | Its owner's login name, which `bb auth login` looks up and stores |
+| Project or repository token | `x-token-auth` |
+
+If `bb auth login` could not reach Bitbucket, it stored no name, and older git
+sends a personal token as `x-token-auth`, which Bitbucket refuses. Run
+`bb auth login` again, or tell git your login name:
+
+```bash
+git config --global credential.https://bitbucket.example.com.username alice
+```
 
 If you clone over SSH instead, none of this applies: SSH authenticates with your
 SSH key, and git never asks for a username or password. Manage those keys with

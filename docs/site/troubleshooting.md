@@ -151,6 +151,12 @@ username=alice
 password=<your token>
 ```
 
+For a personal access token the username is your login name. `x-token-auth`
+there is what a project or repository token goes with; beside a personal token,
+Bitbucket refuses it unless git is 2.46 or later, which asks for the token as
+Bearer instead. [Tokens and SSH](advanced/git-authentication.md#tokens-and-ssh)
+says how to fix it.
+
 !!! danger "That output is your token"
 
     It is printed in full, because that is what git asks for. Do not paste it
