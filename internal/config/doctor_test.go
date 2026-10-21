@@ -880,6 +880,14 @@ func TestDiagnoseNamesTheHostARepositoryGaveAsUnused(t *testing.T) {
 		t.Errorf("the workspace file's ignored keys are %+v, want default_host alone", workspace.Ignored)
 	}
 
+	// A TLS setting the .env named is said on its own row.
+	inputs.dotenv[0].values["BB_INSECURE_SKIP_VERIFY"] = "true"
+	skip := diagnosedSetting(t, diagnose(inputs), "insecure_skip_verify")
+	if want := "BB_INSECURE_SKIP_VERIFY in " + dotenvPath + " is not read"; skip.Value != "false" || !strings.Contains(skip.Problem, want) {
+		t.Errorf("insecure_skip_verify = %+v, want false and a problem saying %q", skip, want)
+	}
+	delete(inputs.dotenv[0].values, "BB_INSECURE_SKIP_VERIFY")
+
 	// A variable the environment carried was never the .env's to give.
 	inputs.ambient = func(name string) bool { return name == "BITBUCKET_URL" }
 	inputs.getenv = func(name string) string {

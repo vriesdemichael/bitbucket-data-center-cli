@@ -65,9 +65,9 @@ type AppConfig struct {
 	// plaintext config fallback rather than the OS keyring. It is set only when
 	// such a credential is actually used, not merely present in the file.
 	UsedInsecureStorage bool
-	// IgnoredHostSettings are the settings a repository's .env or workspace
-	// file gave for the Bitbucket host, which bb does not take from there.
-	IgnoredHostSettings []IgnoredSetting
+	// IgnoredSettings are the settings of bb's own that a repository's .env or
+	// workspace file gave, which bb does not take from there.
+	IgnoredSettings []IgnoredSetting
 
 	// flagSourced records which settings arrived from a command-line flag,
 	// keyed by the environment variable that would otherwise have supplied
@@ -302,9 +302,8 @@ func (sys SystemConfigFile) PolicyConfig() PolicyConfig {
 }
 
 type WorkspaceConfigFile struct {
-	ProjectKey    string                   `yaml:"project_key,omitempty"`
-	Hosts         map[string]StoredProfile `yaml:"hosts,omitempty"`
-	UpdateBaseURL string                   `yaml:"update_base_url,omitempty"`
+	ProjectKey string                   `yaml:"project_key,omitempty"`
+	Hosts      map[string]StoredProfile `yaml:"hosts,omitempty"`
 	// IgnoredDefaultHost is a default_host the file names. It is not read: a
 	// workspace file arrives with a repository, and does not choose the
 	// Bitbucket host (#770). It is kept to say so.
@@ -317,10 +316,45 @@ type IgnoredSetting struct {
 	Path string
 }
 
+// ChoosesHost reports whether the setting would have chosen the Bitbucket host,
+// as bitbucket_url would on Windows.
+func (setting IgnoredSetting) ChoosesHost() bool {
+	return setting.Name == "default_host" || slices.ContainsFunc(hostChoosingVariables, func(name string) bool {
+		return strings.EqualFold(name, setting.Name)
+	})
+}
+
 // hostChoosingVariables decide which Bitbucket bb talks to: directly, or
 // through the file it takes its default host from. A .env file is part of a
 // repository, so it does not set them (#770).
 var hostChoosingVariables = []string{"BITBUCKET_URL", "BB_CONFIG_PATH"}
+
+// dotenvVariables are the variables a repository's .env sets: bb's own
+// credentials, the repository context, and how bb waits, retries, logs and
+// prompts. A .env arrives with a repository, so it sets nothing that decides
+// where the person's token goes or what runs: not the host or the file that
+// names it, TLS trust, a proxy, where updates come from, nor a variable git or
+// the Go runtime reads (#770). A name is taken only as bb spells it, because
+// Windows ignores case in variable names, and bitbucket_url set there would be
+// BITBUCKET_URL.
+var dotenvVariables = []string{
+	"BITBUCKET_TOKEN", "BITBUCKET_USERNAME", "BITBUCKET_USER", "BITBUCKET_PASSWORD", "ADMIN_USER", "ADMIN_PASSWORD",
+	"BITBUCKET_PROJECT_KEY", "BITBUCKET_REPO_SLUG", "BITBUCKET_VERSION_TARGET",
+	"BB_REQUEST_TIMEOUT", "BB_RETRY_COUNT", "BB_RETRY_BACKOFF",
+	"BB_WEBHOOK_SECRET", "BB_WEBHOOK_PASSWORD",
+	"BB_LOG_LEVEL", "BB_LOG_FORMAT", "NO_COLOR",
+	"BB_NO_PROMPT", "BB_NO_PROMPT_VARS",
+	"BB_REQUIRE_KEYRING", "BB_DISABLE_UPDATE",
+}
+
+// refusedDotenvVariable reports whether a .env names one of bb's own settings
+// that it does not take from there, which bb says rather than drops: the person
+// may have meant it. Any other name is the project's, such as its own
+// application's, and is left alone without a word.
+func refusedDotenvVariable(name string) bool {
+	upper := strings.ToUpper(name)
+	return !slices.Contains(dotenvVariables, name) && (strings.HasPrefix(upper, "BB_") || strings.HasPrefix(upper, "BITBUCKET_"))
+}
 
 type StoredProfile struct {
 	URL        string   `yaml:"url"`
@@ -477,7 +511,7 @@ func firstNonEmpty(values ...string) string {
 // LoadWithOverrides resolves configuration the same way LoadFromEnv does, with
 // the given per-invocation values taking precedence.
 func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
-	ignoredHostSettings := loadDotEnv()
+	ignoredSettings := loadDotEnv()
 
 	// flagSourced records which settings a flag supplied, so every message
 	// below can name the input the user actually used rather than the variable
@@ -513,7 +547,7 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	}
 	if workspaceConfig.IgnoredDefaultHost != "" {
 		path, _ := WorkspaceConfigPath()
-		ignoredHostSettings = append(ignoredHostSettings, IgnoredSetting{Name: "default_host", Path: path})
+		ignoredSettings = append(ignoredSettings, IgnoredSetting{Name: "default_host", Path: path})
 	}
 
 	// BB_DISABLE_STORED_CONFIG promises the stored file is ignored entirely, so
@@ -580,8 +614,10 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 	}
 	if resolvedURL == "" {
 		message := "no Bitbucket host configured: set BITBUCKET_URL or run 'bb auth login <host>'"
-		for _, ignored := range ignoredHostSettings {
-			message += fmt.Sprintf("; %s in %s was not used, because a repository's files do not choose the host", ignored.Name, ignored.Path)
+		for _, ignored := range ignoredSettings {
+			if ignored.ChoosesHost() {
+				message += fmt.Sprintf("; %s in %s was not used, because a repository's files do not choose the host", ignored.Name, ignored.Path)
+			}
 		}
 		return AppConfig{}, apperrors.New(apperrors.KindValidation, message, nil)
 	}
@@ -624,7 +660,7 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 		LogFormat:              strings.ToLower(strings.TrimSpace(logFormat)),
 		DiagnosticsEnabled:     diagnosticsEnabled,
 		AuthSource:             "env/default",
-		IgnoredHostSettings:    ignoredHostSettings,
+		IgnoredSettings:        ignoredSettings,
 		flagSourced:            flagSourced,
 	}
 
@@ -697,8 +733,9 @@ func LoadWithOverrides(overrides Overrides) (AppConfig, error) {
 }
 
 // loadDotEnv applies the .env files from the working directory up to the
-// repository root, nearest first, without overriding a variable already set.
-// It returns the host-choosing variables it found and left unset.
+// repository root, nearest first, without overriding a variable already set,
+// and only dotenvVariables. It returns the settings of bb's own it found and
+// left unset.
 func loadDotEnv() []IgnoredSetting {
 	ignored := []IgnoredSetting{}
 	for _, candidate := range dotenvCandidates() {
@@ -719,8 +756,10 @@ func loadDotEnv() []IgnoredSetting {
 			if _, set := os.LookupEnv(name); set {
 				continue
 			}
-			if slices.Contains(hostChoosingVariables, name) {
-				ignored = append(ignored, IgnoredSetting{Name: name, Path: candidate})
+			if !slices.Contains(dotenvVariables, name) {
+				if refusedDotenvVariable(name) {
+					ignored = append(ignored, IgnoredSetting{Name: name, Path: candidate})
+				}
 				continue
 			}
 			_ = os.Setenv(name, values[name])
@@ -1685,15 +1724,10 @@ func ResolveUpdateBaseURL(flagValue string) (string, error) {
 	if envVal := strings.TrimSpace(os.Getenv("BB_UPDATE_BASE_URL")); envVal != "" {
 		return normalizeURL(envVal), nil
 	}
-	// A damaged file is an error here as everywhere else (#567). Skipping it
-	// sent bb update to whichever base URL the next file happened to name.
-	ws, err := LoadWorkspaceConfig()
-	if err != nil {
-		return "", unreadableConfig(WorkspaceConfigPath, "workspace configuration", err)
-	}
-	if strings.TrimSpace(ws.UpdateBaseURL) != "" {
-		return normalizeURL(ws.UpdateBaseURL), nil
-	}
+	// A workspace file arrives with a repository, so it does not choose where
+	// bb updates from (#770). A damaged file is an error here as everywhere
+	// else (#567): skipping it sent bb update to whichever base URL the next
+	// file happened to name.
 	if os.Getenv("BB_DISABLE_STORED_CONFIG") != "1" {
 		stored, err := LoadStoredConfig()
 		if err != nil {

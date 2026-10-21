@@ -217,6 +217,75 @@ func TestACredentialDoesNotFollowAHostTheRepositoryChose(t *testing.T) {
 	})
 }
 
+// TestARepositoryDotenvSetsOnlyBBsOwnSettings is the rest of #770. A .env
+// arrives with a clone, so it sets bb's credentials, repository context and
+// preferences, and nothing else: a proxy and a CA of its own read the stored
+// token on its way to the person's own host, BB_DISABLE_STORED_CONFIG set
+// aside the person's settings, and git runs what GIT_SSH_COMMAND names. On
+// Windows, which ignores case in variable names, bitbucket_url was
+// BITBUCKET_URL.
+func TestARepositoryDotenvSetsOnlyBBsOwnSettings(t *testing.T) {
+	const storedToken = "stored-default-host-token"
+
+	working := t.TempDir()
+	dotenvPath := filepath.Join(working, ".env")
+	dotenv := strings.Join([]string{
+		"bitbucket_url=https://attacker.example.net",
+		"HTTPS_PROXY=http://attacker.example.net:8080",
+		"BB_CA_FILE=attacker.pem",
+		"BB_INSECURE_SKIP_VERIFY=true",
+		"BB_DISABLE_STORED_CONFIG=1",
+		"GIT_SSH_COMMAND=attacker",
+		"APP_DATABASE_URL=postgres://localhost/app",
+		"BB_LOG_FORMAT=jsonl",
+		"BITBUCKET_PROJECT_KEY=PAY",
+		"",
+	}, "\n")
+	if err := os.WriteFile(dotenvPath, []byte(dotenv), 0o600); err != nil {
+		t.Fatalf("write .env: %v", err)
+	}
+
+	t.Setenv("BB_CONFIG_PATH", storedWithDefaultHostCredential(t, storedToken))
+	t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(t.TempDir(), "absent.yaml"))
+	refused := []string{"BITBUCKET_URL", "bitbucket_url", "HTTPS_PROXY", "BB_CA_FILE", "BB_INSECURE_SKIP_VERIFY", "BB_DISABLE_STORED_CONFIG", "GIT_SSH_COMMAND", "APP_DATABASE_URL"}
+	// Unset rather than empty: a .env fills only what the environment lacks,
+	// and an empty value is something the environment has.
+	for _, name := range append([]string{"BB_LOG_FORMAT", "BITBUCKET_PROJECT_KEY"}, refused...) {
+		t.Setenv(name, "")
+		os.Unsetenv(name)
+	}
+	t.Chdir(working)
+
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("LoadFromEnv: %v", err)
+	}
+
+	// What it may set, it set: the file was read.
+	if cfg.ProjectKey != "PAY" || os.Getenv("BB_LOG_FORMAT") != "jsonl" {
+		t.Fatalf("the .env's project key and log format were not taken: %q, %q", cfg.ProjectKey, os.Getenv("BB_LOG_FORMAT"))
+	}
+	if cfg.BitbucketURL != "https://trusted.example.com" || cfg.BitbucketToken != storedToken {
+		t.Errorf("the .env moved bb off the person's own host and token: %s", cfg.BitbucketURL)
+	}
+	for _, name := range refused {
+		if value, set := os.LookupEnv(name); set {
+			t.Errorf("the .env set %s to %q", name, value)
+		}
+	}
+
+	// bb's own settings are named, as the person may have meant them; the
+	// project's own variables are not bb's to warn about.
+	for _, name := range []string{"bitbucket_url", "BB_CA_FILE", "BB_INSECURE_SKIP_VERIFY", "BB_DISABLE_STORED_CONFIG"} {
+		assertIgnoredHostSetting(t, cfg, name, dotenvPath)
+	}
+	for _, ignored := range cfg.IgnoredSettings {
+		if ignored.Name == "HTTPS_PROXY" || ignored.Name == "GIT_SSH_COMMAND" || ignored.Name == "APP_DATABASE_URL" {
+			t.Errorf("the load warns about %s, which is not bb's", ignored.Name)
+		}
+	}
+}
+
 // assertIgnoredHostSetting fails unless the load names the host setting it left
 // unused, and the file it was in.
 func assertIgnoredHostSetting(t *testing.T, cfg AppConfig, name, path string) {
@@ -230,10 +299,10 @@ func assertIgnoredHostSetting(t *testing.T, cfg AppConfig, name, path string) {
 		}
 		return filepath.Clean(path)
 	}
-	for _, ignored := range cfg.IgnoredHostSettings {
+	for _, ignored := range cfg.IgnoredSettings {
 		if ignored.Name == name && resolved(ignored.Path) == resolved(path) {
 			return
 		}
 	}
-	t.Errorf("the load does not name %s in %s as ignored: %+v", name, path, cfg.IgnoredHostSettings)
+	t.Errorf("the load does not name %s in %s as ignored: %+v", name, path, cfg.IgnoredSettings)
 }

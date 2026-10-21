@@ -1765,15 +1765,9 @@ func TestResolveUpdateBaseURLHierarchy(t *testing.T) {
 		t.Fatalf("expected env URL, got %s, err: %v", url, err)
 	}
 
-	// 3. Workspace beats user/sys
+	// 3. A workspace file arrives with a repository, so it names no mirror,
+	// and the user's file beats the system file (#770).
 	t.Setenv("BB_UPDATE_BASE_URL", "")
-	url, err = ResolveUpdateBaseURL("")
-	if err != nil || url != "https://ws-mirror.corp" {
-		t.Fatalf("expected ws URL, got %s, err: %v", url, err)
-	}
-
-	// 4. User beats sys
-	t.Setenv("BB_WORKSPACE_CONFIG_PATH", filepath.Join(tempDir, "nonexistent.yaml"))
 	url, err = ResolveUpdateBaseURL("")
 	if err != nil || url != "https://user-mirror.corp" {
 		t.Fatalf("expected user URL, got %s, err: %v", url, err)
