@@ -1361,3 +1361,48 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 		}
 	}, "ai", "mcp", "serve", "--allow-writes")
 }
+
+// TestLiveMCPCreatePullRequestTargetsTheDefaultBranch holds create_pull_request
+// to its schema: with no to_ref, the pull request targets the repository's
+// default branch. The default is moved off master first, so a target that came
+// from anywhere else would show.
+func TestLiveMCPCreatePullRequestTargetsTheDefaultBranch(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedIsolatedProject(ctx, 1, 1)
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+	for branch, file := range map[string]string{"mcp-default-base": "base.txt", "feature/mcp-default": "feature.txt"} {
+		if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, file); err != nil {
+			t.Fatalf("push commit on %s failed: %v", branch, err)
+		}
+	}
+	mustLiveCLI(t, "branch", "default", "set", "mcp-default-base")
+	if branch := nestedJSONMap(t, mustLiveCLI(t, "branch", "default", "get"), "defaultBranch"); branch["displayId"] != "mcp-default-base" {
+		t.Fatalf("the default branch reads back as %v, want mcp-default-base", branch)
+	}
+
+	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+		var created struct {
+			PullRequest struct {
+				ID float64 `json:"id"`
+			} `json:"pull_request"`
+		}
+		callAndDecode(t, session, context.Background(), "create_pull_request", map[string]any{
+			"project": seeded.Key, "repo": repo.Slug, "from_ref": "feature/mcp-default", "title": "Into the default",
+		}, &created)
+
+		read := mcpLivePullRequest(t, seeded.Key+"/"+repo.Slug, fmt.Sprintf("%d", int64(created.PullRequest.ID)))
+		if read["targetBranch"] != "mcp-default-base" {
+			t.Errorf("the pull request targets %v, want the default branch mcp-default-base", read["targetBranch"])
+		}
+	}, "ai", "mcp", "serve", "--allow-writes")
+}
