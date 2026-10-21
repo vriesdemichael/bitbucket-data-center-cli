@@ -14,9 +14,6 @@ import (
 // it. The rest of each is what the command's own example passes.
 var deprecatedFlagRuns = map[string][]string{
 	"bb ai mcp tools --read-only": {"ai", "mcp", "tools", "--read-only"},
-
-	"bb build required delete --limit": {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--limit", "1"},
-	"bb build required delete --all":   {"build", "required", "delete", "5", "--repo", "PROJ/repo", "--all"},
 }
 
 // deprecatedFlagsThatAreNotRunHere serve until stopped, so the package that

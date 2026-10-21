@@ -19,7 +19,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/style"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/deprecation"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
@@ -530,8 +529,6 @@ func New(deps Dependencies) *cobra.Command {
   bb build required delete 5 --repo PROJ/repo`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			deprecation.WarnFlags(cmd.ErrOrStderr(), cmd.Flags().Changed, "bb build required delete", "limit", "all")
-
 			repo, service, client, err := resolveQualityRepoServiceAndClient(repositorySelector, d)
 			if err != nil {
 				return err
@@ -589,12 +586,6 @@ func New(deps Dependencies) *cobra.Command {
 			return nil
 		},
 	}
-	// Accepted, and inert: the preview reads every check to find the one it
-	// deletes, so there is nothing for a cap to bound (ADR-084).
-	deleteRequiredCmd.Flags().Int("limit", paging.DefaultLimit, "Deprecated: has no effect")
-	deleteRequiredCmd.Flags().Bool("all", false, "Deprecated: has no effect")
-	_ = deleteRequiredCmd.Flags().MarkHidden("limit")
-	_ = deleteRequiredCmd.Flags().MarkHidden("all")
 	requiredCmd.AddCommand(deleteRequiredCmd)
 
 	var scopedSetKey string
