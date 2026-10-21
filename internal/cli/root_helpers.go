@@ -155,6 +155,7 @@ func (options *rootOptions) applyInferredRepositoryContext(cmd *cobra.Command, a
 	// standing in, which is the hazard #472 reports.
 	repoFlag.Changed = true
 	options.repositoryInferred = true
+	options.inferredRemote = inferred.RemoteName
 
 	if asJSON {
 		return nil
