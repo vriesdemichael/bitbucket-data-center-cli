@@ -58,7 +58,7 @@ bb ai mcp serve --host https://bitbucket.example.com --project PAYMENTS
 bb ai mcp serve --host https://bitbucket.example.com --repo PAYMENTS/ledger
 ```
 
-Scoping is enforced at a single choke point over every tool call, resource read, prompt and completion, not per tool. Three behaviours are worth knowing before you configure it:
+Scoping is enforced at a single choke point over every tool call, resource read, prompt and completion, not per tool. Four behaviours are worth knowing before you configure it:
 
 - **Omitted arguments are bound, not rejected.** `list_pull_requests` with no project reaches every repository the token can see. Under a scope the arguments are filled in, so the unbounded mode becomes the bounded one and the agent never needs to know.
 - **Conflicting arguments are refused.** A call naming another project fails with an error the agent can read and correct.
@@ -77,7 +77,7 @@ bb ai mcp serve --host https://bitbucket.example.com --project PAYMENTS --audit-
 {"timestamp":"2026-08-29T09:30:00Z","event":"mcp_tool_invocation","tool":"get_pull_request","project":"PAYMENTS","repo":"ledger","status":"success","duration_ms":45,"user_identity":"alice","host":"https://bitbucket.example.com","scope":"PAYMENTS"}
 ```
 
-`status` is `success`, `error`, `denied`, or `asked`. A tool that asks adds `confirmation`: `accepted`, `declined`, `cancelled`, or `unavailable` when the client could not show the confirmation. A call the confirmation stops is also `denied`, including one whose answer the server cannot use, which records no `confirmation`. A client that sends the answer as a second call, as the 2026-07-28 revision does, leaves two records: `asked`, when the tool puts the question, having read from Bitbucket what it asks about, and the decision when the answer comes back. A question nobody answers is the `asked` record alone. An older client is asked within the one call, which is one record:
+`status` is `success`, `error`, `denied`, or `asked`. A tool that asks adds `confirmation`: `accepted`, `declined`, `cancelled`, or `unavailable` when the client could not show the confirmation. A call the confirmation stops is also `denied`, including one whose answer the server cannot use, which records no `confirmation`. A client that sends the answer as a second call, as the 2026-07-28 revision does, leaves two records: `asked`, when the tool puts the question, having read from Bitbucket what it asks about, and the decision when the answer comes back. A question nobody answers is the `asked` record alone. An older client is asked within the one call, which is one record.
 
 A view the agent put in front of the person keeps itself current while it is on screen by calling `refresh_view`, every 15 seconds while a build runs and less often the longer nothing changes, and the pull request form calls `suggest_form_values` as the person types and picks branches. Both read only, and each call is a record like any other; `--exclude refresh_view` keeps views as they were drawn. What the person does in a view, a comment, a review prepared or a pull request, is a call of the model's own tool, `add_pr_comment`, `prepare_pr_review`, `create_pull_request` or `update_pull_request`, recorded and confirmed as any call of it is.
 

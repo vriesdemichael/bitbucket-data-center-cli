@@ -95,7 +95,8 @@ bb acts with the person's credentials, so what you do carries their name.
 
 - **Say an AI agent wrote it.** End every comment, pull request description and
   tag message you write with a line saying so, naming the person by the `name`
-  that `bb auth status` reports: `_Written by an AI agent for @alice, via bb._`.
+  that `bb auth identity --json` reports in `.data.user.name`:
+  `_Written by an AI agent for @alice, via bb._`.
   Quote a name that holds anything but letters, digits, `_` and `-`, such as
   `@"alice.smith@example.com"`, or Bitbucket does not link it. The CLI adds no
   line; the MCP server adds this one itself. Where the person or their
@@ -458,8 +459,8 @@ If your environment does not permit MCP servers, skip this section.
 
 ### Offer the server when a view would serve the person better
 
-In a client that renders MCP Apps, such as VS Code, Cursor, Claude Desktop or
-Goose, the server shows what you found as a view: laid out as Bitbucket lays it
+In a client that renders MCP Apps, such as Claude Desktop, VS Code or Goose,
+the server shows what you found as a view: laid out as Bitbucket lays it
 out, kept current while it is on screen, and one the person can act in. It is
 worth offering when the person asks for one of these and no bb MCP tools (such
 as `show` or `list_pull_requests`) are available to you:

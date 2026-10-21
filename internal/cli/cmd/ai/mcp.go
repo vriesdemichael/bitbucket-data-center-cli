@@ -85,12 +85,11 @@ auto mode. What holds whatever it decides is Bitbucket's: its merge checks, the
 version a merge or an update names, and the token's permissions.
 --elicitation-opt-in, or mcp_elicitation_opt_in in your configuration file, makes
 the tools that decide whether or when a pull request merges also ask you in the
-client before each call: merging, enabling or disabling auto-merge, submitting
-a review, reporting a build status, creating a tag, and changing a pull
-request's draft flag. A client that cannot ask is then refused those tools with
-error -32021. It is a convenience in a client that shows the question, not a
-control: a client can answer it without you. bb ai mcp tools lists which tools
-ask.
+client before each call: merging, enabling or disabling auto-merge, reporting
+a build status, creating a tag, and changing a pull request's draft flag. A
+client that cannot ask is then refused those tools with error -32021. It is a
+convenience in a client that shows the question, not a control: a client can
+answer it without you. bb ai mcp tools lists which tools ask.
 
 The server offers only the tools that read unless --allow-writes, or
 mcp_allow_writes: true in your configuration file, lets it make changes in
@@ -309,12 +308,13 @@ func newMCPToolsCommand(deps Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tools",
 		Short: "List MCP tools with what they change and whether they ask",
-		Example: `  # Every tool, with whether it changes anything and whether it asks first
+		Example: `  # The tools a server exposes by default: those that only read
   bb ai mcp tools
 
-  # Every tool, as a server started with --allow-writes exposes them
+  # Every tool, as a server started with --allow-writes exposes them, with
+  # whether it changes anything and whether it asks first
   bb ai mcp tools --allow-writes`,
-		Long: `Print every MCP tool the serve command exposes.
+		Long: `Print the MCP tools the serve command exposes.
 
 Use this output to build --tools and --exclude allowlists and denylists.
 

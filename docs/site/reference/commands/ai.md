@@ -48,7 +48,7 @@ Configure the client to run bb ai mcp serve, with a token of the server's own in
 
 Every MCP client has that block: Claude Code and Claude Desktop (.mcp.json, claude\_desktop\_config.json), VS Code, Codex (\[mcp\_servers.bb.env\] in config.toml, or codex mcp add --env) and Antigravity (mcp\_config.json). The ${VAR} form keeps the agent on a PAT of its own, which can be read-only while yours can write, and writes neither into the file. No flag takes a token: a flag's value is readable in the process list for as long as the server runs.
 
-Your MCP client decides whether a call runs, through its own prompts, rules or auto mode. What holds whatever it decides is Bitbucket's: its merge checks, the version a merge or an update names, and the token's permissions. --elicitation-opt-in, or mcp\_elicitation\_opt\_in in your configuration file, makes the tools that decide whether or when a pull request merges also ask you in the client before each call: merging, enabling or disabling auto-merge, submitting a review, reporting a build status, creating a tag, and changing a pull request's draft flag. A client that cannot ask is then refused those tools with error -32021. It is a convenience in a client that shows the question, not a control: a client can answer it without you. bb ai mcp tools lists which tools ask.
+Your MCP client decides whether a call runs, through its own prompts, rules or auto mode. What holds whatever it decides is Bitbucket's: its merge checks, the version a merge or an update names, and the token's permissions. --elicitation-opt-in, or mcp\_elicitation\_opt\_in in your configuration file, makes the tools that decide whether or when a pull request merges also ask you in the client before each call: merging, enabling or disabling auto-merge, reporting a build status, creating a tag, and changing a pull request's draft flag. A client that cannot ask is then refused those tools with error -32021. It is a convenience in a client that shows the question, not a control: a client can answer it without you. bb ai mcp tools lists which tools ask.
 
 The server offers only the tools that read unless --allow-writes, or mcp\_allow\_writes: true in your configuration file, lets it make changes in Bitbucket: you decide once, when you configure it, whether this server may write. Administrative policy can keep it read-only whatever those say. --tools exposes only the tools you name, and --exclude leaves tools out; neither brings back a tool that a read-only server or a scope withholds. refresh\_view and suggest\_form\_values, which only the views of show call, go with show.
 
@@ -117,7 +117,7 @@ List MCP tools with what they change and whether they ask
 bb ai mcp tools [flags]
 ```
 
-Print every MCP tool the serve command exposes.
+Print the MCP tools the serve command exposes.
 
 Use this output to build --tools and --exclude allowlists and denylists.
 
@@ -132,10 +132,11 @@ never                the tool runs when called
 On a server that asks, a client that cannot show a confirmation gets error -32021 for a call that asks. It lists what bb ai mcp serve exposes with the same flags: the tools that read, and with --allow-writes every tool.
 
 ```bash
-# Every tool, with whether it changes anything and whether it asks first
+# The tools a server exposes by default: those that only read
 bb ai mcp tools
 
-# Every tool, as a server started with --allow-writes exposes them
+# Every tool, as a server started with --allow-writes exposes them, with
+# whether it changes anything and whether it asks first
 bb ai mcp tools --allow-writes
 ```
 

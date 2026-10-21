@@ -34,7 +34,10 @@ without reading the message:
 | `4` | `not_found` | Check the project, repository or id |
 | `5` | `conflict` | Read the state again, then decide |
 | `10` | `transient` | Retry |
+| `11` | `not_implemented` | Stop: it is not implemented |
+| `12` | `cancelled` | It was interrupted: do not retry it automatically |
 | `13` | `unknown_outcome` | Do not retry: read the state first, since the change may have been made |
+| `14` | `unsupported` | This Bitbucket release cannot do it; a newer one can |
 | `1` | `permanent`, `internal` | Stop |
 
 `unknown_outcome` is the one to handle on purpose. The request was sent, and
