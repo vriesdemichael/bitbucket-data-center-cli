@@ -248,6 +248,9 @@ pull request when it has one; or its URL, which names the repository too, so
 		Example: `  # A pull request, with what is still outstanding on it
   bb pr get 42 --repo PROJ/repo
 
+  # Inside a checkout: the open pull request of the checked-out branch
+  bb pr view
+
   # Without counting the unresolved threads, which is quicker
   bb pr get 42 --repo PROJ/repo --no-review-summary`,
 		Long: "Get pull request details. The output carries a review summary describing unresolved comment " +
@@ -3213,6 +3216,10 @@ state is in the output.`,
 	defaultReviewersCmd.Flags().StringVar(&defaultReviewersTargetRef, "target-ref", "", "The ID of the target ref (e.g. refs/heads/master)")
 
 	prCmd.AddCommand(defaultReviewersCmd)
+
+	for _, path := range commandsReadingTheCurrentPullRequest {
+		takeTheCurrentPullRequest(prCmd, path, deps, &repository)
+	}
 
 	return prCmd
 }

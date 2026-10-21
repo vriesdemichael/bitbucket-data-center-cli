@@ -104,7 +104,7 @@ Pull request activity commands. This is an explicit exception to the stable vers
 List raw pull request activity items
 
 ```text
-bb pr activity list <pr-id> [flags]
+bb pr activity list [pr-id] [flags]
 ```
 
 List raw pull request activity items. This output is an explicit exception to the stable versioned API and is intended only for AI ingestion and debugging.
@@ -274,7 +274,7 @@ Also takes the [global flags](global-flags.md).
 Get auto-merge configuration for a pull request
 
 ```text
-bb pr auto-merge get <pr-id>
+bb pr auto-merge get [pr-id]
 ```
 
 ```bash
@@ -318,7 +318,7 @@ Show the builds of a pull request
 Show build statuses for a pull request's source commit (also available as bb pr checks)
 
 ```text
-bb pr build status <pr-id> [flags]
+bb pr build status [pr-id] [flags]
 ```
 
 Without --json, the exit status reports the builds, as gh pr checks does: 1 when one failed, 8 when none failed and one is still in progress or has no result, and 0 otherwise, a cancelled build included. It counts every build, not only the --limit shown. With --json the exit status is 0 and each build's state is in the output.
@@ -425,7 +425,7 @@ Also takes the [global flags](global-flags.md).
 Show build statuses for a pull request's source commit (alias for bb pr build status)
 
 ```text
-bb pr checks <pr-id> [flags]
+bb pr checks [pr-id] [flags]
 ```
 
 Without --json, the exit status reports the builds, as gh pr checks does: 1 when one failed, 8 when none failed and one is still in progress or has no result, and 0 otherwise, a cancelled build included. It counts every build, not only the --limit shown. With --json the exit status is 0 and each build's state is in the output.
@@ -728,7 +728,7 @@ Also takes the [global flags](global-flags.md).
 List comment threads for a pull request, unresolved first
 
 ```text
-bb pr comment list <pr-id> [flags]
+bb pr comment list [pr-id] [flags]
 ```
 
 List pull request comment threads. Bitbucket models a task as a blocker comment, so this returns reviewer comments and tasks in one view, each with its resolution state, anchor and reply count.
@@ -1053,7 +1053,7 @@ Also takes the [global flags](global-flags.md).
 List the commits in a pull request
 
 ```text
-bb pr commits <pr-id> [flags]
+bb pr commits [pr-id] [flags]
 ```
 
 ```bash
@@ -1404,7 +1404,7 @@ Also takes the [global flags](global-flags.md).
 Diff a pull request (alias for bb diff pr)
 
 ```text
-bb pr diff <pr-id> [flags]
+bb pr diff [pr-id] [flags]
 ```
 
 Diff a pull request.
@@ -1460,7 +1460,7 @@ List the files changed in a pull request
 Aliases: `bb pr changes`
 
 ```text
-bb pr files <pr-id> [flags]
+bb pr files [pr-id] [flags]
 ```
 
 ```bash
@@ -1509,7 +1509,7 @@ Get pull request details, including outstanding review feedback
 Aliases: `bb pr view`
 
 ```text
-bb pr get <pr-id> [flags]
+bb pr get [pr-id] [flags]
 ```
 
 Get pull request details. The output carries a review summary describing unresolved comment threads, open tasks and reviewers who requested changes, so outstanding feedback is visible without a separate lookup.
@@ -1519,6 +1519,9 @@ The unresolved thread counts come from the activity timeline, which is paged thr
 ```bash
 # A pull request, with what is still outstanding on it
 bb pr get 42 --repo PROJ/repo
+
+# Inside a checkout: the open pull request of the checked-out branch
+bb pr view
 
 # Without counting the unresolved threads, which is quicker
 bb pr get 42 --repo PROJ/repo --no-review-summary
@@ -1617,7 +1620,7 @@ Also takes the [global flags](global-flags.md).
 List Jira issues associated with a pull request
 
 ```text
-bb pr jira <pr-id>
+bb pr jira [pr-id]
 ```
 
 ```bash
@@ -1871,7 +1874,7 @@ Also takes the [global flags](global-flags.md).
 Show the common ancestor commit of a pull request's source and target branches
 
 ```text
-bb pr merge-base <pr-id>
+bb pr merge-base [pr-id]
 ```
 
 ```bash
@@ -2351,7 +2354,7 @@ Also takes the [global flags](global-flags.md).
 Retrieve current draft review details
 
 ```text
-bb pr review get <pr-id>
+bb pr review get [pr-id]
 ```
 
 ```bash
