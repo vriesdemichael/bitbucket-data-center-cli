@@ -219,11 +219,15 @@ type StoredSecret struct {
 }
 
 type LoginInput struct {
-	Host       string
-	Aliases    []string
-	Username   string
-	Password   string
-	Token      string
+	Host     string
+	Aliases  []string
+	Username string
+	Password string
+	Token    string
+	// TokenOwner is the login name Bitbucket takes Token with over Basic
+	// auth, stored as the profile's username for git's credential helper. It
+	// is empty for a token whose owner is not a person (#801).
+	TokenOwner string
 	ClientCert string
 	ClientKey  string
 	SetDefault bool
@@ -739,6 +743,7 @@ func SaveLogin(input LoginInput) (LoginResult, error) {
 
 	if hasToken {
 		profile.AuthMode = "token"
+		profile.Username = strings.TrimSpace(input.TokenOwner)
 		result.AuthMode = "token"
 	} else {
 		profile.AuthMode = "basic"
