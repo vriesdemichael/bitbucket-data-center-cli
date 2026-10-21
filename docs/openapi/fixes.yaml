@@ -1579,3 +1579,32 @@ fixes:
         - go test ./tools/openapi-sanitize -run TestOmitUnsetNullablePropertiesKeepsUnsetFieldsOutOfTheRequest
         - task models:verify
         - task client:verify
+
+  - id: OPENAPI-037
+    area: pull-request-review-anchor-path
+    source: server-contradicts-published-spec
+    status: active
+    status_evidence: >
+      Observed on 10.5.1 by reading back a draft review that held an inline comment, with the
+      generated client's decoding in the path.
+    description: Accept string anchor paths in a draft review, which the spec models as an object.
+    reference:
+      type: endpoint
+      value: /api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/review
+      upstream_issue: >
+        The review endpoint serialises an inline draft's anchor.path as a plain string, as the
+        activity timeline does (OPENAPI-007), while RestComment.Anchor.Path is an object. One inline
+        draft made the generated client refuse the whole review, so bb pr review get and complete
+        failed on it.
+    change:
+      files:
+        - internal/services/pullrequestactivity/review.go
+        - internal/services/pullrequestactivity/review_test.go
+        - tests/integration/live/mcp_live_test.go
+      detail: >
+        The review is read with the raw client, and each thread's string anchor paths are
+        rewritten into the documented object shape before it is decoded, replies included.
+    verification:
+      commands:
+        - go test ./internal/services/pullrequestactivity -run TestDecodeReviewPageAcceptsStringAnchorPaths -count=1
+        - go test -tags=live ./tests/integration/live -run 'TestLiveMCPAddPRCommentRoutesInlineAndReply|TestLiveMCPReviewWaitsForThePersonToPublish' -count=1

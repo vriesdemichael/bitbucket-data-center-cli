@@ -544,13 +544,13 @@ func TestAddCommentValidation(t *testing.T) {
 
 	repo := RepositoryRef{ProjectKey: "TEST", Slug: "demo"}
 
-	if _, err := service.AddComment(context.Background(), RepositoryRef{}, "42", "text", 0); err == nil {
+	if _, err := service.AddComment(context.Background(), RepositoryRef{}, "42", "text", 0, false); err == nil {
 		t.Fatal("expected repository validation error")
 	}
-	if _, err := service.AddComment(context.Background(), repo, "nope", "text", 0); err == nil {
+	if _, err := service.AddComment(context.Background(), repo, "nope", "text", 0, false); err == nil {
 		t.Fatal("expected pull request id validation error")
 	}
-	if _, err := service.AddComment(context.Background(), repo, "42", "   ", 0); err == nil {
+	if _, err := service.AddComment(context.Background(), repo, "42", "   ", 0, false); err == nil {
 		t.Fatal("expected empty text validation error")
 	}
 }
@@ -579,7 +579,7 @@ func TestAddInlineCommentValidation(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, err := service.AddInlineComment(context.Background(), testCase.repo, testCase.prID, testCase.text, testCase.anchor)
+			_, err := service.AddInlineComment(context.Background(), testCase.repo, testCase.prID, testCase.text, testCase.anchor, false)
 			if err == nil {
 				t.Fatal("expected a validation error")
 			}

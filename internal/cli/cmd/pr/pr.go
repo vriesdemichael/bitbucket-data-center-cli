@@ -1731,17 +1731,11 @@ changes as readily as an approval, which its name does not suggest.`,
 			}
 			repo := target.RepositoryRef()
 
-			response, err := client.GetReviewWithResponse(cmd.Context(), repo.ProjectKey, repo.Slug, target.PullRequestID, nil)
+			comments, err := pullrequestactivityservice.NewService(client).Review(cmd.Context(),
+				pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, target.PullRequestID,
+				pullrequestactivityservice.ListOptions{MaxResults: pullrequestactivityservice.AllResults})
 			if err != nil {
 				return err
-			}
-			if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-				return err
-			}
-
-			var comments []openapigenerated.RestComment
-			if response.ApplicationjsonCharsetUTF8200 != nil && response.ApplicationjsonCharsetUTF8200.Values != nil {
-				comments = *response.ApplicationjsonCharsetUTF8200.Values
 			}
 
 			// Flattened like every other comment listing: a draft reply to a

@@ -181,17 +181,14 @@ func TestADiffShowsOneFileAtATimeFromItsTree(t *testing.T) {
 }
 
 // A selected line is commented on through add_pr_comment, anchored to the
-// last line selected on its side, and the view shows the comment under it.
+// last line selected on its side, and the view says under the line that the
+// comment waits in the person's review, which nothing it reads again shows.
 func TestASelectedLineIsCommentedOn(t *testing.T) {
-	now := time.Now().UnixMilli()
-	added := viewThread{ID: 9, Author: "Alice Smith", CreatedDate: now, Text: "Say which rounding.", URL: threadURL(9), Place: "new:10",
-		Anchor: &pullrequestactivityservice.Anchor{Path: "internal/ledger/ledger.go", Line: 10, LineType: "ADDED"}}
-	after := commentedDiff(time.Now(), "two", commentedThreads(added))
 	ctx := browser(t, []viewhost.Frame{
 		{Title: "diff fullscreen", Mode: "fullscreen", Fullscreen: true, Result: fixtureResult(t, commentedDiff(time.Now(), "one", commentedThreads())),
 			ToolResults: map[string][]json.RawMessage{
 				"add_pr_comment": {toolAnswer(t, `{"comment":{"id":9}}`, false)},
-				"refresh_view":   {refreshAnswer(t, &after, "changed")},
+				"refresh_view":   {refreshAnswer(t, nil, "unchanged")},
 			}},
 	})
 	openTreeFile(t, ctx, 0, "ledger.go", 0)
@@ -208,7 +205,7 @@ func TestASelectedLineIsCommentedOn(t *testing.T) {
 	waitInFrame(t, ctx, 0, `d.activeElement && (d.activeElement.dataset.draft || "").startsWith("line|internal/ledger/ledger.go|new:10")`, "the box to comment on line 10 did not open with the caret in it")
 	typeInto(t, ctx, 0, `[data-draft="line|internal/ledger/ledger.go|new:10"]`, "Say which rounding.")
 	inFrame(t, ctx, 0, `const b = d.querySelector("tr.diff-draft .send-button"); b.click(); return true;`, &clicked)
-	waitInFrame(t, ctx, 0, `!d.querySelector("tr.diff-draft") && [...d.querySelectorAll("tr.diff-thread")].some((r) => r.innerText.includes("Say which rounding."))`, "the comment is not shown under its line once sent")
+	waitInFrame(t, ctx, 0, `!d.querySelector("tr.diff-draft textarea") && d.querySelector("tr.diff-draft .added-to-review")`, "a sent comment does not say under its line that it waits in the review")
 
 	calls := toolCalls(t, ctx, 0, "add_pr_comment")
 	if len(calls) != 1 {
@@ -218,11 +215,6 @@ func TestASelectedLineIsCommentedOn(t *testing.T) {
 		if calls[0][key] != want {
 			t.Errorf("the comment sent %s = %v, want %v (all: %v)", key, calls[0][key], want, calls[0])
 		}
-	}
-	var offered bool
-	inFrame(t, ctx, 0, `return Boolean(d.querySelector(".refresh-notice"));`, &offered)
-	if offered {
-		t.Error("a diff whose lines did not change offers itself anew instead of showing the comment in place")
 	}
 }
 
@@ -297,7 +289,9 @@ func TestACommentOnALineIsNumberedOnItsSide(t *testing.T) {
 		}
 		typeInto(t, ctx, 0, `tr.diff-draft textarea`, text)
 		inFrame(t, ctx, 0, `d.querySelector("tr.diff-draft .send-button").click(); return true;`, &clicked)
-		waitInFrame(t, ctx, 0, `!d.querySelector("tr.diff-draft")`, "the comment box did not close once sent")
+		waitInFrame(t, ctx, 0, `d.querySelector("tr.diff-draft .added-to-review")`, "a sent comment does not say it waits in the review")
+		inFrame(t, ctx, 0, `[...d.querySelectorAll("tr.diff-draft .added-to-review button")].find((b) => b.textContent === "Done").click(); return true;`, &clicked)
+		waitInFrame(t, ctx, 0, `!d.querySelector("tr.diff-draft")`, "Done does not close the note")
 	}
 
 	// The removed line 9, and the closing brace: line 10 before, 11 now.

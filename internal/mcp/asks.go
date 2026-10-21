@@ -121,33 +121,6 @@ func askDisableAutoMerge() ask[DisableAutoMergeInput] {
 	}
 }
 
-func askSubmitPRReview() ask[SubmitPRReviewInput] {
-	return ask[SubmitPRReviewInput]{
-		confirm: func(_ context.Context, _ Clients, in SubmitPRReviewInput) (confirmation, error) {
-			pr, repo := prNumber(in.PRID), repoName(in.Project, in.Repo)
-			switch in.Action {
-			case "approve":
-				return confirmation{
-					Message: fmt.Sprintf("Approve pull request %s in %s? An approval counts toward the reviews it needs before it can merge.", pr, repo),
-					Label:   fmt.Sprintf("Approve %s", pr),
-				}, nil
-			case "needs_work":
-				return confirmation{
-					Message: fmt.Sprintf("Mark pull request %s in %s as needing work? That holds its merge back until you clear it.", pr, repo),
-					Label:   fmt.Sprintf("Mark %s as needing work", pr),
-				}, nil
-			case "unapprove":
-				return confirmation{
-					Message: fmt.Sprintf("Withdraw your approval of pull request %s in %s? It may then need another review before it can merge.", pr, repo),
-					Label:   fmt.Sprintf("Withdraw approval of %s", pr),
-				}, nil
-			default:
-				return confirmation{}, fmt.Errorf("unknown action %q", in.Action)
-			}
-		},
-	}
-}
-
 func askSetBuildStatus() ask[SetBuildStatusInput] {
 	return ask[SetBuildStatusInput]{
 		confirm: func(_ context.Context, _ Clients, in SetBuildStatusInput) (confirmation, error) {

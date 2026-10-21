@@ -698,6 +698,7 @@ function lineCommentForm(file, line, pr, view) {
     placeholder: "Comment on line " + number + " of " + filePath(file),
     submitLabel: "Comment",
     busyLabel: "Commenting…",
+    reviewURL: pr.url,
     send: (text) => callForPerson(view, "add_pr_comment", Object.assign(pullRequestArgs(pr), { text, path: filePath(file), line: number, line_type: lineType })),
   });
 }

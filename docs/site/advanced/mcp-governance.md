@@ -14,7 +14,7 @@ On a server that may write, your MCP client decides whether a call runs, through
 
 `--elicitation-opt-in`, or `mcp_elicitation_opt_in: true` in your own configuration file, makes the tools that decide whether code merges also ask you in the client before each call:
 
-- **Ask before every call**: `merge_pull_request` and `enable_auto_merge`, which merge now or later; `disable_auto_merge`, which changes when a pull request merges; `submit_pr_review` and `set_build_status`, which feed the checks that decide whether a merge is allowed; and `create_tag`, which release pipelines act on. `update_pull_request` asks when a call sets the draft flag.
+- **Ask before every call**: `merge_pull_request` and `enable_auto_merge`, which merge now or later; `disable_auto_merge`, which changes when a pull request merges; `set_build_status`, which feeds the checks that decide whether a merge is allowed; and `create_tag`, which release pipelines act on. `update_pull_request` asks when a call sets the draft flag.
 - **Run when called**: every read tool, and the writes that decide nothing about a merge: `create_pull_request`, `add_pr_comment`, and `update_pull_request` for a title or a description.
 
 The question is an MCP elicitation: the client shows what the call will do, and the tool acts only when it is accepted. A client that cannot show one gets error -32021 for those tools. It is a convenience in a client that shows it, not a control: nothing tells `bb` that a person answered, and some clients answer for themselves.
@@ -27,6 +27,9 @@ The [MCP tool reference](../reference/mcp-tools.md) lists every tool with what i
 ```bash
 bb ai mcp tools
 ```
+
+## Reviews Stay Yours
+No tool approves a pull request or requests changes on it: an approval carries no text, so one made with your token would look like yours to every other reviewer and to the merge checks that count approvals ([ADR-104](../adr/104-what-passes-for-the-persons-own-is-marked-as-the-agents-or-left-to-them.md)). A comment the agent adds is pending, in your review, which only you see. `prepare_pr_review` tells the agent where the review waits, how many comments it holds and the status it suggests; you publish it in Bitbucket with **Finish review**, and approve or request changes there.
 
 ## Dedicated Read-Only Token Scoping
 Never run IDE MCP servers under personal developer credentials. Generate a dedicated read-only PAT and bind the MCP server to it:
@@ -72,7 +75,7 @@ bb ai mcp serve --host https://bitbucket.example.com --project PAYMENTS --audit-
 
 `status` is `success`, `error`, `denied`, or `asked`. A tool that asks adds `confirmation`: `accepted`, `declined`, `cancelled`, or `unavailable` when the client could not show the confirmation. A call the confirmation stops is also `denied`, including one whose answer the server cannot use, which records no `confirmation`. A client that sends the answer as a second call, as the 2026-07-28 revision does, leaves two records: `asked`, when the tool puts the question, having read from Bitbucket what it asks about, and the decision when the answer comes back. A question nobody answers is the `asked` record alone. An older client is asked within the one call, which is one record:
 
-A view the agent put in front of the person keeps itself current while it is on screen by calling `refresh_view`, every 15 seconds while a build runs and less often the longer nothing changes, and the pull request form calls `suggest_form_values` as the person types and picks branches. Both read only, and each call is a record like any other; `--exclude refresh_view` keeps views as they were drawn. What the person does in a view, a comment, a review or a pull request, is a call of the model's own tool, `add_pr_comment`, `submit_pr_review`, `create_pull_request` or `update_pull_request`, recorded and confirmed as any call of it is.
+A view the agent put in front of the person keeps itself current while it is on screen by calling `refresh_view`, every 15 seconds while a build runs and less often the longer nothing changes, and the pull request form calls `suggest_form_values` as the person types and picks branches. Both read only, and each call is a record like any other; `--exclude refresh_view` keeps views as they were drawn. What the person does in a view, a comment, a review prepared or a pull request, is a call of the model's own tool, `add_pr_comment`, `prepare_pr_review`, `create_pull_request` or `update_pull_request`, recorded and confirmed as any call of it is.
 
 Resource reads, the resource list and prompts are recorded too, as `mcp_resource_read`, `mcp_resource_list` and `mcp_prompt_get`, with `resource` or `prompt` in place of `tool`. Completions, which a client sends as the person types, are not, and neither are the lists of tools, resource templates and prompts, which read nothing from Bitbucket:
 
@@ -132,7 +135,7 @@ client to this server ([ADR-101](../adr/101-mcp-server-adopts-mcp-apps.md)):
 
 - **Drawn from a result.** The client reads the one page every view renders in, `ui://bb/view`, from bb as an MCP resource, and draws it in a sandboxed frame. The page holds no Bitbucket data. What a view shows arrives inside the result of the `show` call that asked for it, which bb read from Bitbucket with its own token, CA bundle, client certificate and proxy, avatars included.
 - **No network.** The page declares no domains, so the client gives its frame no network at all. It cannot reach Bitbucket, a CDN or anything else, and it never holds a token.
-- **Clicks are tool calls.** **Approve**, **Request changes**, **Reply**, **Comment** and **Create** call the model's own tools, `submit_pr_review`, `add_pr_comment`, `create_pull_request` and `update_pull_request`, through the client, as the model's calls go. The token's permissions, the scope, the audit record and the confirmation of a tool that asks apply to them as to the model. Keeping a view current calls `refresh_view`, and the form's suggestions call `suggest_form_values`: both read only, and offered to views and not to the model.
+- **Clicks are tool calls.** **Approve**, **Request changes**, **Reply**, **Comment** and **Create** call the model's own tools, `prepare_pr_review`, `add_pr_comment`, `create_pull_request` and `update_pull_request`, through the client, as the model's calls go. A comment goes into the person's review, and Approve and Request changes link to that review in Bitbucket, where the person publishes it. The token's permissions, the scope, the audit record and the confirmation of a tool that asks apply to them as to the model. Keeping a view current calls `refresh_view`, and the form's suggestions call `suggest_form_values`: both read only, and offered to views and not to the model.
 - **Links leave through the client.** A link opens in the person's browser, where Bitbucket's own login and permissions apply.
 
 ```mermaid
@@ -151,13 +154,12 @@ sequenceDiagram
     Client->>View: draws ui://bb/view from that result
     Note over Person,Bitbucket: The person clicks Approve
     Person->>View: click
-    View->>Client: tools/call submit_pr_review
-    Client->>bb: tools/call submit_pr_review
-    bb->>Person: asks to confirm, through the client
-    bb->>Bitbucket: POST the review, with bb's token
+    View->>Client: tools/call prepare_pr_review
+    Client->>bb: tools/call prepare_pr_review
+    bb->>Bitbucket: GET the person's review, with bb's token
     bb-->>View: result, through the client
-    View->>Client: tools/call refresh_view
-    Client->>bb: tools/call refresh_view
+    View->>Person: where the review waits, and a link to it
+    Note over Person,Bitbucket: The person publishes it in Bitbucket, in their browser
 ```
 
 There is no other channel: the view reaches nothing the client does not pass on, and nothing reaches Bitbucket but bb. `--exclude show` turns views off, with the tools only views call. A server that may not write keeps the views that read, without the buttons and the form whose tools write.

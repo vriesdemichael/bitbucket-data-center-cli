@@ -11,6 +11,7 @@ import (
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
+	pullrequestactivityservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequestactivity"
 )
 
 // noSuchPullRequestReviewException is Bitbucket's answer to completing a review
@@ -36,22 +37,14 @@ func isNoDraftReview(status int, body []byte) bool {
 // pending reply comes back as the published thread it belongs to, so one thread
 // is enough to know, and one is all this asks for.
 func hasDraftReview(ctx context.Context, client *openapigenerated.ClientWithResponses, target prsel.Target) (bool, error) {
-	limit := float32(1)
-	response, err := client.GetReviewWithResponse(ctx, target.ProjectKey, target.RepoSlug, target.PullRequestID,
-		&openapigenerated.GetReviewParams{Limit: &limit})
+	threads, err := pullrequestactivityservice.NewService(client).Review(ctx,
+		pullrequestactivityservice.RepositoryRef{ProjectKey: target.ProjectKey, Slug: target.RepoSlug}, target.PullRequestID,
+		pullrequestactivityservice.ListOptions{MaxResults: 1})
 	if err != nil {
 		return false, err
 	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return false, err
-	}
-	if response.ApplicationjsonCharsetUTF8200 == nil {
-		return false, openapi.MissingPayload(response.StatusCode(), response.Body, "reading your draft review")
-	}
 
-	values := response.ApplicationjsonCharsetUTF8200.Values
-
-	return values != nil && len(*values) > 0, nil
+	return len(threads) > 0, nil
 }
 
 // noDraftReviewError is the failure of completing a review that was never

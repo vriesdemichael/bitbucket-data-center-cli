@@ -250,6 +250,7 @@ function replyAction(comment, thread, pr, view) {
     placeholder: "Reply to " + (comment.author || "this comment"),
     submitLabel: "Reply",
     busyLabel: "Replying…",
+    reviewURL: pr.url,
     send: (text) => callForPerson(view, "add_pr_comment", Object.assign(pullRequestArgs(pr), { text, parent_id: comment.id })),
   });
 }
