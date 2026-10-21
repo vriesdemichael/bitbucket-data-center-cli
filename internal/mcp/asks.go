@@ -143,6 +143,7 @@ func askSetBuildStatus() ask[SetBuildStatusInput] {
 
 func askCreateTag() ask[CreateTagInput] {
 	return ask[CreateTagInput]{
+		refuse: refuseTagMessage,
 		confirm: func(_ context.Context, _ Clients, in CreateTagInput) (confirmation, error) {
 			return confirmation{
 				Message: fmt.Sprintf("Create tag %q at %s in %s? Release pipelines often act on a new tag, and this server cannot delete one.",

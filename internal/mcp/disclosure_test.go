@@ -104,4 +104,18 @@ func TestWithoutTheLineNothingIsPublishedUnderThePersonsName(t *testing.T) {
 	if text := resultText(result); !result.IsError || !strings.Contains(text, "leave message out") {
 		t.Errorf("a tag message on a server that adds no line was not refused before any request: %q", text)
 	}
+
+	// A server that asks turns the message down before asking: the person
+	// would otherwise approve a call that then fails.
+	opts.ElicitationOptIn = true
+	asking, answers := connectAsking(t, opts, "", accept)
+	result, err = asking.CallTool(context.Background(), &mcp.CallToolParams{Name: "create_tag", Arguments: map[string]any{
+		"project": "PAY", "repo": "ledger", "name": "v1.0.0", "start_point": "main", "message": "First release.",
+	}})
+	if err != nil {
+		t.Fatalf("create_tag: %v", err)
+	}
+	if text := resultText(result); !result.IsError || !strings.Contains(text, "leave message out") || len(answers.questions()) != 0 {
+		t.Errorf("a tag message on a server that asks and adds no line was asked about %d times, then answered %q", len(answers.questions()), text)
+	}
 }
