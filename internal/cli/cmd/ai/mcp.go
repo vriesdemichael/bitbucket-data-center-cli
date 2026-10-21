@@ -34,7 +34,6 @@ func newMCPServeCommand(deps Dependencies) *cobra.Command {
 	var excludeFlag string
 	var readOnly bool
 	var allowWrites bool
-	var yolo bool
 	var projectScope string
 	var repoScope string
 	var auditFile string
@@ -120,9 +119,9 @@ covers this server only: an agent that can run shell commands can run bb
 directly. What holds either way is the token, so give this server a narrower
 PAT than your own.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// --yolo is accepted and inert. --read-only is accepted and still
-			// keeps the server read-only, which it is by default.
-			warnDeprecatedFlags(cmd, "bb ai mcp serve", "yolo", "read-only")
+			// --read-only is accepted and still keeps the server read-only,
+			// which it is by default.
+			warnDeprecatedFlags(cmd, "bb ai mcp serve", "read-only")
 
 			// Multi-instance host enforcement.
 			if strings.TrimSpace(host) == "" {
@@ -240,12 +239,10 @@ PAT than your own.`,
 	cmd.Flags().StringVar(&excludeFlag, "exclude", "", "Comma-separated denylist of tool names to suppress")
 	cmd.Flags().BoolVar(&allowWrites, "allow-writes", false, "Expose the tools that change Bitbucket too; without it the server offers only the tools that read")
 	// Deprecated (ADR-084): still accepted, so an existing client configuration
-	// keeps starting, and hidden. --yolo has nothing left to do; --read-only is
-	// the default, and still keeps a server read-only whatever --allow-writes says.
+	// keeps starting, and hidden. Read-only is the default, and --read-only still
+	// keeps a server read-only whatever --allow-writes says.
 	cmd.Flags().BoolVar(&readOnly, "read-only", false, "Deprecated: the server is read-only unless --allow-writes is passed")
-	cmd.Flags().BoolVar(&yolo, "yolo", false, "Deprecated: has no effect")
 	_ = cmd.Flags().MarkHidden("read-only")
-	_ = cmd.Flags().MarkHidden("yolo")
 	cmd.Flags().StringVar(&projectScope, "project", "", "Confine the server to this project key; calls aimed elsewhere are refused")
 	cmd.Flags().StringVar(&repoScope, "repo", "", "Confine the server to one repository, as PROJECT/slug (or a slug alongside --project)")
 	cmd.Flags().StringVar(&auditFile, "audit-file", "", "Append a JSON Lines audit record per tool call to this path, or to 'stderr'")
@@ -303,7 +300,6 @@ func newMCPToolsCommand(deps Dependencies) *cobra.Command {
 	var readOnly bool
 	var allowWrites bool
 	var aiDisclosure bool
-	var safeOnly bool
 
 	cmd := &cobra.Command{
 		Use:   "tools",
@@ -331,9 +327,7 @@ On a server that asks, a client that cannot show a confirmation gets error
 It lists what bb ai mcp serve exposes with the same flags: the tools that read,
 and with --allow-writes every tool.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Accepted, and inert: every tool is exposed without --yolo, which
-			// is the set it used to narrow the listing to.
-			warnDeprecatedFlags(cmd, "bb ai mcp tools", "safe-only", "read-only")
+			warnDeprecatedFlags(cmd, "bb ai mcp tools", "read-only")
 
 			// What bb ai mcp serve exposes with the same flags, configuration
 			// and policy.
@@ -366,10 +360,6 @@ and with --allow-writes every tool.`,
 						Description: toolDescription(spec),
 						Writes:      toolWrites(spec),
 						Asks:        string(spec.Asks),
-						// Deprecated: both describe exposure without --yolo,
-						// and every tool has it now.
-						Safe:     true,
-						Exposure: exposureSafe,
 					}
 				}
 				return deps.WriteJSON(cmd.OutOrStdout(), entries)
@@ -388,9 +378,7 @@ and with --allow-writes every tool.`,
 	cmd.Flags().BoolVar(&aiDisclosure, "ai-disclosure", true, "List the tools a server with this --ai-disclosure exposes; false leaves out the ones that publish what the agent writes under your name at once")
 	// Deprecated (ADR-084): still accepted, and hidden.
 	cmd.Flags().BoolVar(&readOnly, "read-only", false, "Deprecated: the listing is of a read-only server unless --allow-writes is passed")
-	cmd.Flags().BoolVar(&safeOnly, "safe-only", false, "Deprecated: has no effect")
 	_ = cmd.Flags().MarkHidden("read-only")
-	_ = cmd.Flags().MarkHidden("safe-only")
 
 	return cmd
 }
@@ -437,14 +425,6 @@ type nopWriteCloser struct {
 }
 
 func (nopWriteCloser) Close() error { return nil }
-
-// Exposure labels, part of the --json contract, deprecated with the field that
-// carries them. Every tool reports SAFE now; YOLO stays in the published
-// vocabulary until the field is removed.
-const (
-	exposureSafe = "SAFE"
-	exposureYolo = "YOLO"
-)
 
 // askingValues are the values of the asks field, taken from the server's own
 // vocabulary so the listing cannot publish one the server does not use.

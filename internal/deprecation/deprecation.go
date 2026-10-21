@@ -37,28 +37,13 @@ type Entry struct {
 
 // Entries is the registry.
 var Entries = []Entry{
-	// bb ai mcp serve withheld the tools that change whether a pull request
-	// merges unless --yolo was passed. Every tool is exposed now, and those
-	// tools ask the person to confirm each call through the MCP client (#620),
-	// so the flags that lifted the gate and the fields that reported it no
-	// longer have anything to say.
-	{
-		Name:         "bb ai mcp serve --yolo",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "nothing is withheld for it to expose",
-		Advice:       "Remove it. Pass --allow-writes to expose the tools that change Bitbucket.",
-	},
+	// bb ai mcp serve offers only the tools that read unless --allow-writes is
+	// passed, so --read-only says what the server does anyway.
 	{
 		Name:         "bb ai mcp serve --read-only",
 		DeprecatedIn: "v6.0.0",
 		Reason:       "the server offers only the tools that read unless --allow-writes is passed",
 		Advice:       "Remove it.",
-	},
-	{
-		Name:         "bb ai mcp tools --safe-only",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "it no longer narrows the list",
-		Advice:       "Remove it. bb ai mcp tools lists the tools a read-only server exposes, and --allow-writes the rest.",
 	},
 	{
 		Name:         "bb ai mcp tools --read-only",
@@ -74,18 +59,6 @@ var Entries = []Entry{
 		DeprecatedIn: "v6.0.0",
 		Reason:       "pr_id names the pull request, as it does on every pull request tool",
 		Advice:       "Send pr_id.",
-	},
-	{
-		Name:         "bb ai mcp tools --json field safe",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "every tool is exposed without --yolo, so it is always true",
-		Advice:       "Read asks for whether a tool asks first, and writes for whether it changes anything.",
-	},
-	{
-		Name:         "bb ai mcp tools --json field exposure",
-		DeprecatedIn: "v5.0.0",
-		Reason:       "every tool is exposed without --yolo, so it is always SAFE",
-		Advice:       "Read asks for whether a tool asks first, and writes for whether it changes anything.",
 	},
 
 	// Flags that mirrored a Bitbucket request parameter and changed nothing a

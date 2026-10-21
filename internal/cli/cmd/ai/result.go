@@ -9,16 +9,11 @@ import (
 // writes and asks are separate facts. Several tools write without asking,
 // opening a pull request or commenting, and create_tag asks though it only
 // adds.
-//
-// safe and exposure described exposure without --yolo. Every tool has it now,
-// so they are constant, and deprecated until the next major (ADR-084).
 type Tool struct {
 	Name        string `json:"name" jsonschema:"Tool name, as an MCP client sees it."`
 	Description string `json:"description,omitempty" jsonschema:"What the tool does."`
 	Writes      bool   `json:"writes" jsonschema:"Whether the tool changes anything in Bitbucket."`
 	Asks        string `json:"asks" jsonschema:"Whether a call asks the person to confirm it in the MCP client before it runs, on a server started with --elicitation-opt-in; without it no tool asks. always, never, or when-setting-draft for a call that sets the pull request's draft flag."`
-	Safe        bool   `json:"safe" jsonschema:"Deprecated: always true, since every tool is exposed without --yolo. Read asks and writes instead."`
-	Exposure    string `json:"exposure" jsonschema:"Deprecated: always SAFE, since every tool is exposed without --yolo. Read asks and writes instead."`
 }
 
 // SkillFile is what `bb ai skill install` and `remove` report.
@@ -36,8 +31,7 @@ type SkillFile struct {
 
 func init() {
 	result.Declare("ai mcp tools", result.List[Tool](map[string][]string{
-		"asks":     askingValues,
-		"exposure": {exposureSafe, exposureYolo},
+		"asks": askingValues,
 	}))
 	result.Declare("ai skill install", result.For[SkillFile](map[string][]string{
 		"status": {"installed"},

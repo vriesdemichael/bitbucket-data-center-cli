@@ -160,8 +160,6 @@ Also takes the [global flags](global-flags.md).
                                                  it runs, on a server started with --elicitation-opt-in; without it no
                                                  tool asks. always, never, or when-setting-draft for a call that sets
                                                  the pull request&#39;s draft flag.
-  safe          boolean                          Deprecated: always true, since every tool is exposed without --yolo.
-  exposure      SAFE|YOLO                        Deprecated: always SAFE, since every tool is exposed without --yolo.
 </code></pre>
 </details>
 

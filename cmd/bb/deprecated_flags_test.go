@@ -13,7 +13,6 @@ import (
 // deprecatedFlagRuns is, for each deprecated flag, an invocation that passes
 // it. The rest of each is what the command's own example passes.
 var deprecatedFlagRuns = map[string][]string{
-	"bb ai mcp tools --safe-only": {"ai", "mcp", "tools", "--safe-only"},
 	"bb ai mcp tools --read-only": {"ai", "mcp", "tools", "--read-only"},
 
 	"bb branch restriction create --matcher-display": {
@@ -46,7 +45,6 @@ var deprecatedFlagRuns = map[string][]string{
 // deprecatedFlagsThatAreNotRunHere serve until stopped, so the package that
 // owns them runs them to the point where they would start.
 var deprecatedFlagsThatAreNotRunHere = map[string]bool{
-	"bb ai mcp serve --yolo":      true,
 	"bb ai mcp serve --read-only": true,
 }
 

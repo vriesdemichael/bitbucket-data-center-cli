@@ -638,16 +638,6 @@ func TestLiveMCPToolsCommandListsCatalogue(t *testing.T) {
 			t.Errorf("%v should list the tools that read and nothing that writes:\n%s", args, readOnlyOutput)
 		}
 	}
-
-	// Deprecated, and still accepted until the next major (ADR-084), with no
-	// effect on the listing.
-	safeOutput, err := executeLiveCLI(t, "ai", "mcp", "tools", "--allow-writes", "--safe-only")
-	if err != nil {
-		t.Fatalf("ai mcp tools --safe-only failed: %v\noutput: %s", err, safeOutput)
-	}
-	if !strings.Contains(safeOutput, "merge_pull_request") {
-		t.Errorf("ai mcp tools --allow-writes --safe-only no longer lists every tool:\n%s", safeOutput)
-	}
 }
 
 // listedToolNames returns the tool names a session's server advertises.

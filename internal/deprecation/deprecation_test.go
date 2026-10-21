@@ -157,7 +157,6 @@ func TestWarnFlagsWarnsForEachDeprecatedFlagThatWasPassed(t *testing.T) {
 	passed := func(given ...string) func(string) bool {
 		return func(flag string) bool { return slices.Contains(given, flag) }
 	}
-	yolo, _ := Named("bb ai mcp serve --yolo")
 	readOnly, _ := Named("bb ai mcp serve --read-only")
 
 	testCases := []struct {
@@ -166,9 +165,9 @@ func TestWarnFlagsWarnsForEachDeprecatedFlagThatWasPassed(t *testing.T) {
 		flags  []string
 		want   []string
 	}{
-		{name: "none passed", passed: passed(), flags: []string{"yolo", "read-only"}},
-		{name: "one passed", passed: passed("yolo"), flags: []string{"yolo", "read-only"}, want: []string{yolo.Warning()}},
-		{name: "both passed", passed: passed("yolo", "read-only"), flags: []string{"yolo", "read-only"}, want: []string{yolo.Warning(), readOnly.Warning()}},
+		{name: "none passed", passed: passed(), flags: []string{"read-only", "host"}},
+		{name: "one passed", passed: passed("read-only"), flags: []string{"read-only", "host"}, want: []string{readOnly.Warning()}},
+		{name: "both passed, one in the registry", passed: passed("read-only", "host"), flags: []string{"read-only", "host"}, want: []string{readOnly.Warning()}},
 		{name: "passed, and not in the registry", passed: passed("host"), flags: []string{"host"}},
 	}
 
