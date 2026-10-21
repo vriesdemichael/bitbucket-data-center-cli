@@ -372,7 +372,7 @@ func TestLiveRequiredChecksAgreeWithTheMergeVeto(t *testing.T) {
 			if text := mcpResultText(result); !strings.Contains(text, "Builds: 2 failed, 1 in progress, 4 passed.") {
 				t.Errorf("the model reads %q, want the pull request's builds counted", text)
 			}
-		}, "ai", "mcp", "serve")
+		}, "ai", "mcp", "serve", "--allow-writes")
 	})
 
 	scoped(map[string]any{"key": key("exc"), "parent": key("exc"), "state": "SUCCESSFUL"})

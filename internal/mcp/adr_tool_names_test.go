@@ -24,6 +24,8 @@ var toolNamePattern = regexp.MustCompile(`\b[a-z]+(?:_[a-z]+){1,3}\b`)
 var prosePermitted = map[string]bool{
 	"mcp_audit_file":         true,
 	"mcp_elicitation_opt_in": true,
+	"mcp_allow_writes":       true,
+	"read_only":              true,
 }
 
 // TestADRDoesNotNameToolsThatDoNotExist guards the drift that made ADR-039

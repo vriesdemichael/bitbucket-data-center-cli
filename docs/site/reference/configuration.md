@@ -78,6 +78,7 @@ ignored, and `bb doctor` names it.
 | `project_key` | | read | | The project a command uses when no repository names one. |
 | `insecure_secrets` | read | | read | Tokens and passwords by host, where no keyring could hold them and the login passed `--allow-insecure-storage`. |
 | `update_base_url` | read | read | read | The release mirror `bb update` fetches from. |
+| `mcp_allow_writes` | read | | | `true` lets `bb ai mcp serve` expose the tools that change Bitbucket, as `--allow-writes` does. The `read_only` policy key outranks it. |
 | `mcp_elicitation_opt_in` | read | | | `true` makes `bb ai mcp serve` ask you in the MCP client before each call of a tool that decides a merge, as `--elicitation-opt-in` does. The system file reads it as a policy key. |
 | The [policy keys](system-policy.md#keys) | | | read | Mandates, at the top level of the file or under `policies:` or `policy:`. |
 

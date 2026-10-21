@@ -185,7 +185,9 @@ func TestEveryMCPToolOfferedIsOneTheServerCanExpose(t *testing.T) {
 		listed[spec.Tool.Name] = true
 	}
 
-	output := runCommand(t, "ai", "mcp", "tools")
+	// --allow-writes: --tools and --exclude name tools of a server that may write
+	// too, and the listing of one that may not leaves the writes out.
+	output := runCommand(t, "ai", "mcp", "tools", "--allow-writes")
 	printed := map[string]bool{}
 	for _, line := range strings.Split(output, "\n") {
 		if fields := strings.Fields(line); len(fields) > 0 {

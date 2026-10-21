@@ -472,7 +472,7 @@ func TestLiveMCPGetFileContentReadsEachKindOfFile(t *testing.T) {
 				t.Errorf("description:\n got %q\nwant %q", text, want)
 			}
 		})
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 func deref(value *int) any {

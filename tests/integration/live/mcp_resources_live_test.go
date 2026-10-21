@@ -260,7 +260,7 @@ func TestLiveMCPResourcesReadWhatTheToolsRead(t *testing.T) {
 				t.Errorf("the prompt embeds %v", embedded)
 			}
 		})
-	}, "ai", "mcp", "serve", "--project", key, "--repo", slug, "--audit-file", auditPath)
+	}, "ai", "mcp", "serve", "--allow-writes", "--project", key, "--repo", slug, "--audit-file", auditPath)
 
 	contents, err := os.ReadFile(auditPath)
 	if err != nil {
@@ -329,5 +329,5 @@ func TestLiveMCPResourcesReadWhatTheToolsRead(t *testing.T) {
 				}
 			}
 		})
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }

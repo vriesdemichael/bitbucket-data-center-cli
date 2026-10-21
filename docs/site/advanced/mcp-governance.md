@@ -2,12 +2,15 @@
 
 `bb` includes a built-in Model Context Protocol (MCP) server for integration with AI developer tools (VS Code Agent, Cursor, Claude Desktop).
 
-## Who Decides a Call, and a Read-Only Server
-Your MCP client decides whether a call runs, through its own prompts, rules or auto mode. `bb` asks nothing by default, and controls what it enforces itself ([ADR-103](../adr/103-mcp-tools-ask-the-person-only-on-a-server-that-opts-in.md)). Whatever the client decides, these hold:
+## Read-Only Unless You Allow Writes
+`bb ai mcp serve` offers only the tools that read. Whether it may change Bitbucket at all is yours to decide, once, when you configure it: `--allow-writes`, or `mcp_allow_writes: true` in your own configuration file, exposes the tools that write too. While writes are off, the server tells the model so, and that `--allow-writes` is how it gets them. Leave it out for a client you do not trust to make changes; a client that cannot be trusted with them should not make changes in Bitbucket, and you make them yourself.
+
+## Who Decides a Call
+On a server that may write, your MCP client decides whether a call runs, through its own prompts, rules or auto mode. `bb` asks nothing by default, and controls what it enforces itself ([ADR-103](../adr/103-mcp-tools-ask-the-person-only-on-a-server-that-opts-in.md)). Whatever the client decides, these hold:
 
 - **Bitbucket's merge checks.** A merge goes through only when the repository's required approvals, builds and other checks pass, and the token's permissions allow it.
 - **The version.** A merge or an update that names the pull request version it read is refused if the pull request changed since.
-- **What `bb` enforces.** `--read-only`, the scope, the audit trail and the policy keys below.
+- **What `bb` enforces.** Read-only unless you allow writes, the scope, the audit trail and the policy keys below.
 
 `--elicitation-opt-in`, or `mcp_elicitation_opt_in: true` in your own configuration file, makes the tools that decide whether code merges also ask you in the client before each call:
 
@@ -18,9 +21,7 @@ The question is an MCP elicitation: the client shows what the call will do, and 
 
 Every tool carries the four MCP annotation hints, `readOnlyHint` true only where the tool changes nothing in Bitbucket. They are hints, not a control: clients act on them differently, and some run a tool annotated read-only without asking anyone.
 
-For a client you do not trust to make changes, start the server with `--read-only`, which exposes only the tools that read. A client that cannot be trusted with them should not make changes in Bitbucket; make them yourself.
-
-An administrator can decide this for every client on a machine. `read_only: true` in system policy starts every server read-only whatever its client configuration says, `mcp_elicitation_opt_in: true` makes every server ask, and `disable_mcp_server: true` refuses to start one at all ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)).
+An administrator can decide this for every client on a machine. `read_only: true` in system policy keeps every server read-only whatever `--allow-writes` or a configuration file says, `mcp_elicitation_opt_in: true` makes every server ask, and `disable_mcp_server: true` refuses to start one at all ([ADR-100](../adr/100-administrators-can-switch-bb-off-or-make-it-read-only.md)).
 
 The [MCP tool reference](../reference/mcp-tools.md) lists every tool with what it can change and whether it asks:
 ```bash
@@ -159,7 +160,7 @@ sequenceDiagram
     Client->>bb: tools/call refresh_view
 ```
 
-There is no other channel: the view reaches nothing the client does not pass on, and nothing reaches Bitbucket but bb. `--exclude show` turns views off, with the tools only views call. `--read-only` leaves the views that read and takes away their buttons and the form, whose tools write.
+There is no other channel: the view reaches nothing the client does not pass on, and nothing reaches Bitbucket but bb. `--exclude show` turns views off, with the tools only views call. A server that may not write keeps the views that read, without the buttons and the form whose tools write.
 
 ## Recommended IDE Configuration (`.vscode/settings.json`)
 

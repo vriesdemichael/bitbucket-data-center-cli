@@ -330,6 +330,11 @@ type ServerOptions struct {
 	// all; the person makes those changes themselves. Allow cannot override it.
 	ReadOnly bool
 
+	// ReadOnlyByPolicy says that administrative policy keeps the server
+	// read-only (ADR-100), which no setting of the person lifts, so the
+	// instructions do not tell the model to ask them for --allow-writes.
+	ReadOnlyByPolicy bool
+
 	// ElicitationOptIn makes the tools that decide whether or when a pull
 	// request merges ask the person to confirm each call through the client,
 	// and refuse a client that cannot ask with -32021. Off, nothing asks and
@@ -514,9 +519,15 @@ func anyExposed(tools []string, exposed map[string]bool) bool {
 func instructions(opts ServerOptions) string {
 	var paragraphs []string
 
+	// A tool that is not there must not fail without saying why: the model
+	// learns here that the server is read-only, and from whom that changes.
 	switch {
+	case opts.ReadOnly && opts.ReadOnlyByPolicy:
+		paragraphs = append(paragraphs, "This server is read-only by administrative policy: it offers only the tools that read, "+
+			"and no setting of the person's lets it make changes in Bitbucket.")
 	case opts.ReadOnly:
-		paragraphs = append(paragraphs, "This server is read-only: it offers only the tools that read.")
+		paragraphs = append(paragraphs, "This server is read-only: it offers only the tools that read. It makes changes in Bitbucket "+
+			"only when the person starts it with --allow-writes; when they ask for a change, tell them so.")
 	case opts.ElicitationOptIn:
 		paragraphs = append(paragraphs, "Some tools ask the person to confirm a call in the client before they run, and their descriptions say so. "+
 			"If the person declines or closes the confirmation, do not call the tool again unless they ask.")

@@ -125,7 +125,7 @@ func TestLiveMCPServerStartsAndListsTools(t *testing.T) {
 				t.Errorf("tool %q declares no output schema", tool.Name)
 			}
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 // TestLiveMCPServerExposesEverySpec pins the catalogue against what a client
@@ -157,7 +157,7 @@ func TestLiveMCPServerExposesEverySpec(t *testing.T) {
 		if strings.Join(got, ",") != strings.Join(want, ",") {
 			t.Errorf("tools/list = %v\nwant %v", got, want)
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 // TestLiveMCPToolFilteringAdmitsAndExcludes covers --tools and --exclude,
@@ -183,7 +183,7 @@ func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
 			if strings.Join(got, ",") != "list_branches,list_tags" {
 				t.Errorf("tools/list = %v, want [list_branches list_tags]", got)
 			}
-		}, "ai", "mcp", "serve", "--tools", "list_branches,list_tags")
+		}, "ai", "mcp", "serve", "--allow-writes", "--tools", "list_branches,list_tags")
 	})
 
 	t.Run("tools admits a tool that asks", func(t *testing.T) {
@@ -192,25 +192,39 @@ func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
 			if len(got) != 1 || got[0] != "merge_pull_request" {
 				t.Errorf("tools/list = %v, want [merge_pull_request]", got)
 			}
-		}, "ai", "mcp", "serve", "--tools", "merge_pull_request")
+		}, "ai", "mcp", "serve", "--allow-writes", "--tools", "merge_pull_request")
 	})
 
-	t.Run("read-only exposes only the tools that read", func(t *testing.T) {
-		want := make([]string, 0)
-		for _, spec := range bbmcp.AllSpecs() {
-			if spec.ReadOnly() {
-				want = append(want, spec.Tool.Name)
-			}
+	readTools := make([]string, 0)
+	for _, spec := range bbmcp.AllSpecs() {
+		if spec.ReadOnly() {
+			readTools = append(readTools, spec.Tool.Name)
 		}
-		sort.Strings(want)
+	}
+	sort.Strings(readTools)
 
+	// Read-only by default: writes take --allow-writes (#799).
+	t.Run("a default server exposes only the tools that read", func(t *testing.T) {
 		executeLiveMCPServer(t, func(session *mcp.ClientSession) {
 			got := listedToolNames(t, session)
 			sort.Strings(got)
-			if strings.Join(got, ",") != strings.Join(want, ",") {
-				t.Errorf("tools/list = %v\nwant the read-only tools %v", got, want)
+			if strings.Join(got, ",") != strings.Join(readTools, ",") {
+				t.Errorf("tools/list = %v\nwant the read-only tools %v", got, readTools)
 			}
-		}, "ai", "mcp", "serve", "--read-only")
+			if instructions := session.InitializeResult().Instructions; !strings.Contains(instructions, "--allow-writes") {
+				t.Errorf("the instructions of a read-only server do not name --allow-writes: %q", instructions)
+			}
+		}, "ai", "mcp", "serve")
+	})
+
+	t.Run("the deprecated read-only still wins over allow-writes", func(t *testing.T) {
+		executeLiveMCPServer(t, func(session *mcp.ClientSession) {
+			got := listedToolNames(t, session)
+			sort.Strings(got)
+			if strings.Join(got, ",") != strings.Join(readTools, ",") {
+				t.Errorf("tools/list = %v\nwant the read-only tools %v", got, readTools)
+			}
+		}, "ai", "mcp", "serve", "--allow-writes", "--read-only")
 	})
 
 	t.Run("read-only is not overridden by tools", func(t *testing.T) {
@@ -219,7 +233,7 @@ func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
 			if len(got) != 1 || got[0] != "list_branches" {
 				t.Errorf("tools/list = %v, want [list_branches]", got)
 			}
-		}, "ai", "mcp", "serve", "--read-only", "--tools", "merge_pull_request,list_branches")
+		}, "ai", "mcp", "serve", "--tools", "merge_pull_request,list_branches")
 	})
 
 	t.Run("exclude suppresses a tool", func(t *testing.T) {
@@ -229,7 +243,7 @@ func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
 					t.Error("list_branches was excluded but appears in tools/list")
 				}
 			}
-		}, "ai", "mcp", "serve", "--exclude", "list_branches")
+		}, "ai", "mcp", "serve", "--allow-writes", "--exclude", "list_branches")
 	})
 
 	t.Run("exclude wins over an explicit allowlist", func(t *testing.T) {
@@ -237,7 +251,7 @@ func TestLiveMCPToolFilteringAdmitsAndExcludes(t *testing.T) {
 			if got := listedToolNames(t, session); len(got) != 0 {
 				t.Errorf("tools/list = %v, want no tools", got)
 			}
-		}, "ai", "mcp", "serve", "--tools", "list_branches", "--exclude", "list_branches")
+		}, "ai", "mcp", "serve", "--allow-writes", "--tools", "list_branches", "--exclude", "list_branches")
 	})
 }
 
@@ -590,7 +604,7 @@ func TestLiveMCPReadOnlyToolsAgreeWithCLI(t *testing.T) {
 				t.Errorf("state=unresolved returned the thread that was just resolved: %v", unresolved)
 			}
 		})
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
 
 // TestLiveMCPToolsCommandListsCatalogue covers `bb ai mcp tools`, the companion
@@ -601,32 +615,37 @@ func TestLiveMCPToolsCommandListsCatalogue(t *testing.T) {
 	harness := newLiveHarness(t)
 	configureLiveCLIEnv(t, harness, "", "")
 
-	output, err := executeLiveCLI(t, "ai", "mcp", "tools")
+	// With --allow-writes, every tool, as a server that may write exposes them.
+	output, err := executeLiveCLI(t, "ai", "mcp", "tools", "--allow-writes")
 	if err != nil {
-		t.Fatalf("ai mcp tools failed: %v\noutput: %s", err, output)
+		t.Fatalf("ai mcp tools --allow-writes failed: %v\noutput: %s", err, output)
 	}
 	for _, spec := range bbmcp.AllSpecs() {
 		if !strings.Contains(output, spec.Tool.Name) {
-			t.Errorf("ai mcp tools output omits %q", spec.Tool.Name)
+			t.Errorf("ai mcp tools --allow-writes output omits %q", spec.Tool.Name)
 		}
 	}
 
-	readOnlyOutput, err := executeLiveCLI(t, "ai", "mcp", "tools", "--read-only")
-	if err != nil {
-		t.Fatalf("ai mcp tools --read-only failed: %v\noutput: %s", err, readOnlyOutput)
-	}
-	if strings.Contains(readOnlyOutput, "merge_pull_request") || !strings.Contains(readOnlyOutput, "list_branches") {
-		t.Errorf("ai mcp tools --read-only should list the tools that read and nothing that writes:\n%s", readOnlyOutput)
+	// Without it, the tools a read-only server exposes, which is the default
+	// (#799); the deprecated --read-only lists the same.
+	for _, args := range [][]string{{"ai", "mcp", "tools"}, {"ai", "mcp", "tools", "--read-only"}} {
+		readOnlyOutput, err := executeLiveCLI(t, args...)
+		if err != nil {
+			t.Fatalf("%v failed: %v\noutput: %s", args, err, readOnlyOutput)
+		}
+		if strings.Contains(readOnlyOutput, "merge_pull_request") || !strings.Contains(readOnlyOutput, "list_branches") {
+			t.Errorf("%v should list the tools that read and nothing that writes:\n%s", args, readOnlyOutput)
+		}
 	}
 
-	// Deprecated, and still accepted until the next major (ADR-084): every tool
-	// is exposed without --yolo, which is the set it lists.
-	safeOutput, err := executeLiveCLI(t, "ai", "mcp", "tools", "--safe-only")
+	// Deprecated, and still accepted until the next major (ADR-084), with no
+	// effect on the listing.
+	safeOutput, err := executeLiveCLI(t, "ai", "mcp", "tools", "--allow-writes", "--safe-only")
 	if err != nil {
 		t.Fatalf("ai mcp tools --safe-only failed: %v\noutput: %s", err, safeOutput)
 	}
 	if !strings.Contains(safeOutput, "merge_pull_request") {
-		t.Errorf("ai mcp tools --safe-only no longer lists every tool:\n%s", safeOutput)
+		t.Errorf("ai mcp tools --allow-writes --safe-only no longer lists every tool:\n%s", safeOutput)
 	}
 }
 
@@ -832,7 +851,7 @@ func TestLiveMCPScopeBoundaryHolds(t *testing.T) {
 		if len(payload.Branches) == 0 {
 			t.Fatal("the out-of-scope repository has no branches, so refusing it later would prove nothing")
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 
 	executeLiveMCPServer(t, func(session *mcp.ClientSession) {
 		callCtx := context.Background()
@@ -905,7 +924,7 @@ func TestLiveMCPScopeBoundaryHolds(t *testing.T) {
 				}
 			}
 		})
-	}, "ai", "mcp", "serve", "--project", inScope.Key, "--repo", inScope.Repos[0].Slug)
+	}, "ai", "mcp", "serve", "--allow-writes", "--project", inScope.Key, "--repo", inScope.Repos[0].Slug)
 }
 
 // TestLiveMCPAuditTrailRecordsInvocations proves the audit file is written by a
@@ -945,7 +964,7 @@ func TestLiveMCPAuditTrailRecordsInvocations(t *testing.T) {
 			Name:      "list_tags",
 			Arguments: map[string]any{"project": "NOSUCHPROJECT", "repo": repo.Slug},
 		})
-	}, "ai", "mcp", "serve", "--project", seeded.Key, "--audit-file", auditPath)
+	}, "ai", "mcp", "serve", "--allow-writes", "--project", seeded.Key, "--audit-file", auditPath)
 
 	contents, err := os.ReadFile(auditPath)
 	if err != nil {
@@ -1038,7 +1057,7 @@ func TestLiveMCPAuditTrailRedactsWhatBitbucketEchoes(t *testing.T) {
 		if _, err := session.ReadResource(callCtx, &mcp.ReadResourceParams{URI: uri}); err == nil {
 			t.Fatalf("reading %s was meant to fail in Bitbucket, and did not", uri)
 		}
-	}, "ai", "mcp", "serve", "--project", seeded.Key, "--audit-file", auditPath)
+	}, "ai", "mcp", "serve", "--allow-writes", "--project", seeded.Key, "--audit-file", auditPath)
 
 	contents, err := os.ReadFile(auditPath)
 	if err != nil {
@@ -1255,7 +1274,7 @@ func TestLiveMCPSubmitReviewMutatesForReal(t *testing.T) {
 				t.Errorf("after unapprove: status=%q, want UNAPPROVED", status)
 			}
 		})
-	}, "ai", "mcp", "serve", "--elicitation-opt-in")
+	}, "ai", "mcp", "serve", "--allow-writes", "--elicitation-opt-in")
 
 	// One confirmation per review: approve, needs_work and unapprove each asked.
 	if asked := answers.questions(); len(asked) != 3 {
@@ -1401,5 +1420,5 @@ func TestLiveMCPAddPRCommentRoutesInlineAndReply(t *testing.T) {
 		if !sawReply {
 			t.Errorf("the reply is not inside the thread it answered:\n%s", raw)
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }

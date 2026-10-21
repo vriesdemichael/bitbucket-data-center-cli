@@ -87,7 +87,7 @@ func TestMCPToolsTextOutput(t *testing.T) {
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"mcp", "tools"})
+	cmd.SetArgs([]string{"mcp", "tools", "--allow-writes"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -262,7 +262,7 @@ func TestMCPToolsCountMatchesAllSpecs(t *testing.T) {
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)
-	cmd.SetArgs([]string{"mcp", "tools"})
+	cmd.SetArgs([]string{"mcp", "tools", "--allow-writes"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -349,7 +349,7 @@ func listToolsJSON(t *testing.T, args ...string) []listedTool {
 func TestMCPToolsSaysWhichToolsAsk(t *testing.T) {
 	t.Parallel()
 
-	tools := listToolsJSON(t)
+	tools := listToolsJSON(t, "--allow-writes")
 	if len(tools) != len(bbmcp.AllSpecs()) {
 		t.Fatalf("listed %d tools, want %d", len(tools), len(bbmcp.AllSpecs()))
 	}
@@ -366,7 +366,7 @@ func TestMCPToolsSaysWhichToolsAsk(t *testing.T) {
 		}
 	}
 
-	stdout, _ := runAI(t, "mcp", "tools")
+	stdout, _ := runAI(t, "mcp", "tools", "--allow-writes")
 	for _, line := range strings.Split(stdout, "\n") {
 		fields := strings.Fields(line)
 		if len(fields) < 3 || fields[0] == "NAME" {
@@ -378,10 +378,14 @@ func TestMCPToolsSaysWhichToolsAsk(t *testing.T) {
 	}
 }
 
-// TestMCPToolsReadOnlyListsWhatAReadOnlyServerExposes: --read-only replaces
-// --safe-only as the filter for building a narrow allowlist.
-func TestMCPToolsReadOnlyListsWhatAReadOnlyServerExposes(t *testing.T) {
-	t.Parallel()
+// TestMCPToolsListsWhatAReadOnlyServerExposesByDefault: the listing follows
+// the server, which is read-only unless --allow-writes lets it write (#799).
+// The deprecated --read-only lists the same.
+//
+// Not parallel: your own configuration file's mcp_allow_writes would change the
+// default, so the test reads none.
+func TestMCPToolsListsWhatAReadOnlyServerExposesByDefault(t *testing.T) {
+	t.Setenv("BB_DISABLE_STORED_CONFIG", "1")
 
 	want := map[string]bool{}
 	for _, spec := range bbmcp.AllSpecs() {
@@ -390,14 +394,20 @@ func TestMCPToolsReadOnlyListsWhatAReadOnlyServerExposes(t *testing.T) {
 		}
 	}
 
-	tools := listToolsJSON(t, "--read-only")
-	if len(tools) != len(want) {
-		t.Errorf("--read-only listed %d tools, want the %d read-only ones", len(tools), len(want))
-	}
-	for _, tool := range tools {
-		if !want[tool.Name] || tool.Writes || tool.Asks != "never" {
-			t.Errorf("--read-only listed %+v", tool)
+	for _, args := range [][]string{nil, {"--read-only"}, {"--read-only", "--allow-writes"}} {
+		tools := listToolsJSON(t, args...)
+		if len(tools) != len(want) {
+			t.Errorf("%v listed %d tools, want the %d read-only ones", args, len(tools), len(want))
 		}
+		for _, tool := range tools {
+			if !want[tool.Name] || tool.Writes || tool.Asks != "never" {
+				t.Errorf("%v listed %+v", args, tool)
+			}
+		}
+	}
+
+	if tools := listToolsJSON(t, "--allow-writes"); len(tools) != len(bbmcp.AllSpecs()) {
+		t.Errorf("--allow-writes listed %d tools, want all %d", len(tools), len(bbmcp.AllSpecs()))
 	}
 }
 
@@ -407,10 +417,10 @@ func TestMCPToolsReadOnlyListsWhatAReadOnlyServerExposes(t *testing.T) {
 func TestMCPToolsDeprecatedFormsKeepWorkingAndWarn(t *testing.T) {
 	t.Parallel()
 
-	stdout, stderr := runAI(t, "mcp", "tools", "--safe-only")
+	stdout, stderr := runAI(t, "mcp", "tools", "--allow-writes", "--safe-only")
 	for _, spec := range bbmcp.AllSpecs() {
 		if !strings.Contains(stdout, spec.Tool.Name) {
-			t.Errorf("--safe-only no longer lists %q, and every tool is exposed without --yolo", spec.Tool.Name)
+			t.Errorf("--safe-only narrows the listing to leave out %q; it has no effect", spec.Tool.Name)
 		}
 	}
 	entry, ok := deprecation.Named("bb ai mcp tools --safe-only")
@@ -430,7 +440,7 @@ func TestMCPToolsDeprecatedFormsKeepWorkingAndWarn(t *testing.T) {
 func TestMCPServeDeprecatedFlagsAreAcceptedAndWarn(t *testing.T) {
 	t.Parallel()
 
-	for _, flag := range []string{"yolo", "allow-writes"} {
+	for _, flag := range []string{"yolo", "read-only"} {
 		t.Run(flag, func(t *testing.T) {
 			t.Parallel()
 

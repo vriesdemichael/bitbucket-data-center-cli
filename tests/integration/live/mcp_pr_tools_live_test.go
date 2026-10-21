@@ -217,7 +217,7 @@ func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
 				t.Fatalf("a repository without its project was not refused for it: %s", mcpResultText(result))
 			}
 		})
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 
 	// Scoped to the project, the call with no arguments is bound to it: the
 	// project is filled in, and the dashboard is narrowed to it rather than the
@@ -226,7 +226,7 @@ func TestLiveMCPListPullRequestsModeSelection(t *testing.T) {
 		t.Run("a project-scoped server narrows the dashboard", func(t *testing.T) {
 			listedInProject(t, session, map[string]any{"limit": dashboardPage}, seeded.Key, mine, elsewhere)
 		})
-	}, "ai", "mcp", "serve", "--project", seeded.Key)
+	}, "ai", "mcp", "serve", "--allow-writes", "--project", seeded.Key)
 }
 
 // listedInProject calls list_pull_requests, fails if anything it returns lies
@@ -315,5 +315,5 @@ func TestLiveMCPGetFileContentReturnsTheFileAsText(t *testing.T) {
 				t.Errorf("get_file_content at %s reported path %q, want %q", read.at, payload.Path, path)
 			}
 		}
-	}, "ai", "mcp", "serve")
+	}, "ai", "mcp", "serve", "--allow-writes")
 }
