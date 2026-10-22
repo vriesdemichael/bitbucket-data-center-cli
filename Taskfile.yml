@@ -601,6 +601,29 @@ tasks:
     silent: true
     cmds:
       - git fetch --quiet origin main next
+      # The push sends the local next, and the fetch moves only origin/next: a
+      # local next left behind passed every check below and was then refused as
+      # behind main. So it has to be the next that is checked, before anything
+      # else is.
+      - |
+        if ! local=$(git rev-parse --verify --quiet refs/heads/next); then
+          echo "There is no local next branch, and the promotion pushes it. Create it, then run this check again:" >&2
+          echo "  git switch next" >&2
+          exit 1
+        fi
+        remote=$(git rev-parse origin/next)
+        if [ "$local" != "$remote" ]; then
+          behind=$(git rev-list --count "$local..$remote")
+          ahead=$(git rev-list --count "$remote..$local")
+          echo "The local next is $behind commits behind origin/next and $ahead ahead, and the promotion pushes the local one." >&2
+          if [ "$ahead" = "0" ]; then
+            echo "Bring it up to date, then run this check again:" >&2
+            echo "  git switch next && git pull --ff-only" >&2
+          else
+            echo "Its own commits reach next through a pull request (ADR-066): move them to a branch of their own, bring next back to origin/next, and run this check again." >&2
+          fi
+          exit 1
+        fi
       - |
         if git merge-base --is-ancestor origin/main origin/next; then
           ahead=$(git rev-list --count origin/main..origin/next)
