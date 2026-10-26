@@ -2849,6 +2849,8 @@ refused, <code>bb</code> or its MCP server switched off, <code>bb</code> read-on
 reports the value and what is in force meanwhile.</p>
 <p>An empty string value is treated as unset, so a <code>REG_SZ</code> left blank does not
 mandate an empty path or an empty host list.</p>
+<p>Group Policy sets these values through bb's administrative template; see
+<a href="../../advanced/fleet-deployment/#group-policy">Group Policy</a>.</p>
 <p>The environment variables a user sets take the same two spellings and no others:
 <code>BB_ALLOW_HTTP_UPDATE=yes</code> is refused with
 <code>BB_ALLOW_HTTP_UPDATE must be true or false (or 1 or 0)</code> and the run fails.</p>

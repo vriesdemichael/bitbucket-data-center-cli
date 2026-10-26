@@ -2435,6 +2435,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v610" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v6.1.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v600" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3778,6 +3789,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#v610" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v6.1.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#v600" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5107,6 +5129,48 @@
 
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<h2 id="v610"><a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/tag/v6.1.0">v6.1.0</a><a class="headerlink" href="#v610" title="Permanent link">&para;</a></h2>
+<p>Published: 2026-10-26</p>
+<p>bb v6.1.0 gives administrators who set bb's policy through Group Policy a template to do it with, and sets up shell completion for Windows PowerShell 5.1 when you run the setup from PowerShell 7.</p>
+<p>It is a minor release with no breaking changes.</p>
+<p><strong>For administrators</strong></p>
+<ul>
+<li><strong>A Group Policy template for bb's Windows policy (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/776">#776</a>):</strong></li>
+</ul>
+<p>bb reads its machine policy from <code>HKEY_LOCAL_MACHINE\Software\Policies\bb</code>, but there was no administrative template for it, so setting it through Group Policy meant writing registry items by hand. Each release now publishes <code>bb_policy_templates.zip</code>, holding <code>bb.admx</code> and <code>en-US/bb.adml</code>. Extract it into the <code>PolicyDefinitions</code> folder of your central store, and every value bb reads is a setting under <strong>Computer Configuration &gt; Administrative Templates &gt; bb, the Bitbucket Data Center CLI</strong>, with help that names the registry value it writes. Take the template from the release you deploy, since it offers the values that release reads. <a href="https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/fleet-deployment/#group-policy">Fleet deployment</a> has the steps.</p>
+<p><strong>Fixes worth knowing</strong></p>
+<ul>
+<li><strong><code>bb completion install</code> run from PowerShell 7 sets up Windows PowerShell 5.1 as well (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/issues/819">#819</a>):</strong></li>
+</ul>
+<p>It set PowerShell 7 up, then printed a block of PowerShell error text and left Windows PowerShell 5.1 without completion. Both are set up now, and <code>bb doctor</code> and <code>bb completion remove</code> find the 5.1 profile too. If you ran the setup from PowerShell 7 before, run it again to add 5.1:</p>
+<div class="highlight"><pre><span></span><code>bb<span class="w"> </span>completion<span class="w"> </span>install<span class="w"> </span>--shell<span class="w"> </span>powershell
+</code></pre></div>
+<p>Changes since v6.0.0.</p>
+<p>Compare: <a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/compare/v6.0.0...v6.1.0">v6.0.0...v6.1.0</a></p>
+<p><strong>Features</strong>
+- policy: publish a Group Policy template for the registry values bb reads (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/959a6d6">959a6d6</a>)</p>
+<p><strong>Fixes</strong>
+- completion: ask Windows PowerShell 5.1 without PowerShell 7's module path (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/2ad5409">2ad5409</a>)</p>
+<p><strong>Refactors</strong>
+- pr: move helpers used by one group next to it (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/c4db3f3">c4db3f3</a>)
+- pr: build each group of pr subcommands in its own file (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/124eb46">124eb46</a>)</p>
+<p><strong>Docs</strong>
+- release: write the v6.1.0 notes for the upgrader (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/30033a5">30033a5</a>)</p>
+<p><strong>Tests</strong>
+- pr: hold every pr command to a configuration it cannot load and a malformed --repo (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/14358ec">14358ec</a>)</p>
+<p><strong>Build</strong>
+- release: check that the local next is origin/next before a promotion (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/140294e">140294e</a>)</p>
+<p><strong>CI</strong>
+- link the rules and say how to rebase in the retarget comment (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/1faecc8">1faecc8</a>)
+- move a pull request opened against main to next (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/543112f">543112f</a>)
+- live: keep Bitbucket's whole log when the live job fails (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/9ad7101">9ad7101</a>)</p>
+<p><strong>Chores</strong>
+- deps: Bump certifi in /docs in the uv group across 1 directory (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/b8e3262">b8e3262</a>)
+- deps: Bump astral-sh/setup-uv from 10.3.0 to 10.3.2 (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/e6209fa">e6209fa</a>)
+- quality: stop counting three commit endpoints pr.go only matched by name (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/4a96415">4a96415</a>)
+- deps: Bump the gomod-minor-patch group with 4 updates (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/780c82b">780c82b</a>)
+- deps: Bump actions/setup-python from 7.0.0 to 7.1.0 (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/1014382">1014382</a>)
+- deps: Bump the gomod-minor-patch group with 4 updates (<a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/commit/1004711">1004711</a>)</p>
 <h2 id="v600"><a href="https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/tag/v6.0.0">v6.0.0</a><a class="headerlink" href="#v600" title="Permanent link">&para;</a></h2>
 <p>Published: 2026-10-22</p>
 <p>bb v6.0.0 makes its MCP server one you can hand to an agent without watching every call. It only reads unless you let it write, leaves approving a pull request to you, ends what it publishes with a line saying an AI agent wrote it, and asks you first only when you want it to. A repository you clone can no longer steer bb, and the commands that read a pull request find it from the branch you are on.</p>
