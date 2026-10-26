@@ -179,6 +179,7 @@ func runner(timeout time.Duration) func(context.Context, string, ...string) (str
 		// literal names pwsh, powershell, zsh and fish, and the arguments are
 		// this package's own questions.
 		process := exec.CommandContext(ctx, executable, args...)
+		process.Env = withoutModulePath(os.Environ())
 		// A process the shell started can hold its output open after the
 		// shell is stopped, and Output waits for that; not for long.
 		process.WaitDelay = time.Second
@@ -199,6 +200,23 @@ func runner(timeout time.Duration) func(context.Context, string, ...string) (str
 
 		return "", err
 	}
+}
+
+// withoutModulePath is environ with PSModulePath taken out. PowerShell 7 puts
+// its own module directories in front of it, and bb started from PowerShell 7
+// passes that on: Windows PowerShell 5.1 then loads PowerShell 7's
+// Microsoft.PowerShell.Security, fails to, and cannot run Get-ExecutionPolicy.
+// Each PowerShell works the path out for itself when it is not set.
+func withoutModulePath(environ []string) []string {
+	kept := make([]string, 0, len(environ))
+	for _, entry := range environ {
+		name, _, _ := strings.Cut(entry, "=")
+		if !strings.EqualFold(name, "PSModulePath") {
+			kept = append(kept, entry)
+		}
+	}
+
+	return kept
 }
 
 // Targets are the places a setup of shell for scope goes.
