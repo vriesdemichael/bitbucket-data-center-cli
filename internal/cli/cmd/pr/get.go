@@ -2,6 +2,7 @@ package prcmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prsel"
@@ -100,4 +101,38 @@ func newPullRequestGetCommand(deps Dependencies, repository *string) *cobra.Comm
 	}
 	getCmd.Flags().BoolVar(&noReviewSummary, "no-review-summary", false, "Skip the paged activity timeline walk; the summary still carries the open task tally, which costs one request")
 	return getCmd
+}
+
+// mergeBlockerLines renders one line per veto for `bb pr get`.
+//
+// A veto carries a summary and a detail and either can be empty, so the line has
+// to be built rather than read off one field: a veto with only a detail used to
+// print an empty bullet. The two are joined only when they say different things,
+// because Bitbucket repeats the summary as the detail for several of its own
+// merge checks.
+//
+// It is deliberately not mergeBlockingReasons. That one feeds the dry-run
+// preview's blockingReasons and joins the pair as "summary: detail" rather than
+// "summary (detail)", and it adds a line for a conflict and a fallback for a
+// veto-less refusal, neither of which belongs in a display list that only runs
+// when there are vetoes. The two formats are a divergence worth removing, but
+// blockingReasons is machine output and changing its shape is a contract change.
+func mergeBlockerLines(blockers []pullrequestservice.MergeBlocker) []string {
+	lines := make([]string, 0, len(blockers))
+
+	for _, blocker := range blockers {
+		summary := strings.TrimSpace(blocker.Summary)
+		detail := strings.TrimSpace(blocker.Detail)
+
+		switch {
+		case summary != "" && detail != "" && !strings.EqualFold(summary, detail):
+			lines = append(lines, fmt.Sprintf("%s (%s)", summary, detail))
+		case summary != "":
+			lines = append(lines, summary)
+		case detail != "":
+			lines = append(lines, detail)
+		}
+	}
+
+	return lines
 }

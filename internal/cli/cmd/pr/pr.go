@@ -2,18 +2,13 @@ package prcmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/diffoutput"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/jsonoutput"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prsel"
-	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/config"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/git"
@@ -21,8 +16,6 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	codeowners "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/codeowners"
-	diffservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/diff"
-	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 	reviewerservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reviewer"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/transport/httpclient"
 )
@@ -137,62 +130,6 @@ pull request when it has one; or its URL, which names the repository too, so
 	}
 
 	return prCmd
-}
-
-func newPullRequestDiffAlias(deps Dependencies, repositorySelector *string) *cobra.Command {
-	var patch bool
-	var stat bool
-	var nameOnly bool
-
-	command := &cobra.Command{
-		Use:   "diff <pr-id>",
-		Short: "Diff a pull request (alias for bb diff pr)",
-		Example: `  # The diff of a pull request
-  bb pr diff 42 --repo PROJ/repo
-
-  # Only the names of the files it changes
-  bb pr diff 42 --repo PROJ/repo --name-only
-
-  # As a patch, saved to a file
-  bb pr diff 42 --repo PROJ/repo --patch > pr-42.patch`,
-		Long: "Diff a pull request.\n\nAlias for bb diff pr, which is where the command reference documents it.",
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, client, err := deps.LoadConfigAndClient()
-			if err != nil {
-				return err
-			}
-
-			target, err := prsel.Resolve(cmd.Context(), args[0], *repositorySelector, cfg, nil)
-			if err != nil {
-				return err
-			}
-			repo := diffservice.RepositoryRef{ProjectKey: target.ProjectKey, Slug: target.RepoSlug}
-
-			service := diffservice.NewService(client)
-			outputMode, err := diffoutput.ResolveOutputMode(patch, stat, nameOnly)
-			if err != nil {
-				return err
-			}
-
-			diffed, err := service.DiffPR(cmd.Context(), diffservice.DiffPRInput{
-				Repository:    repo,
-				PullRequestID: target.PullRequestID,
-				Output:        outputMode,
-			})
-			if err != nil {
-				return err
-			}
-
-			return diffoutput.Write(cmd.OutOrStdout(), deps.JSONEnabled(), result.Repository{ProjectKey: repo.ProjectKey, Slug: repo.Slug}, outputMode, diffed, deps.WriteJSON)
-		},
-	}
-
-	command.Flags().BoolVar(&patch, "patch", false, "Output unified patch stream")
-	command.Flags().BoolVar(&stat, "stat", false, "Output structured diff stats")
-	command.Flags().BoolVar(&nameOnly, "name-only", false, "Output only changed file names")
-
-	return command
 }
 
 // Registering an alias as a second flag bound to the same slice does not work:
@@ -372,27 +309,6 @@ func writeWarning(warn io.Writer, message string) {
 	fmt.Fprintf(warn, "warning: %s\n", message)
 }
 
-// partialReviewerAddError describes the outcome of a reviewer add that only
-// partly succeeded.
-//
-// Reviewers are attached one request at a time, so the reviewers added before
-// the failure stay on the pull request. The message names them, because under
-// --json the failure envelope carries no payload and this message is the only
-// place that record can live.
-func partialReviewerAddError(added, failed []string, causes []error) error {
-	var detail strings.Builder
-	detail.WriteString("failed to add ")
-	detail.WriteString(strings.Join(failed, ", "))
-	if len(added) > 0 {
-		detail.WriteString("; already added ")
-		detail.WriteString(strings.Join(added, ", "))
-	}
-	detail.WriteString(": ")
-	detail.WriteString(errors.Join(causes...).Error())
-
-	return apperrors.New(apperrors.KindOf(causes[0]), detail.String(), errors.Join(causes...))
-}
-
 // resolveCurrentUsername determines the username Bitbucket will record for the
 // caller: the author it stamps on a pull request, and the participant whose
 // review status is the caller's own.
@@ -420,22 +336,6 @@ func resolveCurrentUsername(ctx context.Context, client *httpclient.Client, cfg 
 	return strings.TrimSpace(cfg.BitbucketUsername)
 }
 
-func formatReviewerList(users []string) string {
-	if len(users) == 1 {
-		return fmt.Sprintf("reviewer %s", users[0])
-	}
-	return fmt.Sprintf("reviewers %s", strings.Join(users, ", "))
-}
-
-func isAuthor(author, authorUsername, username string) bool {
-	u := strings.TrimSpace(username)
-	if u == "" {
-		return false
-	}
-	return (author != "" && strings.EqualFold(u, strings.TrimSpace(author))) ||
-		(authorUsername != "" && strings.EqualFold(u, strings.TrimSpace(authorUsername)))
-}
-
 // reviewStatuses are the review outcomes a participant can record, and
 // threadStates are the comment thread filters. "unresolved" is a synonym for
 // "open" that NormalizeThreadState has always accepted; naming it here makes
@@ -448,128 +348,3 @@ var (
 	// one --state takes, except the synonym it normalises to open.
 	echoedThreadStates = []string{"open", "resolved", "pending", "all"}
 )
-
-// mergeBlockerLines renders one line per veto for `bb pr get`.
-//
-// A veto carries a summary and a detail and either can be empty, so the line has
-// to be built rather than read off one field: a veto with only a detail used to
-// print an empty bullet. The two are joined only when they say different things,
-// because Bitbucket repeats the summary as the detail for several of its own
-// merge checks.
-//
-// It is deliberately not mergeBlockingReasons. That one feeds the dry-run
-// preview's blockingReasons and joins the pair as "summary: detail" rather than
-// "summary (detail)", and it adds a line for a conflict and a fallback for a
-// veto-less refusal, neither of which belongs in a display list that only runs
-// when there are vetoes. The two formats are a divergence worth removing, but
-// blockingReasons is machine output and changing its shape is a contract change.
-func mergeBlockerLines(blockers []pullrequestservice.MergeBlocker) []string {
-	lines := make([]string, 0, len(blockers))
-
-	for _, blocker := range blockers {
-		summary := strings.TrimSpace(blocker.Summary)
-		detail := strings.TrimSpace(blocker.Detail)
-
-		switch {
-		case summary != "" && detail != "" && !strings.EqualFold(summary, detail):
-			lines = append(lines, fmt.Sprintf("%s (%s)", summary, detail))
-		case summary != "":
-			lines = append(lines, summary)
-		case detail != "":
-			lines = append(lines, detail)
-		}
-	}
-
-	return lines
-}
-
-// mergeBlockingReasons turns Bitbucket's veto list into the preview's
-// blockingReasons.
-//
-// Conflicts are named separately because Bitbucket reports a conflicted merge
-// through its own flag rather than as a veto, so a conflicted pull request with
-// no other veto would otherwise be blocked for no stated reason.
-func mergeBlockingReasons(mergeability pullrequestservice.Mergeability) []string {
-	reasons := []string{}
-
-	if mergeability.Conflicted {
-		reasons = append(reasons, "pull request has merge conflicts")
-	}
-
-	for _, blocker := range mergeability.Blockers {
-		summary := strings.TrimSpace(blocker.Summary)
-		detail := strings.TrimSpace(blocker.Detail)
-
-		switch {
-		case summary != "" && detail != "":
-			reasons = append(reasons, summary+": "+detail)
-		case summary != "":
-			reasons = append(reasons, summary)
-		case detail != "":
-			reasons = append(reasons, detail)
-		}
-	}
-
-	// Mergeable was false, so something refused it. Saying so without a reason
-	// beats an empty list, which reads as "nothing is blocking".
-	if len(reasons) == 0 {
-		reasons = append(reasons, "bitbucket reported the pull request as not mergeable without naming a reason")
-	}
-
-	return reasons
-}
-
-// resolveSourceRepository turns --from-repo into the repository the source
-// branch lives in.
-//
-// Nil when it was not given or names the target anyway, so the payload stays
-// the same-repository shape it has always had and only a genuine fork to
-// upstream pull request carries fromRef.repository (#506).
-func resolveSourceRepository(selector string, target pullrequestservice.RepositoryRef) (*pullrequestservice.RepositoryRef, error) {
-	trimmed := strings.TrimSpace(selector)
-	if trimmed == "" {
-		return nil, nil
-	}
-
-	projectKey, slug, found := strings.Cut(trimmed, "/")
-	projectKey = strings.TrimSpace(projectKey)
-	slug = strings.TrimSpace(slug)
-	if !found || projectKey == "" || slug == "" {
-		return nil, apperrors.New(apperrors.KindValidation,
-			"--from-repo must be in PROJECT/slug form", nil)
-	}
-
-	if strings.EqualFold(projectKey, target.ProjectKey) && strings.EqualFold(slug, target.Slug) {
-		return nil, nil
-	}
-
-	return &pullrequestservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, nil
-}
-
-// codeOwnersSourceRepository names the repository holding the source ref, and
-// only when it is not the target: resolveSourceRepository returns nil for a
-// same-repository pull request, which is also what the code-owners endpoint
-// wants to be told nothing about.
-func codeOwnersSourceRepository(source *pullrequestservice.RepositoryRef) *codeowners.RepositoryRef {
-	if source == nil {
-		return nil
-	}
-
-	return &codeowners.RepositoryRef{ProjectKey: source.ProjectKey, Slug: source.Slug}
-}
-
-// userExists reports whether Bitbucket has a user by that name.
-func userExists(ctx context.Context, client *openapigenerated.ClientWithResponses, username string) (bool, error) {
-	response, err := client.GetUserWithResponse(ctx, strings.TrimSpace(username))
-	if err != nil {
-		return false, apperrors.Transport(fmt.Sprintf("failed to look up user %q", username), err)
-	}
-	if response.StatusCode() == http.StatusNotFound {
-		return false, nil
-	}
-	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
