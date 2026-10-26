@@ -1,9 +1,9 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 225,
-    "files": 76,
-    "functions": 213,
+    "mocked_servers": 226,
+    "files": 77,
+    "functions": 214,
     "by_class": {
       "canned-response": 1,
       "external-service": 27,
@@ -11,7 +11,7 @@
       "routing-beacon": 10,
       "transport-fault": 101,
       "unreachable-state": 25,
-      "unreached-guard": 43
+      "unreached-guard": 44
     },
     "behaviour_by_package": {}
   },
@@ -87,7 +87,7 @@
     },
     {
       "file": "internal/cli/cmd/api/api_test.go",
-      "line": 492,
+      "line": 490,
       "function": "TestApiHostFlagLeavesEnvironmentAlone",
       "class": "routing-beacon",
       "signals": [
@@ -140,7 +140,7 @@
     },
     {
       "file": "internal/cli/cmd/build/build_internal_test.go",
-      "line": 134,
+      "line": 144,
       "function": "TestBuildDryRunPermissionRejection",
       "class": "unreached-guard",
       "signals": [
@@ -200,7 +200,7 @@
     },
     {
       "file": "internal/cli/cmd/insights/insights_internal_test.go",
-      "line": 110,
+      "line": 120,
       "function": "TestInsightsDryRunPermissionRejection",
       "class": "unreached-guard",
       "signals": [
@@ -212,7 +212,7 @@
     },
     {
       "file": "internal/cli/cmd/insights/insights_test.go",
-      "line": 29,
+      "line": 30,
       "function": "newMockInsightsServer",
       "class": "unreached-guard",
       "signals": [
@@ -237,7 +237,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/permission_contract_test.go",
-      "line": 90,
+      "line": 79,
       "function": "TestPRCommandsCheckRepositoryPermission",
       "class": "unreached-guard",
       "signals": [
@@ -249,7 +249,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/permission_contract_test.go",
-      "line": 172,
+      "line": 161,
       "function": "TestPRCommandsCheckPermissionBeforePlanning",
       "class": "unreached-guard",
       "signals": [
@@ -261,7 +261,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 92,
+      "line": 107,
       "function": "TestPRValidationErrors",
       "class": "unreached-guard",
       "signals": [
@@ -273,7 +273,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/pr_test.go",
-      "line": 129,
+      "line": 145,
       "function": "TestPRCreateFromAForkRefusesAMalformedRepository",
       "class": "unreached-guard",
       "signals": [
@@ -284,8 +284,20 @@
       "reason": "asserts that no request is made, which needs no server to be true"
     },
     {
+      "file": "internal/cli/cmd/pr/preconditions_test.go",
+      "line": 126,
+      "function": "TestEveryPRCommandRefusesAMalformedRepository",
+      "class": "unreached-guard",
+      "signals": [
+        "handler-supplied-by-the-caller",
+        "fails-if-the-server-is-reached"
+      ],
+      "action": "keep",
+      "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 86,
+      "line": 75,
       "function": "newReviewerFailureServer",
       "class": "unreachable-state",
       "signals": [
@@ -302,7 +314,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 282,
+      "line": 271,
       "function": "TestPRReviewerAddReportsPartialSuccess",
       "class": "transport-fault",
       "signals": [
@@ -320,7 +332,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_automation_test.go",
-      "line": 339,
+      "line": 328,
       "function": "TestPRReviewerAddPartialFailureEmitsOneJSONDocument",
       "class": "transport-fault",
       "signals": [
@@ -338,7 +350,7 @@
     },
     {
       "file": "internal/cli/cmd/pr/reviewer_helpers_test.go",
-      "line": 138,
+      "line": 139,
       "function": "TestAtGroupShorthandDoesNotMaskServerFailures",
       "class": "unreachable-state",
       "signals": [
@@ -369,7 +381,7 @@
     },
     {
       "file": "internal/cli/cmd/project/permissions_test.go",
-      "line": 22,
+      "line": 21,
       "function": "TestProjectPermissionAliasRejectsBadInvocations",
       "class": "unreached-guard",
       "signals": [
@@ -381,7 +393,7 @@
     },
     {
       "file": "internal/cli/cmd/project/permissions_test.go",
-      "line": 87,
+      "line": 85,
       "function": "TestProjectPermissionsShowRequiresAWiredChecker",
       "class": "unreached-guard",
       "signals": [
@@ -522,7 +534,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 526,
+      "line": 536,
       "function": "TestReviewerPermissionErrors",
       "class": "unreached-guard",
       "signals": [
@@ -534,7 +546,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewer/reviewer_test.go",
-      "line": 619,
+      "line": 629,
       "function": "TestConditionJSONIsValidatedNotReportedAsADefect",
       "class": "transport-fault",
       "signals": [
@@ -547,7 +559,7 @@
     },
     {
       "file": "internal/cli/cmd/reviewergroup/reviewer_group_test.go",
-      "line": 62,
+      "line": 73,
       "function": "TestReviewerGroupPermissionRejections",
       "class": "unreached-guard",
       "signals": [
@@ -559,7 +571,7 @@
     },
     {
       "file": "internal/cli/cmd/tag/tag_test.go",
-      "line": 92,
+      "line": 91,
       "function": "TestTagCreateDryRunSurfacesANonNotFoundLookupFailure",
       "class": "transport-fault",
       "signals": [
@@ -646,7 +658,7 @@
     },
     {
       "file": "internal/cli/cmd/webhook/webhook_test.go",
-      "line": 76,
+      "line": 86,
       "function": "TestWebhookListAcceptsABareArray",
       "class": "unreachable-state",
       "signals": [
@@ -660,7 +672,7 @@
     },
     {
       "file": "internal/cli/cmd/webhook/webhook_test.go",
-      "line": 116,
+      "line": 126,
       "function": "TestWebhookCommandsHonourRefusedPermission",
       "class": "unreached-guard",
       "signals": [
@@ -672,7 +684,7 @@
     },
     {
       "file": "internal/cli/commit_test.go",
-      "line": 37,
+      "line": 40,
       "function": "TestCommitListJiraError",
       "class": "transport-fault",
       "signals": [
@@ -697,7 +709,7 @@
     },
     {
       "file": "internal/cli/new_commands_test.go",
-      "line": 79,
+      "line": 102,
       "function": "TestNewCLICommandsErrorPaths",
       "class": "transport-fault",
       "signals": [
@@ -710,7 +722,7 @@
     },
     {
       "file": "internal/cli/new_commands_test.go",
-      "line": 140,
+      "line": 162,
       "function": "TestFlagValuesTheseCommandsRefuse",
       "class": "unreached-guard",
       "signals": [
@@ -751,7 +763,7 @@
     },
     {
       "file": "internal/cli/pr_checkout_command_test.go",
-      "line": 153,
+      "line": 154,
       "function": "newCheckoutServer",
       "class": "unreachable-state",
       "signals": [
@@ -778,7 +790,7 @@
     },
     {
       "file": "internal/cli/pr_inspection_test.go",
-      "line": 26,
+      "line": 28,
       "function": "TestPRInspectionEmptyResults",
       "class": "unreachable-state",
       "signals": [
@@ -792,7 +804,7 @@
     },
     {
       "file": "internal/cli/pr_inspection_test.go",
-      "line": 52,
+      "line": 54,
       "function": "TestPRInspectionServiceErrors",
       "class": "transport-fault",
       "signals": [
@@ -806,7 +818,7 @@
     },
     {
       "file": "internal/cli/pr_inspection_test.go",
-      "line": 72,
+      "line": 75,
       "function": "TestPRInspectionRepositoryResolutionError",
       "class": "unreached-guard",
       "signals": [
@@ -819,7 +831,7 @@
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
-      "line": 22,
+      "line": 24,
       "function": "newPullRequestStatusServer",
       "class": "unreachable-state",
       "signals": [
@@ -834,7 +846,7 @@
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
-      "line": 226,
+      "line": 224,
       "function": "TestPullRequestStatusFailsWhenTheDashboardFails",
       "class": "transport-fault",
       "signals": [
@@ -850,7 +862,7 @@
     },
     {
       "file": "internal/cli/pr_status_command_test.go",
-      "line": 257,
+      "line": 254,
       "function": "TestPullRequestStatusNotesABranchListingFailure",
       "class": "transport-fault",
       "signals": [
@@ -865,7 +877,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 169,
+      "line": 165,
       "function": "TestBranchValidationErrors",
       "class": "unreached-guard",
       "signals": [
@@ -879,7 +891,7 @@
     },
     {
       "file": "internal/cli/root_test.go",
-      "line": 401,
+      "line": 389,
       "function": "TestAdminHealthPropagatesHardFailure",
       "class": "transport-fault",
       "signals": [
@@ -1520,7 +1532,7 @@
     },
     {
       "file": "internal/services/pullrequest/inspection_test.go",
-      "line": 15,
+      "line": 12,
       "function": "newInspectionService",
       "class": "harness-constructor",
       "signals": [
@@ -1531,7 +1543,7 @@
     },
     {
       "file": "internal/services/pullrequest/inspection_test.go",
-      "line": 52,
+      "line": 42,
       "function": "TestInspectionPropagatesTransportErrors",
       "class": "transport-fault",
       "signals": [
@@ -1545,7 +1557,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 25,
+      "line": 26,
       "function": "TestListPullRequestsValidation",
       "class": "unreached-guard",
       "signals": [
@@ -1558,7 +1570,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 99,
+      "line": 104,
       "function": "TestGetPRBuildStatusesValidation",
       "class": "unreached-guard",
       "signals": [
@@ -1571,7 +1583,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 126,
+      "line": 127,
       "function": "TestGetBuildStatusesPaginationStuck",
       "class": "transport-fault",
       "signals": [
@@ -1586,7 +1598,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 515,
+      "line": 512,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1597,7 +1609,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 541,
+      "line": 530,
       "function": "TestNeedsWorkPropagatesUserLookupFailure",
       "class": "unreachable-state",
       "signals": [
@@ -1611,7 +1623,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 712,
+      "line": 701,
       "function": "TestRebaseRejectsOutOfRangeVersion",
       "class": "unreached-guard",
       "signals": [
@@ -1624,7 +1636,7 @@
     },
     {
       "file": "internal/services/pullrequest/service_test.go",
-      "line": 784,
+      "line": 773,
       "function": "TestRebaseRetriesOnceOnAVersionItReadItself",
       "class": "unreachable-state",
       "signals": [
@@ -1865,7 +1877,7 @@
     },
     {
       "file": "internal/services/reviewer/regressions_test.go",
-      "line": 177,
+      "line": 122,
       "function": "TestRepositoryIDErrorsWhenTheResponseCarriesNoID",
       "class": "unreachable-state",
       "signals": [
@@ -2980,7 +2992,7 @@
     },
     {
       "file": "internal/transport/network/transport_test.go",
-      "line": 243,
+      "line": 246,
       "function": "TestNewSafeTransport",
       "class": "unreachable-state",
       "signals": [
@@ -3031,7 +3043,7 @@
     },
     {
       "file": "internal/transport/outcome/outcome_test.go",
-      "line": 299,
+      "line": 335,
       "function": "TestAPlainHTTPServerAtAnHTTPSURLIsPermanent",
       "class": "transport-fault",
       "signals": [
