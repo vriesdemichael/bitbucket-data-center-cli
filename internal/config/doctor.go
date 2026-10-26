@@ -48,7 +48,7 @@ func SourceKinds() []string {
 }
 
 // registryPolicyLocation is the key loadPlatformPolicy reads on Windows.
-const registryPolicyLocation = `HKEY_LOCAL_MACHINE\Software\Policies\bb`
+const registryPolicyLocation = `HKEY_LOCAL_MACHINE\` + RegistryPolicyKey
 
 // DiagnoseInput is what the invocation contributes to a diagnosis.
 type DiagnoseInput struct {

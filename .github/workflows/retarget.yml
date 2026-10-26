@@ -1,0 +1,99 @@
+name: "Retarget to next"
+
+# main is the default branch, so a pull request opened from the GitHub UI or
+# with a plain `gh pr create` targets it. Every change integrates on next
+# (ADR-066), so this moves such a pull request there instead of leaving the
+# contributor a red Release Flow check to act on. Release Flow stays as the
+# backstop for one that is moved back.
+#
+# A change made with GITHUB_TOKEN starts no workflow, and CI does not run on a
+# changed base, so a pull request moved with it would keep the checks it ran
+# against main. The retarget App's token does start workflows: closing and
+# reopening with it runs CI against next. The App needs Pull requests: read and
+# write on this repository; its client ID is the RETARGET_APP_CLIENT_ID
+# variable and its private key the RETARGET_APP_PRIVATE_KEY secret.
+#
+# pull_request_target runs this repository's copy of the workflow, with its
+# secrets, for a fork's pull request too. Nothing from the pull request is
+# checked out or run, and only its number reaches the shell, never its title or
+# branch name.
+"on":
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  retarget:
+    name: Retarget to next
+    # This repository's next into main is a promotion attempt, and Release
+    # Flow's refusal is the answer to it: next reaches main by fast-forward push.
+    if: >-
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      github.event.pull_request.head.ref != 'next'
+    runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
+      NUMBER: ${{ github.event.pull_request.number }}
+      # The pages a newcomer is pointed at, on next, where the rules are kept.
+      ADR_URL: ${{ github.server_url }}/${{ github.repository }}/blob/next/docs/site/adr/066-major-releases-integrate-on-a-next-branch.md
+      CONTRIBUTING_URL: ${{ github.server_url }}/${{ github.repository }}/blob/next/CONTRIBUTING.md#making-a-change
+    steps:
+      - name: Check the retarget App is configured
+        env:
+          CLIENT_ID: ${{ vars.RETARGET_APP_CLIENT_ID }}
+          HAS_KEY: ${{ secrets.RETARGET_APP_PRIVATE_KEY != '' }}
+        run: |
+          if [ -z "$CLIENT_ID" ] || [ "$HAS_KEY" != "true" ]; then
+            echo "::error::The retarget App is not configured: set the RETARGET_APP_CLIENT_ID variable and the RETARGET_APP_PRIVATE_KEY secret. Until then, retarget by hand: gh pr edit $NUMBER --base next"
+            exit 1
+          fi
+
+      - name: Create the retarget App's token
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RETARGET_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RETARGET_APP_PRIVATE_KEY }}
+          permission-pull-requests: write
+
+      - name: Retarget to next
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: gh api --method PATCH "repos/$GH_REPO/pulls/$NUMBER" -f base=next --silent
+
+      # Reopening it is a new event, so CI runs against next. The reopen
+      # matches no trigger here, because the base is next now.
+      - name: Say why, and run CI against next
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          body=$(printf '%s\n' \
+            "Moved to \`next\`: every change integrates on \`next\` through a pull request, and \`main\` moves only when \`next\` is promoted onto it ([ADR-066]($ADR_URL)). Closed and reopened once so that CI runs against \`next\`." \
+            "" \
+            "If GitHub reports conflicts, rebase your branch onto \`next\` and force-push it:" \
+            "" \
+            "\`\`\`bash" \
+            "git fetch $GITHUB_SERVER_URL/$GH_REPO.git next && git rebase FETCH_HEAD" \
+            "git push --force-with-lease" \
+            "\`\`\`" \
+            "" \
+            "[CONTRIBUTING]($CONTRIBUTING_URL) has the rest of how a change gets in.")
+          gh api "repos/$GH_REPO/issues/$NUMBER/comments" --silent -f body="$body"
+          gh api --method PATCH "repos/$GH_REPO/pulls/$NUMBER" -f state=closed --silent
+          gh api --method PATCH "repos/$GH_REPO/pulls/$NUMBER" -f state=open --silent
+
+      # Dependabot opens a security update against main whatever its
+      # configuration says (ADR-069). Closing one can lose its branch, so it is
+      # asked to rebase instead, which pushes and runs CI against next.
+      - name: Say why, and ask for a rebase onto next
+        if: github.event.pull_request.user.login == 'dependabot[bot]'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          gh api "repos/$GH_REPO/issues/$NUMBER/comments" --silent -f body="Moved to \`next\`: every change integrates on \`next\` through a pull request, and \`main\` moves only when \`next\` is promoted onto it ([ADR-066]($ADR_URL)). Comment \`@dependabot rebase\` to run CI against \`next\`."

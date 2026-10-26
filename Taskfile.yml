@@ -91,6 +91,10 @@ tasks:
     desc: Export JSON Schema for bb configuration and policy files
     cmd: go run ./tools/config-schema-export -out docs/reference/schemas
 
+  docs:export-policy-templates:
+    desc: Export the Group Policy template (ADMX and ADML) for the registry values bb reads
+    cmd: go run ./tools/policy-templates-export -out docs/reference/policy-templates
+
   docs:export-output-schemas:
     desc: Export the --json envelope schemas, including the failure envelope
     cmd: go run ./tools/output-schema-export -out docs/reference/schemas/output
@@ -114,6 +118,7 @@ tasks:
       - task: docs:export-adr-index
       - task: docs:export-mcp-tools
       - task: docs:export-config-schema
+      - task: docs:export-policy-templates
       - task: docs:export-output-schemas
       - task: docs:publish-output-schemas
       - task: docs:publish-config-schema
@@ -138,7 +143,7 @@ tasks:
           exit 1
         fi
     vars:
-      GENERATED_DOCS: docs/site/reference/commands docs/site/reference/mcp-tools.md docs/site/adr/index.md docs/reference/schemas docs/site/reference/schemas
+      GENERATED_DOCS: docs/site/reference/commands docs/site/reference/mcp-tools.md docs/site/adr/index.md docs/reference/schemas docs/site/reference/schemas docs/reference/policy-templates
 
   docs:sync-version:
     desc: Sync documented release versions across markdown files to match latest git tag (or VERSION)
@@ -601,6 +606,29 @@ tasks:
     silent: true
     cmds:
       - git fetch --quiet origin main next
+      # The push sends the local next, and the fetch moves only origin/next: a
+      # local next left behind passed every check below and was then refused as
+      # behind main. So it has to be the next that is checked, before anything
+      # else is.
+      - |
+        if ! local=$(git rev-parse --verify --quiet refs/heads/next); then
+          echo "There is no local next branch, and the promotion pushes it. Create it, then run this check again:" >&2
+          echo "  git switch next" >&2
+          exit 1
+        fi
+        remote=$(git rev-parse origin/next)
+        if [ "$local" != "$remote" ]; then
+          behind=$(git rev-list --count "$local..$remote")
+          ahead=$(git rev-list --count "$remote..$local")
+          echo "The local next is $behind commits behind origin/next and $ahead ahead, and the promotion pushes the local one." >&2
+          if [ "$ahead" = "0" ]; then
+            echo "Bring it up to date, then run this check again:" >&2
+            echo "  git switch next && git pull --ff-only" >&2
+          else
+            echo "Its own commits reach next through a pull request (ADR-066): move them to a branch of their own, bring next back to origin/next, and run this check again." >&2
+          fi
+          exit 1
+        fi
       - |
         if git merge-base --is-ancestor origin/main origin/next; then
           ahead=$(git rev-list --count origin/main..origin/next)
