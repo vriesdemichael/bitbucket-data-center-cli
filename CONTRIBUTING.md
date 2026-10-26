@@ -98,7 +98,8 @@ failing partway through seeding with `License limit exceeded`. See
 next release; `main` moves only when a maintainer promotes `next` to it
 (ADR-066). A change reaches `next` through a pull request, except a branch of
 more than 100 commits: GitHub cannot rebase-merge one that long, so it lands as a
-fast-forward push.
+fast-forward push. A pull request opened against `main` is moved to `next` for
+you, and CI runs again against `next`.
 
 **Use [Conventional Commits](https://www.conventionalcommits.org/).** The commit
 type decides the version of the release your change ships in, so it is worth
