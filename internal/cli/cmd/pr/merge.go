@@ -296,3 +296,39 @@ func newPullRequestTransitionCommands(deps Dependencies, repository *string) []*
 	reopenCmd.Flags().IntVar(&transitionVersion, "version", 0, "Expected pull request version; omit to act on whatever version is current")
 	return []*cobra.Command{mergeCmd, declineCmd, reopenCmd}
 }
+
+// mergeBlockingReasons turns Bitbucket's veto list into the preview's
+// blockingReasons.
+//
+// Conflicts are named separately because Bitbucket reports a conflicted merge
+// through its own flag rather than as a veto, so a conflicted pull request with
+// no other veto would otherwise be blocked for no stated reason.
+func mergeBlockingReasons(mergeability pullrequestservice.Mergeability) []string {
+	reasons := []string{}
+
+	if mergeability.Conflicted {
+		reasons = append(reasons, "pull request has merge conflicts")
+	}
+
+	for _, blocker := range mergeability.Blockers {
+		summary := strings.TrimSpace(blocker.Summary)
+		detail := strings.TrimSpace(blocker.Detail)
+
+		switch {
+		case summary != "" && detail != "":
+			reasons = append(reasons, summary+": "+detail)
+		case summary != "":
+			reasons = append(reasons, summary)
+		case detail != "":
+			reasons = append(reasons, detail)
+		}
+	}
+
+	// Mergeable was false, so something refused it. Saying so without a reason
+	// beats an empty list, which reads as "nothing is blocking".
+	if len(reasons) == 0 {
+		reasons = append(reasons, "bitbucket reported the pull request as not mergeable without naming a reason")
+	}
+
+	return reasons
+}

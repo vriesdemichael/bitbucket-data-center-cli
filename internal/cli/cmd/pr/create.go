@@ -10,6 +10,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/prompt"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/reposel"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
+	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
 	codeowners "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/codeowners"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
@@ -283,4 +284,43 @@ func newPullRequestCreateCommand(deps Dependencies, repository *string) *cobra.C
 	// nobody is there, produces the same message naming every absent flag at
 	// once (ADR-073).
 	return createCmd
+}
+
+// resolveSourceRepository turns --from-repo into the repository the source
+// branch lives in.
+//
+// Nil when it was not given or names the target anyway, so the payload stays
+// the same-repository shape it has always had and only a genuine fork to
+// upstream pull request carries fromRef.repository (#506).
+func resolveSourceRepository(selector string, target pullrequestservice.RepositoryRef) (*pullrequestservice.RepositoryRef, error) {
+	trimmed := strings.TrimSpace(selector)
+	if trimmed == "" {
+		return nil, nil
+	}
+
+	projectKey, slug, found := strings.Cut(trimmed, "/")
+	projectKey = strings.TrimSpace(projectKey)
+	slug = strings.TrimSpace(slug)
+	if !found || projectKey == "" || slug == "" {
+		return nil, apperrors.New(apperrors.KindValidation,
+			"--from-repo must be in PROJECT/slug form", nil)
+	}
+
+	if strings.EqualFold(projectKey, target.ProjectKey) && strings.EqualFold(slug, target.Slug) {
+		return nil, nil
+	}
+
+	return &pullrequestservice.RepositoryRef{ProjectKey: projectKey, Slug: slug}, nil
+}
+
+// codeOwnersSourceRepository names the repository holding the source ref, and
+// only when it is not the target: resolveSourceRepository returns nil for a
+// same-repository pull request, which is also what the code-owners endpoint
+// wants to be told nothing about.
+func codeOwnersSourceRepository(source *pullrequestservice.RepositoryRef) *codeowners.RepositoryRef {
+	if source == nil {
+		return nil
+	}
+
+	return &codeowners.RepositoryRef{ProjectKey: source.ProjectKey, Slug: source.Slug}
 }

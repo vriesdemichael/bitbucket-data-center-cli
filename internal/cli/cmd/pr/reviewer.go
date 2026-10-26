@@ -1,7 +1,10 @@
 package prcmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -11,6 +14,7 @@ import (
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/cli/result"
 	apperrors "github.com/vriesdemichael/bitbucket-data-center-cli/internal/domain/errors"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi"
+	openapigenerated "github.com/vriesdemichael/bitbucket-data-center-cli/internal/openapi/generated"
 	codeowners "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/codeowners"
 	pullrequestservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/pullrequest"
 	reviewerservice "github.com/vriesdemichael/bitbucket-data-center-cli/internal/services/reviewer"
@@ -332,4 +336,57 @@ func newPullRequestReviewerCommand(deps Dependencies, repository *string) *cobra
 	_ = reviewerRemoveCmd.MarkFlagRequired("user")
 	reviewerCmd.AddCommand(reviewerRemoveCmd)
 	return reviewerCmd
+}
+
+// partialReviewerAddError describes the outcome of a reviewer add that only
+// partly succeeded.
+//
+// Reviewers are attached one request at a time, so the reviewers added before
+// the failure stay on the pull request. The message names them, because under
+// --json the failure envelope carries no payload and this message is the only
+// place that record can live.
+func partialReviewerAddError(added, failed []string, causes []error) error {
+	var detail strings.Builder
+	detail.WriteString("failed to add ")
+	detail.WriteString(strings.Join(failed, ", "))
+	if len(added) > 0 {
+		detail.WriteString("; already added ")
+		detail.WriteString(strings.Join(added, ", "))
+	}
+	detail.WriteString(": ")
+	detail.WriteString(errors.Join(causes...).Error())
+
+	return apperrors.New(apperrors.KindOf(causes[0]), detail.String(), errors.Join(causes...))
+}
+
+func formatReviewerList(users []string) string {
+	if len(users) == 1 {
+		return fmt.Sprintf("reviewer %s", users[0])
+	}
+	return fmt.Sprintf("reviewers %s", strings.Join(users, ", "))
+}
+
+func isAuthor(author, authorUsername, username string) bool {
+	u := strings.TrimSpace(username)
+	if u == "" {
+		return false
+	}
+	return (author != "" && strings.EqualFold(u, strings.TrimSpace(author))) ||
+		(authorUsername != "" && strings.EqualFold(u, strings.TrimSpace(authorUsername)))
+}
+
+// userExists reports whether Bitbucket has a user by that name.
+func userExists(ctx context.Context, client *openapigenerated.ClientWithResponses, username string) (bool, error) {
+	response, err := client.GetUserWithResponse(ctx, strings.TrimSpace(username))
+	if err != nil {
+		return false, apperrors.Transport(fmt.Sprintf("failed to look up user %q", username), err)
+	}
+	if response.StatusCode() == http.StatusNotFound {
+		return false, nil
+	}
+	if err := openapi.MapStatusError(response.StatusCode(), response.Body); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
