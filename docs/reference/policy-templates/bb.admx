@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policyDefinitions xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions" revision="1.0" schemaVersion="1.0">
+  <policyNamespaces>
+    <target prefix="bb" namespace="io.github.vriesdemichael.bb"></target>
+  </policyNamespaces>
+  <resources minRequiredRevision="1.0"></resources>
+  <supportedOn>
+    <definitions>
+      <definition name="SUPPORTED_bb" displayName="$(string.SUPPORTED_bb)"></definition>
+    </definitions>
+  </supportedOn>
+  <categories>
+    <category name="bb" displayName="$(string.bb)"></category>
+  </categories>
+  <policies>
+    <policy name="RequireKeyring" class="Machine" displayName="$(string.RequireKeyring)" explainText="$(string.RequireKeyring_Help)" key="Software\Policies\bb" valueName="RequireKeyring">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+    <policy name="AllowedHosts" class="Machine" displayName="$(string.AllowedHosts)" explainText="$(string.AllowedHosts_Help)" presentation="$(presentation.AllowedHosts)" key="Software\Policies\bb">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <elements>
+        <multiText id="AllowedHosts" valueName="AllowedHosts" required="true"></multiText>
+      </elements>
+    </policy>
+    <policy name="CAFile" class="Machine" displayName="$(string.CAFile)" explainText="$(string.CAFile_Help)" presentation="$(presentation.CAFile)" key="Software\Policies\bb">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <elements>
+        <text id="CAFile" valueName="CAFile" required="true"></text>
+      </elements>
+    </policy>
+    <policy name="AllowInsecureSkipVerify" class="Machine" displayName="$(string.AllowInsecureSkipVerify)" explainText="$(string.AllowInsecureSkipVerify_Help)" key="Software\Policies\bb" valueName="AllowInsecureSkipVerify">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+    <policy name="DisableUpdate" class="Machine" displayName="$(string.DisableUpdate)" explainText="$(string.DisableUpdate_Help)" key="Software\Policies\bb" valueName="DisableUpdate">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+    <policy name="UpdateBaseURL" class="Machine" displayName="$(string.UpdateBaseURL)" explainText="$(string.UpdateBaseURL_Help)" presentation="$(presentation.UpdateBaseURL)" key="Software\Policies\bb">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <elements>
+        <text id="UpdateBaseURL" valueName="UpdateBaseURL" required="true"></text>
+      </elements>
+    </policy>
+    <policy name="AllowHTTPUpdate" class="Machine" displayName="$(string.AllowHTTPUpdate)" explainText="$(string.AllowHTTPUpdate_Help)" key="Software\Policies\bb" valueName="AllowHTTPUpdate">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+    <policy name="UpdateTrustedRoot" class="Machine" displayName="$(string.UpdateTrustedRoot)" explainText="$(string.UpdateTrustedRoot_Help)" presentation="$(presentation.UpdateTrustedRoot)" key="Software\Policies\bb">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <elements>
+        <text id="UpdateTrustedRoot" valueName="UpdateTrustedRoot" required="true"></text>
+      </elements>
+    </policy>
+    <policy name="UpdateTUFURL" class="Machine" displayName="$(string.UpdateTUFURL)" explainText="$(string.UpdateTUFURL_Help)" presentation="$(presentation.UpdateTUFURL)" key="Software\Policies\bb">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <elements>
+        <text id="UpdateTUFURL" valueName="UpdateTUFURL" required="true"></text>
+      </elements>
+    </policy>
+    <policy name="UpdateSignatureIdentity" class="Machine" displayName="$(string.UpdateSignatureIdentity)" explainText="$(string.UpdateSignatureIdentity_Help)" presentation="$(presentation.UpdateSignatureIdentity)" key="Software\Policies\bb">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <elements>
+        <text id="UpdateSignatureIdentity" valueName="UpdateSignatureIdentity" required="true"></text>
+      </elements>
+    </policy>
+    <policy name="UpdateSignatureIssuer" class="Machine" displayName="$(string.UpdateSignatureIssuer)" explainText="$(string.UpdateSignatureIssuer_Help)" presentation="$(presentation.UpdateSignatureIssuer)" key="Software\Policies\bb">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <elements>
+        <text id="UpdateSignatureIssuer" valueName="UpdateSignatureIssuer" required="true"></text>
+      </elements>
+    </policy>
+    <policy name="AllowUnverifiedUpdate" class="Machine" displayName="$(string.AllowUnverifiedUpdate)" explainText="$(string.AllowUnverifiedUpdate_Help)" key="Software\Policies\bb" valueName="AllowUnverifiedUpdate">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+    <policy name="DisableBB" class="Machine" displayName="$(string.DisableBB)" explainText="$(string.DisableBB_Help)" key="Software\Policies\bb" valueName="DisableBB">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+    <policy name="DisableMCPServer" class="Machine" displayName="$(string.DisableMCPServer)" explainText="$(string.DisableMCPServer_Help)" key="Software\Policies\bb" valueName="DisableMCPServer">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+    <policy name="ReadOnly" class="Machine" displayName="$(string.ReadOnly)" explainText="$(string.ReadOnly_Help)" key="Software\Policies\bb" valueName="ReadOnly">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+    <policy name="MCPElicitationOptIn" class="Machine" displayName="$(string.MCPElicitationOptIn)" explainText="$(string.MCPElicitationOptIn_Help)" key="Software\Policies\bb" valueName="MCPElicitationOptIn">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+    <policy name="MCPAIDisclosure" class="Machine" displayName="$(string.MCPAIDisclosure)" explainText="$(string.MCPAIDisclosure_Help)" key="Software\Policies\bb" valueName="MCPAIDisclosure">
+      <parentCategory ref="bb"></parentCategory>
+      <supportedOn ref="SUPPORTED_bb"></supportedOn>
+      <enabledValue>
+        <decimal value="1"></decimal>
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0"></decimal>
+      </disabledValue>
+    </policy>
+  </policies>
+</policyDefinitions>

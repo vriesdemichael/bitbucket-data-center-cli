@@ -68,6 +68,9 @@ reports the value and what is in force meanwhile.
 An empty string value is treated as unset, so a `REG_SZ` left blank does not
 mandate an empty path or an empty host list.
 
+Group Policy sets these values through bb's administrative template; see
+[Group Policy](../advanced/fleet-deployment.md#group-policy).
+
 The environment variables a user sets take the same two spellings and no others:
 `BB_ALLOW_HTTP_UPDATE=yes` is refused with
 `BB_ALLOW_HTTP_UPDATE must be true or false (or 1 or 0)` and the run fails.

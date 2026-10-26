@@ -9,7 +9,7 @@
       "type": "string"
     },
     "allow_http_update": {
-      "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+      "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration or registry policy only.",
       "type": "boolean"
     },
     "allow_insecure_skip_verify": {
@@ -17,7 +17,7 @@
       "type": "boolean"
     },
     "allow_unverified_update": {
-      "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+      "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration or registry policy only.",
       "type": "boolean"
     },
     "allowed_hosts": {
@@ -130,7 +130,7 @@
       "description": "Administrative policy block.",
       "properties": {
         "allow_http_update": {
-          "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+          "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration or registry policy only.",
           "type": "boolean"
         },
         "allow_insecure_skip_verify": {
@@ -138,7 +138,7 @@
           "type": "boolean"
         },
         "allow_unverified_update": {
-          "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+          "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration or registry policy only.",
           "type": "boolean"
         },
         "allowed_hosts": {
@@ -189,19 +189,19 @@
           "type": "string"
         },
         "update_signature_identity": {
-          "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.",
           "type": "string"
         },
         "update_signature_issuer": {
-          "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.",
           "type": "string"
         },
         "update_trusted_root": {
-          "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+          "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration or registry policy only; removes the need for outbound access to the Sigstore TUF CDN.",
           "type": "string"
         },
         "update_tuf_url": {
-          "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
+          "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration or registry policy only; mutually exclusive with update_trusted_root.",
           "type": "string"
         }
       },
@@ -212,7 +212,7 @@
       "description": "Administrative policy block (alias).",
       "properties": {
         "allow_http_update": {
-          "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+          "description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration or registry policy only.",
           "type": "boolean"
         },
         "allow_insecure_skip_verify": {
@@ -220,7 +220,7 @@
           "type": "boolean"
         },
         "allow_unverified_update": {
-          "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+          "description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration or registry policy only.",
           "type": "boolean"
         },
         "allowed_hosts": {
@@ -271,19 +271,19 @@
           "type": "string"
         },
         "update_signature_identity": {
-          "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.",
           "type": "string"
         },
         "update_signature_issuer": {
-          "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+          "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.",
           "type": "string"
         },
         "update_trusted_root": {
-          "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+          "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration or registry policy only; removes the need for outbound access to the Sigstore TUF CDN.",
           "type": "string"
         },
         "update_tuf_url": {
-          "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
+          "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration or registry policy only; mutually exclusive with update_trusted_root.",
           "type": "string"
         }
       },
@@ -306,19 +306,19 @@
       "type": "string"
     },
     "update_signature_identity": {
-      "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+      "description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.",
       "type": "string"
     },
     "update_signature_issuer": {
-      "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+      "description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.",
       "type": "string"
     },
     "update_trusted_root": {
-      "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+      "description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration or registry policy only; removes the need for outbound access to the Sigstore TUF CDN.",
       "type": "string"
     },
     "update_tuf_url": {
-      "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
+      "description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration or registry policy only; mutually exclusive with update_trusted_root.",
       "type": "string"
     }
   },

@@ -206,17 +206,25 @@ func TestSystemPolicyPageListsEveryPolicyKey(t *testing.T) {
 	}
 	assertSameKeys(t, "Keys", documented, policyKeys())
 
-	// mcp_audit_file has no registry value.
-	withRegistryValue := policyKeys()
-	delete(withRegistryValue, "mcp_audit_file")
+	nameOf := map[string]string{}
+	withRegistryValue := map[string]bool{}
+	for _, value := range RegistryValues {
+		nameOf[value.Key] = value.Name
+		withRegistryValue[value.Key] = true
+	}
 
 	inRegistry := map[string]bool{}
 	for _, row := range tableRows(section(t, page, "### Windows registry values")) {
 		if len(row) != 3 {
 			t.Fatalf("a registry row with %d cells, want 3: %v", len(row), row)
 		}
-		if match := quoted.FindStringSubmatch(row[2]); match != nil {
-			inRegistry[match[1]] = true
+		match := quoted.FindStringSubmatch(row[2])
+		if match == nil {
+			continue
+		}
+		inRegistry[match[1]] = true
+		if name := quoted.FindStringSubmatch(row[0]); name == nil || name[1] != nameOf[match[1]] {
+			t.Errorf("the registry row for %s names %s, but bb reads %q", match[1], row[0], nameOf[match[1]])
 		}
 	}
 	assertSameKeys(t, "Windows registry values", inRegistry, withRegistryValue)

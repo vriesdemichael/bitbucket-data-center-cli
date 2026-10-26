@@ -137,6 +137,18 @@ Set-ItemProperty -Path $RegPath -Name "DisableUpdate" -Value 1 -Type DWord
 # Set-ItemProperty -Path $RegPath -Name "ReadOnly" -Value 1 -Type DWord
 ```
 
+### Group Policy
+
+Each release publishes bb's administrative template as
+[`bb_policy_templates.zip`](https://github.com/vriesdemichael/bitbucket-data-center-cli/releases/latest/download/bb_policy_templates.zip).
+Extract it into the `PolicyDefinitions` folder of your central store, or into
+`%SystemRoot%\PolicyDefinitions` on a single machine. Every registry value bb
+reads is then a setting under **Computer Configuration > Administrative
+Templates > bb, the Bitbucket Data Center CLI**, and each one's help names the
+[registry value](../reference/system-policy.md#windows-registry-values) it
+writes. Take the template from the release you deploy, since it offers the
+values that release reads.
+
 
 ## CI/CD & Headless Containers (Docker / Kubernetes)
 

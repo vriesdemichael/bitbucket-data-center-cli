@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policyDefinitionResources xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions" revision="1.0" schemaVersion="1.0">
+  <displayName>bb</displayName>
+  <description>Group Policy settings for bb, the Bitbucket Data Center CLI.</description>
+  <resources>
+    <stringTable>
+      <string id="bb">bb, the Bitbucket Data Center CLI</string>
+      <string id="SUPPORTED_bb">bb, the Bitbucket Data Center CLI</string>
+      <string id="RequireKeyring">Require the OS keyring for credentials</string>
+      <string id="RequireKeyring_Help">Mandate OS keyring storage for credentials and prohibit plaintext config file fallback.&#xA;&#xA;Enabled sets RequireKeyring to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over require_keyring in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="AllowedHosts">Allowed Bitbucket hosts</string>
+      <string id="AllowedHosts_Help">Whitelist of permitted Bitbucket Data Center instance URLs or hostnames.&#xA;&#xA;Enabled sets AllowedHosts to the entries given, one per line, taking precedence over allowed_hosts in %ProgramData%\bb\config.yaml. Disabled or not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="CAFile">CA bundle bb must use</string>
+      <string id="CAFile_Help">Absolute or relative path to PEM Root CA certificate bundle.&#xA;&#xA;Enabled sets CAFile to the text given, taking precedence over ca_file in %ProgramData%\bb\config.yaml. Disabled or not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="AllowInsecureSkipVerify">Allow skipping TLS verification</string>
+      <string id="AllowInsecureSkipVerify_Help">Control whether insecure TLS verification (--insecure-skip-verify) is permitted. When false, insecure TLS cannot be enabled.&#xA;&#xA;Enabled sets AllowInsecureSkipVerify to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over allow_insecure_skip_verify in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="DisableUpdate">Disable bb update</string>
+      <string id="DisableUpdate_Help">Disable CLI self-update command (bb update) machine-wide.&#xA;&#xA;Enabled sets DisableUpdate to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over disable_update in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="UpdateBaseURL">Release mirror for bb update</string>
+      <string id="UpdateBaseURL_Help">Base URL of internal release manifest and asset mirror.&#xA;&#xA;Enabled sets UpdateBaseURL to the text given, taking precedence over update_base_url in %ProgramData%\bb\config.yaml. Disabled or not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="AllowHTTPUpdate">Allow bb update over plain HTTP</string>
+      <string id="AllowHTTPUpdate_Help">Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration or registry policy only.&#xA;&#xA;Enabled sets AllowHTTPUpdate to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over allow_http_update in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="UpdateTrustedRoot">Sigstore trusted root for bb update</string>
+      <string id="UpdateTrustedRoot_Help">Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration or registry policy only; removes the need for outbound access to the Sigstore TUF CDN.&#xA;&#xA;Enabled sets UpdateTrustedRoot to the text given, taking precedence over update_trusted_root in %ProgramData%\bb\config.yaml. Disabled or not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="UpdateTUFURL">Sigstore TUF mirror for bb update</string>
+      <string id="UpdateTUFURL_Help">Base URL of an internally mirrored Sigstore TUF repository. System configuration or registry policy only; mutually exclusive with update_trusted_root.&#xA;&#xA;Enabled sets UpdateTUFURL to the text given, taking precedence over update_tuf_url in %ProgramData%\bb\config.yaml. Disabled or not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="UpdateSignatureIdentity">Expected identity of the release signer</string>
+      <string id="UpdateSignatureIdentity_Help">Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.&#xA;&#xA;Enabled sets UpdateSignatureIdentity to the text given, taking precedence over update_signature_identity in %ProgramData%\bb\config.yaml. Disabled or not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="UpdateSignatureIssuer">Expected issuer of the release signer</string>
+      <string id="UpdateSignatureIssuer_Help">Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.&#xA;&#xA;Enabled sets UpdateSignatureIssuer to the text given, taking precedence over update_signature_issuer in %ProgramData%\bb\config.yaml. Disabled or not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="AllowUnverifiedUpdate">Allow bb update without signature verification</string>
+      <string id="AllowUnverifiedUpdate_Help">Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration or registry policy only.&#xA;&#xA;Enabled sets AllowUnverifiedUpdate to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over allow_unverified_update in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="DisableBB">Switch bb off</string>
+      <string id="DisableBB_Help">Disable bb machine-wide: every command is refused except help, --describe, --version, bb doctor and printing a completion script, so a copy a user installed themselves cannot be used. System configuration or registry policy only.&#xA;&#xA;Enabled sets DisableBB to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over disable_bb in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="DisableMCPServer">Switch the MCP server off</string>
+      <string id="DisableMCPServer_Help">Refuse &#39;bb ai mcp serve&#39; machine-wide; the rest of bb keeps working. System configuration or registry policy only.&#xA;&#xA;Enabled sets DisableMCPServer to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over disable_mcp_server in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="ReadOnly">Make bb read-only</string>
+      <string id="ReadOnly_Help">Make bb read-only machine-wide: every command that changes something in Bitbucket is refused and &#39;bb ai mcp serve&#39; offers only the tools that read, while reads, --dry-run and changes to the local machine still run. System configuration or registry policy only.&#xA;&#xA;Enabled sets ReadOnly to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over read_only in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="MCPElicitationOptIn">Ask before an MCP tool decides a merge</string>
+      <string id="MCPElicitationOptIn_Help">Make &#39;bb ai mcp serve&#39; ask the person in the MCP client before each call of a tool that decides a merge, as --elicitation-opt-in does. Read from your own configuration file, and from system configuration or registry policy, where true requires it for every server and false does not switch it off.&#xA;&#xA;Enabled sets MCPElicitationOptIn to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over mcp_elicitation_opt_in in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+      <string id="MCPAIDisclosure">Say that an AI agent wrote what the MCP server publishes</string>
+      <string id="MCPAIDisclosure_Help">Whether &#39;bb ai mcp serve&#39; ends the comments, pull request descriptions and tag messages an agent writes with a line saying an AI agent wrote them; on unless set to false. Read from your own configuration file, and from system configuration or registry policy, where it decides for every server either way. Off, the server offers no tool that publishes what the agent wrote under your name at once.&#xA;&#xA;Enabled sets MCPAIDisclosure to 1 (true) and Disabled sets it to 0 (false), either one taking precedence over mcp_ai_disclosure in %ProgramData%\bb\config.yaml. Not configured, the setting comes from that file, or bb&#39;s default.</string>
+    </stringTable>
+    <presentationTable>
+      <presentation id="AllowedHosts">
+        <multiTextBox refId="AllowedHosts">Allowed Bitbucket hosts</multiTextBox>
+      </presentation>
+      <presentation id="CAFile">
+        <textBox refId="CAFile">
+          <label>CA bundle bb must use</label>
+        </textBox>
+      </presentation>
+      <presentation id="UpdateBaseURL">
+        <textBox refId="UpdateBaseURL">
+          <label>Release mirror for bb update</label>
+        </textBox>
+      </presentation>
+      <presentation id="UpdateTrustedRoot">
+        <textBox refId="UpdateTrustedRoot">
+          <label>Sigstore trusted root for bb update</label>
+        </textBox>
+      </presentation>
+      <presentation id="UpdateTUFURL">
+        <textBox refId="UpdateTUFURL">
+          <label>Sigstore TUF mirror for bb update</label>
+        </textBox>
+      </presentation>
+      <presentation id="UpdateSignatureIdentity">
+        <textBox refId="UpdateSignatureIdentity">
+          <label>Expected identity of the release signer</label>
+        </textBox>
+      </presentation>
+      <presentation id="UpdateSignatureIssuer">
+        <textBox refId="UpdateSignatureIssuer">
+          <label>Expected issuer of the release signer</label>
+        </textBox>
+      </presentation>
+    </presentationTable>
+  </resources>
+</policyDefinitionResources>
