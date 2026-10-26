@@ -12,8 +12,6 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-const registryPolicyKey = `Software\Policies\bb`
-
 type registryReader interface {
 	GetIntegerValue(name string) (uint64, uint32, error)
 	GetStringValue(name string) (string, uint32, error)
@@ -41,7 +39,7 @@ func machineConfigPath() string {
 // platformPolicyDescription names the registry key policy is read from, so a
 // message about a setting can say where to go and change it.
 func platformPolicyDescription() string {
-	return "Windows registry policy HKEY_LOCAL_MACHINE\\" + registryPolicyKey
+	return "Windows registry policy " + registryPolicyLocation
 }
 
 func loadPlatformPolicy() PolicyConfig {
@@ -51,7 +49,7 @@ func loadPlatformPolicy() PolicyConfig {
 }
 
 func loadPlatformPolicyWithProblems() (PolicyConfig, []PolicyProblem) {
-	k, err := registry.OpenKey(registry.LOCAL_MACHINE, registryPolicyKey, registry.QUERY_VALUE)
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, RegistryPolicyKey, registry.QUERY_VALUE)
 	if err != nil {
 		return PolicyConfig{}, nil
 	}
@@ -100,72 +98,48 @@ func parseRegistryPolicy(k registryReader) (PolicyConfig, []PolicyProblem) {
 	var policy PolicyConfig
 	var problems []PolicyProblem
 
-	// The restrictive side of each control: the one that keeps a guarantee
-	// rather than lifting it, so an unreadable value cannot open anything.
-	for _, flag := range []struct {
-		name        string
-		restrictive bool
-		into        **bool
-	}{
-		{"RequireKeyring", true, &policy.RequireKeyring},
-		{"AllowInsecureSkipVerify", false, &policy.AllowInsecureSkipVerify},
-		{"DisableUpdate", true, &policy.DisableUpdate},
-		{"AllowHTTPUpdate", false, &policy.AllowHTTPUpdate},
-		{"AllowUnverifiedUpdate", false, &policy.AllowUnverifiedUpdate},
-		{"DisableBB", true, &policy.DisableBB},
-		{"DisableMCPServer", true, &policy.DisableMCPServer},
-		{"ReadOnly", true, &policy.ReadOnly},
-		{"MCPElicitationOptIn", true, &policy.ElicitationOptIn},
-		// A value bb cannot read keeps the line, the side that hides nothing.
-		{"MCPAIDisclosure", true, &policy.AIDisclosure},
-	} {
-		value, problem := registryBool(k, flag.name, flag.restrictive)
-		if value != nil {
-			*flag.into = value
-		}
-		if problem != nil {
-			problems = append(problems, *problem)
-		}
-	}
-
-	if val, _, err := k.GetStringValue("CAFile"); err == nil && strings.TrimSpace(val) != "" {
-		policy.CAFile = strings.TrimSpace(val)
-	}
-
-	if vals, _, err := k.GetStringsValue("AllowedHosts"); err == nil && len(vals) > 0 {
-		policy.AllowedHosts = vals
-	} else if strVal, _, err := k.GetStringValue("AllowedHosts"); err == nil && strings.TrimSpace(strVal) != "" {
-		parts := strings.Split(strVal, ",")
-		cleaned := make([]string, 0, len(parts))
-		for _, p := range parts {
-			if t := strings.TrimSpace(p); t != "" {
-				cleaned = append(cleaned, t)
+	for _, value := range RegistryValues {
+		switch value.Kind {
+		case RegistryBoolean:
+			parsed, problem := registryBool(k, value.Name, value.restrictive)
+			if parsed != nil {
+				*value.boolean(&policy) = parsed
+			}
+			if problem != nil {
+				problems = append(problems, *problem)
+			}
+		case RegistryString:
+			if val, _, err := k.GetStringValue(value.Name); err == nil && strings.TrimSpace(val) != "" {
+				*value.text(&policy) = strings.TrimSpace(val)
+			}
+		case RegistryList:
+			if list := registryList(k, value.Name); len(list) > 0 {
+				*value.list(&policy) = list
 			}
 		}
-		if len(cleaned) > 0 {
-			policy.AllowedHosts = cleaned
-		}
-	}
-
-	if val, _, err := k.GetStringValue("UpdateBaseURL"); err == nil && strings.TrimSpace(val) != "" {
-		policy.UpdateBaseURL = strings.TrimSpace(val)
-	}
-
-	if val, _, err := k.GetStringValue("UpdateTrustedRoot"); err == nil && strings.TrimSpace(val) != "" {
-		policy.UpdateTrustedRoot = strings.TrimSpace(val)
-	}
-
-	if val, _, err := k.GetStringValue("UpdateTUFURL"); err == nil && strings.TrimSpace(val) != "" {
-		policy.UpdateTUFURL = strings.TrimSpace(val)
-	}
-
-	if val, _, err := k.GetStringValue("UpdateSignatureIdentity"); err == nil && strings.TrimSpace(val) != "" {
-		policy.UpdateSignatureIdentity = strings.TrimSpace(val)
-	}
-
-	if val, _, err := k.GetStringValue("UpdateSignatureIssuer"); err == nil && strings.TrimSpace(val) != "" {
-		policy.UpdateSignatureIssuer = strings.TrimSpace(val)
 	}
 
 	return policy, problems
+}
+
+// registryList reads a list policy value: a REG_MULTI_SZ, or a REG_SZ of
+// comma-separated entries.
+func registryList(k registryReader, name string) []string {
+	if vals, _, err := k.GetStringsValue(name); err == nil && len(vals) > 0 {
+		return vals
+	}
+
+	strVal, _, err := k.GetStringValue(name)
+	if err != nil || strings.TrimSpace(strVal) == "" {
+		return nil
+	}
+	parts := strings.Split(strVal, ",")
+	cleaned := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if t := strings.TrimSpace(p); t != "" {
+			cleaned = append(cleaned, t)
+		}
+	}
+
+	return cleaned
 }

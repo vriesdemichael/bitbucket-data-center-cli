@@ -71,7 +71,7 @@ func ConfigJSONSchema() map[string]any {
 		},
 		"allow_http_update": map[string]any{
 			"type":        "boolean",
-			"description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration only.",
+			"description": "Decide whether bb update may fetch over plain HTTP. false refuses http:// update URLs and --allow-http for every user; true permits plain HTTP for every user. Unset, a user opts in with --allow-http or BB_ALLOW_HTTP_UPDATE. https is always accepted. System configuration or registry policy only.",
 		},
 		"mcp_audit_file": map[string]any{
 			"type":        "string",
@@ -79,23 +79,23 @@ func ConfigJSONSchema() map[string]any {
 		},
 		"update_trusted_root": map[string]any{
 			"type":        "string",
-			"description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration only; removes the need for outbound access to the Sigstore TUF CDN.",
+			"description": "Path to a Sigstore trusted_root.json used to verify release signatures offline. System configuration or registry policy only; removes the need for outbound access to the Sigstore TUF CDN.",
 		},
 		"update_tuf_url": map[string]any{
 			"type":        "string",
-			"description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration only; mutually exclusive with update_trusted_root.",
+			"description": "Base URL of an internally mirrored Sigstore TUF repository. System configuration or registry policy only; mutually exclusive with update_trusted_root.",
 		},
 		"update_signature_identity": map[string]any{
 			"type":        "string",
-			"description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+			"description": "Expected certificate SAN of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.",
 		},
 		"update_signature_issuer": map[string]any{
 			"type":        "string",
-			"description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration only.",
+			"description": "Expected OIDC issuer of the release signer, for organisations that re-sign mirrored artifacts. System configuration or registry policy only.",
 		},
 		"allow_unverified_update": map[string]any{
 			"type":        "boolean",
-			"description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration only.",
+			"description": "Permit bb update without Sigstore signature verification. Last resort; SHA256 checksum verification still applies. System configuration or registry policy only.",
 		},
 	}
 
