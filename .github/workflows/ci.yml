@@ -479,9 +479,28 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
+      # The stack trace behind a 500 is logged when the request fails, which
+      # can be minutes before the suite does, so the whole log is kept. The
+      # container's output carries every line of atlassian-bitbucket.log,
+      # stack traces included.
+      - name: Save Bitbucket logs on failure
+        if: failure()
+        run: |
+          mkdir -p .tmp
+          docker compose -f docker/compose.yml logs --no-color bitbucket > .tmp/bitbucket.log
+
+      - name: Upload Bitbucket logs on failure
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bitbucket-log
+          path: .tmp/bitbucket.log
+          retention-days: 14
+          if-no-files-found: warn
+
       - name: Dump Bitbucket logs on failure
         if: failure()
-        run: docker compose -f docker/compose.yml logs --no-color --tail 400 bitbucket
+        run: tail -n 400 .tmp/bitbucket.log
 
       - name: Stop Bitbucket stack
         if: always()
