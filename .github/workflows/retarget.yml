@@ -39,6 +39,9 @@ jobs:
     env:
       GH_REPO: ${{ github.repository }}
       NUMBER: ${{ github.event.pull_request.number }}
+      # The pages a newcomer is pointed at, on next, where the rules are kept.
+      ADR_URL: ${{ github.server_url }}/${{ github.repository }}/blob/next/docs/site/adr/066-major-releases-integrate-on-a-next-branch.md
+      CONTRIBUTING_URL: ${{ github.server_url }}/${{ github.repository }}/blob/next/CONTRIBUTING.md#making-a-change
     steps:
       - name: Check the retarget App is configured
         env:
@@ -70,7 +73,18 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
-          gh api "repos/$GH_REPO/issues/$NUMBER/comments" --silent -f body="Moved to \`next\`: every change integrates on \`next\` through a pull request, and \`main\` moves only when \`next\` is promoted onto it (ADR-066). Closed and reopened once so that CI runs against \`next\`."
+          body=$(printf '%s\n' \
+            "Moved to \`next\`: every change integrates on \`next\` through a pull request, and \`main\` moves only when \`next\` is promoted onto it ([ADR-066]($ADR_URL)). Closed and reopened once so that CI runs against \`next\`." \
+            "" \
+            "If GitHub reports conflicts, rebase your branch onto \`next\` and force-push it:" \
+            "" \
+            "\`\`\`bash" \
+            "git fetch $GITHUB_SERVER_URL/$GH_REPO.git next && git rebase FETCH_HEAD" \
+            "git push --force-with-lease" \
+            "\`\`\`" \
+            "" \
+            "[CONTRIBUTING]($CONTRIBUTING_URL) has the rest of how a change gets in.")
+          gh api "repos/$GH_REPO/issues/$NUMBER/comments" --silent -f body="$body"
           gh api --method PATCH "repos/$GH_REPO/pulls/$NUMBER" -f state=closed --silent
           gh api --method PATCH "repos/$GH_REPO/pulls/$NUMBER" -f state=open --silent
 
@@ -82,4 +96,4 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
-          gh api "repos/$GH_REPO/issues/$NUMBER/comments" --silent -f body="Moved to \`next\`: every change integrates on \`next\` through a pull request, and \`main\` moves only when \`next\` is promoted onto it (ADR-066). Comment \`@dependabot rebase\` to run CI against \`next\`."
+          gh api "repos/$GH_REPO/issues/$NUMBER/comments" --silent -f body="Moved to \`next\`: every change integrates on \`next\` through a pull request, and \`main\` moves only when \`next\` is promoted onto it ([ADR-066]($ADR_URL)). Comment \`@dependabot rebase\` to run CI against \`next\`."
