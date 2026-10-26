@@ -223,6 +223,37 @@ func TestAShellThatDoesNotAnswerIsStopped(t *testing.T) {
 	}
 }
 
+// TestAShellIsAskedWithoutTheModulePathBbWasGiven: bb started from PowerShell 7
+// inherits its PSModulePath, and Windows PowerShell 5.1 given that path loads
+// PowerShell 7's modules and cannot say what its execution policy is. This test
+// binary stands in for the shell and prints the path it was given.
+func TestAShellIsAskedWithoutTheModulePathBbWasGiven(t *testing.T) {
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatalf("locate the test executable: %v", err)
+	}
+	t.Setenv(modulePathVariable, "1")
+	t.Setenv("PSModulePath", filepath.Join("PowerShell", "7", "Modules"))
+
+	output, err := runner(answerTimeout)(context.Background(), executable)
+	if err != nil {
+		t.Fatalf("the shell could not be asked: %v", err)
+	}
+	if strings.TrimSpace(output) != "asked; PSModulePath set=false" {
+		t.Errorf("the shell was asked with %q", output)
+	}
+}
+
+func TestWithoutModulePathKeepsEverythingElse(t *testing.T) {
+	t.Parallel()
+
+	kept := withoutModulePath([]string{"PATH=/bin", "PSModulePath=a", "psmodulepath=b", "PSModulePathX=c", "=C:=C:\\"})
+	want := []string{"PATH=/bin", "PSModulePathX=c", "=C:=C:\\"}
+	if strings.Join(kept, "\n") != strings.Join(want, "\n") {
+		t.Errorf("kept %q, want %q", kept, want)
+	}
+}
+
 func TestAllUsersGoesWhereEachShellReadsForEveryone(t *testing.T) {
 	t.Parallel()
 
