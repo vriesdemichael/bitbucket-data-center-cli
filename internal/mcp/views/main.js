@@ -234,6 +234,44 @@ function textOf(result) {
   return parts.filter((part) => part && part.type === "text").map((part) => part.text).join("\n");
 }
 
+// sentNothing is an answer from show that put nothing in front of the person:
+// the client said it draws no views, so bb read nothing for one.
+function sentNothing(result) {
+  const answer = (result && result.structuredContent) || {};
+  return answer.shown === false;
+}
+
+const DROPPED_PAYLOAD = "This client passed bb's answer on without what the view draws, so it cannot be drawn here.";
+
+// A client that passes show's answer on without its _meta, as VS Code's agent
+// host does, leaves the view without what it draws. Where the host passes the
+// view's tool calls, the view reads it through refresh_view, with the show
+// call the host gave it as input.
+function canReadDropped(view) {
+  const input = view.toolInput;
+  return view.hostTools && Boolean(input) && typeof input === "object" && typeof input.kind === "string";
+}
+
+// readDropped draws what show's answer lost on the way. Show's text told the
+// model what the view shows, so the model is not told again.
+async function readDropped(view) {
+  try {
+    const result = await bridge.callTool(REFRESH_TOOL, Object.assign({}, view.toolInput), OPEN_TIMEOUT_MS);
+    // An answer that came meanwhile is the view's own.
+    if (view.payload || view.failure) return;
+    if (!result || result.isError) throw new Error(textOf(result) || "bb could not read it.");
+    const payload = payloadOf(result);
+    if (!payload || payload.version !== VIEW_PAYLOAD_VERSION) throw new Error("bb answered with data this page cannot draw.");
+    showPayload(view, payload);
+    view.history = [];
+  } catch (error) {
+    if (view.payload || view.failure) return;
+    view.failure = DROPPED_PAYLOAD + " Reading it again failed: " + ((error && error.message) || "bb could not read it.");
+  }
+  render();
+  scheduleRefresh(view);
+}
+
 bridge.on("ui/notifications/tool-input", (params) => {
   view.toolInput = (params && params.arguments) || null;
   render();
@@ -243,8 +281,13 @@ bridge.on("ui/notifications/tool-result", (result) => {
   const payload = payloadOf(result);
   if (result && result.isError) {
     view.failure = textOf(result) || "The view could not be built.";
-  } else if (!payload) {
+  } else if (!payload && sentNothing(result)) {
     view.failure = textOf(result) || "There is nothing for this view to show.";
+  } else if (!payload && canReadDropped(view)) {
+    readDropped(view);
+    return;
+  } else if (!payload) {
+    view.failure = DROPPED_PAYLOAD;
   } else if (payload.version !== VIEW_PAYLOAD_VERSION) {
     view.failure = DIFFERENT_VERSION;
   } else {
