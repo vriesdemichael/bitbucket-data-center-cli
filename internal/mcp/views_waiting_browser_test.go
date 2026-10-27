@@ -4,6 +4,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 	"github.com/chromedp/cdproto/cdp"
 	cdppage "github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/vriesdemichael/bitbucket-data-center-cli/internal/mcp/viewhost"
 )
 
@@ -113,5 +115,84 @@ func TestAViewWhoseResultDoesNotComeSaysSo(t *testing.T) {
 	inFrame(t, ctx, 0, `return d.getElementById("app").firstElementChild.bbDrawn === true;`, &same)
 	if !same {
 		t.Error("the waits running out after the result drew the view again")
+	}
+}
+
+// droppedResult is show's answer as a client passes it on that keeps its text
+// and structuredContent and drops its _meta, as VS Code's agent host does.
+func droppedResult(t *testing.T, text string, out ShowOutput) json.RawMessage {
+	t.Helper()
+	encoded, err := json.Marshal(&mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: text}}, StructuredContent: out})
+	if err != nil {
+		t.Fatalf("encode the result: %v", err)
+	}
+	return encoded
+}
+
+// A view whose answer reached it without what it draws reads that through
+// refresh_view, with the show call the host gave it, and draws it; show's text
+// told the model, so the model is not told again. A host that passes no tool
+// calls, or a read that fails, gets a view that says what happened rather
+// than show's text for the model. A client that said it draws no views was
+// sent nothing, and nothing is read for it.
+func TestAViewWhoseAnswerLostItsDataReadsIt(t *testing.T) {
+	card := refreshCardPayload("Round refunds to the cent", "OPEN", time.Now(), "one")
+	call := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": 42}
+	shown := droppedResult(t, "Showed the person pull request PAY/ledger#42 as an interactive card: open.\n\n"+notDrawn,
+		ShowOutput{Shown: true, Kind: showKindPullRequest, Target: "PAY/ledger#42"})
+	notShown := droppedResult(t, "This client displays no views, so nothing was shown.",
+		ShowOutput{Shown: false, Kind: showKindPullRequest, Target: "PAY/ledger#42"})
+	const (
+		readsIt = iota
+		passesNoCalls
+		readFails
+		drawsNoViews
+	)
+	ctx := browser(t, []viewhost.Frame{
+		readsIt: {Title: "a host that passes tool calls", Arguments: call, Result: shown,
+			ToolResults: answers(refreshAnswer(t, &card, "The person opened pull request PAY/ledger#42 in a view: open."))},
+		passesNoCalls: {Title: "a host that passes none", Arguments: call, Result: shown},
+		readFails: {Title: "a read that fails", Arguments: call, Result: shown,
+			ToolResults: answers(toolAnswer(t, "Bitbucket did not answer.", true))},
+		drawsNoViews: {Title: "a client that said it draws no views", Arguments: call, Result: notShown,
+			ToolResults: answers(refreshAnswer(t, &card, "The person opened pull request PAY/ledger#42 in a view: open."))},
+	})
+
+	if text := frameText(t, ctx, readsIt); !strings.Contains(text, "Round refunds to the cent") {
+		t.Fatalf("the view did not draw what it read:\n%s", text)
+	}
+	calls := toolCalls(t, ctx, readsIt, "refresh_view")
+	if len(calls) != 1 {
+		t.Fatalf("the view read it %d times, want once", len(calls))
+	}
+	for key, want := range map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": float64(42)} {
+		if calls[0][key] != want {
+			t.Errorf("the read sent %s = %v, want %v (all: %v)", key, calls[0][key], want, calls[0])
+		}
+	}
+	if since, ok := calls[0]["since"]; ok {
+		t.Errorf("the read sent since %v, so bb could answer that nothing changed", since)
+	}
+	if told := hostMessages(t, ctx, readsIt, "ui/update-model-context"); len(told) != 0 {
+		t.Errorf("the model was told %v, which show's text already told it", told)
+	}
+
+	text := frameText(t, ctx, passesNoCalls)
+	if !strings.Contains(text, "without what the view draws") || strings.Contains(text, "If the person says") {
+		t.Errorf("a host that passes no tool calls shows:\n%s\nwant what happened, not show's text for the model", text)
+	}
+	if asked := hostMessages(t, ctx, passesNoCalls, "tools/call"); len(asked) != 0 {
+		t.Errorf("the view asked a host that passes no tool calls: %v", asked)
+	}
+
+	if text := frameText(t, ctx, readFails); !strings.Contains(text, "without what the view draws") || !strings.Contains(text, "Bitbucket did not answer.") {
+		t.Errorf("a read that fails shows:\n%s\nwant what happened and why the read failed", text)
+	}
+
+	if text := frameText(t, ctx, drawsNoViews); !strings.Contains(text, "This client displays no views") {
+		t.Errorf("a client that said it draws no views shows:\n%s\nwant show's answer", text)
+	}
+	if asked := toolCalls(t, ctx, drawsNoViews, "refresh_view"); len(asked) != 0 {
+		t.Errorf("the view read what bb did not send a client that said it draws no views: %v", asked)
 	}
 }

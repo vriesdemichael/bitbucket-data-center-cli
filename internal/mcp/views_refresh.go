@@ -12,7 +12,9 @@ import (
 // Keeping a view current (ADR-101). A view draws what its result carries,
 // then, while it is on screen, calls refresh_view with the show call it
 // answers and the fingerprint of what it draws. The tool reads the view's data
-// again and sends it only when the fingerprint has changed.
+// again and sends it only when the fingerprint has changed. A view whose
+// client passed show's answer on without its _meta reads its data the same
+// way, without a fingerprint, from the show call the client gave it.
 //
 // MCP Apps offers the tool to views and not to the model (visibility "app"),
 // so it takes nothing from the model's tool list or its attention.
@@ -38,8 +40,9 @@ type RefreshViewOutput struct {
 func specRefreshView() Spec {
 	tool := &mcp.Tool{
 		Name: "refresh_view",
-		Description: "Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep " +
-			"current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.",
+		Description: "Called by bb's views, not by the model: reads what a view shows, for a view to open it, to keep it " +
+			"current, or to draw it when the client passed show's answer on without it. With since, the fingerprint of the " +
+			"data a view draws, it answers with the data only when that differs.",
 		Annotations: readOnly("Refresh a view"),
 		InputSchema: refreshViewInputSchema(showKinds),
 		Meta:        appOnlyToolMeta(),

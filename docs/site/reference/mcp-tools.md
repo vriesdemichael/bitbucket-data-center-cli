@@ -110,7 +110,7 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
     :   Hand a review to the person to publish. The comments added with add_pr_comment wait in their draft review; this returns the pull request's URL, how many comments the draft holds, and the status you suggest. Nothing is approved or published here: the person publishes the review in Bitbucket with Finish review, and approves or requests changes. Tell them where it waits and what you suggest.
 
     `refresh_view`
-    :   Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.
+    :   Called by bb's views, not by the model: reads what a view shows, for a view to open it, to keep it current, or to draw it when the client passed show's answer on without it. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.
 
     `resolve_ref`
     :   Resolve a branch or tag name to its tip commit SHA. Use as a cheap existence check before cloning or creating a pull request.
