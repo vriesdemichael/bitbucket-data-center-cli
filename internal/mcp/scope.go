@@ -109,6 +109,11 @@ const (
 	// withheld. Withholding it is the honest outcome; pretending a commit SHA
 	// can be bounded to a project would be the dishonest one.
 	scopeUnbounded
+
+	// scopeNothingToBound: the tool reads nothing from a project or repository,
+	// so there is no argument to bind, and a scoped server needs it as much as
+	// any other. It takes neither argument, and none is added to its call.
+	scopeNothingToBound
 )
 
 // scopeRules maps every tool to how it can be bounded.
@@ -147,6 +152,9 @@ var scopeRules = map[string]scopeRule{
 	"refresh_view": scopeOptionalProjectRepo,
 	// Suggests a repository's branches and the people who can read it.
 	"suggest_form_values": scopeProjectRepo,
+	// Say how the server is set up, and read nothing from a repository.
+	"diagnose":       scopeNothingToBound,
+	"diagnose_check": scopeNothingToBound,
 }
 
 // withheldUnderScope reports whether a scope removes a tool altogether.
@@ -186,6 +194,10 @@ func applyScope(toolName string, arguments json.RawMessage, scope Scope) (json.R
 		// Unreachable through AllSpecs, which the tests pin. Refusing rather
 		// than passing through keeps the failure closed if it ever is reached.
 		return nil, fmt.Errorf("tool %q has no scope rule; refusing to dispatch it under --project/--repo", toolName)
+	}
+
+	if rule == scopeNothingToBound {
+		return arguments, nil
 	}
 
 	if withheldUnderScope(toolName, scope) {

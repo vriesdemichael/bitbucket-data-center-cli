@@ -97,7 +97,8 @@ write. Administrative policy can keep it read-only whatever those say.
 --tools exposes only the tools you name, and --exclude leaves tools out;
 neither brings back a tool that a read-only server or a scope withholds.
 refresh_view and suggest_form_values, which only the views of show call, go
-with show.
+with show, and diagnose_check, which only the page of diagnose calls, goes with
+diagnose.
 
 --project or --repo confines the server to one project or repository, and a
 call aimed elsewhere is refused. Build statuses, which hang off a commit rather
@@ -110,7 +111,9 @@ call this server's tools through the client, with their confirmations, the
 scope and the audit trail. Views highlight code, but of a Svelte, ERB, PHTML,
 Go HTML or Jinja template only the markup, because a crafted file can keep the
 lexers for the code in it busy for seconds. --highlight-templates highlights
-that code too.
+that code too. When a view or a tool does not work, ask the agent to run
+diagnose: it checks this server as the client started it, and its page, alone
+among bb's, declares Bitbucket's address, to measure what gets through.
 
 --audit-file records every tool call as JSON Lines, to a path or to stderr for
 a log collector that reads the process streams. When a record cannot be
@@ -218,6 +221,10 @@ PAT than your own.`,
 				// stdout is the protocol channel, so operational messages go to
 				// stderr like every other diagnostic (ADR-046).
 				Warn: func(message string) { fmt.Fprintln(cmd.ErrOrStderr(), message) },
+				// What bb doctor checks, as the client started this process.
+				Configuration: func() config.Diagnosis {
+					return config.Diagnose(config.DiagnoseInput{Overrides: config.Overrides{Host: strings.TrimSpace(host)}})
+				},
 			})
 
 			// IOTransport over the command's own streams rather than

@@ -7,7 +7,7 @@ search:
 
 This page is generated from the server's registries by `task docs:export-mcp-tools`. Do not edit manually.
 
-`bb ai mcp serve` registers 27 tools. It exposes the 19 that only read, and with `--allow-writes` every one, unless `--tools`, `--exclude` or a scope withholds it. On a server started with `--elicitation-opt-in`, 6 ask the person to confirm a call in the MCP client before they run.
+`bb ai mcp serve` registers 29 tools. It exposes the 21 that only read, and with `--allow-writes` every one, unless `--tools`, `--exclude` or a scope withholds it. On a server started with `--elicitation-opt-in`, 6 ask the person to confirm a call in the MCP client before they run.
 
 The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.
 
@@ -15,12 +15,16 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
 
 `refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them. A click in a view is a call of a tool, through the client, never a connection to Bitbucket ([how views work](../advanced/mcp-governance.md#views-stay-inside-the-mcp-server)).
 
+`diagnose` checks the server as the client started it, and what the client can do with a view, when a view or a tool does not work ([troubleshooting](../troubleshooting.md#a-view-or-a-tool-does-not-work)). `diagnose_check` goes with it, for its page alone.
+
 | Tool | What it does | Access | Asks |
 |---|---|---|---|
 | `add_pr_comment` | Comment on pull request | writes | never |
 | `compare_refs` | Compare refs | read-only | never |
 | `create_pull_request` | Create pull request | writes | never |
 | `create_tag` | Create tag | writes | always |
+| `diagnose` | Diagnose | read-only | never |
+| `diagnose_check` | Diagnose check | read-only | never |
 | `disable_auto_merge` | Disable auto-merge | writes | always |
 | `enable_auto_merge` | Enable auto-merge | writes | always |
 | `get_build_status` | Get build status | read-only | never |
@@ -60,6 +64,12 @@ The tools answer the agent, and `show` is for the person: an agent uses the tool
 
     `create_tag`
     :   Create a tag on a specific commit or ref. Use for release tagging after a PR is merged.
+
+    `diagnose`
+    :   Check how this server is set up: the build, the configuration the client started it with, the way to Bitbucket and whether the credential works, what is exposed, whether confirmations can show, and the client's name, version and capabilities. Call it only when the person asks, such as why a tool does not work. It never returns a credential, a pull request, a person or Bitbucket's address, so its answer can be pasted into an issue. In a client that displays MCP Apps views it also draws a page for the person, which measures what a view can do there and says what that means for bb's views. Where the client passes a view's calls to the server, the next call includes what the page measured.
+
+    `diagnose_check`
+    :   Called by bb's diagnose page, not by the model: answers a read-only call, with filler of the size asked for, so the page can tell what reaches it, and keeps the page's report for the next diagnose.
 
     `disable_auto_merge`
     :   Disable auto-merge on a pull request. The PR will no longer be merged automatically.

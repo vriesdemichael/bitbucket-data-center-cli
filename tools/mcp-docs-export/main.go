@@ -73,6 +73,7 @@ func exportToolReference(outputPath string) error {
 	out.WriteString("The [MCP server guide](../ai-and-llms.md#the-mcp-server) wires it into a client, with examples of the [views](../ai-and-llms.md#views-in-your-agent) `show` puts in front of you.\n\n")
 	out.WriteString("The tools answer the agent, and `show` is for the person: an agent uses the tools to find, read and change things, and `show` for someone who is there to see the result, never when it works on its own. [Tools and views](../ai-and-llms.md#tools-and-views) says which for what.\n\n")
 	out.WriteString("`refresh_view` and `suggest_form_values` are for those views: MCP Apps offers them to views and not to the model, and they go with `show` whether or not `--tools` names them. A click in a view is a call of a tool, through the client, never a connection to Bitbucket ([how views work](../advanced/mcp-governance.md#views-stay-inside-the-mcp-server)).\n\n")
+	out.WriteString("`diagnose` checks the server as the client started it, and what the client can do with a view, when a view or a tool does not work ([troubleshooting](../troubleshooting.md#a-view-or-a-tool-does-not-work)). `diagnose_check` goes with it, for its page alone.\n\n")
 
 	// The title is the tool's name for people, as MCP defines it. The
 	// description is written for the model, which is the tool's main reader,

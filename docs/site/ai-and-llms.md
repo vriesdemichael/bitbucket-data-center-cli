@@ -182,6 +182,8 @@ and draft state are edited the same way.
 - A link opens in Bitbucket, in your browser, through the client; a client that
   will not open links shows you the address to copy. A button, such as
   **Reply** or **Approve**, calls a tool, as the agent does.
+- When a view does not behave as it should, ask the agent to run `diagnose`:
+  it [measures what your client lets a view do](troubleshooting.md#a-view-or-a-tool-does-not-work).
 - bb reads everything a view shows, avatars included, with its own credentials:
   the client never contacts Bitbucket.
 
