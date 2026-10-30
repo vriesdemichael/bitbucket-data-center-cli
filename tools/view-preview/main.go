@@ -17,9 +17,10 @@
 //
 // -from adds the pull request form for a new pull request from that branch.
 // -kinds draws only the kinds it names, and -height draws each fullscreen
-// frame that tall, to see a long view whole. The stand-in host passes tool
-// calls, so the views offer what they do in a client; a view the person
-// clicks in does nothing here.
+// frame that tall, to see a long view whole, and -width draws each frame that
+// wide, such as a phone's. The stand-in host passes tool calls, so the views
+// offer what they do in a client; a view the person clicks in does nothing here.
+// -no-tool-calls draws them as a client that passes none does.
 package main
 
 import (
@@ -30,6 +31,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,14 +56,16 @@ func main() {
 	from := flag.String("from", "", "a branch to draft a new pull request from, in the pull request form")
 	kinds := flag.String("kinds", "", "comma-separated kinds to draw, such as pull_request,diff; empty draws every kind")
 	height := flag.Int("height", 0, "how tall to draw each fullscreen frame, in pixels; zero is the stand-in host's default")
+	width := flag.Int("width", 0, "how wide to draw each frame, in pixels; zero is the page's grid")
 	sameOrigin := flag.Bool("same-origin", false, "let the page reach into its frames, to drive the views from a script")
+	noToolCalls := flag.Bool("no-tool-calls", false, "draw the views as a client that passes them no tool calls does")
 	flag.Parse()
 
 	if *theme != "" && *theme != "light" && *theme != "dark" {
 		fmt.Fprintln(os.Stderr, "view-preview: -theme is light or dark")
 		os.Exit(2)
 	}
-	count, err := run(*project, *repo, *id, *state, *theme, *from, *kinds, *height, *sameOrigin, *out)
+	count, err := run(*project, *repo, *id, *state, *theme, *from, *kinds, *height, *width, *sameOrigin, *noToolCalls, *out)
 	if err == nil && *screenshots != "" {
 		err = capture(*out, *screenshots, count, *bare)
 	}
@@ -146,7 +150,7 @@ func capture(page, dir string, count int, bare bool) error {
 	return nil
 }
 
-func run(project, repo, id, state, theme, from, kinds string, height int, sameOrigin bool, out string) (int, error) {
+func run(project, repo, id, state, theme, from, kinds string, height, width int, sameOrigin, noToolCalls bool, out string) (int, error) {
 	if project == "" || repo == "" || id == "" {
 		return 0, fmt.Errorf("-project, -repo and -id are required")
 	}
@@ -184,9 +188,13 @@ func run(project, repo, id, state, theme, from, kinds string, height int, sameOr
 		return 0, fmt.Errorf("read the view page: %w", err)
 	}
 
-	card := map[string]any{"kind": "pull_request", "project": project, "repo": repo, "id": id}
+	number, err := strconv.Atoi(id)
+	if err != nil {
+		return 0, fmt.Errorf("-id is a pull request's number: %w", err)
+	}
+	card := map[string]any{"kind": "pull_request", "project": project, "repo": repo, "id": number}
 	list := map[string]any{"kind": "pull_requests", "project": project, "repo": repo, "state": state}
-	diff := map[string]any{"kind": "diff", "project": project, "repo": repo, "id": id}
+	diff := map[string]any{"kind": "diff", "project": project, "repo": repo, "id": number}
 
 	type frame struct {
 		title      string
@@ -248,15 +256,20 @@ func run(project, repo, id, state, theme, from, kinds string, height int, sameOr
 		if want.mode == "fullscreen" {
 			frameHeight = height
 		}
+		answers := map[string][]json.RawMessage{"refresh_view": {unchanged}}
+		if noToolCalls {
+			answers = nil
+		}
 		frames = append(frames, viewhost.Frame{
 			Title:       want.title,
 			Theme:       want.theme,
 			Mode:        want.mode,
 			Fullscreen:  want.fullscreen,
 			Height:      frameHeight,
+			Width:       width,
 			Arguments:   want.arguments,
 			Result:      encoded,
-			ToolResults: map[string][]json.RawMessage{"refresh_view": {unchanged}},
+			ToolResults: answers,
 		})
 	}
 
