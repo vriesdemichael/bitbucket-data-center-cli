@@ -124,12 +124,21 @@ func TestAViewOffersToOpenOnlyWhatWorksHere(t *testing.T) {
 		{Title: "a list in a host that passes no tool calls", Mode: "inline", Fullscreen: true, Result: fixtureResult(t, list)},
 	})
 
+	var tabs bool
+	inFrame(t, ctx, 0, `return [...d.querySelectorAll("button")].some((b) => b.textContent.trim() === "Diff");`, &tabs)
+	if tabs {
+		t.Error("a server that shows no other kind offers to open the diff")
+	}
+	// A host that passes no tool calls still leads to the diff, in Bitbucket.
+	clickButton(t, ctx, 1, "Diff")
+	chromedp.Do(ctx, chromedp.Sleep(150*time.Millisecond))
+	if opened := hostMessages(t, ctx, 1, "ui/open-link"); len(opened) != 1 || !strings.HasSuffix(messageText(opened[0]), "/pull-requests/42/diff") {
+		t.Errorf("Diff in a host that passes no tool calls asked the host to open %v, want the diff in Bitbucket", opened)
+	}
+	if calls := refreshCalls(t, ctx, 1); len(calls) != 0 {
+		t.Errorf("Diff in a host that passes no tool calls called refresh_view: %v", calls)
+	}
 	for frame := range 2 {
-		var tabs bool
-		inFrame(t, ctx, frame, `return [...d.querySelectorAll("button")].some((b) => b.textContent.trim() === "Diff");`, &tabs)
-		if tabs {
-			t.Errorf("frame %d offers to open the diff where it cannot", frame)
-		}
 		var card bool
 		inFrame(t, ctx, frame, `return Boolean(d.querySelector(".pr-card"));`, &card)
 		if !card {

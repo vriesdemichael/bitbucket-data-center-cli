@@ -53,6 +53,11 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* An inline view is as tall as it says, so it needs no scrollbar, and one that
+   shows while the host catches up would narrow it. A host that caps the view
+   leaves it overflowing, and the page gives it the bar back (watchSize). */
+:root:not([data-mode="fullscreen"]):not(.capped) { scrollbar-width: none; }
+
 #app { padding: 14px 16px; }
 :root[data-mode="fullscreen"] #app { padding: 0; height: 100vh; }
 
@@ -152,6 +157,10 @@ button {
 .comment-input:focus-visible, .form-field input:focus-visible, .form-field textarea:focus-visible { outline: 2px solid var(--bb-info); outline-offset: 1px; }
 .comment-input:disabled { opacity: 0.7; }
 .form-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.form-notice { margin: 10px 0 0; }
+.form-handover { margin-top: 2px; }
+.form-handed { margin: 8px 0 0; }
+.form-text { display: block; width: 100%; margin-top: 6px; font-family: var(--bb-mono); font-size: var(--bb-text-xs); }
 .form-hint { margin-left: auto; font-size: var(--bb-text-xs); }
 .form-error { margin: 0; color: var(--bb-danger); font-size: var(--bb-text-xs); overflow-wrap: anywhere; }
 
@@ -471,6 +480,11 @@ button.attention-link:hover { color: var(--bb-info); text-decoration-color: curr
 .avatar-stack .more { white-space: nowrap; }
 .stamp { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: var(--bb-text-xs); color: var(--bb-text-faint); white-space: nowrap; }
 .stamp.stale { color: var(--bb-warning); }
+/* What a view that does not update says is never cut off. */
+.stamp.as-drawn { white-space: normal; }
+.view-note { margin: 10px 0 0; font-size: var(--bb-text-xs); }
+.list-header + .view-note { margin: 0 0 8px; }
+.fullscreen-header .view-note { margin-top: 6px; }
 /* When the data was read, and a button to read it again. */
 .stamp-row { display: inline-flex; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
 .stamp-row .stamp { min-width: 0; }
@@ -655,6 +669,8 @@ tr.more td { padding: 6px 8px; background: var(--bb-bg-subtle); }
 .omitted-link:hover { background: var(--bb-bg); }
 .omitted-link:focus-visible { outline: 2px solid var(--bb-info); outline-offset: 1px; }
 .omitted-link .link-icon { color: var(--bb-info); }
+/* What opens Bitbucket because the view cannot act here says so beside its name. */
+.text-action .link-icon, .file-crumb .link-icon, .review-actions .link-icon { width: 12px; height: 12px; margin-left: 4px; vertical-align: -1px; flex: none; }
 .button.icon-only { min-height: 26px; padding: 2px 6px; }
 .file-name .faint { font-size: 11px; }
 .file-link {

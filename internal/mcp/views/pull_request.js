@@ -26,6 +26,7 @@ function pullRequestCard(pr, payload, view) {
     el("div", { class: "status" },
       attentionLine(pr, payload, view),
       quietLine(pr)),
+    motionNote(payload, view),
     el("div", { class: "actions quiet" },
       el("button", {
         type: "button",
@@ -36,7 +37,8 @@ function pullRequestCard(pr, payload, view) {
       pullRequestTabs(pr, "pull_request", view),
       linkButton("Open in Bitbucket", pr.url, view.bridge, "ghost"),
       el("span", { class: "spacer" }),
-      snapshotStamp(payload, view, true)));
+      snapshotStamp(payload, view, true)),
+    noActionsNote(view));
 }
 
 // pullRequestTop is where the pull request lives, its number and its state.
@@ -204,13 +206,23 @@ function pullRequestPage(pr, payload, view) {
         backButton(view),
         el("div", { class: "pr-top" }, icon("pullRequest", null, "faint"), repositoryLabel(pr)),
         el("h1", { class: "pr-title" }, pr.title),
-        el("div", { class: "header-meta" }, stateBadges(pr), byline(pr, payload.avatars || {}))),
+        el("div", { class: "header-meta" }, stateBadges(pr), byline(pr, payload.avatars || {})),
+        motionNote(payload, view),
+        noActionsNote(view)),
       el("div", { class: "header-actions" },
         snapshotStamp(payload, view),
         pullRequestTabs(pr, "pull_request", view),
         linkButton("Open in Bitbucket", pr.url, view.bridge, "primary"),
-        el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
+        exitButton(view))),
     pullRequestOverview(pr, payload, view));
+}
+
+// exitButton leaves fullscreen the view asked for. The host's own control
+// closes what the host opened, and asking it for inline there would draw the
+// inline layout inside its pane.
+function exitButton(view) {
+  if (!view.ownFullscreen) return null;
+  return el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen");
 }
 
 function pullRequestOverview(pr, payload, view) {

@@ -121,9 +121,18 @@ function fileComment(thread, pr, avatars, view) {
 }
 
 // fileCrumb is a file's path as Bitbucket heads a comment on it, which opens
-// the pull request's diff at the file where the view can open it.
+// the pull request's diff at the file: in the view where it can, and in
+// Bitbucket where it cannot.
 function fileCrumb(path, pr, view, threadId) {
   const label = pathLabel(path);
+  if (pr.repository && opensInBitbucket(view, "diff") && isWebURL(pr.url)) {
+    return el("button", {
+      type: "button",
+      class: "file-crumb",
+      title: "Open " + path + " in Bitbucket",
+      onclick: () => openLink(view.bridge, pathURL(pr, path)),
+    }, label, icon("external", null, "link-icon"));
+  }
   if (!pr.repository || !canOpen(view, "diff")) return el("div", { class: "file-crumb" }, label);
   return el("button", {
     type: "button",
@@ -240,6 +249,12 @@ function commentBlock(comment, thread, pr, avatars, view, options) {
 // server lets a view comment. The reply answers that comment, as Bitbucket's
 // Reply does.
 function replyAction(comment, thread, pr, view) {
+  if (pr.repository && callsInBitbucket(view, "add_pr_comment")) {
+    const url = isWebURL(thread.url) ? thread.url : pr.url;
+    return el("div", { class: "comment-actions" },
+      el("button", { type: "button", class: "text-action", title: "Reply in Bitbucket", onclick: () => openLink(view.bridge, url) },
+        "Reply", icon("external", null, "link-icon")));
+  }
   if (!pr.repository || !canCall(view, "add_pr_comment")) return null;
   const key = "reply-" + comment.id;
   if (!view.drafts.has(key)) {

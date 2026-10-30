@@ -42,6 +42,29 @@ function canRefresh(view) {
 // writes.
 const STILL_KINDS = ["pull_request_form"];
 
+// staysAsDrawn is a view that would keep current and cannot: its host passes it
+// no tool calls, so what it shows never changes, and it says so.
+function staysAsDrawn(view) {
+  return !view.hostTools && Boolean(view.payload) && !STILL_KINDS.includes(view.payload.kind);
+}
+
+// motionNote says what may have moved on in a view that cannot look, beside the
+// way to look: its data was bound to change soon.
+function motionNote(payload, view) {
+  if (!staysAsDrawn(view) || !inMotion(payload)) return null;
+  return el("p", { class: "view-note faint", role: "note" }, motionWords(payload));
+}
+
+function motionWords(payload) {
+  if (payload.kind === "pull_requests") {
+    return "Builds that were running may have finished. Open a pull request in Bitbucket to look, or ask for the list again in the conversation.";
+  }
+  const pr = payload.pull_request;
+  const running = pr.check_counts ? pr.check_counts.in_progress : (pr.checks || []).filter((check) => String(check.state).toUpperCase() === "INPROGRESS").length;
+  const what = running === 0 ? "It may have merged by itself." : running === 1 ? "The running build may have finished." : "The running builds may have finished.";
+  return what + " Open it in Bitbucket to look, or ask for it again in the conversation.";
+}
+
 // inMotion is a view whose data is bound to change soon.
 function inMotion(payload) {
   const running = (pr) => {
@@ -111,7 +134,7 @@ async function refreshView(view, byPerson) {
     state.failure = null;
     if (answer.changed) {
       const payload = payloadOf(result);
-      if (!payload || payload.version !== VIEW_PAYLOAD_VERSION) throw new Error("bb answered with data this page cannot draw.");
+      if (!payload || payload.version !== VIEW_PAYLOAD_VERSION) throw new Error(DIFFERENT_VERSION);
       state.idleMs = REFRESH_IDLE_MS;
       if (payload.kind === "diff" && !byPerson && patchChanged(view.payload, payload)) {
         state.pending = { payload, text: textOf(result) };
