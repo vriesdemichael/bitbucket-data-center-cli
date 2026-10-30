@@ -121,6 +121,39 @@ report: `error.message` summarises the issues, and `error.details` names each
 one under its own key, such as `violation/system/policies/require_keyrng` or
 `setting/retry_count`.
 
+## A view or a tool does not work
+
+`bb doctor` runs in your shell. The MCP server runs in the environment your MCP
+client gives it, and what a view can do is settled between the view and the
+client. Ask the agent to run `diagnose`, which looks at both:
+
+- **From inside the server:** the build, the configuration the client started it
+  with, the way to Bitbucket and whether the credential works, what is exposed,
+  whether confirmations are on and the client can show them, and the client's
+  name, version and capabilities.
+- **In a client that renders views:** a page that measures what a view can do
+  there, and says what that means for bb's views. It runs most checks when it
+  opens. A few, such as opening a link or asking for fullscreen, wait for a press
+  each, because a client may need a gesture or open a popup.
+
+The report holds no credential, pull request or person, and not Bitbucket's
+address, only whether that is `http` or `https`, so you can paste it into an
+issue. **Copy** on the page takes it, or it selects it where the client refuses
+the clipboard. The agent can read it too where the client gives it the view's
+context, and where the client passes a view's calls to the server, the next
+`diagnose` includes it.
+
+| The report says | What it means |
+|---|---|
+| The host declares no `serverTools` | Views say they do not update, their tabs and actions open Bitbucket, and a pull request form hands what you wrote to the conversation |
+| The host lists fullscreen and refused it | **Expand** opens a view in place |
+| The host takes a view's context | Whether the model reads it is not known, so name the lines you ask about |
+| The page is older than the bb that is running | The client kept the page: start a new conversation |
+| A result's `_meta` did not arrive | Views cannot draw from `show`'s answer alone in this client |
+
+Nothing the server or the page can see says whether the model reads a result's
+`_meta` or `structuredContent`, or where a client stores a result on disk.
+
 ## Git asks for a password on push or pull
 
 `bb` installs itself as a git credential helper for one host, matched exactly —

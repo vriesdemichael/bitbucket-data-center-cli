@@ -59,11 +59,14 @@ func ClientsFromConfig(cfg config.AppConfig) (Clients, error) {
 // A tool offered only to views (AppOnly) is not among what --tools selects
 // for the model: it goes with the tools it needs, and --exclude still
 // withholds it.
+//
+// NeedsAll names tools every one of which must be exposed for this one to be.
 type Spec struct {
 	Tool            *mcp.Tool
 	Register        func(*mcp.Server, Clients)
 	Asks            Asking
 	Needs           []string
+	NeedsAll        []string
 	RegisterExposed func(*mcp.Server, ServerOptions, map[string]bool)
 }
 
@@ -310,6 +313,10 @@ func AllSpecs() []Spec {
 		// Offered to views, not to the model: the pull request form's
 		// suggestions for branches and reviewers.
 		specSuggestFormValues(),
+		// What the server and the client's views can do, when the person asks.
+		specDiagnose(),
+		// Offered to its page, not to the model.
+		specDiagnoseCheck(),
 	}
 }
 
@@ -367,6 +374,13 @@ type ServerOptions struct {
 	// Warn receives operational messages that must not go to stdout, which is
 	// the protocol channel. Optional.
 	Warn func(string)
+
+	// Configuration checks the configuration this process loads, as bb doctor
+	// does, for diagnose. Optional.
+	Configuration func() config.Diagnosis
+
+	// checks is what has reached this server of diagnose's page.
+	checks *diagnoseLog
 }
 
 // NewServer creates a configured MCP server.
@@ -379,6 +393,7 @@ type ServerOptions struct {
 // it does not depend on whether a client can confirm a call: a tool that asks
 // is listed to every client and refuses the call where it cannot ask.
 func NewServer(opts ServerOptions) *mcp.Server {
+	opts.checks = &diagnoseLog{}
 	tools := exposedSpecs(opts)
 	exposed := make(map[string]bool, len(tools))
 	for _, spec := range tools {
@@ -399,7 +414,8 @@ func NewServer(opts ServerOptions) *mcp.Server {
 	var complete func(context.Context, *mcp.CompleteRequest) (*mcp.CompleteResult, error)
 	// The views need the page they render in, which is a resource, and the
 	// MCP Apps extension, which tells a client that renders views that this
-	// server offers them (ADR-101).
+	// server offers them (ADR-101). Diagnose draws a page of its own while they
+	// are on.
 	views := exposed["show"]
 	if len(resources) > 0 || views {
 		capabilities.Resources = &mcp.ResourceCapabilities{}
@@ -430,7 +446,10 @@ func NewServer(opts ServerOptions) *mcp.Server {
 		spec.Register(server, opts.Clients)
 	}
 	if views {
-		server.AddResource(viewResource(), readViewResource)
+		server.AddResource(viewResource(), readViewResource(opts.checks))
+	}
+	if views && exposed["diagnose"] {
+		addDiagnoseResources(server, opts)
 	}
 	for _, spec := range resources {
 		server.AddResourceTemplate(spec.Template, resourceHandler(spec, opts.Clients))
@@ -500,6 +519,9 @@ func exposedSpecs(opts ServerOptions) []Spec {
 			if len(spec.Needs) > 0 && !anyExposed(spec.Needs, names) {
 				continue
 			}
+			if !allExposed(spec.NeedsAll, names) {
+				continue
+			}
 			kept = append(kept, spec)
 		}
 		if len(kept) == len(exposed) {
@@ -516,6 +538,15 @@ func anyExposed(tools []string, exposed map[string]bool) bool {
 		}
 	}
 	return false
+}
+
+func allExposed(tools []string, exposed map[string]bool) bool {
+	for _, tool := range tools {
+		if !exposed[tool] {
+			return false
+		}
+	}
+	return true
 }
 
 // instructions is what the server tells a model about using its tools
@@ -572,6 +603,9 @@ func instructions(opts ServerOptions) string {
 		}
 		paragraphs = append(paragraphs, "Call show only when a person is there to see it: never when you work on your own, as in a scheduled, "+
 			"background or batch task, and never to read data, which its answer does not carry.")
+	}
+	if exposed["diagnose"] {
+		paragraphs = append(paragraphs, "When the person asks why a view or a tool does not work, diagnose checks the setup and what this client's views can do. Call it only when they ask.")
 	}
 
 	return strings.Join(paragraphs, "\n\n")

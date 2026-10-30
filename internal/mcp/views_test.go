@@ -407,7 +407,7 @@ func TestViewScriptsBuildNoHTMLFromStrings(t *testing.T) {
 	t.Parallel()
 
 	forbidden := []string{"innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function", "createContextualFragment", "DOMParser", "srcdoc ="}
-	for _, name := range append(slices.Clone(viewScripts), "view.css") {
+	for _, name := range append(slices.Clone(viewScripts), "view.css", "diagnose.css", "diagnose.js") {
 		source := mustReadViewAsset(name)
 		if strings.Contains(strings.ToLower(source), "</script") || strings.Contains(strings.ToLower(source), "</style") {
 			t.Errorf("%s contains a closing script or style tag", name)
