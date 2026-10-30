@@ -97,6 +97,18 @@
     const send = (message) => iframe.contentWindow.postMessage(message, "*");
     const reply = (id, result) => send({ jsonrpc: "2.0", id, result });
     record.teardown = () => send({ jsonrpc: "2.0", id: "teardown-" + index, method: "ui/resource-teardown", params: {} });
+    // The host's own control: it changes the mode without the view asking, and
+    // says so as a host does, with whatever else has changed.
+    const showMode = (mode) => {
+      record.mode = mode;
+      stage.classList.toggle("fullscreen", mode === "fullscreen");
+      section.classList.toggle("wide", mode === "fullscreen");
+      if (mode === "fullscreen") iframe.style.height = "";
+    };
+    record.setMode = (mode, context) => {
+      showMode(mode);
+      send({ jsonrpc: "2.0", method: "ui/notifications/host-context-changed", params: Object.assign({ displayMode: mode }, context) });
+    };
     const note = (text) => {
       const line = document.createElement("li");
       line.textContent = text;
@@ -105,7 +117,7 @@
     const context = () => ({
       theme: frame.theme,
       displayMode: record.mode,
-      availableDisplayModes: frame.hideDisplayModes ? undefined : frame.fullscreen ? ["inline", "fullscreen"] : ["inline"],
+      availableDisplayModes: frame.hideDisplayModes ? undefined : frame.fullscreen || frame.refusesFullscreen ? ["inline", "fullscreen"] : ["inline"],
       locale: "en-US",
       platform: "desktop",
       styles: { variables: THEMES[frame.theme] || THEMES.light },
@@ -116,31 +128,44 @@
       const message = event.data;
       if (!message || message.jsonrpc !== "2.0") return;
       record.messages.push(message);
+      if ((frame.refuses || []).includes(message.method)) {
+        send({ jsonrpc: "2.0", id: message.id, error: { code: -32000, message: message.method + " refused" } });
+        note("refused: " + message.method);
+        return;
+      }
       switch (message.method) {
-        case "ui/initialize":
+        case "ui/initialize": {
+          const capabilities = Object.assign(frame.opensNoLinks ? { updateModelContext: {}, message: {} } : { openLinks: {}, updateModelContext: {}, message: {} },
+            record.answers ? { serverTools: {} } : {});
+          for (const name of frame.without || []) delete capabilities[name];
           reply(message.id, {
             protocolVersion: "2026-01-26",
             hostInfo: { name: "bb-view-host", version: "1" },
-            hostCapabilities: Object.assign(frame.opensNoLinks ? { updateModelContext: {}, message: {} } : { openLinks: {}, updateModelContext: {}, message: {} },
-              record.answers ? { serverTools: {} } : {}),
+            hostCapabilities: capabilities,
             hostContext: context(),
           });
           break;
+        }
         case "ui/notifications/initialized":
           send({ jsonrpc: "2.0", method: "ui/notifications/tool-input", params: { arguments: frame.arguments || {} } });
           if (frame.result) send({ jsonrpc: "2.0", method: "ui/notifications/tool-result", params: frame.result });
           break;
         case "ui/notifications/size-changed":
           if (record.mode === "inline" && message.params && message.params.height > 0) {
-            iframe.style.height = Math.ceil(message.params.height) + "px";
+            const reported = Math.ceil(message.params.height);
+            iframe.style.height = (frame.capsHeight ? Math.min(reported, frame.capsHeight) : reported) + "px";
           }
           break;
         case "ui/request-display-mode": {
           const wanted = message.params && message.params.mode;
-          record.mode = frame.fullscreen && wanted === "fullscreen" ? "fullscreen" : "inline";
-          stage.classList.toggle("fullscreen", record.mode === "fullscreen");
-          section.classList.toggle("wide", record.mode === "fullscreen");
-          if (record.mode === "fullscreen") iframe.style.height = "";
+          // A host that refuses leaves its own fullscreen as it is, and answers
+          // inline all the same.
+          if (frame.refusesFullscreen) {
+            reply(message.id, { mode: "inline" });
+            note("display mode refused: " + wanted);
+            break;
+          }
+          showMode(frame.fullscreen && wanted === "fullscreen" ? "fullscreen" : "inline");
           reply(message.id, { mode: record.mode });
           send({ jsonrpc: "2.0", method: "ui/notifications/host-context-changed", params: { displayMode: record.mode } });
           note("display mode: " + record.mode);
