@@ -53,6 +53,14 @@ type Frame struct {
 	// the view says it is: a host that scrolls a view it caps. Zero follows
 	// the view.
 	CapsHeight int `json:"capsHeight,omitempty"`
+	// ResourceResults answer the view's reads of resources, by URI. A frame
+	// with them declares serverResources; a read of anything else is refused.
+	ResourceResults map[string]json.RawMessage `json:"resourceResults,omitempty"`
+	// Policy is put at the top of the page as its Content-Security-Policy, as a
+	// host enforces what a page declares.
+	Policy string `json:"policy,omitempty"`
+	// Sandbox is what the host declares it approved, as hostCapabilities.sandbox.
+	Sandbox json.RawMessage `json:"sandbox,omitempty"`
 	// Width is the view's width in pixels, such as a phone's; zero leaves it
 	// to the page's grid.
 	Width int `json:"width,omitempty"`

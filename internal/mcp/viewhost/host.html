@@ -81,7 +81,12 @@
     const iframe = document.createElement("iframe");
     iframe.setAttribute("sandbox", SANDBOX);
     iframe.setAttribute("title", title.textContent);
-    iframe.srcdoc = VIEW;
+    // A host enforces what a page declares from outside the page: nothing the
+    // page does can undo a policy that was there before it ran.
+    const escaped = String(frame.policy || "").split("&").join("&amp;").split("\"").join("&quot;");
+    iframe.srcdoc = frame.policy
+      ? VIEW.replace("<head>", "<head><meta http-equiv=\"Content-Security-Policy\" content=\"" + escaped + "\">")
+      : VIEW;
     const log = document.createElement("ul");
     log.className = "log";
     stage.append(iframe);
@@ -136,7 +141,9 @@
       switch (message.method) {
         case "ui/initialize": {
           const capabilities = Object.assign(frame.opensNoLinks ? { updateModelContext: {}, message: {} } : { openLinks: {}, updateModelContext: {}, message: {} },
-            record.answers ? { serverTools: {} } : {});
+            record.answers ? { serverTools: {} } : {},
+            frame.resourceResults ? { serverResources: {} } : {},
+            frame.sandbox ? { sandbox: frame.sandbox } : {});
           for (const name of frame.without || []) delete capabilities[name];
           reply(message.id, {
             protocolVersion: "2026-01-26",
@@ -188,6 +195,18 @@
           reply(message.id, {});
           note("message from the person: " + textOf(message.params));
           break;
+        case "resources/read": {
+          const uri = message.params && message.params.uri;
+          const answer = frame.resourceResults && frame.resourceResults[uri];
+          if (!answer) {
+            send({ jsonrpc: "2.0", id: message.id, error: { code: -32601, message: "this host passes no read of " + uri } });
+            note("resource read refused: " + uri);
+            break;
+          }
+          reply(message.id, answer);
+          note("resource read: " + uri);
+          break;
+        }
         case "tools/call": {
           const name = message.params && message.params.name;
           const queue = record.answers && record.answers[name];
