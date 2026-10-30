@@ -261,13 +261,18 @@ func viewResource() *mcp.Resource {
 	}
 }
 
-func readViewResource(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-	return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{{
-		URI:      req.Params.URI,
-		MIMEType: viewMIMEType,
-		Text:     viewPage(),
-		Meta:     viewResourceMeta(),
-	}}}, nil
+// readViewResource serves the page, and notes the read for diagnose: a host may
+// keep what it read for a whole session.
+func readViewResource(checks *diagnoseLog) mcp.ResourceHandler {
+	return func(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+		checks.readView()
+		return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{{
+			URI:      req.Params.URI,
+			MIMEType: viewMIMEType,
+			Text:     viewPage(),
+			Meta:     viewResourceMeta(),
+		}}}, nil
+	}
 }
 
 // clientDisplaysViews reports whether the calling client renders MCP Apps
@@ -1347,7 +1352,7 @@ func avatarDataURI(data []byte) (string, error) {
 // self-contained document the first time a client reads it: no build step, no
 // package manager, and a `go build` that always includes the views.
 
-//go:embed views/page.html views/view.css views/*.js
+//go:embed views/page.html views/view.css views/diagnose.css views/*.js
 var viewAssets embed.FS
 
 // viewScripts are the page's scripts, in the order they are concatenated into
@@ -1374,13 +1379,18 @@ const (
 )
 
 var viewPage = sync.OnceValue(func() string {
+	return assemblePage(viewScripts, mustReadViewAsset("view.css"))
+})
+
+// assemblePage puts these scripts and this style into one self-contained
+// document.
+func assemblePage(scripts []string, style string) string {
 	page := mustReadViewAsset("page.html")
-	style := mustReadViewAsset("view.css")
 
 	var script strings.Builder
 	// One scope for every script, so nothing the page defines is global.
 	script.WriteString("(() => {\n\"use strict\";\n")
-	for _, name := range viewScripts {
+	for _, name := range scripts {
 		script.WriteString("\n// ---- " + name + " ----\n")
 		script.WriteString(mustReadViewAsset(name))
 	}
@@ -1391,7 +1401,7 @@ var viewPage = sync.OnceValue(func() string {
 	}
 	page = strings.Replace(page, viewStylePlaceholder, style, 1)
 	return strings.Replace(page, viewScriptPlaceholder, script.String(), 1)
-})
+}
 
 func mustReadViewAsset(name string) string {
 	data, err := viewAssets.ReadFile("views/" + name)

@@ -36,7 +36,7 @@ func TestRefreshViewIsOfferedToViewsOnly(t *testing.T) {
 	}
 
 	for _, spec := range AllSpecs() {
-		want := spec.Tool.Name == "refresh_view" || spec.Tool.Name == "suggest_form_values"
+		want := spec.Tool.Name == "refresh_view" || spec.Tool.Name == "suggest_form_values" || spec.Tool.Name == "diagnose_check"
 		if spec.AppOnly() != want {
 			t.Errorf("%s: AppOnly() = %v, want %v", spec.Tool.Name, spec.AppOnly(), want)
 		}

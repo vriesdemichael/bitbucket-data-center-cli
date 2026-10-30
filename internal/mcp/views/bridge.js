@@ -116,6 +116,11 @@ function createBridge(appInfo) {
       return request("tools/call", { name, arguments: args }, timeout);
     },
 
+    // A read of one of bb's resources, which the host passes to the server.
+    readResource(uri, timeout) {
+      return request("resources/read", { uri }, timeout);
+    },
+
     requestDisplayMode(mode) {
       return request("ui/request-display-mode", { mode });
     },

@@ -64,6 +64,9 @@ var mcpOnly = map[string]string{
 		"reads again by running the command again",
 	"suggest_form_values": "suggests branches and reviewers as the person fills in the pull request form, which only views " +
 		"call; `bb pr create` completes the same values in the shell",
+	"diagnose": "checks the server from inside it, as the MCP client started it, and what the client's views can do; " +
+		"`bb doctor` checks the configuration from a shell, which sees neither",
+	"diagnose_check": "answers diagnose's page, which only that page calls; a terminal has no page to answer",
 }
 
 // TestEveryMCPToolIsAccountedFor fails when a tool is added without deciding
