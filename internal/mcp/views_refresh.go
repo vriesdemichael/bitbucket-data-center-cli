@@ -70,8 +70,12 @@ func refreshViewInputSchema(kinds []string) *jsonschema.Schema {
 		panic(fmt.Sprintf("deriving input schema for RefreshViewInput: %v", err))
 	}
 	shown := showInputSchema(kinds)
-	for name, property := range shown.Properties {
-		schema.Properties[name] = property
+	for name := range schema.Properties {
+		if property, ok := shown.Properties[name]; ok {
+			schema.Properties[name] = property
+		} else if name != "since" {
+			dropProperty(schema, name)
+		}
 	}
 	return schema
 }
@@ -90,6 +94,9 @@ func refreshViewHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[Refresh
 	return func(ctx context.Context, _ *mcp.CallToolRequest, in RefreshViewInput) (*mcp.CallToolResult, RefreshViewOutput, error) {
 		if !offers.kind(in.Kind) {
 			return nil, RefreshViewOutput{}, fmt.Errorf("refresh_view cannot refresh %q here; it refreshes %s", in.Kind, strings.Join(offers.Kinds, ", "))
+		}
+		if err := offers.refusesEdit(in.ShowInput); err != nil {
+			return nil, RefreshViewOutput{}, err
 		}
 		if err := checkShowInput(in.ShowInput); err != nil {
 			return nil, RefreshViewOutput{}, err
