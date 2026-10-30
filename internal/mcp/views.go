@@ -131,17 +131,32 @@ func (offers viewOffers) kind(kind string) bool {
 	return slices.Contains(offers.Kinds, kind)
 }
 
+// edits reports whether a view may edit a pull request that exists.
+func (offers viewOffers) edits() bool {
+	return slices.Contains(offers.Tools, "update_pull_request")
+}
+
+// refusesEdit says why a form of a pull request that exists cannot be shown
+// here, if it cannot: nothing here could save it.
+func (offers viewOffers) refusesEdit(in ShowInput) error {
+	if in.Kind == showKindPullRequestForm && in.ID != 0 && !offers.edits() {
+		return fmt.Errorf("a pull request form cannot edit a pull request here: this server does not offer update_pull_request")
+	}
+	return nil
+}
+
 // ShowInput is the argument set for show.
 type ShowInput struct {
-	Kind    string        `json:"kind"`
-	Project string        `json:"project,omitempty" jsonschema:"Bitbucket project key"`
-	Repo    string        `json:"repo,omitempty" jsonschema:"Repository slug"`
-	ID      PullRequestID `json:"id,omitempty" jsonschema:"Pull request ID, for kind pull_request and diff"`
-	// State's description is set in specShow, from the values the service
-	// accepts, as list_pull_requests does.
-	State string `json:"state,omitempty"`
-	Role  string `json:"role,omitempty" jsonschema:"For kind pull_requests without repo: REVIEWER, AUTHOR or PARTICIPANT. Omit for all three"`
-	Limit int    `json:"limit,omitempty" jsonschema:"For kind pull_requests: how many to show (default 25)"`
+	Kind    string `json:"kind"`
+	Project string `json:"project,omitempty" jsonschema:"Bitbucket project key"`
+	Repo    string `json:"repo,omitempty" jsonschema:"Repository slug"`
+	// ID's description is set in showInputSchema, from the kinds offered, and
+	// State's there too, from the values the service accepts, as
+	// list_pull_requests does.
+	ID    PullRequestID `json:"id,omitempty"`
+	State string        `json:"state,omitempty"`
+	Role  string        `json:"role,omitempty" jsonschema:"For kind pull_requests without repo: REVIEWER, AUTHOR or PARTICIPANT. Omit for all three"`
+	Limit int           `json:"limit,omitempty" jsonschema:"For kind pull_requests: how many to show (default 25)"`
 	// What the model drafted for kind pull_request_form, named as
 	// create_pull_request names them.
 	FromRef     string `json:"from_ref,omitempty" jsonschema:"For kind pull_request_form: the source branch"`
@@ -164,20 +179,8 @@ type ShowOutput struct {
 
 func specShow() Spec {
 	tool := &mcp.Tool{
-		Name: "show",
-		Description: "Show the person a pull request, a list of pull requests or a pull request's diff as an interactive view, in " +
-			"clients that display MCP Apps views, or a pull request form for them to finish and submit. It is for the person, not for " +
-			"you: its answer says what was shown, not the data, so read with the other tools. Call it only when a person is there to " +
-			"see it, never when you work on your own, as in a scheduled, background or batch task; and once, after you have what you " +
-			"need and before your answer. Kind pull_request, for a pull request the person asked about or should watch, takes project, " +
-			"repo and id; its view keeps its builds and reviews current, and its overview has its comments and activity. Kind diff " +
-			"takes the same, for changes the person cannot open in their own editor, such as another repository's, and draws the " +
-			"comments on their lines. Kind pull_requests, for what needs the person, takes the filters list_pull_requests takes. Kind " +
-			"pull_request_form is for a person who wants a say in a pull request before it exists, being particular about its " +
-			"description or reviewers or asking to see the draft; for a clear request to open one, call create_pull_request instead. " +
-			"It takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft), or an id to edit " +
-			"that pull request; nothing is created or changed until the person submits it. In a client that displays no views, it " +
-			"shows nothing and says so.",
+		Name:        "show",
+		Description: showDescription(viewOffers{Kinds: showKinds, Tools: viewActionTools, comments: true}),
 		Annotations: readOnly("Show a view"),
 		InputSchema: showInputSchema(showKinds),
 		Meta:        viewToolMeta(),
@@ -193,13 +196,86 @@ func specShow() Spec {
 		},
 		RegisterExposed: func(server *mcp.Server, opts ServerOptions, exposed map[string]bool) {
 			offers := offersFor(opts, exposed)
-			// The schema names only the kinds this server offers, so a model is
-			// not told about a view it would be refused.
+			// The description and the schema name only what this server offers,
+			// so a model is not told about a view it would be refused.
 			offered := *tool
+			offered.Description = showDescription(offers)
 			offered.InputSchema = showInputSchema(offers.Kinds)
 			mcp.AddTool(server, &offered, showHandler(opts.Clients, offers))
 		},
 	}
+}
+
+// showDescription is what the model is told about show on a server with these
+// offers: only the kinds it would show.
+func showDescription(offers viewOffers) string {
+	var views []string
+	for _, kind := range []struct{ kind, words string }{
+		{showKindPullRequest, "a pull request"},
+		{showKindPullRequests, "a list of pull requests"},
+		{showKindDiff, "a pull request's diff"},
+	} {
+		if offers.kind(kind.kind) {
+			views = append(views, kind.words)
+		}
+	}
+	form := offers.kind(showKindPullRequestForm)
+
+	var text strings.Builder
+	switch {
+	case len(views) == 0:
+		text.WriteString("Show the person a pull request form to finish and submit, as an interactive view, in clients that display MCP Apps views.")
+	case form:
+		text.WriteString("Show the person " + wordList(views) + " as an interactive view, in clients that display MCP Apps views, or a pull request form for them to finish and submit.")
+	default:
+		text.WriteString("Show the person " + wordList(views) + " as an interactive view, in clients that display MCP Apps views.")
+	}
+	text.WriteString(" It is for the person, not for you: its answer says what was shown, not the data, so read with the other tools. " +
+		"Call it only when a person is there to see it, never when you work on your own, as in a scheduled, background or batch task; " +
+		"and once, after you have what you need and before your answer.")
+
+	if offers.kind(showKindPullRequest) {
+		text.WriteString(" Kind pull_request, for a pull request the person asked about or should watch, takes project, repo and id")
+		if offers.comments {
+			text.WriteString("; its overview has its comments and activity")
+		}
+		text.WriteString(".")
+	}
+	if offers.kind(showKindDiff) {
+		text.WriteString(" Kind diff takes project, repo and id, for changes the person cannot open in their own editor, such as another repository's")
+		if offers.comments {
+			text.WriteString(", and draws the comments on their lines")
+		}
+		text.WriteString(".")
+	}
+	if offers.kind(showKindPullRequests) {
+		text.WriteString(" Kind pull_requests, for what needs the person, takes the filters list_pull_requests takes.")
+	}
+	if form {
+		text.WriteString(" Kind pull_request_form is for a person who wants a say in a pull request before it exists, being particular about its " +
+			"description or reviewers or asking to see the draft; for a clear request to open one, call create_pull_request instead. " +
+			"It takes project, repo, from_ref and what you drafted (title, description, to_ref, reviewers, draft)")
+		if offers.edits() {
+			text.WriteString(", or an id to edit that pull request; nothing is created or changed until the person submits it.")
+		} else {
+			text.WriteString("; nothing is created until the person submits it.")
+		}
+	}
+	// What a view does in the client is answered to the view, and the server
+	// never sees it, so this says what the client decides.
+	if len(views) > 0 {
+		text.WriteString(" A view keeps itself current where the client lets it; to bring one up to date, show it again.")
+	}
+	text.WriteString(" In a client that displays no views, it shows nothing and says so.")
+	return text.String()
+}
+
+// wordList joins words in a sentence: "a", "a or b", "a, b or c".
+func wordList(words []string) string {
+	if len(words) < 2 {
+		return strings.Join(words, "")
+	}
+	return strings.Join(words[:len(words)-1], ", ") + " or " + words[len(words)-1]
 }
 
 // offeredShowKinds are the kinds whose data tools are exposed.
@@ -211,6 +287,13 @@ func offeredShowKinds(exposed map[string]bool) []string {
 		}
 	}
 	return kinds
+}
+
+// showKindFields are the arguments only one kind takes, which a server that
+// does not offer the kind does not list.
+var showKindFields = map[string][]string{
+	showKindPullRequests:    {"state", "role", "limit"},
+	showKindPullRequestForm: {"from_ref", "to_ref", "title", "description", "reviewers", "draft"},
 }
 
 func showInputSchema(kinds []string) *jsonschema.Schema {
@@ -225,7 +308,23 @@ func showInputSchema(kinds []string) *jsonschema.Schema {
 	schema.Properties["kind"].Description = "What to show: " + strings.Join(kinds, ", ")
 	schema.Properties["state"].Description = "For kind pull_requests, in any case: " +
 		strings.Join(openapi.PullRequestStateFilters, ", ") + ". Defaults to open."
+	schema.Properties["id"].Description = "Pull request ID, for kind " + strings.Join(slices.DeleteFunc(slices.Clone(kinds), func(kind string) bool {
+		return kind == showKindPullRequests
+	}), ", ")
+	for kind, fields := range showKindFields {
+		if !slices.Contains(kinds, kind) {
+			for _, field := range fields {
+				dropProperty(schema, field)
+			}
+		}
+	}
 	return schema
+}
+
+// dropProperty takes an argument out of a schema derived from a struct.
+func dropProperty(schema *jsonschema.Schema, name string) {
+	delete(schema.Properties, name)
+	schema.PropertyOrder = slices.DeleteFunc(schema.PropertyOrder, func(other string) bool { return other == name })
 }
 
 // viewToolMeta names the page a client renders the tool's answer in. The flat
@@ -310,6 +409,9 @@ func showHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[ShowInput, Sho
 	return func(ctx context.Context, req *mcp.CallToolRequest, in ShowInput) (*mcp.CallToolResult, ShowOutput, error) {
 		if !offers.kind(in.Kind) {
 			return nil, ShowOutput{}, fmt.Errorf("show cannot show %q here; it shows %s", in.Kind, strings.Join(offers.Kinds, ", "))
+		}
+		if err := offers.refusesEdit(in); err != nil {
+			return nil, ShowOutput{}, err
 		}
 		if err := checkShowInput(in); err != nil {
 			return nil, ShowOutput{}, err
