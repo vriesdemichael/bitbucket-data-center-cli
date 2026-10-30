@@ -42,9 +42,10 @@ function renderPullRequests(payload, view) {
     el("span", { class: "faint" }, formatNumber(prs.length) + (payload.limit_reached ? "+" : "")),
     el("span", { class: "spacer" }),
     snapshotStamp(payload, view, !view.fullscreen),
-    open
-      ? el("button", { type: "button", class: "button ghost", onclick: () => view.expand() }, icon("collapse"), view.fullscreen ? "Exit full screen" : "Show fewer")
-      : null);
+    open && !view.fullscreen
+      ? el("button", { type: "button", class: "button ghost", onclick: () => view.expand() }, icon("collapse"), "Show fewer")
+      : null,
+    view.fullscreen ? exitButton(view) : null);
 
   // A list that stopped at its limit counts only what it holds, and says so.
   // The state and the role ask Bitbucket again; the chips sort what came back.
@@ -74,7 +75,7 @@ function renderPullRequests(payload, view) {
     footer = el("div", { class: "actions" }, moreButton("rows", left, LIST_STEP, "pull requests", view));
   }
 
-  return el("div", { class: view.fullscreen ? "list-page" : "" }, header, filters, list, footer,
+  return el("div", { class: view.fullscreen ? "list-page" : "" }, header, listNotes(payload, view), filters, list, footer,
     payload.limit_reached && open ? el("p", { class: "faint" }, "There may be more than these in Bitbucket.") : null);
 }
 

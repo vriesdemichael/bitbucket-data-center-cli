@@ -28,6 +28,11 @@ const LIST_ROLES = [
   { value: "PARTICIPANT", label: "Participating" },
 ];
 
+// LIST_STATE_WORDS and LIST_ROLE_WORDS say what a list shows, for a list that
+// cannot ask for another.
+const LIST_STATE_WORDS = { open: "open", merged: "merged", declined: "declined", closed: "merged and declined", all: "all" };
+const LIST_ROLE_WORDS = { "": "in any role", REVIEWER: "you are reviewing", AUTHOR: "you authored", PARTICIPANT: "you take part in" };
+
 function offersOf(view) {
   return (view.payload && view.payload.offers) || { kinds: [], tools: [] };
 }
@@ -44,6 +49,30 @@ function canCall(view, tool) {
   return view.hostTools && !view.refresh.torndown && (offersOf(view).tools || []).includes(tool);
 }
 
+// opensInBitbucket and callsInBitbucket are what the server offers and this host
+// cannot do in the view, for want of tool calls: as a list's row does, each leads
+// to the same place in Bitbucket. What the server does not offer stays hidden.
+function opensInBitbucket(view, kind) {
+  return !view.hostTools && (offersOf(view).kinds || []).includes(kind);
+}
+
+function callsInBitbucket(view, tool) {
+  return !view.hostTools && (offersOf(view).tools || []).includes(tool);
+}
+
+// noActionsWords say once per view why what it would do here opens Bitbucket.
+function noActionsWords(view) {
+  const offers = offersOf(view);
+  const others = (offers.kinds || []).filter((kind) => !view.payload || kind !== view.payload.kind);
+  if (view.hostTools || (others.length === 0 && (offers.tools || []).length === 0)) return "";
+  return "This client does not let a view act, so these open Bitbucket.";
+}
+
+function noActionsNote(view) {
+  const words = noActionsWords(view);
+  return words ? el("p", { class: "view-note faint", role: "note" }, words) : null;
+}
+
 // openInView reads what show would put in front of the person, and shows it
 // in this view. replace is a list asked for again, or a pull request a form
 // made, which takes the place of what it was rather than one to go back to.
@@ -58,7 +87,7 @@ async function openInView(view, show, replace, lead, focus) {
     const result = await view.bridge.callTool(REFRESH_TOOL, show, OPEN_TIMEOUT_MS);
     if (!result || result.isError) throw new Error(textOf(result) || "bb could not open it.");
     const payload = payloadOf(result);
-    if (!payload || payload.version !== VIEW_PAYLOAD_VERSION) throw new Error("bb answered with data this page cannot draw.");
+    if (!payload || payload.version !== VIEW_PAYLOAD_VERSION) throw new Error(DIFFERENT_VERSION);
     if (!replace && view.payload) view.history.push(snapshotOf(view));
     const keep = replace ? { filter: view.filter } : null;
     showPayload(view, payload);
@@ -157,17 +186,19 @@ function kindWords(kind) {
 }
 
 // pullRequestTabs are buttons to the pull request's other views, those the
-// server shows, opened in this view.
+// server shows, opened in this view, or in Bitbucket where the view cannot.
 function pullRequestTabs(pr, current, view) {
   if (!pr || !pr.repository) return [];
   return PULL_REQUEST_TABS
-    .filter((tab) => tab.kind !== current && canOpen(view, tab.kind))
-    .map((tab) => el("button", {
-      type: "button",
-      class: "button" + (view.opening === tab.kind ? " busy" : ""),
-      disabled: Boolean(view.opening),
-      onclick: () => openInView(view, { kind: tab.kind, project: pr.repository.project_key, repo: pr.repository.slug, id: pr.id }),
-    }, tab.label));
+    .filter((tab) => tab.kind !== current && (canOpen(view, tab.kind) || opensInBitbucket(view, tab.kind)))
+    .map((tab) => (opensInBitbucket(view, tab.kind)
+      ? linkButton(tab.label, tab.kind === "diff" ? diffURL(pr) : pr.url, view.bridge)
+      : el("button", {
+        type: "button",
+        class: "button" + (view.opening === tab.kind ? " busy" : ""),
+        disabled: Boolean(view.opening),
+        onclick: () => openInView(view, { kind: tab.kind, project: pr.repository.project_key, repo: pr.repository.slug, id: pr.id }),
+      }, tab.label)));
 }
 
 // openPullRequest opens a pull request's card in this view, or in Bitbucket
@@ -194,6 +225,22 @@ function listScope(payload, view) {
   return el("div", { class: "list-scopes" },
     choose("State", LIST_STATES, state, (value) => reask({ state: value })),
     show.repo ? null : choose("Role", LIST_ROLES, show.role || "", (value) => reask({ role: value })));
+}
+
+// listScopeWords stand for the list's state and role where it cannot ask for
+// others: what it shows, and that the conversation can.
+function listScopeWords(payload, view) {
+  const show = payload.show;
+  if (!show || !opensInBitbucket(view, "pull_requests")) return "";
+  const state = String(show.state || "open").toLowerCase();
+  const scope = (LIST_STATE_WORDS[state] || state) + " pull requests" + (show.repo ? "" : " " + (LIST_ROLE_WORDS[show.role || ""] || ""));
+  return "This list shows " + scope.trim() + ". Ask in the conversation for " + (show.repo ? "another state." : "another state or role.");
+}
+
+// listNotes are what a list that cannot act says, in one line under its title.
+function listNotes(payload, view) {
+  const words = [listScopeWords(payload, view), staysAsDrawn(view) && inMotion(payload) ? motionWords(payload) : "", noActionsWords(view)].filter(Boolean);
+  return words.length > 0 ? el("p", { class: "view-note faint", role: "note" }, words.join(" ")) : null;
 }
 
 // openNotice says what could not be opened, over the view.

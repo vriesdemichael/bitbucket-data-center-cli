@@ -423,9 +423,9 @@ func TestAFormSavesAnExistingPullRequest(t *testing.T) {
 	}
 }
 
-// Where the host passes no tool calls the form says it cannot submit, and
-// offers nothing that would not work: no button to send, no branch to pick
-// and no one to search for.
+// Where the host passes no tool calls the form says so before the person writes,
+// and offers nothing that would not work: no button to send, no branch to pick
+// and no one to search for, only what the model drafted.
 func TestAFormInAHostWithoutToolCallsSaysSo(t *testing.T) {
 	ctx := browser(t, []viewhost.Frame{
 		{Title: "form", Mode: "inline", Fullscreen: true, Result: fixtureResult(t, formPayload(newForm(), creating))},
@@ -440,8 +440,15 @@ func TestAFormInAHostWithoutToolCallsSaysSo(t *testing.T) {
 		t.Fatalf("the form has title %q and reads %q, want the draft and that it cannot be submitted here", title, text)
 	}
 	var offered map[string]any
-	inFrame(t, ctx, 0, `return { create: [...d.querySelectorAll("button")].some((b) => b.textContent === "Create" || b.textContent === "Create as draft"), pickers: [...d.querySelectorAll(".picker-button, .swap-button")].every((b) => b.disabled), search: d.querySelector(".reviewer-search").disabled };`, &offered)
-	if offered["create"] != false || offered["pickers"] != true || offered["search"] != true {
-		t.Errorf("a host that passes no tool calls is offered %v, want no create button, and the pickers and the search disabled", offered)
+	inFrame(t, ctx, 0, `return {
+		create: [...d.querySelectorAll("button")].some((b) => b.textContent === "Create" || b.textContent === "Create as draft"),
+		pickers: d.querySelectorAll(".picker-button, .swap-button, .reviewer-search").length,
+		saidFirst: Boolean(d.querySelector(".form-notice").compareDocumentPosition(d.querySelector('[data-draft="form.title"]')) & 4),
+	};`, &offered)
+	if offered["create"] != false || offered["pickers"] != float64(0) || offered["saidFirst"] != true {
+		t.Errorf("a host that passes no tool calls is offered %v, want no create button, no pickers, and the notice before the title", offered)
+	}
+	if !strings.Contains(text, "feature/retries") || !strings.Contains(text, "master") || chipNames(t, ctx, 0) != "bob,carol,erin" {
+		t.Errorf("the form does not show the branches and reviewers as drafted: %q, %q", text, chipNames(t, ctx, 0))
 	}
 }

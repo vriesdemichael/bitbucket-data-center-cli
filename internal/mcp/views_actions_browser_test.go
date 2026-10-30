@@ -140,14 +140,15 @@ func TestACommentOnThePullRequestGoesThroughTheModelsTool(t *testing.T) {
 	}
 }
 
-// A view offers to write only where the server lets views comment, and the
-// host passes tool calls.
+// A view offers to write only where the server lets views comment. Where the
+// host passes no tool calls, what the server offers leads to Bitbucket instead
+// (views_fallback_browser_test.go).
 func TestAViewOffersToCommentOnlyWhereItCan(t *testing.T) {
 	ctx := browser(t, []viewhost.Frame{
 		{Title: "a server that keeps add_pr_comment from views", Mode: "fullscreen", Fullscreen: true,
 			Result: fixtureResult(t, overviewPayload(fixtureActivity(), everyKind, "one")), ToolResults: answers(refreshAnswer(t, nil, "unchanged"))},
-		{Title: "a host that passes no tool calls", Mode: "fullscreen", Fullscreen: true,
-			Result: fixtureResult(t, overviewPayload(fixtureActivity(), commenting, "one"))},
+		{Title: "a host that passes no tool calls, on such a server", Mode: "fullscreen", Fullscreen: true,
+			Result: fixtureResult(t, overviewPayload(fixtureActivity(), everyKind, "one"))},
 	})
 	if err := chromedp.Do(ctx, chromedp.Sleep(200*time.Millisecond)); err != nil {
 		t.Fatal(err)

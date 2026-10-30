@@ -170,6 +170,11 @@ and draft state are edited the same way.
   seconds while a build runs, less often the longer nothing changes, and not at
   all off screen. A changed diff is offered rather than swapped in while you
   read it. `--exclude refresh_view` keeps views as they were drawn.
+- A client decides what a view may do. Where it passes a view no tool calls, a
+  view says when it was read and that it does not update, so ask for it again
+  to bring it up to date. **Diff**, **Reply** and **Approve** open Bitbucket, and
+  a pull request form hands what you wrote to the conversation, or opens
+  Bitbucket's create page for the same branches.
 - A count is Bitbucket's count of the whole, and a view that lists fewer says
   so. A failed build or a request for changes is never behind a click.
 - Code is highlighted as far as bb gets before a deadline, and the rest drawn

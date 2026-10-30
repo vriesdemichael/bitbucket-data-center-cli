@@ -746,7 +746,7 @@ func TestViewsNeverHideWhatNeedsAttention(t *testing.T) {
 		t.Errorf("the file too large to show links to %v, want its diff in Bitbucket", opened)
 	}
 	diff := frameText(t, ctx, stressDiff)
-	if !strings.Contains(diff, "and 1,193 more files, in full screen") {
+	if !strings.Contains(diff, "and 1,193 more files") {
 		t.Errorf("the inline diff does not say how many files it leaves out:\n%.800s", diff)
 	}
 }

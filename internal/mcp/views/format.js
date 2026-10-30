@@ -116,13 +116,14 @@ const SNAPSHOT_STALE_MS = 60 * 60 * 1000;
 // snapshotStamp says when the view's data was read from Bitbucket, or last
 // found unchanged, with a button to read it again where the view can. A view
 // made for a glance says it only once that is long enough ago to matter, or
-// once reading it again failed.
+// once reading it again failed. One that cannot read it again always says so.
 function snapshotStamp(payload, view, onlyWhenStale) {
   const time = Date.parse(payload.generated_at || "");
   if (!Number.isFinite(time)) return null;
   const failure = view.refresh.failure;
   const stale = Date.now() - time > SNAPSHOT_STALE_MS;
-  if (onlyWhenStale && !stale && !failure) return null;
+  const asDrawn = staysAsDrawn(view);
+  if (onlyWhenStale && !stale && !failure && !asDrawn) return null;
   const when = new Date(time);
   const sameDay = when.toDateString() === new Date().toDateString();
   let label;
@@ -134,11 +135,14 @@ function snapshotStamp(payload, view, onlyWhenStale) {
     label = when.toISOString();
   }
   const said = "What Bitbucket said at " + when.toISOString() + ".";
+  const words = "As of " + label + (failure ? " · could not refresh" : stale ? " · may be out of date" : "");
   return el("span", { class: "stamp-row" },
     el("span", {
-      class: "stamp" + (stale || failure ? " stale" : ""),
-      title: failure ? said + " Reading it again failed: " + failure : stale ? said + " It may have changed since." : said,
-    }, "As of " + label + (failure ? " · could not refresh" : stale ? " · may be out of date" : "")),
+      class: "stamp" + (stale || failure ? " stale" : "") + (asDrawn ? " as-drawn" : ""),
+      title: asDrawn
+        ? said + " This client does not let a view read it again, so it stays as it was. Ask for it again in the conversation to bring it up to date."
+        : failure ? said + " Reading it again failed: " + failure : stale ? said + " It may have changed since." : said,
+    }, asDrawn ? words + " · does not update in this client" : words),
     refreshButton(view));
 }
 
