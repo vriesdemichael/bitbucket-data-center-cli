@@ -15,6 +15,7 @@ const CHECK_TIMEOUT_MS = 10000;
 const LADDER_TIMEOUT_MS = 30000;
 const WAIT_FOR_RESULT_MS = 8000;
 const HOST_FOLLOWS_MS = 800;
+const MAX_CHANGES = 50;
 // The sizes a view's own calls try, in KiB, each until one does not arrive. The
 // largest a view carries in practice is under a mebibyte, and it may reach some
 // twenty with sixty avatars of the most Bitbucket allows.
@@ -54,7 +55,7 @@ const report = {
   ],
 };
 
-const state = { running: true, connected: false, standalone: false, copied: "" };
+const state = { running: true, connected: false, standalone: false, copied: "", busy: null, spacer: null };
 
 // effects says what the answers mean for bb's views, not only what they are.
 function effects() {
@@ -63,10 +64,11 @@ function effects() {
   const capabilities = (initialized && initialized.host_capabilities) || {};
   if (initialized && !capabilities.serverTools) {
     out.push("The host declares no serverTools: views do not stay current, their tabs and actions open Bitbucket instead, and a pull request form cannot submit.");
-  } else if (report.tools_call && report.tools_call.error) {
-    out.push("The host declares serverTools, and a call did not get through: views fail where they read themselves again or act.");
+  } else if (report.tools_call && (report.tools_call.error || report.tools_call.is_error)) {
+    out.push("The host declares serverTools, and the check's call failed" + (report.tools_call.error ? " (" + report.tools_call.error + ")" : "") + ". Unless diagnose_check was excluded, views fail where they read themselves again or act.");
   }
-  if (report.presses.fullscreen && report.presses.fullscreen.mode && report.presses.fullscreen.mode !== "fullscreen") {
+  const listed = (initialized && initialized.available_display_modes) || [];
+  if (listed.includes("fullscreen") && report.presses.fullscreen && report.presses.fullscreen.mode && report.presses.fullscreen.mode !== "fullscreen") {
     out.push("The host lists fullscreen and refused it: a view's Expand opens in place.");
   }
   if (capabilities.updateModelContext) {
@@ -84,20 +86,47 @@ function effects() {
     out.push("This page is older than the bb that is running: the client kept it. Start a new conversation to read it again.");
   }
   if (report.tool_result.arrived && !report.tool_result.meta) {
-    out.push("A result's _meta did not arrive, and it is where a view's data travels: views cannot draw from show's answer alone here.");
+    const server = report.server || {};
+    if (server.client && server.client.displays_views === false) {
+      out.push("This client draws this page and told the server it displays no views, so show shows nothing in it.");
+    } else if (server.meta_kib_sent > 0) {
+      out.push("A result's _meta of " + server.meta_kib_sent + " KiB did not arrive, and it is where a view's data travels: a view that carries as much cannot draw from show's answer alone here. Ask for diagnose with a smaller meta_kib to see what gets through.");
+    } else {
+      out.push("A result's _meta did not arrive, and it is where a view's data travels: views cannot draw from show's answer alone here.");
+    }
   }
   return out;
 }
 
+// addressForms are the ways Bitbucket's address gets written: as the server wrote
+// them, and as a browser puts it in order, lower case and in punycode.
+function addressForms() {
+  const forms = (SETTINGS.forms || []).slice();
+  try {
+    const parsed = new URL(SETTINGS.bitbucket);
+    forms.push(parsed.origin, parsed.host, parsed.hostname);
+  } catch {
+    // An address a browser cannot read writes no form of its own.
+  }
+  return [...new Set(forms)].filter(Boolean).sort((a, b) => b.length - a.length);
+}
+
+// ADDRESS finds the address in any string, in any case, as whole names: a host
+// called "git" leaves "digit" alone, and a dot at the end of a sentence does not go
+// on with it. The server's scrub of what it keeps reads the same.
+const ADDRESS = addressForms().map((form) => new RegExp(
+  "(^|[^a-z0-9-])" + form.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&") + "(?=$|[^a-z0-9.-]|\\.($|[^a-z0-9-]))", "gi"));
+
+// scrub takes the address out of every string it is asked to write. Keys and the
+// report's shape stay as they are.
+function scrub(key, value) {
+  if (typeof value !== "string") return value;
+  return ADDRESS.reduce((text, matcher) => text.replace(matcher, "$1<bitbucket>"), value);
+}
+
 // reportText is the report as it leaves the page, in every direction.
 function reportText() {
-  let text = JSON.stringify(Object.assign({ effects: effects() }, report), null, 2);
-  for (const form of SETTINGS.forms || []) {
-    // Whole names, so a host called "git" leaves "digit" alone.
-    const escaped = form.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
-    text = text.replace(new RegExp("(^|[^A-Za-z0-9.-])" + escaped + "(?=$|[^A-Za-z0-9.-])", "g"), "$1<bitbucket>");
-  }
-  return text;
+  return JSON.stringify(Object.assign({ effects: effects() }, report), scrub, 2);
 }
 
 function wait(ms) {
@@ -146,7 +175,11 @@ function noteResult(result) {
     structured_content: Boolean(result && result.structuredContent),
     meta: Boolean(payload),
   };
-  if (result && result.structuredContent) report.server = result.structuredContent;
+  // The answer, less the page's own last report, or each diagnose would nest it.
+  if (result && result.structuredContent) {
+    report.server = Object.assign({}, result.structuredContent);
+    delete report.server.page_report;
+  }
   // The fresh answer's build against this page's: a host may keep a page, and a
   // fresh answer is this bb's whichever route it took.
   const build = payload ? payload.build : result && result.structuredContent && result.structuredContent.build && result.structuredContent.build.page;
@@ -163,7 +196,7 @@ async function checkResources() {
     return { type: first.mimeType || null, has_text: typeof first.text === "string", has_blob: typeof first.blob === "string" };
   });
   const [page, image, text, pdf, template] = await Promise.all([
-    read("ui://bb/diagnose"),
+    read("ui://bb/diagnose/page.html"),
     read("ui://bb/diagnose/fixture.png"),
     read("ui://bb/diagnose/fixture.txt"),
     read("ui://bb/diagnose/fixture.pdf"),
@@ -257,23 +290,37 @@ async function checkNetwork() {
   };
 }
 
-// checkSize grows the view and shrinks it, and looks at whether the frame follows
-// what it reports and whether a scrollbar stays.
+// watchSize tells the host how tall the page is, which it sizes an inline frame to.
+function watchSize() {
+  let queued = false;
+  const app = document.getElementById("app");
+  new ResizeObserver(() => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      bridge.reportSize(Math.ceil(document.documentElement.clientWidth), Math.ceil(app.getBoundingClientRect().height));
+    });
+  }).observe(app);
+}
+
+// checkSize grows the view past its frame and shrinks it again, and looks at
+// whether the frame follows what it reports and whether a scrollbar stays.
 async function checkSize() {
   if (document.documentElement.dataset.mode === "fullscreen") {
     report.size = { measured: false, why: "the view is in fullscreen" };
     return;
   }
   const app = document.getElementById("app");
-  const reportHeight = () => bridge.reportSize(Math.ceil(document.documentElement.clientWidth), Math.ceil(app.getBoundingClientRect().height));
+  await wait(HOST_FOLLOWS_MS);
   const before = window.innerHeight;
-  const spacer = el("div", { class: "size-probe" });
-  app.append(spacer);
-  reportHeight();
+  state.spacer = el("div");
+  state.spacer.style.height = Math.max(400, before + 200 - app.getBoundingClientRect().height) + "px";
+  render();
   await wait(HOST_FOLLOWS_MS);
   const grown = window.innerHeight;
-  spacer.remove();
-  reportHeight();
+  state.spacer = null;
+  render();
   await wait(HOST_FOLLOWS_MS);
   const shrunk = window.innerHeight;
   report.size = {
@@ -296,6 +343,14 @@ async function share() {
   if (report.tools_call && report.tools_call.answered && !report.tools_call.is_error) {
     await outcome(bridge.callTool(CHECK_TOOL, { report: JSON.parse(text) }, CHECK_TIMEOUT_MS));
   }
+}
+
+// shareSoon sends a report that has changed since, once it settles.
+let shareTimer = null;
+function shareSoon() {
+  if (state.running) return;
+  clearTimeout(shareTimer);
+  shareTimer = setTimeout(share, 300);
 }
 
 async function runChecks() {
@@ -356,24 +411,28 @@ async function press(name) {
   const check = PRESSES[name];
   state.busy = name;
   render();
-  report.presses[name] = await check.run();
+  try {
+    report.presses[name] = await check.run();
+  } catch (error) {
+    report.presses[name] = { answered: false, error: (error && error.message) || "it failed" };
+  }
   state.busy = null;
   render();
-  share();
+  shareSoon();
 }
 
 // said is the person's own word on what a press did, which nothing else can see.
 function said(name, seen) {
   report.presses[name].person_says = seen;
   render();
-  share();
+  shareSoon();
 }
 
 // The page.
 
 function words(value) {
   if (value === null || value === undefined) return "not measured";
-  return JSON.stringify(value);
+  return JSON.stringify(value, scrub);
 }
 
 function checkRow(label, value) {
@@ -404,6 +463,7 @@ function plainLinkRow() {
   link.addEventListener("click", () => {
     report.presses.plain_link = report.presses.plain_link || { pressed: true };
     render();
+    shareSoon();
   });
   const done = report.presses.plain_link;
   return el("div", { class: "check-row press-row" }, link,
@@ -444,7 +504,7 @@ function render() {
   const box = el("textarea", { class: "report-text", readonly: true, rows: 12, "aria-label": "The report" });
   box.value = reportText();
   const network = report.network;
-  app.replaceChildren(el("div", { class: "diagnose" },
+  app.replaceChildren(...[el("div", { class: "diagnose" },
     el("h1", {}, "What this client can do with bb's views"),
     state.running ? el("p", { class: "faint", role: "status" }, "Checking…") : null,
     el("section", {},
@@ -486,7 +546,7 @@ function render() {
         checkRow("Declared only", report.declared_only))),
     el("section", {},
       el("h2", {}, "What this cannot find out"),
-      el("ul", { class: "effects faint" }, report.not_capturable.map((item) => el("li", {}, item))))));
+      el("ul", { class: "effects faint" }, report.not_capturable.map((item) => el("li", {}, item))))), state.spacer].filter(Boolean));
 }
 
 function applyTheme(context) {
@@ -501,20 +561,20 @@ function applyTheme(context) {
   }
 }
 
-bridge.on("ui/notifications/tool-input", () => {});
-
 bridge.on("ui/notifications/tool-result", (result) => {
   noteResult(result);
   render();
+  shareSoon();
   if (state.waitingForResult) state.waitingForResult();
 });
 
 // The host's own fullscreen button shows here, as a host says it changed.
 bridge.on("ui/notifications/host-context-changed", (context) => {
   applyTheme(context);
-  if (context && (context.displayMode || context.containerDimensions)) {
+  if (context && (context.displayMode || context.containerDimensions) && report.display_mode_changes.length < MAX_CHANGES) {
     report.display_mode_changes.push({ display_mode: context.displayMode || null, container_dimensions: context.containerDimensions || null });
     render();
+    shareSoon();
   }
 });
 
@@ -525,6 +585,7 @@ async function start() {
     checkInitialize(result);
     applyTheme(result.hostContext);
     state.connected = true;
+    watchSize();
   } catch {
     state.standalone = true;
     render();

@@ -1,7 +1,7 @@
 /* The diagnose page: a report, not a view of anything. It measures whether a
    scrollbar stays, so it leaves the viewport's scrollbars to the browser. */
 
-:root { scrollbar-width: auto; }
+:root, :root:not([data-mode="fullscreen"]):not(.capped) { scrollbar-width: auto; }
 
 .diagnose { display: grid; gap: 16px; }
 .diagnose h1 { margin: 0; font-size: var(--bb-heading); font-weight: var(--font-weight-semibold, 600); }
@@ -16,5 +16,3 @@
 .diagnose .press-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .diagnose .press-row .mono { min-width: 0; overflow-wrap: anywhere; font-size: var(--bb-text-xs); }
 .diagnose .report-text { display: block; width: 100%; margin-bottom: 6px; font-family: var(--bb-mono); font-size: var(--bb-text-xs); }
-/* What the size check grows the view by: more than a host's frame starts at. */
-.size-probe { height: 400px; }

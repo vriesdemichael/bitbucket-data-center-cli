@@ -232,10 +232,13 @@ func TestDiagnoseCarriesItsFillerOnlyInMeta(t *testing.T) {
 		return payload
 	}
 
-	result, _ := callDiagnose[DiagnoseOutput](t, session, "diagnose", nil)
+	result, sent := callDiagnose[DiagnoseOutput](t, session, "diagnose", nil)
 	payload := meta(result)
 	if payload["build"] != diagnoseBuildID() || payload["meta_kib"] != float64(diagnoseDefaultMetaKiB) {
 		t.Errorf("the payload is %v", payload["meta_kib"])
+	}
+	if sent.MetaKiBSent != diagnoseDefaultMetaKiB {
+		t.Errorf("the answer says it sent %d KiB", sent.MetaKiBSent)
 	}
 	if filler, _ := payload["filler"].(string); len(filler) != diagnoseDefaultMetaKiB<<10 {
 		t.Errorf("the filler is %d bytes, want %d", len(filler), diagnoseDefaultMetaKiB<<10)
@@ -276,8 +279,8 @@ func TestDiagnoseCarriesItsFillerOnlyInMeta(t *testing.T) {
 	// A client that draws no page is given none.
 	bare := connectAs(t, diagnoseServer(t), nil)
 	result, out := callDiagnose[DiagnoseOutput](t, bare, "diagnose", nil)
-	if _, carried := result.Meta[diagnosePayloadKey]; carried {
-		t.Error("a client that displays no views was sent the page's payload")
+	if _, carried := result.Meta[diagnosePayloadKey]; carried || out.MetaKiBSent != 0 {
+		t.Errorf("a client that displays no views was sent the page's payload, or told so: %d KiB", out.MetaKiBSent)
 	}
 	if !slices.ContainsFunc(out.Findings, func(finding string) bool { return strings.Contains(finding, "displays no views") }) {
 		t.Errorf("the findings do not say the client displays no views: %v", out.Findings)
@@ -351,6 +354,7 @@ func TestDiagnoseHasAPageOfItsOwn(t *testing.T) {
 
 	// The fixtures, each of its type, and a template; each read is counted.
 	for uri, mimeType := range map[string]string{
+		diagnoseCopyURI:               viewMIMEType,
 		diagnoseURI + "/fixture.png":  "image/png",
 		diagnoseURI + "/fixture.txt":  "text/plain",
 		diagnoseURI + "/fixture.pdf":  "application/pdf",
@@ -366,8 +370,8 @@ func TestDiagnoseHasAPageOfItsOwn(t *testing.T) {
 		}
 	}
 	_, out := callDiagnose[DiagnoseOutput](t, session, "diagnose", nil)
-	if out.Pages.CheckReads != 4 || out.Pages.DiagnosePageReads != 1 || out.Pages.DiagnosePageReadAt == "" {
-		t.Errorf("pages = %+v, want four reads of fixtures and one of the page", out.Pages)
+	if out.Pages.CheckReads != 5 || out.Pages.DiagnosePageReads != 1 || out.Pages.DiagnosePageReadAt == "" {
+		t.Errorf("pages = %+v, want five of the check's reads, and the host's one read of the page", out.Pages)
 	}
 
 	// None of it is for a person to attach. The list of pull requests, which
@@ -517,19 +521,59 @@ func TestConnectionProblemNamesNoAddress(t *testing.T) {
 	}
 }
 
-// Whole names only: a host called "git" leaves "digit" alone, and a report keeps
-// its words.
-func TestScrubAddressMatchesWholeNames(t *testing.T) {
+// Whole names only, in any case, in whatever surrounds them: a host called "git"
+// leaves "digit" alone, and a report keeps its words.
+func TestScrubAddressFindsItWhereverItIsWritten(t *testing.T) {
 	t.Parallel()
 
+	const bb = diagnoseAddress
 	for _, test := range []struct{ base, in, want string }{
-		{"https://git:8443", `"digit git:8443,https://git:8443/x git legit"`, `"digit <bitbucket>,<bitbucket>/x <bitbucket> legit"`},
-		{"https://bb.example.com", `["bb.example.com","bb.example.com.evil.org"]`, `["<bitbucket>","bb.example.com.evil.org"]`},
-		{"https://bb.example.com", `bb.example.com,bb.example.com`, `<bitbucket>,<bitbucket>`},
+		{"https://git:8443", "digit git:8443,https://git:8443/x git legit", "digit " + bb + "," + bb + "/x " + bb + " legit"},
+		{"https://bb.example.com", "bb.example.com,bb.example.com", bb + "," + bb},
+		{"https://bb.example.com", "bb.example.com.elsewhere.org", "bb.example.com.elsewhere.org"},
+		{"https://Bb.Example.com:8443", "https://bb.example.com:8443 and BB.EXAMPLE.COM", bb + " and " + bb},
+		{"https://bb.example.com", "Refused to connect to bb.example.com.", "Refused to connect to " + bb + "."},
+		{"https://bb.example.com", "https://bb.example.com. Then", bb + ". Then"},
+		{"https://bb.example.com", "line one\nbb.example.com\tbb.example.com:443", "line one\n" + bb + "\t" + bb + ":443"},
+		{"https://bb.example.com", "<bb.example.com>", "<" + bb + ">"},
+		{"https://bb.example.com", "https://*.bb.example.com", "https://*." + bb},
+		{"https://bb.example.com", "next=https%3A%2F%2Fbb.example.com", "next=" + bb},
+		{"https://[2001:DB8:0:0::1]:8443", "[2001:db8::1]:8443 and https://[2001:DB8:0:0::1]:8443", "[" + bb + "]:8443 and " + bb},
+		{"https://bb.example.com/context", "https://bb.example.com/context/status", bb + "/status"},
+		{"https://alice:hunter2@bb.example.com", "https://bb.example.com", bb},
 	} {
-		if got := scrubAddress(test.in, test.base); got != test.want {
+		if got := scrubAddress(test.in, addressMatchers(test.base)); got != test.want {
 			t.Errorf("scrubAddress(%q, %q) = %q, want %q", test.in, test.base, got, test.want)
 		}
+	}
+
+	// Keys and shape stay, whatever a host is called: one called "true" leaves
+	// JSON readable, and one called "server" leaves the report's keys alone.
+	report, err := diagnoseScrubbedReport(map[string]any{
+		"server": map[string]any{"page_report": map[string]any{"older": 1}, "flag": true},
+		"list":   []any{"true", "a true word", 7.0},
+	}, "https://true")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := jsonOf(t, report); got != jsonOf(t, map[string]any{"server": map[string]any{"flag": true}, "list": []any{diagnoseAddress, "a " + diagnoseAddress + " word", 7.0}}) {
+		t.Errorf("the report reads %s", got)
+	}
+}
+
+// A page never holds a credential written into the address.
+func TestDiagnosePageHoldsNoUserInTheAddress(t *testing.T) {
+	t.Parallel()
+
+	page := diagnosePage("https://alice:hunter2@bb.example.com:8443/context/")
+	if strings.Contains(page, "hunter2") || strings.Contains(page, "alice") {
+		t.Error("the page holds the user written into the address")
+	}
+	if !strings.Contains(page, "https://bb.example.com:8443/context") {
+		t.Error("the page does not know where to look")
+	}
+	if addressWithoutUser("http://%zz") != "" {
+		t.Error("an address that cannot be read has a form")
 	}
 }
 
@@ -537,9 +581,13 @@ func TestDiagnoseAddressForms(t *testing.T) {
 	t.Parallel()
 
 	got := diagnoseAddressForms("https://bb.example.com:8443/context/")
-	want := []string{"https://bb.example.com:8443/context", "https://bb.example.com:8443", "bb.example.com:8443", "bb.example.com"}
-	if !slices.Equal(got, want) {
-		t.Errorf("forms = %v, want %v", got, want)
+	for _, want := range []string{"https://bb.example.com:8443/context", "https://bb.example.com:8443", "bb.example.com:8443", "bb.example.com", "https%3A%2F%2Fbb.example.com%3A8443"} {
+		if !slices.Contains(got, want) {
+			t.Errorf("forms = %v, want them to hold %s", got, want)
+		}
+	}
+	if !slices.IsSortedFunc(got, func(a, b string) int { return len(b) - len(a) }) {
+		t.Errorf("forms = %v, want the longest first", got)
 	}
 	if forms := diagnoseAddressForms("not a url"); forms != nil {
 		t.Errorf("forms of nothing = %v", forms)
@@ -575,7 +623,7 @@ func TestDiagnoseFindingsSayWhatToFix(t *testing.T) {
 		Client:        diagnoseClient{DisplaysViews: true},
 	})
 	joined := strings.Join(findings, "\n")
-	for _, want := range []string{"check the credential", "cannot show them", "merge_pull_request"} {
+	for _, want := range []string{"refused the credential", "cannot show them", "merge_pull_request"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("the findings do not say %q:\n%s", want, joined)
 		}
@@ -584,6 +632,16 @@ func TestDiagnoseFindingsSayWhatToFix(t *testing.T) {
 	for _, want := range []string{"Bitbucket 10.5.1, over https: reached; the credential works", "read-only", "The page shows"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("the text does not say %q:\n%s", want, text)
+		}
+	}
+	// A credential nobody could check is not called refused.
+	untold := diagnoseFindings(DiagnoseOutput{Connection: diagnoseConnection{Reachable: true, Credential: "unknown", Problem: "Bitbucket did not answer in time"}, Client: diagnoseClient{DisplaysViews: true}})
+	if len(untold) != 1 || strings.Contains(untold[0], "refused") || !strings.Contains(untold[0], "could not be told") {
+		t.Errorf("an untold credential reads %v", untold)
+	}
+	for credential, want := range map[string]string{"works": "the credential works", "refused": "the credential was refused", "unknown": "could not be told"} {
+		if got := credentialWords(credential); !strings.Contains(got, want) {
+			t.Errorf("credential %s reads %q", credential, got)
 		}
 	}
 	if none := diagnoseConnectionOf(context.Background(), Clients{BaseURL: "https://x"}); none.Problem == "" || none.Reachable {

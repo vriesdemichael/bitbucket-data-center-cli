@@ -165,7 +165,7 @@ func TestLiveMCPDiagnoseSaysACredentialWasRefused(t *testing.T) {
 		if !strings.Contains(out.Connection.Problem, "refused the credential") {
 			t.Errorf("the problem reads %q", out.Connection.Problem)
 		}
-		if len(out.Findings) == 0 || !strings.Contains(strings.Join(out.Findings, "\n"), "check the credential") {
+		if len(out.Findings) == 0 || !strings.Contains(strings.Join(out.Findings, "\n"), "refused the credential") {
 			t.Errorf("the findings read %v, want what to fix", out.Findings)
 		}
 		if strings.Contains(answer, "definitely-not-the-password") {
