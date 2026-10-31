@@ -127,12 +127,13 @@ function renderDiff(payload, view) {
         view.openFiles.has(index) ? el("div", { class: "inline-file" }, diffFile(file, index, pr, view, false, comments, avatars)) : null))),
     left > 0
       ? el("div", { class: "more-row" }, view.canFullscreen
-        ? el("button", { type: "button", class: "button ghost list-toggle", onclick: () => view.expand() }, "and " + plural(left, "more file") + ", in full screen")
+        ? el("button", { type: "button", class: "button ghost list-toggle", onclick: () => view.expand(() => revealFiles(view)) },
+          "and " + plural(left, "more file") + (view.grantedFullscreen ? ", in full screen" : ""))
         : moreButton("files", left, FILE_STEP, "files", view))
       : null,
     el("div", { class: "actions quiet" },
       view.canFullscreen
-        ? el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("expand"), "Full screen")
+        ? el("button", { type: "button", class: "button", onclick: () => view.expand(() => openFirstFile(files, view)) }, icon("expand"), expandWords())
         : null,
       view.revealed.has("files")
         ? el("button", { type: "button", class: "button", onclick: () => view.unreveal("files") }, icon("collapse"), "Show fewer files")
@@ -141,6 +142,7 @@ function renderDiff(payload, view) {
       linkButton("Open in Bitbucket", diffURL(pr), view.bridge, "ghost"),
       el("span", { class: "spacer" }),
       snapshotStamp(payload, view, true)),
+    noActionsNote(view),
     view.canFullscreen ? null : selectionBar(pr, view));
 }
 
@@ -153,6 +155,17 @@ function focusPathOf(files, view) {
   if (index < 0) return;
   if (view.fullscreen || view.canFullscreen) view.diffFile = index;
   else view.openFiles.add(index);
+}
+
+// revealFiles and openFirstFile are what a click that asked for fullscreen gets
+// from a host that refuses: the files it asked to see, in place.
+function revealFiles(view) {
+  view.revealed.set("files", (view.revealed.get("files") || 0) + FILE_STEP);
+}
+
+function openFirstFile(files, view) {
+  if (files.length > 0) view.openFiles.add(0);
+  revealFiles(view);
 }
 
 // openFile shows a file's changes: in fullscreen, beside the tree, where the
@@ -280,13 +293,14 @@ function diffPage(pr, files, payload, view, comments) {
         backButton(view),
         el("div", { class: "pr-top" }, icon("pullRequest", null, "faint"), repositoryLabel(pr, "Diff")),
         el("h1", { class: "pr-title held-2", title: pr.title }, pr.title),
-        el("div", { class: "header-meta" }, stateBadges(pr), diffSummary(files, pr, true))),
+        el("div", { class: "header-meta" }, stateBadges(pr), diffSummary(files, pr, true)),
+        noActionsNote(view)),
       el("div", { class: "header-actions" },
         snapshotStamp(payload, view),
         reviewActions(pr, payload, view),
         pullRequestTabs(pr, "diff", view),
         linkButton("Open in Bitbucket", diffURL(pr), view.bridge),
-        el("button", { type: "button", class: "button", onclick: () => view.expand() }, icon("collapse"), "Exit full screen"))),
+        exitButton(view))),
     el("div", { class: "diff-layout" },
       el("nav", { class: "diff-tree", "aria-label": "Files" }, fileTree(files, view, comments)),
       main));
@@ -520,7 +534,11 @@ function coloured(text, spans) {
 // fileURL is a file's diff in Bitbucket, as Bitbucket links one: the pull
 // request's diff, with the file's path after the #.
 function fileURL(pr, file) {
-  return diffURL(pr) + "#" + encodeURI(filePath(file));
+  return pathURL(pr, filePath(file));
+}
+
+function pathURL(pr, path) {
+  return diffURL(pr) + "#" + encodeURI(path);
 }
 
 // diffFilesOf is every file of the diff, with what the patch carries of each.
@@ -596,8 +614,11 @@ function updateSelectionBar(view) {
     canCall(view, "add_pr_comment") && view.selectionPR && view.selectionPR.repository
       ? el("button", { type: "button", class: "button", onclick: () => commentOnSelection(view) }, "Comment")
       : null,
-    el("button", { type: "button", class: "button", onclick: () => view.addSelectionToContext() }, "Add to chat context"),
-    el("button", { type: "button", class: "button primary", onclick: () => view.askAboutSelection() }, icon("comment"), "Ask about this"),
+    callsInBitbucket(view, "add_pr_comment") && view.selectionPR
+      ? linkButton("Comment", fileURL(view.selectionPR, selection.file), view.bridge)
+      : null,
+    view.tellsModel ? el("button", { type: "button", class: "button", onclick: () => view.addSelectionToContext() }, "Add to chat context") : null,
+    view.sendsMessages ? el("button", { type: "button", class: "button primary", onclick: () => view.askAboutSelection() }, icon("comment"), "Ask about this") : null,
     el("button", { type: "button", class: "button ghost", onclick: () => view.clearSelection() }, "Clear"));
   if (view.selectionNotice) bar.append(el("span", { class: "faint" }, view.selectionNotice));
 }

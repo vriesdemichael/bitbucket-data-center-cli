@@ -12,6 +12,12 @@ const CONNECT_TIMEOUT_MS = 10000;
 // the result on would leave it waiting for ever.
 const SLOW_RESULT_MS = 15000;
 const NO_RESULT_MS = 60000;
+// HOST_FOLLOWS_MS is how long a host has to size a frame to what the view
+// reported.
+const HOST_FOLLOWS_MS = 1000;
+// A client may keep the page for a whole session, so asking again can reach the
+// same page; a new conversation reads it again.
+const DIFFERENT_VERSION = "This view was made by a different version of bb. Ask for it again, and if this message comes back, start a new conversation.";
 
 const bridge = createBridge({ name: "bb", version: "1" });
 
@@ -23,10 +29,19 @@ const view = {
   standalone: false,
   // waited is how long the result has been on the way: "slow", then "none".
   waited: "",
+  // fullscreen is the mode the host last said the view is in.
   fullscreen: false,
   // canFullscreen is whether to ask the host for fullscreen: yes unless it
-  // said which modes it has without fullscreen among them, or refused once.
+  // said which modes it has without fullscreen among them, or refused once,
+  // which stands for the view's life. A host may list fullscreen and keep it
+  // to a button of its own, so a button of the view's is named for what it may
+  // do until grantedFullscreen says the host has gone fullscreen when asked;
+  // ownFullscreen is fullscreen the view asked for and got, which it can leave.
+  // The host's own control closes what the host opened.
   canFullscreen: true,
+  refusedFullscreen: false,
+  grantedFullscreen: false,
+  ownFullscreen: false,
   expanded: false,
   // refusedLink is a link the host would not open, shown to open by hand, and
   // opensLinks whether the host said it opens links at all.
@@ -55,10 +70,12 @@ const view = {
   narrow: false,
   phone: false,
   // hostTools is whether the host passes the view's tool calls to bb, which
-  // keeps a view current, and tellsModel whether it takes context for the
-  // model. refresh is how the view keeps current.
+  // keeps a view current. tellsModel is whether it takes context for the model,
+  // and sendsMessages whether it takes a message in the person's name. refresh
+  // is how the view keeps current.
   hostTools: false,
   tellsModel: false,
+  sendsMessages: false,
   refresh: newRefreshState(),
   // history is what the view showed before what it shows now, to go back
   // to; opening is the kind on its way, and openFailure why the last one
@@ -96,23 +113,32 @@ const view = {
   // expand opens the view out: fullscreen where the host has it, in place
   // where it does not. Again, it goes back. A host that has not said whether
   // it has fullscreen is asked; one that answers with anything else, or not
-  // at all, gets the view opened in place, and is not asked again.
-  expand() {
+  // at all, gets the view opened in place, and is not asked again. openInPlace
+  // is what the person asked to see, for a host that refuses. Fullscreen the
+  // host opened itself is the host's to close.
+  expand(openInPlace) {
     if (view.fullscreen) {
+      if (!view.ownFullscreen) return;
       bridge.requestDisplayMode("inline")
-        .then((result) => setDisplayMode(result && result.mode ? result.mode : "inline"))
-        .catch(() => setDisplayMode("inline"));
+        .then((result) => setDisplayMode(result && result.mode ? result.mode : "inline"), () => {});
       return;
     }
     if (view.canFullscreen) {
+      // A second press while the host answers the first asks nothing more.
+      if (view.askingFullscreen) return;
+      view.askingFullscreen = true;
       bridge.requestDisplayMode("fullscreen")
         .then((result) => {
-          if (!result || !result.mode || result.mode === "fullscreen") setDisplayMode("fullscreen");
-          else fullscreenRefused();
+          if (result && result.mode && result.mode !== "fullscreen") throw new Error("refused");
+          view.grantedFullscreen = true;
+          view.ownFullscreen = true;
+          setDisplayMode("fullscreen");
         })
-        .catch(fullscreenRefused);
+        .catch(() => fullscreenRefused(openInPlace))
+        .finally(() => { view.askingFullscreen = false; });
       return;
     }
+    if (openInPlace) openInPlace();
     view.expanded = !view.expanded;
     render();
   },
@@ -147,8 +173,10 @@ const view = {
   addSelectionToContext() {
     const selection = currentSelection(view);
     if (!selection) return;
-    bridge.updateModelContext(selectionText(view.selectionPR, selection))
-      .then(() => { view.selectionNotice = "Added; the model reads it with your next message."; })
+    // A host may take the text and leave it to the model to read, so this says
+    // only what is known. Ask about this, which sends the lines, is the sure way.
+    tookIt(bridge.updateModelContext(selectionText(view.selectionPR, selection)))
+      .then(() => { view.selectionNotice = "Added to this view's context. Name these lines when you ask about them."; })
       .catch(() => { view.selectionNotice = "This client did not take it."; })
       .finally(() => updateSelectionBar(view));
   },
@@ -157,12 +185,21 @@ const view = {
     const selection = currentSelection(view);
     if (!selection) return;
     const text = "Explain these lines, and point out anything that looks wrong.\n\n" + selectionText(view.selectionPR, selection);
-    bridge.sendMessage(text)
+    tookIt(bridge.sendMessage(text))
       .then(() => { view.selectionNotice = "Sent."; })
       .catch(() => { view.selectionNotice = "This client did not take it."; })
       .finally(() => updateSelectionBar(view));
   },
 };
+
+// tookIt fails where the host answered that it did not take what it was
+// handed, as it does with an error or with isError.
+function tookIt(answer) {
+  return answer.then((result) => {
+    if (result && result.isError) throw new Error("the host did not take it");
+    return result;
+  });
+}
 
 // paintSelection marks the selected rows without redrawing the diff, which
 // can run to thousands of rows.
@@ -183,6 +220,15 @@ function payloadOf(result) {
   return payload;
 }
 
+// drawablePayload is what a view's own call answered with, or why it cannot be
+// drawn: a host may drop a result's _meta, which is no question of versions.
+function drawablePayload(result) {
+  const payload = payloadOf(result);
+  if (!payload) throw new Error("bb's answer reached this view without what it draws.");
+  if (payload.version !== VIEW_PAYLOAD_VERSION) throw new Error(DIFFERENT_VERSION);
+  return payload;
+}
+
 function textOf(result) {
   const parts = (result && result.content) || [];
   return parts.filter((part) => part && part.type === "text").map((part) => part.text).join("\n");
@@ -200,7 +246,7 @@ bridge.on("ui/notifications/tool-result", (result) => {
   } else if (!payload) {
     view.failure = textOf(result) || "There is nothing for this view to show.";
   } else if (payload.version !== VIEW_PAYLOAD_VERSION) {
-    view.failure = "This view was made by a different version of bb; ask for it again.";
+    view.failure = DIFFERENT_VERSION;
   } else {
     showPayload(view, payload);
     view.history = [];
@@ -242,7 +288,7 @@ function applyHostContext(context) {
     setNumberLocale(context.locale);
   }
   if (Array.isArray(context.availableDisplayModes)) {
-    view.canFullscreen = context.availableDisplayModes.includes("fullscreen");
+    view.canFullscreen = context.availableDisplayModes.includes("fullscreen") && !view.refusedFullscreen;
   }
   const insets = context.safeAreaInsets;
   if (insets && typeof insets === "object") {
@@ -262,19 +308,33 @@ function applyHostContext(context) {
 
 function setDisplayMode(mode) {
   view.fullscreen = mode === "fullscreen";
+  if (!view.fullscreen) view.ownFullscreen = false;
   document.documentElement.dataset.mode = view.fullscreen ? "fullscreen" : "inline";
   render();
 }
 
 // fullscreenRefused opens the view out in place, where the host would not go
-// fullscreen, and a file picked to open there opens in place instead.
-function fullscreenRefused() {
+// fullscreen, and a file picked to open there opens in place instead. The
+// refusal stands: a host that lists fullscreen later is not asked again.
+function fullscreenRefused(openInPlace) {
   view.canFullscreen = false;
-  view.expanded = true;
-  if (view.payload && view.payload.kind === "diff" && view.diffFile !== null) {
-    view.openFiles.add(view.diffFile);
+  view.refusedFullscreen = true;
+  // An answer that comes once the host has gone fullscreen by its own control
+  // opens nothing: the person is looking at the whole view.
+  if (!view.fullscreen) {
+    view.expanded = true;
+    if (view.payload && view.payload.kind === "diff" && view.diffFile !== null) {
+      view.openFiles.add(view.diffFile);
+    }
+    if (openInPlace) openInPlace();
   }
   render();
+}
+
+// expandWords name a button that opens the view out for what it may do: a host
+// that lists fullscreen may still open it in place, until it has granted it.
+function expandWords() {
+  return view.grantedFullscreen ? "Full screen" : "Expand";
 }
 
 // linkRefused shows a link the host would not open, so the person can open it
@@ -388,7 +448,7 @@ function content() {
         case "pull_requests": return renderPullRequests(view.payload, view);
         case "diff": return renderDiff(view.payload, view);
         case "pull_request_form": return renderPullRequestForm(view.payload, view);
-        default: return notice("This version of the page cannot show a " + view.payload.kind + ".");
+        default: return notice(DIFFERENT_VERSION);
       }
     } catch (error) {
       console.error(error);
@@ -427,15 +487,29 @@ function waitForResult() {
   }
 }
 
-// The host sizes an inline view to what it reports.
+// The host sizes an inline view to what it reports. A scrollbar that showed
+// while it catches up would narrow the view, which makes it taller, so an inline
+// view shows none (view.css), until the host has had time to follow and the view
+// still does not fit: that host caps it, and the person needs the bar to see so.
 function watchSize() {
   let queued = false;
+  let settling = null;
+  const root = document.documentElement;
+  const settle = () => {
+    clearTimeout(settling);
+    settling = setTimeout(() => {
+      root.classList.toggle("capped", root.scrollHeight > root.clientHeight + 1);
+    }, HOST_FOLLOWS_MS);
+  };
   const report = () => {
     queued = false;
     const app = document.getElementById("app");
     const box = app.getBoundingClientRect();
-    bridge.reportSize(Math.ceil(document.documentElement.clientWidth), Math.ceil(box.height));
+    bridge.reportSize(Math.ceil(root.clientWidth), Math.ceil(box.height));
+    settle();
   };
+  // A host that lowers the frame later changes no box in the view.
+  window.addEventListener("resize", settle);
   const observer = new ResizeObserver(() => {
     if (!queued) {
       queued = true;
@@ -460,6 +534,7 @@ async function start() {
       view.opensLinks = Boolean(capabilities.openLinks);
       view.hostTools = Boolean(capabilities.serverTools);
       view.tellsModel = Boolean(capabilities.updateModelContext);
+      view.sendsMessages = Boolean(capabilities.message);
     }
     applyHostContext(result.hostContext);
     scheduleRefresh(view);

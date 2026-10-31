@@ -39,6 +39,10 @@ function renderPullRequestForm(payload, view) {
 
   const busy = Boolean(draft.busy);
   const pr = editing ? payload.pull_request : null;
+  const canSubmit = canCall(view, editing ? "update_pull_request" : "create_pull_request");
+  // A picker or a search needs calls the view may not be able to make: without
+  // them it shows what the model drafted, with no empty field to fill in.
+  const canPick = canCall(view, SUGGEST_TOOL);
   // Once the form is on the page, it makes room for an open reviewer list.
   if (draft.searching) queueMicrotask(fitReviewerList);
   return el("div", { class: "pr-form" + (view.fullscreen ? " page-form" : "") },
@@ -52,15 +56,40 @@ function renderPullRequestForm(payload, view) {
       pr ? stateBadges(pr) : null),
     el("h1", { class: "pr-title" }, editing ? "Edit Pull Request" : "Create pull request"),
     editing ? null : el("p", { class: "form-lead muted" }, "Collaborate on code by choosing teammates to review your changes to a branch."),
+    canSubmit ? null : handOverNotice(view, editing),
     editing
       ? (pr ? el("div", { class: "form-branches" }, branchPair(pr)) : null)
-      : branchRows(draft, show, view, busy),
+      : canPick ? branchRows(draft, show, view, busy) : draftedBranches(draft),
     titleField(draft, busy),
     descriptionField(draft, view, busy),
-    editing ? pullRequestReviewers(draft) : reviewersField(draft, show, view, busy),
-    editing ? draftCheckbox(draft, busy) : null,
+    editing ? pullRequestReviewers(draft) : canPick ? reviewersField(draft, show, view, busy) : draftedReviewers(draft, view, busy),
+    editing || !canSubmit ? draftCheckbox(draft, busy) : null,
     draft.error ? el("p", { class: "form-error", role: "alert" }, draft.error) : null,
-    formActions(payload, view, draft, editing, busy));
+    canSubmit ? formActions(payload, view, draft, editing, busy) : null,
+    // A host may declare the calls and not pass them: a submit that failed offers
+    // the way out too, so what the person wrote is not stranded.
+    !canSubmit || draft.submitFailed ? handOverActions(payload, view, draft, editing) : null);
+}
+
+// draftedBranches are the branches as the model drafted them, for a form that
+// cannot read the repository's: nothing to pick from, and no empty picker.
+function draftedBranches(draft) {
+  return el("div", { class: "form-branches" },
+    branchPair({ source_branch: draft.from, target_branch: draft.to || "the default branch" }));
+}
+
+// draftedReviewers are the reviewers as the model drafted them, for a form that
+// cannot search for others. Taking one off, or adding back the default reviewers
+// and code owners Bitbucket named, needs no call.
+function draftedReviewers(draft, view, busy) {
+  return el("div", { class: "form-field" },
+    el("span", { class: "form-label" }, "Reviewers"),
+    draft.reviewers.length > 0
+      ? el("div", { class: "reviewer-box read-only" }, draft.reviewers.map((name) => reviewerChip(draft, name, view, busy)))
+      : el("span", { class: "faint" }, "None"),
+    el("span", { class: "faint form-hint-line" }, "Ask in the conversation to add others."),
+    reviewerNotes(draft),
+    quickAddButtons(draft, view, busy));
 }
 
 // formDraft is what the person has made of the form so far, started from
@@ -397,7 +426,10 @@ function titleField(draft, busy) {
     "aria-required": "true",
     "data-draft": "form.title",
     disabled: busy,
-    oninput: (event) => { draft.title = event.target.value; },
+    oninput: (event) => {
+      draft.title = event.target.value;
+      handedNoLonger(draft);
+    },
   });
   input.value = draft.title;
   return el("div", { class: "form-field" },
@@ -411,7 +443,10 @@ function descriptionField(draft, view, busy) {
     id: "form-description",
     "data-draft": "form.description",
     disabled: busy,
-    oninput: (event) => { draft.description = event.target.value; },
+    oninput: (event) => {
+      draft.description = event.target.value;
+      handedNoLonger(draft);
+    },
   });
   write.value = draft.description;
   return el("div", { class: "form-field" },
@@ -700,13 +735,142 @@ function draftCheckbox(draft, busy) {
     el("span", { class: "faint" }, "A draft cannot be merged until it is marked ready."));
 }
 
+// handOverRoute is how what the person wrote can reach the conversation from a
+// form that cannot submit: a message in their name, which is the sure way; the
+// view's context, which reaches the model only when the model reads it; or text
+// to copy.
+function handOverRoute(view) {
+  if (view.sendsMessages) return { button: "Send to the conversation", words: "send it to the conversation" };
+  if (view.tellsModel) return { button: "Add to chat context", words: "add it to this view's context" };
+  return { button: "Show as text", words: "copy it into the conversation" };
+}
+
+// handOverNotice says what the form cannot do before the person writes in it,
+// and what to do instead.
+function handOverNotice(view, editing) {
+  const route = handOverRoute(view).words;
+  return el("div", { class: "notice form-notice", role: "note" }, editing
+    ? "This client cannot save this form. Finish it here, then " + route + " for the model to save, or edit the pull request in Bitbucket."
+    : "This client cannot submit this form. Finish it here, then " + route + " for the model to create it, or open Bitbucket's create page.");
+}
+
+// createPageURL is Bitbucket's create page for the branches. Its address carries
+// the branches and nothing else: a title, a description or reviewers in it are
+// ignored.
+function createPageURL(form, draft) {
+  if (!form.repository_url || !draft.from) return "";
+  const url = form.repository_url + "/pull-requests?create&sourceBranch=" + encodeURIComponent(fullRef(draft.from));
+  return draft.to ? url + "&targetBranch=" + encodeURIComponent(fullRef(draft.to)) : url;
+}
+
+// fullRef is a branch as Bitbucket's address names one. A model may have drafted
+// it either way.
+function fullRef(branch) {
+  return branch.startsWith("refs/") ? branch : "refs/heads/" + branch;
+}
+
+// handOverActions take the place of the buttons on a form that cannot submit:
+// one hands over what the person wrote, and one opens the same thing in
+// Bitbucket, whose address does not carry what they wrote.
+function handOverActions(payload, view, draft, editing) {
+  const url = editing ? payload.pull_request && payload.pull_request.url : createPageURL(payload.form, draft);
+  // What was handed over is said only while it is what the form holds.
+  const handed = draft.handed && draft.handed.for === formText(payload, draft) ? draft.handed : null;
+  return el("div", { class: "form-handover" },
+    el("div", { class: "form-actions" },
+      el("button", {
+        type: "button",
+        class: "button primary" + (draft.handing ? " busy" : ""),
+        "data-draft": "form.handover",
+        // The conversation has this already, and a second press would ask again.
+        disabled: Boolean(draft.handing) || Boolean(handed && !handed.text),
+        onclick: () => handOverForm(payload, view),
+      }, handOverRoute(view).button),
+      isWebURL(url) ? linkButton(editing ? "Open in Bitbucket" : "Open Bitbucket's create page", url, view.bridge) : null),
+    editing ? null : el("span", { class: "faint form-hint-line" }, "Bitbucket's page opens with these branches. What you wrote here does not go with it."),
+    handed ? el("p", { class: "form-handed", role: "status" }, handed.said) : null,
+    handed && handed.text ? selectableText(handed.text) : null);
+}
+
+// selectableText is text for the person to take by hand.
+function selectableText(text) {
+  const box = el("textarea", { class: "form-text", readonly: true, rows: Math.min(14, text.split("\n").length + 1), "aria-label": "The form as text" });
+  box.value = text;
+  return box;
+}
+
+// handedNoLonger takes away what was said of a hand-over once the person writes
+// on: it is about what the form held then. Typing draws nothing, so it goes here.
+function handedNoLonger(draft) {
+  if (!draft.handed) return;
+  draft.handed = null;
+  for (const node of document.querySelectorAll(".form-handed, .form-text")) node.remove();
+  const button = document.querySelector('[data-draft="form.handover"]');
+  if (button) button.disabled = false;
+}
+
+// formText is what the person made of the form, in words the model can act on.
+function formText(payload, draft) {
+  const show = payload.show;
+  const repository = show.project + "/" + show.repo;
+  const editing = payload.form.mode === "edit";
+  const lines = editing
+    ? ["Update pull request " + repository + "#" + show.id + " as I filled it in:"]
+    : ["Create this pull request in " + repository + " as I filled it in:", "From: " + draft.from, "To: " + (draft.to || "the default branch")];
+  lines.push("Title: " + draft.title.trim());
+  if (!editing) lines.push("Reviewers: " + (draft.reviewers.join(", ") || "none"));
+  lines.push("Draft: " + (draft.draft ? "yes" : "no"));
+  lines.push("Description:", draft.description);
+  return lines.join("\n");
+}
+
+// handOverForm hands over what the person wrote, by the surest way the host
+// declares; a way that does not take it falls through to the next, down to text
+// to copy, so what they wrote is never lost. The answers say only what is known:
+// that a host took a context does not mean the model will read it.
+async function handOverForm(payload, view) {
+  const draft = formDraft(view, payload.form, payload.avatars);
+  if (draft.handing) return;
+  if (!draft.title.trim()) {
+    draft.error = "You must supply a title for this pull request.";
+    view.focusDraft = "form.title";
+    render();
+    return;
+  }
+  draft.handing = true;
+  draft.error = null;
+  draft.handed = null;
+  render();
+  const text = formText(payload, draft);
+  const routes = [];
+  if (view.sendsMessages) routes.push({ send: () => view.bridge.sendMessage(text), said: "Sent to the conversation." });
+  if (view.tellsModel) routes.push({ send: () => view.bridge.updateModelContext(text), said: "Added to this view's context. Ask in the conversation to go on from this form." });
+  for (const route of routes) {
+    try {
+      await tookIt(route.send());
+      draft.handed = { said: route.said, for: text };
+      break;
+    } catch {
+      // The next way, or the text below.
+    }
+  }
+  if (!draft.handed) {
+    draft.handed = { said: "Select this and paste it into the conversation.", text, for: text };
+  }
+  draft.handing = false;
+  render();
+  // Selected for the person once, when it appears: drawn again later, it leaves
+  // the caret where they are writing.
+  const box = document.querySelector(".form-text");
+  if (box) {
+    box.focus();
+    box.select();
+  }
+}
+
 // formActions are the create page's buttons, Create and Create as draft, or
 // Save for a pull request that exists, where the host can send them.
 function formActions(payload, view, draft, editing, busy) {
-  if (!canCall(view, editing ? "update_pull_request" : "create_pull_request")) {
-    return el("div", { class: "form-actions" },
-      el("span", { class: "faint" }, "This client cannot submit it; ask for it to be created in the conversation."));
-  }
   const waiting = busy || (!editing && draft.lookingUp);
   const button = (label, working, kind, primary) => el("button", {
     type: "button",
@@ -840,6 +1004,7 @@ async function submitForm(payload, view, kind) {
     render();
   } catch (error) {
     draft.busy = null;
+    draft.submitFailed = true;
     draft.error = (error && error.message) || "It did not go through.";
     render();
   }

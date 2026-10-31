@@ -179,6 +179,85 @@ func TestShowKindsFollowTheirTools(t *testing.T) {
 	}
 }
 
+// A model that reads about a kind can ask for it: a server's listed show, in
+// its description and its schema, names only the kinds and arguments it would
+// take, and refresh_view lists no argument its kinds do not take.
+func TestShowDescribesOnlyWhatTheServerOffers(t *testing.T) {
+	t.Parallel()
+
+	mentions := func(tool *mcp.Tool) string {
+		t.Helper()
+		schema, err := json.Marshal(tool.InputSchema)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tool.Description + "\n" + string(schema)
+	}
+
+	everything := mentions(listedTool(t, connect(t, testClients(t), nil, nil), "show"))
+	for _, want := range []string{"pull_request_form", "from_ref", "create_pull_request", "Kind pull_requests", "Kind diff", "an id to edit", "where the client lets it"} {
+		if !strings.Contains(everything, want) {
+			t.Errorf("a server with every tool does not tell the model about %q:\n%s", want, everything)
+		}
+	}
+
+	session := connectWith(t, ServerOptions{Name: "bb", Version: "test", Clients: testClients(t), ReadOnly: true})
+	shown := mentions(listedTool(t, session, "show"))
+	if !strings.Contains(shown, "Kind pull_request,") || !strings.Contains(shown, "Kind diff") {
+		t.Errorf("a read-only server's show does not name the kinds it offers: %s", shown)
+	}
+	refresh := mentions(listedTool(t, session, "refresh_view"))
+	for _, refused := range []string{"pull_request_form", "pull request form", "from_ref", "to_ref", "create_pull_request", `"draft"`, `"reviewers"`, `"title"`} {
+		if strings.Contains(shown, refused) {
+			t.Errorf("a read-only server's show mentions %q, which it would refuse:\n%s", refused, shown)
+		}
+		if strings.Contains(refresh, refused) {
+			t.Errorf("a read-only server's refresh_view mentions %q, which it would refuse:\n%s", refused, refresh)
+		}
+	}
+
+	// A list's arguments go with the list, and a form that edits with the tool
+	// that saves it.
+	noList := mentions(listedTool(t, connect(t, testClients(t), nil, []string{"list_pull_requests"}), "show"))
+	for _, refused := range []string{"Kind pull_requests", `"state"`, `"role"`, `"limit"`, "list_pull_requests"} {
+		if strings.Contains(noList, refused) {
+			t.Errorf("show without list_pull_requests mentions %q:\n%s", refused, noList)
+		}
+	}
+	noEdit := connect(t, testClients(t), nil, []string{"update_pull_request"})
+	if text := mentions(listedTool(t, noEdit, "show")); strings.Contains(text, "an id to edit") || strings.Contains(text, "for kind pull_request, diff, pull_request_form") {
+		t.Errorf("show without update_pull_request offers to edit:\n%s", text)
+	}
+	result, err := noEdit.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "show",
+		Arguments: map[string]any{"kind": "pull_request_form", "project": "PROJ", "repo": "app", "id": 7},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.IsError || !strings.Contains(result.Content[0].(*mcp.TextContent).Text, "update_pull_request") {
+		t.Errorf("show without update_pull_request answered an edit form with %+v, want it refused", result.Content)
+	}
+
+	// A list alone takes no id, and its schema does not offer one.
+	onlyList := mentions(listedTool(t, connect(t, testClients(t), []string{"list_pull_requests", "show"}, nil), "show"))
+	if strings.Contains(onlyList, `"id"`) || strings.Contains(onlyList, "for kind ,") {
+		t.Errorf("show with only the list offers an id:\n%s", onlyList)
+	}
+
+	// Comments go with the tool that reads them.
+	noComments := listedTool(t, connect(t, testClients(t), nil, []string{"list_pr_comments"}), "show")
+	if strings.Contains(noComments.Description, "comments") {
+		t.Errorf("show without list_pr_comments promises comments: %s", noComments.Description)
+	}
+
+	// Only a form: the sentence still reads.
+	formOnly := listedTool(t, connect(t, testClients(t), []string{"create_pull_request", "show"}, nil), "show")
+	if !strings.HasPrefix(formOnly.Description, "Show the person a pull request form") || strings.Contains(formOnly.Description, "Kind diff") {
+		t.Errorf("show with only the form reads: %s", formOnly.Description)
+	}
+}
+
 // The model is told that show is for the person and the other tools for it,
 // and that a view is for someone who is there to see it: never for an agent
 // working on its own, and never to read data. The server's instructions say

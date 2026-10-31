@@ -119,25 +119,27 @@ function addedToReview(view, key, url) {
 // the draft waits, for the person to publish it in Bitbucket (#796).
 function reviewActions(pr, payload, view) {
   const me = payload.me;
-  if (!me || me.author || !pr.repository || pr.state !== "OPEN" || !canCall(view, "prepare_pr_review")) return null;
+  const inBitbucket = callsInBitbucket(view, "prepare_pr_review");
+  if (!me || me.author || !pr.repository || pr.state !== "OPEN" || !(inBitbucket || canCall(view, "prepare_pr_review"))) return null;
   const busy = Boolean(view.reviewing);
   const status = me.status === "APPROVED" ? "You approved" : me.status === "NEEDS_WORK" ? "You requested changes" : null;
+  const act = (suggested) => (inBitbucket ? () => openLink(view.bridge, pr.url) : () => prepareReview(pr, suggested, view));
   return el("div", { class: "review-actions", role: "group", "aria-label": "Your review" },
     status ? el("span", { class: "faint" }, status) : null,
     el("button", {
       type: "button",
       class: "button primary" + (view.reviewing === "approve" ? " busy" : ""),
-      title: "Prepare your review, to publish in Bitbucket as an approval",
+      title: inBitbucket ? "Open the pull request in Bitbucket, to approve it there" : "Prepare your review, to publish in Bitbucket as an approval",
       disabled: busy,
-      onclick: () => prepareReview(pr, "approve", view),
-    }, icon("approved"), "Approve"),
+      onclick: act("approve"),
+    }, icon("approved"), "Approve", inBitbucket ? icon("external", null, "link-icon") : null),
     el("button", {
       type: "button",
       class: "button" + (view.reviewing === "needs_work" ? " busy" : ""),
-      title: "Prepare your review, to publish in Bitbucket as needing work",
+      title: inBitbucket ? "Open the pull request in Bitbucket, to request changes there" : "Prepare your review, to publish in Bitbucket as needing work",
       disabled: busy,
-      onclick: () => prepareReview(pr, "needs_work", view),
-    }, icon("changesRequested"), "Request changes"),
+      onclick: act("needs_work"),
+    }, icon("changesRequested"), "Request changes", inBitbucket ? icon("external", null, "link-icon") : null),
     preparedReview(view),
     view.reviewError ? el("p", { class: "form-error", role: "alert" }, view.reviewError) : null);
 }
@@ -175,6 +177,9 @@ async function prepareReview(pr, suggested, view) {
 
 // newCommentArea comments on the pull request itself.
 function newCommentArea(pr, view) {
+  if (pr.repository && callsInBitbucket(view, "add_pr_comment")) {
+    return el("div", { class: "new-comment" }, linkButton("Add a comment", pr.url, view.bridge));
+  }
   if (!pr.repository || !canCall(view, "add_pr_comment")) return null;
   const key = "comment-pr";
   if (!view.drafts.has(key)) {

@@ -41,7 +41,7 @@ func specRefreshView() Spec {
 		Description: "Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep " +
 			"current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.",
 		Annotations: readOnly("Refresh a view"),
-		InputSchema: refreshViewInputSchema(showKinds),
+		InputSchema: refreshViewInputSchema(showKinds, true),
 		Meta:        appOnlyToolMeta(),
 	}
 	titled(tool)
@@ -58,20 +58,24 @@ func specRefreshView() Spec {
 		RegisterExposed: func(server *mcp.Server, opts ServerOptions, exposed map[string]bool) {
 			offers := offersFor(opts, exposed)
 			offered := *tool
-			offered.InputSchema = refreshViewInputSchema(offers.Kinds)
+			offered.InputSchema = refreshViewInputSchema(offers.Kinds, offers.edits())
 			mcp.AddTool(server, &offered, refreshViewHandler(opts.Clients, offers))
 		},
 	}
 }
 
-func refreshViewInputSchema(kinds []string) *jsonschema.Schema {
+func refreshViewInputSchema(kinds []string, edits bool) *jsonschema.Schema {
 	schema, err := jsonschema.For[RefreshViewInput](nil)
 	if err != nil {
 		panic(fmt.Sprintf("deriving input schema for RefreshViewInput: %v", err))
 	}
-	shown := showInputSchema(kinds)
-	for name, property := range shown.Properties {
-		schema.Properties[name] = property
+	shown := showInputSchema(kinds, edits)
+	for name := range schema.Properties {
+		if property, ok := shown.Properties[name]; ok {
+			schema.Properties[name] = property
+		} else if name != "since" {
+			dropProperty(schema, name)
+		}
 	}
 	return schema
 }
@@ -90,6 +94,9 @@ func refreshViewHandler(c Clients, offers viewOffers) mcp.ToolHandlerFor[Refresh
 	return func(ctx context.Context, _ *mcp.CallToolRequest, in RefreshViewInput) (*mcp.CallToolResult, RefreshViewOutput, error) {
 		if !offers.kind(in.Kind) {
 			return nil, RefreshViewOutput{}, fmt.Errorf("refresh_view cannot refresh %q here; it refreshes %s", in.Kind, strings.Join(offers.Kinds, ", "))
+		}
+		if err := offers.refusesEdit(in.ShowInput); err != nil {
+			return nil, RefreshViewOutput{}, err
 		}
 		if err := checkShowInput(in.ShowInput); err != nil {
 			return nil, RefreshViewOutput{}, err
