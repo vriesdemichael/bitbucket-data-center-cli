@@ -118,6 +118,9 @@ func TestAViewWhoseResultDoesNotComeSaysSo(t *testing.T) {
 	}
 }
 
+// askInstead is where a view that cannot draw sends the person.
+const askInstead = "Ask for it in the conversation instead."
+
 // droppedResult is show's answer as a client passes it on that keeps its text
 // and structuredContent and drops its _meta, as VS Code's agent host does.
 func droppedResult(t *testing.T, text string, out ShowOutput) json.RawMessage {
@@ -132,9 +135,11 @@ func droppedResult(t *testing.T, text string, out ShowOutput) json.RawMessage {
 // A view whose answer reached it without what it draws reads that through
 // refresh_view, with the show call the host gave it, and draws it; show's text
 // told the model, so the model is not told again. A host that passes no tool
-// calls, or a read that fails, gets a view that says what happened rather
-// than show's text for the model. A client that said it draws no views was
-// sent nothing, and nothing is read for it.
+// calls, or a read that fails, gets a view that says what happened and where to
+// ask instead, rather than show's text for the model. A read from a kept page
+// says what any view of another version says, which is what works there. A
+// client that said it draws no views was sent nothing, and nothing is read for
+// it.
 func TestAViewWhoseAnswerLostItsDataReadsIt(t *testing.T) {
 	card := refreshCardPayload("Round refunds to the cent", "OPEN", time.Now(), "one")
 	call := map[string]any{"kind": "pull_request", "project": "PAY", "repo": "ledger", "id": 42}
@@ -142,11 +147,20 @@ func TestAViewWhoseAnswerLostItsDataReadsIt(t *testing.T) {
 		ShowOutput{Shown: true, Kind: showKindPullRequest, Target: "PAY/ledger#42"})
 	notShown := droppedResult(t, "This client displays no views, so nothing was shown.",
 		ShowOutput{Shown: false, Kind: showKindPullRequest, Target: "PAY/ledger#42"})
+	otherVersion, err := json.Marshal(&mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: "The person opened pull request PAY/ledger#42 in a view: open."}},
+		Meta:    mcp.Meta{viewPayloadKey: map[string]any{"version": viewPayloadVersion + 1, "kind": showKindPullRequest}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	const (
 		readsIt = iota
 		passesNoCalls
 		readFails
 		drawsNoViews
+		readsOtherVersion
+		readLosesItToo
 	)
 	ctx := browser(t, []viewhost.Frame{
 		readsIt: {Title: "a host that passes tool calls", Arguments: call, Result: shown,
@@ -156,6 +170,10 @@ func TestAViewWhoseAnswerLostItsDataReadsIt(t *testing.T) {
 			ToolResults: answers(toolAnswer(t, "Bitbucket did not answer.", true))},
 		drawsNoViews: {Title: "a client that said it draws no views", Arguments: call, Result: notShown,
 			ToolResults: answers(refreshAnswer(t, &card, "The person opened pull request PAY/ledger#42 in a view: open."))},
+		readsOtherVersion: {Title: "a page older than the bb it reads", Arguments: call, Result: shown,
+			ToolResults: answers(otherVersion)},
+		readLosesItToo: {Title: "a read that loses it too", Arguments: call, Result: shown,
+			ToolResults: answers(toolAnswer(t, "The person opened pull request PAY/ledger#42 in a view: open.", false))},
 	})
 
 	if text := frameText(t, ctx, readsIt); !strings.Contains(text, "Round refunds to the cent") {
@@ -178,15 +196,23 @@ func TestAViewWhoseAnswerLostItsDataReadsIt(t *testing.T) {
 	}
 
 	text := frameText(t, ctx, passesNoCalls)
-	if !strings.Contains(text, "without what the view draws") || strings.Contains(text, "If the person says") {
-		t.Errorf("a host that passes no tool calls shows:\n%s\nwant what happened, not show's text for the model", text)
+	if !strings.Contains(text, "without what the view draws") || !strings.Contains(text, askInstead) || strings.Contains(text, "If the person says") {
+		t.Errorf("a host that passes no tool calls shows:\n%s\nwant what happened and where to ask, not show's text for the model", text)
 	}
 	if asked := hostMessages(t, ctx, passesNoCalls, "tools/call"); len(asked) != 0 {
 		t.Errorf("the view asked a host that passes no tool calls: %v", asked)
 	}
 
-	if text := frameText(t, ctx, readFails); !strings.Contains(text, "without what the view draws") || !strings.Contains(text, "Bitbucket did not answer.") {
-		t.Errorf("a read that fails shows:\n%s\nwant what happened and why the read failed", text)
+	if text := frameText(t, ctx, readFails); !strings.Contains(text, "without what the view draws") || !strings.Contains(text, askInstead) || !strings.Contains(text, "Bitbucket did not answer.") {
+		t.Errorf("a read that fails shows:\n%s\nwant what happened, where to ask, and why the read failed", text)
+	}
+
+	if text := frameText(t, ctx, readsOtherVersion); !strings.Contains(text, "different version of bb") || !strings.Contains(text, "start a new conversation") || strings.Contains(text, "cannot be drawn here") {
+		t.Errorf("a read from a page older than bb shows:\n%s\nwant what any view of another version says, not that this client cannot draw it", text)
+	}
+
+	if text := frameText(t, ctx, readLosesItToo); !strings.Contains(text, "without what it draws") || !strings.Contains(text, askInstead) || strings.Contains(text, "different version") {
+		t.Errorf("a read that loses its _meta too shows:\n%s\nwant that it came without what it draws, which is no question of versions", text)
 	}
 
 	if text := frameText(t, ctx, drawsNoViews); !strings.Contains(text, "This client displays no views") {
