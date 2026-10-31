@@ -9,9 +9,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"net"
 	"net/url"
 	"regexp"
 	"runtime"
+	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -42,6 +45,9 @@ const (
 	// diagnosePayloadKey is where the tool puts what only the page reads, in the
 	// result's _meta.
 	diagnosePayloadKey = "io.github.vriesdemichael.bb/diagnose"
+
+	// diagnoseCopyURI is the page as its own check reads it.
+	diagnoseCopyURI = diagnoseURI + "/page.html"
 
 	// diagnoseFixtureTemplateURI is the one template the page reads.
 	diagnoseFixtureTemplateURI = diagnoseURI + "/template/{name}"
@@ -174,6 +180,7 @@ type DiagnoseOutput struct {
 	Pages         diagnosePages          `json:"pages" jsonschema:"When the host read the pages, and how many of the page's checks reached the server"`
 	Findings      []string               `json:"findings" jsonschema:"What the above means, and what to fix"`
 	PageReport    map[string]any         `json:"page_report,omitempty" jsonschema:"What the diagnose page last measured in this client, where the host passes a view's calls to the server"`
+	MetaKiBSent   int                    `json:"meta_kib_sent" jsonschema:"How many KiB of filler this answer carries in its _meta for the page; none where no page is drawn"`
 	NotCapturable []string               `json:"not_capturable" jsonschema:"What nothing here can find out"`
 }
 
@@ -312,6 +319,7 @@ func diagnoseHandler(opts ServerOptions, page bool) mcp.ToolHandlerFor[DiagnoseI
 		draws := page && clientDisplaysViews(req)
 		result := &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: diagnoseText(out, draws)}}}
 		if draws {
+			out.MetaKiBSent = kib
 			result.Meta = mcp.Meta{diagnosePayloadKey: diagnosePayload(kib)}
 		}
 		return result, out, nil
@@ -408,7 +416,10 @@ func diagnoseConnectionOf(ctx context.Context, c Clients) diagnoseConnection {
 	out.Reachable = true
 	out.BitbucketVersion = properties.Version
 	if _, err := c.HTTP.CurrentUserName(ctx); err != nil {
-		out.Credential = "refused"
+		// A timeout or a server error says nothing about the credential.
+		if refusesCredential(err) {
+			out.Credential = "refused"
+		}
 		out.Problem = connectionProblem(err)
 		return out
 	}
@@ -508,10 +519,13 @@ func diagnoseClientOf(req *mcp.CallToolRequest) diagnoseClient {
 // diagnoseFindings says what the report means, and what to fix.
 func diagnoseFindings(out DiagnoseOutput) []string {
 	findings := []string{}
-	if !out.Connection.Reachable {
+	switch {
+	case !out.Connection.Reachable:
 		findings = append(findings, "Bitbucket cannot be reached: "+out.Connection.Problem+".")
-	} else if out.Connection.Credential != "works" {
-		findings = append(findings, "Bitbucket answers, and "+out.Connection.Problem+": check the credential the client gives bb in its env block.")
+	case out.Connection.Credential == "refused":
+		findings = append(findings, "Bitbucket answers, and refused the credential: check the one the client gives bb in its env block.")
+	case out.Connection.Credential != "works":
+		findings = append(findings, "Bitbucket answers, and it could not be told whether the credential works: "+out.Connection.Problem+".")
 	}
 	if out.Confirmations.On && !out.Confirmations.ClientCanShow {
 		findings = append(findings, "Confirmations are on and this client cannot show them, so the tools that ask refuse their calls: "+strings.Join(out.Confirmations.Tools, ", ")+".")
@@ -541,7 +555,7 @@ func diagnoseText(out DiagnoseOutput, draws bool) string {
 	case !out.Connection.Reachable:
 		fmt.Fprintf(&text, "Bitbucket, over %s: not reached: %s.\n", out.Connection.Scheme, out.Connection.Problem)
 	default:
-		fmt.Fprintf(&text, "Bitbucket %s, over %s: reached; the credential %s.\n", out.Connection.BitbucketVersion, out.Connection.Scheme, out.Connection.Credential)
+		fmt.Fprintf(&text, "Bitbucket %s, over %s: reached; %s.\n", out.Connection.BitbucketVersion, out.Connection.Scheme, credentialWords(out.Connection.Credential))
 	}
 	access := "reads and writes"
 	if out.Exposure.ReadOnly {
@@ -559,6 +573,17 @@ func diagnoseText(out DiagnoseOutput, draws bool) string {
 		text.WriteString("\nThe page shows the person what a view can do in this client, with a report to copy, and offers it as the view's context. Where the client passes a view's calls to the server, the next diagnose includes it.")
 	}
 	return text.String()
+}
+
+func credentialWords(credential string) string {
+	switch credential {
+	case "works":
+		return "the credential works"
+	case "refused":
+		return "the credential was refused"
+	default:
+		return "it could not be told whether the credential works"
+	}
 }
 
 // DiagnoseCheckInput is what the diagnose page sends: a read-only call, a size
@@ -620,7 +645,8 @@ func diagnoseCheckHandler(opts ServerOptions) mcp.ToolHandlerFor[DiagnoseCheckIn
 
 // diagnoseScrubbedReport bounds what a page leaves with the server, and takes
 // Bitbucket's address out of it again: whatever a page sends, the next diagnose
-// is pasted into an issue.
+// is pasted into an issue. A report does not hold the answer it was drawn beside,
+// or each diagnose would nest the last.
 func diagnoseScrubbedReport(report map[string]any, baseURL string) (map[string]any, error) {
 	if report == nil {
 		return nil, nil
@@ -632,38 +658,87 @@ func diagnoseScrubbedReport(report map[string]any, baseURL string) (map[string]a
 	if len(encoded) > diagnoseMaxReportBytes {
 		return nil, fmt.Errorf("the report is %d bytes, more than the %d a server keeps", len(encoded), diagnoseMaxReportBytes)
 	}
-	var out map[string]any
-	if err := json.Unmarshal([]byte(scrubAddress(string(encoded), baseURL)), &out); err != nil {
-		return nil, fmt.Errorf("the report cannot be read: %w", err)
+	if server, ok := report["server"].(map[string]any); ok {
+		delete(server, "page_report")
 	}
-	return out, nil
+	scrubbed, _ := scrubValue(report, addressMatchers(baseURL)).(map[string]any)
+	return scrubbed, nil
 }
 
-// scrubAddress takes Bitbucket's address out of JSON. It matches whole names, so a
-// host called "git" leaves "digit" alone. It stops at a character that could go on
-// in a name, and takes a second pass for an address that follows another with only
-// one character between them.
-func scrubAddress(text, baseURL string) string {
-	for _, form := range diagnoseAddressForms(baseURL) {
-		whole := regexp.MustCompile(`(^|[^A-Za-z0-9.-])` + regexp.QuoteMeta(form) + `($|[^A-Za-z0-9.-])`)
+// scrubValue takes Bitbucket's address out of every string in a decoded value,
+// and leaves its keys and its shape alone.
+func scrubValue(value any, matchers []*regexp.Regexp) any {
+	switch typed := value.(type) {
+	case string:
+		return scrubAddress(typed, matchers)
+	case []any:
+		out := make([]any, len(typed))
+		for i, item := range typed {
+			out[i] = scrubValue(item, matchers)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(typed))
+		for key, item := range typed {
+			out[key] = scrubValue(item, matchers)
+		}
+		return out
+	}
+	return value
+}
+
+// addressMatchers find the address in text, in any case, as whole names: a host
+// called "git" leaves "digit" alone, and "bb.example.com" leaves
+// "bb.example.com.elsewhere.org". A name may come after a dot, as a subdomain does,
+// and a dot at the end of a sentence does not go on with it.
+func addressMatchers(baseURL string) []*regexp.Regexp {
+	forms := diagnoseAddressForms(baseURL)
+	matchers := make([]*regexp.Regexp, 0, len(forms))
+	for _, form := range forms {
+		matchers = append(matchers, regexp.MustCompile(`(?i)(^|[^a-z0-9-])`+regexp.QuoteMeta(form)+`($|[^a-z0-9.-]|\.($|[^a-z0-9-]))`))
+	}
+	return matchers
+}
+
+// scrubAddress takes the address out of text. It takes two passes, for an address
+// that follows another with one character between them.
+func scrubAddress(text string, matchers []*regexp.Regexp) string {
+	for _, matcher := range matchers {
 		for range 2 {
-			text = whole.ReplaceAllString(text, "${1}"+diagnoseAddress+"${2}")
+			text = matcher.ReplaceAllString(text, "${1}"+diagnoseAddress+"${2}")
 		}
 	}
 	return text
 }
 
-// diagnoseAddressForms are the ways Bitbucket's address is written, longest first.
+// diagnoseAddressForms are the ways Bitbucket's address gets written, longest
+// first: whole, as an origin, as a host with and without its port, an IP address
+// as it reads when it is put in order, and the first two as a query string writes
+// them. A user in the address is never among them, or in the page.
 func diagnoseAddressForms(baseURL string) []string {
 	parsed, err := url.Parse(baseURL)
 	if err != nil || parsed.Host == "" {
 		return nil
 	}
-	forms := []string{strings.TrimRight(baseURL, "/"), parsed.Scheme + "://" + parsed.Host, parsed.Host}
-	if name := parsed.Hostname(); name != parsed.Host {
-		forms = append(forms, name)
+	parsed.User = nil
+	base := strings.TrimRight(parsed.String(), "/")
+	origin := parsed.Scheme + "://" + parsed.Host
+	forms := []string{base, origin, parsed.Host, parsed.Hostname(), url.QueryEscape(base), url.QueryEscape(origin)}
+	if ip := net.ParseIP(parsed.Hostname()); ip != nil {
+		forms = append(forms, ip.String())
 	}
-	return forms
+	sort.SliceStable(forms, func(i, j int) bool { return len(forms[i]) > len(forms[j]) })
+	return slices.Compact(forms)
+}
+
+// addressWithoutUser is the address with no credential that may be written in it.
+func addressWithoutUser(baseURL string) string {
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return ""
+	}
+	parsed.User = nil
+	return strings.TrimRight(parsed.String(), "/")
 }
 
 func schemeOf(baseURL string) string {
@@ -713,7 +788,7 @@ var diagnoseBuildID = sync.OnceValue(func() string {
 func diagnosePage(baseURL string) string {
 	settings, err := json.Marshal(map[string]any{
 		"build":     diagnoseBuildID(),
-		"bitbucket": strings.TrimRight(baseURL, "/"),
+		"bitbucket": addressWithoutUser(baseURL),
 		"scheme":    schemeOf(baseURL),
 		"forms":     diagnoseAddressForms(baseURL),
 	})
@@ -766,6 +841,15 @@ func addDiagnoseResources(server *mcp.Server, opts ServerOptions) {
 			Meta:     meta,
 		}}}, nil
 	})
+	// The page's own check reads a copy, so diagnose's count of reads of the page
+	// stays the host's.
+	server.AddResource(&mcp.Resource{URI: diagnoseCopyURI, Name: "diagnose-fixture-page", MIMEType: viewMIMEType},
+		func(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+			opts.checks.readFixture()
+			return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{{
+				URI: req.Params.URI, MIMEType: viewMIMEType, Text: diagnosePage(opts.Clients.BaseURL),
+			}}}, nil
+		})
 	for _, fixture := range diagnoseFixtures {
 		server.AddResource(&mcp.Resource{
 			URI:      fixture.URI,

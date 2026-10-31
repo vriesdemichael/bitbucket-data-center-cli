@@ -68,7 +68,7 @@ func diagnoseResources(t *testing.T) map[string]json.RawMessage {
 		return encoded
 	}
 	return map[string]json.RawMessage{
-		diagnoseURI:                   read(viewMIMEType, "text"),
+		diagnoseCopyURI:               read(viewMIMEType, "text"),
 		diagnoseURI + "/fixture.png":  read("image/png", "blob"),
 		diagnoseURI + "/fixture.txt":  read("text/plain", "text"),
 		diagnoseURI + "/fixture.pdf":  read("application/pdf", "blob"),
@@ -190,6 +190,16 @@ func TestDiagnoseReportsAHostThatDoesEverything(t *testing.T) {
 	if declared := fieldOf(report, "declared_only", "logging"); declared != false {
 		t.Errorf("logging is reported as %v, want what was declared", declared)
 	}
+	// With the views' style beside it, which hides an inline view's scrollbar, this
+	// page still has to see whether one stays.
+	var scrollbar string
+	inFrame(t, ctx, 0, `return w.getComputedStyle(d.documentElement).scrollbarWidth;`, &scrollbar)
+	if scrollbar != "auto" {
+		t.Errorf("the page's scrollbar-width is %q, so it cannot see one stay", scrollbar)
+	}
+	if reports := hostMessages(t, ctx, 0, "ui/notifications/size-changed"); len(reports) < 3 {
+		t.Errorf("the page reported its size %d times, want it to keep the host told", len(reports))
+	}
 	if notes, _ := report["not_capturable"].([]any); len(notes) != 2 {
 		t.Errorf("not capturable = %v", notes)
 	}
@@ -226,6 +236,9 @@ func TestDiagnoseSaysWhatEachLimitMeansForViews(t *testing.T) {
 		droppedMeta
 		onlyStructured
 		olderPage
+		capsMeta
+		saysNoViews
+		listsOnlyInline
 	)
 	ctx := openDiagnose(t, []viewhost.Frame{
 		noCalls:      {Title: "no serverTools", Mode: "inline", Result: everything, ResourceResults: diagnoseResources(t)},
@@ -238,6 +251,11 @@ func TestDiagnoseSaysWhatEachLimitMeansForViews(t *testing.T) {
 		onlyStructured: {Title: "text dropped", Mode: "inline", Result: diagnoseResult(t, false, true, false, diagnoseBuildID()),
 			ToolResults: diagnoseAnswers(t)},
 		olderPage: {Title: "a page older than bb", Mode: "inline", Result: diagnoseResult(t, true, true, true, "a-later-build"), ToolResults: diagnoseAnswers(t)},
+		capsMeta: {Title: "caps _meta below what was sent", Mode: "inline", ToolResults: diagnoseAnswers(t),
+			Result: json.RawMessage(`{"content":[{"type":"text","text":"bb"}],"structuredContent":{"meta_kib_sent":1024,"client":{"displays_views":true}}}`)},
+		saysNoViews: {Title: "draws the page, told the server it displays no views", Mode: "inline", ToolResults: diagnoseAnswers(t),
+			Result: json.RawMessage(`{"content":[{"type":"text","text":"bb"}],"structuredContent":{"meta_kib_sent":0,"client":{"displays_views":false}}}`)},
+		listsOnlyInline: {Title: "lists inline alone", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t)},
 	})
 
 	for frame, want := range map[int]string{
@@ -245,9 +263,11 @@ func TestDiagnoseSaysWhatEachLimitMeansForViews(t *testing.T) {
 		noContext:    "views offer no Add to chat context",
 		noMessage:    "views offer no Ask about this",
 		noLinks:      "a link in a view is shown to copy",
-		refusesCalls: "a call did not get through",
+		refusesCalls: "the check's call failed",
 		droppedMeta:  "views cannot draw from show's answer alone",
 		olderPage:    "Start a new conversation",
+		capsMeta:     "A result's _meta of 1024 KiB did not arrive",
+		saysNoViews:  "told the server it displays no views",
 	} {
 		effects := effectsOf(t, ctx, frame)
 		if !strings.Contains(effects, want) {
@@ -260,6 +280,13 @@ func TestDiagnoseSaysWhatEachLimitMeansForViews(t *testing.T) {
 	// A host that declares it takes a context is told that much, and no more.
 	if effects := effectsOf(t, ctx, noMessage); !strings.Contains(effects, "Whether the model reads it is not known") {
 		t.Errorf("a host that takes a context reads:\n%s", effects)
+	}
+
+	// A host that lists inline alone answers inline to a press, and refuses nothing.
+	click(t, ctx, listsOnlyInline, `[data-press="fullscreen"]`)
+	waitInFrame(t, ctx, listsOnlyInline, `JSON.parse(d.querySelector(".report-text").value).presses.fullscreen`, "the press did not report")
+	if effects := effectsOf(t, ctx, listsOnlyInline); strings.Contains(effects, "refused it") {
+		t.Errorf("a host that lists inline alone is told it refused fullscreen:\n%s", effects)
 	}
 
 	// Each answer is the answer it got, and the page goes on without it.
@@ -344,6 +371,16 @@ func TestDiagnoseSeesWhatAPolicyStops(t *testing.T) {
 	open := pageReport(t, ctx, 1)
 	if fieldOf(open, "network", "unlisted_fetch", "policy_violation") != nil || fieldOf(open, "network", "unlisted_fetch", "got_through") != false {
 		t.Errorf("an address that cannot resolve, with no policy: %v", fieldOf(open, "network", "unlisted_fetch"))
+	}
+
+	// A host's own words about the address, as a browser or a host would put it
+	// in order, are scrubbed in the report and on the page.
+	sandboxed := openDiagnose(t, []viewhost.Frame{{Title: "echoes the address", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t),
+		Sandbox: json.RawMessage(`{"csp":{"connectDomains":["HTTP://127.0.0.1:9","127.0.0.1"]}}`)}})
+	for name, text := range map[string]string{"report": pageReportText(t, sandboxed, 0), "page": frameText(t, sandboxed, 0)} {
+		if strings.Contains(text, "127.0.0.1") {
+			t.Errorf("the %s names the address:\n%s", name, text)
+		}
 	}
 
 	// The address goes nowhere it could be pasted from.
