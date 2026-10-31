@@ -183,22 +183,23 @@ and draft state are edited the same way.
   will not open links shows you the address to copy. A button, such as
   **Reply** or **Approve**, calls a tool, as the agent does.
 - Clients differ in what they let a view do, as
-  [When your client does less](#when-your-client-does-less) sets out. Ask the
-  agent to run `diagnose`, and it
-  [measures what yours does](troubleshooting.md#a-view-or-a-tool-does-not-work).
+  [When your client does less](#when-your-client-does-less) sets out.
 - bb reads everything a view shows, avatars included, with its own credentials:
   the client never contacts Bitbucket.
 
 ### When your client does less
 
 MCP Apps, the standard bb's views are drawn with, lets a client do several things
-for a view: pass its tool calls to bb, go fullscreen, open links, and hand what
-the view says to the agent. Clients differ in which of these they do, and bb's
-server cannot tell, because a client answers that to the view and not to the
-server. So each view goes by what your client declares, says what it cannot do
-there, and leads you to what works. A view never offers what the server itself
-leaves out: on a read-only server there is no **Add a comment**, whatever the
-client does.
+for a view: pass on what it draws, pass its tool calls to bb, go fullscreen, open
+links, and hand what the view says to the agent. Clients differ in which of these
+they do, and bb's server cannot tell, because a client answers that to the view
+and not to the server. So each view goes by what your client declares, says what
+it cannot do there, and leads you to what works. A view never offers what the
+server itself leaves out: on a read-only server there is no **Add a comment**,
+whatever the client does.
+
+Ask the agent to run `diagnose`, and it
+[measures what your client does](troubleshooting.md#a-view-or-a-tool-does-not-work).
 
 #### A client that passes a view no tool calls
 
@@ -244,6 +245,7 @@ or **Save** fails, the form offers the same ways beside the error.
 
 | Your client | What a view does |
 |---|---|
+| Passes `show`'s answer on without what the view draws | Reads it with a tool call of its own, and where it cannot, says so: ask for it in the conversation instead |
 | Has no fullscreen | Opens the overview and each file in place, and grows a step at a time |
 | Lists fullscreen and refuses a view's request | **Expand** opens in place, and the view does not ask again |
 | Grants fullscreen | The button reads **Full screen** from then on, and **Exit full screen** leaves it |
