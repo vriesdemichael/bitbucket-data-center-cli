@@ -234,20 +234,33 @@ func TestDiagnoseSaysWhatEachLimitMeansForViews(t *testing.T) {
 		noLinks
 		refusesCalls
 		droppedMeta
+		droppedNoCalls
+		droppedOwnCallsToo
 		onlyStructured
 		olderPage
 		capsMeta
 		saysNoViews
 		listsOnlyInline
 	)
+	dropped := diagnoseResult(t, true, true, false, diagnoseBuildID())
+	checkWithoutMeta, err := json.Marshal(&mcp.CallToolResult{
+		Content:           []mcp.Content{&mcp.TextContent{Text: "1 reads and 1 calls"}},
+		StructuredContent: DiagnoseCheckOutput{Reads: 1, Calls: 1},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx := openDiagnose(t, []viewhost.Frame{
-		noCalls:      {Title: "no serverTools", Mode: "inline", Result: everything, ResourceResults: diagnoseResources(t)},
-		noResources:  {Title: "no serverResources", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t)},
-		noContext:    {Title: "no updateModelContext", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t), Without: []string{"updateModelContext"}},
-		noMessage:    {Title: "no message", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t), Without: []string{"message"}},
-		noLinks:      {Title: "no openLinks", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t), OpensNoLinks: true},
-		refusesCalls: {Title: "declares serverTools, refuses them", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t), Refuses: []string{"tools/call"}},
-		droppedMeta:  {Title: "_meta dropped", Mode: "inline", Result: diagnoseResult(t, true, true, false, diagnoseBuildID()), ToolResults: diagnoseAnswers(t)},
+		noCalls:        {Title: "no serverTools", Mode: "inline", Result: everything, ResourceResults: diagnoseResources(t)},
+		noResources:    {Title: "no serverResources", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t)},
+		noContext:      {Title: "no updateModelContext", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t), Without: []string{"updateModelContext"}},
+		noMessage:      {Title: "no message", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t), Without: []string{"message"}},
+		noLinks:        {Title: "no openLinks", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t), OpensNoLinks: true},
+		refusesCalls:   {Title: "declares serverTools, refuses them", Mode: "inline", Result: everything, ToolResults: diagnoseAnswers(t), Refuses: []string{"tools/call"}},
+		droppedMeta:    {Title: "_meta dropped", Mode: "inline", Result: dropped, ToolResults: diagnoseAnswers(t)},
+		droppedNoCalls: {Title: "_meta dropped, no serverTools", Mode: "inline", Result: dropped, ResourceResults: diagnoseResources(t)},
+		droppedOwnCallsToo: {Title: "_meta dropped from a view's own calls too", Mode: "inline", Result: dropped,
+			ToolResults: map[string][]json.RawMessage{"diagnose_check": {checkWithoutMeta}}},
 		onlyStructured: {Title: "text dropped", Mode: "inline", Result: diagnoseResult(t, false, true, false, diagnoseBuildID()),
 			ToolResults: diagnoseAnswers(t)},
 		olderPage: {Title: "a page older than bb", Mode: "inline", Result: diagnoseResult(t, true, true, true, "a-later-build"), ToolResults: diagnoseAnswers(t)},
@@ -259,15 +272,17 @@ func TestDiagnoseSaysWhatEachLimitMeansForViews(t *testing.T) {
 	})
 
 	for frame, want := range map[int]string{
-		noCalls:      "views do not stay current, their tabs and actions open Bitbucket instead, and a pull request form cannot submit",
-		noContext:    "views offer no Add to chat context",
-		noMessage:    "views offer no Ask about this",
-		noLinks:      "a link in a view is shown to copy",
-		refusesCalls: "the check's call failed",
-		droppedMeta:  "views cannot draw from show's answer alone",
-		olderPage:    "Start a new conversation",
-		capsMeta:     "A result's _meta of 1024 KiB did not arrive",
-		saysNoViews:  "told the server it displays no views",
+		noCalls:            "views do not stay current, their tabs and actions open Bitbucket instead, and a pull request form cannot submit",
+		noContext:          "views offer no Add to chat context",
+		noMessage:          "views offer no Ask about this",
+		noLinks:            "a link in a view is shown to copy",
+		refusesCalls:       "the check's call failed",
+		droppedMeta:        "views cannot draw from show's answer alone here. A view reads it with a call of its own, which kept its _meta here up to 16384 KiB.",
+		droppedNoCalls:     "views cannot draw from show's answer alone here. A view cannot read it with a call of its own here",
+		droppedOwnCallsToo: "views cannot draw from show's answer alone here. A view's own call lost a _meta of 64 KiB too",
+		olderPage:          "Start a new conversation",
+		capsMeta:           "A result's _meta of 1024 KiB did not arrive",
+		saysNoViews:        "told the server it displays no views",
 	} {
 		effects := effectsOf(t, ctx, frame)
 		if !strings.Contains(effects, want) {

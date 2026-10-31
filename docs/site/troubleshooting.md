@@ -149,7 +149,7 @@ context, and where the client passes a view's calls to the server, the next
 | The host lists fullscreen and refused it | **Expand** opens a view in place |
 | The host takes a view's context | Whether the model reads it is not known, so name the lines you ask about |
 | The page is older than the bb that is running | The client kept the page: start a new conversation |
-| A result's `_meta` did not arrive | Views cannot draw from `show`'s answer alone in this client |
+| A result's `_meta` did not arrive | A view cannot draw from `show`'s answer alone, so it reads what it draws with a call of its own: the report says whether that works |
 
 [When your client does less](ai-and-llms.md#when-your-client-does-less) says what
 a view does in each case, and what you can do instead.

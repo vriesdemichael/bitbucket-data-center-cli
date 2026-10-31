@@ -90,12 +90,28 @@ function effects() {
     if (server.client && server.client.displays_views === false) {
       out.push("This client draws this page and told the server it displays no views, so show shows nothing in it.");
     } else if (server.meta_kib_sent > 0) {
-      out.push("A result's _meta of " + server.meta_kib_sent + " KiB did not arrive, and it is where a view's data travels: a view that carries as much cannot draw from show's answer alone here. Ask for diagnose with a smaller meta_kib to see what gets through.");
+      out.push("A result's _meta of " + server.meta_kib_sent + " KiB did not arrive, and it is where a view's data travels: a view that carries as much cannot draw from show's answer alone here." + droppedRead(capabilities) + " Ask for diagnose with a smaller meta_kib to see what gets through.");
     } else {
-      out.push("A result's _meta did not arrive, and it is where a view's data travels: views cannot draw from show's answer alone here.");
+      out.push("A result's _meta did not arrive, and it is where a view's data travels: views cannot draw from show's answer alone here." + droppedRead(capabilities));
     }
   }
   return out;
+}
+
+// droppedRead says what a view does about an answer that lost what it draws: it
+// reads that with a call of its own, where those pass and keep their _meta.
+function droppedRead(capabilities) {
+  const sizes = report.meta_size;
+  if (!capabilities.serverTools || (report.tools_call && (report.tools_call.error || report.tools_call.is_error))) {
+    return " A view cannot read it with a call of its own here, so it says it cannot be drawn.";
+  }
+  if (sizes.view_call_largest_kib) {
+    return " A view reads it with a call of its own, which kept its _meta here up to " + sizes.view_call_largest_kib + " KiB.";
+  }
+  if (sizes.view_call_failed_at_kib) {
+    return " A view's own call lost a _meta of " + sizes.view_call_failed_at_kib + " KiB too, so a view that carries as much says it cannot be drawn.";
+  }
+  return "";
 }
 
 // addressForms are the ways Bitbucket's address gets written: as the server wrote
