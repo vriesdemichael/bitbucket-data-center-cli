@@ -41,7 +41,7 @@ func specRefreshView() Spec {
 		Description: "Called by bb's views, not by the model: reads what a view shows, for a view to open it or to keep " +
 			"current. With since, the fingerprint of the data a view draws, it answers with the data only when that differs.",
 		Annotations: readOnly("Refresh a view"),
-		InputSchema: refreshViewInputSchema(showKinds),
+		InputSchema: refreshViewInputSchema(showKinds, true),
 		Meta:        appOnlyToolMeta(),
 	}
 	titled(tool)
@@ -58,18 +58,18 @@ func specRefreshView() Spec {
 		RegisterExposed: func(server *mcp.Server, opts ServerOptions, exposed map[string]bool) {
 			offers := offersFor(opts, exposed)
 			offered := *tool
-			offered.InputSchema = refreshViewInputSchema(offers.Kinds)
+			offered.InputSchema = refreshViewInputSchema(offers.Kinds, offers.edits())
 			mcp.AddTool(server, &offered, refreshViewHandler(opts.Clients, offers))
 		},
 	}
 }
 
-func refreshViewInputSchema(kinds []string) *jsonschema.Schema {
+func refreshViewInputSchema(kinds []string, edits bool) *jsonschema.Schema {
 	schema, err := jsonschema.For[RefreshViewInput](nil)
 	if err != nil {
 		panic(fmt.Sprintf("deriving input schema for RefreshViewInput: %v", err))
 	}
-	shown := showInputSchema(kinds)
+	shown := showInputSchema(kinds, edits)
 	for name := range schema.Properties {
 		if property, ok := shown.Properties[name]; ok {
 			schema.Properties[name] = property

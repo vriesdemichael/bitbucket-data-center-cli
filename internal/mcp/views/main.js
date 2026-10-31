@@ -124,6 +124,9 @@ const view = {
       return;
     }
     if (view.canFullscreen) {
+      // A second press while the host answers the first asks nothing more.
+      if (view.askingFullscreen) return;
+      view.askingFullscreen = true;
       bridge.requestDisplayMode("fullscreen")
         .then((result) => {
           if (result && result.mode && result.mode !== "fullscreen") throw new Error("refused");
@@ -131,7 +134,8 @@ const view = {
           view.ownFullscreen = true;
           setDisplayMode("fullscreen");
         })
-        .catch(() => fullscreenRefused(openInPlace));
+        .catch(() => fullscreenRefused(openInPlace))
+        .finally(() => { view.askingFullscreen = false; });
       return;
     }
     if (openInPlace) openInPlace();
@@ -213,6 +217,15 @@ function paintSelection() {
 function payloadOf(result) {
   const payload = result && result._meta ? result._meta[VIEW_PAYLOAD_KEY] : undefined;
   if (!payload || typeof payload !== "object") return null;
+  return payload;
+}
+
+// drawablePayload is what a view's own call answered with, or why it cannot be
+// drawn: a host may drop a result's _meta, which is no question of versions.
+function drawablePayload(result) {
+  const payload = payloadOf(result);
+  if (!payload) throw new Error("bb's answer reached this view without what it draws.");
+  if (payload.version !== VIEW_PAYLOAD_VERSION) throw new Error(DIFFERENT_VERSION);
   return payload;
 }
 
@@ -306,11 +319,15 @@ function setDisplayMode(mode) {
 function fullscreenRefused(openInPlace) {
   view.canFullscreen = false;
   view.refusedFullscreen = true;
-  view.expanded = true;
-  if (view.payload && view.payload.kind === "diff" && view.diffFile !== null) {
-    view.openFiles.add(view.diffFile);
+  // An answer that comes once the host has gone fullscreen by its own control
+  // opens nothing: the person is looking at the whole view.
+  if (!view.fullscreen) {
+    view.expanded = true;
+    if (view.payload && view.payload.kind === "diff" && view.diffFile !== null) {
+      view.openFiles.add(view.diffFile);
+    }
+    if (openInPlace) openInPlace();
   }
-  if (openInPlace) openInPlace();
   render();
 }
 
@@ -478,16 +495,21 @@ function watchSize() {
   let queued = false;
   let settling = null;
   const root = document.documentElement;
-  const report = () => {
-    queued = false;
-    const app = document.getElementById("app");
-    const box = app.getBoundingClientRect();
-    bridge.reportSize(Math.ceil(root.clientWidth), Math.ceil(box.height));
+  const settle = () => {
     clearTimeout(settling);
     settling = setTimeout(() => {
       root.classList.toggle("capped", root.scrollHeight > root.clientHeight + 1);
     }, HOST_FOLLOWS_MS);
   };
+  const report = () => {
+    queued = false;
+    const app = document.getElementById("app");
+    const box = app.getBoundingClientRect();
+    bridge.reportSize(Math.ceil(root.clientWidth), Math.ceil(box.height));
+    settle();
+  };
+  // A host that lowers the frame later changes no box in the view.
+  window.addEventListener("resize", settle);
   const observer = new ResizeObserver(() => {
     if (!queued) {
       queued = true;

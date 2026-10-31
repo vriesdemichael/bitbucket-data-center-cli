@@ -133,8 +133,7 @@ async function refreshView(view, byPerson) {
     const answer = result.structuredContent || {};
     state.failure = null;
     if (answer.changed) {
-      const payload = payloadOf(result);
-      if (!payload || payload.version !== VIEW_PAYLOAD_VERSION) throw new Error(DIFFERENT_VERSION);
+      const payload = drawablePayload(result);
       state.idleMs = REFRESH_IDLE_MS;
       if (payload.kind === "diff" && !byPerson && patchChanged(view.payload, payload)) {
         state.pending = { payload, text: textOf(result) };
