@@ -39,6 +39,28 @@ type Frame struct {
 	// OpensNoLinks leaves opening links out of the host's capabilities, as a
 	// host does that opens none.
 	OpensNoLinks bool `json:"opensNoLinks,omitempty"`
+	// RefusesFullscreen answers every request for fullscreen with inline, as
+	// a host does that lists fullscreen and keeps that mode to its own button.
+	// A test opens the host's own fullscreen with the frame's setMode function.
+	RefusesFullscreen bool `json:"refusesFullscreen,omitempty"`
+	// Without leaves these capabilities out of what the host declares, such as
+	// message or updateModelContext.
+	Without []string `json:"without,omitempty"`
+	// Refuses answers these methods with an error, such as ui/message, as a
+	// host does that declares a capability and does not honour it.
+	Refuses []string `json:"refuses,omitempty"`
+	// CapsHeight is the tallest an inline frame gets, in pixels, however tall
+	// the view says it is: a host that scrolls a view it caps. Zero follows
+	// the view.
+	CapsHeight int `json:"capsHeight,omitempty"`
+	// ResourceResults answer the view's reads of resources, by URI. A frame
+	// with them declares serverResources; a read of anything else is refused.
+	ResourceResults map[string]json.RawMessage `json:"resourceResults,omitempty"`
+	// Policy is put at the top of the page as its Content-Security-Policy, as a
+	// host enforces what a page declares.
+	Policy string `json:"policy,omitempty"`
+	// Sandbox is what the host declares it approved, as hostCapabilities.sandbox.
+	Sandbox json.RawMessage `json:"sandbox,omitempty"`
 	// Width is the view's width in pixels, such as a phone's; zero leaves it
 	// to the page's grid.
 	Width int `json:"width,omitempty"`

@@ -1,9 +1,9 @@
 {
   "version": 1,
   "spec": "docs/reference/atlassian/bitbucket-openapi.json",
-  "covered": 224,
+  "covered": 225,
   "total": 574,
-  "coverage_percent": 39.02439024390244,
+  "coverage_percent": 39.198606271777,
   "by_tag": [
     {
       "tag": "",
@@ -97,7 +97,7 @@
     },
     {
       "tag": "System Maintenance",
-      "covered": 2,
+      "covered": 3,
       "total": 81
     }
   ],
@@ -509,12 +509,6 @@
       "path": "/api/latest/admin/users/rename",
       "tag": "Permission Management",
       "summary": "Rename user"
-    },
-    {
-      "method": "GET",
-      "path": "/api/latest/application-properties",
-      "tag": "System Maintenance",
-      "summary": "Get application properties"
     },
     {
       "method": "GET",

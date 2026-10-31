@@ -253,8 +253,8 @@ func resourceMiddleware(clients Clients, scope Scope, listed bool) mcp.Middlewar
 				if !ok || list == nil {
 					return result, nil
 				}
-				// The view page is for a client to render, not for the person
-				// to attach, so it stays out of the list (ADR-101).
+				// The pages are for a client to render, not for the person to
+				// attach, so they stay out of the list (ADR-101).
 				list.Resources = slices.DeleteFunc(list.Resources, func(resource *mcp.Resource) bool {
 					return strings.HasPrefix(resource.URI, "ui://")
 				})
@@ -268,6 +268,12 @@ func resourceMiddleware(clients Clients, scope Scope, listed bool) mcp.Middlewar
 					return nil, &jsonrpc.Error{Code: jsonrpc.CodeInternalError, Message: listErr.Error()}
 				}
 				list.Resources = append(list.Resources, listed...)
+			case *mcp.ListResourceTemplatesRequest:
+				if list, ok := result.(*mcp.ListResourceTemplatesResult); ok && list != nil {
+					list.ResourceTemplates = slices.DeleteFunc(list.ResourceTemplates, func(template *mcp.ResourceTemplate) bool {
+						return strings.HasPrefix(template.URITemplate, "ui://")
+					})
+				}
 			case *mcp.CallToolRequest:
 				if callResult, ok := result.(*mcp.CallToolResult); ok && supportsResourceLinks(typed.ProtocolVersion()) {
 					linkResource(typed.Params.Name, rawArguments(typed.Params.Arguments), callResult)

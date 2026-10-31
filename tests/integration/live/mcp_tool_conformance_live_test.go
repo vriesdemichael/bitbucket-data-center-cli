@@ -362,6 +362,8 @@ func seedMCPToolArguments(t *testing.T, ctx context.Context, harness *liveHarnes
 		"show":                 repoArgs(map[string]any{"kind": "pull_request", "id": liveID(t, fixture.mainPR)}),
 		"refresh_view":         repoArgs(map[string]any{"kind": "pull_request", "id": liveID(t, fixture.mainPR)}),
 		"suggest_form_values":  repoArgs(map[string]any{"field": "branch", "text": "feature"}),
+		"diagnose":             {},
+		"diagnose_check":       {},
 	}
 
 	return fixture
@@ -434,6 +436,16 @@ func assertMCPToolAnswer(t *testing.T, fixture mcpToolFixture, name string, answ
 		// answers with the data.
 		if answer["changed"] != true || asString(answer["fingerprint"]) == "" {
 			t.Errorf("refresh_view answered changed=%v with fingerprint %v, want the data and its fingerprint", answer["changed"], answer["fingerprint"])
+		}
+	case "diagnose":
+		// The way the sweep's own calls go to Bitbucket works, so it says so.
+		connection, _ := answer["connection"].(map[string]any)
+		if connection["reachable"] != true || connection["credential"] != "works" {
+			t.Errorf("diagnose answered with the connection %v, want reached with a credential that works", connection)
+		}
+	case "diagnose_check":
+		if calls, _ := answer["calls"].(float64); calls < 1 {
+			t.Errorf("diagnose_check counted %v calls, want at least its own", answer["calls"])
 		}
 	}
 }

@@ -97,7 +97,7 @@ func listToolNames(t *testing.T, session *mcp.ClientSession) []string {
 func TestAllSpecsReturnsExpectedCount(t *testing.T) {
 	t.Parallel()
 
-	const wantCount = 27
+	const wantCount = 29
 	specs := AllSpecs()
 	if len(specs) != wantCount {
 		t.Errorf("AllSpecs: got %d tools, want %d", len(specs), wantCount)
@@ -448,6 +448,8 @@ func TestToolNamesMatchExpected(t *testing.T) {
 		"show",
 		"refresh_view",
 		"suggest_form_values",
+		"diagnose",
+		"diagnose_check",
 	}
 	specs := AllSpecs()
 	if len(specs) != len(want) {

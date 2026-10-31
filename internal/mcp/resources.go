@@ -721,8 +721,9 @@ func cacheHints(_ context.Context, req mcp.Request, c *mcp.Cacheable) {
 	case *mcp.ReadResourceRequest:
 		// The view page is the same for everyone and holds no Bitbucket data,
 		// so any cache may keep it; an hour lets an upgraded bb's page arrive
-		// the same day (ADR-101).
-		if typed.Params != nil && strings.HasPrefix(typed.Params.URI, "ui://") {
+		// the same day (ADR-101). The diagnose page names this server's
+		// Bitbucket, so it stays private with the rest.
+		if typed.Params != nil && strings.HasPrefix(typed.Params.URI, "ui://") && !isDiagnoseResource(typed.Params.URI) {
 			c.CacheScope = "public"
 			c.TTLMs = 3_600_000
 			return

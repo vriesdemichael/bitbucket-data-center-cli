@@ -229,6 +229,14 @@ func openHost(t *testing.T, frames []viewhost.Frame, before []chromedp.Action[ch
 	if err != nil {
 		t.Fatalf("render the host page: %v", err)
 	}
+	return openHostPage(t, page, before, ready)
+}
+
+// openHostPage opens a rendered host page, after running before, and waits until
+// ready holds on it.
+func openHostPage(t *testing.T, page string, before []chromedp.Action[chromedp.Void], ready string) context.Context {
+	t.Helper()
+
 	path := filepath.Join(t.TempDir(), "views.html")
 	if err := os.WriteFile(path, []byte(page), 0o600); err != nil {
 		t.Fatalf("write the host page: %v", err)
