@@ -100,7 +100,8 @@ A button in a view is not a link into Bitbucket but a call of the tools the
 agent uses, through your client: **Reply** calls `add_pr_comment`, which adds the
 reply to your review, **Approve** calls `prepare_pr_review`, which links to that
 review in Bitbucket for you to publish, **Create** calls `create_pull_request`. [How views work](advanced/mcp-governance.md#views-stay-inside-the-mcp-server)
-shows the whole path.
+shows the whole path. A client may not pass those calls on, and
+[what a view does then](#when-your-client-does-less) is its own section.
 
 ### Views in your agent
 
@@ -165,16 +166,12 @@ and draft state are edited the same way.
 
 - A view carries what it draws. It renders again when you come back to the
   conversation, even without bb running, and it says when it was read.
-- While a view is on screen, it keeps itself current: a build that finishes or
-  a new comment appears in place, and the model is told. It asks bb every 15
-  seconds while a build runs, less often the longer nothing changes, and not at
-  all off screen. A changed diff is offered rather than swapped in while you
-  read it. `--exclude refresh_view` keeps views as they were drawn.
-- A client decides what a view may do. Where it passes a view no tool calls, a
-  view says when it was read and that it does not update, so ask for it again
-  to bring it up to date. **Diff**, **Reply** and **Approve** open Bitbucket, and
-  a pull request form hands what you wrote to the conversation, or opens
-  Bitbucket's create page for the same branches.
+- While a view is on screen, it keeps itself current, where your client lets it:
+  a build that finishes or a new comment appears in place, and the model is told.
+  It asks bb every 15 seconds while a build runs, less often the longer nothing
+  changes, and not at all off screen. A changed diff is offered rather than
+  swapped in while you read it. `--exclude refresh_view` keeps views as they were
+  drawn.
 - A count is Bitbucket's count of the whole, and a view that lists fewer says
   so. A failed build or a request for changes is never behind a click.
 - Code is highlighted as far as bb gets before a deadline, and the rest drawn
@@ -187,6 +184,72 @@ and draft state are edited the same way.
   **Reply** or **Approve**, calls a tool, as the agent does.
 - bb reads everything a view shows, avatars included, with its own credentials:
   the client never contacts Bitbucket.
+
+### When your client does less
+
+MCP Apps, the standard bb's views are drawn with, lets a client do several things
+for a view: pass its tool calls to bb, go fullscreen, open links, and hand what
+the view says to the agent. Clients differ in which of these they do, and bb's
+server cannot tell, because a client answers that to the view and not to the
+server. So each view goes by what your client declares, says what it cannot do
+there, and leads you to what works. A view never offers what the server itself
+leaves out: on a read-only server there is no **Add a comment**, whatever the
+client does.
+
+#### A client that passes a view no tool calls
+
+Tool calls are how a view reads itself again and acts. Without them:
+
+- **It stays as it was drawn.** It says when it was read and that it does not
+  update in this client. Ask the agent to show it again to bring it up to date.
+  With a build running or auto-merge on, it also says that may have finished,
+  beside **Open in Bitbucket**.
+- **Its buttons open Bitbucket.** **Diff**, **Overview**, a comment's file,
+  **Approve**, **Request changes**, **Add a comment**, **Reply** and **Comment** on
+  selected lines each open the same place there, and one line under the view
+  says why.
+- **A list shows one state and role,** and says which. Ask the agent for another.
+
+![A pull request card in a client that passes a view no tool calls: a note that the running build may have finished, Overview beside Diff and Open in Bitbucket, the time it was read with "does not update in this client", and a line saying that these open Bitbucket](assets/views/card-no-calls-light.webp#only-light)
+![A pull request card in a client that passes a view no tool calls: a note that the running build may have finished, Overview beside Diff and Open in Bitbucket, the time it was read with "does not update in this client", and a line saying that these open Bitbucket](assets/views/card-no-calls-dark.webp#only-dark)
+
+#### A pull request form that cannot submit
+
+In the same clients a form says at its top that it cannot be submitted, before
+you write in it. The branches and reviewers show as the agent drafted them. The
+title, description and draft flag are yours to change, and you can take a
+reviewer off or add back the default reviewers and code owners. One button hands
+the form to the conversation, by the surest way your client has:
+
+| Your client takes | The button | What happens |
+|---|---|---|
+| A message in your name | **Send to the conversation** | The form arrives as your message, and the agent creates the pull request |
+| Only context for the agent | **Add to chat context** | The form goes into the view's context, and you ask in the conversation to go on from it |
+| Neither | **Show as text** | The form appears as selected text, for you to paste into the conversation |
+
+A way your client refuses falls through to the next, so what you wrote is not
+lost. **Open Bitbucket's create page** opens with the same branches. That page
+takes nothing else from its address, so your title, description and reviewers
+stay in the form. A client may declare tool calls and fail them: where **Create**
+or **Save** fails, the form offers the same ways beside the error.
+
+![A pull request form in a client that passes a view no tool calls: a notice at its top that it cannot be submitted, the branches and reviewers as the agent drafted them, and Send to the conversation beside Open Bitbucket's create page](assets/views/form-no-calls-light.webp#only-light)
+![A pull request form in a client that passes a view no tool calls: a notice at its top that it cannot be submitted, the branches and reviewers as the agent drafted them, and Send to the conversation beside Open Bitbucket's create page](assets/views/form-no-calls-dark.webp#only-dark)
+
+#### Other differences
+
+| Your client | What a view does |
+|---|---|
+| Has no fullscreen | Opens the overview and each file in place, and grows a step at a time |
+| Lists fullscreen and refuses a view's request | **Expand** opens in place, and the view does not ask again |
+| Grants fullscreen | The button reads **Full screen** from then on, and **Exit full screen** leaves it |
+| Opens fullscreen with a control of its own | Draws its full page there, and leaves closing it to that control |
+| Takes context for the agent | **Add to chat context** says the lines were added, and not that the agent read them: name them when you ask, or use **Ask about this**, which sends them |
+| Takes no context for the agent | Offers no **Add to chat context** |
+| Takes no messages | Offers no **Ask about this** |
+| Opens no links, or refuses one | Shows you the address to copy |
+| Caps a view's height | Scrolls inside its frame, with a scrollbar |
+| Keeps a page for a whole session | Says of a view from another version of bb to ask for it again, and if that message comes back, to start a new conversation |
 
 ### What a tool returns
 
