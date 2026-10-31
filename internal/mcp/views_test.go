@@ -225,7 +225,7 @@ func TestShowDescribesOnlyWhatTheServerOffers(t *testing.T) {
 		}
 	}
 	noEdit := connect(t, testClients(t), nil, []string{"update_pull_request"})
-	if text := mentions(listedTool(t, noEdit, "show")); strings.Contains(text, "an id to edit") {
+	if text := mentions(listedTool(t, noEdit, "show")); strings.Contains(text, "an id to edit") || strings.Contains(text, "for kind pull_request, diff, pull_request_form") {
 		t.Errorf("show without update_pull_request offers to edit:\n%s", text)
 	}
 	result, err := noEdit.CallTool(context.Background(), &mcp.CallToolParams{
@@ -237,6 +237,12 @@ func TestShowDescribesOnlyWhatTheServerOffers(t *testing.T) {
 	}
 	if !result.IsError || !strings.Contains(result.Content[0].(*mcp.TextContent).Text, "update_pull_request") {
 		t.Errorf("show without update_pull_request answered an edit form with %+v, want it refused", result.Content)
+	}
+
+	// A list alone takes no id, and its schema does not offer one.
+	onlyList := mentions(listedTool(t, connect(t, testClients(t), []string{"list_pull_requests", "show"}, nil), "show"))
+	if strings.Contains(onlyList, `"id"`) || strings.Contains(onlyList, "for kind ,") {
+		t.Errorf("show with only the list offers an id:\n%s", onlyList)
 	}
 
 	// Comments go with the tool that reads them.

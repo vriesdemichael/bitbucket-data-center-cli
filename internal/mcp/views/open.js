@@ -86,8 +86,7 @@ async function openInView(view, show, replace, lead, focus) {
   try {
     const result = await view.bridge.callTool(REFRESH_TOOL, show, OPEN_TIMEOUT_MS);
     if (!result || result.isError) throw new Error(textOf(result) || "bb could not open it.");
-    const payload = payloadOf(result);
-    if (!payload || payload.version !== VIEW_PAYLOAD_VERSION) throw new Error(DIFFERENT_VERSION);
+    const payload = drawablePayload(result);
     if (!replace && view.payload) view.history.push(snapshotOf(view));
     const keep = replace ? { filter: view.filter } : null;
     showPayload(view, payload);

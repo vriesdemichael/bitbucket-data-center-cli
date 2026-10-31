@@ -65,7 +65,10 @@ function renderPullRequestForm(payload, view) {
     editing ? pullRequestReviewers(draft) : canPick ? reviewersField(draft, show, view, busy) : draftedReviewers(draft, view, busy),
     editing || !canSubmit ? draftCheckbox(draft, busy) : null,
     draft.error ? el("p", { class: "form-error", role: "alert" }, draft.error) : null,
-    canSubmit ? formActions(payload, view, draft, editing, busy) : handOverActions(payload, view, draft, editing));
+    canSubmit ? formActions(payload, view, draft, editing, busy) : null,
+    // A host may declare the calls and not pass them: a submit that failed offers
+    // the way out too, so what the person wrote is not stranded.
+    !canSubmit || draft.submitFailed ? handOverActions(payload, view, draft, editing) : null);
 }
 
 // draftedBranches are the branches as the model drafted them, for a form that
@@ -423,7 +426,10 @@ function titleField(draft, busy) {
     "aria-required": "true",
     "data-draft": "form.title",
     disabled: busy,
-    oninput: (event) => { draft.title = event.target.value; },
+    oninput: (event) => {
+      draft.title = event.target.value;
+      handedNoLonger(draft);
+    },
   });
   input.value = draft.title;
   return el("div", { class: "form-field" },
@@ -437,7 +443,10 @@ function descriptionField(draft, view, busy) {
     id: "form-description",
     "data-draft": "form.description",
     disabled: busy,
-    oninput: (event) => { draft.description = event.target.value; },
+    oninput: (event) => {
+      draft.description = event.target.value;
+      handedNoLonger(draft);
+    },
   });
   write.value = draft.description;
   return el("div", { class: "form-field" },
@@ -750,8 +759,14 @@ function handOverNotice(view, editing) {
 // ignored.
 function createPageURL(form, draft) {
   if (!form.repository_url || !draft.from) return "";
-  const url = form.repository_url + "/pull-requests?create&sourceBranch=" + encodeURIComponent("refs/heads/" + draft.from);
-  return draft.to ? url + "&targetBranch=" + encodeURIComponent("refs/heads/" + draft.to) : url;
+  const url = form.repository_url + "/pull-requests?create&sourceBranch=" + encodeURIComponent(fullRef(draft.from));
+  return draft.to ? url + "&targetBranch=" + encodeURIComponent(fullRef(draft.to)) : url;
+}
+
+// fullRef is a branch as Bitbucket's address names one. A model may have drafted
+// it either way.
+function fullRef(branch) {
+  return branch.startsWith("refs/") ? branch : "refs/heads/" + branch;
 }
 
 // handOverActions take the place of the buttons on a form that cannot submit:
@@ -759,14 +774,16 @@ function createPageURL(form, draft) {
 // Bitbucket, whose address does not carry what they wrote.
 function handOverActions(payload, view, draft, editing) {
   const url = editing ? payload.pull_request && payload.pull_request.url : createPageURL(payload.form, draft);
-  const handed = draft.handed;
+  // What was handed over is said only while it is what the form holds.
+  const handed = draft.handed && draft.handed.for === formText(payload, draft) ? draft.handed : null;
   return el("div", { class: "form-handover" },
     el("div", { class: "form-actions" },
       el("button", {
         type: "button",
         class: "button primary" + (draft.handing ? " busy" : ""),
         "data-draft": "form.handover",
-        disabled: Boolean(draft.handing),
+        // The conversation has this already, and a second press would ask again.
+        disabled: Boolean(draft.handing) || Boolean(handed && !handed.text),
         onclick: () => handOverForm(payload, view),
       }, handOverRoute(view).button),
       isWebURL(url) ? linkButton(editing ? "Open in Bitbucket" : "Open Bitbucket's create page", url, view.bridge) : null),
@@ -775,12 +792,21 @@ function handOverActions(payload, view, draft, editing) {
     handed && handed.text ? selectableText(handed.text) : null);
 }
 
-// selectableText is text for the person to take by hand, selected for them.
+// selectableText is text for the person to take by hand.
 function selectableText(text) {
   const box = el("textarea", { class: "form-text", readonly: true, rows: Math.min(14, text.split("\n").length + 1), "aria-label": "The form as text" });
   box.value = text;
-  queueMicrotask(() => box.select());
   return box;
+}
+
+// handedNoLonger takes away what was said of a hand-over once the person writes
+// on: it is about what the form held then. Typing draws nothing, so it goes here.
+function handedNoLonger(draft) {
+  if (!draft.handed) return;
+  draft.handed = null;
+  for (const node of document.querySelectorAll(".form-handed, .form-text")) node.remove();
+  const button = document.querySelector('[data-draft="form.handover"]');
+  if (button) button.disabled = false;
 }
 
 // formText is what the person made of the form, in words the model can act on.
@@ -822,17 +848,24 @@ async function handOverForm(payload, view) {
   for (const route of routes) {
     try {
       await tookIt(route.send());
-      draft.handed = { said: route.said };
+      draft.handed = { said: route.said, for: text };
       break;
     } catch {
       // The next way, or the text below.
     }
   }
   if (!draft.handed) {
-    draft.handed = { said: "Select this and paste it into the conversation.", text };
+    draft.handed = { said: "Select this and paste it into the conversation.", text, for: text };
   }
   draft.handing = false;
   render();
+  // Selected for the person once, when it appears: drawn again later, it leaves
+  // the caret where they are writing.
+  const box = document.querySelector(".form-text");
+  if (box) {
+    box.focus();
+    box.select();
+  }
 }
 
 // formActions are the create page's buttons, Create and Create as draft, or
@@ -971,6 +1004,7 @@ async function submitForm(payload, view, kind) {
     render();
   } catch (error) {
     draft.busy = null;
+    draft.submitFailed = true;
     draft.error = (error && error.message) || "It did not go through.";
     render();
   }

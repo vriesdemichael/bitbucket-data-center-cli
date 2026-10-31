@@ -182,7 +182,7 @@ func specShow() Spec {
 		Name:        "show",
 		Description: showDescription(viewOffers{Kinds: showKinds, Tools: viewActionTools, comments: true}),
 		Annotations: readOnly("Show a view"),
-		InputSchema: showInputSchema(showKinds),
+		InputSchema: showInputSchema(showKinds, true),
 		Meta:        viewToolMeta(),
 	}
 	titled(tool)
@@ -200,7 +200,7 @@ func specShow() Spec {
 			// so a model is not told about a view it would be refused.
 			offered := *tool
 			offered.Description = showDescription(offers)
-			offered.InputSchema = showInputSchema(offers.Kinds)
+			offered.InputSchema = showInputSchema(offers.Kinds, offers.edits())
 			mcp.AddTool(server, &offered, showHandler(opts.Clients, offers))
 		},
 	}
@@ -296,7 +296,9 @@ var showKindFields = map[string][]string{
 	showKindPullRequestForm: {"from_ref", "to_ref", "title", "description", "reviewers", "draft"},
 }
 
-func showInputSchema(kinds []string) *jsonschema.Schema {
+// showInputSchema is show's arguments on a server that offers these kinds, and
+// edits says whether it can save a form of a pull request that exists.
+func showInputSchema(kinds []string, edits bool) *jsonschema.Schema {
 	schema, err := jsonschema.For[ShowInput](nil)
 	if err != nil {
 		panic(fmt.Sprintf("deriving input schema for ShowInput: %v", err))
@@ -308,9 +310,14 @@ func showInputSchema(kinds []string) *jsonschema.Schema {
 	schema.Properties["kind"].Description = "What to show: " + strings.Join(kinds, ", ")
 	schema.Properties["state"].Description = "For kind pull_requests, in any case: " +
 		strings.Join(openapi.PullRequestStateFilters, ", ") + ". Defaults to open."
-	schema.Properties["id"].Description = "Pull request ID, for kind " + strings.Join(slices.DeleteFunc(slices.Clone(kinds), func(kind string) bool {
-		return kind == showKindPullRequests
-	}), ", ")
+	withID := slices.DeleteFunc(slices.Clone(kinds), func(kind string) bool {
+		return kind == showKindPullRequests || (kind == showKindPullRequestForm && !edits)
+	})
+	if len(withID) > 0 {
+		schema.Properties["id"].Description = "Pull request ID, for kind " + strings.Join(withID, ", ")
+	} else {
+		dropProperty(schema, "id")
+	}
 	for kind, fields := range showKindFields {
 		if !slices.Contains(kinds, kind) {
 			for _, field := range fields {

@@ -219,6 +219,21 @@ func TestFullscreenTheViewAskedForIsTheViewsToLeave(t *testing.T) {
 	}
 }
 
+// A second press while the host answers the first asks nothing more, and opens
+// nothing twice.
+func TestASecondPressWhileTheHostAnswersAsksNothingMore(t *testing.T) {
+	ctx := browser(t, []viewhost.Frame{{Title: "refuses", Mode: "inline", RefusesFullscreen: true, Result: fixtureResult(t, fallbackDiff(nil))}})
+	var pressed bool
+	inFrame(t, ctx, 0, `const b = [...d.querySelectorAll("button")].find((b) => b.textContent.includes("Expand")); if (b) { b.click(); b.click(); } return Boolean(b);`, &pressed)
+	if !pressed {
+		t.Fatal("no Expand to press")
+	}
+	waitInFrame(t, ctx, 0, `d.querySelector(".inline-file .diff-table")`, "the refusal did not open the file in place")
+	if requested := hostMessages(t, ctx, 0, "ui/request-display-mode"); len(requested) != 1 {
+		t.Errorf("two presses asked %d times, want once", len(requested))
+	}
+}
+
 // An inline view shows no scrollbar while the host catches up with it, since a
 // scrollbar narrows it and a narrower view is taller. A host that caps the view
 // gets it back, or a person could not see there is more.
@@ -239,6 +254,13 @@ func TestAScrollbarShowsOnlyWhereTheHostCapsTheView(t *testing.T) {
 			t.Errorf("frame %d has scrollbar-width %q, want %q", frame, got, want)
 		}
 	}
+
+	// A host that lowers the frame later changes no box in the view, and the bar
+	// comes back all the same.
+	if err := chromedp.Do(ctx, chromedp.Evaluate[chromedp.Void](`window.bbHost.frames[0].iframe.style.height = "40px"`)); err != nil {
+		t.Fatal(err)
+	}
+	waitInFrame(t, ctx, 0, `window.bbHost.frames[0].iframe.contentWindow.getComputedStyle(d.documentElement).scrollbarWidth === "auto"`, "a frame lowered later did not get its scrollbar back")
 }
 
 // inMotionCard is a card with a build running, or auto-merge on.
@@ -250,6 +272,22 @@ func inMotionCard(running int, autoMerge bool, offers *viewOffers) viewPayload {
 	}
 	card.Offers = offers
 	return card
+}
+
+// A host may pass a view's calls and drop their _meta, which is no question of
+// versions: the view says what happened, rather than send the person to a new
+// conversation that will not help.
+func TestAViewsOwnCallThatLostItsDataSaysSo(t *testing.T) {
+	card := refreshCardPayload("Round refunds", "OPEN", time.Now(), "one")
+	card.Offers = reviewOffers
+	dropped := structuredAnswer(t, "The person opened the diff.", map[string]any{"changed": true})
+	ctx := browser(t, []viewhost.Frame{{Title: "drops _meta on a view's call", Mode: "inline", Result: fixtureResult(t, card),
+		ToolResults: answers(dropped)}})
+	clickButton(t, ctx, 0, "Diff")
+	waitInFrame(t, ctx, 0, `d.querySelector(".float-notice")`, "the view did not say the diff could not be opened")
+	if text := frameText(t, ctx, 0); !strings.Contains(text, "without what it draws") || strings.Contains(text, "different version") {
+		t.Errorf("a dropped _meta reads:\n%s", text)
+	}
 }
 
 // A view that cannot read itself again always says when it was read and that it
@@ -569,6 +607,90 @@ func TestAFormThatCannotSubmitHandsOverWhatThePersonWrote(t *testing.T) {
 	}
 	if text := frameText(t, ctx, messageFrame); !strings.Contains(text, "What you wrote here does not go with it.") {
 		t.Errorf("the form does not say what the create page leaves out:\n%s", text)
+	}
+}
+
+// A hand-over is said only of what the form still holds: writing on takes it away,
+// and a press that would only ask again is off until there is something new. The
+// text to select takes the caret once, and leaves it alone after.
+func TestAHandOverIsAboutWhatTheFormHolds(t *testing.T) {
+	form := fixtureResult(t, formPayload(newForm(), creating))
+	ctx := browser(t, []viewhost.Frame{
+		{Title: "message", Mode: "inline", Result: form},
+		{Title: "text", Mode: "inline", Result: form, Without: []string{"message", "updateModelContext"}},
+	})
+
+	clickButton(t, ctx, 0, "Send to the conversation")
+	waitInFrame(t, ctx, 0, `d.body.innerText.includes("Sent to the conversation.")`, "the form did not say it was sent")
+	var disabled bool
+	inFrame(t, ctx, 0, `return d.querySelector('[data-draft="form.handover"]').disabled;`, &disabled)
+	if !disabled {
+		t.Error("a press that would only ask again is still on")
+	}
+	typeInto(t, ctx, 0, `[data-draft="form.title"]`, "Another title")
+	waitInFrame(t, ctx, 0, `!d.body.innerText.includes("Sent to the conversation.")`, "the form still says it sent what it no longer holds")
+	inFrame(t, ctx, 0, `return d.querySelector('[data-draft="form.handover"]').disabled;`, &disabled)
+	if disabled {
+		t.Error("the press stays off after the person wrote on")
+	}
+	clickButton(t, ctx, 0, "Send to the conversation")
+	waitInFrame(t, ctx, 0, `d.body.innerText.includes("Sent to the conversation.")`, "the second hand-over was not said")
+	sent := hostMessages(t, ctx, 0, "ui/message")
+	if len(sent) != 2 || !strings.Contains(messageText(sent[1]), "Another title") {
+		t.Errorf("the form sent %v, want the second with what the person wrote since", sent)
+	}
+
+	clickButton(t, ctx, 1, "Show as text")
+	waitInFrame(t, ctx, 1, `d.activeElement && d.activeElement.classList.contains("form-text")`, "the text did not take the caret")
+	var selected bool
+	inFrame(t, ctx, 1, `const b = d.querySelector(".form-text"); return b.selectionEnd - b.selectionStart === b.value.length && b.value.length > 0;`, &selected)
+	if !selected {
+		t.Error("the text is not selected for the person")
+	}
+	// Drawn again, it leaves the caret where the person is writing.
+	inFrame(t, ctx, 1, `d.querySelector('[data-draft="form.title"]').focus(); return null;`, nil)
+	if err := chromedp.Do(ctx, chromedp.Evaluate[chromedp.Void](`window.bbHost.frames[1].setMode("inline", {})`)); err != nil {
+		t.Fatal(err)
+	}
+	letItLand(t, ctx)
+	var focused string
+	inFrame(t, ctx, 1, `return d.activeElement ? (d.activeElement.dataset.draft || d.activeElement.className) : "";`, &focused)
+	if focused != "form.title" {
+		t.Errorf("a redraw moved the caret to %q", focused)
+	}
+	typeInto(t, ctx, 1, `[data-draft="form.description"]`, "Written on.")
+	waitInFrame(t, ctx, 1, `!d.querySelector(".form-text")`, "the text stays, of what the form no longer holds")
+}
+
+// A host may declare the calls and not pass them. A submit that fails says why,
+// and offers the way out too, so what the person wrote is not stranded.
+func TestASubmitThatFailsOffersTheWayOut(t *testing.T) {
+	ctx := browser(t, []viewhost.Frame{{Title: "declares serverTools, refuses them", Mode: "inline",
+		Result:      fixtureResult(t, formPayload(newForm(), creating)),
+		ToolResults: map[string][]json.RawMessage{"suggest_form_values": {suggestions(t)}},
+		Refuses:     []string{"tools/call"}}})
+
+	if buttons := buttonsOf(t, ctx, 0); strings.Contains(buttons, "Send to the conversation") {
+		t.Errorf("before anything failed the form offers to hand over: %q", buttons)
+	}
+	clickButton(t, ctx, 0, "Create")
+	waitInFrame(t, ctx, 0, `d.querySelector(".form-error")`, "a failed submit said nothing")
+	buttons := buttonsOf(t, ctx, 0)
+	if !strings.Contains(buttons, "Send to the conversation") || !strings.Contains(buttons, "Open Bitbucket's create page") || !strings.Contains(buttons, "Create") {
+		t.Errorf("after a failed submit the buttons read %q, want the way out beside Create", buttons)
+	}
+}
+
+// A model may draft a branch by its full name, which the create page's address
+// takes as it is.
+func TestTheCreatePageTakesABranchWrittenInFull(t *testing.T) {
+	form := newForm()
+	form.FromRef = "refs/heads/feature/retries"
+	form.ToRef = "refs/heads/master"
+	ctx := browser(t, []viewhost.Frame{{Title: "full names", Mode: "inline", Result: fixtureResult(t, formPayload(form, creating))}})
+	want := "https://bitbucket.example.com/projects/PAY/repos/ledger/pull-requests?create&sourceBranch=refs%2Fheads%2Ffeature%2Fretries&targetBranch=refs%2Fheads%2Fmaster"
+	if got := openedBy(t, ctx, 0, clickNamed("Open Bitbucket's create page")); got != want {
+		t.Errorf("the create page opened %q, want %q", got, want)
 	}
 }
 
