@@ -151,6 +151,9 @@ context, and where the client passes a view's calls to the server, the next
 | The page is older than the bb that is running | The client kept the page: start a new conversation |
 | A result's `_meta` did not arrive | Views cannot draw from `show`'s answer alone in this client |
 
+[When your client does less](ai-and-llms.md#when-your-client-does-less) says what
+a view does in each case, and what you can do instead.
+
 Nothing the server or the page can see says whether the model reads a result's
 `_meta` or `structuredContent`, or where a client stores a result on disk.
 
