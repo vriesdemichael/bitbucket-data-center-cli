@@ -241,7 +241,7 @@ function sentNothing(result) {
   return answer.shown === false;
 }
 
-const DROPPED_PAYLOAD = "This client passed bb's answer on without what the view draws, so it cannot be drawn here.";
+const DROPPED_PAYLOAD = "This client passed bb's answer on without what the view draws, so it cannot be drawn here. Ask for it in the conversation instead.";
 
 // A client that passes show's answer on without its _meta, as VS Code's agent
 // host does, leaves the view without what it draws. Where the host passes the
@@ -260,13 +260,13 @@ async function readDropped(view) {
     // An answer that came meanwhile is the view's own.
     if (view.payload || view.failure) return;
     if (!result || result.isError) throw new Error(textOf(result) || "bb could not read it.");
-    const payload = payloadOf(result);
-    if (!payload || payload.version !== VIEW_PAYLOAD_VERSION) throw new Error("bb answered with data this page cannot draw.");
-    showPayload(view, payload);
+    showPayload(view, drawablePayload(result));
     view.history = [];
   } catch (error) {
     if (view.payload || view.failure) return;
-    view.failure = DROPPED_PAYLOAD + " Reading it again failed: " + ((error && error.message) || "bb could not read it.");
+    const reason = (error && error.message) || "bb could not read it.";
+    // A kept page fails the same in any client, and its own words say what works.
+    view.failure = reason === DIFFERENT_VERSION ? reason : DROPPED_PAYLOAD + " Reading it again failed: " + reason;
   }
   render();
   scheduleRefresh(view);
