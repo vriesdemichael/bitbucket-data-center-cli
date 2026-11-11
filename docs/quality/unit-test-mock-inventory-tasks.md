@@ -7,7 +7,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | action | count | meaning |
 |---|---:|---|
 | `remove` | 1 | delete; it asserts nothing a live test would not already give |
-| `keep` | 180 | legitimate unit test under ADR-079 |
+| `keep` | 182 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
 | `decide-separately` | 27 | outside the Bitbucket policy; needs its own decision |
 
@@ -41,6 +41,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 | `internal/services/tag/service_test.go` | 3 | 0 | 0 | 2 | 1 |
 | `internal/services/token/service_test.go` | 3 | 0 | 0 | 2 | 1 |
 | `internal/transport/outcome/outcome_test.go` | 3 | 0 | 0 | 3 | 0 |
+| `internal/cli/cmd/pr/comment_anchor_read_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/pr/permission_contract_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/pr/pr_test.go` | 2 | 0 | 0 | 2 | 0 |
 | `internal/cli/cmd/project/permissions_test.go` | 2 | 0 | 0 | 2 | 0 |

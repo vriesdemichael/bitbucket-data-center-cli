@@ -125,11 +125,12 @@ type activityPage struct {
 }
 
 type rawActivity struct {
-	ID          *int64                     `json:"id,omitempty"`
-	Action      *string                    `json:"action,omitempty"`
-	CreatedDate *int64                     `json:"createdDate,omitempty"`
-	Comment     *json.RawMessage           `json:"comment,omitempty"`
-	Raw         map[string]json.RawMessage `json:"-"`
+	ID            *int64                     `json:"id,omitempty"`
+	Action        *string                    `json:"action,omitempty"`
+	CreatedDate   *int64                     `json:"createdDate,omitempty"`
+	Comment       *json.RawMessage           `json:"comment,omitempty"`
+	CommentAnchor *json.RawMessage           `json:"commentAnchor,omitempty"`
+	Raw           map[string]json.RawMessage `json:"-"`
 }
 
 func (activity *rawActivity) UnmarshalJSON(data []byte) error {
@@ -195,6 +196,12 @@ func mapActivity(item rawActivity) (Activity, error) {
 		if err != nil {
 			return Activity{}, err
 		}
+		if item.CommentAnchor != nil {
+			normalized, err = graftTimelineAnchor(normalized, *item.CommentAnchor)
+			if err != nil {
+				return Activity{}, err
+			}
+		}
 
 		comment := openapigenerated.RestComment{}
 		if err := json.Unmarshal(normalized, &comment); err != nil {
@@ -204,6 +211,44 @@ func mapActivity(item rawActivity) (Activity, error) {
 	}
 
 	return mapped, nil
+}
+
+// graftTimelineAnchor moves an activity-level commentAnchor into the comment it
+// belongs to, as that comment's anchor.
+//
+// Bitbucket 8.x places an inline comment's anchor beside the comment on the
+// activity (commentAnchor) and leaves the comment itself without one; the
+// releases inside the tested window nest it inside the comment. The thread view
+// reads the anchor off the comment, so on 8.x every inline thread read as a
+// pull-request-level one, and a caller with no file or line went back to
+// guessing which code a review comment meant.
+//
+// An anchor already on the comment wins. Both shapes present means a server
+// that moved the field and still sends the old one, and the comment's own is
+// the one its other endpoints agree with.
+func graftTimelineAnchor(commentJSON, anchorJSON json.RawMessage) (json.RawMessage, error) {
+	var comment map[string]any
+	if err := json.Unmarshal(commentJSON, &comment); err != nil {
+		return nil, err
+	}
+	if comment == nil {
+		return commentJSON, nil
+	}
+	if existing, present := comment["anchor"]; present && existing != nil {
+		return commentJSON, nil
+	}
+
+	var anchor map[string]any
+	if err := json.Unmarshal(anchorJSON, &anchor); err != nil {
+		return nil, err
+	}
+	if anchor == nil {
+		return commentJSON, nil
+	}
+	commentanchor.NormalizeAnchorPaths(anchor)
+
+	comment["anchor"] = anchor
+	return json.Marshal(comment)
 }
 
 // normalizeCommentAnchorPaths rewrites string anchor paths into the object form

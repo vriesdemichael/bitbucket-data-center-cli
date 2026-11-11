@@ -253,6 +253,24 @@ func newPullRequestCommentCommand(deps Dependencies, repository *string) *cobra.
 				return err
 			}
 
+			// The single-comment view omits the anchor on the releases that
+			// place it beside the comment on the activity timeline, so an
+			// inline comment read here as anchored false with no file or line.
+			// The timeline carries the anchor, so it is read from there. Best
+			// effort: the comment above was fetched, and a timeline that
+			// cannot be read leaves the answer the single-comment view gave
+			// rather than failing a get that worked.
+			if comment.Anchor == nil && comment.Id != nil {
+				activityService := pullrequestactivityservice.NewService(client)
+				if activities, available, listErr := activityService.TryList(cmd.Context(),
+					pullrequestactivityservice.RepositoryRef{ProjectKey: repo.ProjectKey, Slug: repo.Slug},
+					target.PullRequestID); listErr == nil && available {
+					if found, ok := pullrequestactivityservice.CommentByID(activities, *comment.Id); ok {
+						comment.Anchor = found.Anchor
+					}
+				}
+			}
+
 			if deps.JSONEnabled() {
 				return deps.WriteJSON(cmd.OutOrStdout(), SingleComment{Repository: repositoryOf(repo), PullRequestID: target.PullRequestID, Comment: result.CommentFrom(comment)})
 			}

@@ -1,16 +1,16 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 226,
-    "files": 77,
-    "functions": 214,
+    "mocked_servers": 228,
+    "files": 78,
+    "functions": 216,
     "by_class": {
       "canned-response": 1,
       "external-service": 27,
       "harness-constructor": 18,
       "routing-beacon": 10,
       "transport-fault": 101,
-      "unreachable-state": 25,
+      "unreachable-state": 27,
       "unreached-guard": 44
     },
     "behaviour_by_package": {}
@@ -221,6 +221,31 @@
       ],
       "action": "keep",
       "reason": "asserts that no request is made, which needs no server to be true"
+    },
+    {
+      "file": "internal/cli/cmd/pr/comment_anchor_read_test.go",
+      "line": 93,
+      "function": "newAnchorBesideCommentServer",
+      "class": "unreachable-state",
+      "signals": [
+        "serves-bitbucket-routes",
+        "inspects-the-request-path"
+      ],
+      "action": "keep",
+      "reason": "the answers are reduced from what a real Bitbucket 8.14.3 sent: the anchor beside the comment on the activity, and a single-comment view without one. The release window the live stack tests starts above 8.14.3, so no instance CI brings up can be put into this shape; the live confirmation is against the server that sent them.",
+      "reviewed": true
+    },
+    {
+      "file": "internal/cli/cmd/pr/comment_anchor_read_test.go",
+      "line": 145,
+      "function": "TestPRCommentGetKeepsTheServerAnswerWhenTheTimelineCannotBeRead",
+      "class": "unreachable-state",
+      "signals": [
+        "inspects-the-request-path"
+      ],
+      "action": "keep",
+      "reason": "the missing activity timeline is the subject, and every live pull request carries one; no instance CI brings up can be asked to drop it, and the subject is bb's own answer rather than the server's.",
+      "reviewed": true
     },
     {
       "file": "internal/cli/cmd/pr/create_interactive_test.go",
