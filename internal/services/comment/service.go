@@ -539,6 +539,11 @@ const (
 // CommentOutOfDateException, reporting expectedVersion -1 -- so leaving it out is
 // not an option, and asking every caller for it would be ceremony over a value
 // the server already holds.
+//
+// On a pull request the write carries both resolution fields, because each
+// moves only itself: state is what the task counters read, threadResolved is
+// what the web interface reads to collapse the thread (OPENAPI-038). A commit
+// comment has no thread and carries state alone.
 func (service *Service) SetState(ctx context.Context, target Target, commentID string, state CommentState, version *int32) (openapigenerated.RestComment, error) {
 	if err := validateTarget(target); err != nil {
 		return openapigenerated.RestComment{}, err
@@ -562,6 +567,10 @@ func (service *Service) SetState(ctx context.Context, target Target, commentID s
 
 	stateValue := string(state)
 	body := openapigenerated.RestComment{State: &stateValue, Version: resolvedVersion}
+	if strings.TrimSpace(target.CommitID) == "" {
+		threadResolved := state == CommentStateResolved
+		body.ThreadResolved = &threadResolved
+	}
 
 	// The raw method, so an anchored comment's path is repaired before decoding
 	// (ADR-077). This is the one that mattered most: resolving an inline

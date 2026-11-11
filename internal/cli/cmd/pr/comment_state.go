@@ -27,8 +27,8 @@ func newPullRequestCommentStateCommands(deps Dependencies, repository *string) [
 	specs := []stateCommand{
 		{
 			use:   "resolve <pr-id> <comment-id>",
-			short: "Resolve a pull request comment, closing it as a task",
-			example: "  # Mark a comment or task as dealt with\n" +
+			short: "Resolve a pull request comment, closing its thread",
+			example: "  # Close a review thread (and any task state on it)\n" +
 				"  bb pr comment resolve 42 1389396 --repo PROJ/repo",
 			intent:   "pr.comment.resolve",
 			reason:   "comment will be resolved",
@@ -37,8 +37,8 @@ func newPullRequestCommentStateCommands(deps Dependencies, repository *string) [
 		},
 		{
 			use:   "reopen <pr-id> <comment-id>",
-			short: "Reopen a resolved pull request comment",
-			example: "  # Reopen a comment that was resolved\n" +
+			short: "Reopen a resolved pull request comment thread",
+			example: "  # Reopen a comment thread that was resolved\n" +
 				"  bb pr comment reopen 42 1389396 --repo PROJ/repo",
 			intent:   "pr.comment.reopen",
 			reason:   "comment will be reopened",
@@ -91,8 +91,9 @@ func newCommentStateCommand(
 				}
 
 				preview := dryrunpreview.New(dryrunpreview.Item{
-					Intent:          intent,
-					Target:          map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "prId": prID, "commentId": commentID, "state": string(state)},
+					Intent: intent,
+					Target: map[string]any{"repository": fmt.Sprintf("%s/%s", repo.ProjectKey, repo.Slug), "prId": prID, "commentId": commentID, "state": string(state),
+						"threadResolved": state == commentservice.CommentStateResolved},
 					Action:          "update",
 					PredictedAction: "update",
 					Reason:          reason,

@@ -308,18 +308,21 @@ func TestAVerbNarrowsTheCommentsItIsOffered(t *testing.T) {
 	// is still allowed, so an absent state must not read as resolved.
 	stateless := result.Comment{ID: 3, Text: "Looks good."}
 	suggesting := result.Comment{ID: 4, Text: "Try:\n```suggestion\nreturn nil\n```"}
+	// A thread the web interface resolved carries threadResolved with the state
+	// left OPEN: closed for both verbs, and reopen has to be offered for it.
+	threadResolved := result.Comment{ID: 5, State: "OPEN", Resolved: true, Text: "Addressed."}
 
-	every := []result.Comment{open, resolved, stateless, suggesting}
+	every := []result.Comment{open, resolved, stateless, suggesting, threadResolved}
 
 	for _, testCase := range []struct {
 		name        string
 		commandPath string
 		offered     []int64
 	}{
-		{name: "getting one is not a statement about its state", commandPath: "pr comment get", offered: []int64{1, 2, 3, 4}},
-		{name: "reacting is not either", commandPath: "pr comment react", offered: []int64{1, 2, 3, 4}},
-		{name: "replying takes any comment", commandPath: "pr comment add", offered: []int64{1, 2, 3, 4}},
-		{name: "reopening takes a resolved one", commandPath: "pr comment reopen", offered: []int64{2}},
+		{name: "getting one is not a statement about its state", commandPath: "pr comment get", offered: []int64{1, 2, 3, 4, 5}},
+		{name: "reacting is not either", commandPath: "pr comment react", offered: []int64{1, 2, 3, 4, 5}},
+		{name: "replying takes any comment", commandPath: "pr comment add", offered: []int64{1, 2, 3, 4, 5}},
+		{name: "reopening takes a closed one", commandPath: "pr comment reopen", offered: []int64{2, 5}},
 		{name: "resolving takes everything else", commandPath: "pr comment resolve", offered: []int64{1, 3, 4}},
 		{name: "applying a suggestion takes one that has a suggestion", commandPath: "pr comment apply-suggestion", offered: []int64{4}},
 	} {
