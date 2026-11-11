@@ -6,6 +6,7 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | action | count | meaning |
 |---|---:|---|
+| `move-to-live` | 1 | write the live test, then delete the mock |
 | `remove` | 1 | delete; it asserts nothing a live test would not already give |
 | `keep` | 180 | legitimate unit test under ADR-079 |
 | `follows-callers` | 18 | goes when the tests supplying its handlers go |
@@ -15,10 +16,10 @@ Each proposal is what the mock *assumes*, not a verdict on the test. Whether a l
 
 | file | total | move-to-live | remove | keep | other |
 |---|---:|---:|---:|---:|---:|
+| `internal/services/comment/service_test.go` | 10 | 1 | 0 | 8 | 1 |
 | `internal/transport/httpclient/client_test.go` | 23 | 0 | 0 | 23 | 0 |
 | `internal/transport/download/download_test.go` | 18 | 0 | 0 | 18 | 0 |
 | `internal/transport/githubrelease/client_test.go` | 16 | 0 | 0 | 1 | 15 |
-| `internal/services/comment/service_test.go` | 9 | 0 | 0 | 8 | 1 |
 | `internal/services/pullrequest/service_test.go` | 7 | 0 | 0 | 6 | 1 |
 | `internal/cli/cmd/api/api_test.go` | 6 | 0 | 0 | 6 | 0 |
 | `internal/services/branch/service_test.go` | 6 | 0 | 0 | 5 | 1 |

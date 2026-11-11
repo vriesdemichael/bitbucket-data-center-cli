@@ -360,10 +360,10 @@ search:
 :   Add or remove a reaction on a pull request comment
 
 <a id="bb-pr-comment-reopen"></a>[`pr comment reopen`](pr.md#bb-pr-comment-reopen)
-:   Reopen a resolved pull request comment
+:   Reopen a resolved pull request comment thread
 
 <a id="bb-pr-comment-resolve"></a>[`pr comment resolve`](pr.md#bb-pr-comment-resolve)
-:   Resolve a pull request comment, closing it as a task
+:   Resolve a pull request comment, closing its thread
 
 <a id="bb-pr-commits"></a>[`pr commits`](pr.md#bb-pr-commits)
 :   List the commits in a pull request

@@ -1,10 +1,11 @@
 {
   "version": 1,
   "summary": {
-    "mocked_servers": 226,
+    "mocked_servers": 227,
     "files": 77,
-    "functions": 214,
+    "functions": 215,
     "by_class": {
+      "bitbucket-behaviour": 1,
       "canned-response": 1,
       "external-service": 27,
       "harness-constructor": 18,
@@ -13,7 +14,9 @@
       "unreachable-state": 25,
       "unreached-guard": 44
     },
-    "behaviour_by_package": {}
+    "behaviour_by_package": {
+      "internal/services/comment": 1
+    }
   },
   "entries": [
     {
@@ -1154,7 +1157,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 17,
+      "line": 19,
       "function": "newCommentTestService",
       "class": "harness-constructor",
       "signals": [
@@ -1165,7 +1168,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 61,
+      "line": 63,
       "function": "TestServiceCreateExplainsAnchorRejection",
       "class": "transport-fault",
       "signals": [
@@ -1180,7 +1183,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 107,
+      "line": 109,
       "function": "TestCountTasksValidatesTarget",
       "class": "unreached-guard",
       "signals": [
@@ -1193,7 +1196,21 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 140,
+      "line": 141,
+      "function": "TestSetStateCarriesTheThreadFlagOnAPullRequestComment",
+      "class": "bitbucket-behaviour",
+      "signals": [
+        "asserts-request-body",
+        "handler-passed-to-a-helper",
+        "inspects-the-request-path",
+        "serves-bitbucket-routes"
+      ],
+      "action": "move-to-live",
+      "reason": "asserts how Bitbucket routes, accepts or answers; only a real server can confirm it"
+    },
+    {
+      "file": "internal/services/comment/service_test.go",
+      "line": 194,
       "function": "TestListSurfacesAMalformedPage",
       "class": "transport-fault",
       "signals": [
@@ -1208,7 +1225,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 170,
+      "line": 224,
       "function": "TestCreateRefusesABlockerOnACommit",
       "class": "unreached-guard",
       "signals": [
@@ -1220,7 +1237,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 204,
+      "line": 258,
       "function": "TestAnUnreadableVersionLookupStopsTheWrite",
       "class": "transport-fault",
       "signals": [
@@ -1233,7 +1250,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 260,
+      "line": 314,
       "function": "TestEveryEmptyReadIsRefused",
       "class": "transport-fault",
       "signals": [
@@ -1246,7 +1263,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 307,
+      "line": 361,
       "function": "TestAStationaryPageEndsTheListing",
       "class": "transport-fault",
       "signals": [
@@ -1260,7 +1277,7 @@
     },
     {
       "file": "internal/services/comment/service_test.go",
-      "line": 343,
+      "line": 397,
       "function": "TestEveryEmptyWriteFallsBackToWhatWasSent",
       "class": "unreachable-state",
       "signals": [

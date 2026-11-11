@@ -1608,3 +1608,61 @@ fixes:
       commands:
         - go test ./internal/services/pullrequestactivity -run TestDecodeReviewPageAcceptsStringAnchorPaths -count=1
         - go test -tags=live ./tests/integration/live -run 'TestLiveMCPAddPRCommentRoutesInlineAndReply|TestLiveMCPReviewWaitsForThePersonToPublish' -count=1
+
+  - id: OPENAPI-038
+    area: unpublished-write-behavior
+    source: published-spec-incomplete
+    status: active
+    status_evidence: >
+      Observed on 10.5 by TestLiveSetStateCarriesBothResolutionFlags, which pins all three
+      writes against a running instance: state alone moves state and leaves threadResolved
+      false; threadResolved alone moves the thread flag and leaves state OPEN; the two
+      flags move only themselves.
+    description: >
+      Resolve a pull request comment by sending state and threadResolved together. The
+      published contract's only writable resolution field is RestComment.state; the server
+      additionally honours threadResolved on the same endpoint and does not document it.
+    reference:
+      type: endpoint
+      value: >
+        PUT /api/latest/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}
+      upstream_issue: >
+        RestComment documents state (OPEN|RESOLVED) as the writable resolution field and
+        threadResolved as a response property. Probed against a running instance, same
+        comment each time:
+
+          {"version":n,"state":"RESOLVED"}      -> state RESOLVED, threadResolved still false;
+                                                   threadResolver/threadResolvedDate never written
+          {"version":n,"threadResolved":true}   -> threadResolved true (the thread collapses on the
+                                                   site and a resolver is recorded), state stays OPEN
+          {"version":n,"threadResolved":true,
+           "state":"RESOLVED"}                  -> both set
+
+        Each field moves only itself. A comment resolved with state alone therefore reads as
+        done to every state reader while the web interface keeps the thread open -- and the
+        open thread is exactly what a reviewer or an author sees. The reverse write closes
+        the thread and leaves behind the state the task counters read.
+
+        The document carries CommentThread, a schema for threads, referenced by no operation,
+        so nothing in it describes the thread-level write the web interface itself performs.
+        bb pr comment resolve used to send state alone: reviewers closing feedback saw bb
+        report success while the conversation stayed open on the page.
+    change:
+      files:
+        - internal/services/comment/service.go
+        - internal/services/comment/service_test.go
+        - internal/cli/cmd/pr/comment_state.go
+        - internal/cli/completion/source_ids.go
+        - internal/cli/completion/source_ids_test.go
+        - tests/integration/live/pr_review_live_test.go
+        - skills/bb/SKILL.md
+      detail: >
+        SetState sends state and threadResolved together on a pull request comment --
+        threadResolved=false with state=OPEN on reopen -- and state alone on a commit
+        comment, which has no thread. The resolve and reopen help says thread rather than
+        task, the dry-run preview reports threadResolved, and the completion filter reads
+        both flags, so a thread the web interface resolved is offered to reopen.
+    verification:
+      commands:
+        - go test ./internal/services/comment -run TestSetStateCarriesTheThreadFlagOnAPullRequestComment -count=1
+        - go test -tags=live ./tests/integration/live -run 'TestLiveSetStateCarriesBothResolutionFlags|TestLivePullRequestCommentResolveReopen' -count=1

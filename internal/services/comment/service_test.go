@@ -2,6 +2,8 @@ package comment
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -128,6 +130,58 @@ func TestSetStateValidation(t *testing.T) {
 	}
 	if _, err := service.SetState(context.Background(), target, "7", CommentState("DONE"), nil); err == nil {
 		t.Fatal("expected a validation error for an unknown state")
+	}
+}
+
+// TestSetStateCarriesTheThreadFlagOnAPullRequestComment pins the request body:
+// the two resolution fields move only themselves -- state feeds the task
+// counters, threadResolved is what the web interface reads to collapse the
+// thread -- so a pull request write sends both, and a commit comment, which
+// has no thread, sends state alone (OPENAPI-038).
+func TestSetStateCarriesTheThreadFlagOnAPullRequestComment(t *testing.T) {
+	t.Parallel()
+
+	var gotPath string
+	var gotBody map[string]any
+	service := newCommentTestService(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		raw, _ := io.ReadAll(r.Body)
+		gotBody = map[string]any{}
+		_ = json.Unmarshal(raw, &gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	})
+
+	version := int32(3)
+	pr := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, PullRequestID: "12"}
+
+	if _, err := service.SetState(context.Background(), pr, "9", CommentStateResolved, &version); err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	wantSuffix := "/projects/TEST/repos/demo/pull-requests/12/comments/9"
+	if !strings.HasSuffix(gotPath, wantSuffix) {
+		t.Fatalf("PUT went to %q, want suffix %q", gotPath, wantSuffix)
+	}
+	if gotBody["state"] != "RESOLVED" || gotBody["threadResolved"] != true || gotBody["version"] != float64(3) {
+		t.Fatalf("resolve body = %v, want state RESOLVED, threadResolved true, version 3", gotBody)
+	}
+
+	if _, err := service.SetState(context.Background(), pr, "9", CommentStateOpen, &version); err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	if gotBody["state"] != "OPEN" || gotBody["threadResolved"] != false {
+		t.Fatalf("reopen body = %v, want state OPEN and threadResolved false, both present", gotBody)
+	}
+
+	commit := Target{Repository: RepositoryRef{ProjectKey: "TEST", Slug: "demo"}, CommitID: "abc"}
+	if _, err := service.SetState(context.Background(), commit, "9", CommentStateResolved, &version); err != nil {
+		t.Fatalf("commit resolve: %v", err)
+	}
+	if gotBody["state"] != "RESOLVED" {
+		t.Fatalf("commit resolve body = %v, want state RESOLVED", gotBody)
+	}
+	if _, present := gotBody["threadResolved"]; present {
+		t.Fatalf("commit resolve body = %v, want no threadResolved: a commit comment has no thread", gotBody)
 	}
 }
 
