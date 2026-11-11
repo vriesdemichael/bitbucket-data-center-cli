@@ -146,6 +146,23 @@ func ThreadsFromComments(comments []openapigenerated.RestComment, options Thread
 	return buildThreads(comments, nil, options)
 }
 
+// CommentByID finds one comment in a timeline that has already been walked,
+// with the anchor the graft gave it.
+//
+// The single-comment endpoint omits the anchor on the releases that place it
+// beside the comment on the activity, so a read that needs to know whether a
+// comment is inline, and where, is answered from the timeline instead. The
+// second return is false when the id is not on the timeline.
+func CommentByID(activities []Activity, commentID int64) (openapigenerated.RestComment, bool) {
+	for _, comment := range ExtractComments(activities) {
+		if comment.Id != nil && *comment.Id == commentID {
+			return comment, true
+		}
+	}
+
+	return openapigenerated.RestComment{}, false
+}
+
 // buildThreads maps every comment, then filters. The returned summary is
 // computed over the unfiltered set, so it reflects everything the caller passed
 // in rather than whatever filter was applied on top.
@@ -456,6 +473,10 @@ func collectReplies(comments *[]openapigenerated.RestComment) []Reply {
 // generated RestComment model has nowhere to put it. An orphaned anchor points
 // at a line that no longer exists in the diff, which an agent needs to know
 // before it tries to act on the referenced location.
+//
+// The flag is read from both places the anchor itself can sit: inside the
+// comment, and beside it as the activity's commentAnchor on the releases that
+// place it there.
 func extractOrphanedAnchors(activities []Activity) map[int64]bool {
 	orphaned := map[int64]bool{}
 
@@ -465,6 +486,16 @@ func extractOrphanedAnchors(activities []Activity) map[int64]bool {
 			continue
 		}
 		markOrphanedComment(comment, orphaned)
+
+		anchor, ok := activity.Raw["commentAnchor"].(map[string]any)
+		if !ok {
+			continue
+		}
+		if flag, isBool := anchor["orphaned"].(bool); isBool && flag {
+			if id, isNumber := comment["id"].(float64); isNumber {
+				orphaned[int64(id)] = true
+			}
+		}
 	}
 
 	return orphaned

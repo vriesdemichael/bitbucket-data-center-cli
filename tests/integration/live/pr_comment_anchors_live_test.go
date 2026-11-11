@@ -71,6 +71,52 @@ func TestLivePRCommentAnchors(t *testing.T) {
 		})
 	})
 
+	t.Run("the aggregate listing carries the anchor", func(t *testing.T) {
+		// The listing a caller runs first is the one without --path, built
+		// from the activity timeline. A pull-request-level comment beside the
+		// anchored one is the contrast: nothing to anchor to, and a thread
+		// that must stay unanchored rather than pick up its neighbour's.
+		general := mustLiveCLI(t, "pr", "comment", "add", prID, "--text", "about the pull request as a whole")
+		generalID := commentIDFrom(t, general)
+		if generalID == "" {
+			t.Fatalf("no comment id in:\n%s", general)
+		}
+
+		listing := mustLiveCLI(t, "pr", "comment", "list", prID, "--json")
+
+		data, _ := decodeJSONMap(t, listing)["data"].(map[string]any)
+		threads, _ := data["threads"].([]any)
+
+		var anchored, unanchored map[string]any
+		for _, entry := range threads {
+			thread, _ := entry.(map[string]any)
+			if thread["id"] == commentIDAsJSONNumber(t, rootID) {
+				anchored = thread
+			}
+			if thread["id"] == commentIDAsJSONNumber(t, generalID) {
+				unanchored = thread
+			}
+		}
+		if anchored == nil || unanchored == nil {
+			t.Fatalf("expected both threads in the aggregate listing:\n%s", listing)
+		}
+
+		anchor, _ := anchored["anchor"].(map[string]any)
+		if anchor == nil || anchor["path"] != file || anchor["line"] != float64(1) {
+			t.Fatalf("expected the anchored thread to say where it is, got %#v", anchor)
+		}
+		if _, has := unanchored["anchor"]; has {
+			t.Fatalf("expected the pull-request-level thread to stay unanchored, got %#v", unanchored["anchor"])
+		}
+
+		summary, _ := data["summary"].(map[string]any)
+		// Exactly one inline thread exists on this pull request here: the
+		// removed-line comment below has not been added yet.
+		if summary["unresolvedInline"] != float64(1) {
+			t.Fatalf("expected the summary to count one inline thread, got %#v", summary["unresolvedInline"])
+		}
+	})
+
 	t.Run("a removed line anchors to the original file", func(t *testing.T) {
 		// bb always sends diffType EFFECTIVE, which Bitbucket also stores when none is sent, so no read shows it arrived.
 		output := mustLiveCLI(t, "pr", "comment", "add", prID,
