@@ -279,15 +279,18 @@ bb pr comment add 42 --repo MYPROJ/payments --text "Fixed in <commit>. Please re
 
 _Written by an AI agent for @alice, via bb._"
 
-# Close a task once it is addressed, or put it back if it was not
+# Close a review thread once it is addressed, or put it back if it was not
 bb pr comment resolve 42 131 --repo MYPROJ/payments
 bb pr comment reopen 42 131 --repo MYPROJ/payments
 ```
 
-Resolving a comment is how a task is closed. Bitbucket has no separate pull
-request task object: tasks are blocker comments, so `resolve` on the comment is
-the whole of it. Nothing under `bb pr` manages tasks separately, and the comment
-subcommands above are the entire surface for them.
+Resolving a comment closes the whole thread. Bitbucket keeps two independent
+resolution flags, and `resolve` writes both: `threadResolved`, which the web
+interface reads to collapse the conversation and record the resolver, and the
+comment `state`, which the task counters read — a task is a blocker comment, so
+there is no separate task object. `reopen` clears both. Nothing under `bb pr`
+manages tasks separately, and the comment subcommands above are the entire
+surface for them.
 
 Re-run the listing afterwards to confirm the thread count dropped. Note that
 reviewers resolve their own threads, so an addressed comment stays unresolved

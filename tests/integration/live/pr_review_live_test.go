@@ -710,6 +710,12 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 	if state := prReviewCommentIn(t, afterResolve)["state"]; state != "RESOLVED" {
 		t.Fatalf("state = %v after resolve, want RESOLVED", state)
 	}
+	// Resolve writes both resolution fields (OPENAPI-038): the thread flag is
+	// what the web interface reads to collapse the conversation, and a resolve
+	// that skipped it would look done here while the page kept the thread open.
+	if resolved := prReviewCommentIn(t, afterResolve)["resolved"]; resolved != true {
+		t.Fatalf("resolved = %v after resolve, want true", resolved)
+	}
 
 	reopenOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, commentID)
 	if err != nil {
@@ -726,6 +732,9 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 	if state := prReviewCommentIn(t, afterReopen)["state"]; state != "OPEN" {
 		t.Fatalf("state = %v after reopen, want OPEN", state)
 	}
+	if resolved := prReviewCommentIn(t, afterReopen)["resolved"]; resolved != false {
+		t.Fatalf("resolved = %v after reopen, want false", resolved)
+	}
 
 	// Resolving twice in a row exercises the version being re-read each time.
 	// A cached version would make the second call fail with a 409.
@@ -740,6 +749,95 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 	}
 	if state := prReviewComment(t, pullRequestID, commentID)["state"]; state != "OPEN" {
 		t.Fatalf("state = %v after the second reopen, want OPEN", state)
+	}
+}
+
+// TestLiveSetStateCarriesBothResolutionFlags pins what each resolution field
+// does on its own, because the published contract documents only state and the
+// two move only themselves (OPENAPI-038).
+//
+// state alone resolves the comment and leaves the thread open -- which is what
+// the web interface reads, so a comment resolved with state alone looks done
+// here while the page keeps the conversation open. threadResolved alone
+// collapses the thread and leaves state alone -- which is what the task
+// counters read, so the write leaves the task behind. bb's resolve sends both,
+// which is the only write the task view and the thread view agree on.
+func TestLiveSetStateCarriesBothResolutionFlags(t *testing.T) {
+	t.Parallel()
+
+	harness := newLiveHarness(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	defer cancel()
+
+	seeded, err := harness.seedRepo(ctx, repoSeed{})
+	if err != nil {
+		t.Fatalf("seed project with repositories failed: %v", err)
+	}
+	repo := seeded.Repos[0]
+	branch := "feature/set-state-flags"
+	if err := harness.pushCommitOnBranch(seeded.Key, repo.Slug, branch, "set-state-flags.txt"); err != nil {
+		t.Fatalf("push commit on branch failed: %v", err)
+	}
+	pullRequestID, err := harness.createPullRequest(ctx, seeded.Key, repo.Slug, branch, "master")
+	if err != nil {
+		t.Fatalf("create pull request failed: %v", err)
+	}
+	configureLiveCLIEnv(t, harness, seeded.Key, repo.Slug)
+
+	addOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "add", pullRequestID, "--text", "thread for the flags")
+	if err != nil {
+		t.Fatalf("pr comment add failed: %v\noutput: %s", err, addOutput)
+	}
+	addData := decodeJSONMap(t, addOutput)
+	commentObject, ok := addData["comment"].(map[string]any)
+	if !ok {
+		commentObject = addData
+	}
+	commentID, ok := numericOrStringID(commentObject["id"])
+	if !ok {
+		t.Fatalf("expected a comment id in the add output: %s", addOutput)
+	}
+
+	path := "/rest/api/latest/projects/" + seeded.Key + "/repos/" + repo.Slug + "/pull-requests/" + pullRequestID + "/comments/" + commentID
+
+	// The documented field, written alone: state moves, the thread flag does not.
+	version, _ := prReviewComment(t, pullRequestID, commentID)["version"].(float64)
+	if _, err := harness.liveJSON(ctx, http.MethodPut, path, map[string]any{"version": int(version), "state": "RESOLVED"}); err != nil {
+		t.Fatalf("state-only resolve failed: %v", err)
+	}
+	if stored := prReviewComment(t, pullRequestID, commentID); stored["state"] != "RESOLVED" || stored["resolved"] != false {
+		t.Fatalf("after a state-only resolve the comment reads state %v resolved %v, want RESOLVED and false: the thread stays open on the site", stored["state"], stored["resolved"])
+	}
+
+	// Put both fields back to open, then move the thread flag alone: state must
+	// not follow it.
+	version, _ = prReviewComment(t, pullRequestID, commentID)["version"].(float64)
+	if _, err := harness.liveJSON(ctx, http.MethodPut, path, map[string]any{"version": int(version), "threadResolved": false, "state": "OPEN"}); err != nil {
+		t.Fatalf("reopening both fields failed: %v", err)
+	}
+	version, _ = prReviewComment(t, pullRequestID, commentID)["version"].(float64)
+	if _, err := harness.liveJSON(ctx, http.MethodPut, path, map[string]any{"version": int(version), "threadResolved": true}); err != nil {
+		t.Fatalf("thread-only resolve failed: %v", err)
+	}
+	if stored := prReviewComment(t, pullRequestID, commentID); stored["threadResolved"] == nil || stored["resolved"] != true || stored["state"] != "OPEN" {
+		t.Fatalf("after a thread-only resolve the comment reads resolved %v state %v, want true and OPEN: state does not follow the thread flag", stored["resolved"], stored["state"])
+	}
+
+	// bb's resolve sends both fields, and the readback has to agree from both
+	// directions -- the task view and the thread view.
+	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "resolve", pullRequestID, commentID); err != nil {
+		t.Fatalf("pr comment resolve failed: %v", err)
+	}
+	if stored := prReviewComment(t, pullRequestID, commentID); stored["state"] != "RESOLVED" || stored["resolved"] != true {
+		t.Fatalf("after bb resolve the comment reads state %v resolved %v, want RESOLVED and true", stored["state"], stored["resolved"])
+	}
+
+	if _, err := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, commentID); err != nil {
+		t.Fatalf("pr comment reopen failed: %v", err)
+	}
+	if stored := prReviewComment(t, pullRequestID, commentID); stored["state"] != "OPEN" || stored["resolved"] != false {
+		t.Fatalf("after bb reopen the comment reads state %v resolved %v, want OPEN and false", stored["state"], stored["resolved"])
 	}
 }
 

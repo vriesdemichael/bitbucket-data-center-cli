@@ -491,10 +491,10 @@ Add, list, resolve and react to pull request comments
 :   Add or remove a reaction on a pull request comment
 
 [`reopen`](#bb-pr-comment-reopen)
-:   Reopen a resolved pull request comment
+:   Reopen a resolved pull request comment thread
 
 [`resolve`](#bb-pr-comment-resolve)
-:   Resolve a pull request comment, closing it as a task
+:   Resolve a pull request comment, closing its thread
 
 ### `bb pr comment add`
 
@@ -969,14 +969,14 @@ Also takes the [global flags](global-flags.md).
 
 ### `bb pr comment reopen`
 
-Reopen a resolved pull request comment
+Reopen a resolved pull request comment thread
 
 ```text
 bb pr comment reopen <pr-id> <comment-id>
 ```
 
 ```bash
-# Reopen a comment that was resolved
+# Reopen a comment thread that was resolved
 bb pr comment reopen 42 1389396 --repo PROJ/repo
 ```
 
@@ -1035,14 +1035,14 @@ Also takes the [global flags](global-flags.md).
 
 ### `bb pr comment resolve`
 
-Resolve a pull request comment, closing it as a task
+Resolve a pull request comment, closing its thread
 
 ```text
 bb pr comment resolve <pr-id> <comment-id>
 ```
 
 ```bash
-# Mark a comment or task as dealt with
+# Close a review thread (and any task state on it)
 bb pr comment resolve 42 1389396 --repo PROJ/repo
 ```
 

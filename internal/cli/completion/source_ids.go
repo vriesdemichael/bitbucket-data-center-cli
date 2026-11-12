@@ -292,7 +292,10 @@ func commentFilterFor(path string) func(result.Comment) bool {
 }
 
 func resolvedComment(comment result.Comment) bool {
-	return strings.EqualFold(strings.TrimSpace(comment.State), "RESOLVED")
+	// Closure lives in two independent fields and resolve and reopen write both:
+	// the comment state the task counters read, and the thread flag the web
+	// interface reads (OPENAPI-038). Either one closed is closed.
+	return strings.EqualFold(strings.TrimSpace(comment.State), "RESOLVED") || comment.Resolved
 }
 
 // carriesSuggestion reports the fenced block `apply-suggestion` rewrites the
