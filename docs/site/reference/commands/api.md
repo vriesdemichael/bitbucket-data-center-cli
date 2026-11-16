@@ -53,7 +53,7 @@ cat body.json | bb api /rest/api/1.0/projects/PROJ/repos/repo/branches -X POST -
 `-X, --method string`
 :   HTTP method (one of: GET, POST, PUT, DELETE, PATCH, HEAD)
 
-`--paginate`
+`--paginate[=true|false]`
 :   Automatically fetch all pages for paginated endpoints
 
 `-f, --raw-field stringArray`

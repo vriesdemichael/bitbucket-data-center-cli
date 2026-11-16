@@ -94,7 +94,7 @@ bb reviewer-group delete <reviewer-group-id> [flags]
 bb reviewer-group delete 4 --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug or --project
 
 Inherited from [`bb reviewer-group`](#bb-reviewer-group):

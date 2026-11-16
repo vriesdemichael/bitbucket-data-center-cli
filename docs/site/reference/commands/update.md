@@ -29,7 +29,7 @@ bb update --dry-run
 bb update --base-url https://mirror.example.com/bb
 ```
 
-`--allow-http`
+`--allow-http[=true|false]`
 :   Permit a plain-HTTP release mirror; refused when administrative policy sets allow\_http\_update: false
 
 `--base-url string`

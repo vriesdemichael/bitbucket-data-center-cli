@@ -125,7 +125,7 @@ With --repo, a condition the repository inherits from its project is refused: de
 bb reviewer condition delete 9 --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug or --project
 
 Inherited from [`bb reviewer`](#bb-reviewer):

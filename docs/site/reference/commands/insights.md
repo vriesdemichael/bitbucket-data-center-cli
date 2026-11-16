@@ -82,7 +82,7 @@ bb insights annotation delete a1b2c3d lint --external-id lint-1 --repo PROJ/repo
 `--external-id string`
 :   External annotation ID to delete
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb insights`](#bb-insights):
@@ -118,7 +118,7 @@ bb insights annotation list a1b2c3d lint --repo PROJ/repo
 bb insights annotation list a1b2c3d --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -232,7 +232,7 @@ bb insights report delete <commit> <report-key> [flags]
 bb insights report delete a1b2c3d lint --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb insights`](#bb-insights):
@@ -306,7 +306,7 @@ bb insights report list <commit> [flags]
 bb insights report list a1b2c3d --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`

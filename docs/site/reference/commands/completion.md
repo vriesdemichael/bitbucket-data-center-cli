@@ -56,7 +56,7 @@ Without --shell it sets up the shell bb was started from. Running it again chang
 
 Windows PowerShell 5.1 runs no profile script under its default execution policy, Restricted. bb then says so rather than write a profile that would not run.
 
-`--all-users`
+`--all-users[=true|false]`
 :   For everyone on this machine rather than you; needs an administrator
 
 `--shell string`
@@ -95,13 +95,13 @@ Take out what bb completion install set up: its file, or its block in a file it 
 
 A script saved from bb completion &lt;shell&gt; where install puts its file is bb's too, and is removed with it. A file bb did not write is left alone, and so is a script a package linked where --all-users writes.
 
-`--all-users`
+`--all-users[=true|false]`
 :   For everyone on this machine rather than you; needs an administrator
 
 `--shell string`
 :   Shell to remove completion for (default: the shell bb was started from) (one of: bash, zsh, fish, powershell)
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).

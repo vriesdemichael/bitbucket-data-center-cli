@@ -154,7 +154,7 @@ bb project branch-restriction delete <project-key> <restriction-id> [flags]
 bb project branch-restriction delete PROJ 7
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).
@@ -497,7 +497,7 @@ bb project default-task delete <project-key> <task-id> [flags]
 bb project default-task delete PROJ 3
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).
@@ -633,7 +633,7 @@ bb project delete <project-key> [flags]
 bb project delete PROJ
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).
@@ -695,7 +695,7 @@ bb project list
 bb project list --name pay
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -779,7 +779,7 @@ bb project permissions grant PROJ alice PROJECT_WRITE
 bb project permissions grant PROJ backend-team PROJECT_WRITE --group
 ```
 
-`--group`
+`--group[=true|false]`
 :   Treat the argument as a group rather than a user
 
 Also takes the [global flags](global-flags.md).
@@ -846,7 +846,7 @@ Also available as bb project permissions list --group, one level shallower.
 bb project permissions groups list PROJ
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -883,7 +883,7 @@ Also available as bb project permissions revoke --group, one level shallower.
 bb project permissions groups revoke PROJ backend-team
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).
@@ -920,10 +920,10 @@ bb project permissions list PROJ
 bb project permissions list PROJ --group
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
-`--group`
+`--group[=true|false]`
 :   List groups instead of users
 
 `--limit int`
@@ -965,10 +965,10 @@ bb project permissions revoke PROJ alice
 bb project permissions revoke PROJ backend-team --group
 ```
 
-`--group`
+`--group[=true|false]`
 :   Treat the argument as a group rather than a user
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).
@@ -1062,7 +1062,7 @@ Also available as bb project permissions list, one level shallower.
 bb project permissions users list PROJ
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -1099,7 +1099,7 @@ Also available as bb project permissions revoke, one level shallower.
 bb project permissions users revoke PROJ alice
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).
@@ -1192,10 +1192,10 @@ printf '%s' "$WEBHOOK_SECRET" | bb project webhook create PROJ reviews \
   https://ci.example.com/hooks/reviews --event pr:opened --event pr:merged --secret-stdin
 ```
 
-`--active`
+`--active[=true|false]`
 :   Whether the webhook is active (default true)
 
-`--credentials-password-stdin`
+`--credentials-password-stdin[=true|false]`
 :   Read the endpoint password from stdin (or set BB\_WEBHOOK\_PASSWORD)
 
 `--credentials-username string`
@@ -1204,7 +1204,7 @@ printf '%s' "$WEBHOOK_SECRET" | bb project webhook create PROJ reviews \
 `--event strings`
 :   Webhook events to subscribe to (default \[repo:refs\_changed\])
 
-`--secret-stdin`
+`--secret-stdin[=true|false]`
 :   Read the shared secret from stdin (or set BB\_WEBHOOK\_SECRET)
 
 `--ssl-verification string`
@@ -1247,7 +1247,7 @@ bb project webhook delete <project-key> <webhook-id> [flags]
 bb project webhook delete PROJ 12
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).
@@ -1276,7 +1276,7 @@ bb project webhook list <project-key> [flags]
 bb project webhook list PROJ
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -1324,7 +1324,7 @@ bb project webhook stats PROJ 12
 bb project webhook stats PROJ 12 --summary
 ```
 
-`--summary`
+`--summary[=true|false]`
 :   Get statistics summary instead of detailed logs
 
 Also takes the [global flags](global-flags.md).
@@ -1349,7 +1349,7 @@ bb project webhook test PROJ 12
 bb project webhook test PROJ 12 --url https://ci.example.com/hooks/new
 ```
 
-`--reveal-secret`
+`--reveal-secret[=true|false]`
 :   Print the endpoint credentials Bitbucket sent instead of redacting it
 
 `--url string`
@@ -1387,7 +1387,7 @@ printf '%s' "$ENDPOINT_PASSWORD" | bb project webhook update PROJ 12 \
 `--active string`
 :   Active status (one of: true, false)
 
-`--credentials-password-stdin`
+`--credentials-password-stdin[=true|false]`
 :   Read the endpoint password from stdin (or set BB\_WEBHOOK\_PASSWORD)
 
 `--credentials-username string`
@@ -1399,13 +1399,13 @@ printf '%s' "$ENDPOINT_PASSWORD" | bb project webhook update PROJ 12 \
 `--name string`
 :   New name
 
-`--no-credentials`
+`--no-credentials[=true|false]`
 :   Remove the endpoint credentials from the webhook
 
-`--no-secret`
+`--no-secret[=true|false]`
 :   Remove the shared secret from the webhook
 
-`--secret-stdin`
+`--secret-stdin[=true|false]`
 :   Read the shared secret from stdin (or set BB\_WEBHOOK\_SECRET)
 
 `--ssl-verification string`

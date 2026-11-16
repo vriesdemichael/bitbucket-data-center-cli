@@ -38,7 +38,7 @@ bb search commits --repo PROJ/repo --since v1.2.0 --until main --merges exclude
 bb search commits --repo PROJ/repo --path src/main.go
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -116,7 +116,7 @@ bb search prs --role author --state all --since 2026-07-20 --until 2026-09-27 --
 bb search prs --repo PROJ/repo --state merged --date-field closed --since 2026-09-01
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--date-field string`
@@ -216,7 +216,7 @@ bb search repos billing
 bb search repos billing --project PROJ
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`

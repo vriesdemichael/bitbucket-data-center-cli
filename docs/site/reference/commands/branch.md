@@ -164,7 +164,7 @@ bb branch delete feature/x --repo PROJ/repo --end-point a1b2c3d --yes
 `--end-point string`
 :   Expected commit at branch tip
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb branch`](#bb-branch):
@@ -213,13 +213,13 @@ bb branch list --repo PROJ/repo --details
 bb branch list --repo PROJ/repo --base release/2.4
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--base string`
 :   Branch, tag or commit the ahead and behind counts are measured against (defaults to the default branch); implies --details
 
-`--details`
+`--details[=true|false]`
 :   Show what Bitbucket's branch list shows beside each branch: how far it is ahead of and behind --base, its last commit, its builds and its pull requests
 
 `--filter string`
@@ -311,7 +311,7 @@ bb branch model inspect <commit> [flags]
 bb branch model inspect a1b2c3d --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -501,7 +501,7 @@ A restriction the repository inherits from its project is refused: deleted throu
 bb branch restriction delete 7 --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb branch`](#bb-branch):
@@ -606,7 +606,7 @@ bb branch restriction list --repo PROJ/repo
 bb branch restriction list --repo PROJ/repo --type pull-request-only
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`

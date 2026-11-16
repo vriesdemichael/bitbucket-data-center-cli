@@ -70,10 +70,10 @@ bb ai mcp serve --tools get_pull_request,list_pull_requests,get_pr_diff \
   --audit-file /var/log/bb/mcp-audit.jsonl
 ```
 
-`--ai-disclosure`
+`--ai-disclosure[=true|false]`
 :   End the comments, pull request descriptions and tag messages the agent writes with a line saying an AI agent wrote them; with --ai-disclosure=false the server offers no tool that publishes them under your name at once (default true)
 
-`--allow-writes`
+`--allow-writes[=true|false]`
 :   Expose the tools that change Bitbucket too; without it the server offers only the tools that read
 
 `--audit-failure string`
@@ -82,13 +82,13 @@ bb ai mcp serve --tools get_pull_request,list_pull_requests,get_pr_diff \
 `--audit-file string`
 :   Append a JSON Lines audit record per tool call to this path, or to 'stderr'
 
-`--elicitation-opt-in`
+`--elicitation-opt-in[=true|false]`
 :   Ask the person in the MCP client before each call of a tool that decides a merge; a client that cannot ask is refused those tools
 
 `--exclude string`
 :   Comma-separated denylist of tool names to suppress
 
-`--highlight-templates`
+`--highlight-templates[=true|false]`
 :   In views, highlight the code inside templates too, not only their markup
 
 `--host string`
@@ -140,10 +140,10 @@ bb ai mcp tools
 bb ai mcp tools --allow-writes
 ```
 
-`--ai-disclosure`
+`--ai-disclosure[=true|false]`
 :   List the tools a server with this --ai-disclosure exposes; false leaves out the ones that publish what the agent writes under your name at once (default true)
 
-`--allow-writes`
+`--allow-writes[=true|false]`
 :   List the tools 'bb ai mcp serve --allow-writes' exposes, which change Bitbucket too
 
 Also takes the [global flags](global-flags.md).
@@ -210,7 +210,7 @@ bb ai skill install
 bb ai skill install --global
 ```
 
-`--global`
+`--global[=true|false]`
 :   Install for every project of yours (~/.agents/skills and ~/.claude/skills)
 
 Also takes the [global flags](global-flags.md).
@@ -246,10 +246,10 @@ bb ai skill remove
 bb ai skill remove --global --yes
 ```
 
-`--global`
+`--global[=true|false]`
 :   Remove from every project of yours (~/.agents/skills and ~/.claude/skills)
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).

@@ -42,7 +42,7 @@ bb commit compare <failing> <green>     # commits since the last green build
 bb commit compare feature/x main --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -146,7 +146,7 @@ bb commit list --repo PROJ/repo --path src/main.go --limit 10
 bb commit list --repo PROJ/repo --jira PAY-128
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--jira string`
