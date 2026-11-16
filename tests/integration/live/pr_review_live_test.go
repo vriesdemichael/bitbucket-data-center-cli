@@ -692,6 +692,16 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 		t.Fatalf("expected the blocker in the task listing, got: %s", beforeResolve)
 	}
 
+	// A dry run predicts both resolution fields and writes neither.
+	previewOutput := mustLiveCLI(t, "--dry-run", "pr", "comment", "resolve", pullRequestID, commentID)
+	predicted := decodeLivePreview(t, previewOutput).effect(t, previewOutput).Target
+	if predicted["state"] != "RESOLVED" || predicted["threadResolved"] != true {
+		t.Fatalf("the dry run predicts state %v threadResolved %v, want RESOLVED and true:\n%s", predicted["state"], predicted["threadResolved"], previewOutput)
+	}
+	if stored := prReviewComment(t, pullRequestID, commentID); stored["state"] != "OPEN" || stored["resolved"] != false {
+		t.Fatalf("after the dry run the comment reads state %v resolved %v, want OPEN and false: the dry run wrote", stored["state"], stored["resolved"])
+	}
+
 	resolveOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "resolve", pullRequestID, commentID)
 	if err != nil {
 		t.Fatalf("pr comment resolve failed: %v\noutput: %s", err, resolveOutput)
@@ -715,6 +725,15 @@ func TestLivePullRequestCommentResolveReopen(t *testing.T) {
 	// that skipped it would look done here while the page kept the thread open.
 	if resolved := prReviewCommentIn(t, afterResolve)["resolved"]; resolved != true {
 		t.Fatalf("resolved = %v after resolve, want true", resolved)
+	}
+
+	previewOutput = mustLiveCLI(t, "--dry-run", "pr", "comment", "reopen", pullRequestID, commentID)
+	predicted = decodeLivePreview(t, previewOutput).effect(t, previewOutput).Target
+	if predicted["state"] != "OPEN" || predicted["threadResolved"] != false {
+		t.Fatalf("the dry run predicts state %v threadResolved %v, want OPEN and false:\n%s", predicted["state"], predicted["threadResolved"], previewOutput)
+	}
+	if stored := prReviewComment(t, pullRequestID, commentID); stored["state"] != "RESOLVED" || stored["resolved"] != true {
+		t.Fatalf("after the dry run the comment reads state %v resolved %v, want RESOLVED and true: the dry run wrote", stored["state"], stored["resolved"])
 	}
 
 	reopenOutput, err := executeLiveCLI(t, "--json", "pr", "comment", "reopen", pullRequestID, commentID)
