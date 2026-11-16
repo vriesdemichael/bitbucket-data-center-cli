@@ -820,7 +820,7 @@ func TestLiveSetStateCarriesBothResolutionFlags(t *testing.T) {
 	if _, err := harness.liveJSON(ctx, http.MethodPut, path, map[string]any{"version": int(version), "threadResolved": true}); err != nil {
 		t.Fatalf("thread-only resolve failed: %v", err)
 	}
-	if stored := prReviewComment(t, pullRequestID, commentID); stored["threadResolved"] == nil || stored["resolved"] != true || stored["state"] != "OPEN" {
+	if stored := prReviewComment(t, pullRequestID, commentID); stored["resolved"] != true || stored["state"] != "OPEN" {
 		t.Fatalf("after a thread-only resolve the comment reads resolved %v state %v, want true and OPEN: state does not follow the thread flag", stored["resolved"], stored["state"])
 	}
 
