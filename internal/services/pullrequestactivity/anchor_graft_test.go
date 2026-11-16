@@ -190,11 +190,45 @@ func TestGraftKeepsTheCommentOwnAnchor(t *testing.T) {
 	// A null beside the comment, and a null comment, are shapes a server sends
 	// for an unanchored one; both pass through unchanged rather than failing
 	// the page.
-	if through, err := graftTimelineAnchor(comment, json.RawMessage(`null`)); err != nil || string(through) != string(comment) {
+	// The comment for the null anchor carries none of its own, or the
+	// precedence above would answer before the null is looked at.
+	unanchored := json.RawMessage(`{"id": 6, "text": "about the whole pull request"}`)
+	if through, err := graftTimelineAnchor(unanchored, json.RawMessage(`null`)); err != nil || string(through) != string(unanchored) {
 		t.Fatalf("a null anchor changed the comment: %s %v", through, err)
 	}
 	if through, err := graftTimelineAnchor(json.RawMessage(`null`), anchor); err != nil || string(through) != "null" {
 		t.Fatalf("a null comment was changed: %s %v", through, err)
+	}
+}
+
+// TestGraftFailsOnWhatItCannotRead pins that an activity whose comment or
+// anchor beside it is not an object fails, rather than decoding without the
+// anchor: an inline comment read as a pull-request-level one is the bug the
+// graft exists to fix.
+func TestGraftFailsOnWhatItCannotRead(t *testing.T) {
+	t.Parallel()
+
+	comment := json.RawMessage(`{"id": 5, "version": 0, "text": "inline", "state": "OPEN"}`)
+	anchor := json.RawMessage(`{"line": 40, "lineType": "CONTEXT", "path": "beside.go"}`)
+
+	// The control: the same activity with both readable maps, so the failures
+	// below come from the shape under test and nothing else.
+	mapped, err := mapActivity(rawActivity{Comment: &comment, CommentAnchor: &anchor})
+	if err != nil {
+		t.Fatalf("the readable activity failed: %v", err)
+	}
+	if mapped.Comment == nil || mapped.Comment.Anchor == nil {
+		t.Fatalf("expected the readable activity to carry the grafted anchor, got %#v", mapped.Comment)
+	}
+
+	notAnObject := json.RawMessage(`"beside.go"`)
+	if _, err := mapActivity(rawActivity{Comment: &comment, CommentAnchor: &notAnObject}); err == nil {
+		t.Error("an anchor that is not an object mapped without error")
+	}
+
+	commentList := json.RawMessage(`["inline"]`)
+	if _, err := mapActivity(rawActivity{Comment: &commentList, CommentAnchor: &anchor}); err == nil {
+		t.Error("a comment that is not an object mapped without error")
 	}
 }
 
