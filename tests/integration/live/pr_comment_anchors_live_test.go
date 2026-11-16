@@ -84,7 +84,7 @@ func TestLivePRCommentAnchors(t *testing.T) {
 
 		listing := mustLiveCLI(t, "pr", "comment", "list", prID, "--json")
 
-		data, _ := decodeJSONMap(t, listing)["data"].(map[string]any)
+		data := decodeJSONMap(t, listing)
 		threads, _ := data["threads"].([]any)
 
 		var anchored, unanchored map[string]any
