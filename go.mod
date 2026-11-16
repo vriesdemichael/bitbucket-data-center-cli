@@ -7,7 +7,7 @@ toolchain go1.27.4
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/chromedp/cdproto v0.160.0
+	github.com/chromedp/cdproto v0.160.1
 	github.com/chromedp/chromedp v0.23.0
 	github.com/go-openapi/runtime v0.33.4
 	github.com/google/jsonschema-go v0.4.3
@@ -17,11 +17,11 @@ require (
 	github.com/oapi-codegen/runtime v1.9.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/sigstore/protobuf-specs v0.5.2
-	github.com/sigstore/rekor v1.5.5
+	github.com/sigstore/rekor v1.6.1
 	github.com/sigstore/sigstore v1.11.3
 	github.com/sigstore/sigstore-go v1.4.0
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/crypto v0.59.0
 	golang.org/x/image v0.48.0
@@ -49,7 +49,7 @@ require (
 	github.com/digitorus/pkcs7 v0.0.0-20260821105541-05f79448fa77 // indirect
 	github.com/digitorus/timestamp v0.0.0-20231217203849-220c5c2851b7 // indirect
 	github.com/dlclark/regexp2/v2 v2.13.0 // indirect
-	github.com/go-json-experiment/json v1.27.0 // indirect
+	github.com/go-json-experiment/json v1.27.2 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/analysis v1.0.1 // indirect
