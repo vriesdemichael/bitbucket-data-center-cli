@@ -114,7 +114,7 @@ List raw pull request activity items. This output is an explicit exception to th
 bb pr activity list 42 --repo PROJ/repo --all
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -331,7 +331,7 @@ bb pr build status 42 --repo PROJ/repo
 bb pr build status 42 --repo PROJ/repo && bb pr merge 42 --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -389,10 +389,10 @@ bb pr checkout 42 --detach
 `--branch string`
 :   Local branch name to use (defaults to the pull request source branch)
 
-`--detach`
+`--detach[=true|false]`
 :   Check out the source commit without creating or moving a local branch
 
-`--force`
+`--force[=true|false]`
 :   Check out even when tracked files have uncommitted changes, discarding them
 
 Inherited from [`bb pr`](#bb-pr):
@@ -438,7 +438,7 @@ bb pr checks 42 --repo PROJ/repo
 bb pr checks 42 --repo PROJ/repo && bb pr merge 42 --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -528,7 +528,7 @@ bb pr comment add 49 --repo PROJ/repo --blocker --text "Add a test for the empty
 bb pr comment add 49 --repo PROJ/repo --pending --text "Naming: prefer retryCount."
 ```
 
-`--blocker`
+`--blocker[=true|false]`
 :   Mark the comment as a blocker
 
 `--line int`
@@ -543,7 +543,7 @@ bb pr comment add 49 --repo PROJ/repo --pending --text "Naming: prefer retryCoun
 `--path string`
 :   File path for an inline comment
 
-`--pending`
+`--pending[=true|false]`
 :   Mark the comment as pending (draft)
 
 `--text string`
@@ -681,7 +681,7 @@ bb pr comment delete 42 1389396 --repo PROJ/repo --version 3
 `--version int32`
 :   Expected comment version; a comment that changed since is refused
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb pr`](#bb-pr):
@@ -802,13 +802,13 @@ bb pr comment list 42 --repo PROJ/repo --tasks-only --state open
 bb pr comment list 42 --repo PROJ/repo --path src/main.go --with-replies
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
-`--blocker`
+`--blocker[=true|false]`
 :   List pull request blocker comments
 
-`--full`
+`--full[=true|false]`
 :   Add every comment ungrouped, alongside the thread view
 
 `--limit int`
@@ -820,13 +820,13 @@ bb pr comment list 42 --repo PROJ/repo --path src/main.go --with-replies
 `--state string`
 :   Filter threads by resolution state (one of: open, unresolved, resolved, pending, all) (default "all")
 
-`--tasks-only`
+`--tasks-only[=true|false]`
 :   Show only threads Bitbucket tracks as tasks (blocker comments)
 
-`--unresolved`
+`--unresolved[=true|false]`
 :   Show only unresolved threads (shorthand for --state open)
 
-`--with-replies`
+`--with-replies[=true|false]`
 :   Include the full text of every reply instead of only the most recent one
 
 Inherited from [`bb pr`](#bb-pr):
@@ -941,7 +941,7 @@ bb pr comment react 42 1389396 thumbsup --repo PROJ/repo
 bb pr comment react 42 1389396 thumbsup --repo PROJ/repo --remove
 ```
 
-`--remove`
+`--remove[=true|false]`
 :   Remove the reaction instead of adding it
 
 Inherited from [`bb pr`](#bb-pr):
@@ -1112,7 +1112,7 @@ bb pr commits [pr-id] [flags]
 bb pr commits 42 --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -1189,16 +1189,16 @@ bb pr create --repo PROJ/repo --from-repo SANDBOX/repo-experiment --from-ref fea
   --to-ref main --title "My change"
 ```
 
-`--codeowners`
+`--codeowners[=true|false]`
 :   Assign the code owners Bitbucket reports for the change, the same ones the web interface offers; the CODEOWNERS syntax and its meaning are the server's (default true)
 
-`--default-reviewers`
+`--default-reviewers[=true|false]`
 :   Include default reviewers configured on repository/project; a failed lookup warns, unless this flag is passed explicitly, which makes it fatal (default true)
 
 `--description string`
 :   Pull request description
 
-`--draft`
+`--draft[=true|false]`
 :   Create as a draft pull request
 
 `--from-ref string`
@@ -1207,10 +1207,10 @@ bb pr create --repo PROJ/repo --from-repo SANDBOX/repo-experiment --from-ref fea
 `--from-repo string`
 :   Repository holding --from-ref as PROJECT/slug, for a fork to upstream pull request (defaults to --repo)
 
-`--no-codeowners`
+`--no-codeowners[=true|false]`
 :   Do not assign code owners
 
-`--no-default-reviewers`
+`--no-default-reviewers[=true|false]`
 :   Do not include default reviewers
 
 `--reviewer-group strings`
@@ -1473,13 +1473,13 @@ bb pr diff 42 --repo PROJ/repo --name-only
 bb pr diff 42 --repo PROJ/repo --patch > pr-42.patch
 ```
 
-`--name-only`
+`--name-only[=true|false]`
 :   Output only changed file names
 
-`--patch`
+`--patch[=true|false]`
 :   Output unified patch stream
 
-`--stat`
+`--stat[=true|false]`
 :   Output structured diff stats
 
 Inherited from [`bb pr`](#bb-pr):
@@ -1519,7 +1519,7 @@ bb pr files [pr-id] [flags]
 bb pr files 42 --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -1578,7 +1578,7 @@ bb pr view
 bb pr get 42 --repo PROJ/repo --no-review-summary
 ```
 
-`--no-review-summary`
+`--no-review-summary[=true|false]`
 :   Skip the paged activity timeline walk; the summary still carries the open task tally, which costs one request
 
 Inherited from [`bb pr`](#bb-pr):
@@ -1725,7 +1725,7 @@ bb pr list --repo PROJ/repo --source-branch feature/x --state all
 bb pr list --repo PROJ/repo --with-review-status
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -1743,7 +1743,7 @@ bb pr list --repo PROJ/repo --with-review-status
 `--target-branch string`
 :   Optional target branch filter
 
-`--with-review-status`
+`--with-review-status[=true|false]`
 :   Resolve unresolved comment threads per pull request (walks each activity timeline; slower)
 
 Inherited from [`bb pr`](#bb-pr):
@@ -2030,7 +2030,7 @@ bb pr ready 42 --repo PROJ/repo
 bb pr ready 42 --repo PROJ/repo --undo
 ```
 
-`--undo`
+`--undo[=true|false]`
 :   Turn the pull request back into a draft instead
 
 Inherited from [`bb pr`](#bb-pr):
@@ -2498,10 +2498,10 @@ bb pr review reviewer add 42 --repo PROJ/repo --default-reviewers
 bb pr review reviewer add 42 --repo PROJ/repo --codeowners
 ```
 
-`--codeowners`
+`--codeowners[=true|false]`
 :   Assign the code owners Bitbucket reports for the change, the same ones the web interface offers; the CODEOWNERS syntax and its meaning are the server's
 
-`--default-reviewers`
+`--default-reviewers[=true|false]`
 :   Assign default reviewers configured on repository/project for this pull request
 
 `--reviewer-group strings`
@@ -2592,7 +2592,7 @@ bb pr review reviewer remove 42 --user alice --repo PROJ/repo
 `--user string`
 :   Reviewer username
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb pr`](#bb-pr):
@@ -2836,7 +2836,7 @@ The last two are cross-repository and need no repository context. The current-br
 bb pr status
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -3064,7 +3064,7 @@ bb pr update 42 --repo PROJ/repo --version 1 --draft
 `--description string`
 :   Updated pull request description
 
-`--draft`
+`--draft[=true|false]`
 :   Set draft state: --draft to mark as draft, --draft=false to mark as ready for review
 
 `--reviewers strings`

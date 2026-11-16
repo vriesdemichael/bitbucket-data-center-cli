@@ -68,7 +68,7 @@ bb ssh-key list [flags]
 bb ssh-key list
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -111,7 +111,7 @@ bb ssh-key remove <ssh-key-id> [flags]
 bb ssh-key remove 31
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).

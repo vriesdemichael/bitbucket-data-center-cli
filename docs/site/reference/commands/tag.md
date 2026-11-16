@@ -81,7 +81,7 @@ bb tag delete v1.2.0 --repo PROJ/repo
 bb tag delete v1.2.0 --repo PROJ/repo --yes
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb tag`](#bb-tag):
@@ -117,7 +117,7 @@ bb tag list --repo PROJ/repo
 bb tag list --repo PROJ/repo --filter v1. --order-by MODIFICATION
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--filter string`

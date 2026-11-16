@@ -17,19 +17,19 @@ search:
 `--client-key string`
 :   Path to PEM client key for mTLS
 
-`--describe`
+`--describe[=true|false]`
 :   Say what this command's --json output looks like, for a run and for --dry-run, instead of running it
 
-`--dry-run`
+`--dry-run[=true|false]`
 :   Say what the real run would do, without doing it; each command's help says what it checks
 
-`--full-error-body`
+`--full-error-body[=true|false]`
 :   Print the whole upstream response body in an error instead of a summary
 
-`--insecure-skip-verify`
+`--insecure-skip-verify[=true|false]`
 :   Disable TLS certificate verification (unsafe; local/dev only)
 
-`--json`
+`--json[=true|false]`
 :   Print the output as one JSON document
 
 `--log-format string`
@@ -38,10 +38,10 @@ search:
 `--log-level string`
 :   Diagnostics verbosity: error, warn, info, debug
 
-`--no-color`
+`--no-color[=true|false]`
 :   Disable colored output
 
-`--no-input`
+`--no-input[=true|false]`
 :   Never prompt; fail instead when a value is missing
 
 `--request-timeout string`
@@ -53,5 +53,5 @@ search:
 `--retry-count int`
 :   HTTP retry attempts for transient errors (default -1)
 
-`--yaml`
+`--yaml[=true|false]`
 :   Print the output as one YAML document: the same document as --json

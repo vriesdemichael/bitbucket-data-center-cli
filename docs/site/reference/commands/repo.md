@@ -114,7 +114,7 @@ bb repo admin create --project PROJ --name billing-service \
 `--description string`
 :   Repository description
 
-`--forkable`
+`--forkable[=true|false]`
 :   Repository forkable (default true)
 
 `--name string`
@@ -175,7 +175,7 @@ bb repo admin delete PROJ/repo
 bb repo admin delete PROJ/repo --yes
 ```
 
-`--yes`
+`--yes[=true|false]`
 :   Skip the confirmation. Only applies when the repository is named explicitly.
 
 Inherited from [`bb repo admin`](#bb-repo-admin):
@@ -475,7 +475,7 @@ bb repo browse history <path> [flags]
 bb repo browse history src/main.go --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -571,7 +571,7 @@ bb repo browse tree --repo PROJ/repo
 bb repo browse tree src --repo PROJ/repo --at v1.2.0
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--at string`
@@ -662,13 +662,13 @@ bb repo clone https://bitbucket.example.com/projects/PROJ/repos/repo work/repo
 bb repo clone PROJ/repo --https -- --depth 1
 ```
 
-`--https`
+`--https[=true|false]`
 :   Use HTTPS only and skip the SSH clone attempt
 
-`--no-upstream`
+`--no-upstream[=true|false]`
 :   Do not add an upstream remote when cloning a fork
 
-`--ssh`
+`--ssh[=true|false]`
 :   Use SSH only and disable HTTPS fallback
 
 `-u, --upstream-remote-name string`
@@ -830,7 +830,7 @@ bb repo comment delete --commit a1b2c3d --id 1389396 --repo PROJ/repo
 `--version int32`
 :   Expected comment version
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo comment`](#bb-repo-comment):
@@ -880,7 +880,7 @@ bb repo comment list --commit a1b2c3d --path src/main.go --repo PROJ/repo
 bb repo comment list --pr 42 --path src/main.go --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -1057,7 +1057,7 @@ bb repo compare feature/x main --repo PROJ/repo
 bb repo compare feature/x main --repo PROJ/repo --diff
 ```
 
-`--diff`
+`--diff[=true|false]`
 :   Show the unified diff of the changes
 
 `--repo string`
@@ -1110,7 +1110,7 @@ bb repo create --project PROJ --name billing-service \
 `--description string`
 :   Repository description
 
-`--forkable`
+`--forkable[=true|false]`
 :   Repository forkable (default true)
 
 `--name string`
@@ -1249,7 +1249,7 @@ A task the repository inherits from its project is refused; bb project default-t
 bb repo default-task delete 3 --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo default-task`](#bb-repo-default-task):
@@ -1427,7 +1427,7 @@ bb repo delete PROJ/repo --yes
 `--repo string`
 :   Repository as PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
-`--yes`
+`--yes[=true|false]`
 :   Skip the confirmation. Only applies when the repository is named explicitly.
 
 Also takes the [global flags](global-flags.md).
@@ -1590,7 +1590,7 @@ bb repo get --repo PROJ/repo
 bb repo get --repo PROJ/repo --readme=false
 ```
 
-`--readme`
+`--readme[=true|false]`
 :   Include the README; --readme=false leaves it out (default true)
 
 `--repo string`
@@ -1724,7 +1724,7 @@ bb repo label remove <label> [flags]
 bb repo label remove backend --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo label`](#bb-repo-label):
@@ -1763,7 +1763,7 @@ bb repo list
 bb repo list --project PROJ --all
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -1825,7 +1825,7 @@ bb repo permissions grant alice REPO_WRITE --repo PROJ/repo
 bb repo permissions grant backend-team REPO_WRITE --group --repo PROJ/repo
 ```
 
-`--group`
+`--group[=true|false]`
 :   Treat the argument as a group rather than a user
 
 Inherited from [`bb repo permissions`](#bb-repo-permissions):
@@ -1870,10 +1870,10 @@ bb repo permissions list --repo PROJ/repo
 bb repo permissions list --group --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
-`--group`
+`--group[=true|false]`
 :   List groups instead of users
 
 `--limit int`
@@ -1922,10 +1922,10 @@ bb repo permissions revoke alice --repo PROJ/repo
 bb repo permissions revoke backend-team --group --repo PROJ/repo
 ```
 
-`--group`
+`--group[=true|false]`
 :   Treat the argument as a group rather than a user
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo permissions`](#bb-repo-permissions):
@@ -2064,7 +2064,7 @@ bb repo settings auto-decline delete [flags]
 bb repo settings auto-decline delete --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings auto-decline`](#bb-repo-settings-auto-decline):
@@ -2136,7 +2136,7 @@ bb repo settings auto-decline set --enabled --inactivity-weeks 4 --repo PROJ/rep
 bb repo settings auto-decline set --enabled=false --repo PROJ/repo
 ```
 
-`--enabled`
+`--enabled[=true|false]`
 :   Enable or disable auto-decline
 
 `--inactivity-weeks int32`
@@ -2179,7 +2179,7 @@ bb repo settings auto-merge delete [flags]
 bb repo settings auto-merge delete --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings auto-merge`](#bb-repo-settings-auto-merge):
@@ -2249,7 +2249,7 @@ bb repo settings auto-merge set [flags]
 bb repo settings auto-merge set --enabled --repo PROJ/repo
 ```
 
-`--enabled`
+`--enabled[=true|false]`
 :   Enable or disable auto-merge
 
 Inherited from [`bb repo settings auto-merge`](#bb-repo-settings-auto-merge):
@@ -2431,7 +2431,7 @@ bb repo settings pull-requests update [flags]
 bb repo settings pull-requests update --required-all-tasks-complete --repo PROJ/repo
 ```
 
-`--required-all-tasks-complete`
+`--required-all-tasks-complete[=true|false]`
 :   Require all pull-request tasks to be completed before merge
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
@@ -2568,7 +2568,7 @@ Also available as bb repo permissions list --group, one level shallower.
 bb repo settings security permissions groups list --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -2612,7 +2612,7 @@ Also available as bb repo permissions revoke --group, one level shallower.
 bb repo settings security permissions groups revoke backend-team --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
@@ -2692,7 +2692,7 @@ Also available as bb repo permissions list, one level shallower.
 bb repo settings security permissions users list --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -2736,7 +2736,7 @@ Also available as bb repo permissions revoke, one level shallower.
 bb repo settings security permissions users revoke alice --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
@@ -2787,10 +2787,10 @@ printf '%s' "$WEBHOOK_SECRET" | bb repo settings workflow webhooks create review
   --event pr:opened --event pr:merged --secret-stdin
 ```
 
-`--active`
+`--active[=true|false]`
 :   Whether the webhook is active (default true)
 
-`--credentials-password-stdin`
+`--credentials-password-stdin[=true|false]`
 :   Read the endpoint password from stdin (or set BB\_WEBHOOK\_PASSWORD)
 
 `--credentials-username string`
@@ -2799,7 +2799,7 @@ printf '%s' "$WEBHOOK_SECRET" | bb repo settings workflow webhooks create review
 `--event strings`
 :   Webhook event(s) to subscribe to (default \[repo:refs\_changed\])
 
-`--secret-stdin`
+`--secret-stdin[=true|false]`
 :   Read the shared secret from stdin (or set BB\_WEBHOOK\_SECRET)
 
 `--ssl-verification string`
@@ -2849,7 +2849,7 @@ bb repo settings workflow webhooks delete <webhook-id> [flags]
 bb repo settings workflow webhooks delete 12 --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb repo settings`](#bb-repo-settings):
@@ -2951,10 +2951,10 @@ bb repo ssh-key add deploy-key.pub --project PROJ --permission read-write
 `--permission string`
 :   Permission level (one of: read-only, read-write) (default "read-only")
 
-`--read-only`
+`--read-only[=true|false]`
 :   Add as read-only access key
 
-`--read-write`
+`--read-write[=true|false]`
 :   Add as read-write access key
 
 Inherited from [`bb repo ssh-key`](#bb-repo-ssh-key):
@@ -2997,7 +2997,7 @@ bb repo ssh-key list --repo PROJ/repo
 bb repo ssh-key list --project PROJ
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -3040,7 +3040,7 @@ bb repo ssh-key remove <access-key-id> [flags]
 bb repo ssh-key remove 31 --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug or --project
 
 Inherited from [`bb repo ssh-key`](#bb-repo-ssh-key):

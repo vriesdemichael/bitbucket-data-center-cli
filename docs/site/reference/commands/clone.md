@@ -25,13 +25,13 @@ bb clone https://bitbucket.example.com/projects/PROJ/repos/repo work/repo
 bb clone PROJ/repo --https -- --depth 1
 ```
 
-`--https`
+`--https[=true|false]`
 :   Use HTTPS only and skip the SSH clone attempt
 
-`--no-upstream`
+`--no-upstream[=true|false]`
 :   Do not add an upstream remote when cloning a fork
 
-`--ssh`
+`--ssh[=true|false]`
 :   Use SSH only and disable HTTPS fallback
 
 `-u, --upstream-remote-name string`

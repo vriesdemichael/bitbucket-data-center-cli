@@ -81,13 +81,13 @@ bb diff pr 42 --repo PROJ/repo --name-only
 bb diff pr 42 --repo PROJ/repo --patch > pr-42.patch
 ```
 
-`--name-only`
+`--name-only[=true|false]`
 :   Output only changed file names
 
-`--patch`
+`--patch[=true|false]`
 :   Output unified patch stream
 
-`--stat`
+`--stat[=true|false]`
 :   Output structured diff stats
 
 Inherited from [`bb diff`](#bb-diff):
@@ -128,16 +128,16 @@ bb diff refs main feature/x --repo PROJ/repo
 bb diff refs main feature/x --repo PROJ/repo --stat
 ```
 
-`--name-only`
+`--name-only[=true|false]`
 :   Output only changed file names
 
-`--patch`
+`--patch[=true|false]`
 :   Output unified patch stream
 
 `--path string`
 :   Optional file path for file-scoped diff
 
-`--stat`
+`--stat[=true|false]`
 :   Output structured diff stats
 
 Inherited from [`bb diff`](#bb-diff):

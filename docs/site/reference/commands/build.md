@@ -41,7 +41,7 @@ bb build delete a1b2c3d --key ci --repo PROJ/repo
 `--key string`
 :   Build status key
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb build`](#bb-build):
@@ -201,7 +201,7 @@ bb build required delete <required-build-id> [flags]
 bb build required delete 5 --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb build`](#bb-build):
@@ -237,7 +237,7 @@ bb build required list [flags]
 bb build required list --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -435,7 +435,7 @@ bb build status get a1b2c3d --repo PROJ/repo
 bb build status get a1b2c3d --repo PROJ/repo --order-by NEWEST
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`

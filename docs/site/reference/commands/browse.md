@@ -28,7 +28,7 @@ bb browse src/main.go --branch release/1.2 --blame
 bb browse --settings --repo PROJ/repo --no-browser
 ```
 
-`--blame`
+`--blame[=true|false]`
 :   Open blame view for a file
 
 `-b, --branch string`
@@ -37,16 +37,16 @@ bb browse --settings --repo PROJ/repo --no-browser
 `-c, --commit string`
 :   Select another commit
 
-`-n, --no-browser`
+`-n, --no-browser[=true|false]`
 :   Print destination URL instead of opening the browser
 
-`-r, --releases`
+`-r, --releases[=true|false]`
 :   Open repository tags/releases view
 
 `-R, --repo string`
 :   Repository as \[HOST/\]PROJECT/slug (defaults to the repository of the git checkout you are in, then BITBUCKET\_PROJECT\_KEY + BITBUCKET\_REPO\_SLUG)
 
-`-s, --settings`
+`-s, --settings[=true|false]`
 :   Open repository settings
 
 Also takes the [global flags](global-flags.md).

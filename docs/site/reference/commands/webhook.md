@@ -49,10 +49,10 @@ printf '%s' "$WEBHOOK_SECRET" | bb webhook create reviews \
   --event pr:opened --event pr:merged --secret-stdin
 ```
 
-`--active`
+`--active[=true|false]`
 :   Whether the new webhook is active (default true)
 
-`--credentials-password-stdin`
+`--credentials-password-stdin[=true|false]`
 :   Read the endpoint password from stdin (or set BB\_WEBHOOK\_PASSWORD)
 
 `--credentials-username string`
@@ -61,7 +61,7 @@ printf '%s' "$WEBHOOK_SECRET" | bb webhook create reviews \
 `--event strings`
 :   Webhook event(s) to subscribe to (default \[repo:refs\_changed\])
 
-`--secret-stdin`
+`--secret-stdin[=true|false]`
 :   Read the shared secret from stdin (or set BB\_WEBHOOK\_SECRET)
 
 `--ssl-verification string`
@@ -111,7 +111,7 @@ bb webhook delete <webhook-id> [flags]
 bb webhook delete 12 --repo PROJ/repo
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked; applies only when the target is named with --repo PROJECT/slug
 
 Inherited from [`bb webhook`](#bb-webhook):
@@ -147,7 +147,7 @@ bb webhook get <webhook-id> [flags]
 bb webhook get 12 --repo PROJ/repo
 ```
 
-`--reveal-secret`
+`--reveal-secret[=true|false]`
 :   Print the webhook's shared secret instead of redacting it
 
 Inherited from [`bb webhook`](#bb-webhook):
@@ -189,7 +189,7 @@ bb webhook list [flags]
 bb webhook list --repo PROJ/repo
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -241,7 +241,7 @@ bb webhook stats 12 --repo PROJ/repo
 bb webhook stats 12 --repo PROJ/repo --summary
 ```
 
-`--summary`
+`--summary[=true|false]`
 :   Get statistics summary instead of detailed stats
 
 Inherited from [`bb webhook`](#bb-webhook):
@@ -271,7 +271,7 @@ bb webhook test 12 --repo PROJ/repo
 bb webhook test 12 --repo PROJ/repo --url https://ci.example.com/hooks/new
 ```
 
-`--reveal-secret`
+`--reveal-secret[=true|false]`
 :   Print the endpoint credentials Bitbucket sent instead of redacting it
 
 `--url string`
@@ -314,7 +314,7 @@ printf '%s' "$ENDPOINT_PASSWORD" | bb webhook update 12 --repo PROJ/repo \
 `--active string`
 :   Active status, unchanged when omitted (one of: true, false)
 
-`--credentials-password-stdin`
+`--credentials-password-stdin[=true|false]`
 :   Read the endpoint password from stdin (or set BB\_WEBHOOK\_PASSWORD)
 
 `--credentials-username string`
@@ -326,13 +326,13 @@ printf '%s' "$ENDPOINT_PASSWORD" | bb webhook update 12 --repo PROJ/repo \
 `--name string`
 :   New name of the webhook
 
-`--no-credentials`
+`--no-credentials[=true|false]`
 :   Remove the endpoint credentials from the webhook
 
-`--no-secret`
+`--no-secret[=true|false]`
 :   Remove the shared secret from the webhook
 
-`--secret-stdin`
+`--secret-stdin[=true|false]`
 :   Read the shared secret from stdin (or set BB\_WEBHOOK\_SECRET)
 
 `--ssl-verification string`

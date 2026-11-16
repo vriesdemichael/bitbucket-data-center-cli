@@ -110,7 +110,7 @@ bb auth alias discover --host https://bitbucket.example.com --replace
 `--host string`
 :   Bitbucket host URL
 
-`--replace`
+`--replace[=true|false]`
 :   Store only the discovered aliases, dropping any others
 
 Also takes the [global flags](global-flags.md).
@@ -173,7 +173,7 @@ bb auth alias remove git.example.com:7999 --host https://bitbucket.example.com
 `--host string`
 :   Bitbucket host URL
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).
@@ -280,7 +280,7 @@ bb auth gpg-key clear [flags]
 bb auth gpg-key clear
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm clearing of all GPG keys
 
 Also takes the [global flags](global-flags.md).
@@ -307,7 +307,7 @@ bb auth gpg-key list [flags]
 bb auth gpg-key list
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -344,7 +344,7 @@ bb auth gpg-key remove <id-or-fingerprint> [flags]
 bb auth gpg-key remove 3AA5C34371567BD2
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Also takes the [global flags](global-flags.md).
@@ -432,7 +432,7 @@ printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com \
   --token-stdin --allow-insecure-storage
 ```
 
-`--allow-insecure-storage`
+`--allow-insecure-storage[=true|false]`
 :   Where the OS keyring is unavailable, store the credential in the config file in plaintext instead of failing
 
 `--client-cert string`
@@ -441,19 +441,19 @@ printf '%s' "$BITBUCKET_TOKEN" | bb auth login https://bitbucket.example.com \
 `--client-key string`
 :   Path to PEM client key for mTLS
 
-`--discover-aliases`
+`--discover-aliases[=true|false]`
 :   Discover host aliases from the first accessible repository clone links (default true)
 
-`--password-stdin`
+`--password-stdin[=true|false]`
 :   Read the basic-auth password from stdin
 
-`--require-keyring`
+`--require-keyring[=true|false]`
 :   Fail if the OS keyring is unavailable instead of storing credentials in plaintext
 
-`--set-default`
+`--set-default[=true|false]`
 :   Set host as default target (default true)
 
-`--token-stdin`
+`--token-stdin[=true|false]`
 :   Read the access token from stdin
 
 `--username string`
@@ -594,10 +594,10 @@ bb auth setup-git --global=false
 bb auth setup-git --force
 ```
 
-`--force`
+`--force[=true|false]`
 :   Overwrite an existing credential helper for this host
 
-`--global`
+`--global[=true|false]`
 :   Write to global git config rather than the current repository (default true)
 
 `--host string`
@@ -643,7 +643,7 @@ bb auth status
 bb auth status --check
 ```
 
-`--check`
+`--check[=true|false]`
 :   Exit non-zero when a check fails (for CI)
 
 `--host string`
@@ -804,7 +804,7 @@ bb auth token list --repo PROJ/repo
 bb auth token list --user alice
 ```
 
-`--all`
+`--all[=true|false]`
 :   Return every result rather than the first --limit
 
 `--limit int`
@@ -847,7 +847,7 @@ bb auth token revoke <token-id> [flags]
 bb auth token revoke 1827364510
 ```
 
-`-y, --yes`
+`-y, --yes[=true|false]`
 :   Confirm without being asked
 
 Inherited from [`bb auth token`](#bb-auth-token):
