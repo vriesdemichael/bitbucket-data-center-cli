@@ -17,11 +17,11 @@ require (
 	github.com/oapi-codegen/runtime v1.9.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/sigstore/protobuf-specs v0.5.2
-	github.com/sigstore/rekor v1.6.1
+	github.com/sigstore/rekor v1.5.5
 	github.com/sigstore/sigstore v1.11.3
 	github.com/sigstore/sigstore-go v1.4.0
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.1.0
+	github.com/spf13/pflag v1.0.10
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/crypto v0.59.0
 	golang.org/x/image v0.48.0
