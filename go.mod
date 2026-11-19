@@ -7,7 +7,7 @@ toolchain go1.27.4
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/chromedp/cdproto v0.160.2
+	github.com/chromedp/cdproto v0.160.3
 	github.com/chromedp/chromedp v0.23.1
 	github.com/go-openapi/runtime v0.33.4
 	github.com/google/jsonschema-go v0.4.3
