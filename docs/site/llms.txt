@@ -224,6 +224,7 @@ Prefer the published command reference over guessing flags or subcommands.
 - [Advanced Topics](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/advanced/): Dry-run, diagnostics, and repository discovery
 - [AI and llms.txt overview](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/ai-and-llms/): How this file and the AI tooling fit together
 - [MCP setup per client](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/how-to/mcp-clients/): The server entry for Claude Code, Claude Desktop, Cursor and VS Code
+- [bb's MCP server and Atlassian's](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/mcp-compared/): How the two differ, and when to use which
 - [Architecture Decision Records](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/adr/): Design rationale and system constraints
 - [Changelog](https://vriesdemichael.github.io/bitbucket-data-center-cli/latest/changelog/): Release history and release notes
 - [bb AI skill (SKILL.md)](https://github.com/vriesdemichael/bitbucket-data-center-cli/blob/main/skills/bb/SKILL.md)

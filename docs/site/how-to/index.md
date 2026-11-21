@@ -22,3 +22,4 @@ Tasks, each with the commands that do it.
 
 - **Connect an agent to Bitbucket:** [Set Up the MCP Server in Your Client](mcp-clients.md)
 - **Limit what an agent may do:** [MCP Server Governance](../advanced/mcp-governance.md)
+- **Choose between bb's MCP server and Atlassian's:** [bb's MCP Server and Atlassian's](../mcp-compared.md)
