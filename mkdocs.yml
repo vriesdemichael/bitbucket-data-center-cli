@@ -149,6 +149,7 @@ nav:
       - Server-Side Hooks: advanced/server-side-hooks.md
       - Webhook Secrets: advanced/webhook-secrets.md
   - AI and llms.txt: ai-and-llms.md
+  - bb's MCP Server and Atlassian's: mcp-compared.md
   - ADR Records: adr/index.md
   # Linked rather than copied into docs_dir: the guide is 365 lines that change with the
   # gates it describes, and a second copy under docs/site would drift from the one
