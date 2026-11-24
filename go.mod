@@ -7,17 +7,17 @@ toolchain go1.27.4
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/chromedp/cdproto v0.160.6
+	github.com/chromedp/cdproto v0.160.7
 	github.com/chromedp/chromedp v0.24.0
 	github.com/go-openapi/runtime v0.33.5
 	github.com/google/jsonschema-go v0.4.3
 	github.com/joho/godotenv v1.5.1
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/muesli/termenv v0.16.0
-	github.com/oapi-codegen/runtime v1.9.0
+	github.com/oapi-codegen/runtime v1.9.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/sigstore/protobuf-specs v0.5.2
-	github.com/sigstore/rekor v1.6.2
+	github.com/sigstore/rekor v1.6.3
 	github.com/sigstore/sigstore v1.11.3
 	github.com/sigstore/sigstore-go v1.4.0
 	github.com/spf13/cobra v1.10.2
@@ -48,7 +48,7 @@ require (
 	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/digitorus/pkcs7 v0.0.0-20260821105541-05f79448fa77 // indirect
 	github.com/digitorus/timestamp v0.0.0-20231217203849-220c5c2851b7 // indirect
-	github.com/dlclark/regexp2/v2 v2.13.1 // indirect
+	github.com/dlclark/regexp2/v2 v2.13.2 // indirect
 	github.com/go-json-experiment/json v1.27.2 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -101,7 +101,7 @@ require (
 	github.com/xo/terminfo v1.3.1 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.2 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
