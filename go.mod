@@ -1,6 +1,6 @@
 module github.com/vriesdemichael/bitbucket-data-center-cli
 
-go 1.27.0
+go 1.27.3
 
 toolchain go1.27.4
 
@@ -16,10 +16,10 @@ require (
 	github.com/muesli/termenv v0.16.0
 	github.com/oapi-codegen/runtime v1.9.1
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
-	github.com/sigstore/protobuf-specs v0.5.2
-	github.com/sigstore/rekor v1.6.3
-	github.com/sigstore/sigstore v1.11.3
-	github.com/sigstore/sigstore-go v1.4.0
+	github.com/sigstore/protobuf-specs v0.5.3-0.20261112181914-a84bc5ff572a
+	github.com/sigstore/rekor v1.6.5
+	github.com/sigstore/sigstore v1.11.4
+	github.com/sigstore/sigstore-go v1.4.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.1.0
 	github.com/zalando/go-keyring v0.2.8
@@ -31,6 +31,7 @@ require (
 )
 
 require (
+	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/ProtonMail/go-crypto v1.5.2 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
@@ -92,8 +93,8 @@ require (
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
-	github.com/sigstore/rekor-tiles/v2 v2.4.2 // indirect
-	github.com/sigstore/timestamp-authority/v2 v2.2.1 // indirect
+	github.com/sigstore/rekor-tiles/v2 v2.4.6 // indirect
+	github.com/sigstore/timestamp-authority/v2 v2.2.2 // indirect
 	github.com/theupdateframework/go-tuf v0.7.1 // indirect
 	github.com/theupdateframework/go-tuf/v2 v2.4.2 // indirect
 	github.com/transparency-dev/formats v0.1.1 // indirect
